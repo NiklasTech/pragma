@@ -1,4 +1,5 @@
-onlyBuiltDependencies: "msw,esbuild"
+allowBuilds:
+  esbuild: set this to true or false
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
@@ -13,5 +14,3 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
     vitest: "*"
-allowBuilds:
-  esbuild: true

@@ -38,11 +38,5 @@
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
-  "packageManager": "pnpm@11.5.0",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "msw",
-      "esbuild"
-    ]
-  }
+  "packageManager": "pnpm@11.5.0"
 }
