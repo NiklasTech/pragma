@@ -10,6 +10,8 @@
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/cli": "^2.11.2",
     "typescript": "~6.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
