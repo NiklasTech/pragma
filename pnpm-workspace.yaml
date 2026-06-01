@@ -11,4 +11,8 @@ peerDependencyRules:
     - vitest
   allowedVersions:
     vite: "*"
-    vitest: "*"
+onlyBuiltDependencies:
+  - msw
+  - esbuild
+allowBuilds:
+  esbuild: true

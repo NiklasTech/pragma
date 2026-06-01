@@ -1,3 +1,4 @@
+import path from "node:path";
 import { defineConfig } from "vite-plus";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -6,6 +7,11 @@ const mobile = !!/android|ios/.exec(process.env.TAURI_ENV_PLATFORM ?? "");
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   clearScreen: false,
   server: {
     host: mobile ? "0.0.0.0" : false,
