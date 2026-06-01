@@ -25,3 +25,7 @@ dist-ssr
 !.vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
