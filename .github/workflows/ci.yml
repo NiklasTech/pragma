@@ -28,7 +28,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm approve-builds esbuild
+          pnpm install --frozen-lockfile
 
       - name: Run checks
         run: pnpm exec vp check
@@ -53,7 +55,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm approve-builds esbuild
+          pnpm install --frozen-lockfile
 
       - name: Build frontend
         run: pnpm exec vp build
