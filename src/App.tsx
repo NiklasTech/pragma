@@ -86,15 +86,14 @@ function Showcase() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
+      <div className="min-h-screen bg-background text-foreground p-8">
         <div className="max-w-6xl mx-auto">
-          <header className="mb-12 pb-6 border-b border-zinc-800">
+          <header className="mb-12 pb-6 border-b border-border">
             <h1 className="text-3xl font-mono font-bold tracking-tight">
               Pragma Component Showcase
             </h1>
-            <p className="text-zinc-400 mt-2 font-mono text-sm">
-              Alle verfuegbaren UI-Components. Bewerte welche angepasst werden muessen fuer den
-              IDE-Look.
+            <p className="text-muted-foreground mt-2 font-mono text-sm">
+              Alle verfuegbaren UI-Components. Warm Dark Theme — Pragma IDE.
             </p>
           </header>
 
@@ -136,7 +135,7 @@ function Showcase() {
                 <CardDescription>Card Description</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-muted-foreground">
                   Card content goes here. Used for panels, settings, etc.
                 </p>
               </CardContent>
@@ -253,13 +252,13 @@ function Showcase() {
                 <TabsTrigger value="logs">Logs</TabsTrigger>
               </TabsList>
               <TabsContent value="overview">
-                <p className="text-sm text-zinc-400">Overview content</p>
+                <p className="text-sm text-muted-foreground">Overview content</p>
               </TabsContent>
               <TabsContent value="settings">
-                <p className="text-sm text-zinc-400">Settings content</p>
+                <p className="text-sm text-muted-foreground">Settings content</p>
               </TabsContent>
               <TabsContent value="logs">
-                <p className="text-sm text-zinc-400">Logs content</p>
+                <p className="text-sm text-muted-foreground">Logs content</p>
               </TabsContent>
             </Tabs>
           </Section>
@@ -345,7 +344,7 @@ function Showcase() {
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <p className="text-sm text-zinc-400 mt-2 pl-6">
+                <p className="text-sm text-muted-foreground mt-2 pl-6">
                   Hidden content revealed. Used for file explorer sections, settings groups, etc.
                 </p>
               </CollapsibleContent>
@@ -368,7 +367,7 @@ function Showcase() {
           </Section>
 
           <Section title="ScrollArea">
-            <ScrollArea className="h-32 w-64 rounded-md border border-zinc-800 p-4">
+            <ScrollArea className="h-32 w-64 rounded-md border border-border p-4">
               <div className="space-y-2">
                 {Array.from({ length: 20 }).map((_, i) => (
                   <p key={i} className="text-sm font-mono">
@@ -416,58 +415,58 @@ function Showcase() {
               <Button variant="link" className="h-auto p-0">
                 Home
               </Button>
-              <CaretRight className="h-4 w-4 text-zinc-500" />
+              <CaretRight className="h-4 w-4 text-muted-foreground" />
               <Button variant="link" className="h-auto p-0">
                 Settings
               </Button>
-              <CaretRight className="h-4 w-4 text-zinc-500" />
-              <span className="text-zinc-400">General</span>
+              <CaretRight className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">General</span>
             </nav>
           </Section>
 
           <Section title="Command (Cmd+K) — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Command Palette — wird spaeter als globaler Shortcut implementiert.
             </p>
           </Section>
 
           <Section title="ContextMenu — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Right-click context menu — wird fuer File Explorer implementiert.
             </p>
           </Section>
 
           <Section title="Menubar — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Top application menu bar — wird fuer die IDE Titlebar implementiert.
             </p>
           </Section>
 
           <Section title="Resizable — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Resizable panels — wird fuer Editor/Terminal Split implementiert.
             </p>
           </Section>
 
           <Section title="Sheet — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Slide-out panels — wird fuer mobile Sidebar oder Settings verwendet.
             </p>
           </Section>
 
           <Section title="Sonner (Toasts) — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Toast notifications — wird fuer Build-Status, Git-Operationen, etc. verwendet.
             </p>
           </Section>
 
           <Section title="HoverCard — TODO">
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-foreground">
               Hover cards — wird fuer Git-Commit-Preview, Type-Info, etc. verwendet.
             </p>
           </Section>
 
-          <div className="mt-12 pt-6 border-t border-zinc-800 text-center text-zinc-500 text-sm font-mono">
+          <div className="mt-12 pt-6 border-t border-border text-center text-muted-foreground text-sm font-mono">
             End of Component Showcase — Pragma IDE
           </div>
         </div>
