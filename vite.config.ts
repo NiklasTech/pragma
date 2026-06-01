@@ -1,6 +1,23 @@
 import { defineConfig } from "vite-plus";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+
+const mobile = !!/android|ios/.exec(process.env.TAURI_ENV_PLATFORM ?? "");
 
 export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  clearScreen: false,
+  server: {
+    host: mobile ? "0.0.0.0" : false,
+    port: 5173,
+    strictPort: true,
+  },
+  envPrefix: ["VITE_", "TAURI_ENV_"],
+  build: {
+    target: mobile ? ["es2020", "chrome111", "safari13"] : ["chrome120"],
+    minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+  },
   staged: {
     "*": "vp check --fix",
   },
