@@ -29,7 +29,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm config set onlyBuiltDependencies "msw,esbuild"
+          echo "onlyBuiltDependencies:" >> pnpm-workspace.yaml
+          echo "  - msw" >> pnpm-workspace.yaml
+          echo "  - esbuild" >> pnpm-workspace.yaml
           pnpm install --frozen-lockfile
 
       - name: Run checks
@@ -56,7 +58,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm config set onlyBuiltDependencies "msw,esbuild"
+          echo "onlyBuiltDependencies:" >> pnpm-workspace.yaml
+          echo "  - msw" >> pnpm-workspace.yaml
+          echo "  - esbuild" >> pnpm-workspace.yaml
           pnpm install --frozen-lockfile
 
       - name: Build frontend
