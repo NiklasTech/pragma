@@ -28,11 +28,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: |
-          echo "onlyBuiltDependencies:" >> pnpm-workspace.yaml
-          echo "  - msw" >> pnpm-workspace.yaml
-          echo "  - esbuild" >> pnpm-workspace.yaml
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run checks
         run: pnpm exec vp check
@@ -57,11 +53,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: |
-          echo "onlyBuiltDependencies:" >> pnpm-workspace.yaml
-          echo "  - msw" >> pnpm-workspace.yaml
-          echo "  - esbuild" >> pnpm-workspace.yaml
-          pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build frontend
         run: pnpm exec vp build
