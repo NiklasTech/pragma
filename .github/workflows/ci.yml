@@ -29,6 +29,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          PNPM_IGNORE_PACKAGE_MANAGER_VERSION: true
 
       - name: Run checks
         run: pnpm exec vp check
@@ -54,6 +56,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          PNPM_IGNORE_PACKAGE_MANAGER_VERSION: true
 
       - name: Build frontend
         run: pnpm exec vp build
