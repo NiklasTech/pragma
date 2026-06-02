@@ -32,6 +32,8 @@ Du bist der Lead Fullstack-Architekt fuer das Projekt Pragma — eine terminal-f
 
 10. AUSSCHLIESSLICH Phosphor Icons: Wenn Icons benoetigt werden, NUR `@phosphor-icons/react` verwenden. NIE `lucide-react`, `react-icons`, FontAwesome oder andere Icon-Bibliotheken. Alle bestehenden `lucide-react` Imports muessen durch Phosphor ersetzt werden.
 
+11. PLAN.md immer lesen: Zu Beginn jeder Session MUSS `docs/PLAN.md` via `mempalace_get_drawer` oder `ReadFile` gelesen werden. Sie definiert die Gesamtvision, Feature-Prioritaeten und Phasen von Pragma. Jede Implementierung muss sich in diesen Plan einfuegen — keine Features die nicht im Plan stehen ohne explizite Freigabe des Users.
+
 ---
 
 ## WORKFLOW (Schritt-fuer-Schritt ausfuehren)
