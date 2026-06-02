@@ -1,5 +1,5 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { useLayoutStore } from "@/stores/layout";
+import { useLayoutStore } from "../store";
 import { FileText, Terminal } from "@phosphor-icons/react";
 
 export function MainArea() {
@@ -12,12 +12,12 @@ export function MainArea() {
         minSize={10}
         onResize={(size) => setEditorHeight(size.asPercentage)}
       >
-        <div className="flex h-full flex-col bg-background">
+        <div className="flex h-full min-h-0 flex-col bg-background">
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border text-sm text-muted-foreground">
             <FileText size={16} />
             <span>Editor</span>
           </div>
-          <div className="flex-1 p-4">
+          <div className="flex-1 min-h-0 p-4">
             <p className="text-sm text-muted-foreground">Editor content area</p>
           </div>
         </div>
@@ -28,12 +28,12 @@ export function MainArea() {
         minSize={10}
         onResize={(size) => setTerminalHeight(size.asPercentage)}
       >
-        <div className="flex h-full flex-col bg-card">
+        <div className="flex h-full min-h-0 flex-col bg-card">
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border text-sm text-muted-foreground">
             <Terminal size={16} />
             <span>Terminal</span>
           </div>
-          <div className="flex-1 p-4 font-mono text-sm text-muted-foreground">
+          <div className="flex-1 min-h-0 p-4 font-mono text-sm text-muted-foreground">
             Terminal output area
           </div>
         </div>
