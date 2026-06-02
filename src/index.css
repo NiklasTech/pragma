@@ -101,3 +101,13 @@
     overscroll-behavior: none;
   }
 }
+
+/* CodeMirror Dark Theme Overrides */
+.cm-editor {
+  background-color: var(--background, #0f0f10);
+  color: var(--foreground, #e8e8ea);
+}
+
+.cm-editor.cm-focused {
+  outline: none;
+}
