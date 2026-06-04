@@ -34,9 +34,9 @@ interface TerminalActions {
 const initialState: TerminalState = {
   sessions: [],
   activeSessionId: null,
-  defaultShell: "/bin/zsh",
+  defaultShell: "",
   fontSize: 13,
-  fontFamily: "JetBrains Mono",
+  fontFamily: "Geist Mono Variable",
   scrollback: 10000,
   aiSuggestions: true,
 };
