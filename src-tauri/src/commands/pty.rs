@@ -2,6 +2,7 @@ use portable_pty::{ChildKiller, CommandBuilder, MasterPty, NativePtySystem, PtyS
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::{Read, Write};
+#[cfg(windows)]
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
@@ -72,15 +73,17 @@ fn windows_shell_path() -> PathBuf {
     system32.join("cmd.exe")
 }
 
+#[cfg(windows)]
 fn default_shell() -> String {
-    if cfg!(target_os = "windows") {
-        windows_shell_path().to_string_lossy().into_owned()
-    } else {
-        std::env::var("SHELL")
-            .ok()
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| "/bin/zsh".to_string())
-    }
+    windows_shell_path().to_string_lossy().into_owned()
+}
+
+#[cfg(not(windows))]
+fn default_shell() -> String {
+    std::env::var("SHELL")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "/bin/zsh".to_string())
 }
 
 fn resolve_shell(shell: Option<String>) -> String {
