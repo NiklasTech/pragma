@@ -1,11 +1,19 @@
 import { useCallback, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Minus, Square, X } from "@phosphor-icons/react";
+import { FloppyDisk, FolderOpen, Minus, Square, X } from "@phosphor-icons/react";
+import { useOpenFile } from "@/hooks/useOpenFile";
+import { useSaveFile } from "@/hooks/useSaveFile";
+import { useEditorStore } from "@/stores/editor";
 
 export function Titlebar() {
   const [isMaximized, setIsMaximized] = useState(false);
-
   const win = getCurrentWindow();
+  const openFile = useOpenFile();
+  const saveFile = useSaveFile();
+  const { openFiles, activeTabId } = useEditorStore();
+
+  const activeFile = openFiles.find((f) => f.id === activeTabId);
+  const canSave = activeFile?.isModified ?? false;
 
   useEffect(() => {
     const unlisten = win.onResized(() => {
@@ -37,6 +45,25 @@ export function Titlebar() {
       <div className="flex items-center gap-2 px-3">
         <img src="/favicon.svg" alt="" className="h-4 w-4" />
         <span className="text-xs font-medium text-muted-foreground">Pragma</span>
+        <button
+          type="button"
+          onClick={openFile}
+          className="ml-2 flex h-6 items-center gap-1.5 rounded px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          title="Open File"
+        >
+          <FolderOpen size={14} />
+          <span>Open</span>
+        </button>
+        <button
+          type="button"
+          onClick={saveFile}
+          disabled={!canSave}
+          className="flex h-6 items-center gap-1.5 rounded px-2 text-xs transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed text-muted-foreground"
+          title="Save File"
+        >
+          <FloppyDisk size={14} />
+          <span>Save</span>
+        </button>
       </div>
 
       <div className="flex-1" data-tauri-drag-region />

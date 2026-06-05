@@ -68,16 +68,22 @@ function createExtensions(onChange: (value: string) => void): Extension[] {
 export function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const onChangeRef = useRef<(value: string) => void>(() => {});
 
   const { openFiles, activeTabId, updateFileContent } = useEditorStore();
-
   const activeFile = openFiles.find((f) => f.id === activeTabId) ?? null;
+
+  onChangeRef.current = activeFile ? (value) => updateFileContent(activeFile.id, value) : () => {};
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const view = new EditorView({
+      state: EditorState.create({
+        doc: activeFile?.content ?? "",
+        extensions: createExtensions((value) => onChangeRef.current(value)),
+      }),
       parent: container,
     });
     viewRef.current = view;
@@ -86,33 +92,7 @@ export function Editor() {
       view.destroy();
       viewRef.current = null;
     };
-  }, []);
-
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-
-    if (!activeFile) {
-      view.setState(
-        EditorState.create({
-          doc: "",
-          extensions: createExtensions(() => {}),
-        }),
-      );
-      return;
-    }
-
-    const extensions = createExtensions((value) => {
-      updateFileContent(activeFile.id, value);
-    });
-
-    const newState = EditorState.create({
-      doc: activeFile.content,
-      extensions,
-    });
-
-    view.setState(newState);
-  }, [activeFile, updateFileContent]);
+  }, [activeFile?.id]);
 
   if (!activeFile) {
     return (
