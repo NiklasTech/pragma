@@ -44,7 +44,11 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
         .unwrap_or("unknown")
         .to_string();
 
-    Ok(FileReadResult { path, name, content })
+    Ok(FileReadResult {
+        path,
+        name,
+        content,
+    })
 }
 
 #[tauri::command]
@@ -74,8 +78,7 @@ pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
         return Err(format!("Not a directory: {}", path));
     }
 
-    let dir =
-        fs::read_dir(path_ref).map_err(|e| format!("Failed to read directory: {}", e))?;
+    let dir = fs::read_dir(path_ref).map_err(|e| format!("Failed to read directory: {}", e))?;
 
     let mut entries: Vec<DirEntry> = Vec::new();
 
@@ -95,12 +98,10 @@ pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
         });
     }
 
-    entries.sort_by(|a, b| {
-        match (a.is_directory, b.is_directory) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        }
+    entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
     });
 
     Ok(entries)
