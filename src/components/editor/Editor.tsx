@@ -58,7 +58,11 @@ const baseTheme = EditorView.theme({
   },
 });
 
-function createExtensions(onChange: (value: string) => void, vimEnabled: boolean): Extension[] {
+function createExtensions(
+  onChange: (value: string) => void,
+  onCursorChange: (pos: { line: number; column: number }) => void,
+  vimEnabled: boolean,
+): Extension[] {
   const extensions: Extension[] = [
     languageCompartment.of([]),
     lineNumbers(),
@@ -69,6 +73,11 @@ function createExtensions(onChange: (value: string) => void, vimEnabled: boolean
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         onChange(update.state.doc.toString());
+      }
+      if (update.selectionSet) {
+        const head = update.state.selection.main.head;
+        const line = update.state.doc.lineAt(head);
+        onCursorChange({ line: line.number, column: head - line.from + 1 });
       }
     }),
     EditorState.tabSize.of(2),
@@ -95,6 +104,7 @@ export function Editor() {
   const saveFile = useSaveFile();
 
   const [vimMode, setVimMode] = useState<string | null>(null);
+  const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
 
   const activeFile = openFiles.find((f) => f.id === activeTabId) ?? null;
 
@@ -115,11 +125,19 @@ export function Editor() {
     const view = new EditorView({
       state: EditorState.create({
         doc: activeFile?.content ?? "",
-        extensions: createExtensions((value) => onChangeRef.current(value), vimEnabled),
+        extensions: createExtensions(
+          (value) => onChangeRef.current(value),
+          (pos) => setCursorPos(pos),
+          vimEnabled,
+        ),
       }),
       parent: container,
     });
     viewRef.current = view;
+
+    const head = view.state.selection.main.head;
+    const line = view.state.doc.lineAt(head);
+    setCursorPos({ line: line.number, column: head - line.from + 1 });
 
     let vimModeHandler: ((e: { mode: string }) => void) | null = null;
     if (vimEnabled) {
@@ -144,6 +162,7 @@ export function Editor() {
       view.destroy();
       viewRef.current = null;
       setVimMode(null);
+      setCursorPos({ line: 1, column: 1 });
     };
   }, [activeFile?.id, vimEnabled]);
 
@@ -177,7 +196,12 @@ export function Editor() {
   return (
     <div className="flex h-full w-full flex-col">
       <div ref={containerRef} className="min-h-0 flex-1" />
-      <VimStatus mode={vimMode} />
+      <VimStatus
+        mode={vimMode}
+        line={cursorPos.line}
+        column={cursorPos.column}
+        fileType={activeFile.name}
+      />
     </div>
   );
 }
