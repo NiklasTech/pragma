@@ -8,6 +8,7 @@ import {
   SidebarSimple,
   Sidebar as SidebarIcon,
 } from "@phosphor-icons/react";
+import { FileExplorer } from "@/components/sidebar";
 
 const tabs = [
   { id: "explorer" as const, icon: Files, label: "Explorer" },
@@ -104,8 +105,18 @@ export function SidebarContent() {
           {tabs.find((t) => t.id === sidebarTab)?.label}
         </h2>
       </div>
-      <div className="flex-1 min-h-0 p-3 overflow-auto">
-        <p className="text-sm text-muted-foreground">{sidebarTab} content</p>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {sidebarTab === "explorer" && <FileExplorer />}
+        {sidebarTab === "search" && (
+          <div className="p-3">
+            <p className="text-sm text-muted-foreground">Search content</p>
+          </div>
+        )}
+        {sidebarTab === "git" && (
+          <div className="p-3">
+            <p className="text-sm text-muted-foreground">Git content</p>
+          </div>
+        )}
       </div>
     </div>
   );
