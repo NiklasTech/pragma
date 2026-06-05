@@ -9,6 +9,14 @@ pub struct FileReadResult {
     pub content: String,
 }
 
+#[derive(Serialize)]
+pub struct DirEntry {
+    pub path: String,
+    pub name: String,
+    pub is_directory: bool,
+    pub is_file: bool,
+}
+
 #[tauri::command]
 pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     let path_ref = Path::new(&path);
@@ -56,4 +64,100 @@ pub fn write_text_file(path: String, content: String) -> Result<(), String> {
     }
 
     fs::write(path_ref, content).map_err(|e| format!("Failed to write file: {}", e))
+}
+
+#[tauri::command]
+pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
+    let path_ref = Path::new(&path);
+
+    if !path_ref.exists() {
+        return Err(format!("Path not found: {}", path));
+    }
+
+    if !path_ref.is_dir() {
+        return Err(format!("Not a directory: {}", path));
+    }
+
+    let dir = fs::read_dir(path_ref).map_err(|e| format!("Failed to read directory: {}", e))?;
+
+    let mut entries: Vec<DirEntry> = Vec::new();
+
+    for entry in dir {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+        let metadata = entry
+            .metadata()
+            .map_err(|e| format!("Failed to read metadata: {}", e))?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        let path = entry.path().to_string_lossy().to_string();
+
+        entries.push(DirEntry {
+            path,
+            name,
+            is_directory: metadata.is_dir(),
+            is_file: metadata.is_file(),
+        });
+    }
+
+    entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    });
+
+    Ok(entries)
+}
+
+#[tauri::command]
+pub fn create_file(path: String) -> Result<(), String> {
+    let path_ref = Path::new(&path);
+
+    if path_ref.exists() {
+        return Err(format!("Already exists: {}", path));
+    }
+
+    fs::write(path_ref, "").map_err(|e| format!("Failed to create file: {}", e))
+}
+
+#[tauri::command]
+pub fn create_directory(path: String) -> Result<(), String> {
+    let path_ref = Path::new(&path);
+
+    if path_ref.exists() {
+        return Err(format!("Already exists: {}", path));
+    }
+
+    fs::create_dir_all(path_ref).map_err(|e| format!("Failed to create directory: {}", e))
+}
+
+#[tauri::command]
+pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
+    let old_ref = Path::new(&old_path);
+    let new_ref = Path::new(&new_path);
+
+    if !old_ref.exists() {
+        return Err(format!("Source not found: {}", old_path));
+    }
+
+    if new_ref.exists() {
+        return Err(format!("Destination already exists: {}", new_path));
+    }
+
+    fs::rename(old_ref, new_ref).map_err(|e| format!("Failed to rename: {}", e))
+}
+
+#[tauri::command]
+pub fn delete_file(path: String) -> Result<(), String> {
+    let path_ref = Path::new(&path);
+
+    if !path_ref.exists() {
+        return Err(format!("Not found: {}", path));
+    }
+
+    if path_ref.is_file() {
+        fs::remove_file(path_ref).map_err(|e| format!("Failed to delete file: {}", e))
+    } else if path_ref.is_dir() {
+        fs::remove_dir_all(path_ref).map_err(|e| format!("Failed to delete directory: {}", e))
+    } else {
+        Err(format!("Not a file or directory: {}", path))
+    }
 }

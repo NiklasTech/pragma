@@ -13,6 +13,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::fs::read_text_file,
             commands::fs::write_text_file,
+            commands::fs::list_directory,
+            commands::fs::create_file,
+            commands::fs::create_directory,
+            commands::fs::rename_file,
+            commands::fs::delete_file,
             commands::pty::create_pty,
             commands::pty::write_pty,
             commands::pty::resize_pty,
