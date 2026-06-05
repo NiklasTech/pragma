@@ -1,10 +1,15 @@
-import { useEffect, useRef } from "react";
-import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { useEffect, useRef, useState } from "react";
+import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { vim, getCM } from "@replit/codemirror-vim";
 import { useEditorStore } from "@/stores/editor";
+import { useSettingsStore } from "@/stores/settings";
+import { useSaveFile } from "@/hooks/useSaveFile";
 import { loadLanguage } from "@/lib/editor/languages";
+import { registerVimSave, registerVimClose } from "./vim-setup";
+import { VimStatus } from "./vim-status";
 
 const languageCompartment = new Compartment();
 
@@ -53,8 +58,8 @@ const baseTheme = EditorView.theme({
   },
 });
 
-function createExtensions(onChange: (value: string) => void): Extension[] {
-  return [
+function createExtensions(onChange: (value: string) => void, vimEnabled: boolean): Extension[] {
+  const extensions: Extension[] = [
     languageCompartment.of([]),
     lineNumbers(),
     history(),
@@ -69,17 +74,39 @@ function createExtensions(onChange: (value: string) => void): Extension[] {
     EditorState.tabSize.of(2),
     EditorState.allowMultipleSelections.of(true),
   ];
+
+  if (vimEnabled) {
+    extensions.unshift(vim({ status: false }));
+    extensions.push(drawSelection());
+  }
+
+  return extensions;
 }
 
 export function Editor() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef<(value: string) => void>(() => {});
+  const saveRef = useRef(() => {});
+  const closeRef = useRef(() => {});
 
-  const { openFiles, activeTabId, updateFileContent } = useEditorStore();
+  const { openFiles, activeTabId, updateFileContent, closeFile } = useEditorStore();
+  const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
+  const saveFile = useSaveFile();
+
+  const [vimMode, setVimMode] = useState<string | null>(null);
+
   const activeFile = openFiles.find((f) => f.id === activeTabId) ?? null;
 
   onChangeRef.current = activeFile ? (value) => updateFileContent(activeFile.id, value) : () => {};
+  saveRef.current = () => {
+    void saveFile();
+  };
+  closeRef.current = () => {
+    if (activeTabId) {
+      closeFile(activeTabId);
+    }
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -88,17 +115,37 @@ export function Editor() {
     const view = new EditorView({
       state: EditorState.create({
         doc: activeFile?.content ?? "",
-        extensions: createExtensions((value) => onChangeRef.current(value)),
+        extensions: createExtensions((value) => onChangeRef.current(value), vimEnabled),
       }),
       parent: container,
     });
     viewRef.current = view;
 
+    let vimModeHandler: ((e: { mode: string }) => void) | null = null;
+    if (vimEnabled) {
+      const cm = getCM(view);
+      if (cm) {
+        vimModeHandler = (e: { mode: string }) => setVimMode(e.mode);
+        cm.on("vim-mode-change", vimModeHandler);
+        setVimMode("normal");
+      }
+    }
+
+    const unregisterSave = registerVimSave(() => saveRef.current());
+    const unregisterClose = registerVimClose(() => closeRef.current());
+
     return () => {
+      if (vimModeHandler) {
+        const cm = getCM(view);
+        if (cm) cm.off("vim-mode-change", vimModeHandler);
+      }
+      unregisterSave();
+      unregisterClose();
       view.destroy();
       viewRef.current = null;
+      setVimMode(null);
     };
-  }, [activeFile?.id]);
+  }, [activeFile?.id, vimEnabled]);
 
   useEffect(() => {
     if (!viewRef.current || !activeFile) return;
@@ -127,5 +174,10 @@ export function Editor() {
     );
   }
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div className="flex h-full w-full flex-col">
+      <div ref={containerRef} className="min-h-0 flex-1" />
+      <VimStatus mode={vimMode} />
+    </div>
+  );
 }

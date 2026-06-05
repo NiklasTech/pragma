@@ -37,6 +37,7 @@
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
+    "@replit/codemirror-vim": "^6.3.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@xterm/addon-fit": "^0.11.0",
