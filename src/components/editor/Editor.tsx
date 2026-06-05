@@ -1,8 +1,12 @@
 import { useEffect, useRef } from "react";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
-import { EditorState, type Extension } from "@codemirror/state";
+import { Compartment, EditorState, type Extension } from "@codemirror/state";
+import { oneDark } from "@codemirror/theme-one-dark";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { useEditorStore } from "@/stores/editor";
+import { loadLanguage } from "@/lib/editor/languages";
+
+const languageCompartment = new Compartment();
 
 const baseTheme = EditorView.theme({
   "&": {
@@ -51,9 +55,11 @@ const baseTheme = EditorView.theme({
 
 function createExtensions(onChange: (value: string) => void): Extension[] {
   return [
+    languageCompartment.of([]),
     lineNumbers(),
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
+    oneDark,
     baseTheme,
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
@@ -91,6 +97,25 @@ export function Editor() {
     return () => {
       view.destroy();
       viewRef.current = null;
+    };
+  }, [activeFile?.id]);
+
+  useEffect(() => {
+    if (!viewRef.current || !activeFile) return;
+
+    let cancelled = false;
+
+    loadLanguage(activeFile.name)
+      .then((ext) => {
+        if (cancelled || !viewRef.current) return;
+        viewRef.current.dispatch({
+          effects: languageCompartment.reconfigure(ext),
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
     };
   }, [activeFile?.id]);
 
