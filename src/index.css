@@ -82,6 +82,23 @@
   --chart-3: #fbbf24;
   --chart-4: #f87171;
   --chart-5: #60a5fa;
+  --editor-background: #0f0f10;
+  --editor-foreground: #e8e8ea;
+  --editor-keyword: #b18aff;
+  --editor-function: #60a5fa;
+  --editor-string: #4ade80;
+  --editor-number: #fbbf24;
+  --editor-comment: #8a8a8f;
+  --editor-type: #fbbf24;
+  --editor-tag: #f87171;
+  --editor-attribute: #fbbf24;
+  --editor-property: #e8e8ea;
+  --editor-operator: #7c6af7;
+  --editor-cursor: #e8e8ea;
+  --editor-selection: rgba(124, 106, 247, 0.3);
+  --editor-gutter: #0f0f10;
+  --editor-gutter-foreground: #8a8a8f;
+  --editor-active-line: #242427;
 }
 
 @layer base {
