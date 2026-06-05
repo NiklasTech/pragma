@@ -19,6 +19,7 @@
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "^4.3.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "class-variance-authority": "^0.7.1",

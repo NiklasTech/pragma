@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Vision & Prinzipien
+## 1. Vision & Prinzipiens
 
 - **Terminal-DNA ohne Terminal-Feeling:** Die App nutzt das Terminal als Kern, fühlt sich aber wie eine vollwertige IDE an — nicht wie ein aufgebohrter Terminal-Emulator
 - **AI als First-Class-Citizen:** Nicht als Plugin nachträglich reingebaut, sondern von Anfang an in Architektur und UX verankert
