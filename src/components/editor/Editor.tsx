@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { pragmaDarkTheme, themeCompartment } from "@/lib/theme/editor-theme";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { vim, getCM } from "@replit/codemirror-vim";
 import { useEditorStore } from "@/stores/editor";
@@ -25,36 +25,14 @@ const baseTheme = EditorView.theme({
   },
   ".cm-content": {
     padding: "8px 0",
-    caretColor: "var(--foreground, #e8e8ea)",
+    caretColor: "var(--editor-cursor)",
   },
   ".cm-line": {
     padding: "0 12px 0 8px",
   },
   ".cm-gutters": {
-    backgroundColor: "var(--background, #0f0f10)",
-    borderRight: "1px solid var(--border, #3a3a3e)",
-    color: "var(--muted-foreground, #8a8a8f)",
     fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
     fontSize: "14px",
-  },
-  ".cm-activeLineGutter": {
-    backgroundColor: "var(--muted, #242427)",
-    color: "var(--foreground, #e8e8ea)",
-  },
-  ".cm-activeLine": {
-    backgroundColor: "var(--muted, #242427)",
-  },
-  ".cm-selectionBackground": {
-    backgroundColor: "rgba(124, 106, 247, 0.3)",
-  },
-  ".cm-cursor": {
-    borderLeftColor: "var(--foreground, #e8e8ea)",
-    borderLeftWidth: "2px",
-  },
-  ".cm-foldPlaceholder": {
-    backgroundColor: "var(--secondary, #242427)",
-    borderColor: "var(--border, #3a3a3e)",
-    color: "var(--foreground, #e8e8ea)",
   },
 });
 
@@ -65,10 +43,10 @@ function createExtensions(
 ): Extension[] {
   const extensions: Extension[] = [
     languageCompartment.of([]),
+    themeCompartment.of(pragmaDarkTheme),
     lineNumbers(),
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
-    oneDark,
     baseTheme,
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
