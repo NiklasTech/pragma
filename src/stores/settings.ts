@@ -11,6 +11,7 @@ export interface EditorSettings {
   wordWrap: boolean;
   lineNumbers: boolean;
   autoSave: AutoSave;
+  autoSaveDelay: number;
   formatOnSave: boolean;
   stickyLines: boolean;
 }
@@ -75,6 +76,7 @@ const defaultSettings: SettingsState = {
     wordWrap: false,
     lineNumbers: true,
     autoSave: "onFocusChange",
+    autoSaveDelay: 1000,
     formatOnSave: false,
     stickyLines: false,
   },
