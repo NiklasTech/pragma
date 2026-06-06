@@ -34,6 +34,7 @@ interface EditorActions {
   updateFileContent: (fileId: string, content: string) => void;
   setCursorPosition: (fileId: string, cursor: CursorPosition) => void;
   markModified: (fileId: string, isModified: boolean) => void;
+  reorderTabs: (fromIndex: number, toIndex: number) => void;
 }
 
 const initialState: EditorState = {
@@ -105,5 +106,25 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
     set({
       openFiles: openFiles.map((f) => (f.id === fileId ? { ...f, isModified } : f)),
     });
+  },
+
+  reorderTabs: (fromIndex, toIndex) => {
+    const { openFiles, openTabs } = get();
+    if (
+      fromIndex < 0 ||
+      fromIndex >= openFiles.length ||
+      toIndex < 0 ||
+      toIndex >= openFiles.length ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+    const nextFiles = [...openFiles];
+    const nextTabs = [...openTabs];
+    const [movedFile] = nextFiles.splice(fromIndex, 1);
+    const [movedTab] = nextTabs.splice(fromIndex, 1);
+    nextFiles.splice(toIndex, 0, movedFile);
+    nextTabs.splice(toIndex, 0, movedTab);
+    set({ openFiles: nextFiles, openTabs: nextTabs });
   },
 }));
