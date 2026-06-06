@@ -7,6 +7,7 @@ import { vim, getCM } from "@replit/codemirror-vim";
 import { useEditorStore } from "@/stores/editor";
 import { useSettingsStore } from "@/stores/settings";
 import { useSaveFile } from "@/hooks/useSaveFile";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import { loadLanguage } from "@/lib/editor/languages";
 import { registerVimSave, registerVimClose } from "./vim-setup";
 import { VimStatus } from "./vim-status";
@@ -80,6 +81,7 @@ export function Editor() {
   const { openFiles, activeTabId, updateFileContent, closeFile } = useEditorStore();
   const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
   const saveFile = useSaveFile();
+  const { handleBlur } = useAutoSave();
 
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
@@ -173,7 +175,17 @@ export function Editor() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div ref={containerRef} className="min-h-0 flex-1" />
+      <div
+        ref={containerRef}
+        className="min-h-0 flex-1"
+        onBlur={(e) => {
+          const related = e.relatedTarget as HTMLElement | null;
+          if (related && containerRef.current?.contains(related)) {
+            return;
+          }
+          handleBlur();
+        }}
+      />
       <VimStatus
         mode={vimMode}
         line={cursorPos.line}
