@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::os::unix::process::CommandExt;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, State};
 
@@ -179,8 +180,8 @@ pub fn run_list_configs(workspace_root: String) -> Result<Vec<RunConfig>, String
         return Ok(Vec::new());
     }
 
-    let content =
-        std::fs::read_to_string(&config_path).map_err(|e| format!("Failed to read run config: {e}"))?;
+    let content = std::fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read run config: {e}"))?;
 
     let config_file: RunConfigFile =
         serde_json::from_str(&content).map_err(|e| format!("Failed to parse run config: {e}"))?;
@@ -212,13 +213,17 @@ pub fn run_start(
 
     // Set up process group so we can kill the whole tree later
     #[cfg(unix)]
-    unsafe { cmd.pre_exec(set_process_group); }
+    unsafe {
+        cmd.pre_exec(set_process_group);
+    }
 
     for (key, value) in &config.env {
         cmd.env(key, value);
     }
 
-    let mut child = cmd.spawn().map_err(|e| format!("Failed to start process: {e}"))?;
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to start process: {e}"))?;
 
     // Get the process group ID (same as child PID on Unix since we called setpgid)
     #[cfg(unix)]
