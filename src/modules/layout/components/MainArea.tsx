@@ -3,10 +3,14 @@ import { useLayoutStore } from "../store";
 import { Editor } from "@/components/editor";
 import { TabBar } from "@/components/editor/TabBar";
 import { Terminal } from "@/components/terminal";
+import { RunOutputPanel } from "@/components/run-config";
+import { useRunConfigStore } from "@/stores/runConfig";
 import { FileText, Terminal as TerminalIcon } from "@phosphor-icons/react";
 
 export function MainArea() {
   const { editorHeight, terminalHeight, setEditorHeight, setTerminalHeight } = useLayoutStore();
+  const { activeProcessId } = useRunConfigStore();
+  const hasRunOutput = activeProcessId !== null;
 
   return (
     <ResizablePanelGroup orientation="vertical" className="h-full w-full">
@@ -39,15 +43,27 @@ export function MainArea() {
         minSize={10}
         onResize={(size) => setTerminalHeight(size.asPercentage)}
       >
-        <div className="flex h-full min-h-0 flex-col bg-card">
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-border text-sm text-muted-foreground">
-            <TerminalIcon size={16} />
-            <span>Terminal</span>
+        {hasRunOutput ? (
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-border text-sm text-muted-foreground">
+              <TerminalIcon size={16} />
+              <span>Output</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <RunOutputPanel />
+            </div>
           </div>
-          <div className="flex-1 min-h-0">
-            <Terminal />
+        ) : (
+          <div className="flex h-full min-h-0 flex-col bg-card">
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-border text-sm text-muted-foreground">
+              <TerminalIcon size={16} />
+              <span>Terminal</span>
+            </div>
+            <div className="flex-1 min-h-0">
+              <Terminal />
+            </div>
           </div>
-        </div>
+        )}
       </ResizablePanel>
     </ResizablePanelGroup>
   );

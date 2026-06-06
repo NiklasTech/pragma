@@ -4,3 +4,4 @@ pub mod git;
 pub mod lsp;
 pub mod mcp;
 pub mod pty;
+pub mod run;
