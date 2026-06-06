@@ -1,5 +1,8 @@
-interface VimStatusProps {
-  mode: string | null;
+import { useSettingsStore } from "@/stores/settings";
+import { PushPin } from "@phosphor-icons/react";
+
+interface EditorStatusbarProps {
+  vimMode: string | null;
   line: number;
   column: number;
   fileType: string;
@@ -41,15 +44,26 @@ function getModeColor(mode: string): string {
   return "text-green-400";
 }
 
-export function VimStatus({ mode, line, column, fileType }: VimStatusProps) {
-  if (!mode) return null;
-
-  const label = mode.toUpperCase();
-  const colorClass = getModeColor(mode);
+export function EditorStatusbar({ vimMode, line, column, fileType }: EditorStatusbarProps) {
+  const stickyLines = useSettingsStore((state) => state.editor.stickyLines);
+  const setEditorSettings = useSettingsStore((state) => state.setEditorSettings);
 
   return (
     <div className="flex items-center justify-between px-3 py-1 text-xs border-t border-border bg-muted select-none">
-      <span className={`font-medium ${colorClass}`}>{label}</span>
+      <div className="flex items-center gap-3">
+        {vimMode && (
+          <span className={`font-medium ${getModeColor(vimMode)}`}>{vimMode.toUpperCase()}</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setEditorSettings({ stickyLines: !stickyLines })}
+          className={`flex items-center gap-1 transition-colors hover:text-foreground ${stickyLines ? "text-foreground" : "text-muted-foreground"}`}
+          title={stickyLines ? "Sticky Lines: On" : "Sticky Lines: Off"}
+        >
+          <PushPin size={12} weight={stickyLines ? "fill" : "regular"} />
+          <span>Sticky</span>
+        </button>
+      </div>
       <div className="flex items-center gap-4 text-muted-foreground">
         <span>{getFileTypeLabel(fileType)}</span>
         <span>UTF-8</span>
