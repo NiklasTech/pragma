@@ -1,18 +1,7 @@
 import { useCallback } from "react";
-import {
-  Folder,
-  FolderOpen,
-  FileText,
-  FileCode,
-  FileArchive,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  CaretRight,
-  CaretDown,
-  Spinner,
-} from "@phosphor-icons/react";
+import { Folder, FolderOpen, CaretRight, CaretDown, Spinner } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { getFileIcon } from "@/lib/file-icons";
 import { useEditorStore } from "@/stores/editor";
 import {
   ContextMenu,
@@ -22,54 +11,6 @@ import {
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import type { FileSystemNode } from "@/stores/fileExplorer";
-
-function getFileIcon(name: string) {
-  const ext = name.split(".").pop()?.toLowerCase();
-  switch (ext) {
-    case "js":
-    case "jsx":
-    case "ts":
-    case "tsx":
-    case "rs":
-    case "py":
-    case "go":
-    case "java":
-    case "cpp":
-    case "c":
-    case "h":
-    case "rb":
-    case "php":
-    case "swift":
-    case "kt":
-      return FileCode;
-    case "zip":
-    case "tar":
-    case "gz":
-    case "rar":
-    case "7z":
-      return FileArchive;
-    case "png":
-    case "jpg":
-    case "jpeg":
-    case "gif":
-    case "svg":
-    case "webp":
-    case "ico":
-      return FileImage;
-    case "mp4":
-    case "mov":
-    case "avi":
-    case "mkv":
-      return FileVideo;
-    case "mp3":
-    case "wav":
-    case "ogg":
-    case "flac":
-      return FileAudio;
-    default:
-      return FileText;
-  }
-}
 
 interface FileTreeNodeProps {
   node: FileSystemNode;
