@@ -29,3 +29,5 @@ tauri-plugin-dialog = "2.7.1"
 tauri-plugin-store = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"
+libc = "0.2"
+nix = { version = "0.29", features = ["process", "signal"] }

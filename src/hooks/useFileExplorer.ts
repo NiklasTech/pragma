@@ -1,9 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { useFileExplorerStore, type FileSystemNode } from "@/stores/fileExplorer";
 import { useEditorStore } from "@/stores/editor";
+import { useRunConfigStore } from "@/stores/runConfig";
 import { detectLanguage } from "@/lib/language";
 
 interface DirEntry {
@@ -32,6 +33,14 @@ function entryToNode(entry: DirEntry): FileSystemNode {
 export function useFileExplorer() {
   const store = useFileExplorerStore();
   const { openFile } = useEditorStore();
+  const { setWorkspaceRoot, loadConfigs } = useRunConfigStore();
+
+  useEffect(() => {
+    if (store.rootPath) {
+      setWorkspaceRoot(store.rootPath);
+      void loadConfigs();
+    }
+  }, [store.rootPath, setWorkspaceRoot, loadConfigs]);
 
   const selectRoot = useCallback(async () => {
     let path: string | null = null;

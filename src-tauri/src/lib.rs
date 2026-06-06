@@ -1,11 +1,13 @@
 mod commands;
 
 use commands::pty::PtyManager;
+use commands::run::RunManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(PtyManager::new())
+        .manage(RunManager::new())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
@@ -26,6 +28,10 @@ pub fn run() {
             commands::ai::ai_list_providers,
             commands::lsp::lsp_list_servers,
             commands::mcp::mcp_list_servers,
+            commands::run::run_list_configs,
+            commands::run::run_start,
+            commands::run::run_stop,
+            commands::run::run_restart,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

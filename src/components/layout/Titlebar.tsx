@@ -4,6 +4,7 @@ import { FloppyDisk, FolderOpen, Minus, Square, X } from "@phosphor-icons/react"
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useSaveFile } from "@/hooks/useSaveFile";
 import { useEditorStore } from "@/stores/editor";
+import { RunConfigWidget } from "@/components/run-config";
 
 export function Titlebar() {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -64,6 +65,9 @@ export function Titlebar() {
           <FloppyDisk size={14} />
           <span>Save</span>
         </button>
+
+        <div className="mx-1 h-4 w-px bg-border" />
+        <RunConfigWidget />
       </div>
 
       <div className="flex-1" data-tauri-drag-region />
