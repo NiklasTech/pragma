@@ -10,7 +10,8 @@ import { useSaveFile } from "@/hooks/useSaveFile";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { loadLanguage } from "@/lib/editor/languages";
 import { registerVimSave, registerVimClose } from "./vim-setup";
-import { VimStatus } from "./vim-status";
+import { EditorStatusbar } from "./EditorStatusbar";
+import { StickyLinesOverlay } from "./StickyLinesOverlay";
 
 const languageCompartment = new Compartment();
 
@@ -80,11 +81,13 @@ export function Editor() {
 
   const { openFiles, activeTabId, updateFileContent, closeFile } = useEditorStore();
   const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
+  const stickyLinesEnabled = useSettingsStore((state) => state.editor.stickyLines);
   const saveFile = useSaveFile();
   const { handleBlur } = useAutoSave();
 
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
 
   const activeFile = openFiles.find((f) => f.id === activeTabId) ?? null;
 
@@ -114,6 +117,7 @@ export function Editor() {
       parent: container,
     });
     viewRef.current = view;
+    setEditorView(view);
 
     const head = view.state.selection.main.head;
     const line = view.state.doc.lineAt(head);
@@ -141,6 +145,7 @@ export function Editor() {
       unregisterClose();
       view.destroy();
       viewRef.current = null;
+      setEditorView(null);
       setVimMode(null);
       setCursorPos({ line: 1, column: 1 });
     };
@@ -175,19 +180,22 @@ export function Editor() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div
-        ref={containerRef}
-        className="min-h-0 flex-1"
-        onBlur={(e) => {
-          const related = e.relatedTarget as HTMLElement | null;
-          if (related && containerRef.current?.contains(related)) {
-            return;
-          }
-          handleBlur();
-        }}
-      />
-      <VimStatus
-        mode={vimMode}
+      <div className="relative min-h-0 flex-1">
+        <StickyLinesOverlay view={editorView} enabled={stickyLinesEnabled} />
+        <div
+          ref={containerRef}
+          className="h-full w-full"
+          onBlur={(e) => {
+            const related = e.relatedTarget as HTMLElement | null;
+            if (related && containerRef.current?.contains(related)) {
+              return;
+            }
+            handleBlur();
+          }}
+        />
+      </div>
+      <EditorStatusbar
+        vimMode={vimMode}
         line={cursorPos.line}
         column={cursorPos.column}
         fileType={activeFile.name}
