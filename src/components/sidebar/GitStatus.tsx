@@ -14,12 +14,12 @@ import {
   ArrowsLeftRight,
   File,
   CheckCircle,
-  GitBranch,
-  ArrowUp,
-  ArrowDown,
   ClockCounterClockwise,
   GitDiff,
+  CaretDown,
+  CaretRight,
 } from "@phosphor-icons/react";
+import { BranchSwitcher } from "./BranchSwitcher";
 
 function StatusIcon({ status }: { status: string }) {
   const props = { size: 13, className: "shrink-0" };
@@ -93,7 +93,6 @@ function shortSha(sha: string): string {
 // ─── Virtualized Row Types ───────────────────────────────────────────────────
 
 type GitRow =
-  | { kind: "branch-header"; key: string }
   | { kind: "commit-area"; key: string }
   | { kind: "list-header"; key: string; count: number }
   | { kind: "file-entry"; key: string; entry: GitStatusEntry }
@@ -102,7 +101,6 @@ type GitRow =
   | { kind: "history-entry"; key: string; commit: GitCommit };
 
 const ROW_HEIGHTS = {
-  "branch-header": 40,
   "commit-area": 176,
   "list-header": 28,
   "file-entry": 30,
@@ -125,32 +123,8 @@ function BranchHeader({
   isDetached: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40">
-      <div className="inline-flex items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11px] font-medium">
-        <GitBranch size={11} className="text-muted-foreground" />
-        <span className="truncate max-w-[120px]">{repoLabel}</span>
-      </div>
-      {ahead > 0 || behind > 0 ? (
-        <div className="flex items-center gap-0.5 text-[10px] font-semibold text-muted-foreground">
-          {ahead > 0 && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
-              <ArrowUp size={8} weight="bold" />
-              {ahead}
-            </span>
-          )}
-          {behind > 0 && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
-              <ArrowDown size={8} weight="bold" />
-              {behind}
-            </span>
-          )}
-        </div>
-      ) : null}
-      {isDetached && (
-        <span className="rounded bg-muted/55 px-1.5 py-px text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-          detached
-        </span>
-      )}
+    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 shrink-0">
+      <BranchSwitcher repoLabel={repoLabel} ahead={ahead} behind={behind} isDetached={isDetached} />
     </div>
   );
 }
@@ -338,14 +312,23 @@ function CleanTreeHint({ repoLabel }: { repoLabel: string }) {
   );
 }
 
-function HistoryHeader() {
+function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   return (
-    <div className="flex h-7 items-center gap-1.5 px-3">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex h-7 w-full items-center gap-1.5 px-3 text-left hover:bg-accent/20 transition-colors"
+    >
+      {expanded ? (
+        <CaretDown size={11} className="text-muted-foreground" />
+      ) : (
+        <CaretRight size={11} className="text-muted-foreground" />
+      )}
       <ClockCounterClockwise size={11} className="text-muted-foreground" />
       <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/85">
         Recent Commits
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -390,8 +373,6 @@ function RowRenderer({
   onOpenDiff: (entry: GitStatusEntry) => void;
 }) {
   switch (row.kind) {
-    case "branch-header":
-      return <BranchHeader repoLabel={repoLabel} ahead={0} behind={0} isDetached={false} />;
     case "commit-area":
       return null; // rendered outside virtualizer
     case "list-header":
@@ -417,7 +398,7 @@ function RowRenderer({
     case "clean-hint":
       return <CleanTreeHint repoLabel={repoLabel} />;
     case "history-header":
-      return <HistoryHeader />;
+      return <HistoryHeader expanded={false} onToggle={() => {}} />;
     case "history-entry":
       return <HistoryEntry commit={row.commit} />;
   }
@@ -446,6 +427,7 @@ export function GitStatus() {
   const { openDiff } = useEditorStore();
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -456,7 +438,7 @@ export function GitStatus() {
 
   useEffect(() => {
     if (repoPath) {
-      void loadLog(5);
+      void loadLog(8);
     }
   }, [repoPath, loadLog]);
 
@@ -549,7 +531,6 @@ export function GitStatus() {
   // Build virtual rows
   const rows = useMemo<GitRow[]>(() => {
     const result: GitRow[] = [];
-    result.push({ kind: "branch-header", key: "branch-header" });
     result.push({ kind: "commit-area", key: "commit-area" });
 
     if (files.length > 0) {
@@ -563,13 +544,15 @@ export function GitStatus() {
 
     if (commits.length > 0) {
       result.push({ kind: "history-header", key: "history-header" });
-      for (const c of commits) {
-        result.push({ kind: "history-entry", key: `commit-${c.id}`, commit: c });
+      if (historyExpanded) {
+        for (const c of commits) {
+          result.push({ kind: "history-entry", key: `commit-${c.id}`, commit: c });
+        }
       }
     }
 
     return result;
-  }, [files, commits]);
+  }, [files, commits, historyExpanded]);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -611,6 +594,9 @@ export function GitStatus() {
 
   return (
     <div className="flex h-full min-w-0 flex-col">
+      {/* Fixed header — outside scroll area so dropdown is not clipped */}
+      <BranchHeader repoLabel={repoLabel} ahead={ahead} behind={behind} isDetached={isDetached} />
+
       {/* Scrollable content area — virtualized */}
       <div
         ref={scrollRef}
@@ -627,7 +613,6 @@ export function GitStatus() {
             const row = rows[virtualRow.index];
             if (!row) return null;
 
-            // Commit area is rendered outside virtualizer (has its own state)
             if (row.kind === "commit-area") {
               return (
                 <div
@@ -654,8 +639,7 @@ export function GitStatus() {
               );
             }
 
-            // Branch header needs dynamic data
-            if (row.kind === "branch-header") {
+            if (row.kind === "history-header") {
               return (
                 <div
                   key={virtualRow.key}
@@ -668,39 +652,37 @@ export function GitStatus() {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <BranchHeader
-                    repoLabel={repoLabel}
-                    ahead={ahead}
-                    behind={behind}
-                    isDetached={isDetached}
+                  <HistoryHeader
+                    expanded={historyExpanded}
+                    onToggle={() => setHistoryExpanded((v) => !v)}
                   />
                 </div>
               );
             }
 
-            // List header needs dynamic data
-            if (row.kind === "list-header") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <ListHeader
-                    count={row.count}
-                    headerCheckState={headerCheckState}
-                    actionBusy={actionBusy}
-                    onToggleAll={handleToggleAll}
-                  />
-                </div>
-              );
-            }
+            if (row.kind === "list-header")
+              if (row.kind === "list-header") {
+                return (
+                  <div
+                    key={virtualRow.key}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: virtualRow.size,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <ListHeader
+                      count={row.count}
+                      headerCheckState={headerCheckState}
+                      actionBusy={actionBusy}
+                      onToggleAll={handleToggleAll}
+                    />
+                  </div>
+                );
+              }
 
             return (
               <div

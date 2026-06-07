@@ -141,3 +141,52 @@ pub fn git_diff_file(
 
     git::status::get_file_diff(&repo_path, &path, staged.unwrap_or(false))
 }
+
+#[tauri::command]
+pub fn git_checkout_branch(repo_path: String, branch_name: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if branch_name.is_empty() {
+        return Err("Branch name is required".to_string());
+    }
+
+    git::branch::checkout_branch(&repo_path, &branch_name)
+}
+
+#[tauri::command]
+pub fn git_create_branch(
+    repo_path: String,
+    branch_name: String,
+    checkout: Option<bool>,
+) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if branch_name.is_empty() {
+        return Err("Branch name is required".to_string());
+    }
+
+    git::branch::create_branch(&repo_path, &branch_name, checkout.unwrap_or(false))
+}
+
+#[tauri::command]
+pub fn git_delete_branch(repo_path: String, branch_name: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if branch_name.is_empty() {
+        return Err("Branch name is required".to_string());
+    }
+
+    git::branch::delete_branch(&repo_path, &branch_name)
+}
+
+#[tauri::command]
+pub fn git_has_uncommitted_changes(repo_path: String) -> Result<bool, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+
+    git::branch::has_uncommitted_changes(&repo_path)
+}

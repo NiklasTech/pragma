@@ -96,6 +96,10 @@ interface GitActions {
   clearDiff: () => void;
   setCommitMessage: (value: string) => void;
   setDiffViewMode: (mode: DiffViewMode) => void;
+  checkoutBranch: (branchName: string) => Promise<void>;
+  createBranch: (branchName: string, checkout?: boolean) => Promise<void>;
+  deleteBranch: (branchName: string) => Promise<void>;
+  hasUncommittedChanges: () => Promise<boolean>;
   refreshAll: () => Promise<void>;
   clearError: () => void;
 }
@@ -119,7 +123,7 @@ const initialState: GitState = {
 export const useGitStore = create<GitState & GitActions>((set, get) => ({
   ...initialState,
 
-  setRepoPath: (path) =>
+  setRepoPath: (path) => {
     set({
       repoPath: path,
       snapshot: null,
@@ -130,7 +134,11 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
       diffPath: null,
       commitMessage: "",
       error: null,
-    }),
+    });
+    if (path) {
+      void get().refreshAll();
+    }
+  },
 
   loadStatus: async () => {
     const { repoPath } = get();
@@ -252,9 +260,65 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
   setCommitMessage: (value) => set({ commitMessage: value }),
   setDiffViewMode: (mode) => set({ diffViewMode: mode }),
 
+  checkoutBranch: async (branchName: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "checkout" });
+    try {
+      await invoke("git_checkout_branch", { repoPath, branchName });
+      await get().refreshAll();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  createBranch: async (branchName: string, checkout = false) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "create-branch" });
+    try {
+      await invoke("git_create_branch", { repoPath, branchName, checkout });
+      await get().refreshAll();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  deleteBranch: async (branchName: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "delete-branch" });
+    try {
+      await invoke("git_delete_branch", { repoPath, branchName });
+      await get().loadBranches();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  hasUncommittedChanges: async () => {
+    const { repoPath } = get();
+    if (!repoPath) return false;
+
+    try {
+      return await invoke<boolean>("git_has_uncommitted_changes", { repoPath });
+    } catch {
+      return false;
+    }
+  },
+
   refreshAll: async () => {
-    const { loadStatus, loadBranches, loadLog, loadGraph } = get();
-    await Promise.all([loadStatus(), loadBranches(), loadLog(), loadGraph()]);
+    const { loadStatus, loadBranches, loadLog } = get();
+    await Promise.all([loadStatus(), loadBranches(), loadLog()]);
   },
 
   clearError: () => set({ error: null }),
