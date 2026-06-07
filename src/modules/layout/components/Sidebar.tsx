@@ -101,12 +101,7 @@ export function SidebarContent() {
   const { sidebarTab } = useLayoutStore();
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-card">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {tabs.find((t) => t.id === sidebarTab)?.label}
-        </h2>
-      </div>
+    <div className="flex h-full min-h-0 flex-col bg-card overflow-hidden" style={{ width: "100%" }}>
       <div className="flex-1 min-h-0 overflow-hidden">
         {sidebarTab === "explorer" && <FileExplorer />}
         {sidebarTab === "search" && (

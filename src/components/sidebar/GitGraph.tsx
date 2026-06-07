@@ -305,7 +305,7 @@ export function GitGraph() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-w-0 flex-col overflow-x-hidden">
       {/* Header */}
       <div
         className="grid shrink-0 items-center gap-2 border-b border-border/40 bg-card/55 pr-3 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60 select-none"
@@ -347,7 +347,7 @@ export function GitGraph() {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]"
       >
         <div
           style={{
