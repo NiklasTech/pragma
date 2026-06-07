@@ -9,9 +9,10 @@ import { useSettingsStore } from "@/stores/settings";
 import { useSaveFile } from "@/hooks/useSaveFile";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { loadLanguage } from "@/lib/editor/languages";
-import { registerVimSave, registerVimClose } from "./vim-setup";
+// vim-setup hooks currently unused — re-enable when vim save/close integration is needed
 import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
+import { InlineDiff } from "./InlineDiff";
 
 const languageCompartment = new Compartment();
 
@@ -72,34 +73,23 @@ function createExtensions(
   return extensions;
 }
 
-export function Editor() {
+function FileEditor({
+  content,
+  fileName,
+  onChange,
+  vimEnabled,
+}: {
+  content: string;
+  fileName: string;
+  onChange: (value: string) => void;
+  vimEnabled: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const onChangeRef = useRef<(value: string) => void>(() => {});
-  const saveRef = useRef(() => {});
-  const closeRef = useRef(() => {});
-
-  const { openFiles, activeTabId, updateFileContent, closeFile } = useEditorStore();
-  const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
-  const stickyLinesEnabled = useSettingsStore((state) => state.editor.stickyLines);
-  const saveFile = useSaveFile();
-  const { handleBlur } = useAutoSave();
-
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
-  const [editorView, setEditorView] = useState<EditorView | null>(null);
-
-  const activeFile = openFiles.find((f) => f.id === activeTabId) ?? null;
-
-  onChangeRef.current = activeFile ? (value) => updateFileContent(activeFile.id, value) : () => {};
-  saveRef.current = () => {
-    void saveFile();
-  };
-  closeRef.current = () => {
-    if (activeTabId) {
-      closeFile(activeTabId);
-    }
-  };
+  const { handleBlur } = useAutoSave();
 
   useEffect(() => {
     const container = containerRef.current;
@@ -107,9 +97,9 @@ export function Editor() {
 
     const view = new EditorView({
       state: EditorState.create({
-        doc: activeFile?.content ?? "",
+        doc: content,
         extensions: createExtensions(
-          (value) => onChangeRef.current(value),
+          (value) => onChange(value),
           (pos) => setCursorPos(pos),
           vimEnabled,
         ),
@@ -133,30 +123,24 @@ export function Editor() {
       }
     }
 
-    const unregisterSave = registerVimSave(() => saveRef.current());
-    const unregisterClose = registerVimClose(() => closeRef.current());
-
     return () => {
       if (vimModeHandler) {
         const cm = getCM(view);
         if (cm) cm.off("vim-mode-change", vimModeHandler);
       }
-      unregisterSave();
-      unregisterClose();
       view.destroy();
       viewRef.current = null;
       setEditorView(null);
       setVimMode(null);
       setCursorPos({ line: 1, column: 1 });
     };
-  }, [activeFile?.id, vimEnabled]);
+  }, [content, vimEnabled]);
 
   useEffect(() => {
-    if (!viewRef.current || !activeFile) return;
+    if (!viewRef.current) return;
 
     let cancelled = false;
-
-    loadLanguage(activeFile.name)
+    loadLanguage(fileName)
       .then((ext) => {
         if (cancelled || !viewRef.current) return;
         viewRef.current.dispatch({
@@ -168,20 +152,12 @@ export function Editor() {
     return () => {
       cancelled = true;
     };
-  }, [activeFile?.id]);
-
-  if (!activeFile) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-        <span>No file open</span>
-      </div>
-    );
-  }
+  }, [fileName]);
 
   return (
     <div className="flex h-full w-full flex-col">
       <div className="relative min-h-0 flex-1">
-        <StickyLinesOverlay view={editorView} enabled={stickyLinesEnabled} />
+        <StickyLinesOverlay view={editorView} enabled={false} />
         <div
           ref={containerRef}
           className="h-full w-full"
@@ -198,8 +174,70 @@ export function Editor() {
         vimMode={vimMode}
         line={cursorPos.line}
         column={cursorPos.column}
-        fileType={activeFile.name}
+        fileType={fileName}
       />
     </div>
+  );
+}
+
+export function Editor() {
+  const { tabs, activeTabId, updateFileContent, closeTab } = useEditorStore();
+  const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
+  const saveFile = useSaveFile();
+
+  const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
+
+  const handleClose = () => {
+    if (activeTabId) {
+      closeTab(activeTabId);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "w" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleClose();
+      }
+      if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        void saveFile();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTabId, saveFile]);
+
+  if (!activeTab) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+        <span>No file open</span>
+      </div>
+    );
+  }
+
+  if (activeTab.kind === "diff") {
+    return (
+      <div className="flex h-full w-full flex-col">
+        <div className="relative min-h-0 flex-1">
+          <InlineDiff
+            original={activeTab.original}
+            modified={activeTab.modified}
+            patchText={activeTab.patchText}
+            filePath={activeTab.path}
+          />
+        </div>
+        <EditorStatusbar vimMode={null} line={0} column={0} fileType={activeTab.path} />
+      </div>
+    );
+  }
+
+  return (
+    <FileEditor
+      content={activeTab.content}
+      fileName={activeTab.name}
+      onChange={(value) => updateFileContent(activeTab.id, value)}
+      vimEnabled={vimEnabled}
+    />
   );
 }

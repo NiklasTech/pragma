@@ -12,6 +12,16 @@ if (import.meta.hot) {
   });
 }
 
+const originalError = console.error;
+console.error = (...args: unknown[]) => {
+  const first = args[0];
+  const msg = typeof first === "string" ? first : "";
+  if (msg.includes("ResizeObserver loop") || msg.includes("ResizeObserver Loop")) {
+    return;
+  }
+  originalError.apply(console, args);
+};
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />

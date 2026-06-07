@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import type { DiffViewMode } from "@/components/editor/InlineDiff";
 
 export interface GitStatusEntry {
   path: string;
@@ -75,6 +76,7 @@ interface GitState {
   diffContent: string | null;
   diffPath: string | null;
   diffStaged: boolean;
+  diffViewMode: DiffViewMode;
   isLoading: boolean;
   error: string | null;
   commitMessage: string;
@@ -90,9 +92,10 @@ interface GitActions {
   stageFiles: (paths: string[]) => Promise<void>;
   unstageFiles: (paths: string[]) => Promise<void>;
   commit: () => Promise<void>;
-  loadFileDiff: (path: string, staged: boolean) => Promise<void>;
+  loadFileDiff: (path: string, staged: boolean) => Promise<string>;
   clearDiff: () => void;
   setCommitMessage: (value: string) => void;
+  setDiffViewMode: (mode: DiffViewMode) => void;
   refreshAll: () => Promise<void>;
   clearError: () => void;
 }
@@ -106,6 +109,7 @@ const initialState: GitState = {
   diffContent: null,
   diffPath: null,
   diffStaged: false,
+  diffViewMode: "split",
   isLoading: false,
   error: null,
   commitMessage: "",
@@ -231,19 +235,22 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
 
   loadFileDiff: async (path: string, staged: boolean) => {
     const { repoPath } = get();
-    if (!repoPath) return;
+    if (!repoPath) return "";
 
     set({ isLoading: true, error: null });
     try {
       const content = await invoke<string>("git_diff_file", { repoPath, path, staged });
       set({ diffContent: content, diffPath: path, diffStaged: staged, isLoading: false });
+      return content;
     } catch (err) {
       set({ diffContent: null, diffPath: null, isLoading: false, error: String(err) });
+      return "";
     }
   },
 
   clearDiff: () => set({ diffContent: null, diffPath: null }),
   setCommitMessage: (value) => set({ commitMessage: value }),
+  setDiffViewMode: (mode) => set({ diffViewMode: mode }),
 
   refreshAll: async () => {
     const { loadStatus, loadBranches, loadLog, loadGraph } = get();

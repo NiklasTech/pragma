@@ -4,22 +4,22 @@ import { toast } from "sonner";
 import { useEditorStore } from "@/stores/editor";
 
 export function useSaveFile() {
-  const { openFiles, activeTabId, markModified } = useEditorStore();
+  const { tabs, activeTabId, markModified } = useEditorStore();
 
   return useCallback(async () => {
-    const file = openFiles.find((f) => f.id === activeTabId);
-    if (!file) return;
-    if (!file.isModified) return;
+    const tab = tabs.find((t) => t.id === activeTabId);
+    if (!tab || tab.kind !== "file") return;
+    if (!tab.isModified) return;
 
     try {
       await invoke("write_text_file", {
-        path: file.path,
-        content: file.content,
+        path: tab.path,
+        content: tab.content,
       });
-      markModified(file.id, false);
-      toast.success(`Saved ${file.name}`);
+      markModified(tab.id, false);
+      toast.success(`Saved ${tab.name}`);
     } catch (err) {
       toast.error(String(err));
     }
-  }, [openFiles, activeTabId, markModified]);
+  }, [tabs, activeTabId, markModified]);
 }

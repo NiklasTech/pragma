@@ -11,10 +11,10 @@ export function Titlebar() {
   const win = getCurrentWindow();
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
-  const { openFiles, activeTabId } = useEditorStore();
+  const { tabs, activeTabId } = useEditorStore();
 
-  const activeFile = openFiles.find((f) => f.id === activeTabId);
-  const canSave = activeFile?.isModified ?? false;
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const canSave = activeTab?.kind === "file" ? activeTab.isModified : false;
 
   useEffect(() => {
     const unlisten = win.onResized(() => {
