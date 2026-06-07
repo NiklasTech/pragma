@@ -1,8 +1,7 @@
-mod commands;
-mod git;
+pub mod modules;
 
-use commands::pty::PtyManager;
-use commands::run::RunManager;
+use modules::pty::PtyManager;
+use modules::run::RunManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,37 +13,44 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
-            commands::fs::read_text_file,
-            commands::fs::write_text_file,
-            commands::fs::list_directory,
-            commands::fs::create_file,
-            commands::fs::create_directory,
-            commands::fs::rename_file,
-            commands::fs::delete_file,
-            commands::pty::create_pty,
-            commands::pty::write_pty,
-            commands::pty::resize_pty,
-            commands::pty::kill_pty,
-            commands::git::git_status,
-            commands::git::git_branches,
-            commands::git::git_log,
-            commands::git::git_log_entries,
-            commands::git::git_commit_files,
-            commands::git::git_stage,
-            commands::git::git_unstage,
-            commands::git::git_diff_file,
-            commands::git::git_commit,
-            commands::git::git_checkout_branch,
-            commands::git::git_create_branch,
-            commands::git::git_delete_branch,
-            commands::git::git_has_uncommitted_changes,
-            commands::ai::ai_list_providers,
-            commands::lsp::lsp_list_servers,
-            commands::mcp::mcp_list_servers,
-            commands::run::run_list_configs,
-            commands::run::run_start,
-            commands::run::run_stop,
-            commands::run::run_restart,
+            modules::fs::read_text_file,
+            modules::fs::write_text_file,
+            modules::fs::list_directory,
+            modules::fs::create_file,
+            modules::fs::create_directory,
+            modules::fs::rename_file,
+            modules::fs::delete_file,
+            modules::pty::create_pty,
+            modules::pty::write_pty,
+            modules::pty::resize_pty,
+            modules::pty::kill_pty,
+            modules::git::commands::git_status,
+            modules::git::commands::git_branches,
+            modules::git::commands::git_log,
+            modules::git::commands::git_log_entries,
+            modules::git::commands::git_commit_files,
+            modules::git::commands::git_stage,
+            modules::git::commands::git_unstage,
+            modules::git::commands::git_discard,
+            modules::git::commands::git_diff,
+            modules::git::commands::git_diff_content,
+            modules::git::commands::git_commit,
+            modules::git::commands::git_checkout_branch,
+            modules::git::commands::git_create_branch,
+            modules::git::commands::git_delete_branch,
+            modules::git::commands::git_has_uncommitted_changes,
+            modules::git::commands::git_remotes,
+            modules::git::commands::git_remote_branches,
+            modules::git::commands::git_fetch,
+            modules::git::commands::git_pull,
+            modules::git::commands::git_push,
+            modules::git::commands::git_show_commit,
+            modules::git::commands::git_commit_file_diff,
+            modules::git::commands::git_remote_url,
+            modules::run::run_list_configs,
+            modules::run::run_start,
+            modules::run::run_stop,
+            modules::run::run_restart,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

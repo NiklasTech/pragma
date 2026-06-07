@@ -8,7 +8,7 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, State};
 
-// ─── Data Types ──────────────────────────────────────────────────────────────
+// -- Data Types ----------------------------------------------------------------
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RunConfig {
@@ -47,7 +47,7 @@ struct RunStatusEvent {
     exit_code: Option<i32>,
 }
 
-// ─── Run Manager ─────────────────────────────────────────────────────────────
+// -- Run Manager ---------------------------------------------------------------
 
 struct RunInstance {
     pgid: i32,
@@ -65,7 +65,7 @@ impl RunManager {
     }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 
 fn resolve_cwd(cwd: Option<&str>, workspace_root: &str) -> String {
     match cwd {
@@ -170,7 +170,7 @@ fn kill_process_group(_pgid: i32) {
     // For now, this is a no-op fallback
 }
 
-// ─── Commands ────────────────────────────────────────────────────────────────
+// -- Commands ------------------------------------------------------------------
 
 #[tauri::command]
 pub fn run_list_configs(workspace_root: String) -> Result<Vec<RunConfig>, String> {
