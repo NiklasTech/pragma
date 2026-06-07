@@ -32,6 +32,27 @@ pub struct GitCommitResult {
     pub commit_sha: String,
 }
 
+#[derive(Serialize)]
+pub struct GitPushResponse {
+    pub pushed: bool,
+}
+
+#[derive(Serialize)]
+pub struct GitPullResponse {
+    pub pulled: bool,
+    pub had_conflicts: bool,
+}
+
+#[derive(Serialize)]
+pub struct GitRemotesResponse {
+    pub remotes: Vec<git::remote::GitRemote>,
+}
+
+#[derive(Serialize)]
+pub struct GitRemoteBranchesResponse {
+    pub branches: Vec<git::remote::GitRemoteBranch>,
+}
+
 #[tauri::command]
 pub fn git_status(repo_path: String) -> Result<GitStatusResponse, String> {
     if repo_path.is_empty() {
@@ -189,4 +210,83 @@ pub fn git_has_uncommitted_changes(repo_path: String) -> Result<bool, String> {
     }
 
     git::branch::has_uncommitted_changes(&repo_path)
+}
+
+#[tauri::command]
+pub async fn git_remotes(repo_path: String) -> Result<GitRemotesResponse, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+
+    let remotes = git::remote::list_remotes(&repo_path)?;
+    Ok(GitRemotesResponse { remotes })
+}
+
+#[tauri::command]
+pub async fn git_remote_branches(
+    repo_path: String,
+    remote_name: Option<String>,
+) -> Result<GitRemoteBranchesResponse, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+
+    let branches = git::remote::list_remote_branches(&repo_path, remote_name)?;
+    Ok(GitRemoteBranchesResponse { branches })
+}
+
+#[tauri::command]
+pub async fn git_fetch(
+    app: tauri::AppHandle,
+    repo_path: String,
+    remote_name: Option<String>,
+    branch_name: Option<String>,
+) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+
+    git::remote::fetch(&repo_path, remote_name, branch_name, Some(&app))
+}
+
+#[tauri::command]
+pub async fn git_push(
+    app: tauri::AppHandle,
+    repo_path: String,
+    remote_name: Option<String>,
+    branch_name: Option<String>,
+) -> Result<GitPushResponse, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+
+    let result = git::remote::push(&repo_path, remote_name, branch_name, Some(&app))?;
+    Ok(GitPushResponse {
+        pushed: result.pushed,
+    })
+}
+
+#[tauri::command]
+pub async fn git_pull(
+    app: tauri::AppHandle,
+    repo_path: String,
+    remote_name: Option<String>,
+    branch_name: Option<String>,
+    rebase: Option<bool>,
+) -> Result<GitPullResponse, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+
+    let result = git::remote::pull(
+        &repo_path,
+        remote_name,
+        branch_name,
+        rebase.unwrap_or(false),
+        Some(&app),
+    )?;
+    Ok(GitPullResponse {
+        pulled: result.pulled,
+        had_conflicts: result.had_conflicts,
+    })
 }

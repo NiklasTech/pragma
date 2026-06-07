@@ -6,6 +6,8 @@ use commands::run::RunManager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    git::env_loader::load_shell_env();
+
     tauri::Builder::default()
         .manage(PtyManager::new())
         .manage(RunManager::new())
@@ -38,6 +40,11 @@ pub fn run() {
             commands::git::git_create_branch,
             commands::git::git_delete_branch,
             commands::git::git_has_uncommitted_changes,
+            commands::git::git_remotes,
+            commands::git::git_remote_branches,
+            commands::git::git_fetch,
+            commands::git::git_push,
+            commands::git::git_pull,
             commands::ai::ai_list_providers,
             commands::lsp::lsp_list_servers,
             commands::mcp::mcp_list_servers,

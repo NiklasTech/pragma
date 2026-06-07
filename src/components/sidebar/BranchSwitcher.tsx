@@ -11,7 +11,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { GitBranch, Check, Plus, Trash, Warning, X, Spinner } from "@phosphor-icons/react";
+import {
+  GitBranch,
+  Check,
+  Plus,
+  Trash,
+  Warning,
+  X,
+  Spinner,
+  ArrowUp,
+  ArrowDown,
+  ArrowsClockwise,
+  DownloadSimple,
+} from "@phosphor-icons/react";
 
 interface BranchSwitcherProps {
   repoLabel: string;
@@ -29,6 +41,16 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     deleteBranch,
     hasUncommittedChanges,
     actionBusy,
+    actionStatus,
+    actionProgress,
+    push,
+    pull,
+    fetch,
+    remotes,
+    remoteBranches,
+    pushPullError,
+    clearPushPullError,
+    loadRemoteBranches,
   } = useGitStore();
 
   const [open, setOpen] = useState(false);
@@ -37,10 +59,15 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
   const [pendingBranch, setPendingBranch] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [warningBranch, setWarningBranch] = useState<string | null>(null);
+  const [showPullOptions, setShowPullOptions] = useState(false);
+  const [showFetchDialog, setShowFetchDialog] = useState(false);
+  const [selectedFetchBranch, setSelectedFetchBranch] = useState<string>("");
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const currentBranch = snapshot?.repo.branch ?? repoLabel;
+  const hasRemote = remotes.length > 0;
+  const canPushPull = hasRemote && !isDetached;
 
   useEffect(() => {
     if (creating && inputRef.current) {
@@ -119,9 +146,37 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     }
   };
 
+  const handlePush = async () => {
+    await push();
+  };
+
+  const handlePull = async (rebase: boolean) => {
+    setShowPullOptions(false);
+    await pull(undefined, undefined, rebase);
+  };
+
+  const openFetchDialog = async () => {
+    await loadRemoteBranches();
+    setSelectedFetchBranch("");
+    setShowFetchDialog(true);
+  };
+
+  const handleFetchBranch = async () => {
+    setShowFetchDialog(false);
+    if (selectedFetchBranch) {
+      await fetch(undefined, selectedFetchBranch);
+    } else {
+      await fetch();
+    }
+  };
+
+  const isPushBusy = actionBusy === "push";
+  const isPullBusy = actionBusy === "pull";
+  const isFetchBusy = actionBusy === "fetch";
+
   return (
     <>
-      <div className="relative" ref={menuRef}>
+      <div className="relative flex items-center gap-2" ref={menuRef}>
         <button
           type="button"
           onClick={() => setOpen(!open)}
@@ -149,18 +204,107 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
           <div className="flex items-center gap-0.5 text-[10px] font-semibold text-muted-foreground">
             {ahead > 0 && (
               <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
-                <ArrowUpIcon size={8} />
+                <ArrowUp size={8} />
                 {ahead}
               </span>
             )}
             {behind > 0 && (
               <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
-                <ArrowDownIcon size={8} />
+                <ArrowDown size={8} />
                 {behind}
               </span>
             )}
           </div>
         ) : null}
+
+        {/* Status indicator */}
+        {actionStatus && (
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground animate-pulse">
+            <Spinner size={10} className="animate-spin" />
+            <span className="max-w-[100px] truncate">{actionStatus}</span>
+            {actionProgress && actionProgress.total_objects > 0 && (
+              <span className="text-[9px]">
+                {actionProgress.received_objects}/{actionProgress.total_objects}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Push / Pull / Fetch buttons */}
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => void handlePush()}
+            disabled={!canPushPull || isPushBusy || ahead === 0}
+            title={!hasRemote ? "No remote configured" : ahead === 0 ? "Nothing to push" : "Push"}
+            className={cn(
+              "rounded p-1 transition-colors",
+              canPushPull && ahead > 0
+                ? "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
+                : "text-muted-foreground/30 cursor-not-allowed",
+            )}
+          >
+            {isPushBusy ? <Spinner size={12} className="animate-spin" /> : <ArrowUp size={12} />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowPullOptions(!showPullOptions)}
+            disabled={!canPushPull || isPullBusy || behind === 0}
+            title={
+              !hasRemote ? "No remote configured" : behind === 0 ? "Already up to date" : "Pull"
+            }
+            className={cn(
+              "rounded p-1 transition-colors",
+              canPushPull && behind > 0
+                ? "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
+                : "text-muted-foreground/30 cursor-not-allowed",
+            )}
+          >
+            {isPullBusy ? <Spinner size={12} className="animate-spin" /> : <ArrowDown size={12} />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void openFetchDialog()}
+            disabled={!canPushPull || isFetchBusy}
+            title={!hasRemote ? "No remote configured" : "Fetch"}
+            className={cn(
+              "rounded p-1 transition-colors",
+              canPushPull
+                ? "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
+                : "text-muted-foreground/30 cursor-not-allowed",
+            )}
+          >
+            {isFetchBusy ? (
+              <Spinner size={12} className="animate-spin" />
+            ) : (
+              <ArrowsClockwise size={12} />
+            )}
+          </button>
+        </div>
+
+        {/* Pull options dropdown */}
+        {showPullOptions && (
+          <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-border bg-popover shadow-md">
+            <button
+              type="button"
+              onClick={() => void handlePull(false)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[12px] text-foreground/90 hover:bg-accent/30"
+            >
+              <ArrowDown size={12} />
+              Pull (merge)
+            </button>
+            <button
+              type="button"
+              onClick={() => void handlePull(true)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[12px] text-foreground/90 hover:bg-accent/30"
+            >
+              <ArrowsClockwise size={12} />
+              Pull (rebase)
+            </button>
+          </div>
+        )}
 
         {open && (
           <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border bg-popover shadow-md">
@@ -264,6 +408,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         )}
       </div>
 
+      {/* Uncommitted changes warning dialog */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -308,28 +453,112 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Fetch dialog with branch selection */}
+      <Dialog open={showFetchDialog} onOpenChange={setShowFetchDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[14px]">
+              <DownloadSimple size={18} className="text-primary" />
+              Fetch from Remote
+            </DialogTitle>
+            <DialogDescription className="text-[12px]">
+              Select a remote branch to fetch, or fetch all branches.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setSelectedFetchBranch("")}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-3 py-2 text-[12px] transition-colors",
+                selectedFetchBranch === ""
+                  ? "bg-accent/50 font-medium text-foreground"
+                  : "text-foreground/90 hover:bg-accent/30",
+              )}
+            >
+              <ArrowsClockwise size={12} />
+              Fetch all branches
+            </button>
+
+            {remoteBranches.length === 0 && (
+              <p className="px-3 py-2 text-[11px] text-muted-foreground">
+                No remote branches found. Fetch all to discover branches.
+              </p>
+            )}
+
+            {remoteBranches.map((rb) => (
+              <button
+                key={rb.name}
+                type="button"
+                onClick={() => setSelectedFetchBranch(rb.name)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-3 py-2 text-[12px] transition-colors",
+                  selectedFetchBranch === rb.name
+                    ? "bg-accent/50 font-medium text-foreground"
+                    : "text-foreground/90 hover:bg-accent/30",
+                )}
+              >
+                <GitBranch size={12} className="text-muted-foreground" />
+                {rb.name}
+              </button>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFetchDialog(false)}
+              className="text-[12px]"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => void handleFetchBranch()}
+              disabled={isFetchBusy}
+              className="text-[12px]"
+            >
+              {isFetchBusy ? (
+                <>
+                  <Spinner size={12} className="animate-spin mr-1" />
+                  Fetching…
+                </>
+              ) : selectedFetchBranch ? (
+                `Fetch ${selectedFetchBranch}`
+              ) : (
+                "Fetch all"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Push/Pull error dialog */}
+      <Dialog open={!!pushPullError} onOpenChange={clearPushPullError}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[14px]">
+              <Warning size={18} className="text-destructive" />
+              Git Remote Error
+            </DialogTitle>
+            <DialogDescription className="text-[12px]">{pushPullError}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearPushPullError}
+              className="text-[12px]"
+            >
+              Dismiss
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
-  );
-}
-
-function ArrowUpIcon({ size }: { size: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 256 256"
-      fill="currentColor"
-      style={{ transform: "rotate(180deg)" }}
-    >
-      <path d="M204.24 148.24l-72 72a6 6 0 0 1-8.48 0l-72-72a6 6 0 0 1 8.48-8.48L122 201.51V40a6 6 0 0 1 12 0v161.51l61.76-61.75a6 6 0 0 1 8.48 8.48Z" />
-    </svg>
-  );
-}
-
-function ArrowDownIcon({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 256 256" fill="currentColor">
-      <path d="M204.24 148.24l-72 72a6 6 0 0 1-8.48 0l-72-72a6 6 0 0 1 8.48-8.48L122 201.51V40a6 6 0 0 1 12 0v161.51l61.76-61.75a6 6 0 0 1 8.48 8.48Z" />
-    </svg>
   );
 }

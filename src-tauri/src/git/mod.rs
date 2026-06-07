@@ -1,5 +1,7 @@
 pub mod branch;
+pub mod env_loader;
 pub mod graph;
+pub mod remote;
 pub mod status;
 
 use git2::Error as GitError;
