@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { GitDiffPane } from "./GitDiffPane";
+import { useEditorStore } from "@/stores/editor";
 import {
   Spinner,
   PencilSimple,
@@ -17,8 +17,8 @@ import {
   GitBranch,
   ArrowUp,
   ArrowDown,
-  X,
   ClockCounterClockwise,
+  GitDiff,
 } from "@phosphor-icons/react";
 
 function StatusIcon({ status }: { status: string }) {
@@ -267,12 +267,14 @@ function FileEntryRow({
   actionBusy,
   onToggleFile,
   onSelectFile,
+  onOpenDiff,
 }: {
   entry: GitStatusEntry;
   isSelected: boolean;
   actionBusy: string | null;
   onToggleFile: (entry: GitStatusEntry) => void;
   onSelectFile: (entry: GitStatusEntry) => void;
+  onOpenDiff: (entry: GitStatusEntry) => void;
 }) {
   const checkState = computeCheckState(entry);
   const fileName = basename(entry.path);
@@ -309,6 +311,14 @@ function FileEntryRow({
           <span className="truncate text-[12px] leading-tight">{fileName}</span>
           {dir && <span className="truncate text-[10px] text-muted-foreground/70">{dir}</span>}
         </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => onOpenDiff(entry)}
+        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+        title="Open diff in editor"
+      >
+        <GitDiff size={13} />
       </button>
     </div>
   );
@@ -369,6 +379,7 @@ function RowRenderer({
   repoLabel,
   onToggleFile,
   onSelectFile,
+  onOpenDiff,
 }: {
   row: GitRow;
   isSelected: (path: string) => boolean;
@@ -376,6 +387,7 @@ function RowRenderer({
   repoLabel: string;
   onToggleFile: (entry: GitStatusEntry) => void;
   onSelectFile: (entry: GitStatusEntry) => void;
+  onOpenDiff: (entry: GitStatusEntry) => void;
 }) {
   switch (row.kind) {
     case "branch-header":
@@ -399,6 +411,7 @@ function RowRenderer({
           actionBusy={actionBusy}
           onToggleFile={onToggleFile}
           onSelectFile={onSelectFile}
+          onOpenDiff={onOpenDiff}
         />
       );
     case "clean-hint":
@@ -418,8 +431,6 @@ export function GitStatus() {
     repoPath,
     isLoading,
     error,
-    diffContent,
-    diffPath,
     commitMessage,
     actionBusy,
     commits,
@@ -429,9 +440,10 @@ export function GitStatus() {
     unstageFiles,
     commit,
     loadFileDiff,
-    clearDiff,
     setCommitMessage,
   } = useGitStore();
+
+  const { openDiff } = useEditorStore();
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -481,8 +493,40 @@ export function GitStatus() {
 
   const handleSelectFile = (entry: GitStatusEntry) => {
     setSelectedPath(entry.path);
+  };
+
+  const handleOpenDiff = async (entry: GitStatusEntry) => {
     const mode = entry.is_unstaged ? false : true;
-    void loadFileDiff(entry.path, mode);
+    try {
+      const content = await loadFileDiff(entry.path, mode);
+      if (!content || content === "No diff available") return;
+
+      const originalLines: string[] = [];
+      const modifiedLines: string[] = [];
+
+      for (const line of content.split("\n")) {
+        if (line.startsWith("+")) {
+          modifiedLines.push(line.slice(1));
+        } else if (line.startsWith("-")) {
+          originalLines.push(line.slice(1));
+        } else if (line.startsWith(" ")) {
+          const c = line.slice(1);
+          originalLines.push(c);
+          modifiedLines.push(c);
+        }
+      }
+
+      openDiff({
+        id: `diff:${entry.path}:${mode ? "staged" : "unstaged"}`,
+        path: entry.path,
+        original: originalLines.join("\n"),
+        modified: modifiedLines.join("\n"),
+        patchText: content,
+        staged: mode,
+      });
+    } catch {
+      // Error is handled by the store
+    }
   };
 
   const handleCommit = () => {
@@ -677,34 +721,13 @@ export function GitStatus() {
                   repoLabel={repoLabel}
                   onToggleFile={handleToggleFile}
                   onSelectFile={handleSelectFile}
+                  onOpenDiff={handleOpenDiff}
                 />
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* Diff Panel */}
-      {diffContent && diffPath && (
-        <div
-          className="border-t border-border/60 bg-card shrink-0 flex flex-col min-w-0 overflow-x-hidden"
-          style={{ maxHeight: "45%", height: "280px" }}
-        >
-          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 shrink-0">
-            <span className="text-[10px] font-mono text-muted-foreground truncate">{diffPath}</span>
-            <button
-              type="button"
-              onClick={clearDiff}
-              className="p-1 rounded hover:bg-accent text-muted-foreground"
-            >
-              <X size={12} />
-            </button>
-          </div>
-          <div className="flex-1 min-h-0">
-            <GitDiffPane diffText={diffContent} filePath={diffPath} active={true} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

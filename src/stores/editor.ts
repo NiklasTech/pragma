@@ -1,7 +1,13 @@
 import { create } from "zustand";
 
-export interface OpenFile {
+export interface CursorPosition {
+  line: number;
+  column: number;
+}
+
+export interface FileTab {
   id: string;
+  kind: "file";
   path: string;
   name: string;
   content: string;
@@ -9,122 +15,162 @@ export interface OpenFile {
   language?: string;
 }
 
-export interface CursorPosition {
-  line: number;
-  column: number;
+export interface DiffTab {
+  id: string;
+  kind: "diff";
+  path: string;
+  name: string;
+  original: string;
+  modified: string;
+  patchText: string;
+  staged: boolean;
 }
 
+export type EditorTab = FileTab | DiffTab;
+
 export interface TabState {
-  fileId: string;
+  tabId: string;
   cursor: CursorPosition;
   scrollTop: number;
 }
 
 interface EditorState {
-  openFiles: OpenFile[];
-  openTabs: TabState[];
+  tabs: EditorTab[];
+  tabStates: TabState[];
   activeTabId: string | null;
   cursorPositions: Record<string, CursorPosition>;
 }
 
 interface EditorActions {
-  openFile: (file: OpenFile) => void;
-  closeFile: (fileId: string) => void;
-  setActiveTab: (fileId: string) => void;
-  updateFileContent: (fileId: string, content: string) => void;
-  setCursorPosition: (fileId: string, cursor: CursorPosition) => void;
-  markModified: (fileId: string, isModified: boolean) => void;
+  openFile: (file: Omit<FileTab, "kind">) => void;
+  openDiff: (diff: Omit<DiffTab, "kind" | "name">) => void;
+  closeTab: (tabId: string) => void;
+  setActiveTab: (tabId: string) => void;
+  updateFileContent: (tabId: string, content: string) => void;
+  setCursorPosition: (tabId: string, cursor: CursorPosition) => void;
+  markModified: (tabId: string, isModified: boolean) => void;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
 }
 
 const initialState: EditorState = {
-  openFiles: [],
-  openTabs: [],
+  tabs: [],
+  tabStates: [],
   activeTabId: null,
   cursorPositions: {},
 };
+
+function createTabState(tabId: string): TabState {
+  return {
+    tabId,
+    cursor: { line: 0, column: 0 },
+    scrollTop: 0,
+  };
+}
 
 export const useEditorStore = create<EditorState & EditorActions>((set, get) => ({
   ...initialState,
 
   openFile: (file) => {
-    const { openFiles, openTabs, activeTabId } = get();
-    if (openFiles.some((f) => f.id === file.id)) {
+    const { tabs, tabStates, activeTabId } = get();
+    if (tabs.some((t) => t.id === file.id)) {
       if (activeTabId !== file.id) {
         set({ activeTabId: file.id });
       }
       return;
     }
-    const newTab: TabState = {
-      fileId: file.id,
-      cursor: { line: 0, column: 0 },
-      scrollTop: 0,
-    };
+    const fileTab: FileTab = { ...file, kind: "file" };
     set({
-      openFiles: [...openFiles, file],
-      openTabs: [...openTabs, newTab],
+      tabs: [...tabs, fileTab],
+      tabStates: [...tabStates, createTabState(file.id)],
       activeTabId: file.id,
     });
   },
 
-  closeFile: (fileId) => {
-    const { openFiles, openTabs, activeTabId } = get();
-    const nextFiles = openFiles.filter((f) => f.id !== fileId);
-    const nextTabs = openTabs.filter((t) => t.fileId !== fileId);
+  openDiff: (diff) => {
+    const { tabs, tabStates, activeTabId } = get();
+    const diffId = `diff:${diff.path}:${diff.staged ? "staged" : "unstaged"}`;
+
+    if (tabs.some((t) => t.id === diffId)) {
+      if (activeTabId !== diffId) {
+        set({ activeTabId: diffId });
+      }
+      return;
+    }
+
+    const diffTab: DiffTab = {
+      ...diff,
+      id: diffId,
+      kind: "diff",
+      name: `${diff.path.split("/").pop() ?? diff.path} (Diff)`,
+    };
+
+    set({
+      tabs: [...tabs, diffTab],
+      tabStates: [...tabStates, createTabState(diffId)],
+      activeTabId: diffId,
+    });
+  },
+
+  closeTab: (tabId) => {
+    const { tabs, tabStates, activeTabId } = get();
+    const nextTabs = tabs.filter((t) => t.id !== tabId);
+    const nextStates = tabStates.filter((s) => s.tabId !== tabId);
     let nextActive = activeTabId;
-    if (activeTabId === fileId) {
-      nextActive = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].fileId : null;
+    if (activeTabId === tabId) {
+      nextActive = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].id : null;
     }
     set({
-      openFiles: nextFiles,
-      openTabs: nextTabs,
+      tabs: nextTabs,
+      tabStates: nextStates,
       activeTabId: nextActive,
     });
   },
 
-  setActiveTab: (fileId) => {
-    set({ activeTabId: fileId });
+  setActiveTab: (tabId) => {
+    set({ activeTabId: tabId });
   },
 
-  updateFileContent: (fileId, content) => {
-    const { openFiles } = get();
+  updateFileContent: (tabId, content) => {
+    const { tabs } = get();
     set({
-      openFiles: openFiles.map((f) => (f.id === fileId ? { ...f, content, isModified: true } : f)),
+      tabs: tabs.map((t) =>
+        t.id === tabId && t.kind === "file" ? { ...t, content, isModified: true } : t,
+      ),
     });
   },
 
-  setCursorPosition: (fileId, cursor) => {
-    const { cursorPositions, openTabs } = get();
+  setCursorPosition: (tabId, cursor) => {
+    const { cursorPositions, tabStates } = get();
     set({
-      cursorPositions: { ...cursorPositions, [fileId]: cursor },
-      openTabs: openTabs.map((t) => (t.fileId === fileId ? { ...t, cursor } : t)),
+      cursorPositions: { ...cursorPositions, [tabId]: cursor },
+      tabStates: tabStates.map((s) => (s.tabId === tabId ? { ...s, cursor } : s)),
     });
   },
 
-  markModified: (fileId, isModified) => {
-    const { openFiles } = get();
+  markModified: (tabId, isModified) => {
+    const { tabs } = get();
     set({
-      openFiles: openFiles.map((f) => (f.id === fileId ? { ...f, isModified } : f)),
+      tabs: tabs.map((t) => (t.id === tabId && t.kind === "file" ? { ...t, isModified } : t)),
     });
   },
 
   reorderTabs: (fromIndex, toIndex) => {
-    const { openFiles, openTabs } = get();
+    const { tabs, tabStates } = get();
     if (
       fromIndex < 0 ||
-      fromIndex >= openFiles.length ||
+      fromIndex >= tabs.length ||
       toIndex < 0 ||
-      toIndex >= openFiles.length ||
+      toIndex >= tabs.length ||
       fromIndex === toIndex
     ) {
       return;
     }
-    const nextFiles = [...openFiles];
-    const nextTabs = [...openTabs];
-    const [movedFile] = nextFiles.splice(fromIndex, 1);
+    const nextTabs = [...tabs];
+    const nextStates = [...tabStates];
     const [movedTab] = nextTabs.splice(fromIndex, 1);
-    nextFiles.splice(toIndex, 0, movedFile);
+    const [movedState] = nextStates.splice(fromIndex, 1);
     nextTabs.splice(toIndex, 0, movedTab);
-    set({ openFiles: nextFiles, openTabs: nextTabs });
+    nextStates.splice(toIndex, 0, movedState);
+    set({ tabs: nextTabs, tabStates: nextStates });
   },
 }));

@@ -8,13 +8,16 @@ export function useAutoSave() {
   const autoSave = useSettingsStore((state) => state.editor.autoSave);
   const autoSaveDelay = useSettingsStore((state) => state.editor.autoSaveDelay);
   const activeTabId = useEditorStore((state) => state.activeTabId);
-  const openFiles = useEditorStore((state) => state.openFiles);
+  const tabs = useEditorStore((state) => state.tabs);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activeFile = openFiles.find((f) => f.id === activeTabId);
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const isFileTab = activeTab?.kind === "file";
+  const isModified = isFileTab ? activeTab.isModified : false;
+  const content = isFileTab ? activeTab.content : "";
 
   useEffect(() => {
-    if (autoSave !== "afterDelay" || !activeFile || !activeFile.isModified) {
+    if (autoSave !== "afterDelay" || !isFileTab || !isModified) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
@@ -37,13 +40,13 @@ export function useAutoSave() {
         timerRef.current = null;
       }
     };
-  }, [activeFile?.content, activeFile?.isModified, autoSave, autoSaveDelay, saveFile]);
+  }, [content, isModified, autoSave, autoSaveDelay, saveFile]);
 
   const handleBlur = useCallback(() => {
-    if (autoSave === "onFocusChange" && activeFile?.isModified) {
+    if (autoSave === "onFocusChange" && isModified) {
       void saveFile();
     }
-  }, [autoSave, activeFile?.isModified, saveFile]);
+  }, [autoSave, isModified, saveFile]);
 
   return { handleBlur };
 }
