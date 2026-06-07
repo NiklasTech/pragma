@@ -4,16 +4,18 @@ import { cn } from "@/lib/utils";
 import {
   Files,
   GitBranch,
+  GitDiff,
   MagnifyingGlass,
   SidebarSimple,
   Sidebar as SidebarIcon,
 } from "@phosphor-icons/react";
-import { FileExplorer } from "@/components/sidebar";
+import { FileExplorer, GitGraph, GitStatus } from "@/components/sidebar";
 
 const tabs = [
   { id: "explorer" as const, icon: Files, label: "Explorer" },
   { id: "search" as const, icon: MagnifyingGlass, label: "Search" },
-  { id: "git" as const, icon: GitBranch, label: "Source Control" },
+  { id: "git" as const, icon: GitBranch, label: "Git Graph" },
+  { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
 ];
 
 export const DOCK_WIDTH = 48;
@@ -112,11 +114,8 @@ export function SidebarContent() {
             <p className="text-sm text-muted-foreground">Search content</p>
           </div>
         )}
-        {sidebarTab === "git" && (
-          <div className="p-3">
-            <p className="text-sm text-muted-foreground">Git content</p>
-          </div>
-        )}
+        {sidebarTab === "git" && <GitGraph />}
+        {sidebarTab === "git-status" && <GitStatus />}
       </div>
     </div>
   );

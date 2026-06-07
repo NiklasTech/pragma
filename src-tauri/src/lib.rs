@@ -1,4 +1,5 @@
 mod commands;
+mod git;
 
 use commands::pty::PtyManager;
 use commands::run::RunManager;
@@ -25,6 +26,14 @@ pub fn run() {
             commands::pty::resize_pty,
             commands::pty::kill_pty,
             commands::git::git_status,
+            commands::git::git_branches,
+            commands::git::git_log,
+            commands::git::git_log_entries,
+            commands::git::git_commit_files,
+            commands::git::git_stage,
+            commands::git::git_unstage,
+            commands::git::git_diff_file,
+            commands::git::git_commit,
             commands::ai::ai_list_providers,
             commands::lsp::lsp_list_servers,
             commands::mcp::mcp_list_servers,
