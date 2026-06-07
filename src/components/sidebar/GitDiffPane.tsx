@@ -187,13 +187,13 @@ export function GitDiffPane({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col min-w-0">
       <div className="flex h-9 shrink-0 items-center gap-3 border-b border-border/60 px-3">
         <span className="truncate font-mono text-[11px] text-muted-foreground" title={filePath}>
           {filePath}
         </span>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-hidden" style={{ maxWidth: "100%" }}>
         <CodeMirror
           ref={cmRef}
           value={modifiedContent}

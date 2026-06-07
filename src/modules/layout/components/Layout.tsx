@@ -27,11 +27,11 @@ export function Layout() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-background text-foreground flex flex-col">
       <Titlebar />
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <SidebarDock panelRef={sidebarRef} />
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1 overflow-hidden">
             <ResizablePanel
               id="sidebar"
               ref={sidebarRef}
