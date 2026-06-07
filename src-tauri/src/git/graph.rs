@@ -1,6 +1,6 @@
 use git2::Repository;
 
-use super::{map_git_error, GitBranch, GitCommit, GitLogEntry, GitCommitFileChange};
+use super::{map_git_error, GitBranch, GitCommit, GitCommitFileChange, GitLogEntry};
 
 pub fn get_branches(repo_path: &str) -> Result<Vec<GitBranch>, String> {
     let repo = Repository::open(repo_path).map_err(map_git_error)?;
@@ -65,7 +65,11 @@ pub fn get_log(repo_path: &str, limit: usize) -> Result<Vec<GitCommit>, String> 
     Ok(commits)
 }
 
-pub fn get_log_entries(repo_path: &str, limit: usize, before_sha: Option<String>) -> Result<Vec<GitLogEntry>, String> {
+pub fn get_log_entries(
+    repo_path: &str,
+    limit: usize,
+    before_sha: Option<String>,
+) -> Result<Vec<GitLogEntry>, String> {
     let repo = Repository::open(repo_path).map_err(map_git_error)?;
 
     let mut revwalk = repo.revwalk().map_err(map_git_error)?;
@@ -141,7 +145,8 @@ pub fn get_commit_files(repo_path: &str, sha: &str) -> Result<Vec<GitCommitFileC
         let parent = commit.parent(0).map_err(map_git_error)?;
         let parent_tree = parent.tree().map_err(map_git_error)?;
         let commit_tree = commit.tree().map_err(map_git_error)?;
-        let diff = repo.diff_tree_to_tree(Some(&parent_tree), Some(&commit_tree), None)
+        let diff = repo
+            .diff_tree_to_tree(Some(&parent_tree), Some(&commit_tree), None)
             .map_err(map_git_error)?;
 
         for delta in diff.deltas() {
@@ -155,11 +160,15 @@ pub fn get_commit_files(repo_path: &str, sha: &str) -> Result<Vec<GitCommitFileC
                 _ => ("?", "Other"),
             };
 
-            let path = delta.new_file().path()
+            let path = delta
+                .new_file()
+                .path()
                 .and_then(|p| p.to_str())
                 .unwrap_or("unknown")
                 .to_string();
-            let original_path = delta.old_file().path()
+            let original_path = delta
+                .old_file()
+                .path()
                 .and_then(|p| p.to_str())
                 .map(|s| s.to_string());
 

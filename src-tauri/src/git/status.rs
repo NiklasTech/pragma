@@ -14,20 +14,18 @@ pub fn get_snapshot(repo_path: &str) -> Result<GitStatusSnapshot, String> {
         .ok()
         .and_then(|h| h.target())
         .and_then(|oid| {
-            repo.find_commit(oid)
-                .ok()
-                .and_then(|_| {
-                    repo.branch_upstream_name(&head.name().unwrap_or(""))
-                        .ok()
-                        .and_then(|b| b.as_str().map(|s| s.to_string()))
-                })
+            repo.find_commit(oid).ok().and_then(|_| {
+                repo.branch_upstream_name(&head.name().unwrap_or(""))
+                    .ok()
+                    .and_then(|b| b.as_str().map(|s| s.to_string()))
+            })
         });
 
     let (ahead, behind) = if let Ok(local) = head.resolve() {
         if let Some(local_oid) = local.target() {
-            if let Ok(upstream_ref) = repo.resolve_reference_from_short_name(
-                &upstream.clone().unwrap_or_default(),
-            ) {
+            if let Ok(upstream_ref) =
+                repo.resolve_reference_from_short_name(&upstream.clone().unwrap_or_default())
+            {
                 if let Some(upstream_oid) = upstream_ref.target() {
                     repo.graph_ahead_behind(local_oid, upstream_oid)
                         .unwrap_or((0, 0))
@@ -143,7 +141,8 @@ pub fn commit(repo_path: &str, message: String) -> Result<String, String> {
     let tree = repo.find_tree(tree_oid).map_err(map_git_error)?;
 
     let head = repo.head().map_err(map_git_error)?;
-    let parent = repo.find_commit(head.target().ok_or("HEAD has no target")?)
+    let parent = repo
+        .find_commit(head.target().ok_or("HEAD has no target")?)
         .map_err(map_git_error)?;
 
     let commit_oid = repo
@@ -153,11 +152,7 @@ pub fn commit(repo_path: &str, message: String) -> Result<String, String> {
     Ok(commit_oid.to_string())
 }
 
-pub fn get_file_diff(
-    repo_path: &str,
-    path: &str,
-    staged: bool,
-) -> Result<String, String> {
+pub fn get_file_diff(repo_path: &str, path: &str, staged: bool) -> Result<String, String> {
     let repo = Repository::open(repo_path).map_err(map_git_error)?;
 
     let diff = if staged {
@@ -203,9 +198,7 @@ pub fn get_file_diff(
     Ok(output)
 }
 
-fn classify_status(
-    status: git2::Status,
-) -> (String, String, bool, bool, Option<String>) {
+fn classify_status(status: git2::Status) -> (String, String, bool, bool, Option<String>) {
     let is_staged = status.is_index_new()
         || status.is_index_modified()
         || status.is_index_deleted()
