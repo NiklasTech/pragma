@@ -28,10 +28,11 @@ function readSidebarWidth(): number {
   }
 }
 
-function readSidebarView(): "explorer" | "search" | "git" {
+function readSidebarView(): "explorer" | "search" | "git" | "git-status" {
   try {
     const stored = window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY);
-    if (stored === "explorer" || stored === "search" || stored === "git") return stored;
+    if (stored === "explorer" || stored === "search" || stored === "git" || stored === "git-status")
+      return stored;
   } catch {
     // ignore
   }
@@ -43,7 +44,7 @@ function readSidebarView(): "explorer" | "search" | "git" {
 interface LayoutState {
   sidebarWidth: number;
   sidebarCollapsed: boolean;
-  sidebarTab: "explorer" | "search" | "git";
+  sidebarTab: "explorer" | "search" | "git" | "git-status";
   editorHeight: number;
   terminalHeight: number;
   aiPanelOpen: boolean;
@@ -51,7 +52,7 @@ interface LayoutState {
 
   setSidebarWidth: (width: number) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
-  setSidebarTab: (tab: "explorer" | "search" | "git") => void;
+  setSidebarTab: (tab: "explorer" | "search" | "git" | "git-status") => void;
   setEditorHeight: (height: number) => void;
   setTerminalHeight: (height: number) => void;
   setAIPanelOpen: (open: boolean) => void;

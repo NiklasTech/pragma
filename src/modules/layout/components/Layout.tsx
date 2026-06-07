@@ -1,5 +1,5 @@
 import { useRef, useCallback } from "react";
-import type { PanelImperativeHandle } from "react-resizable-panels";
+import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useLayoutStore, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "../store";
 import { SidebarDock, SidebarContent } from "./Sidebar";
@@ -13,11 +13,12 @@ export function Layout() {
   const sidebarRef = useRef<PanelImperativeHandle>(null);
 
   const handleSidebarResize = useCallback(
-    (size: { inPixels: number; asPercentage: number }) => {
-      const collapsed = size.inPixels <= 0;
+    (size: PanelSize) => {
+      const px = size.inPixels;
+      const collapsed = px <= 4;
       setSidebarCollapsed(collapsed);
-      if (!collapsed && size.inPixels > 0) {
-        setSidebarWidth(size.inPixels);
+      if (!collapsed && px > 0) {
+        setSidebarWidth(px);
       }
     },
     [setSidebarCollapsed, setSidebarWidth],

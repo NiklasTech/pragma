@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useFileExplorerStore, type FileSystemNode } from "@/stores/fileExplorer";
 import { useEditorStore } from "@/stores/editor";
 import { useRunConfigStore } from "@/stores/runConfig";
+import { useGitStore } from "@/stores/git";
 import { detectLanguage } from "@/lib/language";
 
 interface DirEntry {
@@ -34,13 +35,15 @@ export function useFileExplorer() {
   const store = useFileExplorerStore();
   const { openFile } = useEditorStore();
   const { setWorkspaceRoot, loadConfigs } = useRunConfigStore();
+  const { setRepoPath } = useGitStore();
 
   useEffect(() => {
     if (store.rootPath) {
       setWorkspaceRoot(store.rootPath);
+      setRepoPath(store.rootPath);
       void loadConfigs();
     }
-  }, [store.rootPath, setWorkspaceRoot, loadConfigs]);
+  }, [store.rootPath, setWorkspaceRoot, setRepoPath, loadConfigs]);
 
   const selectRoot = useCallback(async () => {
     let path: string | null = null;
