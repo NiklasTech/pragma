@@ -2,6 +2,8 @@ use serde::Serialize;
 use std::fs;
 use std::path::Path;
 
+use super::local_history;
+
 #[derive(Serialize)]
 pub struct FileReadResult {
     pub path: String,
@@ -52,7 +54,7 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
 }
 
 #[tauri::command]
-pub fn write_text_file(path: String, content: String) -> Result<(), String> {
+pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> Result<(), String> {
     let path_ref = Path::new(&path);
 
     if !path_ref.exists() {
@@ -63,7 +65,15 @@ pub fn write_text_file(path: String, content: String) -> Result<(), String> {
         return Err(format!("Not a file: {}", path));
     }
 
-    fs::write(path_ref, content).map_err(|e| format!("Failed to write file: {}", e))
+    fs::write(path_ref, &content).map_err(|e| format!("Failed to write file: {}", e))?;
+
+    let repo_path = path_ref
+        .parent()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let _ = local_history::on_file_saved(&app, &repo_path, &path, &content);
+
+    Ok(())
 }
 
 #[tauri::command]

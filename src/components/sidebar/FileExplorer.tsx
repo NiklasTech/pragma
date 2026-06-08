@@ -8,6 +8,7 @@ import {
   ContextMenuItem,
 } from "@/components/ui/context-menu";
 import { useFileExplorer } from "@/hooks/useFileExplorer";
+import { useLocalHistory } from "@/hooks/useLocalHistory";
 import { FileTreeNode } from "./FileTreeNode";
 
 export function FileExplorer() {
@@ -24,6 +25,8 @@ export function FileExplorer() {
     renameNode,
     deleteNode,
   } = useFileExplorer();
+
+  const { openPanel } = useLocalHistory();
 
   const rootName = rootPath ? rootPath.replace(/\\/g, "/").split("/").pop() || rootPath : null;
 
@@ -79,6 +82,7 @@ export function FileExplorer() {
                     onCreate={createNode}
                     onRename={renameNode}
                     onDelete={deleteNode}
+                    onShowLocalHistory={openPanel}
                   />
                 ))}
               </div>
