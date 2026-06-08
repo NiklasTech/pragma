@@ -1,5 +1,12 @@
 import { useCallback } from "react";
-import { Folder, FolderOpen, CaretRight, CaretDown, Spinner } from "@phosphor-icons/react";
+import {
+  Folder,
+  FolderOpen,
+  CaretRight,
+  CaretDown,
+  Spinner,
+  ClockCounterClockwise,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { getFileIcon } from "@/lib/file-icons";
 import { useEditorStore } from "@/stores/editor";
@@ -22,6 +29,7 @@ interface FileTreeNodeProps {
   onCreate: (parentPath: string, name: string, isDirectory: boolean) => void;
   onRename: (path: string, newName: string) => void;
   onDelete: (path: string) => void;
+  onShowLocalHistory?: (path: string) => void;
 }
 
 export function FileTreeNode({
@@ -34,6 +42,7 @@ export function FileTreeNode({
   onCreate,
   onRename,
   onDelete,
+  onShowLocalHistory,
 }: FileTreeNodeProps) {
   const activeTabId = useEditorStore((s) => s.activeTabId);
   const isExpanded = expandedDirs.has(node.path);
@@ -69,6 +78,12 @@ export function FileTreeNode({
     const confirmed = window.confirm(`Delete "${node.name}"?`);
     if (confirmed) onDelete(node.path);
   }, [node, onDelete]);
+
+  const handleShowLocalHistory = useCallback(() => {
+    if (onShowLocalHistory) {
+      onShowLocalHistory(node.path);
+    }
+  }, [node.path, onShowLocalHistory]);
 
   const paddingLeft = depth * 12 + 4;
 
@@ -144,6 +159,11 @@ export function FileTreeNode({
             <>
               <ContextMenuItem onClick={handleClick}>Open</ContextMenuItem>
               <ContextMenuSeparator />
+              <ContextMenuItem onClick={handleShowLocalHistory}>
+                <ClockCounterClockwise size={14} className="mr-2" />
+                Local History
+              </ContextMenuItem>
+              <ContextMenuSeparator />
               <ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
               <ContextMenuItem variant="destructive" onClick={handleDelete}>
                 Delete
@@ -167,6 +187,7 @@ export function FileTreeNode({
               onCreate={onCreate}
               onRename={onRename}
               onDelete={onDelete}
+              onShowLocalHistory={onShowLocalHistory}
             />
           ))}
         </div>

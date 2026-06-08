@@ -9,7 +9,8 @@ import {
   SidebarSimple,
   Sidebar as SidebarIcon,
 } from "@phosphor-icons/react";
-import { FileExplorer, GitGraph, GitStatus } from "@/components/sidebar";
+import { FileExplorer, GitGraph, GitStatus, LocalHistoryPanel } from "@/components/sidebar";
+import { useLocalHistory } from "@/hooks/useLocalHistory";
 
 const tabs = [
   { id: "explorer" as const, icon: Files, label: "Explorer" },
@@ -99,6 +100,7 @@ export function SidebarDock({
 
 export function SidebarContent() {
   const { sidebarTab } = useLayoutStore();
+  const { isOpen, activeFilePath, closePanel } = useLocalHistory();
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-card overflow-hidden" style={{ width: "100%" }}>
@@ -112,6 +114,9 @@ export function SidebarContent() {
         {sidebarTab === "git" && <GitGraph />}
         {sidebarTab === "git-status" && <GitStatus />}
       </div>
+      {activeFilePath && (
+        <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />
+      )}
     </div>
   );
 }
