@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub(crate) const DEFAULT_TIMEOUT_SECS: u64 = 30;
 pub(crate) const NETWORK_TIMEOUT_SECS: u64 = 120;
@@ -114,6 +114,22 @@ pub struct GitRemote {
 pub struct GitRemoteBranch {
     pub name: String,
     pub remote: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StashEntry {
+    pub index: u32,
+    pub message: String,
+    pub ref_name: String,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct SmartCheckoutResult {
+    pub stashed: bool,
+    pub stash_ref: Option<String>,
+    pub checkout_ok: bool,
+    pub pop_ok: bool,
+    pub pop_conflict: bool,
 }
 
 pub(crate) struct GitOutput {
