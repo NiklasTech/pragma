@@ -104,7 +104,7 @@ pub fn save_snapshot(
     let now = Utc::now();
     let snapshot_id = format!("{}", now.timestamp_millis());
 
-    let (diff, full_content) = if metas.is_empty() {
+    let (diff, _full_content) = if metas.is_empty() {
         (String::new(), Some(new_content.to_string()))
     } else {
         let prev_snapshot_path = snapshot_path(&dir, &metas.last().unwrap().timestamp);

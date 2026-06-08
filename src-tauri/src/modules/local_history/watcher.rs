@@ -12,7 +12,7 @@ const DEBOUNCE_MS: u64 = 500;
 
 pub struct LocalHistoryWatcher {
     watcher: RecommendedWatcher,
-    last_event: Arc<Mutex<HashMap<String, Instant>>>,
+    _last_event: Arc<Mutex<HashMap<String, Instant>>>,
     app_data_dir: std::path::PathBuf,
     repo_path: String,
     policy: RetentionPolicy,
@@ -29,8 +29,8 @@ impl LocalHistoryWatcher {
             .app_data_dir()
             .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
 
-        let last_event = Arc::new(Mutex::new(HashMap::<String, Instant>::new()));
-        let last_event_clone = last_event.clone();
+        let _last_event = Arc::new(Mutex::new(HashMap::<String, Instant>::new()));
+        let last_event_clone = _last_event.clone();
         let app_data_dir_clone = app_data_dir.clone();
         let repo_path_clone = repo_path.clone();
         let policy_clone = policy;
@@ -76,7 +76,7 @@ impl LocalHistoryWatcher {
 
         Ok(Self {
             watcher,
-            last_event,
+            _last_event,
             app_data_dir,
             repo_path,
             policy,

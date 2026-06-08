@@ -23,6 +23,26 @@ export interface ChatSession {
   updatedAt: number;
 }
 
+// ─── CLI Types ───────────────────────────────────────────────────────────────
+
+export interface CLIManifest {
+  id: string;
+  name: string;
+  description: string;
+  supports_sessions: boolean;
+}
+
+export interface CLIStatus {
+  provider_id: string;
+  installed: boolean;
+  version: string | null;
+  authenticated: boolean;
+  user: string | null;
+  error: string | null;
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
+
 interface AIState {
   activeProvider: AIProvider;
   activeModel: string;
@@ -33,6 +53,11 @@ interface AIState {
   chatSessions: ChatSession[];
   activeChatSessionId: string | null;
   apiKeyRefs: Record<AIProvider, string | null>;
+
+  // CLI
+  cliManifests: CLIManifest[];
+  cliStatuses: Record<string, CLIStatus>;
+  activeCLIProvider: string | null;
 }
 
 interface AIActions {
@@ -50,6 +75,14 @@ interface AIActions {
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
   loadKeyStatus: (provider: AIProvider) => Promise<void>;
   deleteApiKey: (provider: AIProvider) => Promise<void>;
+
+  // CLI
+  loadCLIManifests: () => Promise<void>;
+  loadCLIStatuses: () => Promise<void>;
+  installCLI: (providerId: string) => Promise<void>;
+  startCLILogin: (providerId: string) => Promise<string>;
+  logoutCLI: (providerId: string) => Promise<void>;
+  setActiveCLIProvider: (providerId: string | null) => void;
 }
 
 const defaultProviders: Record<AIProvider, ProviderConfig> = {
@@ -78,6 +111,9 @@ const initialState: AIState = {
     kimi: null,
     custom: null,
   },
+  cliManifests: [],
+  cliStatuses: {},
+  activeCLIProvider: null,
 };
 
 export const useAIStore = create<AIState & AIActions>((set, get) => ({
@@ -164,4 +200,38 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
       apiKeyRefs: { ...get().apiKeyRefs, [provider]: null },
     });
   },
+
+  // ─── CLI Actions ──────────────────────────────────────────────────────────
+
+  loadCLIManifests: async () => {
+    const manifests = await invoke<CLIManifest[]>("cli_list_manifests");
+    set({ cliManifests: manifests });
+  },
+
+  loadCLIStatuses: async () => {
+    const statuses = await invoke<CLIStatus[]>("cli_check_all_statuses");
+    const map: Record<string, CLIStatus> = {};
+    for (const s of statuses) {
+      map[s.provider_id] = s;
+    }
+    set({ cliStatuses: map });
+  },
+
+  installCLI: async (providerId) => {
+    await invoke("cli_install", { req: { provider_id: providerId } });
+    await get().loadCLIStatuses();
+  },
+
+  startCLILogin: async (providerId) => {
+    const result = await invoke<string>("cli_start_login", { req: { provider_id: providerId } });
+    await get().loadCLIStatuses();
+    return result;
+  },
+
+  logoutCLI: async (providerId) => {
+    await invoke("cli_logout", { req: { provider_id: providerId } });
+    await get().loadCLIStatuses();
+  },
+
+  setActiveCLIProvider: (providerId) => set({ activeCLIProvider: providerId }),
 }));

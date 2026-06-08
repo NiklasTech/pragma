@@ -68,6 +68,14 @@ pub fn run() {
             commands::ai::ai_get_key,
             commands::ai::ai_key_status,
             commands::ai::ai_delete_key,
+            commands::ai::ai_chat,
+            commands::cli::cli_list_manifests,
+            commands::cli::cli_check_status,
+            commands::cli::cli_check_all_statuses,
+            commands::cli::cli_install,
+            commands::cli::cli_start_login,
+            commands::cli::cli_logout,
+            commands::cli::cli_chat,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
