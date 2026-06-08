@@ -2,6 +2,7 @@ use crate::modules::git::operations;
 use crate::modules::git::types::{
     GitBranch, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
     GitLogEntry, GitPullResult, GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot,
+    SmartCheckoutResult, StashEntry,
 };
 
 async fn blocking<F, T>(f: F) -> Result<T, String>
@@ -349,4 +350,49 @@ pub async fn git_remote_url(
     }
     let remote = name.unwrap_or_else(|| "origin".to_string());
     blocking(move || operations::remote_url(&repo_path, &remote).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_stash_push(repo_path: String, message: String) -> Result<String, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    let msg = message.trim().to_string();
+    if msg.is_empty() {
+        return Err("Stash message is required".to_string());
+    }
+    blocking(move || operations::stash_push(&repo_path, &msg).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_stash_pop(repo_path: String, stash_ref: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if stash_ref.is_empty() {
+        return Err("Stash ref is required".to_string());
+    }
+    blocking(move || operations::stash_pop(&repo_path, &stash_ref).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_stash_list(repo_path: String) -> Result<Vec<StashEntry>, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    blocking(move || operations::stash_list(&repo_path).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_smart_checkout(
+    repo_path: String,
+    branch_name: String,
+) -> Result<SmartCheckoutResult, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if branch_name.is_empty() {
+        return Err("Branch name is required".to_string());
+    }
+    blocking(move || operations::smart_checkout(&repo_path, &branch_name).map_err(Into::into)).await
 }

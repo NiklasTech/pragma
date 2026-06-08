@@ -37,6 +37,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     branches,
     snapshot,
     checkoutBranch,
+    smartCheckout,
     createBranch,
     deleteBranch,
     hasUncommittedChanges,
@@ -112,7 +113,16 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     [currentBranch, hasUncommittedChanges, checkoutBranch],
   );
 
-  const handleForceCheckout = async () => {
+  const handleSmartSwitch = async () => {
+    if (!warningBranch) return;
+    setShowWarning(false);
+    setPendingBranch(warningBranch);
+    await smartCheckout(warningBranch);
+    setPendingBranch(null);
+    setWarningBranch(null);
+  };
+
+  const handleNormalSwitch = async () => {
     if (!warningBranch) return;
     setShowWarning(false);
     setPendingBranch(warningBranch);
@@ -408,7 +418,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         )}
       </div>
 
-      {/* Uncommitted changes warning dialog */}
+      {/* Uncommitted changes smart switch dialog */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -417,11 +427,51 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               Uncommitted Changes
             </DialogTitle>
             <DialogDescription className="text-[12px]">
-              You have uncommitted changes. Checking out{" "}
-              <span className="font-mono font-medium">{warningBranch}</span> may cause conflicts or
-              overwrite your changes.
+              You have{" "}
+              <span className="font-medium">
+                {snapshot?.changed_files.length ?? 0} changed file
+                {(snapshot?.changed_files.length ?? 0) === 1 ? "" : "s"}
+              </span>
+              . How do you want to switch to{" "}
+              <span className="font-mono font-medium">{warningBranch}</span>?
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => void handleSmartSwitch()}
+              disabled={pendingBranch !== null}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-md border border-border bg-accent/30 px-3 py-2.5 text-left transition-colors hover:bg-accent/50",
+                pendingBranch !== null && "opacity-60 cursor-not-allowed",
+              )}
+            >
+              <ArrowsClockwise size={18} className="shrink-0 text-primary" />
+              <div className="min-w-0">
+                <div className="text-[12px] font-medium">Smart Switch</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Stash changes, switch branch, then restore changes and workspace
+                </div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleNormalSwitch()}
+              disabled={pendingBranch !== null}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-md border border-border px-3 py-2.5 text-left transition-colors hover:bg-accent/30",
+                pendingBranch !== null && "opacity-60 cursor-not-allowed",
+              )}
+            >
+              <GitBranch size={18} className="shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <div className="text-[12px] font-medium">Normal Switch</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Switch branch without stashing (may fail or conflict)
+                </div>
+              </div>
+            </button>
+          </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
@@ -430,25 +480,10 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                 setShowWarning(false);
                 setWarningBranch(null);
               }}
-              className="text-[12px]"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => void handleForceCheckout()}
               disabled={pendingBranch !== null}
               className="text-[12px]"
             >
-              {pendingBranch ? (
-                <>
-                  <Spinner size={12} className="animate-spin mr-1" />
-                  Switching…
-                </>
-              ) : (
-                "Switch Anyway"
-              )}
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { DiffViewMode } from "@/components/editor/InlineDiff";
+import { saveWorkspace, loadWorkspace } from "./workspace";
 
 export interface GitStatusEntry {
   path: string;
@@ -122,6 +123,7 @@ interface GitActions {
   setCommitMessage: (value: string) => void;
   setDiffViewMode: (mode: DiffViewMode) => void;
   checkoutBranch: (branchName: string) => Promise<void>;
+  smartCheckout: (branchName: string) => Promise<void>;
   createBranch: (branchName: string, checkout?: boolean) => Promise<void>;
   deleteBranch: (branchName: string) => Promise<void>;
   hasUncommittedChanges: () => Promise<boolean>;
@@ -297,17 +299,66 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
   setDiffViewMode: (mode) => set({ diffViewMode: mode }),
 
   checkoutBranch: async (branchName: string) => {
-    const { repoPath } = get();
+    const { repoPath, snapshot } = get();
     if (!repoPath) return;
+
+    const currentBranch = snapshot?.repo.branch;
 
     set({ actionBusy: "checkout" });
     try {
+      if (currentBranch) {
+        await saveWorkspace(repoPath, currentBranch);
+      }
       await invoke("git_checkout_branch", { repoPath, branchName });
+      await loadWorkspace(repoPath, branchName);
       await get().refreshAll();
     } catch (err) {
       set({ error: String(err) });
     } finally {
       set({ actionBusy: null });
+    }
+  },
+
+  smartCheckout: async (branchName: string) => {
+    const { repoPath, snapshot } = get();
+    if (!repoPath) return;
+
+    const currentBranch = snapshot?.repo.branch;
+
+    set({ actionBusy: "checkout", actionStatus: "Smart switching branch…" });
+    try {
+      if (currentBranch) {
+        await saveWorkspace(repoPath, currentBranch);
+      }
+      const result = await invoke<{
+        stashed: boolean;
+        stash_ref: string | null;
+        checkout_ok: boolean;
+        pop_ok: boolean;
+        pop_conflict: boolean;
+      }>("git_smart_checkout", { repoPath, branchName });
+
+      if (!result.checkout_ok) {
+        throw new Error("Checkout failed");
+      }
+
+      if (result.pop_conflict) {
+        toast.warning("Stash applied with conflicts. Resolve conflicts before continuing.");
+      } else if (result.stashed && !result.pop_ok) {
+        toast.error("Failed to restore stashed changes.");
+      }
+
+      await loadWorkspace(repoPath, branchName);
+      await get().refreshAll();
+
+      if (result.stashed && result.pop_ok && !result.pop_conflict) {
+        toast.success("Switched branch and restored changes");
+      }
+    } catch (err) {
+      set({ error: String(err) });
+      toast.error(String(err));
+    } finally {
+      set({ actionBusy: null, actionStatus: null });
     }
   },
 
