@@ -1,3 +1,5 @@
+pub mod ai;
+pub mod commands;
 pub mod modules;
 
 use modules::pty::PtyManager;
@@ -62,6 +64,10 @@ pub fn run() {
             modules::run::run_start,
             modules::run::run_stop,
             modules::run::run_restart,
+            commands::ai::ai_store_key,
+            commands::ai::ai_get_key,
+            commands::ai::ai_key_status,
+            commands::ai::ai_delete_key,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

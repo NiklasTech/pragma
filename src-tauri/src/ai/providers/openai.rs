@@ -1,0 +1,316 @@
+use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+
+use crate::ai::{
+    config::ProviderConfig,
+    error::AIError,
+    keychain,
+    provider::{
+        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse, Message,
+        ModelInfo, Role, Usage,
+    },
+};
+
+const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
+const COMPLETIONS_PATH: &str = "/chat/completions";
+
+const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[
+    ("gpt-4o", "GPT-4o", Some(128_000), true, true),
+    ("o1", "o1", Some(200_000), true, false),
+    ("o3", "o3", Some(200_000), true, false),
+];
+
+pub struct OpenAIProvider {
+    config: ProviderConfig,
+    client: reqwest::Client,
+}
+
+impl OpenAIProvider {
+    pub fn new(config: ProviderConfig) -> Result<Self, AIError> {
+        let api_key = match &config.api_key {
+            Some(key) if !key.is_empty() => key.clone(),
+            _ => match keychain::get_api_key("openai")? {
+                Some(key) => key,
+                None => return Err(AIError::InvalidApiKey),
+            },
+        };
+
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
+                .map_err(|e| AIError::Provider(format!("invalid api key header: {e}")))?,
+        );
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            reqwest::header::HeaderValue::from_static("application/json"),
+        );
+
+        if let Some(extra) = &config.extra_headers {
+            for (k, v) in extra {
+                headers.insert(
+                    reqwest::header::HeaderName::from_bytes(k.as_bytes())
+                        .map_err(|e| AIError::Provider(format!("invalid header name: {e}")))?,
+                    reqwest::header::HeaderValue::from_str(v)
+                        .map_err(|e| AIError::Provider(format!("invalid header value: {e}")))?,
+                );
+            }
+        }
+
+        let client = reqwest::Client::builder()
+            .default_headers(headers)
+            .timeout(Duration::from_secs(config.timeout_seconds))
+            .build()
+            .map_err(|e| AIError::Network(e.to_string()))?;
+
+        Ok(Self { config, client })
+    }
+
+    fn base_url(&self) -> String {
+        if self.config.base_url.is_empty() {
+            DEFAULT_BASE_URL.to_string()
+        } else {
+            self.config.base_url.trim_end_matches('/').to_string()
+        }
+    }
+
+    fn validate_model(&self) -> Result<(), AIError> {
+        if self.config.model.is_empty() {
+            return Err(AIError::InvalidModel("model is empty".to_string()));
+        }
+        Ok(())
+    }
+}
+
+impl AIProvider for OpenAIProvider {
+    fn name(&self) -> &'static str {
+        "openai"
+    }
+
+    fn config(&self) -> &ProviderConfig {
+        &self.config
+    }
+
+    fn models(&self) -> Vec<ModelInfo> {
+        MODELS
+            .iter()
+            .map(|(id, name, ctx, stream, vision)| ModelInfo {
+                id: id.to_string(),
+                name: name.to_string(),
+                context_window: *ctx,
+                supports_streaming: *stream,
+                supports_vision: *vision,
+            })
+            .collect()
+    }
+
+    fn complete(
+        &self,
+        req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<CompletionResponse, AIError>> {
+        Box::pin(async move {
+            self.validate_model()?;
+
+            let body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
+            let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
+
+            let response = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| map_reqwest_error(e))?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_openai_error(status, &text));
+            }
+
+            let openai_resp: OpenAIResponse = response
+                .json()
+                .await
+                .map_err(|e| AIError::Serialization(e.to_string()))?;
+
+            let choice = openai_resp
+                .choices
+                .into_iter()
+                .next()
+                .ok_or_else(|| AIError::Provider("no choices in response".to_string()))?;
+
+            Ok(CompletionResponse {
+                content: choice.message.content.unwrap_or_default(),
+                model: openai_resp.model,
+                usage: openai_resp.usage.map(|u| Usage {
+                    prompt_tokens: u.prompt_tokens,
+                    completion_tokens: u.completion_tokens,
+                    total_tokens: u.total_tokens,
+                }),
+            })
+        })
+    }
+
+    fn stream(
+        &self,
+        req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<Vec<CompletionChunk>, AIError>> {
+        Box::pin(async move {
+            self.validate_model()?;
+
+            let mut body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
+            body.stream = Some(true);
+
+            let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
+
+            let response = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| map_reqwest_error(e))?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_openai_error(status, &text));
+            }
+
+            let bytes = response
+                .bytes()
+                .await
+                .map_err(|e| AIError::Network(e.to_string()))?;
+            let text = String::from_utf8_lossy(&bytes);
+
+            let mut chunks = Vec::new();
+            for line in text.lines() {
+                let line = line.trim();
+                if line.is_empty() || line == "data: [DONE]" {
+                    continue;
+                }
+                if let Some(data) = line.strip_prefix("data: ") {
+                    let event: OpenAIStreamEvent = serde_json::from_str(data)
+                        .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
+
+                    if let Some(choice) = event.choices.into_iter().next() {
+                        if let Some(content) = choice.delta.content {
+                            chunks.push(CompletionChunk {
+                                content,
+                                finish_reason: choice.finish_reason,
+                            });
+                        }
+                    }
+                }
+            }
+
+            Ok(chunks)
+        })
+    }
+}
+
+fn map_reqwest_error(err: reqwest::Error) -> AIError {
+    if err.is_timeout() {
+        AIError::RequestTimeout
+    } else if err.is_connect() {
+        AIError::Network(format!("connection failed: {err}"))
+    } else {
+        AIError::Network(err.to_string())
+    }
+}
+
+fn map_openai_error(status: reqwest::StatusCode, body: &str) -> AIError {
+    if status == reqwest::StatusCode::UNAUTHORIZED {
+        return AIError::InvalidApiKey;
+    }
+    if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        let retry_after = None;
+        return AIError::RateLimited { retry_after };
+    }
+    AIError::Provider(format!("HTTP {status}: {body}"))
+}
+
+#[derive(Debug, Serialize)]
+struct OpenAIRequestBody {
+    model: String,
+    messages: Vec<OpenAIMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stream: Option<bool>,
+}
+
+impl OpenAIRequestBody {
+    fn from_completion_request(model: &str, req: CompletionRequest) -> Self {
+        Self {
+            model: model.to_string(),
+            messages: req.messages.into_iter().map(Into::into).collect(),
+            temperature: req.temperature,
+            max_tokens: req.max_tokens,
+            stream: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct OpenAIMessage {
+    role: String,
+    content: String,
+}
+
+impl From<Message> for OpenAIMessage {
+    fn from(msg: Message) -> Self {
+        Self {
+            role: match msg.role {
+                Role::System => "system",
+                Role::User => "user",
+                Role::Assistant => "assistant",
+            }
+            .to_string(),
+            content: msg.content,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIResponse {
+    model: String,
+    choices: Vec<OpenAIChoice>,
+    usage: Option<OpenAIUsage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIChoice {
+    message: OpenAIResponseMessage,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIResponseMessage {
+    content: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIUsage {
+    prompt_tokens: u32,
+    completion_tokens: u32,
+    total_tokens: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIStreamEvent {
+    choices: Vec<OpenAIStreamChoice>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIStreamChoice {
+    delta: OpenAIStreamDelta,
+    finish_reason: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIStreamDelta {
+    content: Option<String>,
+}

@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
 export type AIProvider = "openai" | "anthropic" | "ollama" | "deepseek" | "kimi" | "custom";
@@ -46,6 +47,9 @@ interface AIActions {
   setActiveChatSession: (sessionId: string | null) => void;
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
   setApiKeyRef: (provider: AIProvider, ref: string | null) => void;
+  storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
+  loadKeyStatus: (provider: AIProvider) => Promise<void>;
+  deleteApiKey: (provider: AIProvider) => Promise<void>;
 }
 
 const defaultProviders: Record<AIProvider, ProviderConfig> = {
@@ -137,6 +141,27 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
     const { apiKeyRefs } = get();
     set({
       apiKeyRefs: { ...apiKeyRefs, [provider]: ref },
+    });
+  },
+
+  storeApiKey: async (provider, key) => {
+    await invoke("ai_store_key", { req: { provider, key } });
+    await get().loadKeyStatus(provider);
+  },
+
+  loadKeyStatus: async (provider) => {
+    const status = await invoke<{ has_key: boolean; masked: string }>("ai_key_status", {
+      req: { provider },
+    });
+    set({
+      apiKeyRefs: { ...get().apiKeyRefs, [provider]: status.has_key ? status.masked : null },
+    });
+  },
+
+  deleteApiKey: async (provider) => {
+    await invoke("ai_delete_key", { req: { provider } });
+    set({
+      apiKeyRefs: { ...get().apiKeyRefs, [provider]: null },
     });
   },
 }));
