@@ -10,6 +10,7 @@
     "prepare": "vp config"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.199",
     "@base-ui/react": "^1.5.0",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-angular": "^0.1.4",
@@ -47,6 +48,7 @@
     "@uiw/react-codemirror": "^4.25.10",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
+    "ai": "^6.0.197",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

@@ -1,9 +1,11 @@
 import { useCallback, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { FloppyDisk, FolderOpen, Minus, Square, X } from "@phosphor-icons/react";
+import { FloppyDisk, FolderOpen, Minus, Robot, Square, X } from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useSaveFile } from "@/hooks/useSaveFile";
 import { useEditorStore } from "@/stores/editor";
+import { useLayoutStore } from "@/modules/layout";
 import { RunConfigWidget } from "@/components/run-config";
 
 export function Titlebar() {
@@ -15,6 +17,7 @@ export function Titlebar() {
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const canSave = activeTab?.kind === "file" ? activeTab.isModified : false;
+  const { aiPanelOpen, toggleAIPanel } = useLayoutStore();
 
   useEffect(() => {
     const unlisten = win.onResized(() => {
@@ -68,6 +71,21 @@ export function Titlebar() {
 
         <div className="mx-1 h-4 w-px bg-border" />
         <RunConfigWidget />
+
+        <button
+          type="button"
+          onClick={toggleAIPanel}
+          className={cn(
+            "flex h-6 items-center gap-1.5 rounded px-2 text-xs transition-colors",
+            aiPanelOpen
+              ? "bg-primary/15 text-primary"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          )}
+          title="Toggle AI Chat (Ctrl+Shift+A)"
+        >
+          <Robot size={14} />
+          <span>AI</span>
+        </button>
       </div>
 
       <div className="flex-1" data-tauri-drag-region />

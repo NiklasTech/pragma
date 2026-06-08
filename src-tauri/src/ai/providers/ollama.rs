@@ -13,7 +13,6 @@ use crate::ai::{
 
 const DEFAULT_BASE_URL: &str = "http://localhost:11434";
 const CHAT_PATH: &str = "/api/chat";
-const TAGS_PATH: &str = "/api/tags";
 
 pub struct OllamaProvider {
     config: ProviderConfig,
@@ -45,8 +44,9 @@ impl OllamaProvider {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn fetch_models(&self) -> Result<Vec<ModelInfo>, AIError> {
-        let url = format!("{}{}", self.base_url(), TAGS_PATH);
+        let url = format!("{}/api/tags", self.base_url());
 
         let response = self
             .client
@@ -59,17 +59,20 @@ impl OllamaProvider {
             return Ok(Vec::new());
         }
 
-        let tags: OllamaTagsResponse = response
+        let tags: serde_json::Value = response
             .json()
             .await
             .map_err(|e| AIError::Serialization(e.to_string()))?;
 
         Ok(tags
-            .models
-            .into_iter()
-            .map(|m| ModelInfo {
-                id: m.name.clone(),
-                name: m.name,
+            .get("models")
+            .and_then(|m| m.as_array())
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|m| m.get("name").and_then(|n| n.as_str()))
+            .map(|name| ModelInfo {
+                id: name.to_string(),
+                name: name.to_string(),
                 context_window: None,
                 supports_streaming: true,
                 supports_vision: false,
@@ -274,17 +277,8 @@ struct OllamaResponse {
 
 #[derive(Debug, Deserialize)]
 struct OllamaStreamEvent {
+    #[allow(dead_code)]
     model: String,
     message: OllamaMessage,
     done: bool,
-}
-
-#[derive(Debug, Deserialize)]
-struct OllamaTagsResponse {
-    models: Vec<OllamaModelTag>,
-}
-
-#[derive(Debug, Deserialize)]
-struct OllamaModelTag {
-    name: String,
 }
