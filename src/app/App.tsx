@@ -5,10 +5,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useSaveFile } from "@/hooks/useSaveFile";
 import { useLayoutStore } from "@/modules/layout";
+import { useAIInit } from "@/hooks/useAIInit";
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 export default function App() {
+  useAIInit();
+
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
 

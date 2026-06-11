@@ -226,12 +226,16 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   },
 
   loadCLIStatuses: async () => {
-    const statuses = await invoke<CLIStatus[]>("cli_check_all_statuses");
-    const map: Record<string, CLIStatus> = {};
-    for (const s of statuses) {
-      map[s.provider_id] = s;
+    try {
+      const statuses = await invoke<CLIStatus[]>("cli_check_all_statuses");
+      const map: Record<string, CLIStatus> = {};
+      for (const s of statuses) {
+        map[s.provider_id] = s;
+      }
+      set({ cliStatuses: map });
+    } catch (e) {
+      console.error("[CLI Statuses Error]", e);
     }
-    set({ cliStatuses: map });
   },
 
   installCLI: async (providerId) => {
