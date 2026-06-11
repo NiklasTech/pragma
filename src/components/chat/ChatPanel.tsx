@@ -1,10 +1,11 @@
 import { useRef, useEffect, useCallback } from "react";
-import { PaperPlaneRight, Warning, Terminal } from "@phosphor-icons/react";
+import { PaperPlaneRight, Warning, Terminal, Plus, ChatTeardropText } from "@phosphor-icons/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useAI } from "@/hooks/useAI";
 import { useAIStore } from "@/stores/ai";
 import { ChatMessage } from "./ChatMessage";
+import { ChatSessionList } from "./ChatSessionList";
 import type { UIMessage } from "@ai-sdk/react";
 
 export function ChatPanel() {
@@ -17,12 +18,16 @@ export function ChatPanel() {
     canChat,
     isCLIActive,
     activeCLIProvider,
+    sessionId,
+    createChatSession,
   } = useAI();
-  const { cliStatuses } = useAIStore();
+  const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
+  const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
 
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector("[data-slot='scroll-area-viewport']");
     if (viewport) {
@@ -42,8 +47,36 @@ export function ChatPanel() {
     [input, isLoading, handleSubmit],
   );
 
+  const handleNewSession = useCallback(() => {
+    createChatSession();
+  }, [createChatSession]);
+
   return (
     <div className="flex h-full flex-col">
+      {/* Session Header */}
+      <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b border-border/40">
+        <div className="flex items-center gap-2 min-w-0">
+          <ChatTeardropText size={14} className="text-muted-foreground shrink-0" />
+          <span className="text-xs text-muted-foreground truncate">
+            {activeSession?.title ?? "Chat"}
+          </span>
+          <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0">
+            {sessionId.slice(0, 12)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <ChatSessionList />
+          <button
+            onClick={handleNewSession}
+            className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            title="New Session"
+          >
+            <Plus size={14} weight="bold" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
       <div className="flex-1 min-h-0">
         <ScrollArea ref={scrollRef} className="h-full">
           <div className="flex flex-col gap-4 p-4">
@@ -85,6 +118,7 @@ export function ChatPanel() {
         </ScrollArea>
       </div>
 
+      {/* Input Area */}
       <div className="shrink-0 border-t border-border/60 p-3">
         {/* Status Banner */}
         {isCLIActive && cliStatus && (

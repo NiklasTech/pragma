@@ -124,13 +124,22 @@ function createCLITransport(providerId: string): ChatTransport<UIMessage> {
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useAI() {
-  const { activeProvider, activeModel, providers, activeCLIProvider, apiKeyRefs } = useAIStore();
+  const {
+    activeProvider,
+    activeModel,
+    providers,
+    activeCLIProvider,
+    apiKeyRefs,
+    activeChatSessionId,
+    createChatSession,
+  } = useAIStore();
 
   const providerConfig = providers[activeProvider];
   const hasAPIKey = apiKeyRefs[activeProvider] !== null;
   const isCLIActive = activeCLIProvider !== null;
 
-  const [input, setInput] = useState("");
+  // Ensure a session exists
+  const sessionId = activeChatSessionId ?? "default";
 
   // Determine which transport to use
   const transport = useMemo<ChatTransport<UIMessage>>(() => {
@@ -138,7 +147,6 @@ export function useAI() {
       return createCLITransport(activeCLIProvider);
     }
 
-    // API provider with custom fetch
     const fetcher = createAPIFetch(activeProvider, activeModel, providerConfig.baseUrl);
 
     return {
@@ -181,8 +189,11 @@ export function useAI() {
   }, [isCLIActive, activeCLIProvider, activeProvider, activeModel, providerConfig.baseUrl]);
 
   const chat = useChat({
+    id: sessionId,
     transport,
   });
+
+  const [input, setInput] = useState("");
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -213,5 +224,7 @@ export function useAI() {
     canChat,
     isCLIActive,
     activeCLIProvider,
+    sessionId,
+    createChatSession,
   };
 }

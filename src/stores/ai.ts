@@ -71,6 +71,7 @@ interface AIActions {
   removeChatSession: (sessionId: string) => void;
   setActiveChatSession: (sessionId: string | null) => void;
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
+  createChatSession: () => ChatSession;
   setApiKeyRef: (provider: AIProvider, ref: string | null) => void;
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
   loadKeyStatus: (provider: AIProvider) => Promise<void>;
@@ -171,6 +172,22 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
           : s,
       ),
     });
+  },
+
+  createChatSession: () => {
+    const session: ChatSession = {
+      id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      title: "New Chat",
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const { chatSessions } = get();
+    set({
+      chatSessions: [...chatSessions, session],
+      activeChatSessionId: session.id,
+    });
+    return session;
   },
 
   setApiKeyRef: (provider, ref) => {
