@@ -1,8 +1,10 @@
+use std::env;
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::time::timeout;
 
@@ -45,6 +47,51 @@ pub struct CLIChunk {
 
 pub struct CLIManager;
 
+/// Returns a modified PATH that includes common user bin directories.
+/// This ensures CLIs installed via npm global, pipx, uv, cargo, etc.
+/// are discoverable even when the app is launched from a desktop environment
+/// with a restricted PATH.
+fn enriched_path() -> String {
+    let current = env::var("PATH").unwrap_or_default();
+    let home = env::var("HOME").unwrap_or_default();
+
+    let mut extra: Vec<PathBuf> = Vec::new();
+
+    if !home.is_empty() {
+        // npm global (default)
+        extra.push(PathBuf::from(&home).join(".local/bin"));
+        // npm global (legacy)
+        extra.push(PathBuf::from(&home).join(".npm-global/bin"));
+        // cargo
+        extra.push(PathBuf::from(&home).join(".cargo/bin"));
+        // pipx / uv tools
+        extra.push(PathBuf::from(&home).join(".local/share/uv/tools"));
+        extra.push(PathBuf::from(&home).join(".local/pipx/venvs"));
+        // pnpm
+        extra.push(PathBuf::from(&home).join(".pnpm-global"));
+        // fnm / nvm
+        extra.push(PathBuf::from(&home).join(".fnm"));
+        extra.push(PathBuf::from(&home).join(".nvm/versions/node"));
+        // Homebrew (macOS + Linux)
+        extra.push(PathBuf::from("/opt/homebrew/bin"));
+        extra.push(PathBuf::from("/usr/local/bin"));
+    }
+
+    // Flatten and join extra paths that actually exist
+    let extra_str = extra
+        .into_iter()
+        .filter(|p| p.exists())
+        .map(|p| p.to_string_lossy().to_string())
+        .collect::<Vec<_>>()
+        .join(":");
+
+    if extra_str.is_empty() {
+        current
+    } else {
+        format!("{}:{}", extra_str, current)
+    }
+}
+
 impl CLIManager {
     pub fn new() -> Self {
         Self
@@ -79,6 +126,10 @@ impl CLIManager {
                         status.error = Some(e.to_string());
                     }
                 }
+            } else {
+                // No explicit auth check command — assume authenticated if installed.
+                // The user will discover auth issues when they actually try to chat.
+                status.authenticated = true;
             }
         }
 
@@ -86,18 +137,41 @@ impl CLIManager {
     }
 
     pub async fn check_all_statuses(&self) -> Vec<CLIStatus> {
+        let manifests = super::manifest::built_in_manifests();
+        let mut handles = Vec::new();
+
+        for manifest in manifests {
+            let id = manifest.id.clone();
+            // Spawn each check in its own task so they run in parallel
+            let handle = tokio::spawn(async move {
+                let manager = CLIManager::new();
+                match timeout(Duration::from_secs(10), manager.check_status(&id)).await {
+                    Ok(Ok(status)) => status,
+                    Ok(Err(e)) => CLIStatus {
+                        provider_id: id,
+                        installed: false,
+                        version: None,
+                        authenticated: false,
+                        user: None,
+                        error: Some(e.to_string()),
+                    },
+                    Err(_) => CLIStatus {
+                        provider_id: id,
+                        installed: false,
+                        version: None,
+                        authenticated: false,
+                        user: None,
+                        error: Some("status check timed out".to_string()),
+                    },
+                }
+            });
+            handles.push(handle);
+        }
+
         let mut results = Vec::new();
-        for manifest in super::manifest::built_in_manifests() {
-            match self.check_status(&manifest.id).await {
-                Ok(status) => results.push(status),
-                Err(e) => results.push(CLIStatus {
-                    provider_id: manifest.id,
-                    installed: false,
-                    version: None,
-                    authenticated: false,
-                    user: None,
-                    error: Some(e.to_string()),
-                }),
+        for handle in handles {
+            if let Ok(status) = handle.await {
+                results.push(status);
             }
         }
         results
@@ -119,7 +193,9 @@ impl CLIManager {
         let mut cmd = Command::new(&parts[0]);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .env("PATH", enriched_path())
+            .envs(env::vars());
 
         let output = cmd
             .output()
@@ -152,7 +228,8 @@ impl CLIManager {
         let mut cmd = Command::new(&parts[0]);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .env("PATH", enriched_path());
 
         // Set up environment if specified
         if let Some(env_vars) = &manifest.env {
@@ -195,7 +272,9 @@ impl CLIManager {
         let mut cmd = Command::new(&parts[0]);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .env("PATH", enriched_path())
+            .envs(env::vars());
 
         let output = cmd
             .output()
@@ -223,9 +302,10 @@ impl CLIManager {
 
         let chat_cmd = build_chat_command(&manifest, &req);
         let output_format = manifest.output_format.clone();
+        let prompt = build_prompt(&req);
 
         tokio::spawn(async move {
-            if let Err(e) = run_chat_process(chat_cmd, output_format, tx).await {
+            if let Err(e) = run_chat_process(chat_cmd, output_format, prompt, tx).await {
                 tracing::error!("CLI chat error: {e}");
             }
         });
@@ -247,6 +327,8 @@ impl CLIManager {
             .args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .env("PATH", enriched_path())
+            .envs(env::vars())
             .output()
             .await
             .map_err(|e| AIError::Provider(format!("check failed: {e}")))?;
@@ -275,6 +357,8 @@ impl CLIManager {
             .args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .env("PATH", enriched_path())
+            .envs(env::vars())
             .output()
             .await
             .map_err(|e| AIError::Provider(format!("auth check failed: {e}")))?;
@@ -299,20 +383,19 @@ impl CLIManager {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-fn build_chat_command(manifest: &CLIManifest, req: &CLIChatRequest) -> Vec<String> {
-    let mut cmd = shellwords::split(&manifest.chat_cmd).unwrap_or_default();
-
-    // Build prompt from messages
-    let prompt = req
-        .messages
+fn build_prompt(req: &CLIChatRequest) -> String {
+    req.messages
         .iter()
         .map(|m| format!("{}: {}", m.role, m.content))
         .collect::<Vec<_>>()
-        .join("\n\n");
+        .join("\n\n")
+}
+
+fn build_chat_command(manifest: &CLIManifest, req: &CLIChatRequest) -> Vec<String> {
+    let mut cmd = shellwords::split(&manifest.chat_cmd).unwrap_or_default();
 
     // Replace placeholders in chat_cmd
     let cmd_str = cmd.join(" ");
-    let cmd_str = cmd_str.replace("{prompt}", &prompt);
     let cmd_str = cmd_str.replace("{cwd}", &req.cwd.clone().unwrap_or_else(|| ".".to_string()));
     let cmd_str = cmd_str.replace("{session_id}", &req.session_id.clone().unwrap_or_default());
 
@@ -323,6 +406,7 @@ fn build_chat_command(manifest: &CLIManifest, req: &CLIChatRequest) -> Vec<Strin
 async fn run_chat_process(
     cmd_parts: Vec<String>,
     output_format: OutputFormat,
+    prompt: String,
     tx: tokio::sync::mpsc::Sender<CLIChunk>,
 ) -> Result<(), AIError> {
     if cmd_parts.is_empty() {
@@ -334,8 +418,20 @@ async fn run_chat_process(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .stdin(Stdio::piped())
+        .env("PATH", enriched_path())
+        .envs(env::vars())
         .spawn()
         .map_err(|e| AIError::Provider(format!("failed to spawn chat: {e}")))?;
+
+    // Write the conversation prompt to stdin and close it
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(prompt.as_bytes())
+            .await
+            .map_err(|e| AIError::Provider(format!("failed to write prompt: {e}")))?;
+        // Close stdin to signal EOF to the child process
+        drop(stdin);
+    }
 
     let stdout = child
         .stdout
@@ -375,8 +471,6 @@ async fn run_chat_process(
 
 fn parse_json_chunk(line: &str) -> CLIChunk {
     // Try to parse as JSON and extract text content
-    // This is a simplified parser — real implementation would handle
-    // the specific JSON schemas of each CLI
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(line) {
         // Try common fields
         if let Some(text) = value.get("content").and_then(|v| v.as_str()) {
@@ -384,6 +478,22 @@ fn parse_json_chunk(line: &str) -> CLIChunk {
                 text: text.to_string(),
                 done: false,
             };
+        }
+        // Kimi Code CLI returns content as an array of blocks:
+        // [{"type":"think","think":"..."}, {"type":"text","text":"..."}]
+        if let Some(content) = value.get("content").and_then(|v| v.as_array()) {
+            let mut text_parts = Vec::new();
+            for block in content {
+                if let Some(text) = block.get("text").and_then(|v| v.as_str()) {
+                    text_parts.push(text.to_string());
+                }
+            }
+            if !text_parts.is_empty() {
+                return CLIChunk {
+                    text: text_parts.join(""),
+                    done: false,
+                };
+            }
         }
         if let Some(text) = value.get("text").and_then(|v| v.as_str()) {
             return CLIChunk {

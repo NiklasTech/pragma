@@ -71,6 +71,7 @@ interface AIActions {
   removeChatSession: (sessionId: string) => void;
   setActiveChatSession: (sessionId: string | null) => void;
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
+  createChatSession: () => ChatSession;
   setApiKeyRef: (provider: AIProvider, ref: string | null) => void;
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
   loadKeyStatus: (provider: AIProvider) => Promise<void>;
@@ -173,6 +174,22 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
     });
   },
 
+  createChatSession: () => {
+    const session: ChatSession = {
+      id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      title: "New Chat",
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const { chatSessions } = get();
+    set({
+      chatSessions: [...chatSessions, session],
+      activeChatSessionId: session.id,
+    });
+    return session;
+  },
+
   setApiKeyRef: (provider, ref) => {
     const { apiKeyRefs } = get();
     set({
@@ -209,12 +226,16 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   },
 
   loadCLIStatuses: async () => {
-    const statuses = await invoke<CLIStatus[]>("cli_check_all_statuses");
-    const map: Record<string, CLIStatus> = {};
-    for (const s of statuses) {
-      map[s.provider_id] = s;
+    try {
+      const statuses = await invoke<CLIStatus[]>("cli_check_all_statuses");
+      const map: Record<string, CLIStatus> = {};
+      for (const s of statuses) {
+        map[s.provider_id] = s;
+      }
+      set({ cliStatuses: map });
+    } catch (e) {
+      console.error("[CLI Statuses Error]", e);
     }
-    set({ cliStatuses: map });
   },
 
   installCLI: async (providerId) => {

@@ -26,7 +26,7 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
 
       <div
         className={cn(
-          "max-w-[85%] rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed",
+          "max-w-[85%] rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap",
           isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
         )}
       >

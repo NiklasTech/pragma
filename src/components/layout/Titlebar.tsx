@@ -1,15 +1,18 @@
 import { useCallback, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { FloppyDisk, FolderOpen, Minus, Robot, Square, X } from "@phosphor-icons/react";
+import { FloppyDisk, FolderOpen, Gear, Minus, Robot, Square, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useOpenFile } from "@/hooks/useOpenFile";
 import { useSaveFile } from "@/hooks/useSaveFile";
 import { useEditorStore } from "@/stores/editor";
 import { useLayoutStore } from "@/modules/layout";
 import { RunConfigWidget } from "@/components/run-config";
+import { AISettings } from "@/components/settings/AISettings";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export function Titlebar() {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const win = getCurrentWindow();
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
@@ -86,6 +89,29 @@ export function Titlebar() {
           <Robot size={14} />
           <span>AI</span>
         </button>
+
+        <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <SheetTrigger
+            className={cn(
+              "flex h-6 items-center gap-1.5 rounded px-2 text-xs transition-colors",
+              settingsOpen
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+            title="Settings"
+          >
+            <Gear size={14} />
+            <span>Settings</span>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Settings</SheetTitle>
+            </SheetHeader>
+            <div className="py-4">
+              <AISettings />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="flex-1" data-tauri-drag-region />
