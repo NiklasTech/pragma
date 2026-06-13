@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::ai::{
@@ -274,6 +275,125 @@ impl AIProvider for AnthropicProvider {
             }
 
             Ok(chunks)
+        })
+    }
+
+    fn stream_chunks(
+        &self,
+        req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<tokio::sync::mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>
+    {
+        Box::pin(async move {
+            self.validate_model()?;
+
+            let (system, messages, temperature, max_tokens) = self.split_messages(req.messages);
+            let mut body = AnthropicRequestBody::from_completion_request(
+                &self.config.model,
+                system,
+                messages,
+                temperature,
+                max_tokens,
+            );
+            body.stream = true;
+
+            let url = format!("{}{}", self.base_url(), MESSAGES_PATH);
+
+            let response = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| map_reqwest_error(e))?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_anthropic_error(status, &text));
+            }
+
+            let (tx, rx) = tokio::sync::mpsc::channel::<Result<CompletionChunk, AIError>>(64);
+            let mut stream = response.bytes_stream();
+
+            tokio::spawn(async move {
+                let mut buffer = String::new();
+                let mut event_data: Vec<String> = Vec::new();
+
+                while let Some(result) = stream.next().await {
+                    match result {
+                        Ok(bytes) => {
+                            buffer.push_str(&String::from_utf8_lossy(&bytes));
+
+                            while let Some(pos) = buffer.find('\n') {
+                                let line = buffer.drain(..=pos).collect::<String>();
+                                let line = line.trim_end_matches('\n').trim_end_matches('\r');
+
+                                if line.is_empty() {
+                                    for data_line in &event_data {
+                                        if let Some(data) = data_line.strip_prefix("data: ") {
+                                            if data == "[DONE]" {
+                                                continue;
+                                            }
+
+                                            match serde_json::from_str::<AnthropicStreamEvent>(data)
+                                            {
+                                                Ok(event) => match event {
+                                                    AnthropicStreamEvent::ContentBlockDelta {
+                                                        delta,
+                                                    } => {
+                                                        let AnthropicDelta::TextDelta { text } =
+                                                            delta;
+                                                        if !text.is_empty() {
+                                                            let _ = tx
+                                                                .send(Ok(CompletionChunk {
+                                                                    content: text,
+                                                                    finish_reason: None,
+                                                                }))
+                                                                .await;
+                                                        }
+                                                    }
+                                                    AnthropicStreamEvent::MessageDelta {
+                                                        usage,
+                                                        ..
+                                                    } => {
+                                                        if usage.is_some() {
+                                                            let _ = tx
+                                                                .send(Ok(CompletionChunk {
+                                                                    content: String::new(),
+                                                                    finish_reason: Some(
+                                                                        "stop".to_string(),
+                                                                    ),
+                                                                }))
+                                                                .await;
+                                                        }
+                                                    }
+                                                    _ => {}
+                                                },
+                                                Err(e) => {
+                                                    let _ = tx
+                                                        .send(Err(AIError::Stream(format!(
+                                                            "invalid sse event: {e}"
+                                                        ))))
+                                                        .await;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    event_data.clear();
+                                } else if let Some(data) = line.strip_prefix("data: ") {
+                                    event_data.push(data.to_string());
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            let _ = tx.send(Err(map_reqwest_error(e))).await;
+                            break;
+                        }
+                    }
+                }
+            });
+
+            Ok(rx)
         })
     }
 }

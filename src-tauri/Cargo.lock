@@ -81,6 +81,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "diffy",
+ "futures-util",
  "keyring",
  "libc",
  "log",

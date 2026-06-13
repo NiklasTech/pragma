@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::ai::{
@@ -203,6 +204,89 @@ impl AIProvider for OllamaProvider {
             }
 
             Ok(chunks)
+        })
+    }
+
+    fn stream_chunks(
+        &self,
+        req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<tokio::sync::mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>
+    {
+        Box::pin(async move {
+            self.validate_model()?;
+
+            let mut body = OllamaRequestBody::from_completion_request(&self.config.model, req);
+            body.stream = true;
+
+            let url = format!("{}{}", self.base_url(), CHAT_PATH);
+
+            let response = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| map_reqwest_error(e))?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_ollama_error(status, &text));
+            }
+
+            let (tx, rx) = tokio::sync::mpsc::channel::<Result<CompletionChunk, AIError>>(64);
+            let mut stream = response.bytes_stream();
+
+            tokio::spawn(async move {
+                let mut buffer = String::new();
+
+                while let Some(result) = stream.next().await {
+                    match result {
+                        Ok(bytes) => {
+                            buffer.push_str(&String::from_utf8_lossy(&bytes));
+
+                            while let Some(pos) = buffer.find('\n') {
+                                let line = buffer.drain(..=pos).collect::<String>();
+                                let line = line.trim();
+
+                                if line.is_empty() {
+                                    continue;
+                                }
+
+                                match serde_json::from_str::<OllamaStreamEvent>(line) {
+                                    Ok(event) => {
+                                        if !event.message.content.is_empty() {
+                                            let _ = tx
+                                                .send(Ok(CompletionChunk {
+                                                    content: event.message.content,
+                                                    finish_reason: if event.done {
+                                                        Some("stop".to_string())
+                                                    } else {
+                                                        None
+                                                    },
+                                                }))
+                                                .await;
+                                        }
+                                    }
+                                    Err(e) => {
+                                        let _ = tx
+                                            .send(Err(AIError::Stream(format!(
+                                                "invalid stream event: {e}"
+                                            ))))
+                                            .await;
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            let _ = tx.send(Err(map_reqwest_error(e))).await;
+                            break;
+                        }
+                    }
+                }
+            });
+
+            Ok(rx)
         })
     }
 }

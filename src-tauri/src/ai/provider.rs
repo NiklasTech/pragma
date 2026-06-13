@@ -2,6 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 
 use super::config::ProviderConfig;
 use super::error::AIError;
@@ -101,4 +102,11 @@ pub trait AIProvider: Send + Sync {
         &self,
         req: CompletionRequest,
     ) -> BoxFuture<'_, Result<Vec<CompletionChunk>, AIError>>;
+
+    /// Stream completion chunks in real-time. The returned receiver yields
+    /// either a chunk or an error. It closes once the stream is finished.
+    fn stream_chunks(
+        &self,
+        req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>;
 }

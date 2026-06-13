@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use tauri::ipc::Channel;
 
 use crate::ai::cli::{built_in_manifests, CLIChatMessage, CLIChatRequest, CLIManager, CLIStatus};
+use crate::commands::ai::StreamChunk;
 
 // ─── Request / Response Types ────────────────────────────────────────────────
 
@@ -127,4 +129,53 @@ pub async fn cli_chat(req: CLIChatCommandRequest) -> Result<String, String> {
     }
 
     Ok(full_text)
+}
+
+#[tauri::command]
+pub async fn cli_chat_stream(
+    req: CLIChatCommandRequest,
+    channel: Channel<StreamChunk>,
+) -> Result<(), String> {
+    if req.provider_id.is_empty() {
+        return Err("provider_id is required".to_string());
+    }
+    if req.messages.is_empty() {
+        return Err("messages are required".to_string());
+    }
+
+    let manager = CLIManager::new();
+    let chat_req = CLIChatRequest {
+        provider_id: req.provider_id,
+        messages: req.messages,
+        session_id: req.session_id,
+        cwd: None,
+    };
+
+    let mut rx = manager.chat(chat_req).await.map_err(|e| e.to_string())?;
+
+    while let Some(chunk) = rx.recv().await {
+        let done = chunk.done;
+        let text = if chunk.text.is_empty() && !done {
+            None
+        } else {
+            Some(chunk.text)
+        };
+
+        if channel
+            .send(StreamChunk {
+                text,
+                error: None,
+                done,
+            })
+            .is_err()
+        {
+            break;
+        }
+
+        if done {
+            break;
+        }
+    }
+
+    Ok(())
 }
