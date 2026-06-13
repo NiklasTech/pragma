@@ -1,12 +1,24 @@
 import { useRef, useEffect, useCallback } from "react";
-import { PaperPlaneRight, Warning, Terminal, Plus, ChatTeardropText } from "@phosphor-icons/react";
+import {
+  PaperPlaneRight,
+  Warning,
+  Terminal,
+  Plus,
+  ChatTeardropText,
+  Stop,
+  Robot,
+  ArrowCounterClockwise,
+} from "@phosphor-icons/react";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useAI } from "@/hooks/useAI";
 import { useAIStore } from "@/stores/ai";
+import type { UIMessage } from "@ai-sdk/react";
+
 import { ChatMessage } from "./ChatMessage";
 import { ChatSessionList } from "./ChatSessionList";
-import type { UIMessage } from "@ai-sdk/react";
+import { ChatTypingIndicator } from "./ChatTypingIndicator";
 
 export function ChatPanel() {
   const {
@@ -15,6 +27,10 @@ export function ChatPanel() {
     handleInputChange,
     handleSubmit,
     isLoading,
+    status,
+    error,
+    regenerate,
+    stop,
     canChat,
     isCLIActive,
     activeCLIProvider,
@@ -27,13 +43,12 @@ export function ChatPanel() {
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     const viewport = scrollRef.current?.querySelector("[data-slot='scroll-area-viewport']");
     if (viewport) {
       viewport.scrollTop = viewport.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, status]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -50,6 +65,10 @@ export function ChatPanel() {
   const handleNewSession = useCallback(() => {
     createChatSession();
   }, [createChatSession]);
+
+  const handleRetry = useCallback(() => {
+    void regenerate();
+  }, [regenerate]);
 
   return (
     <div className="flex h-full flex-col">
@@ -96,21 +115,30 @@ export function ChatPanel() {
               </div>
             )}
 
-            {messages.map((msg: UIMessage) => {
+            {messages.map((msg: UIMessage, index: number) => {
               const text = msg.parts
                 .filter((p) => p.type === "text")
                 .map((p) => (p as { text: string }).text)
                 .join("");
-              return <ChatMessage key={msg.id} role={msg.role} content={text} />;
+              const isStreaming =
+                status === "streaming" && index === messages.length - 1 && msg.role === "assistant";
+              return (
+                <ChatMessage
+                  key={msg.id}
+                  role={msg.role}
+                  content={text}
+                  isStreaming={isStreaming}
+                />
+              );
             })}
 
-            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+            {status === "submitted" && (
               <div className="flex gap-3">
                 <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground" />
+                  <Robot size={14} className="text-muted-foreground" />
                 </div>
                 <div className="rounded-xl bg-muted px-3.5 py-2.5">
-                  <span className="text-[13px] text-muted-foreground">Thinking...</span>
+                  <ChatTypingIndicator />
                 </div>
               </div>
             )}
@@ -120,6 +148,25 @@ export function ChatPanel() {
 
       {/* Input Area */}
       <div className="shrink-0 border-t border-border/60 p-3">
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-2 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
+            <Warning size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">Something went wrong</p>
+              <p className="mt-0.5 break-words">{error.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-destructive/15"
+            >
+              <ArrowCounterClockwise size={12} weight="bold" />
+              <span>Retry</span>
+            </button>
+          </div>
+        )}
+
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
           <div className="mb-2 flex items-center gap-2 rounded-md bg-primary/10 px-3 py-2 text-[12px] text-primary">
@@ -152,13 +199,23 @@ export function ChatPanel() {
             className="min-h-[36px] resize-none py-2 text-[13px]"
             disabled={!canChat || isLoading}
           />
-          <button
-            type="submit"
-            disabled={!input.trim() || isLoading || !canChat}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
-          >
-            <PaperPlaneRight size={16} weight="bold" />
-          </button>
+          {status === "streaming" ? (
+            <button
+              type="button"
+              onClick={stop}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
+            >
+              <Stop size={16} weight="bold" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading || !canChat}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
+            >
+              <PaperPlaneRight size={16} weight="bold" />
+            </button>
+          )}
         </form>
       </div>
     </div>

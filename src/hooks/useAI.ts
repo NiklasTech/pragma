@@ -1,10 +1,11 @@
 import { useMemo, useCallback, useState } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import type { ChatTransport, UIMessageChunk } from "ai";
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
+
 import { useAIStore } from "@/stores/ai";
 
-// ─── API Provider Types ──────────────────────────────────────────────────────
+// ─── Request Types ───────────────────────────────────────────────────────────
 
 interface APIChatRequest {
   provider: string;
@@ -12,20 +13,6 @@ interface APIChatRequest {
   base_url?: string;
   messages: Array<{ role: string; content: string }>;
 }
-
-interface APIChatResponse {
-  id: string;
-  object: string;
-  created: number;
-  model: string;
-  choices: Array<{
-    index: number;
-    message: { role: string; content: string };
-    finish_reason: string;
-  }>;
-}
-
-// ─── CLI Types ───────────────────────────────────────────────────────────────
 
 interface CLIChatMessage {
   role: string;
@@ -38,79 +25,121 @@ interface CLIChatRequest {
   session_id?: string;
 }
 
+interface StreamChunk {
+  text?: string;
+  error?: string;
+  done?: boolean;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function getMessageText(msg: UIMessage): string {
+export function getMessageText(msg: UIMessage): string {
   return msg.parts
     .filter((p) => p.type === "text")
     .map((p) => (p as { text: string }).text)
     .join("");
 }
 
-// ─── API Transport ───────────────────────────────────────────────────────────
+// ─── Streaming Transport ─────────────────────────────────────────────────────
 
-function createAPIFetch(provider: string, model: string, baseUrl?: string): typeof fetch {
-  return async (_input: RequestInfo | URL, init?: RequestInit) => {
-    const body = JSON.parse((init?.body as string) ?? "{}") as {
-      messages: UIMessage[];
-    };
-
-    const req: APIChatRequest = {
-      provider,
-      model,
-      base_url: baseUrl,
-      messages: body.messages.map((m: UIMessage) => ({
-        role: m.role,
-        content: getMessageText(m),
-      })),
-    };
-
-    const result = await invoke<APIChatResponse>("ai_chat", { req });
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  };
-}
-
-// ─── CLI Transport ───────────────────────────────────────────────────────────
-
-function createCLITransport(providerId: string): ChatTransport<UIMessage> {
+function createStreamTransport(
+  activeProvider: string,
+  activeModel: string,
+  baseUrl: string | undefined,
+  isCLIActive: boolean,
+  activeCLIProvider: string | null,
+): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages }) {
-      const req: CLIChatRequest = {
-        provider_id: providerId,
-        messages: messages.map((m: UIMessage) => ({
-          role: m.role,
-          content: getMessageText(m),
-        })),
-        session_id: generateId(),
-      };
-
-      const result = await invoke<string>("cli_chat", { req });
       const chunkId = generateId();
 
-      const chunks: UIMessageChunk[] = [
-        { type: "text-start", id: chunkId },
-        { type: "text-delta", id: chunkId, delta: result },
-        { type: "text-end", id: chunkId },
-        { type: "finish", finishReason: "stop" },
-      ];
-
-      let index = 0;
       return new ReadableStream<UIMessageChunk>({
-        pull(controller) {
-          if (index < chunks.length) {
-            controller.enqueue(chunks[index]);
-            index++;
-          } else {
-            controller.close();
-          }
+        start(controller) {
+          let started = false;
+          let closed = false;
+
+          const safeEnqueue = (chunk: UIMessageChunk) => {
+            if (!closed) {
+              controller.enqueue(chunk);
+            }
+          };
+
+          const safeClose = () => {
+            if (!closed) {
+              closed = true;
+              controller.close();
+            }
+          };
+
+          const finish = () => {
+            safeEnqueue({ type: "text-end", id: chunkId });
+            safeEnqueue({ type: "finish", finishReason: "stop" });
+            safeClose();
+          };
+
+          const channel = new Channel<StreamChunk>();
+
+          channel.onmessage = (chunk) => {
+            if (!started) {
+              started = true;
+              safeEnqueue({ type: "text-start", id: chunkId });
+            }
+
+            if (chunk.error) {
+              safeEnqueue({ type: "error", errorText: chunk.error });
+              safeClose();
+              return;
+            }
+
+            if (chunk.text) {
+              safeEnqueue({ type: "text-delta", id: chunkId, delta: chunk.text });
+            }
+
+            if (chunk.done) {
+              finish();
+            }
+          };
+
+          const send = async () => {
+            try {
+              if (isCLIActive && activeCLIProvider) {
+                const req: CLIChatRequest = {
+                  provider_id: activeCLIProvider,
+                  messages: messages.map((m: UIMessage) => ({
+                    role: m.role,
+                    content: getMessageText(m),
+                  })),
+                  session_id: generateId(),
+                };
+                await invoke("cli_chat_stream", { req, channel });
+              } else {
+                const req: APIChatRequest = {
+                  provider: activeProvider,
+                  model: activeModel,
+                  base_url: baseUrl,
+                  messages: messages.map((m: UIMessage) => ({
+                    role: m.role,
+                    content: getMessageText(m),
+                  })),
+                };
+                await invoke("ai_chat_stream", { req, channel });
+              }
+
+              if (!started) {
+                safeEnqueue({ type: "text-start", id: chunkId });
+              }
+              finish();
+            } catch (err) {
+              safeEnqueue({ type: "error", errorText: String(err) });
+              safeClose();
+            }
+          };
+
+          void send();
         },
       });
     },
@@ -138,55 +167,19 @@ export function useAI() {
   const hasAPIKey = apiKeyRefs[activeProvider] !== null;
   const isCLIActive = activeCLIProvider !== null;
 
-  // Ensure a session exists
   const sessionId = activeChatSessionId ?? "default";
 
-  // Determine which transport to use
-  const transport = useMemo<ChatTransport<UIMessage>>(() => {
-    if (isCLIActive && activeCLIProvider) {
-      return createCLITransport(activeCLIProvider);
-    }
-
-    const fetcher = createAPIFetch(activeProvider, activeModel, providerConfig.baseUrl);
-
-    return {
-      async sendMessages({ messages }) {
-        const body = JSON.stringify({ messages });
-        const response = await fetcher("/api/chat", {
-          method: "POST",
-          body,
-          headers: { "Content-Type": "application/json" },
-        });
-
-        const data = (await response.json()) as APIChatResponse;
-        const content = data.choices[0]?.message.content ?? "";
-        const chunkId = generateId();
-
-        const chunks: UIMessageChunk[] = [
-          { type: "text-start", id: chunkId },
-          { type: "text-delta", id: chunkId, delta: content },
-          { type: "text-end", id: chunkId },
-          { type: "finish", finishReason: "stop" },
-        ];
-
-        let index = 0;
-        return new ReadableStream<UIMessageChunk>({
-          pull(controller) {
-            if (index < chunks.length) {
-              controller.enqueue(chunks[index]);
-              index++;
-            } else {
-              controller.close();
-            }
-          },
-        });
-      },
-
-      async reconnectToStream() {
-        return null;
-      },
-    };
-  }, [isCLIActive, activeCLIProvider, activeProvider, activeModel, providerConfig.baseUrl]);
+  const transport = useMemo<ChatTransport<UIMessage>>(
+    () =>
+      createStreamTransport(
+        activeProvider,
+        activeModel,
+        providerConfig.baseUrl,
+        isCLIActive,
+        activeCLIProvider,
+      ),
+    [activeProvider, activeModel, providerConfig.baseUrl, isCLIActive, activeCLIProvider],
+  );
 
   const chat = useChat({
     id: sessionId,
@@ -210,7 +203,6 @@ export function useAI() {
     [input, chat],
   );
 
-  // Determine if chat is available
   const canChat = isCLIActive || hasAPIKey || activeProvider === "ollama";
 
   return {
@@ -221,6 +213,8 @@ export function useAI() {
     isLoading: chat.status === "submitted" || chat.status === "streaming",
     status: chat.status,
     error: chat.error,
+    regenerate: chat.regenerate,
+    stop: chat.stop,
     canChat,
     isCLIActive,
     activeCLIProvider,

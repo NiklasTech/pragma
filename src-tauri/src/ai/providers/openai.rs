@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::ai::{
@@ -206,6 +207,103 @@ impl AIProvider for OpenAIProvider {
             }
 
             Ok(chunks)
+        })
+    }
+
+    fn stream_chunks(
+        &self,
+        req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<tokio::sync::mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>
+    {
+        Box::pin(async move {
+            self.validate_model()?;
+
+            let mut body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
+            body.stream = Some(true);
+
+            let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
+
+            let response = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .await
+                .map_err(|e| map_reqwest_error(e))?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_openai_error(status, &text));
+            }
+
+            let (tx, rx) = tokio::sync::mpsc::channel::<Result<CompletionChunk, AIError>>(64);
+            let mut stream = response.bytes_stream();
+
+            tokio::spawn(async move {
+                let mut buffer = String::new();
+                let mut event_data: Vec<String> = Vec::new();
+
+                while let Some(result) = stream.next().await {
+                    match result {
+                        Ok(bytes) => {
+                            buffer.push_str(&String::from_utf8_lossy(&bytes));
+
+                            while let Some(pos) = buffer.find('\n') {
+                                let line = buffer.drain(..=pos).collect::<String>();
+                                let line = line.trim_end_matches('\n').trim_end_matches('\r');
+
+                                if line.is_empty() {
+                                    for data_line in &event_data {
+                                        if let Some(data) = data_line.strip_prefix("data: ") {
+                                            if data == "[DONE]" {
+                                                continue;
+                                            }
+
+                                            match serde_json::from_str::<OpenAIStreamEvent>(data) {
+                                                Ok(event) => {
+                                                    if let Some(choice) =
+                                                        event.choices.into_iter().next()
+                                                    {
+                                                        if let Some(content) = choice.delta.content
+                                                        {
+                                                            if !content.is_empty() {
+                                                                let _ = tx
+                                                                    .send(Ok(CompletionChunk {
+                                                                        content,
+                                                                        finish_reason: choice
+                                                                            .finish_reason,
+                                                                    }))
+                                                                    .await;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    let _ = tx
+                                                        .send(Err(AIError::Stream(format!(
+                                                            "invalid sse event: {e}"
+                                                        ))))
+                                                        .await;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    event_data.clear();
+                                } else if let Some(data) = line.strip_prefix("data: ") {
+                                    event_data.push(data.to_string());
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            let _ = tx.send(Err(map_reqwest_error(e))).await;
+                            break;
+                        }
+                    }
+                }
+            });
+
+            Ok(rx)
         })
     }
 }

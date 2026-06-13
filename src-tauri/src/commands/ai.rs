@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use tauri::ipc::Channel;
+
 use crate::ai::{
     config::ProviderConfig,
     keychain,
-    provider::{AIProvider, CompletionRequest, Message, Role},
+    provider::{AIProvider, CompletionChunk, CompletionRequest, Message, Role},
     providers::{anthropic::AnthropicProvider, ollama::OllamaProvider, openai::OpenAIProvider},
 };
 
@@ -202,4 +204,105 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
             finish_reason: "stop".to_string(),
         }],
     })
+}
+
+// ─── Streaming Chat ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct StreamChunk {
+    pub text: Option<String>,
+    pub error: Option<String>,
+    pub done: bool,
+}
+
+#[tauri::command]
+pub async fn ai_chat_stream(req: ChatRequest, channel: Channel<StreamChunk>) -> Result<(), String> {
+    if req.provider.is_empty() {
+        return Err("provider is required".to_string());
+    }
+    if req.model.is_empty() {
+        return Err("model is required".to_string());
+    }
+    if req.messages.is_empty() {
+        return Err("messages are required".to_string());
+    }
+
+    let config = ProviderConfig {
+        base_url: req.base_url.unwrap_or_default(),
+        model: req.model,
+        timeout_seconds: 60,
+        api_key: None,
+        extra_headers: None,
+    };
+
+    let messages: Vec<Message> = req
+        .messages
+        .into_iter()
+        .map(|m| Message {
+            role: match m.role.as_str() {
+                "system" => Role::System,
+                "assistant" => Role::Assistant,
+                _ => Role::User,
+            },
+            content: m.content,
+        })
+        .collect();
+
+    let completion_req = CompletionRequest {
+        messages,
+        temperature: req.temperature,
+        max_tokens: req.max_tokens,
+        stream: true,
+    };
+
+    let provider: Box<dyn AIProvider> = match req.provider.as_str() {
+        "openai" | "deepseek" | "kimi" | "custom" => {
+            Box::new(OpenAIProvider::new(config).map_err(|e| e.to_string())?)
+        }
+        "anthropic" => Box::new(AnthropicProvider::new(config).map_err(|e| e.to_string())?),
+        "ollama" => Box::new(OllamaProvider::new(config).map_err(|e| e.to_string())?),
+        _ => return Err(format!("unsupported provider: {}", req.provider)),
+    };
+
+    let mut rx = provider
+        .stream_chunks(completion_req)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    while let Some(result) = rx.recv().await {
+        match result {
+            Ok(CompletionChunk {
+                content,
+                finish_reason,
+            }) => {
+                let done = finish_reason.as_deref() == Some("stop");
+                let text = if content.is_empty() && !done {
+                    None
+                } else {
+                    Some(content)
+                };
+                let chunk = StreamChunk {
+                    text,
+                    error: None,
+                    done,
+                };
+                if channel.send(chunk).is_err() {
+                    break;
+                }
+                if done {
+                    break;
+                }
+            }
+            Err(e) => {
+                let _ = channel.send(StreamChunk {
+                    text: None,
+                    error: Some(e.to_string()),
+                    done: false,
+                });
+                break;
+            }
+        }
+    }
+
+    Ok(())
 }
