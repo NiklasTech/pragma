@@ -118,6 +118,71 @@ pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
 }
 
 #[tauri::command]
+pub fn list_directory_recursive(path: String) -> Result<Vec<DirEntry>, String> {
+    let path_ref = Path::new(&path);
+
+    if !path_ref.exists() {
+        return Err(format!("Path not found: {}", path));
+    }
+
+    if !path_ref.is_dir() {
+        return Err(format!("Not a directory: {}", path));
+    }
+
+    let mut entries: Vec<DirEntry> = Vec::new();
+    collect_entries_recursive(path_ref, &mut entries, 0)?;
+
+    entries.sort_by(|a, b| match (a.is_directory, b.is_directory) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    });
+
+    Ok(entries)
+}
+
+fn collect_entries_recursive(
+    dir: &Path,
+    out: &mut Vec<DirEntry>,
+    depth: usize,
+) -> Result<(), String> {
+    if depth > 8 {
+        return Ok(());
+    }
+
+    let dir_entries = fs::read_dir(dir).map_err(|e| format!("Failed to read directory: {}", e))?;
+
+    for entry in dir_entries {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+        let metadata = entry
+            .metadata()
+            .map_err(|e| format!("Failed to read metadata: {}", e))?;
+        let name = entry.file_name().to_string_lossy().to_string();
+        let path = entry.path().to_string_lossy().to_string();
+
+        if name.starts_with('.') || name == "node_modules" || name == "target" {
+            continue;
+        }
+
+        let is_directory = metadata.is_dir();
+        let is_file = metadata.is_file();
+
+        out.push(DirEntry {
+            path,
+            name,
+            is_directory,
+            is_file,
+        });
+
+        if is_directory {
+            collect_entries_recursive(&entry.path(), out, depth + 1)?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn create_file(path: String) -> Result<(), String> {
     let path_ref = Path::new(&path);
 
