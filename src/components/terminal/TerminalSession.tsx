@@ -1,10 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalStore, type TerminalSession as TerminalSessionType } from "@/stores/terminal";
+import { useTerminalSuggestions } from "@/hooks/useTerminalSuggestions";
+import { AISuggestionsOverlay } from "./ai-suggestions";
 
 interface PtyOutputEvent {
   id: string;
@@ -21,7 +23,17 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const ptyIdRef = useRef<string | null>(null);
-  const { fontSize, fontFamily, scrollback } = useTerminalStore();
+  const lastOutputRef = useRef<string>("");
+  const [termState, setTermState] = useState<XTerm | null>(null);
+  const { fontSize, fontFamily, scrollback, aiSuggestions } = useTerminalStore();
+
+  const suggestions = useTerminalSuggestions({
+    term: termState,
+    ptyId: ptyIdRef.current,
+    enabled: aiSuggestions,
+    cwd: session.cwd ?? null,
+    lastOutputRef,
+  });
 
   useEffect(() => {
     let disposed = false;
@@ -54,10 +66,12 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       t.loadAddon(fit);
       t.open(containerRef.current);
       termRef.current = t;
+      setTermState(t);
 
       const unlisten = await listen<PtyOutputEvent>("pty_output", (event) => {
         if (event.payload.id === ptyIdRef.current) {
           t.write(event.payload.data);
+          lastOutputRef.current = (lastOutputRef.current + event.payload.data).slice(-1000);
         }
       });
       unlistenFn = unlisten;
@@ -88,12 +102,6 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         t.writeln(`\r\nFailed to start shell: ${String(err)}`);
         return;
       }
-
-      t.onData((data) => {
-        if (ptyIdRef.current) {
-          void invoke("write_pty", { id: ptyIdRef.current, data });
-        }
-      });
 
       resizeObserver = new ResizeObserver(() => {
         if (resizeTimer) clearTimeout(resizeTimer);
@@ -156,11 +164,58 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     }
   }, [isActive]);
 
+  useEffect(() => {
+    if (!termState) return;
+
+    const handleData = suggestions.handleData;
+    const disposable = termState.onData((data) => {
+      if (data === "\t") return;
+
+      if (!handleData(data) && ptyIdRef.current) {
+        void invoke("write_pty", { id: ptyIdRef.current, data });
+      }
+    });
+
+    return () => {
+      disposable.dispose();
+    };
+  }, [termState, suggestions.handleData]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const activeElement = document.activeElement;
+      if (!activeElement || !container.contains(activeElement)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (suggestions.visible) {
+        suggestions.accept();
+      } else if (ptyIdRef.current) {
+        void invoke("write_pty", { id: ptyIdRef.current, data: "\t" });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [suggestions.visible, suggestions.accept]);
+
   return (
     <div
       ref={containerRef}
       className="h-full w-full relative overflow-hidden"
       style={{ display: isActive ? "block" : "none" }}
-    />
+    >
+      <AISuggestionsOverlay
+        suggestion={suggestions.suggestion}
+        loading={suggestions.loading}
+        visible={suggestions.visible}
+      />
+    </div>
   );
 }

@@ -37,6 +37,8 @@ export interface AISettings {
   inlineCompletion: boolean;
   completionDebounce: number;
   terminalSuggestions: boolean;
+  terminalSuggestionProvider: AIProvider | null;
+  terminalSuggestionModel: string | null;
   providers: Record<AIProvider, ProviderSettings>;
 }
 
@@ -93,6 +95,8 @@ const defaultSettings: SettingsState = {
     inlineCompletion: true,
     completionDebounce: 500,
     terminalSuggestions: true,
+    terminalSuggestionProvider: null,
+    terminalSuggestionModel: null,
     providers: {
       openai: { model: "gpt-4o" },
       anthropic: { model: "claude-sonnet-4-6" },
