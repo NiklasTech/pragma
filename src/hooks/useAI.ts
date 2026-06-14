@@ -4,6 +4,7 @@ import type { ChatTransport, UIMessageChunk } from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 import { useAIStore } from "@/stores/ai";
+import { useAIEditStore } from "@/stores/aiEdit";
 import { useFileExplorerStore } from "@/stores/fileExplorer";
 import {
   buildContextUserMessage,
@@ -191,6 +192,7 @@ export function useAI() {
   const chat = useChat({
     id: sessionId,
     transport,
+    experimental_throttle: 50,
   });
 
   const [input, setInput] = useState("");
@@ -221,6 +223,12 @@ export function useAI() {
         } catch (err) {
           console.error("[Chat Context Error]", err);
         }
+      }
+
+      const { edit, submitPrompt } = useAIEditStore.getState();
+      if (edit?.status === "composing") {
+        messageText = `${messageText}\n\nSelected code from ${edit.filePath}:\n\`\`\`\n${edit.originalCode}\n\`\`\``;
+        submitPrompt();
       }
 
       void chat.sendMessage({ text: messageText });

@@ -24,6 +24,7 @@ export interface DiffTab {
   modified: string;
   patchText: string;
   staged: boolean;
+  sourceTabId?: string;
 }
 
 export type EditorTab = FileTab | DiffTab;
@@ -43,7 +44,7 @@ interface EditorState {
 
 interface EditorActions {
   openFile: (file: Omit<FileTab, "kind">) => void;
-  openDiff: (diff: Omit<DiffTab, "kind" | "name">) => void;
+  openDiff: (diff: Omit<DiffTab, "kind" | "name" | "id"> & { id?: string; name?: string }) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   updateFileContent: (tabId: string, content: string) => void;
@@ -88,7 +89,7 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
 
   openDiff: (diff) => {
     const { tabs, tabStates, activeTabId } = get();
-    const diffId = `diff:${diff.path}:${diff.staged ? "staged" : "unstaged"}`;
+    const diffId = diff.id ?? `diff:${diff.path}:${diff.staged ? "staged" : "unstaged"}`;
 
     if (tabs.some((t) => t.id === diffId)) {
       if (activeTabId !== diffId) {
@@ -97,11 +98,12 @@ export const useEditorStore = create<EditorState & EditorActions>((set, get) => 
       return;
     }
 
+    const fileName = diff.path.split("/").pop() ?? diff.path;
     const diffTab: DiffTab = {
       ...diff,
       id: diffId,
       kind: "diff",
-      name: `${diff.path.split("/").pop() ?? diff.path} (Diff)`,
+      name: diff.name ?? `${fileName} (Diff)`,
     };
 
     set({

@@ -3,6 +3,8 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
+@source "../node_modules/streamdown/dist/*.js";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -133,4 +135,108 @@
 /* xterm.js: only show scrollbar when content overflows */
 .xterm-viewport {
   overflow-y: auto !important;
+}
+
+/* Chat code-block syntax-highlighting tokens (Lezer / legacy-mode mapping) */
+.tok-keyword,
+.tok-controlKeyword,
+.tok-definitionKeyword,
+.tok-moduleKeyword,
+.tok-operatorKeyword {
+  color: var(--editor-keyword, #b18aff);
+}
+
+.tok-variableName,
+.tok-definition {
+  color: var(--editor-property, #e8e8ea);
+}
+
+.tok-propertyName {
+  color: var(--editor-property, #e8e8ea);
+}
+
+.tok-typeName,
+.tok-className,
+.tok-interfaceName {
+  color: var(--editor-type, #fbbf24);
+}
+
+.tok-string,
+.tok-string2 {
+  color: var(--editor-string, #4ade80);
+}
+
+.tok-number,
+.tok-unit {
+  color: var(--editor-number, #fbbf24);
+}
+
+.tok-comment {
+  color: var(--editor-comment, #8a8a8f);
+}
+
+.tok-tagName {
+  color: var(--editor-tag, #f87171);
+}
+
+.tok-attributeName {
+  color: var(--editor-attribute, #fbbf24);
+}
+
+.tok-function,
+.tok-call {
+  color: var(--editor-function, #60a5fa);
+}
+
+.tok-operator,
+.tok-punctuation,
+.tok-bracket {
+  color: var(--editor-operator, #7c6af7);
+}
+
+.tok-atom {
+  color: var(--editor-number, #fbbf24);
+}
+
+.tok-meta {
+  color: var(--editor-comment, #8a8a8f);
+}
+
+.tok-link {
+  color: var(--editor-function, #60a5fa);
+  text-decoration: underline;
+}
+
+.tok-heading {
+  color: var(--editor-keyword, #b18aff);
+  font-weight: 600;
+}
+
+.tok-name {
+  color: var(--editor-function, #60a5fa);
+}
+
+.tok-modifier {
+  color: var(--editor-keyword, #b18aff);
+}
+
+/* Shimmer text animation for streaming placeholders */
+@keyframes pragma-shimmer {
+  0% {
+    background-position: calc(-1 * var(--shimmer-spread, 100px)) 0;
+  }
+  100% {
+    background-position: var(--shimmer-spread, 100px) 0;
+  }
+}
+
+.pragma-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--muted-foreground, #8a8a8f) 0%,
+    var(--foreground, #e8e8ea) 50%,
+    var(--muted-foreground, #8a8a8f) 100%
+  );
+  background-size: calc(2 * var(--shimmer-spread, 100px)) 100%;
+  animation: pragma-shimmer var(--shimmer-duration, 2s) linear infinite;
 }

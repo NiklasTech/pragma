@@ -4,7 +4,7 @@ import { EditorState, Compartment } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Spinner, Columns, Rows } from "@phosphor-icons/react";
+import { Spinner, Columns, Rows, Check, X } from "@phosphor-icons/react";
 import { pragmaDarkTheme, themeCompartment } from "@/lib/theme/editor-theme";
 import { loadLanguage } from "@/lib/editor/languages";
 import { cn } from "@/lib/utils";
@@ -61,6 +61,8 @@ interface InlineDiffProps {
   filePath: string;
   viewMode?: DiffViewMode;
   onViewModeChange?: (mode: DiffViewMode) => void;
+  onAccept?: (modified: string) => void;
+  onReject?: () => void;
   className?: string;
 }
 
@@ -265,6 +267,8 @@ export function InlineDiff({
   filePath,
   viewMode = "split",
   onViewModeChange,
+  onAccept,
+  onReject,
   className,
 }: InlineDiffProps) {
   const [state, setState] = useState<LoadState>({ kind: "idle" });
@@ -279,6 +283,25 @@ export function InlineDiff({
     }, 50);
     return () => clearTimeout(timer);
   }, [original, modified, patchText]);
+
+  useEffect(() => {
+    if (!onAccept && !onReject) return;
+
+    const handler = (e: KeyboardEvent) => {
+      if (onAccept && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        onAccept(modified);
+        return;
+      }
+      if (onReject && e.key === "Escape") {
+        e.preventDefault();
+        onReject();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onAccept, onReject, modified]);
 
   const handleViewModeChange = (mode: DiffViewMode) => {
     if (onViewModeChange) {
@@ -340,6 +363,28 @@ export function InlineDiff({
             <Rows size={12} />
             Unified
           </Button>
+          {onReject && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[10.5px] gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={onReject}
+            >
+              <X size={12} weight="bold" />
+              Reject
+            </Button>
+          )}
+          {onAccept && (
+            <Button
+              variant="default"
+              size="sm"
+              className="h-6 px-2 text-[10.5px] gap-1"
+              onClick={() => onAccept(modified)}
+            >
+              <Check size={12} weight="bold" />
+              Accept
+            </Button>
+          )}
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden" style={{ maxWidth: "100%" }}>

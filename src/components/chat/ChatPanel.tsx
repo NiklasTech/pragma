@@ -10,18 +10,45 @@ import {
   ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { useAI } from "@/hooks/useAI";
+import { useAI, getMessageText } from "@/hooks/useAI";
 import { useAIStore } from "@/stores/ai";
+import { useAIEditStore } from "@/stores/aiEdit";
+import { useEditorStore } from "@/stores/editor";
 import { useFileExplorerStore } from "@/stores/fileExplorer";
+import { extractFirstCodeBlock } from "@/lib/extract-code-block";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AiModelSelector } from "./AiModelSelector";
-import { ChatMessage } from "./ChatMessage";
 import { ChatSessionList } from "./ChatSessionList";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
+import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
+import { Message, MessageContent, MessageResponse } from "./Message";
+import { ReasoningBlock } from "./ReasoningBlock";
+import { SourceBlock } from "./SourceBlock";
+
+function extractInlineReasoning(text: string): { text: string; reasoning: string } {
+  const tags = [
+    { open: "<thinking>", close: "</thinking>" },
+    { open: "<reasoning>", close: "</reasoning>" },
+    { open: "<think>", close: "</think>" },
+  ];
+
+  let reasoning = "";
+  let cleaned = text;
+
+  for (const { open, close } of tags) {
+    const start = cleaned.indexOf(open);
+    if (start === -1) continue;
+    const end = cleaned.indexOf(close, start + open.length);
+    if (end === -1) continue;
+    reasoning += cleaned.slice(start + open.length, end).trim() + "\n\n";
+    cleaned = cleaned.slice(0, start) + cleaned.slice(end + close.length);
+  }
+
+  return { text: cleaned.trim(), reasoning: reasoning.trim() };
+}
 
 export function ChatPanel() {
   const {
@@ -42,8 +69,9 @@ export function ChatPanel() {
     createChatSession,
   } = useAI();
   const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
+  const { edit, prefillPrompt, consumePrefill, receiveProposal, cancelEdit } = useAIEditStore();
+  const openDiff = useEditorStore((state) => state.openDiff);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const contextPickerRef = useRef<ContextPickerRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -51,12 +79,57 @@ export function ChatPanel() {
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
 
+  const previousStatusRef = useRef(status);
+
+  const inputRef = useRef(input);
+  inputRef.current = input;
+
   useEffect(() => {
-    const viewport = scrollRef.current?.querySelector("[data-slot='scroll-area-viewport']");
-    if (viewport) {
-      viewport.scrollTop = viewport.scrollHeight;
+    if (!prefillPrompt) return;
+    if (inputRef.current !== prefillPrompt) {
+      setInput(prefillPrompt);
     }
-  }, [messages, isLoading, status]);
+    consumePrefill();
+  }, [prefillPrompt, setInput, consumePrefill]);
+
+  useEffect(() => {
+    const previous = previousStatusRef.current;
+    previousStatusRef.current = status;
+
+    if (
+      (previous === "streaming" || previous === "submitted") &&
+      status === "ready" &&
+      edit?.status === "awaiting"
+    ) {
+      const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+      if (!lastAssistant) {
+        cancelEdit();
+        return;
+      }
+
+      const text = getMessageText(lastAssistant);
+      const codeBlock = extractFirstCodeBlock(text);
+
+      if (!codeBlock) {
+        cancelEdit();
+        return;
+      }
+
+      receiveProposal(codeBlock.code);
+
+      const fileName = edit.filePath.split("/").pop() ?? edit.filePath;
+      openDiff({
+        id: `ai-edit:${edit.fileTabId}:${Date.now()}`,
+        path: edit.filePath,
+        original: edit.originalCode,
+        modified: codeBlock.code,
+        patchText: "",
+        staged: false,
+        sourceTabId: edit.fileTabId,
+        name: `${fileName} (AI Edit)`,
+      });
+    }
+  }, [status, edit, messages, receiveProposal, cancelEdit, openDiff]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -110,6 +183,11 @@ export function ChatPanel() {
     void regenerate();
   }, [regenerate]);
 
+  const streamingMessageId =
+    status === "streaming" && messages[messages.length - 1]?.role === "assistant"
+      ? messages[messages.length - 1]?.id
+      : null;
+
   return (
     <div className="flex h-full flex-col">
       {/* Session Header */}
@@ -137,9 +215,9 @@ export function ChatPanel() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0">
-        <ScrollArea ref={scrollRef} className="h-full">
-          <div className="flex flex-col gap-4 p-4">
+      <div className="relative flex-1 min-h-0">
+        <Conversation className="h-full">
+          <ConversationContent className="gap-4 p-4">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -156,35 +234,92 @@ export function ChatPanel() {
               </div>
             )}
 
-            {messages.map((msg: UIMessage, index: number) => {
-              const text = msg.parts
+            {messages.map((msg: UIMessage) => {
+              const reasoningParts = msg.parts
+                .filter((p) => p.type === "reasoning")
+                .map((p) => (p as { text: string }).text)
+                .join("");
+              const rawText = msg.parts
                 .filter((p) => p.type === "text")
                 .map((p) => (p as { text: string }).text)
                 .join("");
-              const isStreaming =
-                status === "streaming" && index === messages.length - 1 && msg.role === "assistant";
+              const sourceDocuments = msg.parts.filter(
+                (p) => p.type === "source-document",
+              ) as Array<{
+                type: "source-document";
+                title: string;
+                filename?: string;
+              }>;
+              const sourceUrls = msg.parts.filter((p) => p.type === "source-url") as Array<{
+                type: "source-url";
+                url: string;
+                title?: string;
+              }>;
+              const isStreaming = msg.id === streamingMessageId;
+
+              // Some providers/models emit reasoning as inline <thinking> tags inside the text.
+              const { text, reasoning: inlineReasoning } = extractInlineReasoning(rawText);
+              const reasoning = reasoningParts || inlineReasoning;
+
+              if (msg.role === "user") {
+                return (
+                  <Message key={msg.id} from="user">
+                    <MessageContent>
+                      <p className="whitespace-pre-wrap wrap-break-word">{rawText}</p>
+                    </MessageContent>
+                  </Message>
+                );
+              }
+
               return (
-                <ChatMessage
-                  key={msg.id}
-                  role={msg.role}
-                  content={text}
-                  isStreaming={isStreaming}
-                />
+                <Message key={msg.id} from="assistant">
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <Robot size={14} className="text-muted-foreground" />
+                  </div>
+                  <MessageContent>
+                    {sourceDocuments.map((source, index) => (
+                      <SourceBlock
+                        key={`${msg.id}-doc-${index}`}
+                        type="document"
+                        title={source.title}
+                        filename={source.filename}
+                        streaming={isStreaming}
+                      />
+                    ))}
+                    {sourceUrls.map((source, index) => (
+                      <SourceBlock
+                        key={`${msg.id}-url-${index}`}
+                        type="url"
+                        title={source.title ?? source.url}
+                        url={source.url}
+                        streaming={isStreaming}
+                      />
+                    ))}
+                    {reasoning && <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />}
+                    <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
+                    {isStreaming && (
+                      <span className="mt-2 inline-flex h-4 items-center">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground" />
+                      </span>
+                    )}
+                  </MessageContent>
+                </Message>
               );
             })}
 
             {status === "submitted" && (
-              <div className="flex gap-3">
+              <Message from="assistant">
                 <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
                   <Robot size={14} className="text-muted-foreground" />
                 </div>
-                <div className="rounded-xl bg-muted px-3.5 py-2.5">
+                <MessageContent>
                   <ChatTypingIndicator />
-                </div>
-              </div>
+                </MessageContent>
+              </Message>
             )}
-          </div>
-        </ScrollArea>
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
       </div>
 
       {/* Input Area */}
