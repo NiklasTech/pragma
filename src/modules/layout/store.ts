@@ -28,10 +28,16 @@ function readSidebarWidth(): number {
   }
 }
 
-function readSidebarView(): "explorer" | "search" | "git" | "git-status" {
+function readSidebarView(): "explorer" | "search" | "git" | "git-status" | "docker" {
   try {
     const stored = window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY);
-    if (stored === "explorer" || stored === "search" || stored === "git" || stored === "git-status")
+    if (
+      stored === "explorer" ||
+      stored === "search" ||
+      stored === "git" ||
+      stored === "git-status" ||
+      stored === "docker"
+    )
       return stored;
   } catch {
     // ignore
@@ -44,7 +50,7 @@ function readSidebarView(): "explorer" | "search" | "git" | "git-status" {
 interface LayoutState {
   sidebarWidth: number;
   sidebarCollapsed: boolean;
-  sidebarTab: "explorer" | "search" | "git" | "git-status";
+  sidebarTab: "explorer" | "search" | "git" | "git-status" | "docker";
   editorHeight: number;
   terminalHeight: number;
   aiPanelOpen: boolean;
@@ -52,7 +58,7 @@ interface LayoutState {
 
   setSidebarWidth: (width: number) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
-  setSidebarTab: (tab: "explorer" | "search" | "git" | "git-status") => void;
+  setSidebarTab: (tab: "explorer" | "search" | "git" | "git-status" | "docker") => void;
   setEditorHeight: (height: number) => void;
   setTerminalHeight: (height: number) => void;
   setAIPanelOpen: (open: boolean) => void;
