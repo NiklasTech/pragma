@@ -17,6 +17,7 @@ import { useAIStore } from "@/stores/ai";
 import { useFileExplorerStore } from "@/stores/fileExplorer";
 import type { UIMessage } from "@ai-sdk/react";
 
+import { AiModelSelector } from "./AiModelSelector";
 import { ChatMessage } from "./ChatMessage";
 import { ChatSessionList } from "./ChatSessionList";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
@@ -112,7 +113,7 @@ export function ChatPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Session Header */}
-      <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b border-border/40">
+      <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b border-border/40 gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <ChatTeardropText size={14} className="text-muted-foreground shrink-0" />
           <span className="text-xs text-muted-foreground truncate">
@@ -122,7 +123,8 @@ export function ChatPanel() {
             {sessionId.slice(0, 12)}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
+          <AiModelSelector />
           <ChatSessionList />
           <button
             onClick={handleNewSession}

@@ -16,6 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAIStore, type AIProvider } from "@/stores/ai";
 import { useSettingsStore } from "@/stores/settings";
+import { PROVIDER_LABELS, PROVIDER_MODELS } from "@/lib/ai-providers";
 import {
   Eye,
   EyeSlash,
@@ -33,24 +34,6 @@ import {
 } from "@phosphor-icons/react";
 
 type AuthTab = "cli" | "apikey" | "ollama";
-
-const PROVIDER_LABELS: Record<AIProvider, string> = {
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  ollama: "Ollama",
-  deepseek: "DeepSeek",
-  kimi: "Kimi",
-  custom: "Custom",
-};
-
-const PROVIDER_MODELS: Record<AIProvider, string[]> = {
-  openai: ["gpt-4o", "o1", "o3"],
-  anthropic: ["claude-opus-4", "claude-sonnet-4", "claude-haiku"],
-  ollama: ["llama3.2", "codellama", "mistral", "phi4"],
-  deepseek: ["deepseek-chat", "deepseek-coder"],
-  kimi: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
-  custom: [],
-};
 
 const NEEDS_KEY: AIProvider[] = ["openai", "anthropic", "deepseek", "kimi", "custom"];
 
