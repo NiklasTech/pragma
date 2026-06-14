@@ -86,6 +86,7 @@ pub fn run() {
             commands::ai::ai_chat,
             commands::ai::ai_chat_stream,
             commands::ai::ai_inline_completion,
+            commands::ai::ai_terminal_suggestion,
             commands::context::read_chat_context,
             commands::cli::cli_list_manifests,
             commands::cli::cli_check_status,

@@ -50,6 +50,8 @@ interface AIState {
   completionDebounce: number;
   completionTriggerCharacters: string[];
   terminalSuggestions: boolean;
+  terminalSuggestionProvider: AIProvider | null;
+  terminalSuggestionModel: string | null;
   providers: Record<AIProvider, ProviderConfig>;
   chatSessions: ChatSession[];
   activeChatSessionId: string | null;
@@ -68,6 +70,8 @@ interface AIActions {
   setCompletionDebounce: (ms: number) => void;
   setCompletionTriggerCharacters: (chars: string[]) => void;
   setTerminalSuggestions: (enabled: boolean) => void;
+  setTerminalSuggestionProvider: (provider: AIProvider | null) => void;
+  setTerminalSuggestionModel: (model: string | null) => void;
   updateProviderConfig: (provider: AIProvider, config: Partial<ProviderConfig>) => void;
   addChatSession: (session: ChatSession) => void;
   removeChatSession: (sessionId: string) => void;
@@ -104,6 +108,8 @@ const initialState: AIState = {
   completionDebounce: 500,
   completionTriggerCharacters: [],
   terminalSuggestions: true,
+  terminalSuggestionProvider: null,
+  terminalSuggestionModel: null,
   providers: { ...defaultProviders },
   chatSessions: [],
   activeChatSessionId: null,
@@ -129,6 +135,8 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   setCompletionDebounce: (ms) => set({ completionDebounce: ms }),
   setCompletionTriggerCharacters: (chars) => set({ completionTriggerCharacters: chars }),
   setTerminalSuggestions: (enabled) => set({ terminalSuggestions: enabled }),
+  setTerminalSuggestionProvider: (provider) => set({ terminalSuggestionProvider: provider }),
+  setTerminalSuggestionModel: (model) => set({ terminalSuggestionModel: model }),
 
   updateProviderConfig: (provider, config) => {
     const { providers } = get();
