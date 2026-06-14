@@ -330,6 +330,11 @@ pub async fn ai_chat_stream(req: ChatRequest, channel: Channel<StreamChunk>) -> 
         extra_headers: None,
     };
 
+    const SYSTEM_PROMPT: &str = "You are Pragma, a helpful coding assistant. \
+Use Markdown formatting in your answers: bold, italic, lists, and fenced code blocks. \
+Always wrap code in markdown code fences with the correct language tag, e.g. ```typescript ... ```. \
+When showing file contents, preserve the full code and include the language tag.";
+
     let messages: Vec<Message> = req
         .messages
         .into_iter()
@@ -343,8 +348,15 @@ pub async fn ai_chat_stream(req: ChatRequest, channel: Channel<StreamChunk>) -> 
         })
         .collect();
 
+    let mut messages_with_system = Vec::with_capacity(messages.len() + 1);
+    messages_with_system.push(Message {
+        role: Role::System,
+        content: SYSTEM_PROMPT.to_string(),
+    });
+    messages_with_system.extend(messages);
+
     let completion_req = CompletionRequest {
-        messages,
+        messages: messages_with_system,
         temperature: req.temperature,
         max_tokens: req.max_tokens,
         stream: true,
