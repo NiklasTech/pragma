@@ -6,6 +6,7 @@ import { useFileExplorerStore, type FileSystemNode } from "@/stores/fileExplorer
 import { useEditorStore } from "@/stores/editor";
 import { useRunConfigStore } from "@/stores/runConfig";
 import { useGitStore } from "@/stores/git";
+import { useDockerStore } from "@/stores/docker";
 import { detectLanguage } from "@/lib/language";
 
 interface DirEntry {
@@ -36,14 +37,16 @@ export function useFileExplorer() {
   const { openFile } = useEditorStore();
   const { setWorkspaceRoot, loadConfigs } = useRunConfigStore();
   const { setRepoPath } = useGitStore();
+  const { setWorkspaceRoot: setDockerWorkspaceRoot } = useDockerStore();
 
   useEffect(() => {
     if (store.rootPath) {
       setWorkspaceRoot(store.rootPath);
       setRepoPath(store.rootPath);
+      setDockerWorkspaceRoot(store.rootPath);
       void loadConfigs();
     }
-  }, [store.rootPath, setWorkspaceRoot, setRepoPath, loadConfigs]);
+  }, [store.rootPath, setWorkspaceRoot, setRepoPath, setDockerWorkspaceRoot, loadConfigs]);
 
   const selectRoot = useCallback(async () => {
     let path: string | null = null;

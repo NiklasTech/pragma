@@ -2,6 +2,7 @@ import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useLayoutStore } from "../store";
 import { cn } from "@/lib/utils";
 import {
+  Cube,
   Files,
   GitBranch,
   GitDiff,
@@ -9,7 +10,13 @@ import {
   SidebarSimple,
   Sidebar as SidebarIcon,
 } from "@phosphor-icons/react";
-import { FileExplorer, GitGraph, GitStatus, LocalHistoryPanel } from "@/components/sidebar";
+import {
+  DockerPanel,
+  FileExplorer,
+  GitGraph,
+  GitStatus,
+  LocalHistoryPanel,
+} from "@/components/sidebar";
 import { useLocalHistory } from "@/hooks/useLocalHistory";
 
 const tabs = [
@@ -17,6 +24,7 @@ const tabs = [
   { id: "search" as const, icon: MagnifyingGlass, label: "Search" },
   { id: "git" as const, icon: GitBranch, label: "Git Graph" },
   { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
+  { id: "docker" as const, icon: Cube, label: "Docker" },
 ];
 
 export const DOCK_WIDTH = 48;
@@ -113,6 +121,7 @@ export function SidebarContent() {
         )}
         {sidebarTab === "git" && <GitGraph />}
         {sidebarTab === "git-status" && <GitStatus />}
+        {sidebarTab === "docker" && <DockerPanel />}
       </div>
       {activeFilePath && (
         <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />

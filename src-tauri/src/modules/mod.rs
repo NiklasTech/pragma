@@ -1,3 +1,4 @@
+pub mod env_loader;
 pub mod fs;
 pub mod git;
 pub mod local_history;

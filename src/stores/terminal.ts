@@ -1,10 +1,14 @@
 import { create } from "zustand";
 
+export type TerminalSessionType = "shell" | "docker-logs" | "docker-exec";
+
 export interface TerminalSession {
   id: string;
   name: string;
-  shell: string;
-  cwd: string;
+  type: TerminalSessionType;
+  shell?: string;
+  command?: string;
+  cwd?: string;
   isActive: boolean;
 }
 

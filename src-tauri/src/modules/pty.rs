@@ -219,3 +219,91 @@ pub fn kill_pty(state: State<'_, PtyManager>, id: String) -> Result<(), String> 
     }
     Ok(())
 }
+
+#[tauri::command]
+pub fn create_pty_command(
+    app: AppHandle,
+    state: State<'_, PtyManager>,
+    command: String,
+    cwd: Option<String>,
+    cols: u16,
+    rows: u16,
+) -> Result<String, String> {
+    let trimmed = command.trim();
+    if trimmed.is_empty() {
+        return Err("command is required".to_string());
+    }
+
+    let parts = shellwords::split(trimmed).map_err(|e| format!("Invalid command: {e}"))?;
+    if parts.is_empty() {
+        return Err("command is required".to_string());
+    }
+
+    let program = &parts[0];
+    let args = &parts[1..];
+
+    let pty_system = NativePtySystem::default();
+    let pair = pty_system
+        .openpty(PtySize {
+            rows: rows.max(2),
+            cols: cols.max(10),
+            pixel_width: 0,
+            pixel_height: 0,
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut cmd = CommandBuilder::new(program);
+    cmd.args(args);
+    cmd.env("TERM", "xterm-256color");
+    cmd.env("COLORTERM", "truecolor");
+
+    if let Some(cwd) = cwd {
+        let path = std::path::PathBuf::from(cwd);
+        if path.is_dir() {
+            cmd.cwd(path);
+        }
+    }
+
+    let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+    drop(pair.slave);
+
+    let id = uuid::Uuid::new_v4().to_string();
+
+    let reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
+    let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
+    let killer = child.clone_killer();
+
+    let event_id = id.clone();
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        let mut reader = reader;
+        let mut buf = [0u8; 4096];
+        loop {
+            match reader.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    let data = String::from_utf8_lossy(&buf[..n]).to_string();
+                    let payload = PtyOutputEvent {
+                        id: event_id.clone(),
+                        data,
+                    };
+                    let _ = app_handle.emit("pty_output", payload);
+                }
+                Err(_) => break,
+            }
+        }
+    });
+
+    let mut ptys = state.ptys.lock().map_err(|e| e.to_string())?;
+    ptys.insert(
+        id.clone(),
+        PtyInstance {
+            writer: Arc::new(Mutex::new(writer)),
+            killer: Arc::new(Mutex::new(killer)),
+            master: Arc::new(Mutex::new(pair.master)),
+            child,
+        },
+    );
+
+    Ok(id)
+}
