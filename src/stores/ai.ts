@@ -48,6 +48,7 @@ interface AIState {
   activeModel: string;
   inlineCompletion: boolean;
   completionDebounce: number;
+  completionTriggerCharacters: string[];
   terminalSuggestions: boolean;
   providers: Record<AIProvider, ProviderConfig>;
   chatSessions: ChatSession[];
@@ -65,6 +66,7 @@ interface AIActions {
   setActiveModel: (model: string) => void;
   setInlineCompletion: (enabled: boolean) => void;
   setCompletionDebounce: (ms: number) => void;
+  setCompletionTriggerCharacters: (chars: string[]) => void;
   setTerminalSuggestions: (enabled: boolean) => void;
   updateProviderConfig: (provider: AIProvider, config: Partial<ProviderConfig>) => void;
   addChatSession: (session: ChatSession) => void;
@@ -100,6 +102,7 @@ const initialState: AIState = {
   activeModel: "claude-sonnet-4-6",
   inlineCompletion: true,
   completionDebounce: 500,
+  completionTriggerCharacters: [],
   terminalSuggestions: true,
   providers: { ...defaultProviders },
   chatSessions: [],
@@ -124,6 +127,7 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   setActiveModel: (model) => set({ activeModel: model }),
   setInlineCompletion: (enabled) => set({ inlineCompletion: enabled }),
   setCompletionDebounce: (ms) => set({ completionDebounce: ms }),
+  setCompletionTriggerCharacters: (chars) => set({ completionTriggerCharacters: chars }),
   setTerminalSuggestions: (enabled) => set({ terminalSuggestions: enabled }),
 
   updateProviderConfig: (provider, config) => {
