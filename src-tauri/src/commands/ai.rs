@@ -227,7 +227,9 @@ pub struct InlineCompletionResponse {
 const MAX_INLINE_CONTENT_LEN: usize = 50_000;
 
 #[tauri::command]
-pub async fn ai_inline_completion(req: InlineCompletionRequest) -> Result<InlineCompletionResponse, String> {
+pub async fn ai_inline_completion(
+    req: InlineCompletionRequest,
+) -> Result<InlineCompletionResponse, String> {
     if req.provider.is_empty() {
         return Err("provider is required".to_string());
     }
@@ -272,15 +274,24 @@ pub async fn ai_inline_completion(req: InlineCompletionRequest) -> Result<Inline
     let response = match req.provider.as_str() {
         "openai" | "deepseek" | "kimi" | "custom" => {
             let provider = OpenAIProvider::new(config).map_err(|e| e.to_string())?;
-            provider.complete(completion_req).await.map_err(|e| e.to_string())?
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
         }
         "anthropic" => {
             let provider = AnthropicProvider::new(config).map_err(|e| e.to_string())?;
-            provider.complete(completion_req).await.map_err(|e| e.to_string())?
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
         }
         "ollama" => {
             let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
-            provider.complete(completion_req).await.map_err(|e| e.to_string())?
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
         }
         _ => return Err(format!("unsupported provider: {}", req.provider)),
     };
