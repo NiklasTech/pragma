@@ -4,6 +4,13 @@ import type { ChatTransport, UIMessageChunk } from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 import { useAIStore } from "@/stores/ai";
+import { useFileExplorerStore } from "@/stores/fileExplorer";
+import {
+  buildContextUserMessage,
+  parseMentions,
+  stripMentions,
+  type ChatContextResult,
+} from "@/lib/chat-context";
 
 // ─── Request Types ───────────────────────────────────────────────────────────
 
@@ -187,20 +194,39 @@ export function useAI() {
   });
 
   const [input, setInput] = useState("");
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   }, []);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       if (!input.trim() || chat.status === "submitted" || chat.status === "streaming") return;
 
-      void chat.sendMessage({ text: input });
+      const mentions = parseMentions(input);
+      let messageText = input.trim();
+
+      if (rootPath && mentions.length > 0) {
+        try {
+          const result = await invoke<ChatContextResult>("read_chat_context", {
+            req: { root_path: rootPath, paths: mentions },
+          });
+
+          if (result.content) {
+            const question = stripMentions(input);
+            messageText = buildContextUserMessage(result.content, question);
+          }
+        } catch (err) {
+          console.error("[Chat Context Error]", err);
+        }
+      }
+
+      void chat.sendMessage({ text: messageText });
       setInput("");
     },
-    [input, chat],
+    [input, chat, rootPath],
   );
 
   const canChat = isCLIActive || hasAPIKey || activeProvider === "ollama";
@@ -208,6 +234,7 @@ export function useAI() {
   return {
     messages: chat.messages,
     input,
+    setInput,
     handleInputChange,
     handleSubmit,
     isLoading: chat.status === "submitted" || chat.status === "streaming",

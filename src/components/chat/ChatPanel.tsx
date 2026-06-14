@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import {
   PaperPlaneRight,
   Warning,
@@ -14,16 +14,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useAI } from "@/hooks/useAI";
 import { useAIStore } from "@/stores/ai";
+import { useFileExplorerStore } from "@/stores/fileExplorer";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { ChatMessage } from "./ChatMessage";
 import { ChatSessionList } from "./ChatSessionList";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
+import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
 
 export function ChatPanel() {
   const {
     messages,
     input,
+    setInput,
     handleInputChange,
     handleSubmit,
     isLoading,
@@ -38,7 +41,11 @@ export function ChatPanel() {
     createChatSession,
   } = useAI();
   const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contextPickerRef = useRef<ContextPickerRef>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
@@ -52,14 +59,46 @@ export function ChatPanel() {
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (contextPickerRef.current?.handleKeyDown(e)) {
+        return;
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         if (input.trim() && !isLoading) {
-          handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
+          void handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
         }
       }
     },
     [input, isLoading, handleSubmit],
+  );
+
+  const updateCursorPosition = useCallback(() => {
+    const position = textareaRef.current?.selectionStart ?? 0;
+    setCursorPosition(position);
+  }, []);
+
+  const handleInputChangeWithCursor = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      handleInputChange(e);
+      setCursorPosition(e.target.selectionStart);
+    },
+    [handleInputChange],
+  );
+
+  const handleContextSelect = useCallback(
+    (value: string, position: number) => {
+      setInput(value);
+      setCursorPosition(position);
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(position, position);
+        }
+      });
+    },
+    [setInput],
   );
 
   const handleNewSession = useCallback(() => {
@@ -190,15 +229,28 @@ export function ChatPanel() {
         )}
 
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={onKeyDown}
-            placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
-            rows={1}
-            className="min-h-[36px] resize-none py-2 text-[13px]"
-            disabled={!canChat || isLoading}
-          />
+          <div className="relative flex-1">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChangeWithCursor}
+              onKeyDown={onKeyDown}
+              onKeyUp={updateCursorPosition}
+              onClick={updateCursorPosition}
+              onSelect={updateCursorPosition}
+              placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
+              rows={1}
+              className="min-h-[36px] resize-none py-2 text-[13px]"
+              disabled={!canChat || isLoading}
+            />
+            <ContextPicker
+              ref={contextPickerRef}
+              input={input}
+              cursorPosition={cursorPosition}
+              rootPath={rootPath}
+              onSelect={handleContextSelect}
+            />
+          </div>
           {status === "streaming" ? (
             <button
               type="button"
