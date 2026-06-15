@@ -6,7 +6,10 @@ use crate::ai::{
     config::ProviderConfig,
     keychain,
     provider::{AIProvider, CompletionChunk, CompletionRequest, Message, Role},
-    providers::{anthropic::AnthropicProvider, ollama::OllamaProvider, openai::OpenAIProvider},
+    providers::{
+        anthropic::AnthropicProvider, copilot::CopilotProvider, custom::CustomProvider,
+        gemini::GeminiProvider, ollama::OllamaProvider, openai::OpenAIProvider,
+    },
 };
 
 // ─── Chat Request / Response ─────────────────────────────────────────────────
@@ -163,8 +166,23 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "custom" => {
-            let provider = OpenAIProvider::new(config).map_err(|e| e.to_string())?;
+        "openai" | "deepseek" | "kimi" => {
+            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
+                .map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "custom" => {
+            let provider = CustomProvider::new(config).map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "gemini" => {
+            let provider = GeminiProvider::new(config).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -179,6 +197,13 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
         }
         "ollama" => {
             let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "copilot" => {
+            let provider = CopilotProvider::new(config).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -272,8 +297,23 @@ pub async fn ai_inline_completion(
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "custom" => {
-            let provider = OpenAIProvider::new(config).map_err(|e| e.to_string())?;
+        "openai" | "deepseek" | "kimi" => {
+            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
+                .map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "custom" => {
+            let provider = CustomProvider::new(config).map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "gemini" => {
+            let provider = GeminiProvider::new(config).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -288,6 +328,13 @@ pub async fn ai_inline_completion(
         }
         "ollama" => {
             let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "copilot" => {
+            let provider = CopilotProvider::new(config).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -363,11 +410,14 @@ When showing file contents, preserve the full code and include the language tag.
     };
 
     let provider: Box<dyn AIProvider> = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "custom" => {
-            Box::new(OpenAIProvider::new(config).map_err(|e| e.to_string())?)
-        }
+        "openai" | "deepseek" | "kimi" => Box::new(
+            OpenAIProvider::new_for_provider(config, &req.provider).map_err(|e| e.to_string())?,
+        ),
+        "custom" => Box::new(CustomProvider::new(config).map_err(|e| e.to_string())?),
+        "gemini" => Box::new(GeminiProvider::new(config).map_err(|e| e.to_string())?),
         "anthropic" => Box::new(AnthropicProvider::new(config).map_err(|e| e.to_string())?),
         "ollama" => Box::new(OllamaProvider::new(config).map_err(|e| e.to_string())?),
+        "copilot" => Box::new(CopilotProvider::new(config).map_err(|e| e.to_string())?),
         _ => return Err(format!("unsupported provider: {}", req.provider)),
     };
 
@@ -512,8 +562,23 @@ pub async fn ai_terminal_suggestion(
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "custom" => {
-            let provider = OpenAIProvider::new(config).map_err(|e| e.to_string())?;
+        "openai" | "deepseek" | "kimi" => {
+            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
+                .map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "custom" => {
+            let provider = CustomProvider::new(config).map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "gemini" => {
+            let provider = GeminiProvider::new(config).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -528,6 +593,13 @@ pub async fn ai_terminal_suggestion(
         }
         "ollama" => {
             let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
+            provider
+                .complete(completion_req)
+                .await
+                .map_err(|e| e.to_string())?
+        }
+        "copilot" => {
+            let provider = CopilotProvider::new(config).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -552,4 +624,112 @@ pub async fn ai_terminal_suggestion(
     };
 
     Ok(TerminalSuggestionResponse { suggestion })
+}
+
+// ─── Copilot OAuth ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct CopilotStartLoginRequest {
+    pub client_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CopilotStartLoginResponse {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub expires_in: u64,
+    pub interval: u64,
+}
+
+#[tauri::command]
+pub async fn copilot_start_device_login(
+    req: CopilotStartLoginRequest,
+) -> Result<CopilotStartLoginResponse, String> {
+    if req.client_id.trim().is_empty() {
+        return Err("GitHub OAuth client ID is required".to_string());
+    }
+
+    let result = crate::ai::auth::start_device_flow(&req.client_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    crate::ai::auth::store_client_id(&req.client_id).map_err(|e| e.to_string())?;
+
+    Ok(CopilotStartLoginResponse {
+        device_code: result.device_code,
+        user_code: result.user_code,
+        verification_uri: result.verification_uri,
+        expires_in: result.expires_in,
+        interval: result.interval,
+    })
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CopilotPollLoginRequest {
+    pub client_id: String,
+    pub device_code: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CopilotPollLoginResponse {
+    pub authorized: bool,
+}
+
+#[tauri::command]
+pub async fn copilot_poll_device_login(
+    req: CopilotPollLoginRequest,
+) -> Result<CopilotPollLoginResponse, String> {
+    if req.client_id.trim().is_empty() {
+        return Err("GitHub OAuth client ID is required".to_string());
+    }
+    if req.device_code.is_empty() {
+        return Err("device_code is required".to_string());
+    }
+
+    match crate::ai::auth::poll_device_flow(&req.client_id, &req.device_code)
+        .await
+        .map_err(|e| e.to_string())?
+    {
+        Some(tokens) => {
+            let token_set = crate::ai::auth::OAuthTokenSet {
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_at: tokens.expires_at,
+            };
+            crate::ai::auth::store_tokens(&token_set).map_err(|e| e.to_string())?;
+            crate::ai::auth::store_client_id(&req.client_id).map_err(|e| e.to_string())?;
+            Ok(CopilotPollLoginResponse { authorized: true })
+        }
+        None => Ok(CopilotPollLoginResponse { authorized: false }),
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct CopilotAuthStatus {
+    pub authenticated: bool,
+}
+
+#[tauri::command]
+pub async fn copilot_auth_status() -> Result<CopilotAuthStatus, String> {
+    let authenticated = crate::ai::auth::is_authenticated().map_err(|e| e.to_string())?;
+    Ok(CopilotAuthStatus { authenticated })
+}
+
+#[tauri::command]
+pub async fn copilot_logout() -> Result<(), String> {
+    crate::ai::auth::delete_tokens().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn open_external_url(url: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    if !url.starts_with("https://") {
+        return Err("only HTTPS URLs are allowed".to_string());
+    }
+
+    use tauri_plugin_shell::ShellExt;
+    app_handle
+        .shell()
+        .open(&url, None)
+        .map_err(|e| e.to_string())
 }

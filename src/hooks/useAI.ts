@@ -167,6 +167,7 @@ export function useAI() {
     providers,
     activeCLIProvider,
     apiKeyRefs,
+    copilotAuth,
     activeChatSessionId,
     createChatSession,
   } = useAIStore();
@@ -237,7 +238,11 @@ export function useAI() {
     [input, chat, rootPath],
   );
 
-  const canChat = isCLIActive || hasAPIKey || activeProvider === "ollama";
+  const canChat =
+    isCLIActive ||
+    hasAPIKey ||
+    activeProvider === "ollama" ||
+    (activeProvider === "copilot" && copilotAuth.authenticated);
 
   return {
     messages: chat.messages,
