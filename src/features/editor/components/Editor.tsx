@@ -361,7 +361,7 @@ export function Editor({ panelId }: EditorProps) {
 
   if (!activeTab) {
     return (
-      <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full w-full items-center justify-center text-ui-sm text-fg-subtle">
         <span>No file open</span>
       </div>
     );

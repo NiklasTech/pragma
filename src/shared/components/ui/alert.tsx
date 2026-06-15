@@ -8,13 +8,14 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
+        default: "bg-bg-elevated text-fg-default",
         destructive:
-          "border-destructive/30 bg-destructive/5 text-destructive *:data-[slot=alert-description]:text-destructive/80 *:[svg]:text-current",
+          "border-status-error/30 bg-status-error/5 text-status-error *:data-[slot=alert-description]:text-status-error/80 *:[svg]:text-current",
         warning:
           "border-status-warning/30 bg-status-warning/5 text-status-warning *:data-[slot=alert-description]:text-status-warning/80",
         success:
           "border-status-success/30 bg-status-success/5 text-status-success *:data-[slot=alert-description]:text-status-success/80",
+        info: "border-primary/20 bg-primary/5 text-primary *:data-[slot=alert-description]:text-primary/80",
       },
     },
     defaultVariants: {
@@ -43,7 +44,7 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="alert-title"
       className={cn(
-        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
+        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-fg-default",
         className,
       )}
       {...props}
@@ -56,7 +57,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<"div">) 
     <div
       data-slot="alert-description"
       className={cn(
-        "text-xs text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-3",
+        "text-ui-xs text-balance text-fg-subtle md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-fg-default [&_p:not(:last-child)]:mb-3",
         className,
       )}
       {...props}

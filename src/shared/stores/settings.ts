@@ -56,6 +56,23 @@ export interface LayoutSettings {
   chatPanelWidth: number;
 }
 
+export type StatusbarItem =
+  | "vimMode"
+  | "cursor"
+  | "fileType"
+  | "encoding"
+  | "eol"
+  | "gitBranch"
+  | "gitSync"
+  | "problems"
+  | "aiProvider"
+  | "theme";
+
+export interface StatusbarSettings {
+  visible: boolean;
+  items: StatusbarItem[];
+}
+
 export type ThemeMode = "dark" | "light" | "system";
 
 export interface SettingsState {
@@ -66,6 +83,7 @@ export interface SettingsState {
   themeMode: ThemeMode;
   keymap: string;
   layout: LayoutSettings;
+  statusbar: StatusbarSettings;
 }
 
 interface SettingsActions {
@@ -76,6 +94,7 @@ interface SettingsActions {
   setThemeMode: (mode: ThemeMode) => void;
   setKeymap: (keymap: string) => void;
   setLayoutSettings: (settings: Partial<LayoutSettings>) => void;
+  setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
   updateProvider: (provider: AIProvider, config: Partial<ProviderSettings>) => void;
   resetToDefaults: () => void;
 }
@@ -128,6 +147,21 @@ const defaultSettings: SettingsState = {
     terminalHeight: "50%",
     chatPanelWidth: 380,
   },
+  statusbar: {
+    visible: true,
+    items: [
+      "vimMode",
+      "cursor",
+      "fileType",
+      "encoding",
+      "eol",
+      "gitBranch",
+      "gitSync",
+      "problems",
+      "aiProvider",
+      "theme",
+    ],
+  },
 };
 
 export const useSettingsStore = create<SettingsState & SettingsActions>((set) => ({
@@ -145,6 +179,9 @@ export const useSettingsStore = create<SettingsState & SettingsActions>((set) =>
   setKeymap: (keymap) => set({ keymap }),
 
   setLayoutSettings: (settings) => set((state) => ({ layout: { ...state.layout, ...settings } })),
+
+  setStatusbarSettings: (settings) =>
+    set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
 
   updateProvider: (provider, config) =>
     set((state) => ({

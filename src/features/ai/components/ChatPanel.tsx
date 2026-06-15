@@ -191,13 +191,13 @@ export function ChatPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Session Header */}
-      <div className="shrink-0 flex items-center justify-between px-3 py-2 border-b border-border/40 gap-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
-          <ChatTeardropText size={14} className="text-muted-foreground shrink-0" />
-          <span className="text-xs text-muted-foreground truncate">
+          <ChatTeardropText size={14} className="shrink-0 text-fg-muted" />
+          <span className="truncate text-ui-xs text-fg-muted">
             {activeSession?.title ?? "Chat"}
           </span>
-          <span className="text-ui-xs text-muted-foreground/60 font-mono shrink-0">
+          <span className="shrink-0 font-mono text-ui-xs text-fg-subtle">
             {sessionId.slice(0, 12)}
           </span>
         </div>
@@ -206,7 +206,7 @@ export function ChatPanel() {
           <ChatSessionList />
           <button
             onClick={handleNewSession}
-            className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
             title="New Session"
           >
             <Plus size={14} weight="bold" />
@@ -220,14 +220,14 @@ export function ChatPanel() {
           <ConversationContent className="gap-4 p-4">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-accent-subtle">
                   <PaperPlaneRight size={20} weight="bold" className="text-primary" />
                 </div>
-                <p className="text-sm font-medium">Pragma AI</p>
-                <p className="text-sm text-muted-foreground mt-1">How can I help you today?</p>
+                <p className="text-ui-sm font-semibold">Pragma AI</p>
+                <p className="mt-1 text-ui-sm text-fg-muted">How can I help you today?</p>
 
                 {!canChat && (
-                  <p className="mt-4 text-xs text-muted-foreground">
+                  <p className="mt-4 text-ui-xs text-fg-subtle">
                     Open Settings to configure an AI provider.
                   </p>
                 )}
@@ -273,8 +273,8 @@ export function ChatPanel() {
 
               return (
                 <Message key={msg.id} from="assistant">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <Robot size={14} className="text-muted-foreground" />
+                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-hover">
+                    <Robot size={14} className="text-fg-muted" />
                   </div>
                   <MessageContent>
                     {sourceDocuments.map((source, index) => (
@@ -299,7 +299,7 @@ export function ChatPanel() {
                     <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
                     {isStreaming && (
                       <span className="mt-2 inline-flex h-4 items-center">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground" />
+                        <span className="size-1.5 animate-pulse rounded-full bg-fg-muted" />
                       </span>
                     )}
                   </MessageContent>
@@ -323,10 +323,10 @@ export function ChatPanel() {
       </div>
 
       {/* Input Area */}
-      <div className="shrink-0 border-t border-border/60 p-3">
+      <div className="shrink-0 border-t border-border/60 bg-bg-surface p-3">
         {/* Error Banner */}
         {error && (
-          <div className="mb-2 flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-ui-sm text-destructive">
+          <div className="mb-2 flex items-start gap-2 rounded-md bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
             <Warning size={14} className="mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-medium">Something went wrong</p>
@@ -335,7 +335,7 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={handleRetry}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-destructive/15"
+              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-status-error/15"
             >
               <ArrowCounterClockwise size={12} weight="bold" />
               <span>Retry</span>
@@ -345,7 +345,7 @@ export function ChatPanel() {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-primary/10 px-3 py-2 text-ui-sm text-primary">
+          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
             <Terminal size={14} />
             <span>
               Using {cliStatus.provider_id} via CLI

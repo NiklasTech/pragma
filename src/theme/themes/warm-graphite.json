@@ -3,11 +3,11 @@
   "format": "pragma-theme-v1",
 
   "metadata": {
-    "id": "warm-graphite",
-    "name": "Warm Graphite",
+    "id": "pragma-dark",
+    "name": "Pragma Dark",
     "author": "Pragma Team",
-    "description": "A warm, paper-like dark theme with amber accents. Designed for long coding sessions.",
-    "version": "1.0.0",
+    "description": "A deep, high-contrast dark theme with electric blue accents. Built for focus.",
+    "version": "2.0.0",
     "license": "MIT"
   },
 
@@ -20,40 +20,39 @@
   "tokens": {
     "colors": {
       "background": {
-        "root": "#121110",
-        "surface": "#181716",
-        "elevated": "#1e1d1c",
-        "input": "#232221",
-        "hover": "#252423",
-        "active": "#2a2927",
-        "overlay": "rgba(0, 0, 0, 0.6)"
+        "root": "#09090b",
+        "surface": "#0f0f11",
+        "elevated": "#151519",
+        "input": "#1a1a1f",
+        "hover": "rgba(255, 255, 255, 0.05)",
+        "active": "rgba(43, 127, 255, 0.10)",
+        "overlay": "rgba(0, 0, 0, 0.65)"
       },
       "foreground": {
-        "default": "#e8e6e3",
-        "muted": "#9a9691",
-        "subtle": "#6b6864",
-        "inverse": "#121110"
+        "default": "#f4f4f5",
+        "muted": "#a1a1aa",
+        "subtle": "#71717a",
+        "inverse": "#09090b"
       },
       "accent": {
-        "default": "#d4a574",
-        "hover": "#e0b88a",
-        "dim": "#8c7356",
-        "glow": "rgba(212, 165, 116, 0.25)"
+        "default": "#2b7fff",
+        "subtle": "rgba(43, 127, 255, 0.12)",
+        "glow": "rgba(43, 127, 255, 0.35)"
       },
       "border": {
-        "default": "#2e2d2b",
-        "subtle": "#232221",
-        "focus": "#575552"
+        "default": "rgba(255, 255, 255, 0.08)",
+        "subtle": "rgba(255, 255, 255, 0.05)",
+        "focus": "rgba(43, 127, 255, 0.50)"
       },
       "status": {
-        "success": "#8fb573",
-        "successBg": "rgba(143, 181, 115, 0.12)",
-        "warning": "#d4a574",
-        "warningBg": "rgba(212, 165, 116, 0.12)",
-        "error": "#d47d7d",
-        "errorBg": "rgba(212, 125, 125, 0.12)",
-        "info": "#7da3d4",
-        "infoBg": "rgba(125, 163, 212, 0.12)"
+        "success": "#22c55e",
+        "successBg": "rgba(34, 197, 94, 0.12)",
+        "warning": "#f59e0b",
+        "warningBg": "rgba(245, 158, 11, 0.12)",
+        "error": "#ef4444",
+        "errorBg": "rgba(239, 68, 68, 0.12)",
+        "info": "#3b82f6",
+        "infoBg": "rgba(59, 130, 246, 0.12)"
       },
       "git": {
         "added": "{status.success}",
@@ -65,17 +64,17 @@
         "untracked": "{status.info}",
         "untrackedBg": "{status.infoBg}",
         "ignored": "{foreground.subtle}",
-        "conflict": "#c78fd4"
+        "conflict": "#c084fc"
       },
       "thread": {
-        "default": "{accent.dim}",
+        "default": "{accent.subtle}",
         "active": "{accent.default}"
       },
-      "selection": "rgba(212, 165, 116, 0.25)",
+      "selection": "rgba(43, 127, 255, 0.25)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "{border.focus}",
-        "thumbHover": "{foreground.subtle}"
+        "thumb": "rgba(255, 255, 255, 0.12)",
+        "thumbHover": "rgba(255, 255, 255, 0.22)"
       }
     },
 
@@ -91,16 +90,16 @@
       },
       "line": {
         "active": "rgba(255, 255, 255, 0.03)",
-        "highlight": "rgba(212, 165, 116, 0.06)"
+        "highlight": "rgba(43, 127, 255, 0.06)"
       },
       "syntax": {
-        "keyword": "#c78fd4",
-        "string": "#8fb573",
+        "keyword": "#c084fc",
+        "string": "#86efac",
         "comment": "{foreground.subtle}",
-        "function": "#7da3d4",
+        "function": "#60a5fa",
         "variable": "{foreground.default}",
-        "number": "{accent.default}",
-        "type": "{accent.hover}",
+        "number": "#fdba74",
+        "type": "#93c5fd",
         "tag": "{status.error}",
         "attribute": "{accent.default}",
         "property": "{foreground.default}",
@@ -112,36 +111,38 @@
       "background": "{background.root}",
       "foreground": "{foreground.default}",
       "cursor": "{accent.default}",
-      "cursorAccent": "{accent.hover}",
+      "cursorAccent": "{accent.default}",
       "selection": "{selection}",
       "ansi": {
-        "black": "#121110",
-        "red": "#d47d7d",
-        "green": "#8fb573",
-        "yellow": "#d4a574",
-        "blue": "#7da3d4",
-        "magenta": "#c78fd4",
-        "cyan": "#7dbfc9",
-        "white": "#9a9691"
+        "black": "#09090b",
+        "red": "#ef4444",
+        "green": "#22c55e",
+        "yellow": "#f59e0b",
+        "blue": "#2b7fff",
+        "magenta": "#c084fc",
+        "cyan": "#22d3ee",
+        "white": "#a1a1aa"
       },
       "ansiBright": {
-        "black": "#2e2d2b",
-        "red": "#e09e9e",
-        "green": "#a8c98e",
-        "yellow": "#e0b88a",
-        "blue": "#9bbce0",
-        "magenta": "#d6a8e0",
-        "cyan": "#9cd1d9",
-        "white": "#e8e6e3"
+        "black": "#27272a",
+        "red": "#f87171",
+        "green": "#4ade80",
+        "yellow": "#fbbf24",
+        "blue": "#60a5fa",
+        "magenta": "#d8b4fe",
+        "cyan": "#67e8f9",
+        "white": "#f4f4f5"
       }
     },
 
     "layout": {
       "headerHeight": 40,
-      "tabHeight": 32,
+      "tabHeight": 34,
       "statusbarHeight": 26,
+      "breadcrumbHeight": 28,
       "inputbarHeight": 42,
       "sidebarWidth": 260,
+      "sidebarCollapsedWidth": 48,
       "sidebarMinWidth": 180,
       "sidebarMaxWidth": 480,
       "panelMinHeight": 160,
@@ -180,9 +181,9 @@
 
     "motion": {
       "duration": {
-        "fast": "120ms",
-        "base": "180ms",
-        "slow": "220ms",
+        "fast": "150ms",
+        "base": "200ms",
+        "slow": "250ms",
         "layout": "300ms"
       },
       "ease": {

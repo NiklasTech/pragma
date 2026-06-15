@@ -92,17 +92,17 @@ export function FileTreeNode({
       className={cn(
         "group flex items-center gap-1 rounded-sm py-[3px] pr-2 text-ui-base cursor-pointer select-none transition-colors",
         isActiveFile
-          ? "bg-primary/10 text-primary"
+          ? "bg-bg-active text-primary"
           : isSelected
-            ? "bg-accent text-accent-foreground"
-            : "text-foreground hover:bg-accent/50",
+            ? "bg-bg-hover text-fg-default"
+            : "text-fg-default hover:bg-bg-hover",
       )}
       style={{ paddingLeft }}
       onClick={handleClick}
     >
       {node.isDirectory ? (
         <>
-          <span className="text-muted-foreground/70">
+          <span className="text-fg-subtle">
             {isExpanded ? (
               <CaretDown size={12} weight="bold" />
             ) : (
@@ -110,9 +110,9 @@ export function FileTreeNode({
             )}
           </span>
           {node.isLoading ? (
-            <Spinner size={14} className="animate-spin text-muted-foreground" />
+            <Spinner size={14} className="animate-spin text-fg-muted" />
           ) : (
-            <span className={cn("shrink-0", isExpanded ? "text-primary" : "text-muted-foreground")}>
+            <span className={cn("shrink-0", isExpanded ? "text-primary" : "text-fg-muted")}>
               {isExpanded ? <FolderOpen size={14} /> : <Folder size={14} />}
             </span>
           )}
@@ -122,7 +122,7 @@ export function FileTreeNode({
       )}
 
       {node.isDirectory ? null : (
-        <span className="shrink-0 text-muted-foreground">
+        <span className="shrink-0 text-fg-muted">
           {(() => {
             const Icon = getFileIcon(node.name);
             return <Icon size={14} />;
@@ -133,7 +133,7 @@ export function FileTreeNode({
       <span className={cn("truncate", node.isDirectory && "font-medium")}>{node.name}</span>
 
       {node.error && (
-        <span className="ml-auto text-ui-xs text-destructive shrink-0" title={node.error}>
+        <span className="ml-auto shrink-0 text-ui-xs text-status-error" title={node.error}>
           err
         </span>
       )}

@@ -15,28 +15,24 @@ export function TerminalTabs({ sessions, activeSessionId }: TerminalTabsProps) {
   }
 
   return (
-    <div className="flex items-center gap-0.5 border-b border-border/60 bg-card px-2 py-1 overflow-x-auto">
+    <div className="flex h-tab items-center gap-1 overflow-x-auto border-b border-border/60 bg-bg-surface px-2">
       {sessions.map((session) => {
         const isActive = session.id === activeSessionId;
         return (
           <div
             key={session.id}
-            className={cn(
-              "group flex items-center gap-1.5 rounded px-2 py-1 text-ui-xs transition-colors cursor-default select-none",
-              isActive
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-            )}
+            data-active={isActive}
             onClick={() => setActiveSession(session.id)}
+            className={cn("pragma-pill-tab group cursor-default", isActive && "data-active=true")}
           >
-            <span className="truncate max-w-[140px]">{session.name}</span>
+            <span className="max-w-[140px] truncate">{session.name}</span>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 removeSession(session.id);
               }}
-              className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="ml-0.5 rounded-sm p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
               aria-label={`Close ${session.name}`}
             >
               <X size={10} />

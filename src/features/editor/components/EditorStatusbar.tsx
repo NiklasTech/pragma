@@ -1,5 +1,6 @@
 import { useSettingsStore } from "@/shared/stores/settings";
 import { PushPin } from "@phosphor-icons/react";
+import { cn } from "@/shared/lib/utils";
 
 interface EditorStatusbarProps {
   vimMode: string | null;
@@ -39,8 +40,8 @@ function getFileTypeLabel(name: string): string {
 
 function getModeColor(mode: string): string {
   if (mode === "insert") return "text-status-info";
-  if (mode === "replace") return "text-orange-400";
-  if (mode.startsWith("visual")) return "text-purple-400";
+  if (mode === "replace") return "text-status-warning";
+  if (mode.startsWith("visual")) return "text-[#c084fc]";
   return "text-status-success";
 }
 
@@ -49,22 +50,27 @@ export function EditorStatusbar({ vimMode, line, column, fileType }: EditorStatu
   const setEditorSettings = useSettingsStore((state) => state.setEditorSettings);
 
   return (
-    <div className="flex items-center justify-between px-3 py-1 text-xs border-t border-border bg-muted select-none">
+    <div className="flex h-statusbar items-center justify-between border-t border-border/60 bg-bg-surface px-3 text-ui-xs select-none">
       <div className="flex items-center gap-3">
         {vimMode && (
-          <span className={`font-medium ${getModeColor(vimMode)}`}>{vimMode.toUpperCase()}</span>
+          <span className={cn("font-semibold", getModeColor(vimMode))}>
+            {vimMode.toUpperCase()}
+          </span>
         )}
         <button
           type="button"
           onClick={() => setEditorSettings({ stickyLines: !stickyLines })}
-          className={`flex items-center gap-1 transition-colors hover:text-foreground ${stickyLines ? "text-foreground" : "text-muted-foreground"}`}
+          className={cn(
+            "flex items-center gap-1 transition-colors hover:text-fg-default",
+            stickyLines ? "text-fg-default" : "text-fg-muted",
+          )}
           title={stickyLines ? "Sticky Lines: On" : "Sticky Lines: Off"}
         >
           <PushPin size={12} weight={stickyLines ? "fill" : "regular"} />
           <span>Sticky</span>
         </button>
       </div>
-      <div className="flex items-center gap-4 text-muted-foreground">
+      <div className="flex items-center gap-4 text-fg-muted">
         <span>{getFileTypeLabel(fileType)}</span>
         <span>UTF-8</span>
         <span>

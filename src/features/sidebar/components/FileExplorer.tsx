@@ -45,7 +45,7 @@ export function FileExplorer() {
   if (!rootPath) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
-        <p className="text-sm text-muted-foreground">No folder open</p>
+        <p className="text-ui-sm text-fg-muted">No folder open</p>
         <Button variant="outline" size="sm" onClick={selectRoot} className="gap-2">
           <FolderOpen size={16} />
           Open Folder
@@ -58,15 +58,15 @@ export function FileExplorer() {
     <ContextMenu>
       <ContextMenuTrigger>
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
-            <span className="text-xs font-semibold text-foreground truncate" title={rootPath}>
+          <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
+            <span className="truncate text-ui-xs font-semibold text-fg-default" title={rootPath}>
               {rootName}
             </span>
           </div>
           <ScrollArea className="flex-1 min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Spinner size={20} className="animate-spin text-muted-foreground" />
+                <Spinner size={20} className="animate-spin text-fg-muted" />
               </div>
             ) : (
               <div className="py-1">

@@ -192,26 +192,26 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
           onClick={() => setOpen(!open)}
           disabled={actionBusy === "checkout"}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-ui-xs font-medium transition-colors",
-            open ? "bg-accent" : "hover:bg-foreground/10",
+            "inline-flex items-center gap-1.5 rounded-md bg-bg-hover px-2 py-1 text-ui-xs font-medium transition-colors",
+            open ? "bg-bg-active" : "hover:bg-bg-hover",
             actionBusy === "checkout" && "opacity-60",
           )}
         >
           {actionBusy === "checkout" ? (
-            <Spinner size={11} className="animate-spin text-muted-foreground" />
+            <Spinner size={11} className="animate-spin text-fg-muted" />
           ) : (
-            <GitBranch size={11} className="text-muted-foreground" />
+            <GitBranch size={11} className="text-fg-muted" />
           )}
           <span className="truncate max-w-[120px]">{currentBranch}</span>
           {isDetached && (
-            <span className="rounded bg-muted/55 px-1 py-px text-ui-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="rounded bg-bg-hover px-1 py-px text-ui-xs font-medium uppercase tracking-wider text-fg-muted">
               detached
             </span>
           )}
         </button>
 
         {ahead > 0 || behind > 0 ? (
-          <div className="flex items-center gap-0.5 text-ui-xs font-semibold text-muted-foreground">
+          <div className="flex items-center gap-0.5 text-ui-xs font-semibold text-fg-muted">
             {ahead > 0 && (
               <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
                 <ArrowUp size={8} />
@@ -229,7 +229,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
 
         {/* Status indicator */}
         {actionStatus && (
-          <div className="flex items-center gap-1 text-ui-xs text-muted-foreground animate-pulse">
+          <div className="flex animate-pulse items-center gap-1 text-ui-xs text-fg-muted">
             <Spinner size={10} className="animate-spin" />
             <span className="max-w-[100px] truncate">{actionStatus}</span>
             {actionProgress && actionProgress.total_objects > 0 && (
@@ -296,11 +296,11 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
 
         {/* Pull options dropdown */}
         {showPullOptions && (
-          <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-border bg-popover shadow-md">
+          <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-border/60 bg-bg-elevated shadow-lg shadow-black/10">
             <button
               type="button"
               onClick={() => void handlePull(false)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-ui-sm text-foreground/90 hover:bg-accent/30"
+              className="flex w-full items-center gap-2 px-3 py-2 text-ui-sm text-fg-default hover:bg-bg-hover"
             >
               <ArrowDown size={12} />
               Pull (merge)
@@ -308,7 +308,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             <button
               type="button"
               onClick={() => void handlePull(true)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-ui-sm text-foreground/90 hover:bg-accent/30"
+              className="flex w-full items-center gap-2 px-3 py-2 text-ui-sm text-fg-default hover:bg-bg-hover"
             >
               <ArrowsClockwise size={12} />
               Pull (rebase)
@@ -317,7 +317,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         )}
 
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border bg-popover shadow-md">
+          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border/60 bg-bg-elevated shadow-lg shadow-black/10">
             <div className="max-h-72 overflow-y-auto py-1">
               {branches.map((branch) => {
                 const isCurrent = branch.name === currentBranch;
@@ -328,8 +328,8 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                     className={cn(
                       "group flex items-center gap-2 px-3 py-1.5 text-ui-sm",
                       isCurrent
-                        ? "bg-accent/50 font-medium text-foreground"
-                        : "text-foreground/90 hover:bg-accent/30",
+                        ? "bg-bg-active font-medium text-fg-default"
+                        : "text-fg-default hover:bg-bg-hover",
                     )}
                   >
                     <button
@@ -339,14 +339,11 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                       className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
                       {isPending ? (
-                        <Spinner
-                          size={12}
-                          className="animate-spin shrink-0 text-muted-foreground"
-                        />
+                        <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
                       ) : isCurrent ? (
                         <Check size={12} className="shrink-0 text-primary" weight="bold" />
                       ) : (
-                        <GitBranch size={12} className="shrink-0 text-muted-foreground" />
+                        <GitBranch size={12} className="shrink-0 text-fg-muted" />
                       )}
                       <span className="truncate">{branch.name}</span>
                     </button>
@@ -356,7 +353,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                         type="button"
                         onClick={() => void handleDeleteBranch(branch.name)}
                         disabled={actionBusy === "delete-branch"}
-                        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                        className="shrink-0 rounded p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-status-error group-hover:opacity-100"
                         title="Delete branch"
                       >
                         <Trash size={12} />
@@ -367,7 +364,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               })}
             </div>
 
-            <div className="border-t border-border px-2 py-1.5">
+            <div className="border-t border-border/60 px-2 py-1.5">
               {creating ? (
                 <div className="flex items-center gap-1.5">
                   <Input
@@ -407,7 +404,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                 <button
                   type="button"
                   onClick={() => setCreating(true)}
-                  className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-ui-sm text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+                  className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
                 >
                   <Plus size={12} />
                   Create new branch
@@ -442,14 +439,14 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               onClick={() => void handleSmartSwitch()}
               disabled={pendingBranch !== null}
               className={cn(
-                "flex w-full items-center gap-3 rounded-md border border-border bg-accent/30 px-3 py-2.5 text-left transition-colors hover:bg-accent/50",
+                "flex w-full items-center gap-3 rounded-md border border-border/60 bg-bg-hover px-3 py-2.5 text-left transition-colors hover:bg-bg-active",
                 pendingBranch !== null && "opacity-60 cursor-not-allowed",
               )}
             >
               <ArrowsClockwise size={18} className="shrink-0 text-primary" />
               <div className="min-w-0">
                 <div className="text-ui-sm font-medium">Smart Switch</div>
-                <div className="text-ui-xs text-muted-foreground">
+                <div className="text-ui-xs text-fg-muted">
                   Stash changes, switch branch, then restore changes and workspace
                 </div>
               </div>
@@ -459,14 +456,14 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               onClick={() => void handleNormalSwitch()}
               disabled={pendingBranch !== null}
               className={cn(
-                "flex w-full items-center gap-3 rounded-md border border-border px-3 py-2.5 text-left transition-colors hover:bg-accent/30",
+                "flex w-full items-center gap-3 rounded-md border border-border/60 px-3 py-2.5 text-left transition-colors hover:bg-bg-hover",
                 pendingBranch !== null && "opacity-60 cursor-not-allowed",
               )}
             >
-              <GitBranch size={18} className="shrink-0 text-muted-foreground" />
+              <GitBranch size={18} className="shrink-0 text-fg-muted" />
               <div className="min-w-0">
                 <div className="text-ui-sm font-medium">Normal Switch</div>
-                <div className="text-ui-xs text-muted-foreground">
+                <div className="text-ui-xs text-fg-muted">
                   Switch branch without stashing (may fail or conflict)
                 </div>
               </div>
@@ -509,8 +506,8 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               className={cn(
                 "flex w-full items-center gap-2 rounded-md px-3 py-2 text-ui-sm transition-colors",
                 selectedFetchBranch === ""
-                  ? "bg-accent/50 font-medium text-foreground"
-                  : "text-foreground/90 hover:bg-accent/30",
+                  ? "bg-bg-active font-medium text-fg-default"
+                  : "text-fg-default hover:bg-bg-hover",
               )}
             >
               <ArrowsClockwise size={12} />
@@ -518,7 +515,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             </button>
 
             {remoteBranches.length === 0 && (
-              <p className="px-3 py-2 text-ui-xs text-muted-foreground">
+              <p className="px-3 py-2 text-ui-xs text-fg-muted">
                 No remote branches found. Fetch all to discover branches.
               </p>
             )}
@@ -535,7 +532,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                     : "text-foreground/90 hover:bg-accent/30",
                 )}
               >
-                <GitBranch size={12} className="text-muted-foreground" />
+                <GitBranch size={12} className="text-fg-muted" />
                 {rb.name}
               </button>
             ))}
@@ -577,7 +574,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-ui-md">
-              <Warning size={18} className="text-destructive" />
+              <Warning size={18} className="text-status-error" />
               Git Remote Error
             </DialogTitle>
             <DialogDescription className="text-ui-sm">{pushPullError}</DialogDescription>

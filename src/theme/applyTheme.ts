@@ -105,13 +105,12 @@ const TOKEN_TO_CSS_VAR: Record<string, string> = {
   "colors-foreground-inverse": "--color-fg-inverse",
 
   // Accent
-  "colors-accent-default": "--color-accent-default",
-  "colors-accent-hover": "--color-accent-hover",
-  "colors-accent-dim": "--color-accent-dim",
+  "colors-accent-default": "--color-accent",
+  "colors-accent-subtle": "--color-accent-subtle",
   "colors-accent-glow": "--color-accent-glow",
 
   // Borders
-  "colors-border-default": "--color-border-default",
+  "colors-border-default": "--color-border",
   "colors-border-subtle": "--color-border-subtle",
   "colors-border-focus": "--color-border-focus",
 
@@ -191,6 +190,46 @@ const TOKEN_TO_CSS_VAR: Record<string, string> = {
   "terminal-ansi-bright-magenta": "--color-terminal-ansi-bright-magenta",
   "terminal-ansi-bright-cyan": "--color-terminal-ansi-bright-cyan",
   "terminal-ansi-bright-white": "--color-terminal-ansi-bright-white",
+
+  // Layout
+  "layout-header-height": "--chrome-header-h",
+  "layout-tab-height": "--chrome-tab-h",
+  "layout-statusbar-height": "--chrome-statusbar-h",
+  "layout-breadcrumb-height": "--chrome-breadcrumb-h",
+  "layout-sidebar-width": "--chrome-sidebar-expanded-w",
+  "layout-sidebar-collapsed-width": "--chrome-sidebar-collapsed-w",
+  "layout-sidebar-min-width": "--chrome-sidebar-min-w",
+  "layout-sidebar-max-width": "--chrome-sidebar-max-w",
+  "layout-panel-min-height": "--chrome-panel-min-h",
+  "layout-panel-default-height": "--chrome-panel-default-h",
+  "layout-row-height": "--chrome-row-h",
+  "layout-inputbar-height": "--chrome-inputbar-h",
+
+  // Typography
+  "typography-ui-2xs": "--text-ui-2xs",
+  "typography-ui-xs": "--text-ui-xs",
+  "typography-ui-sm": "--text-ui-sm",
+  "typography-ui-base": "--text-ui-base",
+  "typography-ui-md": "--text-ui-md",
+  "typography-ui-lg": "--text-ui-lg",
+  "typography-editor": "--text-editor",
+  "typography-line-height-ui-2xs": "--leading-ui-2xs",
+  "typography-line-height-ui-xs": "--leading-ui-xs",
+  "typography-line-height-ui-sm": "--leading-ui-sm",
+  "typography-line-height-ui-base": "--leading-ui-base",
+  "typography-line-height-ui-md": "--leading-ui-md",
+  "typography-line-height-ui-lg": "--leading-ui-lg",
+  "typography-line-height-editor": "--leading-editor",
+
+  // Motion
+  "motion-duration-fast": "--motion-fast",
+  "motion-duration-base": "--motion-base",
+  "motion-duration-slow": "--motion-slow",
+  "motion-duration-layout": "--motion-layout",
+  "motion-ease-default": "--motion-ease",
+  "motion-ease-out": "--motion-ease-out",
+  "motion-ease-in-out": "--motion-ease-in-out",
+  "motion-ease-spring": "--motion-ease-spring",
 };
 
 // Additional CSS variables that should receive the same value as another.
@@ -520,7 +559,7 @@ export function clearAppliedTheme(): void {
           overlay: "",
         },
         foreground: { default: "", muted: "", subtle: "", inverse: "" },
-        accent: { default: "", hover: "", dim: "", glow: "" },
+        accent: { default: "", subtle: "", glow: "" },
         border: { default: "", subtle: "", focus: "" },
         status: {
           success: "",
@@ -595,6 +634,33 @@ export function clearAppliedTheme(): void {
           cyan: "",
           white: "",
         },
+      },
+      layout: {
+        headerHeight: 0,
+        tabHeight: 0,
+        statusbarHeight: 0,
+        breadcrumbHeight: 0,
+        inputbarHeight: 0,
+        sidebarWidth: 0,
+        sidebarCollapsedWidth: 0,
+        sidebarMinWidth: 0,
+        sidebarMaxWidth: 0,
+        panelMinHeight: 0,
+        panelDefaultHeight: 0,
+        rowHeight: 0,
+        padding: { xs: 0, sm: 0, md: 0, lg: 0 },
+      },
+      typography: {
+        ui: { "2xs": "", xs: "", sm: "", base: "", md: "", lg: "" },
+        editor: "",
+        lineHeight: {
+          ui: { "2xs": "", xs: "", sm: "", base: "", md: "", lg: "" },
+          editor: "",
+        },
+      },
+      motion: {
+        duration: { fast: "", base: "", slow: "", layout: "" },
+        ease: { default: "", out: "", inOut: "", spring: "" },
       },
     },
   });
