@@ -7,112 +7,462 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================================
+   PRAGMA DESIGN TOKEN SYSTEM
+   ----------------------------------------------------------------------------
+   Single source of truth for all visual values in the UI. Every hardcoded
+   value in components should eventually resolve to one of these tokens.
+
+   Namespaces:
+     --color-*   : all colors (ui, status, git, editor, terminal)
+     --text-*    : font sizes and line heights
+     --chrome-*  : layout constants for chrome elements
+     --radius-*  : border radius values
+     --motion-*  : durations and easings
+   ============================================================================ */
+
 @theme inline {
+  /* --------------------------------------------------------------------------
+     Typography
+     -------------------------------------------------------------------------- */
   --font-heading: var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
+
+  --text-ui-2xs: var(--text-ui-2xs);
+  --text-ui-xs: var(--text-ui-xs);
+  --text-ui-sm: var(--text-ui-sm);
+  --text-ui-base: var(--text-ui-base);
+  --text-ui-md: var(--text-ui-md);
+  --text-ui-lg: var(--text-ui-lg);
+  --text-editor: var(--text-editor);
+
+  --leading-ui-xs: var(--leading-ui-xs);
+  --leading-ui-sm: var(--leading-ui-sm);
+  --leading-ui-base: var(--leading-ui-base);
+  --leading-ui-md: var(--leading-ui-md);
+  --leading-ui-lg: var(--leading-ui-lg);
+  --leading-editor: var(--leading-editor);
+
+  /* --------------------------------------------------------------------------
+     Radius
+     -------------------------------------------------------------------------- */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: calc(var(--radius-lg) * 1.4);
+  --radius-3xl: calc(var(--radius-lg) * 1.8);
+  --radius-4xl: calc(var(--radius-lg) * 2.2);
+
+  /* --------------------------------------------------------------------------
+     Layout (mapped to Tailwind sizing utilities)
+     -------------------------------------------------------------------------- */
+  --height-header: var(--chrome-header-h);
+  --height-tab: var(--chrome-tab-h);
+  --height-statusbar: var(--chrome-statusbar-h);
+  --height-inputbar: var(--chrome-inputbar-h);
+  --height-row: var(--chrome-row-h);
+
+  --width-sidebar: var(--chrome-sidebar-w);
+  --width-sidebar-min: var(--chrome-sidebar-min-w);
+  --width-sidebar-max: var(--chrome-sidebar-max-w);
+
+  --min-height-panel: var(--chrome-panel-min-h);
+  --default-height-panel: var(--chrome-panel-default-h);
+
+  /* --------------------------------------------------------------------------
+     Colors — UI surfaces & text
+     -------------------------------------------------------------------------- */
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-foreground: var(--foreground);
+
+  --color-bg-root: var(--color-bg-root);
+  --color-bg-surface: var(--color-bg-surface);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-bg-input: var(--color-bg-input);
+  --color-bg-hover: var(--color-bg-hover);
+  --color-bg-active: var(--color-bg-active);
+  --color-bg-overlay: var(--color-bg-overlay);
+
+  --color-fg-default: var(--color-fg-default);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-fg-subtle: var(--color-fg-subtle);
+  --color-fg-inverse: var(--color-fg-inverse);
+
+  --color-accent: var(--color-accent-default);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-dim: var(--color-accent-dim);
+  --color-accent-glow: var(--color-accent-glow);
+
+  --color-border: var(--color-border-default);
+  --color-border-subtle: var(--color-border-subtle);
+  --color-border-focus: var(--color-border-focus);
+
+  /* --------------------------------------------------------------------------
+     Colors — shadcn/ui aliases (keep compatibility)
+     -------------------------------------------------------------------------- */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* --------------------------------------------------------------------------
+     Colors — semantic status & git
+     -------------------------------------------------------------------------- */
+  --color-status-success: var(--color-status-success);
+  --color-status-success-bg: var(--color-status-success-bg);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-warning-bg: var(--color-status-warning-bg);
+  --color-status-error: var(--color-status-error);
+  --color-status-error-bg: var(--color-status-error-bg);
+  --color-status-info: var(--color-status-info);
+  --color-status-info-bg: var(--color-status-info-bg);
+
+  --color-git-added: var(--color-git-added);
+  --color-git-added-bg: var(--color-git-added-bg);
+  --color-git-modified: var(--color-git-modified);
+  --color-git-modified-bg: var(--color-git-modified-bg);
+  --color-git-deleted: var(--color-git-deleted);
+  --color-git-deleted-bg: var(--color-git-deleted-bg);
+  --color-git-untracked: var(--color-git-untracked);
+  --color-git-untracked-bg: var(--color-git-untracked-bg);
+  --color-git-ignored: var(--color-git-ignored);
+  --color-git-conflict: var(--color-git-conflict);
+
+  /* --------------------------------------------------------------------------
+     Colors — editor & terminal
+     -------------------------------------------------------------------------- */
+  --color-editor-bg: var(--color-editor-bg);
+  --color-editor-fg: var(--color-editor-fg);
+  --color-editor-selection: var(--color-editor-selection);
+  --color-editor-cursor: var(--color-editor-cursor);
+  --color-editor-gutter-bg: var(--color-editor-gutter-bg);
+  --color-editor-gutter-fg: var(--color-editor-gutter-fg);
+  --color-editor-gutter-active-bg: var(--color-editor-gutter-active-bg);
+  --color-editor-line-active: var(--color-editor-line-active);
+  --color-editor-line-highlight: var(--color-editor-line-highlight);
+
+  --color-syntax-keyword: var(--color-syntax-keyword);
+  --color-syntax-string: var(--color-syntax-string);
+  --color-syntax-comment: var(--color-syntax-comment);
+  --color-syntax-function: var(--color-syntax-function);
+  --color-syntax-variable: var(--color-syntax-variable);
+  --color-syntax-number: var(--color-syntax-number);
+  --color-syntax-type: var(--color-syntax-type);
+  --color-syntax-tag: var(--color-syntax-tag);
+  --color-syntax-attribute: var(--color-syntax-attribute);
+  --color-syntax-property: var(--color-syntax-property);
+  --color-syntax-operator: var(--color-syntax-operator);
+
+  --color-terminal-bg: var(--color-terminal-bg);
+  --color-terminal-fg: var(--color-terminal-fg);
+  --color-terminal-cursor: var(--color-terminal-cursor);
+  --color-terminal-cursor-accent: var(--color-terminal-cursor-accent);
+  --color-terminal-selection: var(--color-terminal-selection);
 }
 
+/* ============================================================================
+   DEFAULT THEME: Warm Graphite (dark)
+   ============================================================================ */
+
 :root {
-  --background: #0f0f10;
-  --foreground: #e8e8ea;
-  --card: #1a1a1c;
-  --card-foreground: #e8e8ea;
-  --popover: #1a1a1c;
-  --popover-foreground: #e8e8ea;
-  --primary: #7c6af7;
-  --primary-foreground: #0f0f10;
-  --secondary: #242427;
-  --secondary-foreground: #e8e8ea;
-  --muted: #242427;
-  --muted-foreground: #8a8a8f;
-  --accent: #242427;
-  --accent-foreground: #e8e8ea;
-  --destructive: #f87171;
-  --border: #3a3a3e;
-  --input: #3a3a3e;
-  --ring: #7c6af7;
+  /* --------------------------------------------------------------------------
+     Backgrounds
+     -------------------------------------------------------------------------- */
+  --color-bg-root: #121110;
+  --color-bg-surface: #181716;
+  --color-bg-elevated: #1e1d1c;
+  --color-bg-input: #232221;
+  --color-bg-hover: #252423;
+  --color-bg-active: #2a2927;
+  --color-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* --------------------------------------------------------------------------
+     Foregrounds
+     -------------------------------------------------------------------------- */
+  --color-fg-default: #e8e6e3;
+  --color-fg-muted: #9a9691;
+  --color-fg-subtle: #6b6864;
+  --color-fg-inverse: #121110;
+
+  /* --------------------------------------------------------------------------
+     Accent
+     -------------------------------------------------------------------------- */
+  --color-accent-default: #d4a574;
+  --color-accent-hover: #e0b88a;
+  --color-accent-dim: #8c7356;
+  --color-accent-glow: rgba(212, 165, 116, 0.25);
+
+  /* --------------------------------------------------------------------------
+     Borders
+     -------------------------------------------------------------------------- */
+  --color-border-default: #2e2d2b;
+  --color-border-subtle: #232221;
+  --color-border-focus: #575552;
+
+  /* --------------------------------------------------------------------------
+     Status
+     -------------------------------------------------------------------------- */
+  --color-status-success: #8fb573;
+  --color-status-success-bg: rgba(143, 181, 115, 0.12);
+  --color-status-warning: #d4a574;
+  --color-status-warning-bg: rgba(212, 165, 116, 0.12);
+  --color-status-error: #d47d7d;
+  --color-status-error-bg: rgba(212, 125, 125, 0.12);
+  --color-status-info: #7da3d4;
+  --color-status-info-bg: rgba(125, 163, 212, 0.12);
+
+  /* --------------------------------------------------------------------------
+     Git
+     -------------------------------------------------------------------------- */
+  --color-git-added: var(--color-status-success);
+  --color-git-added-bg: var(--color-status-success-bg);
+  --color-git-modified: var(--color-status-warning);
+  --color-git-modified-bg: var(--color-status-warning-bg);
+  --color-git-deleted: var(--color-status-error);
+  --color-git-deleted-bg: var(--color-status-error-bg);
+  --color-git-untracked: var(--color-status-info);
+  --color-git-untracked-bg: var(--color-status-info-bg);
+  --color-git-ignored: var(--color-fg-subtle);
+  --color-git-conflict: #c78fd4;
+
+  /* --------------------------------------------------------------------------
+     Misc
+     -------------------------------------------------------------------------- */
+  --color-selection: rgba(212, 165, 116, 0.25);
+  --color-scrollbar-track: transparent;
+  --color-scrollbar-thumb: var(--color-border-focus);
+  --color-scrollbar-thumb-hover: var(--color-fg-subtle);
+
+  --color-thread: var(--color-accent-dim);
+  --color-thread-active: var(--color-accent-default);
+
+  /* --------------------------------------------------------------------------
+     Editor
+     -------------------------------------------------------------------------- */
+  --color-editor-bg: var(--color-bg-root);
+  --color-editor-fg: var(--color-fg-default);
+  --color-editor-selection: var(--color-selection);
+  --color-editor-cursor: var(--color-accent-default);
+  --color-editor-gutter-bg: var(--color-bg-root);
+  --color-editor-gutter-fg: var(--color-fg-subtle);
+  --color-editor-gutter-active-bg: var(--color-bg-surface);
+  --color-editor-line-active: rgba(255, 255, 255, 0.03);
+  --color-editor-line-highlight: rgba(212, 165, 116, 0.06);
+
+  --color-syntax-keyword: #c78fd4;
+  --color-syntax-string: #8fb573;
+  --color-syntax-comment: var(--color-fg-subtle);
+  --color-syntax-function: #7da3d4;
+  --color-syntax-variable: var(--color-fg-default);
+  --color-syntax-number: var(--color-accent-default);
+  --color-syntax-type: var(--color-accent-hover);
+  --color-syntax-tag: var(--color-status-error);
+  --color-syntax-attribute: var(--color-accent-default);
+  --color-syntax-property: var(--color-fg-default);
+  --color-syntax-operator: var(--color-fg-muted);
+
+  /* --------------------------------------------------------------------------
+     Terminal
+     -------------------------------------------------------------------------- */
+  --color-terminal-bg: var(--color-bg-root);
+  --color-terminal-fg: var(--color-fg-default);
+  --color-terminal-cursor: var(--color-accent-default);
+  --color-terminal-cursor-accent: var(--color-accent-hover);
+  --color-terminal-selection: var(--color-selection);
+
+  --color-terminal-ansi-black: #121110;
+  --color-terminal-ansi-red: #d47d7d;
+  --color-terminal-ansi-green: #8fb573;
+  --color-terminal-ansi-yellow: #d4a574;
+  --color-terminal-ansi-blue: #7da3d4;
+  --color-terminal-ansi-magenta: #c78fd4;
+  --color-terminal-ansi-cyan: #7dbfc9;
+  --color-terminal-ansi-white: #9a9691;
+
+  --color-terminal-ansi-bright-black: #2e2d2b;
+  --color-terminal-ansi-bright-red: #e09e9e;
+  --color-terminal-ansi-bright-green: #a8c98e;
+  --color-terminal-ansi-bright-yellow: #e0b88a;
+  --color-terminal-ansi-bright-blue: #9bbce0;
+  --color-terminal-ansi-bright-magenta: #d6a8e0;
+  --color-terminal-ansi-bright-cyan: #9cd1d9;
+  --color-terminal-ansi-bright-white: #e8e6e3;
+
+  /* --------------------------------------------------------------------------
+     Layout
+     -------------------------------------------------------------------------- */
+  --chrome-header-h: 40px;
+  --chrome-tab-h: 32px;
+  --chrome-statusbar-h: 26px;
+  --chrome-inputbar-h: 42px;
+
+  --chrome-sidebar-w: 260px;
+  --chrome-sidebar-min-w: 180px;
+  --chrome-sidebar-max-w: 480px;
+
+  --chrome-panel-min-h: 160px;
+  --chrome-panel-default-h: 240px;
+
+  --chrome-gap: 0px;
+  --chrome-pad-xs: 4px;
+  --chrome-pad-sm: 6px;
+  --chrome-pad-md: 8px;
+  --chrome-pad-lg: 12px;
+
+  --chrome-row-h: 26px;
+
+  /* --------------------------------------------------------------------------
+     Typography
+     -------------------------------------------------------------------------- */
+  --text-ui-2xs: 9px;
+  --text-ui-xs: 11px;
+  --text-ui-sm: 12px;
+  --text-ui-base: 13px;
+  --text-ui-md: 14px;
+  --text-ui-lg: 16px;
+
+  --leading-ui-2xs: 12px;
+  --leading-ui-2xs: 12px;
+  --leading-ui-xs: 14px;
+  --leading-ui-sm: 16px;
+  --leading-ui-base: 20px;
+  --leading-ui-md: 22px;
+  --leading-ui-lg: 24px;
+
+  --text-editor: 14px;
+  --leading-editor: 22px;
+
+  --tracking-ui: -0.01em;
+  --tracking-editor: 0em;
+
+  /* --------------------------------------------------------------------------
+     Radius
+     -------------------------------------------------------------------------- */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-pill: 9999px;
+
+  /* --------------------------------------------------------------------------
+     Motion
+     -------------------------------------------------------------------------- */
+  --motion-duration-instant: 0ms;
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 180ms;
+  --motion-duration-slow: 220ms;
+  --motion-duration-layout: 300ms;
+
+  --motion-ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --------------------------------------------------------------------------
+     shadcn/ui aliases (backwards compatible)
+     -------------------------------------------------------------------------- */
+  --background: var(--color-bg-root);
+  --foreground: var(--color-fg-default);
+  --card: var(--color-bg-surface);
+  --card-foreground: var(--color-fg-default);
+  --popover: var(--color-bg-elevated);
+  --popover-foreground: var(--color-fg-default);
+  --primary: var(--color-accent-default);
+  --primary-foreground: var(--color-fg-inverse);
+  --secondary: var(--color-bg-hover);
+  --secondary-foreground: var(--color-fg-default);
+  --muted: var(--color-bg-hover);
+  --muted-foreground: var(--color-fg-muted);
+  --accent: var(--color-bg-active);
+  --accent-foreground: var(--color-fg-default);
+  --destructive: var(--color-status-error);
+  --border: var(--color-border-default);
+  --input: var(--color-border-default);
+  --ring: var(--color-accent-default);
   --radius: 0.375rem;
-  --sidebar: #0f0f10;
-  --sidebar-foreground: #e8e8ea;
-  --sidebar-primary: #7c6af7;
-  --sidebar-primary-foreground: #0f0f10;
-  --sidebar-accent: #242427;
-  --sidebar-accent-foreground: #e8e8ea;
-  --sidebar-border: #3a3a3e;
-  --sidebar-ring: #7c6af7;
-  --chart-1: #7c6af7;
-  --chart-2: #4ade80;
-  --chart-3: #fbbf24;
-  --chart-4: #f87171;
-  --chart-5: #60a5fa;
-  --editor-background: #0f0f10;
-  --editor-foreground: #e8e8ea;
-  --editor-keyword: #b18aff;
-  --editor-function: #60a5fa;
-  --editor-string: #4ade80;
-  --editor-number: #fbbf24;
-  --editor-comment: #8a8a8f;
-  --editor-type: #fbbf24;
-  --editor-tag: #f87171;
-  --editor-attribute: #fbbf24;
-  --editor-property: #e8e8ea;
-  --editor-operator: #7c6af7;
-  --editor-cursor: #e8e8ea;
-  --editor-selection: rgba(124, 106, 247, 0.3);
-  --editor-gutter: #0f0f10;
-  --editor-gutter-foreground: #8a8a8f;
-  --editor-active-line: #242427;
+
+  --sidebar: var(--color-bg-root);
+  --sidebar-foreground: var(--color-fg-default);
+  --sidebar-primary: var(--color-accent-default);
+  --sidebar-primary-foreground: var(--color-fg-inverse);
+  --sidebar-accent: var(--color-bg-hover);
+  --sidebar-accent-foreground: var(--color-fg-default);
+  --sidebar-border: var(--color-border-default);
+  --sidebar-ring: var(--color-accent-default);
+
+  --chart-1: var(--color-accent-default);
+  --chart-2: var(--color-status-success);
+  --chart-3: var(--color-status-warning);
+  --chart-4: var(--color-status-error);
+  --chart-5: var(--color-status-info);
+
+  /* --------------------------------------------------------------------------
+     Legacy editor tokens (kept for backwards compatibility during migration)
+     -------------------------------------------------------------------------- */
+  --editor-background: var(--color-editor-bg);
+  --editor-foreground: var(--color-editor-fg);
+  --editor-keyword: var(--color-syntax-keyword);
+  --editor-function: var(--color-syntax-function);
+  --editor-string: var(--color-syntax-string);
+  --editor-number: var(--color-syntax-number);
+  --editor-comment: var(--color-syntax-comment);
+  --editor-type: var(--color-syntax-type);
+  --editor-tag: var(--color-syntax-tag);
+  --editor-attribute: var(--color-syntax-attribute);
+  --editor-property: var(--color-syntax-property);
+  --editor-operator: var(--color-syntax-operator);
+  --editor-cursor: var(--color-editor-cursor);
+  --editor-selection: var(--color-editor-selection);
+  --editor-gutter: var(--color-editor-gutter-bg);
+  --editor-gutter-foreground: var(--color-editor-gutter-fg);
+  --editor-active-line: var(--color-editor-line-active);
 }
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
+
   html,
   body,
   #root {
@@ -122,105 +472,160 @@
   }
 }
 
-/* CodeMirror Dark Theme Overrides */
+/* ============================================================================
+   SCROLLBAR
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* ============================================================================
+   CODE MIRROR
+   ============================================================================ */
+
 .cm-editor {
-  background-color: var(--background, #0f0f10);
-  color: var(--foreground, #e8e8ea);
+  background-color: var(--color-editor-bg);
+  color: var(--color-editor-fg);
 }
 
 .cm-editor.cm-focused {
   outline: none;
 }
 
-/* xterm.js: only show scrollbar when content overflows */
-.xterm-viewport {
-  overflow-y: auto !important;
+.cm-gutters {
+  background-color: var(--color-editor-gutter-bg) !important;
+  border-right: 1px solid var(--color-border-subtle) !important;
 }
 
-/* Chat code-block syntax-highlighting tokens (Lezer / legacy-mode mapping) */
+.cm-activeLineGutter {
+  background-color: var(--color-editor-gutter-active-bg) !important;
+}
+
+.cm-activeLine {
+  background-color: var(--color-editor-line-active) !important;
+}
+
+.cm-selectionBackground {
+  background-color: var(--color-editor-selection) !important;
+}
+
+.cm-cursor {
+  border-left-color: var(--color-editor-cursor) !important;
+}
+
+/* ============================================================================
+   XTERM.JS
+   ============================================================================ */
+
+.xterm-viewport {
+  overflow-y: auto !important;
+  background-color: var(--color-terminal-bg) !important;
+}
+
+.xterm-screen {
+  color: var(--color-terminal-fg);
+}
+
+/* ============================================================================
+   CHAT / STREAMDOWN SYNTAX HIGHLIGHTING
+   ============================================================================ */
+
 .tok-keyword,
 .tok-controlKeyword,
 .tok-definitionKeyword,
 .tok-moduleKeyword,
 .tok-operatorKeyword {
-  color: var(--editor-keyword, #b18aff);
+  color: var(--color-syntax-keyword);
 }
 
 .tok-variableName,
 .tok-definition {
-  color: var(--editor-property, #e8e8ea);
+  color: var(--color-syntax-variable);
 }
 
 .tok-propertyName {
-  color: var(--editor-property, #e8e8ea);
+  color: var(--color-syntax-property);
 }
 
 .tok-typeName,
 .tok-className,
 .tok-interfaceName {
-  color: var(--editor-type, #fbbf24);
+  color: var(--color-syntax-type);
 }
 
 .tok-string,
 .tok-string2 {
-  color: var(--editor-string, #4ade80);
+  color: var(--color-syntax-string);
 }
 
 .tok-number,
-.tok-unit {
-  color: var(--editor-number, #fbbf24);
+.tok-unit,
+.tok-atom {
+  color: var(--color-syntax-number);
 }
 
-.tok-comment {
-  color: var(--editor-comment, #8a8a8f);
+.tok-comment,
+.tok-meta {
+  color: var(--color-syntax-comment);
 }
 
 .tok-tagName {
-  color: var(--editor-tag, #f87171);
+  color: var(--color-syntax-tag);
 }
 
 .tok-attributeName {
-  color: var(--editor-attribute, #fbbf24);
+  color: var(--color-syntax-attribute);
 }
 
 .tok-function,
-.tok-call {
-  color: var(--editor-function, #60a5fa);
+.tok-call,
+.tok-name {
+  color: var(--color-syntax-function);
 }
 
 .tok-operator,
 .tok-punctuation,
 .tok-bracket {
-  color: var(--editor-operator, #7c6af7);
-}
-
-.tok-atom {
-  color: var(--editor-number, #fbbf24);
-}
-
-.tok-meta {
-  color: var(--editor-comment, #8a8a8f);
+  color: var(--color-syntax-operator);
 }
 
 .tok-link {
-  color: var(--editor-function, #60a5fa);
+  color: var(--color-syntax-function);
   text-decoration: underline;
 }
 
 .tok-heading {
-  color: var(--editor-keyword, #b18aff);
+  color: var(--color-syntax-keyword);
   font-weight: 600;
 }
 
-.tok-name {
-  color: var(--editor-function, #60a5fa);
-}
-
 .tok-modifier {
-  color: var(--editor-keyword, #b18aff);
+  color: var(--color-syntax-keyword);
 }
 
-/* Shimmer text animation for streaming placeholders */
+/* ============================================================================
+   SHIMMER
+   ============================================================================ */
+
 @keyframes pragma-shimmer {
   0% {
     background-position: calc(-1 * var(--shimmer-spread, 100px)) 0;
@@ -233,10 +638,28 @@
 .pragma-shimmer {
   background-image: linear-gradient(
     90deg,
-    var(--muted-foreground, #8a8a8f) 0%,
-    var(--foreground, #e8e8ea) 50%,
-    var(--muted-foreground, #8a8a8f) 100%
+    var(--color-fg-muted) 0%,
+    var(--color-fg-default) 50%,
+    var(--color-fg-muted) 100%
   );
   background-size: calc(2 * var(--shimmer-spread, 100px)) 100%;
   animation: pragma-shimmer var(--shimmer-duration, 2s) linear infinite;
+}
+
+/* ============================================================================
+   PRAGMA THREAD (distinctive UI element)
+   ============================================================================ */
+
+.pragma-thread {
+  background-color: var(--color-thread);
+  box-shadow: 0 0 12px var(--color-accent-glow);
+  opacity: 0.4;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-default),
+    opacity var(--motion-duration-fast) var(--motion-ease-default);
+}
+
+.pragma-thread-active {
+  background-color: var(--color-thread-active);
+  opacity: 0.8;
 }
