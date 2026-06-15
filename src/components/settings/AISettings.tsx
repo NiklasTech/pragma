@@ -16,6 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAIStore, type AIProvider } from "@/stores/ai";
 import { useSettingsStore } from "@/stores/settings";
+import { invoke } from "@tauri-apps/api/core";
 import { PROVIDER_LABELS, PROVIDER_MODELS } from "@/lib/ai-providers";
 import {
   Eye,
@@ -35,7 +36,7 @@ import {
 
 type AuthTab = "cli" | "apikey" | "ollama";
 
-const NEEDS_KEY: AIProvider[] = ["openai", "anthropic", "deepseek", "kimi", "custom"];
+const NEEDS_KEY: AIProvider[] = ["openai", "anthropic", "deepseek", "kimi", "gemini", "custom"];
 
 export function AISettings() {
   const aiStore = useAIStore();
@@ -48,6 +49,12 @@ export function AISettings() {
   const [installing, setInstalling] = React.useState<string | null>(null);
   const [loggingIn, setLoggingIn] = React.useState<string | null>(null);
 
+  const [copilotClientIdInput, setCopilotClientIdInput] = React.useState("");
+  const [copilotUserCode, setCopilotUserCode] = React.useState<string | null>(null);
+  const [copilotVerificationUri, setCopilotVerificationUri] = React.useState<string | null>(null);
+  const [copilotPolling, setCopilotPolling] = React.useState(false);
+  const [copilotError, setCopilotError] = React.useState<string | null>(null);
+
   const activeProvider = settingsStore.ai.defaultProvider;
   const providerConfig = settingsStore.ai.providers[activeProvider];
   const apiKeyRef = aiStore.apiKeyRefs[activeProvider];
@@ -57,6 +64,8 @@ export function AISettings() {
     NEEDS_KEY.forEach((p) => void aiStore.loadKeyStatus(p));
     void aiStore.loadCLIManifests();
     void aiStore.loadCLIStatuses();
+    void aiStore.loadCopilotAuthStatus();
+    setCopilotClientIdInput(aiStore.copilotAuth.clientId);
   }, []);
 
   const handleProviderChange = (provider: AIProvider) => {
@@ -68,6 +77,9 @@ export function AISettings() {
     }
     setKeyInput("");
     setTestStatus("idle");
+    setCopilotError(null);
+    setCopilotUserCode(null);
+    setCopilotVerificationUri(null);
   };
 
   const handleModelChange = (model: string) => {
@@ -129,6 +141,68 @@ export function AISettings() {
     }
   };
 
+  const handleCopilotConnect = async () => {
+    const clientId = copilotClientIdInput.trim();
+    if (!clientId) return;
+
+    setCopilotError(null);
+    setCopilotUserCode(null);
+    setCopilotVerificationUri(null);
+    setCopilotPolling(true);
+
+    try {
+      const start = await aiStore.startCopilotDeviceLogin(clientId);
+      setCopilotUserCode(start.user_code);
+      setCopilotVerificationUri(start.verification_uri);
+
+      const verificationUrl = `${start.verification_uri}?user_code=${encodeURIComponent(start.user_code)}`;
+      void invoke("open_external_url", { url: verificationUrl });
+
+      const deadline = Date.now() + start.expires_in * 1000;
+      const poll = async () => {
+        if (Date.now() >= deadline) {
+          setCopilotPolling(false);
+          setCopilotError("Login code expired. Please try again.");
+          return;
+        }
+
+        try {
+          const authorized = await aiStore.pollCopilotDeviceLogin(clientId, start.device_code);
+          if (authorized) {
+            setCopilotPolling(false);
+            setCopilotUserCode(null);
+            setCopilotVerificationUri(null);
+            return;
+          }
+          setTimeout(poll, start.interval * 1000);
+        } catch (err) {
+          setCopilotPolling(false);
+          setCopilotError(String(err));
+        }
+      };
+
+      setTimeout(poll, start.interval * 1000);
+    } catch (err) {
+      setCopilotPolling(false);
+      setCopilotError(String(err));
+    }
+  };
+
+  const handleCopilotDisconnect = async () => {
+    await aiStore.logoutCopilot();
+    setCopilotUserCode(null);
+    setCopilotVerificationUri(null);
+    setCopilotError(null);
+  };
+
+  const handleOpenVerificationUrl = () => {
+    if (copilotVerificationUri && copilotUserCode) {
+      void invoke("open_external_url", {
+        url: `${copilotVerificationUri}?user_code=${encodeURIComponent(copilotUserCode)}`,
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Auth Mode Tabs */}
@@ -155,7 +229,7 @@ export function AISettings() {
           }`}
         >
           <Globe size={14} />
-          API Key
+          API / OAuth
         </button>
         <button
           type="button"
@@ -309,26 +383,31 @@ export function AISettings() {
 
                 <div className="flex flex-col gap-1.5">
                   <Label>Model</Label>
-                  <Select
-                    value={providerConfig.model}
-                    onValueChange={(v) => {
-                      if (v) handleModelChange(v);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROVIDER_MODELS[activeProvider].map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
-                        </SelectItem>
-                      ))}
-                      {activeProvider === "custom" && providerConfig.model && (
-                        <SelectItem value={providerConfig.model}>{providerConfig.model}</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  {activeProvider === "custom" ? (
+                    <Input
+                      value={providerConfig.model}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      placeholder="e.g. gpt-4o, llama-v3p1-405b-instruct"
+                    />
+                  ) : (
+                    <Select
+                      value={providerConfig.model}
+                      onValueChange={(v) => {
+                        if (v) handleModelChange(v);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROVIDER_MODELS[activeProvider].map((m) => (
+                          <SelectItem key={m} value={m}>
+                            {m}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
 
@@ -379,6 +458,73 @@ export function AISettings() {
                   {apiKeyRef && (
                     <p className="text-xs text-muted-foreground">Saved key: {apiKeyRef}</p>
                   )}
+                </div>
+              )}
+
+              {activeProvider === "copilot" && (
+                <div className="flex flex-col gap-3 rounded-md bg-muted p-3">
+                  <div className="flex flex-col gap-1.5">
+                    <Label>GitHub OAuth Client ID</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Create a GitHub OAuth App and paste its Client ID here.
+                    </p>
+                    <Input
+                      value={copilotClientIdInput}
+                      onChange={(e) => {
+                        setCopilotClientIdInput(e.target.value);
+                        aiStore.setCopilotClientId(e.target.value);
+                      }}
+                      placeholder="e.g. Iv23li..."
+                      disabled={copilotPolling || aiStore.copilotAuth.authenticated}
+                    />
+                  </div>
+
+                  {aiStore.copilotAuth.authenticated ? (
+                    <div className="flex flex-col gap-2">
+                      <span className="flex items-center gap-1 text-xs text-green-500">
+                        <CheckCircle size={14} /> Connected to GitHub Copilot
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopilotDisconnect}
+                        disabled={copilotPolling}
+                      >
+                        <SignOut size={14} className="mr-1" />
+                        Disconnect
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={handleCopilotConnect}
+                      disabled={!copilotClientIdInput.trim() || copilotPolling}
+                    >
+                      <SignIn size={14} className="mr-1" />
+                      {copilotPolling ? "Waiting for authorization..." : "Connect GitHub Account"}
+                    </Button>
+                  )}
+
+                  {copilotUserCode && copilotVerificationUri && (
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-xs text-muted-foreground">
+                        Enter this code on GitHub if the browser did not open:
+                      </p>
+                      <code className="rounded bg-card px-2 py-1 text-center text-sm font-mono">
+                        {copilotUserCode}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleOpenVerificationUrl}
+                        disabled={copilotPolling}
+                      >
+                        Open GitHub
+                      </Button>
+                    </div>
+                  )}
+
+                  {copilotError && <p className="text-xs text-destructive">{copilotError}</p>}
                 </div>
               )}
 

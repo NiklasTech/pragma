@@ -34,7 +34,9 @@ const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
   ollama: [],
   deepseek: [],
   kimi: ["moonshot-kimi"],
+  gemini: [],
   custom: [],
+  copilot: [],
 };
 
 function isCLIAuthenticated(
@@ -52,8 +54,10 @@ function isProviderAvailable(
   apiKeyRefs: Record<AIProvider, string | null>,
   activeCLIProvider: string | null,
   cliStatuses: Record<string, { authenticated?: boolean }>,
+  copilotAuthenticated: boolean,
 ): boolean {
   if (provider === "ollama") return true;
+  if (provider === "copilot") return copilotAuthenticated;
   if (apiKeyRefs[provider] !== null) return true;
   return isCLIAuthenticated(CLI_PROVIDER_IDS[provider], activeCLIProvider, cliStatuses);
 }
@@ -67,6 +71,7 @@ export function AiModelSelector() {
     apiKeyRefs,
     activeCLIProvider,
     cliStatuses,
+    copilotAuth,
     setActiveProvider,
     setActiveModel,
     updateProviderConfig,
@@ -81,13 +86,21 @@ export function AiModelSelector() {
       ollama: false,
       deepseek: false,
       kimi: false,
+      gemini: false,
       custom: false,
+      copilot: false,
     };
     (Object.keys(map) as AIProvider[]).forEach((p) => {
-      map[p] = isProviderAvailable(p, apiKeyRefs, activeCLIProvider, cliStatuses);
+      map[p] = isProviderAvailable(
+        p,
+        apiKeyRefs,
+        activeCLIProvider,
+        cliStatuses,
+        copilotAuth.authenticated,
+      );
     });
     return map;
-  }, [apiKeyRefs, activeCLIProvider, cliStatuses]);
+  }, [apiKeyRefs, activeCLIProvider, cliStatuses, copilotAuth.authenticated]);
 
   const isAvailable = availableMap[activeProvider];
 

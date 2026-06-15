@@ -1,7 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
-export type AIProvider = "openai" | "anthropic" | "ollama" | "deepseek" | "kimi" | "custom";
+export type AIProvider =
+  | "openai"
+  | "anthropic"
+  | "ollama"
+  | "deepseek"
+  | "kimi"
+  | "gemini"
+  | "custom"
+  | "copilot";
 
 export interface ProviderConfig {
   model: string;
@@ -61,6 +69,10 @@ interface AIState {
   cliManifests: CLIManifest[];
   cliStatuses: Record<string, CLIStatus>;
   activeCLIProvider: string | null;
+  copilotAuth: {
+    authenticated: boolean;
+    clientId: string;
+  };
 }
 
 interface AIActions {
@@ -83,6 +95,19 @@ interface AIActions {
   loadKeyStatus: (provider: AIProvider) => Promise<void>;
   deleteApiKey: (provider: AIProvider) => Promise<void>;
 
+  // Copilot OAuth
+  loadCopilotAuthStatus: () => Promise<void>;
+  startCopilotDeviceLogin: (clientId: string) => Promise<{
+    device_code: string;
+    user_code: string;
+    verification_uri: string;
+    expires_in: number;
+    interval: number;
+  }>;
+  pollCopilotDeviceLogin: (clientId: string, deviceCode: string) => Promise<boolean>;
+  logoutCopilot: () => Promise<void>;
+  setCopilotClientId: (clientId: string) => void;
+
   // CLI
   loadCLIManifests: () => Promise<void>;
   loadCLIStatuses: () => Promise<void>;
@@ -98,7 +123,9 @@ const defaultProviders: Record<AIProvider, ProviderConfig> = {
   ollama: { baseUrl: "http://localhost:11434", model: "llama3.2" },
   deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
   kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
+  gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash" },
   custom: { baseUrl: "", model: "" },
+  copilot: { model: "gpt-4o" },
 };
 
 const initialState: AIState = {
@@ -119,7 +146,13 @@ const initialState: AIState = {
     ollama: null,
     deepseek: null,
     kimi: null,
+    gemini: null,
     custom: null,
+    copilot: null,
+  },
+  copilotAuth: {
+    authenticated: false,
+    clientId: "",
   },
   cliManifests: [],
   cliStatuses: {},
@@ -267,4 +300,46 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   },
 
   setActiveCLIProvider: (providerId) => set({ activeCLIProvider: providerId }),
+
+  // ─── Copilot OAuth Actions ────────────────────────────────────────────────
+
+  loadCopilotAuthStatus: async () => {
+    try {
+      const status = await invoke<{ authenticated: boolean }>("copilot_auth_status");
+      set({ copilotAuth: { ...get().copilotAuth, authenticated: status.authenticated } });
+    } catch (e) {
+      console.error("[Copilot Auth Status Error]", e);
+    }
+  },
+
+  startCopilotDeviceLogin: async (clientId) => {
+    const result = await invoke<{
+      device_code: string;
+      user_code: string;
+      verification_uri: string;
+      expires_in: number;
+      interval: number;
+    }>("copilot_start_device_login", { req: { client_id: clientId } });
+    set({ copilotAuth: { ...get().copilotAuth, clientId } });
+    return result;
+  },
+
+  pollCopilotDeviceLogin: async (clientId, deviceCode) => {
+    const result = await invoke<{ authorized: boolean }>("copilot_poll_device_login", {
+      req: { client_id: clientId, device_code: deviceCode },
+    });
+    if (result.authorized) {
+      set({ copilotAuth: { ...get().copilotAuth, authenticated: true, clientId } });
+    }
+    return result.authorized;
+  },
+
+  logoutCopilot: async () => {
+    await invoke("copilot_logout");
+    set({ copilotAuth: { authenticated: false, clientId: get().copilotAuth.clientId } });
+  },
+
+  setCopilotClientId: (clientId) => {
+    set({ copilotAuth: { ...get().copilotAuth, clientId } });
+  },
 }));

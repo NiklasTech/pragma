@@ -4,55 +4,61 @@ use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::ai::{
+    auth::{self, CopilotAccessToken},
     config::ProviderConfig,
     error::AIError,
-    keychain,
     provider::{
         AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse, Message,
         ModelInfo, Role, Usage,
     },
 };
 
-const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
+const DEFAULT_BASE_URL: &str = "https://api.individual.githubcopilot.com";
 const COMPLETIONS_PATH: &str = "/chat/completions";
+
+const APP_NAME: &str = "Pragma";
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[
     ("gpt-4o", "GPT-4o", Some(128_000), true, true),
-    ("o1", "o1", Some(200_000), true, false),
-    ("o3", "o3", Some(200_000), true, false),
+    (
+        "claude-3.5-sonnet",
+        "Claude 3.5 Sonnet",
+        Some(200_000),
+        true,
+        true,
+    ),
+    (
+        "gemini-2.0-flash",
+        "Gemini 2.0 Flash",
+        Some(1_048_576),
+        true,
+        true,
+    ),
 ];
 
-pub struct OpenAIProvider {
+pub struct CopilotProvider {
     config: ProviderConfig,
     client: reqwest::Client,
 }
 
-impl OpenAIProvider {
+impl CopilotProvider {
     pub fn new(config: ProviderConfig) -> Result<Self, AIError> {
-        Self::new_for_provider(config, "openai")
-    }
-
-    pub fn new_for_provider(
-        config: ProviderConfig,
-        keychain_name: impl AsRef<str>,
-    ) -> Result<Self, AIError> {
-        let api_key = match &config.api_key {
-            Some(key) if !key.is_empty() => key.clone(),
-            _ => match keychain::get_api_key(keychain_name.as_ref())? {
-                Some(key) => key,
-                None => return Err(AIError::InvalidApiKey),
-            },
-        };
+        let editor_version = format!("{APP_NAME}/{APP_VERSION}");
 
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
-            reqwest::header::AUTHORIZATION,
-            reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
-                .map_err(|e| AIError::Provider(format!("invalid api key header: {e}")))?,
-        );
-        headers.insert(
             reqwest::header::CONTENT_TYPE,
             reqwest::header::HeaderValue::from_static("application/json"),
+        );
+        headers.insert(
+            "Editor-Version",
+            reqwest::header::HeaderValue::from_str(&editor_version)
+                .map_err(|e| AIError::Provider(format!("invalid editor version header: {e}")))?,
+        );
+        headers.insert(
+            "Copilot-Integration-Id",
+            reqwest::header::HeaderValue::from_static("pragma"),
         );
 
         if let Some(extra) = &config.extra_headers {
@@ -89,11 +95,15 @@ impl OpenAIProvider {
         }
         Ok(())
     }
+
+    async fn fetch_copilot_token(&self) -> Result<CopilotAccessToken, AIError> {
+        auth::get_valid_copilot_token().await
+    }
 }
 
-impl AIProvider for OpenAIProvider {
+impl AIProvider for CopilotProvider {
     fn name(&self) -> &'static str {
-        "openai"
+        "copilot"
     }
 
     fn config(&self) -> &ProviderConfig {
@@ -120,12 +130,14 @@ impl AIProvider for OpenAIProvider {
         Box::pin(async move {
             self.validate_model()?;
 
-            let body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
+            let copilot_token = self.fetch_copilot_token().await?;
+            let body = CopilotRequestBody::from_completion_request(&self.config.model, req);
             let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
 
             let response = self
                 .client
                 .post(&url)
+                .header("Authorization", format!("Bearer {}", copilot_token.token))
                 .json(&body)
                 .send()
                 .await
@@ -134,15 +146,15 @@ impl AIProvider for OpenAIProvider {
             let status = response.status();
             if !status.is_success() {
                 let text = response.text().await.unwrap_or_default();
-                return Err(map_openai_error(status, &text));
+                return Err(map_copilot_error(status, &text));
             }
 
-            let openai_resp: OpenAIResponse = response
+            let copilot_resp: CopilotResponse = response
                 .json()
                 .await
                 .map_err(|e| AIError::Serialization(e.to_string()))?;
 
-            let choice = openai_resp
+            let choice = copilot_resp
                 .choices
                 .into_iter()
                 .next()
@@ -150,8 +162,8 @@ impl AIProvider for OpenAIProvider {
 
             Ok(CompletionResponse {
                 content: choice.message.content.unwrap_or_default(),
-                model: openai_resp.model,
-                usage: openai_resp.usage.map(|u| Usage {
+                model: copilot_resp.model,
+                usage: copilot_resp.usage.map(|u| Usage {
                     prompt_tokens: u.prompt_tokens,
                     completion_tokens: u.completion_tokens,
                     total_tokens: u.total_tokens,
@@ -167,7 +179,8 @@ impl AIProvider for OpenAIProvider {
         Box::pin(async move {
             self.validate_model()?;
 
-            let mut body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
+            let copilot_token = self.fetch_copilot_token().await?;
+            let mut body = CopilotRequestBody::from_completion_request(&self.config.model, req);
             body.stream = Some(true);
 
             let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
@@ -175,6 +188,7 @@ impl AIProvider for OpenAIProvider {
             let response = self
                 .client
                 .post(&url)
+                .header("Authorization", format!("Bearer {}", copilot_token.token))
                 .json(&body)
                 .send()
                 .await
@@ -183,7 +197,7 @@ impl AIProvider for OpenAIProvider {
             let status = response.status();
             if !status.is_success() {
                 let text = response.text().await.unwrap_or_default();
-                return Err(map_openai_error(status, &text));
+                return Err(map_copilot_error(status, &text));
             }
 
             let bytes = response
@@ -199,7 +213,7 @@ impl AIProvider for OpenAIProvider {
                     continue;
                 }
                 if let Some(data) = line.strip_prefix("data: ") {
-                    let event: OpenAIStreamEvent = serde_json::from_str(data)
+                    let event: CopilotStreamEvent = serde_json::from_str(data)
                         .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
 
                     if let Some(choice) = event.choices.into_iter().next() {
@@ -225,7 +239,8 @@ impl AIProvider for OpenAIProvider {
         Box::pin(async move {
             self.validate_model()?;
 
-            let mut body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
+            let copilot_token = self.fetch_copilot_token().await?;
+            let mut body = CopilotRequestBody::from_completion_request(&self.config.model, req);
             body.stream = Some(true);
 
             let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
@@ -233,6 +248,7 @@ impl AIProvider for OpenAIProvider {
             let response = self
                 .client
                 .post(&url)
+                .header("Authorization", format!("Bearer {}", copilot_token.token))
                 .json(&body)
                 .send()
                 .await
@@ -241,7 +257,7 @@ impl AIProvider for OpenAIProvider {
             let status = response.status();
             if !status.is_success() {
                 let text = response.text().await.unwrap_or_default();
-                return Err(map_openai_error(status, &text));
+                return Err(map_copilot_error(status, &text));
             }
 
             let (tx, rx) = tokio::sync::mpsc::channel::<Result<CompletionChunk, AIError>>(64);
@@ -267,7 +283,7 @@ impl AIProvider for OpenAIProvider {
                                                 continue;
                                             }
 
-                                            match serde_json::from_str::<OpenAIStreamEvent>(data) {
+                                            match serde_json::from_str::<CopilotStreamEvent>(data) {
                                                 Ok(event) => {
                                                     if let Some(choice) =
                                                         event.choices.into_iter().next()
@@ -325,21 +341,20 @@ fn map_reqwest_error(err: reqwest::Error) -> AIError {
     }
 }
 
-fn map_openai_error(status: reqwest::StatusCode, body: &str) -> AIError {
+fn map_copilot_error(status: reqwest::StatusCode, body: &str) -> AIError {
     if status == reqwest::StatusCode::UNAUTHORIZED {
         return AIError::InvalidApiKey;
     }
     if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        let retry_after = None;
-        return AIError::RateLimited { retry_after };
+        return AIError::RateLimited { retry_after: None };
     }
     AIError::Provider(format!("HTTP {status}: {body}"))
 }
 
 #[derive(Debug, Serialize)]
-struct OpenAIRequestBody {
+struct CopilotRequestBody {
     model: String,
-    messages: Vec<OpenAIMessage>,
+    messages: Vec<CopilotMessage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -348,7 +363,7 @@ struct OpenAIRequestBody {
     stream: Option<bool>,
 }
 
-impl OpenAIRequestBody {
+impl CopilotRequestBody {
     fn from_completion_request(model: &str, req: CompletionRequest) -> Self {
         Self {
             model: model.to_string(),
@@ -361,12 +376,12 @@ impl OpenAIRequestBody {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct OpenAIMessage {
+struct CopilotMessage {
     role: String,
     content: String,
 }
 
-impl From<Message> for OpenAIMessage {
+impl From<Message> for CopilotMessage {
     fn from(msg: Message) -> Self {
         Self {
             role: match msg.role {
@@ -381,41 +396,41 @@ impl From<Message> for OpenAIMessage {
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIResponse {
+struct CopilotResponse {
     model: String,
-    choices: Vec<OpenAIChoice>,
-    usage: Option<OpenAIUsage>,
+    choices: Vec<CopilotChoice>,
+    usage: Option<CopilotUsage>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIChoice {
-    message: OpenAIResponseMessage,
+struct CopilotChoice {
+    message: CopilotResponseMessage,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIResponseMessage {
+struct CopilotResponseMessage {
     content: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIUsage {
+struct CopilotUsage {
     prompt_tokens: u32,
     completion_tokens: u32,
     total_tokens: u32,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIStreamEvent {
-    choices: Vec<OpenAIStreamChoice>,
+struct CopilotStreamEvent {
+    choices: Vec<CopilotStreamChoice>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIStreamChoice {
-    delta: OpenAIStreamDelta,
+struct CopilotStreamChoice {
+    delta: CopilotStreamDelta,
     finish_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OpenAIStreamDelta {
+struct CopilotStreamDelta {
     content: Option<String>,
 }

@@ -7,7 +7,7 @@ import { useAIStore } from "@/stores/ai";
  * never opens the Settings page.
  */
 export function useAIInit() {
-  const { loadCLIStatuses, loadCLIManifests, loadKeyStatus } = useAIStore();
+  const { loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus } = useAIStore();
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -27,5 +27,8 @@ export function useAIInit() {
       "custom",
     ];
     providers.forEach((p) => void loadKeyStatus(p));
-  }, [loadCLIStatuses, loadCLIManifests, loadKeyStatus]);
+
+    // Load GitHub Copilot OAuth status
+    void loadCopilotAuthStatus();
+  }, [loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus]);
 }

@@ -24,7 +24,15 @@ export interface TerminalSettings {
   scrollback: number;
 }
 
-export type AIProvider = "openai" | "anthropic" | "ollama" | "deepseek" | "kimi" | "custom";
+export type AIProvider =
+  | "openai"
+  | "anthropic"
+  | "ollama"
+  | "deepseek"
+  | "kimi"
+  | "gemini"
+  | "custom"
+  | "copilot";
 
 export interface ProviderSettings {
   model: string;
@@ -103,7 +111,9 @@ const defaultSettings: SettingsState = {
       ollama: { baseUrl: "http://localhost:11434", model: "llama3.2" },
       deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
       kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
+      gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash" },
       custom: { baseUrl: "", model: "" },
+      copilot: { model: "gpt-4o" },
     },
   },
   theme: "dark-default",
