@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { Layout } from "@/modules/layout";
-import { WindowResizeHandles } from "@/components/layout/WindowResizeHandles";
-import { Toaster } from "@/components/ui/sonner";
-import { useOpenFile } from "@/hooks/useOpenFile";
-import { useSaveFile } from "@/hooks/useSaveFile";
-import { useLayoutStore } from "@/modules/layout";
-import { useAIInit } from "@/hooks/useAIInit";
+import { Layout } from "@/shell/layout";
+import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
+import { Toaster } from "@/shared/components/ui/sonner";
+import { useOpenFile } from "@/shared/hooks/useOpenFile";
+import { useSaveFile } from "@/shared/hooks/useSaveFile";
+import { useLayoutStore } from "@/shell/layout";
+import { useAIInit } from "@/shared/hooks/useAIInit";
+import { ThemeProvider } from "@/theme";
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
@@ -37,7 +38,7 @@ export default function App() {
         void saveFile();
       } else if (isAIToggleShortcut) {
         e.preventDefault();
-        useLayoutStore.getState().toggleAIPanel();
+        useLayoutStore.getState().toggleAI();
       }
     };
 
@@ -48,10 +49,10 @@ export default function App() {
   }, [openFile, saveFile]);
 
   return (
-    <>
+    <ThemeProvider>
       <WindowResizeHandles />
       <Layout />
       <Toaster position="bottom-right" />
-    </>
+    </ThemeProvider>
   );
 }

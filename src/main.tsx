@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./app/App";
-import { initRunConfigListeners } from "@/stores/runConfig";
+import { initRunConfigListeners } from "@/shared/stores/runConfig";
 
 initRunConfigListeners();
 

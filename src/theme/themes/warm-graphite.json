@@ -1,0 +1,196 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+
+  "metadata": {
+    "id": "warm-graphite",
+    "name": "Warm Graphite",
+    "author": "Pragma Team",
+    "description": "A warm, paper-like dark theme with amber accents. Designed for long coding sessions.",
+    "version": "1.0.0",
+    "license": "MIT"
+  },
+
+  "appearance": {
+    "defaultMode": "dark",
+    "supportedModes": ["dark"],
+    "preferredEditorTheme": "pragma-dark"
+  },
+
+  "tokens": {
+    "colors": {
+      "background": {
+        "root": "#121110",
+        "surface": "#181716",
+        "elevated": "#1e1d1c",
+        "input": "#232221",
+        "hover": "#252423",
+        "active": "#2a2927",
+        "overlay": "rgba(0, 0, 0, 0.6)"
+      },
+      "foreground": {
+        "default": "#e8e6e3",
+        "muted": "#9a9691",
+        "subtle": "#6b6864",
+        "inverse": "#121110"
+      },
+      "accent": {
+        "default": "#d4a574",
+        "hover": "#e0b88a",
+        "dim": "#8c7356",
+        "glow": "rgba(212, 165, 116, 0.25)"
+      },
+      "border": {
+        "default": "#2e2d2b",
+        "subtle": "#232221",
+        "focus": "#575552"
+      },
+      "status": {
+        "success": "#8fb573",
+        "successBg": "rgba(143, 181, 115, 0.12)",
+        "warning": "#d4a574",
+        "warningBg": "rgba(212, 165, 116, 0.12)",
+        "error": "#d47d7d",
+        "errorBg": "rgba(212, 125, 125, 0.12)",
+        "info": "#7da3d4",
+        "infoBg": "rgba(125, 163, 212, 0.12)"
+      },
+      "git": {
+        "added": "{status.success}",
+        "addedBg": "{status.successBg}",
+        "modified": "{status.warning}",
+        "modifiedBg": "{status.warningBg}",
+        "deleted": "{status.error}",
+        "deletedBg": "{status.errorBg}",
+        "untracked": "{status.info}",
+        "untrackedBg": "{status.infoBg}",
+        "ignored": "{foreground.subtle}",
+        "conflict": "#c78fd4"
+      },
+      "thread": {
+        "default": "{accent.dim}",
+        "active": "{accent.default}"
+      },
+      "selection": "rgba(212, 165, 116, 0.25)",
+      "scrollbar": {
+        "track": "transparent",
+        "thumb": "{border.focus}",
+        "thumbHover": "{foreground.subtle}"
+      }
+    },
+
+    "editor": {
+      "background": "{background.root}",
+      "foreground": "{foreground.default}",
+      "selection": "{selection}",
+      "cursor": "{accent.default}",
+      "gutter": {
+        "background": "{background.root}",
+        "foreground": "{foreground.subtle}",
+        "activeBackground": "{background.surface}"
+      },
+      "line": {
+        "active": "rgba(255, 255, 255, 0.03)",
+        "highlight": "rgba(212, 165, 116, 0.06)"
+      },
+      "syntax": {
+        "keyword": "#c78fd4",
+        "string": "#8fb573",
+        "comment": "{foreground.subtle}",
+        "function": "#7da3d4",
+        "variable": "{foreground.default}",
+        "number": "{accent.default}",
+        "type": "{accent.hover}",
+        "tag": "{status.error}",
+        "attribute": "{accent.default}",
+        "property": "{foreground.default}",
+        "operator": "{foreground.muted}"
+      }
+    },
+
+    "terminal": {
+      "background": "{background.root}",
+      "foreground": "{foreground.default}",
+      "cursor": "{accent.default}",
+      "cursorAccent": "{accent.hover}",
+      "selection": "{selection}",
+      "ansi": {
+        "black": "#121110",
+        "red": "#d47d7d",
+        "green": "#8fb573",
+        "yellow": "#d4a574",
+        "blue": "#7da3d4",
+        "magenta": "#c78fd4",
+        "cyan": "#7dbfc9",
+        "white": "#9a9691"
+      },
+      "ansiBright": {
+        "black": "#2e2d2b",
+        "red": "#e09e9e",
+        "green": "#a8c98e",
+        "yellow": "#e0b88a",
+        "blue": "#9bbce0",
+        "magenta": "#d6a8e0",
+        "cyan": "#9cd1d9",
+        "white": "#e8e6e3"
+      }
+    },
+
+    "layout": {
+      "headerHeight": 40,
+      "tabHeight": 32,
+      "statusbarHeight": 26,
+      "inputbarHeight": 42,
+      "sidebarWidth": 260,
+      "sidebarMinWidth": 180,
+      "sidebarMaxWidth": 480,
+      "panelMinHeight": 160,
+      "panelDefaultHeight": 240,
+      "rowHeight": 26,
+      "padding": {
+        "xs": 4,
+        "sm": 6,
+        "md": 8,
+        "lg": 12
+      }
+    },
+
+    "typography": {
+      "ui": {
+        "2xs": "9px",
+        "xs": "11px",
+        "sm": "12px",
+        "base": "13px",
+        "md": "14px",
+        "lg": "16px"
+      },
+      "editor": "14px",
+      "lineHeight": {
+        "ui": {
+          "2xs": "12px",
+          "xs": "14px",
+          "sm": "16px",
+          "base": "20px",
+          "md": "22px",
+          "lg": "24px"
+        },
+        "editor": "22px"
+      }
+    },
+
+    "motion": {
+      "duration": {
+        "fast": "120ms",
+        "base": "180ms",
+        "slow": "220ms",
+        "layout": "300ms"
+      },
+      "ease": {
+        "default": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "out": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "inOut": "cubic-bezier(0.2, 0, 0, 1)",
+        "spring": "cubic-bezier(0.34, 1.56, 0.64, 1)"
+      }
+    }
+  }
+}
