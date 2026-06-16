@@ -9,6 +9,8 @@ import {
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
 import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
+import { useTheme } from "@/theme";
+import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { AISuggestionsOverlay } from "./ai-suggestions";
 
 interface PtyOutputEvent {
@@ -29,6 +31,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const lastOutputRef = useRef<string>("");
   const [termState, setTermState] = useState<XTerm | null>(null);
   const { fontSize, fontFamily, scrollback, aiSuggestions } = useTerminalStore();
+  const { themeId, resolvedMode } = useTheme();
 
   const suggestions = useTerminalSuggestions({
     term: termState,
@@ -57,12 +60,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         cursorStyle: "block",
         convertEol: true,
         scrollback,
-        theme: {
-          background: "#0d0e15",
-          foreground: "#c0caf5",
-          cursor: "#c0caf5",
-          selectionBackground: "#283457",
-        },
+        theme: getXtermTheme(),
       });
       const fit = new FitAddon();
       fitRef.current = fit;
@@ -155,6 +153,12 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       ptyIdRef.current = null;
     };
   }, [session.command, session.shell, session.cwd, fontSize, fontFamily, scrollback]);
+
+  useEffect(() => {
+    if (!termRef.current) return;
+
+    termRef.current.options.theme = getXtermTheme();
+  }, [themeId, resolvedMode]);
 
   useEffect(() => {
     if (isActive && termRef.current && fitRef.current) {

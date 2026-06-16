@@ -11,6 +11,7 @@ import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useAutoSave } from "@/shared/hooks/useAutoSave";
+import { useTheme } from "@/theme";
 import { useSelectionAskAi } from "@/shared/hooks/useSelectionAskAi";
 import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
@@ -68,6 +69,7 @@ function FileEditor({
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
+  const { themeId, resolvedMode } = useTheme();
   const [hasSelection, setHasSelection] = useState(false);
   const selectedTextRef = useRef("");
   const { handleBlur } = useAutoSave();
@@ -222,6 +224,14 @@ function FileEditor({
     captureActiveSelection,
     askFromSelection,
   });
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    viewRef.current.dispatch({
+      effects: themeCompartment.reconfigure(pragmaDarkTheme),
+    });
+  }, [themeId, resolvedMode]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
