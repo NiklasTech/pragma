@@ -37,8 +37,7 @@ export interface ForegroundTokens {
 
 export interface AccentTokens {
   default: string;
-  hover: string;
-  dim: string;
+  subtle: string;
   glow: string;
 }
 
@@ -162,8 +161,10 @@ export interface LayoutTokens {
   headerHeight: number;
   tabHeight: number;
   statusbarHeight: number;
+  breadcrumbHeight: number;
   inputbarHeight: number;
   sidebarWidth: number;
+  sidebarCollapsedWidth: number;
   sidebarMinWidth: number;
   sidebarMaxWidth: number;
   panelMinHeight: number;

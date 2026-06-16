@@ -1,29 +1,27 @@
 "use client";
 
-import { useTheme } from "next-themes";
+import * as React from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 import { CheckCircle, Info, Warning, XCircle, Spinner } from "@phosphor-icons/react";
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-
+function Toaster({ ...props }: ToasterProps) {
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="dark"
       className="toaster group"
       icons={{
-        success: <CheckCircle className="size-4" />,
-        info: <Info className="size-4" />,
-        warning: <Warning className="size-4" />,
-        error: <XCircle className="size-4" />,
-        loading: <Spinner className="size-4 animate-spin" />,
+        success: <CheckCircle className="size-4 text-status-success" />,
+        info: <Info className="size-4 text-primary" />,
+        warning: <Warning className="size-4 text-status-warning" />,
+        error: <XCircle className="size-4 text-status-error" />,
+        loading: <Spinner className="size-4 animate-spin text-primary" />,
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "var(--color-bg-elevated)",
+          "--normal-text": "var(--color-fg-default)",
+          "--normal-border": "var(--color-border)",
+          "--border-radius": "var(--radius-md)",
         } as React.CSSProperties
       }
       toastOptions={{
@@ -34,6 +32,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       {...props}
     />
   );
-};
+}
 
 export { Toaster };

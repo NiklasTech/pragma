@@ -38,7 +38,7 @@ function StatusIcon({ status }: { status: string }) {
     case "renamed":
       return <ArrowsLeftRight {...props} className="shrink-0 text-status-info" />;
     default:
-      return <File {...props} className="shrink-0 text-muted-foreground" />;
+      return <File {...props} className="shrink-0 text-fg-muted" />;
   }
 }
 
@@ -53,7 +53,7 @@ function statusAccent(code: string): string {
     case "R":
       return "bg-status-info/80";
     default:
-      return "bg-muted-foreground/40";
+      return "bg-fg-muted/40";
   }
 }
 
@@ -152,12 +152,12 @@ function CommitArea({
   onCommit: () => void;
 }) {
   return (
-    <div className="px-2.5 pb-2.5 pt-2.5 space-y-2 border-b border-border/40">
+    <div className="space-y-2 border-b border-border/60 px-2.5 pb-2.5 pt-2.5">
       <div
         className={cn(
-          "relative rounded-lg border bg-background/95 shadow-sm transition-colors",
+          "relative rounded-lg border bg-bg-surface shadow-sm transition-colors",
           commitMessage.length > 0 ? "border-border/70" : "border-border/45",
-          "focus-within:border-primary/45 focus-within:shadow-md focus-within:shadow-primary/5",
+          "focus-within:border-primary/45 focus-within:shadow-[0_0_12px_-4px_var(--color-accent-glow)]",
         )}
       >
         <Textarea
@@ -166,9 +166,9 @@ function CommitArea({
           onKeyDown={handleKeyDown}
           placeholder="Commit message"
           rows={2}
-          className="min-h-[56px] border-0 resize-none rounded-lg bg-transparent px-3 pb-5 pt-2 text-ui-sm leading-snug shadow-none placeholder:text-muted-foreground/65 focus-visible:ring-0"
+          className="min-h-[56px] resize-none rounded-lg border-0 bg-transparent px-3 pb-5 pt-2 text-ui-sm leading-snug shadow-none placeholder:text-fg-subtle focus-visible:ring-0"
         />
-        <div className="pointer-events-none absolute inset-x-3 bottom-1 flex items-center text-ui-xs text-muted-foreground/55">
+        <div className="pointer-events-none absolute inset-x-3 bottom-1 flex items-center text-ui-xs text-fg-subtle">
           {commitMessage.length > 0 ? (
             <span>Ch: {commitMessage.length}</span>
           ) : (
@@ -177,18 +177,14 @@ function CommitArea({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 text-ui-xs text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-ui-xs text-fg-muted">
         <span
           className={cn(
             "size-1.5 shrink-0 rounded-full",
-            canCommit
-              ? "bg-foreground/80"
-              : stagedCount > 0
-                ? "bg-muted-foreground/60"
-                : "bg-muted-foreground/30",
+            canCommit ? "bg-fg-default/80" : stagedCount > 0 ? "bg-fg-muted/60" : "bg-fg-subtle/60",
           )}
         />
-        <span className="truncate font-medium text-foreground/85">
+        <span className="truncate font-medium text-fg-default/85">
           {stagedCount === 0
             ? "Nothing staged"
             : `${stagedCount} ${stagedCount === 1 ? "file" : "files"} staged`}
@@ -220,13 +216,13 @@ function ListHeader({
 }) {
   return (
     <div className="flex h-7 items-center gap-2 px-3">
-      <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/85">
+      <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-fg-muted">
         Changes
       </span>
-      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border/60 px-1 text-ui-xs font-semibold text-muted-foreground">
+      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border/60 px-1 text-ui-xs font-semibold text-fg-muted">
         {count}
       </span>
-      <label className="ml-auto flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-ui-xs font-medium text-muted-foreground hover:text-foreground">
+      <label className="ml-auto flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-ui-xs font-medium text-fg-muted hover:text-fg-default">
         <span>All</span>
         <Checkbox
           checked={headerCheckState === "checked"}
@@ -263,7 +259,7 @@ function FileEntryRow({
     <div
       className={cn(
         "group relative flex h-[30px] items-center gap-2 rounded-md pl-2 pr-2 transition-all duration-100",
-        isSelected ? "bg-accent/55 text-foreground" : "hover:bg-accent/30",
+        isSelected ? "bg-bg-active text-fg-default" : "hover:bg-bg-hover",
       )}
     >
       <span
@@ -294,7 +290,7 @@ function FileEntryRow({
       <button
         type="button"
         onClick={() => onOpenDiff(entry)}
-        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+        className="shrink-0 rounded p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
         title="Open diff in editor"
       >
         <GitDiff size={13} />
@@ -306,12 +302,12 @@ function FileEntryRow({
 function CleanTreeHint({ repoLabel }: { repoLabel: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-1.5 px-4 py-8 text-center">
-      <div className="flex size-8 items-center justify-center rounded-full border border-border/55 text-muted-foreground">
+      <div className="flex size-8 items-center justify-center rounded-full border border-border/60 text-fg-muted">
         <CheckCircle size={16} />
       </div>
-      <div className="text-ui-sm font-medium text-foreground">Working tree clean</div>
-      <div className="text-ui-xs text-muted-foreground">
-        on <span className="font-mono text-foreground/80">{repoLabel}</span>
+      <div className="text-ui-sm font-medium text-fg-default">Working tree clean</div>
+      <div className="text-ui-xs text-fg-muted">
+        on <span className="font-mono text-fg-default/80">{repoLabel}</span>
       </div>
     </div>
   );
@@ -322,15 +318,15 @@ function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onToggle: ()
     <button
       type="button"
       onClick={onToggle}
-      className="flex h-7 w-full items-center gap-1.5 px-3 text-left hover:bg-accent/20 transition-colors"
+      className="flex h-7 w-full items-center gap-1.5 px-3 text-left transition-colors hover:bg-bg-hover"
     >
       {expanded ? (
-        <CaretDown size={11} className="text-muted-foreground" />
+        <CaretDown size={11} className="text-fg-muted" />
       ) : (
-        <CaretRight size={11} className="text-muted-foreground" />
+        <CaretRight size={11} className="text-fg-muted" />
       )}
-      <ClockCounterClockwise size={11} className="text-muted-foreground" />
-      <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/85">
+      <ClockCounterClockwise size={11} className="text-fg-muted" />
+      <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-fg-muted">
         Recent Commits
       </span>
     </button>
@@ -340,18 +336,16 @@ function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onToggle: ()
 function HistoryEntry({ commit }: { commit: GitCommit }) {
   return (
     <div
-      className="group flex flex-col gap-0.5 px-3 py-1.5 hover:bg-accent/30 rounded-md mx-1"
+      className="group mx-1 flex flex-col gap-0.5 rounded-md px-3 py-1.5 hover:bg-bg-hover"
       title={commit.message}
     >
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="font-mono text-ui-xs text-muted-foreground/70 shrink-0">
-          {shortSha(commit.id)}
-        </span>
-        <span className="truncate text-ui-sm text-foreground/90">
+        <span className="shrink-0 font-mono text-ui-xs text-fg-subtle">{shortSha(commit.id)}</span>
+        <span className="truncate text-ui-sm text-fg-default/90">
           {commit.message.split("\n")[0]}
         </span>
       </div>
-      <div className="flex items-center gap-1.5 text-ui-xs text-muted-foreground/60">
+      <div className="flex items-center gap-1.5 text-ui-xs text-fg-subtle">
         <span className="truncate">{commit.author}</span>
         <span>·</span>
         <span>{formatRelativeTime(commit.time)}</span>
@@ -576,7 +570,7 @@ export function GitStatus() {
   if (!repoPath) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-sm text-muted-foreground">Open a folder to view Git status</p>
+        <p className="text-ui-sm text-fg-muted">Open a folder to view Git status</p>
       </div>
     );
   }
@@ -584,7 +578,7 @@ export function GitStatus() {
   if (isLoading && !snapshot) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Spinner size={20} className="animate-spin text-muted-foreground" />
+        <Spinner size={20} className="animate-spin text-fg-muted" />
       </div>
     );
   }
@@ -592,7 +586,7 @@ export function GitStatus() {
   if (error && !snapshot) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-ui-sm text-status-error">{error}</p>
       </div>
     );
   }

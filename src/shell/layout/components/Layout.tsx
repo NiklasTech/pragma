@@ -12,6 +12,7 @@ import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Titlebar } from "@/shell/chrome/Titlebar";
+import { Statusbar } from "@/shell/chrome/Statusbar";
 import { useDiagnostics } from "@/shared/hooks/useDiagnostics";
 
 export function Layout() {
@@ -36,7 +37,7 @@ export function Layout() {
   const sidebarExpanded = showSidebar && !sidebar.collapsed;
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
       <Titlebar />
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -94,6 +95,7 @@ export function Layout() {
 
       {ai.mode === "bottom-sheet" && <AIChatHost />}
       {ai.mode === "floating" && <AIChatHost />}
+      <Statusbar />
       <TerminalFloatingHost />
       <FloatingHost />
     </div>

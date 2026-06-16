@@ -108,15 +108,15 @@ export function Titlebar() {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-header shrink-0 items-center justify-between select-none bg-card border-b border-border/60"
+      className="flex h-header shrink-0 items-center justify-between select-none border-b border-border/60 bg-bg-surface"
     >
       <div className="flex items-center gap-2 px-3">
         <img src="/favicon.svg" alt="" className="h-4 w-4" />
-        <span className="text-ui-xs font-medium text-muted-foreground">Pragma</span>
+        <span className="text-ui-xs font-semibold text-fg-default">Pragma</span>
         <button
           type="button"
           onClick={openFile}
-          className="ml-2 flex h-6 items-center gap-1.5 rounded px-2 text-ui-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="ml-2 flex h-6 items-center gap-1.5 rounded-md px-2 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           title="Open File"
         >
           <FolderOpen size={14} />
@@ -126,14 +126,14 @@ export function Titlebar() {
           type="button"
           onClick={saveFile}
           disabled={!canSave}
-          className="flex h-6 items-center gap-1.5 rounded px-2 text-ui-xs transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed text-muted-foreground"
+          className="flex h-6 items-center gap-1.5 rounded-md px-2 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
           title="Save File"
         >
           <FloppyDisk size={14} />
           <span>Save</span>
         </button>
 
-        <div className="mx-1 h-4 w-px bg-border" />
+        <div className="mx-1 h-4 w-px bg-border/60" />
         <RunConfigWidget />
 
         <button
@@ -142,8 +142,8 @@ export function Titlebar() {
           className={cn(
             "flex h-6 items-center gap-1.5 rounded px-2 text-ui-xs transition-colors",
             aiOpen
-              ? "bg-primary/15 text-primary"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              ? "bg-accent-subtle text-primary"
+              : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
           )}
           title="Toggle AI Chat (Ctrl+Shift+A)"
         >
@@ -154,8 +154,8 @@ export function Titlebar() {
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "flex h-6 items-center gap-1 rounded px-2 text-ui-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground outline-none",
-              activePreset && "text-foreground",
+              "flex h-6 items-center gap-1 rounded-md px-2 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default outline-none",
+              activePreset && "text-fg-default",
             )}
             title="Layout"
           >
@@ -171,7 +171,7 @@ export function Titlebar() {
                   <DropdownMenuItem
                     key={id}
                     onClick={() => applyPreset(id)}
-                    className={cn(activePreset === id && "bg-accent")}
+                    className={cn(activePreset === id && "bg-bg-active")}
                   >
                     <div className="flex flex-col">
                       <span>{presetLabels[id]?.name ?? id}</span>
@@ -193,7 +193,7 @@ export function Titlebar() {
                   <DropdownMenuItem
                     key={mode}
                     onClick={() => useLayoutStore.getState().setAIMode(mode as typeof ai.mode)}
-                    className={cn(ai.mode === mode && "bg-accent")}
+                    className={cn(ai.mode === mode && "bg-bg-active")}
                   >
                     {aiModeLabels[mode]}
                   </DropdownMenuItem>
@@ -208,7 +208,7 @@ export function Titlebar() {
                   <DropdownMenuItem
                     key={pos}
                     onClick={() => setSidebarPosition(pos as typeof sidebar.position)}
-                    className={cn(sidebar.position === pos && "bg-accent")}
+                    className={cn(sidebar.position === pos && "bg-bg-active")}
                   >
                     <Sidebar size={14} className="mr-2" />
                     {sidebarPositionLabels[pos]}
@@ -224,7 +224,7 @@ export function Titlebar() {
                   <DropdownMenuItem
                     key={mode}
                     onClick={() => setTerminalMode(mode as typeof terminal.mode)}
-                    className={cn(terminal.mode === mode && "bg-accent")}
+                    className={cn(terminal.mode === mode && "bg-bg-active")}
                   >
                     <TerminalIcon size={14} className="mr-2" />
                     {terminalModeLabels[mode]}
@@ -240,8 +240,8 @@ export function Titlebar() {
             className={cn(
               "flex h-6 items-center gap-1.5 rounded px-2 text-ui-xs transition-colors",
               settingsOpen
-                ? "bg-primary/15 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                ? "bg-accent-subtle text-primary"
+                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
             )}
             title="Settings"
           >
@@ -265,7 +265,7 @@ export function Titlebar() {
         <button
           type="button"
           onClick={handleMinimize}
-          className="flex h-header w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex h-header w-11 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label="Minimize"
         >
           <Minus size={14} weight="bold" />
@@ -273,7 +273,7 @@ export function Titlebar() {
         <button
           type="button"
           onClick={handleToggleMaximize}
-          className="flex h-header w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex h-header w-11 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label={isMaximized ? "Restore" : "Maximize"}
         >
           <Square size={12} weight="bold" />
@@ -281,7 +281,7 @@ export function Titlebar() {
         <button
           type="button"
           onClick={handleClose}
-          className="flex h-header w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-destructive hover:text-white"
+          className="flex h-header w-11 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
           aria-label="Close"
         >
           <X size={14} weight="bold" />

@@ -45,11 +45,11 @@ export function SidebarDock() {
   return (
     <div
       className={cn(
-        "flex h-full w-12 shrink-0 flex-col items-center border-border/60 bg-card py-2",
+        "flex h-full w-[--width-sidebar-collapsed] shrink-0 flex-col items-center border-border/60 bg-bg-surface py-2",
         isRight ? "border-l" : "border-r",
       )}
     >
-      <div className="flex w-full flex-col gap-0.5 px-1">
+      <div className="flex w-full flex-col gap-1 px-1.5">
         {tabs.map((tab) => {
           const isActive = tab.id === sidebar.tab && !sidebar.collapsed;
           return (
@@ -60,19 +60,19 @@ export function SidebarDock() {
               aria-pressed={isActive}
               onClick={() => handleSelectView(tab.id)}
               className={cn(
-                "relative flex items-center justify-center rounded-md p-2 outline-none transition-all duration-fast",
+                "relative flex size-9 items-center justify-center rounded-lg outline-none transition-all duration-fast",
                 "focus-visible:ring-2 focus-visible:ring-primary/40",
                 isActive
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  ? "bg-bg-active text-fg-default"
+                  : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
               )}
               title={tab.label}
             >
               {isActive && (
                 <span
                   className={cn(
-                    "absolute top-1/2 h-5 w-[2px] -translate-y-1/2 bg-primary",
-                    isRight ? "right-0 rounded-l-full" : "left-0 rounded-r-full",
+                    "absolute top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-primary shadow-[0_0_8px_var(--color-accent-glow)]",
+                    isRight ? "right-0" : "left-0",
                   )}
                 />
               )}
@@ -92,7 +92,7 @@ export function SidebarDock() {
         type="button"
         onClick={() => setSidebarCollapsed(!sidebar.collapsed)}
         className={cn(
-          "rounded-md p-2 text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground",
+          "flex size-9 items-center justify-center rounded-lg text-fg-muted outline-none transition-colors hover:bg-bg-hover hover:text-fg-default",
           "focus-visible:ring-2 focus-visible:ring-primary/40",
         )}
         title={sidebar.collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -108,12 +108,12 @@ export function SidebarContent() {
   const { isOpen, activeFilePath, closePanel } = useLocalHistory();
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-card">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-bg-root">
       <div className="min-h-0 flex-1 overflow-hidden">
         {sidebar.tab === "explorer" && <FileExplorer />}
         {sidebar.tab === "search" && (
           <div className="p-3">
-            <p className="text-ui-sm text-muted-foreground">Search content</p>
+            <p className="text-ui-sm text-fg-muted">Search content</p>
           </div>
         )}
         {sidebar.tab === "git" && <GitGraph />}

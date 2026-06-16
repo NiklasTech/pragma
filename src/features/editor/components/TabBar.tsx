@@ -51,11 +51,10 @@ export function TabBar({ panelId }: TabBarProps) {
   }
 
   return (
-    <div className="flex h-tab min-w-0 shrink-0 items-center overflow-x-auto border-b border-border bg-bg-surface">
+    <div className="flex h-tab min-w-0 shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-bg-surface px-2">
       {tabs.map((tab, index) => {
         const isActive = activeTabId === tab.id;
         const isDropTarget = dragOverIndex === index;
-
         const Icon = tab.kind === "diff" ? GitDiff : getFileIcon(tab.name);
 
         return (
@@ -66,21 +65,21 @@ export function TabBar({ panelId }: TabBarProps) {
             onDragEnd={handleDragEnd}
             onDragOver={(e) => handleDragOver(e, index)}
             onDrop={(e) => handleDrop(e, index)}
-            className={cn(
-              "group flex max-w-[180px] shrink-0 cursor-pointer items-center gap-1.5 border-r border-border px-2.5 py-1.5 text-ui-xs transition-colors select-none",
-              isActive
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-              isDropTarget && draggedIndex !== index && "bg-primary/10",
-            )}
             onClick={() => (panelId ? setPanelActiveTab(panelId, tab.id) : setActiveTab(tab.id))}
             title={tab.name}
+            data-active={isActive}
+            className={cn(
+              "pragma-pill-tab group relative max-w-[180px] cursor-pointer",
+              isDropTarget && draggedIndex !== index && "bg-accent-subtle",
+            )}
           >
             <Icon
               size={13}
               className={cn(
                 "shrink-0",
-                tab.kind === "diff" ? "text-status-success" : "text-muted-foreground",
+                tab.kind === "diff"
+                  ? "text-status-success"
+                  : "text-fg-muted group-hover:text-fg-default data-[active=true]:text-fg-default",
               )}
             />
             <span className="min-w-0 flex-1 truncate">{tab.name}</span>
@@ -93,7 +92,7 @@ export function TabBar({ panelId }: TabBarProps) {
                 closeTab(tab.id);
               }}
               className={cn(
-                "ml-0.5 shrink-0 rounded-sm p-0.5 text-muted-foreground transition-opacity hover:text-foreground",
+                "ml-0.5 shrink-0 rounded-sm p-0.5 text-fg-muted transition-opacity hover:text-fg-default",
                 isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
               )}
               aria-label={`Close ${tab.name}`}

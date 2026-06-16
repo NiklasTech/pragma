@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { TabBar } from "@/features/editor/components/TabBar";
+import { EditorBreadcrumb } from "@/features/editor/components/EditorBreadcrumb";
 import { Editor } from "@/features/editor/components/Editor";
 import { useEditorStore } from "@/shared/stores/editor";
 
@@ -34,6 +35,7 @@ export default function EditorPanel({ panelId }: EditorPanelProps) {
       tabIndex={-1}
     >
       <TabBar panelId={panelId} />
+      <EditorBreadcrumb panelId={panelId} />
       <div className="min-h-0 flex-1">
         <Editor panelId={panelId} />
       </div>
