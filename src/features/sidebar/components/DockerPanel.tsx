@@ -66,20 +66,18 @@ function ContainerRow({
     actionBusy === `restart-${container.id}`;
 
   return (
-    <div className="group flex flex-col gap-1 rounded-md px-2 py-1.5 hover:bg-accent/40">
+    <div className="group flex flex-col gap-1 rounded-md px-2 py-1.5 hover:bg-bg-hover">
       <div className="flex items-center gap-2 min-w-0">
         <StatusDot state={container.state} />
-        <span className="truncate text-ui-sm font-medium text-foreground" title={name}>
+        <span className="truncate text-ui-sm font-medium text-fg-default" title={name}>
           {name}
         </span>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-ui-xs text-muted-foreground" title={container.image}>
+        <span className="truncate text-ui-xs text-fg-muted" title={container.image}>
           {container.image}
         </span>
-        <span className="shrink-0 text-ui-xs text-muted-foreground capitalize">
-          {container.status}
-        </span>
+        <span className="shrink-0 text-ui-xs text-fg-muted capitalize">{container.status}</span>
       </div>
       <div className="flex items-center gap-1">
         {isRunning ? (
@@ -147,7 +145,7 @@ function DockerActionButton({
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
     </button>
@@ -181,10 +179,10 @@ export function ContainerGroup({
 
   return (
     <Collapsible defaultOpen={defaultOpen}>
-      <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md px-1 py-1 text-ui-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
+      <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md px-1 py-1 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default">
         <span className="flex items-center gap-1.5">
           {title}
-          <span className="rounded-full bg-accent px-1.5 py-0 text-ui-xs text-foreground">
+          <span className="rounded-full bg-bg-active px-1.5 py-0 text-ui-xs text-fg-default">
             {containers.length}
           </span>
         </span>
@@ -272,8 +270,8 @@ export function DockerPanel() {
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Cube size={16} className="text-muted-foreground" />
-          <span className="text-xs font-semibold text-foreground">Docker</span>
+          <Cube size={16} className="text-fg-muted" />
+          <span className="text-xs font-semibold text-fg-default">Docker</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -281,7 +279,7 @@ export function DockerPanel() {
             onClick={() => void loadContainers()}
             disabled={isLoading}
             title="Refresh"
-            className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
           >
             {isLoading ? (
               <Spinner size={12} className="animate-spin" />
@@ -296,42 +294,42 @@ export function DockerPanel() {
         <div className="space-y-3 p-2">
           {runtimeLoading ? (
             <div className="flex items-center justify-center py-6">
-              <Spinner size={18} className="animate-spin text-muted-foreground" />
+              <Spinner size={18} className="animate-spin text-fg-muted" />
             </div>
           ) : runtime === null ? (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-muted-foreground">Failed to detect Docker runtime.</p>
-              {error && <p className="text-ui-xs text-destructive">{error}</p>}
+              <p className="text-xs text-fg-muted">Failed to detect Docker runtime.</p>
+              {error && <p className="text-ui-xs text-status-error">{error}</p>}
             </div>
           ) : !runtime.available ? (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-fg-muted">
                 Docker or Podman is not available on this system.
               </p>
-              <p className="text-ui-xs text-muted-foreground">
+              <p className="text-ui-xs text-fg-muted">
                 Shell: /bin/fish · PATH entries: check Tauri log
               </p>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between rounded-md bg-accent/30 px-2 py-1.5">
-                <span className="text-ui-xs text-muted-foreground">
+              <div className="flex items-center justify-between rounded-md bg-bg-hover px-2 py-1.5">
+                <span className="text-ui-xs text-fg-muted">
                   {runtime.runtime} {runtime.version}
                 </span>
                 <span className="text-ui-xs text-status-success">connected</span>
               </div>
 
-              {error && <p className="text-ui-xs text-destructive px-1">{error}</p>}
+              {error && <p className="text-ui-xs text-status-error px-1">{error}</p>}
 
               {runtime.compose_file && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-ui-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-ui-xs font-semibold uppercase tracking-wider text-fg-muted">
                       Compose
                     </span>
-                    <span className="text-ui-xs text-muted-foreground">{runtime.compose_file}</span>
+                    <span className="text-ui-xs text-fg-muted">{runtime.compose_file}</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     <ComposeButton label="Up" busy={composeBusy} onClick={() => void composeUp()} />
@@ -356,7 +354,7 @@ export function DockerPanel() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-ui-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span className="text-ui-xs font-semibold uppercase tracking-wider text-fg-muted">
                     Containers
                   </span>
                   <button
@@ -364,14 +362,14 @@ export function DockerPanel() {
                     onClick={() => setStatsEnabled((v) => !v)}
                     className={cn(
                       "text-ui-xs transition-colors",
-                      statsEnabled ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                      statsEnabled ? "text-primary" : "text-fg-muted hover:text-fg-default",
                     )}
                   >
                     Stats
                   </button>
                 </div>
                 {containers.length === 0 ? (
-                  <p className="px-1 py-3 text-ui-xs text-muted-foreground text-center">
+                  <p className="px-1 py-3 text-ui-xs text-fg-muted text-center">
                     No containers found.
                   </p>
                 ) : (

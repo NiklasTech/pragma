@@ -95,7 +95,7 @@ export function AIChatHost() {
     return (
       <div
         className={cn(
-          "relative flex h-full shrink-0 flex-col border-border/60 bg-card",
+          "relative flex h-full shrink-0 flex-col border-border/60 bg-bg-surface",
           isLeft ? "border-r" : "border-l",
         )}
         style={{ width: ai.size }}
@@ -109,7 +109,7 @@ export function AIChatHost() {
           <button
             type="button"
             onClick={() => setAIMode("hidden")}
-            className="ml-auto rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
             aria-label="Close"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -132,7 +132,7 @@ export function AIChatHost() {
   // bottom-sheet
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 z-40 flex flex-col border-t border-border/60 bg-card"
+      className="absolute bottom-0 left-0 right-0 z-40 flex flex-col border-t border-border/60 bg-bg-surface"
       style={{ height: ai.size }}
     >
       <ResizeHandle
@@ -144,7 +144,7 @@ export function AIChatHost() {
         <button
           type="button"
           onClick={() => setAIMode("hidden")}
-          className="ml-auto rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
           aria-label="Close"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">

@@ -1,6 +1,5 @@
 import { Suspense, lazy } from "react";
 import type { PanelKind } from "../tree/types";
-import { PanelHeader } from "./PanelHeader";
 
 const EditorPanel = lazy(() => import("./panels/EditorPanel"));
 const TerminalPanel = lazy(() => import("./panels/TerminalPanel"));
@@ -22,7 +21,6 @@ interface PanelHostProps {
 export function PanelHost({ panelId, kind }: PanelHostProps) {
   return (
     <div className="group relative flex h-full w-full flex-col overflow-hidden border border-border/40 bg-bg-root">
-      <PanelHeader panelId={panelId} kind={kind} />
       <div className="min-h-0 flex-1">
         <Suspense fallback={<PanelSkeleton />}>
           <PanelContent kind={kind} panelId={panelId} />

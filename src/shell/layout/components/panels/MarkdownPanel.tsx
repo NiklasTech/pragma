@@ -11,7 +11,7 @@ const streamdownComponents: ComponentProps<typeof Streamdown>["components"] = {
   },
   inlineCode({ children }) {
     return (
-      <code className="rounded bg-muted/70 px-1.5 py-0.5 font-mono text-ui-xs text-foreground">
+      <code className="rounded bg-bg-hover/70 px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
         {children}
       </code>
     );

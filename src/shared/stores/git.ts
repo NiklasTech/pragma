@@ -117,6 +117,7 @@ interface GitActions {
   loadGraph: (offset?: number, limit?: number) => Promise<void>;
   stageFiles: (paths: string[]) => Promise<void>;
   unstageFiles: (paths: string[]) => Promise<void>;
+  discardFiles: (paths: string[]) => Promise<void>;
   commit: () => Promise<void>;
   loadFileDiff: (path: string, staged: boolean) => Promise<string>;
   clearDiff: () => void;
@@ -252,6 +253,21 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
     set({ actionBusy: "unstage" });
     try {
       await invoke("git_unstage", { repoPath, paths });
+      await get().loadStatus();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  discardFiles: async (paths: string[]) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "discard" });
+    try {
+      await invoke("git_discard", { repoPath, paths });
       await get().loadStatus();
     } catch (err) {
       set({ error: String(err) });

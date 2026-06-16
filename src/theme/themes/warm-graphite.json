@@ -55,20 +55,20 @@
         "infoBg": "rgba(59, 130, 246, 0.12)"
       },
       "git": {
-        "added": "{status.success}",
-        "addedBg": "{status.successBg}",
-        "modified": "{status.warning}",
-        "modifiedBg": "{status.warningBg}",
-        "deleted": "{status.error}",
-        "deletedBg": "{status.errorBg}",
-        "untracked": "{status.info}",
-        "untrackedBg": "{status.infoBg}",
-        "ignored": "{foreground.subtle}",
+        "added": "{colors.status.success}",
+        "addedBg": "{colors.status.successBg}",
+        "modified": "{colors.status.warning}",
+        "modifiedBg": "{colors.status.warningBg}",
+        "deleted": "{colors.status.error}",
+        "deletedBg": "{colors.status.errorBg}",
+        "untracked": "{colors.status.info}",
+        "untrackedBg": "{colors.status.infoBg}",
+        "ignored": "{colors.foreground.subtle}",
         "conflict": "#c084fc"
       },
       "thread": {
-        "default": "{accent.subtle}",
-        "active": "{accent.default}"
+        "default": "{colors.accent.subtle}",
+        "active": "{colors.accent.default}"
       },
       "selection": "rgba(43, 127, 255, 0.25)",
       "scrollbar": {
@@ -79,14 +79,14 @@
     },
 
     "editor": {
-      "background": "{background.root}",
-      "foreground": "{foreground.default}",
-      "selection": "{selection}",
-      "cursor": "{accent.default}",
+      "background": "{colors.background.root}",
+      "foreground": "{colors.foreground.default}",
+      "selection": "{colors.selection}",
+      "cursor": "{colors.accent.default}",
       "gutter": {
-        "background": "{background.root}",
-        "foreground": "{foreground.subtle}",
-        "activeBackground": "{background.surface}"
+        "background": "{colors.background.root}",
+        "foreground": "{colors.foreground.subtle}",
+        "activeBackground": "{colors.background.surface}"
       },
       "line": {
         "active": "rgba(255, 255, 255, 0.03)",
@@ -95,24 +95,24 @@
       "syntax": {
         "keyword": "#c084fc",
         "string": "#86efac",
-        "comment": "{foreground.subtle}",
+        "comment": "{colors.foreground.subtle}",
         "function": "#60a5fa",
-        "variable": "{foreground.default}",
+        "variable": "{colors.foreground.default}",
         "number": "#fdba74",
         "type": "#93c5fd",
-        "tag": "{status.error}",
-        "attribute": "{accent.default}",
-        "property": "{foreground.default}",
-        "operator": "{foreground.muted}"
+        "tag": "{colors.status.error}",
+        "attribute": "{colors.accent.default}",
+        "property": "{colors.foreground.default}",
+        "operator": "{colors.foreground.muted}"
       }
     },
 
     "terminal": {
-      "background": "{background.root}",
-      "foreground": "{foreground.default}",
-      "cursor": "{accent.default}",
-      "cursorAccent": "{accent.default}",
-      "selection": "{selection}",
+      "background": "{colors.background.root}",
+      "foreground": "{colors.foreground.default}",
+      "cursor": "{colors.accent.default}",
+      "cursorAccent": "{colors.accent.default}",
+      "selection": "{colors.selection}",
       "ansi": {
         "black": "#09090b",
         "red": "#ef4444",
@@ -136,7 +136,7 @@
     },
 
     "layout": {
-      "headerHeight": 40,
+      "headerHeight": 48,
       "tabHeight": 34,
       "statusbarHeight": 26,
       "breadcrumbHeight": 28,

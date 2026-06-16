@@ -189,9 +189,9 @@ function UnifiedDiffView({ patchText }: { patchText: string }) {
       case "hunk":
         return "bg-status-info/5 text-status-info/70";
       case "header":
-        return "text-muted-foreground/60";
+        return "text-fg-muted/60";
       default:
-        return "text-foreground/80";
+        return "text-fg-default/80";
     }
   }, []);
 
@@ -204,7 +204,7 @@ function UnifiedDiffView({ patchText }: { patchText: string }) {
       case "hunk":
         return "bg-status-info/10 text-status-info/60";
       default:
-        return "text-muted-foreground/30";
+        return "text-fg-muted/30";
     }
   }, []);
 
@@ -315,7 +315,7 @@ export function InlineDiff({
 
   if (state.kind === "loading" || state.kind === "idle") {
     return (
-      <div className="flex h-full items-center justify-center gap-2 text-ui-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center gap-2 text-ui-xs text-fg-muted">
         <Spinner size={14} className="animate-spin" />
         Loading diff…
       </div>
@@ -324,7 +324,7 @@ export function InlineDiff({
 
   if (state.kind === "error") {
     return (
-      <div className="flex h-full items-center justify-center px-6 text-center text-ui-sm text-destructive">
+      <div className="flex h-full items-center justify-center px-6 text-center text-ui-sm text-status-error">
         {state.message}
       </div>
     );
@@ -333,7 +333,7 @@ export function InlineDiff({
   return (
     <div className={cn("flex h-full min-h-0 flex-col min-w-0", className)}>
       <div className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-border/60 px-3">
-        <span className="truncate font-mono text-ui-xs text-muted-foreground" title={filePath}>
+        <span className="truncate font-mono text-ui-xs text-fg-muted" title={filePath}>
           {filePath}
         </span>
         <div className="flex items-center gap-1">
@@ -342,7 +342,7 @@ export function InlineDiff({
             size="sm"
             className={cn(
               "h-6 px-2 text-ui-xs gap-1",
-              effectiveViewMode === "split" && "bg-accent text-foreground",
+              effectiveViewMode === "split" && "bg-bg-active text-fg-default",
             )}
             onClick={() => handleViewModeChange("split")}
           >
@@ -354,7 +354,7 @@ export function InlineDiff({
             size="sm"
             className={cn(
               "h-6 px-2 text-ui-xs gap-1",
-              effectiveViewMode === "unified" && "bg-accent text-foreground",
+              effectiveViewMode === "unified" && "bg-bg-active text-fg-default",
               !canShowUnified && "opacity-40 cursor-not-allowed",
             )}
             onClick={() => canShowUnified && handleViewModeChange("unified")}
@@ -367,7 +367,7 @@ export function InlineDiff({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-ui-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="h-6 px-2 text-ui-xs gap-1 text-status-error hover:text-status-error hover:bg-status-error/10"
               onClick={onReject}
             >
               <X size={12} weight="bold" />

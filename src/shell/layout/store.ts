@@ -23,7 +23,6 @@ const AI_MIN_WIDTH = 260;
 const AI_MAX_WIDTH = 720;
 
 const SIDEBAR_MIN_WIDTH = 180;
-const SIDEBAR_MAX_WIDTH = 480;
 
 const TERMINAL_MIN_HEIGHT = 20;
 const TERMINAL_MAX_HEIGHT = 80;
@@ -53,7 +52,7 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
         set((s) => ({ sidebar: { ...s.sidebar, position }, ...markCustomized(s) })),
       setSidebarWidth: (width) =>
         set((s) => ({
-          sidebar: { ...s.sidebar, width: clamp(width, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH) },
+          sidebar: { ...s.sidebar, width: Math.max(width, SIDEBAR_MIN_WIDTH) },
           ...markCustomized(s),
         })),
       setSidebarCollapsed: (collapsed) =>

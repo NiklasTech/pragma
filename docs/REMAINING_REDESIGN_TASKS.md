@@ -8,35 +8,34 @@
 
 ---
 
-## 1. Restliche Sidebar-Panels auf neue Tokens umstellen
+## 1. Restliche Sidebar-Panels auf neue Tokens umstellen ✅
 
-Die folgenden Komponenten verwenden noch überwiegend alte Klassen (`bg-card`, `text-muted-foreground`, `bg-accent`, `text-foreground`, `border-border`, `text-destructive`, `bg-muted`, …) oder hartkodierte Werte. Sie sollten auf `bg-bg-surface`, `bg-bg-root`, `bg-bg-hover`, `bg-bg-active`, `text-fg-default`, `text-fg-muted`, `text-fg-subtle`, `border-border/60`, `text-status-*` etc. migriert werden.
+Die folgenden Komponenten wurden auf das neue Token-System migriert:
 
 - `src/features/sidebar/components/DockerPanel.tsx`
 - `src/features/sidebar/components/LocalHistoryPanel.tsx`
 - `src/features/sidebar/components/GitGraph.tsx`
 - `src/features/sidebar/components/GitDiffPane.tsx`
 
-### Hinweis
-
-`GitStatus.tsx` und `BranchSwitcher.tsx` wurden bereits angepasst, können aber bei Bedarf nochmals auf hartkodierte Werte geprüft werden.
+`GitStatus.tsx` und `BranchSwitcher.tsx` wurden ebenfalls auf hartkodierte Werte geprüft und aktualisiert.
 
 ---
 
-## 2. Settings-UI für die Statusbar-Konfiguration
+## 2. Settings-UI für die Statusbar-Konfiguration ✅
 
-Die globale Statusbar (`src/shell/chrome/Statusbar.tsx`) liest ihre Konfiguration bereits aus `useSettingsStore().statusbar`, aber es gibt noch keine UI, um sie zu bearbeiten.
+Die globale Statusbar (`src/shell/chrome/Statusbar.tsx`) liest ihre Konfiguration aus `useSettingsStore().statusbar`. Eine UI zum Bearbeiten wurde erstellt:
 
-### Benötigte Änderungen
+- `src/features/settings/components/StatusbarSettings.tsx`
+- Eingebunden in `src/shell/chrome/Titlebar.tsx` im Settings-Sheet
 
-- `src/features/settings/components/AISettings.tsx` oder eine neue `StatusbarSettings.tsx` im selben Ordner erstellen.
-- UI-Elemente:
-  - Toggle für `statusbar.visible`
-  - Reorder-/Checkbox-Liste der `StatusbarItem`s (`vimMode`, `cursor`, `fileType`, `encoding`, `eol`, `gitBranch`, `gitSync`, `problems`, `aiProvider`, `theme`)
-  - Button „Reset to default preset“
-- Die Settings-Komponente in `src/shell/chrome/Titlebar.tsx` im Settings-Sheet einbinden.
+UI-Elemente:
 
-### Store-API (bereits vorhanden)
+- Toggle für `statusbar.visible`
+- Reorder-Buttons für aktivierte Items
+- Toggle-Chips für alle verfügbaren `StatusbarItem`s
+- Button „Reset to Default"
+
+### Store-API
 
 ```ts
 const { statusbar, setStatusbarSettings } = useSettingsStore();
@@ -45,9 +44,9 @@ setStatusbarSettings({ visible: false, items: ["cursor", "fileType"] });
 
 ---
 
-## 3. Editor-Theme auf neue Syntax-Tokens umstellen
+## 3. Editor-Theme auf neue Syntax-Tokens umstellen ✅
 
-`src/shared/lib/theme/editor-theme.ts` definiert das CodeMirror-Theme. Es sollte auf die neuen CSS-Variablen aus `src/globals.css` verweisen:
+`src/shared/lib/theme/editor-theme.ts` wurde auf die neuen CSS-Variablen umgestellt:
 
 - `--editor-bg`
 - `--editor-fg`
@@ -62,40 +61,48 @@ setStatusbarSettings({ visible: false, items: ["cursor", "fileType"] });
 - `--syntax-function`
 - `--syntax-variable`
 - `--syntax-number`
+- `--syntax-property`
+- `--syntax-type`
+- `--syntax-operator`
+- `--syntax-tag`
+- `--syntax-attribute`
 
-Außerdem sollte geprüft werden, ob die im Theme JSON hinterlegten `editor.syntax.*`-Tokens korrekt ins Theme übernommen werden, damit ein Wechsel des Themes auch die Editor-Farben aktualisiert.
+Fehlende Syntax-Variablen wurden in `src/globals.css` ergänzt.
 
 ---
 
-## 4. File Explorer: `window.prompt` / `window.confirm` ersetzen
+## 4. File Explorer: `window.prompt` / `window.confirm` ersetzen ✅
 
-`src/features/sidebar/components/FileExplorer.tsx` und `src/features/sidebar/components/FileTreeNode.tsx` verwenden Browser-Dialoge:
+`src/features/sidebar/components/FileExplorer.tsx` und `src/features/sidebar/components/FileTreeNode.tsx` verwenden keine Browser-Dialoge mehr.
 
-- `window.prompt("New file name:")`
-- `window.prompt("New folder name:")`
-- `window.prompt("Rename to:", node.name)`
-- `window.confirm(\`Delete "\${node.name}"?\`)`
+Umgesetzt:
 
-### Ziel
+- `src/shared/components/ui/input-dialog.tsx` für Texteingaben
+- `src/shared/components/ui/alert-dialog.tsx` für Löschen-Bestätigungen
 
-Eigene `Dialog`/`AlertDialog`-Komponenten aus `src/shared/components/ui/` verwenden, um ein konsistentes Erscheinungsbild zu gewährleisten und Tauri-Desktop-Verhalten zu unterstützen.
-
-### Betroffene Aktionen
+Betroffene Aktionen:
 
 - Neue Datei anlegen
 - Neuen Ordner anlegen
 - Datei/Ordner umbenennen
 - Datei/Ordner löschen
 
-### Empfohlener Ansatz
-
-Ein kleiner `InputDialog`-Wrapper erstellen (oder `AlertDialog` für Löschen), der Name und Validierung entgegennimmt.
-
 ---
 
-## 5. Konsistenzprüfung: Hartkodierte Werte finden und eliminieren
+## 5. Konsistenzprüfung: Hartkodierte Werte finden und eliminieren ✅
 
-Obwohl das Token-System jetzt zentral in `src/globals.css` liegt, können noch hartkodierte Farb-, Layout- oder Bewegungswerte in Feature-Komponenten existieren. Empfohlene Suche:
+Alte shadcn/ui-Farbklassen in `src/features`, `src/shell` und `src/app` wurden auf das Token-System migriert. Betroffene Bereiche:
+
+- AI-Komponenten (`src/features/ai/components/*`)
+- Editor-Komponenten (`InlineDiff.tsx`, `SelectionAskAi.tsx`)
+- Terminal-Komponenten (`ai-suggestions.tsx`)
+- Run-Config (`RunConfigWidget.tsx`, `RunOutputPanel.tsx`)
+- Settings (`AISettings.tsx`)
+- Sidebar (`BranchSwitcher.tsx`, `DockerPanel.tsx`, `GitGraph.tsx`, `GitStatus.tsx`)
+- Shell/Chrome (`Titlebar.tsx`)
+- Shell/Layout (`AIChatHost.tsx`, `FloatingWindow.tsx`, `MarkdownPanel.tsx`, `PreviewPanel.tsx`)
+
+Empfohlene Prüfkommandos für zukünftige Refactorings:
 
 ### Farben
 
@@ -108,36 +115,54 @@ grep -R "text-muted-foreground\|text-foreground\|bg-card\|bg-muted\|bg-accent\|t
 
 ```bash
 # hartkodierte Höhen/Breiten, die durch chrome-*-Tokens ersetzt werden sollten
-grep -R "h-\\[40px\\]\|h-\\[34px\\]\|h-\\[28px\\]\|h-\\[26px\\]\|w-12\|w-\\[48px\\]" src/features src/shell src/app
+grep -R "h-\[40px\]\|h-\[34px\]\|h-\[28px\]\|h-\[26px\]\|w-12\|w-\[48px\]" src/features src/shell src/app
 ```
 
 ### Bewegung
 
 ```bash
 # Durations/Easings, die nicht über --motion-* laufen
-grep -R "duration-\\[.*\\]\|transition-all.*duration-" src/features src/shell
+grep -R "duration-\[.*\]\|transition-all.*duration-" src/features src/shell
 ```
 
 ---
 
-## 6. Sonstige offene Punkte
+## 6. Sonstige offene Punkte ✅
 
-- `src/features/ai/components/Conversation.tsx`, `Message.tsx`, `ReasoningBlock.tsx`, `SourceBlock.tsx`, `ChatCodeBlock.tsx`, `MarkdownCode.tsx`, `ChatTypingIndicator.tsx`, `Shimmer.tsx`, `ActivityBlock.tsx`, `ContextPicker.tsx`, `AiModelSelector.tsx`, `ChatSessionList.tsx` prüfen und ggf. auf neue Tokens umstellen.
-- `src/features/editor/components/InlineDiff.tsx`, `SelectionAskAi.tsx`, `StickyLinesOverlay.tsx` prüfen und ggf. auf neue Tokens umstellen.
-- `src/features/terminal/components/TerminalSession.tsx`, `ai-suggestions.tsx` prüfen und ggf. auf neue Tokens umstellen.
-- `src/shell/layout/components/panels/*` prüfen und ggf. auf neue Tokens umstellen.
-- `src/shell/chrome/WindowResizeHandles.tsx` prüfen.
-- Optional: `.pragma-aurora-glow` und `.pragma-glass` Utility-Klassen in `src/globals.css` definieren, falls sie noch verwendet werden sollen.
+- `src/features/ai/components/*` – geprüft und auf neue Tokens umgestellt
+- `src/features/editor/components/InlineDiff.tsx`, `SelectionAskAi.tsx`, `StickyLinesOverlay.tsx` – geprüft und auf neue Tokens umgestellt
+- `src/features/terminal/components/TerminalSession.tsx`, `ai-suggestions.tsx` – geprüft und auf neue Tokens umgestellt
+- `src/shell/layout/components/panels/*` – geprüft und auf neue Tokens umgestellt
+- `src/shell/chrome/WindowResizeHandles.tsx` – geprüft
+- `.pragma-aurora-glow` und `.pragma-glass` – nicht erforderlich
 
 ---
 
-## 7. Qualitäts-Checkliste vor Fertigstellung
+## 7. Sticky Lines: UI aus Statusbar entfernt → spätere Settings-Seite ✅
 
-- [ ] `vp check` läuft ohne Warnungen und Fehler
-- [ ] `vp test` läuft erfolgreich
-- [ ] Keine `window.prompt` / `window.confirm` mehr im File Explorer
-- [ ] Keine hartkodierten Farbwerte in Feature-Komponenten
-- [ ] Editor-Theme reagiert auf Theme-Wechsel
-- [ ] Statusbar lässt sich über Settings konfigurieren
-- [ ] Alle Sidebar-Panels verwenden neue Tokens
-- [ ] Dunkles Theme sieht in allen Hauptansichten konsistent aus
+Die **Sticky-Lines**-Funktion wurde aus der Editor-Statusbar entfernt. Der Store-Wert `useSettingsStore().editor.stickyLines` und `StickyLinesOverlay.tsx` bleiben erhalten, sind aber derzeit deaktiviert.
+
+### Ziel (zukünftig)
+
+- Sticky Lines als Option in einer späteren **Editor-Settings**-Seite wieder anbieten.
+- `enabled` an `StickyLinesOverlay` aus der Einstellung ableiten.
+
+### Betroffene Dateien
+
+- `src/features/editor/components/EditorStatusbar.tsx` (Button entfernt)
+- `src/features/editor/components/Editor.tsx` (`enabled={false}`)
+- `src/features/editor/components/StickyLinesOverlay.tsx`
+- `src/shared/stores/settings.ts` (`editor.stickyLines` bleibt erhalten)
+
+---
+
+## 8. Qualitäts-Checkliste vor Fertigstellung
+
+- [x] `vp check` läuft ohne Warnungen und Fehler
+- [x] `vp test` läuft erfolgreich
+- [x] Keine `window.prompt` / `window.confirm` mehr im File Explorer
+- [x] Keine hartkodierten Farbwerte in Feature-Komponenten
+- [x] Editor-Theme reagiert auf Theme-Wechsel
+- [x] Statusbar lässt sich über Settings konfigurieren
+- [x] Alle Sidebar-Panels verwenden neue Tokens
+- [x] Dunkles Theme sieht in allen Hauptansichten konsistent aus

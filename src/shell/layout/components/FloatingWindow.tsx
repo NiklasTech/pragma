@@ -96,7 +96,7 @@ export function FloatingWindow({
     <div
       ref={windowRef}
       className={cn(
-        "fixed z-50 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-card shadow-xl",
+        "fixed z-50 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-bg-elevated shadow-xl",
         isDragging && "cursor-grabbing select-none",
         isResizing && "select-none",
         className,
@@ -118,7 +118,7 @@ export function FloatingWindow({
             type="button"
             data-no-drag
             onClick={onClose}
-            className="ml-auto rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
             aria-label="Close"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -145,7 +145,7 @@ export function FloatingWindow({
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className="absolute bottom-1 right-1 text-muted-foreground/50"
+          className="absolute bottom-1 right-1 text-fg-muted/50"
         >
           <path
             d="M8 11L11 11L11 8"

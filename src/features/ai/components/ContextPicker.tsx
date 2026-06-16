@@ -210,13 +210,13 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
               onMouseEnter={() => setSelectedIndex(index)}
               className={cn(
                 "flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-ui-base outline-hidden select-none",
-                isSelected && "bg-accent text-accent-foreground",
+                isSelected && "bg-bg-active text-fg-default",
               )}
             >
               {entry.is_directory ? (
-                <Folder size={14} className="shrink-0 text-muted-foreground" />
+                <Folder size={14} className="shrink-0 text-fg-muted" />
               ) : (
-                <FileText size={14} className="shrink-0 text-muted-foreground" />
+                <FileText size={14} className="shrink-0 text-fg-muted" />
               )}
               <span className="min-w-0 truncate">{relativePath}</span>
             </button>

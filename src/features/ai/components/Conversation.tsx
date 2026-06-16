@@ -49,10 +49,10 @@ export const ConversationEmptyState = ({
   >
     {children ?? (
       <>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
+        {icon && <div className="text-fg-muted">{icon}</div>}
         <div className="space-y-1">
           <h3 className="text-sm font-medium">{title}</h3>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {description && <p className="text-sm text-fg-muted">{description}</p>}
         </div>
       </>
     )}
@@ -76,7 +76,7 @@ export const ConversationScrollButton = ({
   return (
     <Button
       className={cn(
-        "absolute bottom-3 left-1/2 size-7 -translate-x-1/2 rounded-full border-border/50 bg-background/90 shadow-md backdrop-blur",
+        "absolute bottom-3 left-1/2 size-7 -translate-x-1/2 rounded-full border-border/50 bg-bg-root/90 shadow-md backdrop-blur",
         className,
       )}
       onClick={handleScrollToBottom}
@@ -101,7 +101,7 @@ export const ConversationDownload = ({
   ...props
 }: ConversationDownloadProps) => (
   <Button
-    className={cn("absolute top-4 right-4 rounded-full bg-background hover:bg-muted", className)}
+    className={cn("absolute top-4 right-4 rounded-full bg-bg-root hover:bg-bg-hover", className)}
     onClick={onDownload}
     size="icon"
     type="button"
