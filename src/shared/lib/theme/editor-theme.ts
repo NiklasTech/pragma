@@ -11,53 +11,53 @@ export type EditorThemeName = "pragma-dark" | "one-dark";
 
 const pragmaDarkBase = EditorView.theme({
   "&": {
-    backgroundColor: "var(--color-editor-bg)",
-    color: "var(--color-editor-fg)",
+    backgroundColor: "var(--editor-bg)",
+    color: "var(--editor-fg)",
   },
   ".cm-gutters": {
-    backgroundColor: "var(--color-editor-gutter-bg)",
-    borderRight: "1px solid var(--color-border-default)",
-    color: "var(--color-editor-gutter-fg)",
+    backgroundColor: "var(--editor-gutter-bg)",
+    borderRight: "1px solid var(--border-default)",
+    color: "var(--editor-gutter-fg)",
   },
   ".cm-activeLineGutter": {
-    backgroundColor: "var(--color-editor-line-active)",
-    color: "var(--color-editor-fg)",
+    backgroundColor: "var(--editor-line-active)",
+    color: "var(--editor-fg)",
   },
   ".cm-activeLine": {
-    backgroundColor: "var(--color-editor-line-active)",
+    backgroundColor: "var(--editor-line-active)",
   },
   ".cm-selectionBackground": {
-    backgroundColor: "var(--color-editor-selection)",
+    backgroundColor: "var(--editor-selection)",
   },
   ".cm-cursor": {
-    borderLeftColor: "var(--color-editor-cursor)",
+    borderLeftColor: "var(--editor-cursor)",
     borderLeftWidth: "2px",
   },
   ".cm-foldPlaceholder": {
-    backgroundColor: "var(--color-bg-hover)",
-    borderColor: "var(--color-border-default)",
-    color: "var(--color-editor-fg)",
+    backgroundColor: "var(--bg-hover)",
+    borderColor: "var(--border-default)",
+    color: "var(--editor-fg)",
   },
   ".cm-lineNumbers": {
-    color: "var(--color-editor-gutter-fg)",
+    color: "var(--editor-gutter-fg)",
   },
 });
 
 const pragmaDarkHighlight = HighlightStyle.define([
-  { tag: tags.keyword, color: "var(--color-syntax-keyword)" },
+  { tag: tags.keyword, color: "var(--syntax-keyword)" },
   {
     tag: [tags.name, tags.deleted, tags.character, tags.propertyName, tags.macroName],
-    color: "var(--color-syntax-property)",
+    color: "var(--syntax-property)",
   },
   {
     tag: [tags.function(tags.variableName), tags.labelName],
-    color: "var(--color-syntax-function)",
+    color: "var(--syntax-function)",
   },
   {
     tag: [tags.color, tags.constant(tags.name), tags.standard(tags.name)],
-    color: "var(--color-syntax-number)",
+    color: "var(--syntax-number)",
   },
-  { tag: [tags.definition(tags.name), tags.separator], color: "var(--color-editor-fg)" },
+  { tag: [tags.definition(tags.name), tags.separator], color: "var(--editor-fg)" },
   {
     tag: [
       tags.typeName,
@@ -69,7 +69,7 @@ const pragmaDarkHighlight = HighlightStyle.define([
       tags.self,
       tags.namespace,
     ],
-    color: "var(--color-syntax-type)",
+    color: "var(--syntax-type)",
   },
   {
     tag: [
@@ -81,15 +81,15 @@ const pragmaDarkHighlight = HighlightStyle.define([
       tags.link,
       tags.special(tags.string),
     ],
-    color: "var(--color-syntax-operator)",
+    color: "var(--syntax-operator)",
   },
-  { tag: [tags.meta, tags.comment], color: "var(--color-syntax-comment)", fontStyle: "italic" },
+  { tag: [tags.meta, tags.comment], color: "var(--syntax-comment)", fontStyle: "italic" },
   { tag: tags.strong, fontWeight: "bold" },
   { tag: tags.emphasis, fontStyle: "italic" },
   { tag: tags.strikethrough, textDecoration: "line-through" },
   {
     tag: [tags.link, tags.annotation],
-    color: "var(--color-syntax-function)",
+    color: "var(--syntax-function)",
     textDecoration: "underline",
   },
   {
@@ -102,27 +102,27 @@ const pragmaDarkHighlight = HighlightStyle.define([
       tags.heading5,
       tags.heading6,
     ],
-    color: "var(--color-syntax-tag)",
+    color: "var(--syntax-tag)",
     fontWeight: "bold",
   },
   {
     tag: [tags.atom, tags.bool, tags.special(tags.variableName)],
-    color: "var(--color-syntax-number)",
+    color: "var(--syntax-number)",
   },
   {
     tag: [tags.processingInstruction, tags.string, tags.inserted],
-    color: "var(--color-syntax-string)",
+    color: "var(--syntax-string)",
   },
-  { tag: [tags.contentSeparator], color: "var(--color-editor-fg)" },
+  { tag: [tags.contentSeparator], color: "var(--editor-fg)" },
   {
     tag: tags.invalid,
-    color: "var(--color-syntax-tag)",
-    borderBottom: "1px dotted var(--color-syntax-tag)",
+    color: "var(--syntax-tag)",
+    borderBottom: "1px dotted var(--syntax-tag)",
   },
-  { tag: tags.punctuation, color: "var(--color-syntax-comment)" },
-  { tag: tags.tagName, color: "var(--color-syntax-tag)" },
-  { tag: tags.attributeName, color: "var(--color-syntax-attribute)" },
-  { tag: tags.attributeValue, color: "var(--color-syntax-string)" },
+  { tag: tags.punctuation, color: "var(--syntax-comment)" },
+  { tag: tags.tagName, color: "var(--syntax-tag)" },
+  { tag: tags.attributeName, color: "var(--syntax-attribute)" },
+  { tag: tags.attributeValue, color: "var(--syntax-string)" },
 ]);
 
 export const pragmaDarkTheme: Extension[] = [

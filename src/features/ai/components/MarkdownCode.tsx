@@ -28,7 +28,7 @@ export function MarkdownCode({
 
   return (
     <code
-      className="rounded bg-muted/70 px-1.5 py-0.5 font-mono text-ui-xs text-foreground"
+      className="rounded bg-bg-hover/70 px-1.5 py-0.5 font-mono text-ui-xs text-fg-default"
       {...rest}
     >
       {children}

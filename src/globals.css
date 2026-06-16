@@ -240,6 +240,11 @@
   --syntax-function: #60a5fa;
   --syntax-variable: var(--fg-default);
   --syntax-number: #fdba74;
+  --syntax-property: var(--fg-default);
+  --syntax-type: #f472b6;
+  --syntax-operator: var(--fg-muted);
+  --syntax-tag: #f87171;
+  --syntax-attribute: #facc15;
 
   /* --------------------------------------------------------------------------
      Terminal
@@ -270,8 +275,8 @@
   /* --------------------------------------------------------------------------
      Layout
      -------------------------------------------------------------------------- */
-  --chrome-header-h: 40px;
-  --chrome-tab-h: 34px;
+  --chrome-header-h: 48px;
+  --chrome-tab-h: 68px;
   --chrome-statusbar-h: 26px;
   --chrome-breadcrumb-h: 28px;
   --chrome-sidebar-collapsed-w: 48px;
@@ -387,7 +392,7 @@
   gap: 6px;
   height: var(--chrome-tab-h);
   padding: 0 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   font-size: var(--text-ui-sm);
   line-height: var(--leading-ui-sm);
   font-weight: 500;

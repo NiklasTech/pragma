@@ -53,8 +53,8 @@ export function ChatCodeBlock({ code, lang }: ChatCodeBlockProps) {
 
 function GeneratingPlaceholder({ label }: { label: string }) {
   return (
-    <div className="not-prose my-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-ui-xs text-muted-foreground">
-      <span className="inline-block size-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
+    <div className="not-prose my-2 flex items-center gap-2 rounded-lg border border-border/50 bg-bg-hover/30 px-3 py-2 text-ui-xs text-fg-muted">
+      <span className="inline-block size-1.5 animate-pulse rounded-full bg-fg-muted/60" />
       <Shimmer duration={1.2}>
         {label === "text" ? "Generating code…" : `Generating ${label}…`}
       </Shimmer>
@@ -72,11 +72,9 @@ function BlockChrome({
   children: React.ReactNode;
 }) {
   return (
-    <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-      <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-muted/20 px-3 py-1">
-        <span className="font-mono text-ui-xs uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
+    <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-bg-hover/30">
+      <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-bg-hover/20 px-3 py-1">
+        <span className="font-mono text-ui-xs uppercase tracking-wide text-fg-muted">{label}</span>
         <CopyButton text={code} />
       </div>
       <div className="overflow-x-auto">{children}</div>
@@ -88,7 +86,7 @@ function FinalizedCodeBlock({ code, lang }: { code: string; lang: string }) {
   if (!isHighlightable(lang)) {
     return (
       <BlockChrome label={lang} code={code}>
-        <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-foreground">
+        <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-fg-default">
           {code}
         </pre>
       </BlockChrome>
@@ -134,14 +132,14 @@ const HighlightedPre = memo(function HighlightedPre({
 
   if (!nodes) {
     return (
-      <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-foreground">
+      <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-fg-default">
         {code}
       </pre>
     );
   }
 
   return (
-    <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-foreground">
+    <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-fg-default">
       {nodes.map((node, index) =>
         node.kind === "break" ? (
           <span key={index}>{"\n"}</span>
@@ -160,9 +158,9 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
   const prompt = shellPrompt(lang);
 
   return (
-    <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-muted/40">
+    <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-bg-hover/40">
       <div className="flex items-center justify-between gap-2 px-3 py-1.5">
-        <span className="font-mono text-ui-xs uppercase tracking-wide text-muted-foreground">
+        <span className="font-mono text-ui-xs uppercase tracking-wide text-fg-muted">
           {normalizeLangLabel(lang)}
         </span>
         <div className="flex items-center gap-1">
@@ -170,16 +168,16 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
           <CopyButton text={code} />
         </div>
       </div>
-      <div className="border-t border-border/40 bg-background/40">
+      <div className="border-t border-border/40 bg-bg-root/40">
         <pre
           className={cn(
-            "m-0 overflow-x-auto px-3 py-2 font-mono text-ui-sm leading-relaxed text-foreground",
+            "m-0 overflow-x-auto px-3 py-2 font-mono text-ui-sm leading-relaxed text-fg-default",
             isMultiline ? "whitespace-pre" : "whitespace-pre-wrap",
           )}
         >
           {code.split("\n").map((line, index) => (
             <span key={index} className="flex">
-              <span className="mr-2 select-none text-muted-foreground/70">{prompt}</span>
+              <span className="mr-2 select-none text-fg-muted/70">{prompt}</span>
               <span>{line}</span>
             </span>
           ))}
@@ -208,7 +206,7 @@ function RunInTerminalButton({ command }: { command: string }) {
       size="sm"
       variant="ghost"
       onClick={onRun}
-      className="h-5 gap-1 px-1.5 text-ui-xs font-medium text-muted-foreground hover:text-foreground"
+      className="h-5 gap-1 px-1.5 text-ui-xs font-medium text-fg-muted hover:text-fg-default"
       aria-label="Run in active terminal"
       title="Run in active terminal"
     >
@@ -241,7 +239,7 @@ function CopyButton({ text }: { text: string }) {
       size="icon"
       variant="ghost"
       onClick={onCopy}
-      className="size-5 shrink-0 text-muted-foreground hover:text-foreground"
+      className="size-5 shrink-0 text-fg-muted hover:text-fg-default"
       aria-label="Copy code"
       title="Copy code"
     >

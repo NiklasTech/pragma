@@ -51,7 +51,7 @@ export function TabBar({ panelId }: TabBarProps) {
   }
 
   return (
-    <div className="flex h-tab min-w-0 shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-bg-surface px-2">
+    <div className="my-1 flex h-tab min-w-0 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-bg-surface px-3">
       {tabs.map((tab, index) => {
         const isActive = activeTabId === tab.id;
         const isDropTarget = dragOverIndex === index;
@@ -74,7 +74,7 @@ export function TabBar({ panelId }: TabBarProps) {
             )}
           >
             <Icon
-              size={13}
+              size={14}
               className={cn(
                 "shrink-0",
                 tab.kind === "diff"
@@ -82,7 +82,7 @@ export function TabBar({ panelId }: TabBarProps) {
                   : "text-fg-muted group-hover:text-fg-default data-[active=true]:text-fg-default",
               )}
             />
-            <span className="min-w-0 flex-1 truncate">{tab.name}</span>
+            <span className="min-w-0 flex-1 truncate text-ui-sm">{tab.name}</span>
             {tab.kind === "file" && tab.isModified && (
               <span className="size-1.5 shrink-0 rounded-full bg-primary" />
             )}

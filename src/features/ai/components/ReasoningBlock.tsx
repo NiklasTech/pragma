@@ -20,7 +20,7 @@ export function ReasoningBlock({ reasoning, streaming = false }: ReasoningBlockP
       streaming={streaming}
       defaultOpen={streaming}
     >
-      <pre className="whitespace-pre-wrap font-mono text-ui-xs leading-relaxed text-muted-foreground">
+      <pre className="whitespace-pre-wrap font-mono text-ui-xs leading-relaxed text-fg-muted">
         {trimmed}
       </pre>
     </ActivityBlock>

@@ -16,7 +16,7 @@ function StatusDot({ status }: { status: RunStatus }) {
       ? "text-status-success"
       : status === "failed"
         ? "text-status-error"
-        : "text-muted-foreground";
+        : "text-fg-muted";
 
   return <Circle size={6} weight="fill" className={colorClass} />;
 }
@@ -35,7 +35,7 @@ function RunningProcessBadge({
   return (
     <div
       className={`flex items-center gap-1.5 rounded px-2 py-0.5 transition-colors ${
-        isActive ? "bg-accent" : "bg-accent/40"
+        isActive ? "bg-bg-active" : "bg-bg-active/40"
       }`}
     >
       <button
@@ -45,12 +45,12 @@ function RunningProcessBadge({
         title="Open output"
       >
         <StatusDot status={process.status} />
-        <span className="text-xs text-foreground">{process.configName}</span>
+        <span className="text-xs text-fg-default">{process.configName}</span>
       </button>
       <button
         type="button"
         onClick={() => onStop(process.id)}
-        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-status-error"
+        className="flex h-5 w-5 items-center justify-center rounded text-fg-muted transition-colors hover:text-status-error"
         title="Stop"
       >
         <Stop size={12} weight="fill" />
@@ -136,10 +136,10 @@ export function RunConfigWidget() {
         <button
           type="button"
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="flex h-6 items-center gap-1 rounded px-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
         >
           <span>Run</span>
-          <CaretDown size={10} />
+          <CaretDown size={12} />
         </button>
 
         {dropdownOpen && (
@@ -151,11 +151,11 @@ export function RunConfigWidget() {
                 return (
                   <div
                     key={config.name}
-                    className="flex items-center justify-between px-3 py-1.5 hover:bg-accent"
+                    className="flex items-center justify-between px-3 py-1.5 hover:bg-bg-hover"
                   >
                     <div className="flex items-center gap-2">
                       <StatusDot status={proc?.status ?? "stopped"} />
-                      <span className="text-xs text-foreground">{config.name}</span>
+                      <span className="text-xs text-fg-default">{config.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {proc?.status === "running" ? (
@@ -166,7 +166,7 @@ export function RunConfigWidget() {
                               handleOpenOutput(proc.id);
                               setDropdownOpen(false);
                             }}
-                            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-fg-default"
                             title="Open output"
                           >
                             <Terminal size={12} />
@@ -174,7 +174,7 @@ export function RunConfigWidget() {
                           <button
                             type="button"
                             onClick={() => handleStop(proc.id)}
-                            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-status-error"
+                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-error"
                             title="Stop"
                           >
                             <Stop size={12} weight="fill" />
@@ -184,7 +184,7 @@ export function RunConfigWidget() {
                         <button
                           type="button"
                           onClick={() => (proc ? handleRestart(proc.id) : handleStart(config))}
-                          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-status-success"
+                          className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-success"
                           title={proc ? "Restart" : "Start"}
                         >
                           {proc ? (
@@ -211,15 +211,15 @@ export function RunConfigWidget() {
                     setActiveProcess(activeProcessId === proc.id ? null : proc.id);
                     setDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between px-3 py-1.5 hover:bg-accent ${
-                    activeProcessId === proc.id ? "bg-accent/60" : ""
+                  className={`flex w-full items-center justify-between px-3 py-1.5 hover:bg-bg-hover ${
+                    activeProcessId === proc.id ? "bg-bg-active/60" : ""
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <StatusDot status={proc.status} />
-                    <span className="text-xs text-foreground">{proc.configName}</span>
+                    <span className="text-xs text-fg-default">{proc.configName}</span>
                     {proc.exitCode !== null && (
-                      <span className="text-ui-xs text-muted-foreground">({proc.exitCode})</span>
+                      <span className="text-ui-xs text-fg-muted">({proc.exitCode})</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1">
@@ -229,7 +229,7 @@ export function RunConfigWidget() {
                         e.stopPropagation();
                         void restartProcess(proc.id);
                       }}
-                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-status-success"
+                      className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-success"
                       title="Restart"
                     >
                       <ArrowCounterClockwise size={12} />
@@ -240,7 +240,7 @@ export function RunConfigWidget() {
                         e.stopPropagation();
                         removeProcess(proc.id);
                       }}
-                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-status-error"
+                      className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-error"
                       title="Remove"
                     >
                       <Trash size={12} />

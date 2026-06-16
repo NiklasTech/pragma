@@ -85,23 +85,23 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
             <DialogTitle className="flex items-center gap-2 text-sm">
               <ClockCounterClockwise size={16} />
               Local History
-              <span className="text-muted-foreground font-normal">— {fileName}</span>
+              <span className="text-fg-muted font-normal">— {fileName}</span>
             </DialogTitle>
           </div>
         </DialogHeader>
 
         <div className="flex flex-1 min-h-0">
           <div className="w-56 border-r border-border/60 flex flex-col shrink-0">
-            <div className="px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
+            <div className="px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted border-b border-border/40">
               Snapshots
             </div>
             <ScrollArea className="flex-1">
               {isLoading && snapshots.length === 0 ? (
                 <div className="flex items-center justify-center py-8">
-                  <Spinner size={16} className="animate-spin text-muted-foreground" />
+                  <Spinner size={16} className="animate-spin text-fg-muted" />
                 </div>
               ) : snapshots.length === 0 ? (
-                <div className="px-3 py-6 text-ui-xs text-muted-foreground text-center">
+                <div className="px-3 py-6 text-ui-xs text-fg-muted text-center">
                   No snapshots yet
                 </div>
               ) : (
@@ -113,14 +113,12 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
                       className={cn(
                         "w-full text-left px-3 py-2 text-ui-xs flex flex-col gap-0.5 transition-colors",
                         selectedSnapshotId === snap.id
-                          ? "bg-accent text-accent-foreground"
-                          : "text-foreground hover:bg-accent/40",
+                          ? "bg-bg-active text-fg-default"
+                          : "text-fg-default hover:bg-bg-hover",
                       )}
                     >
                       <span className="font-medium">{formatRelativeTime(snap.timestamp)}</span>
-                      <span className="text-muted-foreground text-ui-xs">
-                        {formatTime(snap.timestamp)}
-                      </span>
+                      <span className="text-fg-muted text-ui-xs">{formatTime(snap.timestamp)}</span>
                     </button>
                   ))}
                 </div>
@@ -132,7 +130,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
             {selectedSnapshotId && diffResult ? (
               <>
                 <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 shrink-0">
-                  <span className="text-ui-xs text-muted-foreground">
+                  <span className="text-ui-xs text-fg-muted">
                     Snapshot from{" "}
                     {formatTime(
                       snapshots.find((s) => s.id === selectedSnapshotId)?.timestamp || "",
@@ -158,7 +156,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
                 </div>
               </>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-fg-muted">
                 <FileText size={24} className="opacity-40" />
                 <span className="text-ui-xs">Select a snapshot to view diff</span>
               </div>

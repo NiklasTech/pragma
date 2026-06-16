@@ -149,29 +149,29 @@ export function AiModelSelector() {
       <PopoverTrigger>
         <span
           className={cn(
-            "inline-flex h-7 max-w-[220px] items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 text-ui-sm font-medium transition-colors hover:bg-accent",
-            !isAvailable && "text-muted-foreground",
+            "inline-flex h-7 max-w-[220px] items-center gap-1.5 rounded-md border border-border/60 bg-bg-root px-2 text-ui-sm font-medium transition-colors hover:bg-bg-hover",
+            !isAvailable && "text-fg-muted",
           )}
         >
-          <Robot size={13} className="shrink-0 text-muted-foreground" />
+          <Robot size={13} className="shrink-0 text-fg-muted" />
           <span className="truncate">{PROVIDER_LABELS[activeProvider]}</span>
-          <span className="text-muted-foreground">/</span>
+          <span className="text-fg-muted">/</span>
           <span className="truncate">{activeModel || "No model"}</span>
           <span
             className={cn(
               "ml-0.5 h-1.5 w-1.5 shrink-0 rounded-full",
-              isAvailable ? "bg-status-success" : "bg-destructive",
+              isAvailable ? "bg-status-success" : "bg-status-error",
             )}
             title={isAvailable ? "Online" : "Offline"}
           />
-          <CaretDown size={12} className="shrink-0 text-muted-foreground" />
+          <CaretDown size={12} className="shrink-0 text-fg-muted" />
         </span>
       </PopoverTrigger>
 
       <PopoverContent align="start" side="bottom" className="w-72 p-3">
         <div className="flex flex-col gap-3">
           {/* Mode quick switch */}
-          <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+          <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg-hover p-1">
             {MODE_ORDER.map((mode) => {
               const Icon = MODE_ICONS[mode];
               const active = currentMode === mode;
@@ -187,9 +187,9 @@ export function AiModelSelector() {
                   className={cn(
                     "flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-ui-xs font-medium transition-colors",
                     active
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                    disabled && "cursor-not-allowed opacity-40 hover:text-muted-foreground",
+                      ? "bg-bg-surface text-fg-default shadow-sm"
+                      : "text-fg-muted hover:text-fg-default",
+                    disabled && "cursor-not-allowed opacity-40 hover:text-fg-muted",
                   )}
                 >
                   <Icon size={12} />
@@ -201,7 +201,7 @@ export function AiModelSelector() {
 
           {/* Provider list */}
           <div className="flex flex-col gap-1">
-            <span className="text-ui-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="text-ui-xs font-medium uppercase tracking-wider text-fg-muted">
               Provider
             </span>
             <div className="flex flex-col gap-0.5">
@@ -216,8 +216,8 @@ export function AiModelSelector() {
                     className={cn(
                       "flex items-center justify-between rounded-md px-2 py-1.5 text-ui-sm transition-colors",
                       isActive
-                        ? "bg-accent/50 font-medium text-foreground"
-                        : "text-foreground/90 hover:bg-accent/30",
+                        ? "bg-bg-active/50 font-medium text-fg-default"
+                        : "text-fg-default/90 hover:bg-bg-hover",
                     )}
                   >
                     <span className="flex items-center gap-2">
@@ -230,7 +230,7 @@ export function AiModelSelector() {
                     <span
                       className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        available ? "bg-status-success" : "bg-destructive",
+                        available ? "bg-status-success" : "bg-status-error",
                       )}
                       title={available ? "Online" : "Offline"}
                     />
@@ -242,7 +242,7 @@ export function AiModelSelector() {
 
           {/* Model select */}
           <div className="flex flex-col gap-1">
-            <span className="text-ui-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="text-ui-xs font-medium uppercase tracking-wider text-fg-muted">
               Model
             </span>
             <Select value={activeModel} onValueChange={handleModelChange}>
@@ -266,7 +266,7 @@ export function AiModelSelector() {
 
           {/* Configure hint */}
           {!isAvailable && (
-            <p className="text-ui-xs text-destructive">
+            <p className="text-ui-xs text-status-error">
               Provider not available. Add an API key in Settings or connect a CLI subscription.
             </p>
           )}

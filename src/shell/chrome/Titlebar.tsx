@@ -6,7 +6,8 @@ import {
   Gear,
   Minus,
   Robot,
-  Square,
+  CornersOut,
+  CornersIn,
   X,
   Layout,
   Sidebar,
@@ -21,6 +22,7 @@ import { useLayoutStore } from "@/shell/layout";
 import { layoutPresets, presetLabels } from "@/shell/layout/presets";
 import { RunConfigWidget } from "@/features/run-config/components";
 import { AISettings } from "@/features/settings/components/AISettings";
+import { StatusbarSettings } from "@/features/settings/components/StatusbarSettings";
 import {
   Sheet,
   SheetContent,
@@ -111,25 +113,25 @@ export function Titlebar() {
       className="flex h-header shrink-0 items-center justify-between select-none border-b border-border/60 bg-bg-surface"
     >
       <div className="flex items-center gap-2 px-3">
-        <img src="/favicon.svg" alt="" className="h-4 w-4" />
+        <img src="/favicon.svg" alt="" className="h-5 w-5" />
         <span className="text-ui-xs font-semibold text-fg-default">Pragma</span>
         <button
           type="button"
           onClick={openFile}
-          className="ml-2 flex h-6 items-center gap-1.5 rounded-md px-2 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="ml-2 flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           title="Open File"
         >
-          <FolderOpen size={14} />
+          <FolderOpen size={16} />
           <span>Open</span>
         </button>
         <button
           type="button"
           onClick={saveFile}
           disabled={!canSave}
-          className="flex h-6 items-center gap-1.5 rounded-md px-2 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
           title="Save File"
         >
-          <FloppyDisk size={14} />
+          <FloppyDisk size={16} />
           <span>Save</span>
         </button>
 
@@ -140,28 +142,28 @@ export function Titlebar() {
           type="button"
           onClick={toggleAI}
           className={cn(
-            "flex h-6 items-center gap-1.5 rounded px-2 text-ui-xs transition-colors",
+            "flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm transition-colors",
             aiOpen
               ? "bg-accent-subtle text-primary"
               : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
           )}
           title="Toggle AI Chat (Ctrl+Shift+A)"
         >
-          <Robot size={14} />
+          <Robot size={16} />
           <span>AI</span>
         </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "flex h-6 items-center gap-1 rounded-md px-2 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default outline-none",
+              "flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default outline-none",
               activePreset && "text-fg-default",
             )}
             title="Layout"
           >
-            <Layout size={14} />
+            <Layout size={16} />
             <span>Layout</span>
-            <CaretDown size={10} className="ml-0.5 opacity-70" />
+            <CaretDown size={12} className="ml-0.5 opacity-70" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuSub>
@@ -175,7 +177,7 @@ export function Titlebar() {
                   >
                     <div className="flex flex-col">
                       <span>{presetLabels[id]?.name ?? id}</span>
-                      <span className="text-ui-2xs text-muted-foreground">
+                      <span className="text-ui-2xs text-fg-muted">
                         {presetLabels[id]?.description}
                       </span>
                     </div>
@@ -238,22 +240,23 @@ export function Titlebar() {
         <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
           <SheetTrigger
             className={cn(
-              "flex h-6 items-center gap-1.5 rounded px-2 text-ui-xs transition-colors",
+              "flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm transition-colors",
               settingsOpen
                 ? "bg-accent-subtle text-primary"
                 : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
             )}
             title="Settings"
           >
-            <Gear size={14} />
+            <Gear size={16} />
             <span>Settings</span>
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Settings</SheetTitle>
             </SheetHeader>
-            <div className="py-4">
+            <div className="py-4 space-y-6">
               <AISettings />
+              <StatusbarSettings />
             </div>
           </SheetContent>
         </Sheet>
@@ -265,26 +268,30 @@ export function Titlebar() {
         <button
           type="button"
           onClick={handleMinimize}
-          className="flex h-header w-11 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label="Minimize"
         >
-          <Minus size={14} weight="bold" />
+          <Minus size={18} weight="bold" />
         </button>
         <button
           type="button"
           onClick={handleToggleMaximize}
-          className="flex h-header w-11 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label={isMaximized ? "Restore" : "Maximize"}
         >
-          <Square size={12} weight="bold" />
+          {isMaximized ? (
+            <CornersIn size={18} weight="bold" />
+          ) : (
+            <CornersOut size={18} weight="bold" />
+          )}
         </button>
         <button
           type="button"
           onClick={handleClose}
-          className="flex h-header w-11 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
           aria-label="Close"
         >
-          <X size={14} weight="bold" />
+          <X size={18} weight="bold" />
         </button>
       </div>
     </div>

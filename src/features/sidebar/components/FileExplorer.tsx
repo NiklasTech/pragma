@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FolderOpen, Spinner } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -7,6 +8,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
 } from "@/shared/components/ui/context-menu";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { FileTreeNode } from "./FileTreeNode";
@@ -30,17 +32,18 @@ export function FileExplorer() {
 
   const rootName = rootPath ? rootPath.replace(/\\/g, "/").split("/").pop() || rootPath : null;
 
-  const handleCreateFile = () => {
-    if (!rootPath) return;
-    const name = window.prompt("New file name:");
-    if (name?.trim()) void createNode(rootPath, name.trim(), false);
+  const [createDialog, setCreateDialog] = useState<{
+    open: boolean;
+    isDirectory: boolean;
+  }>({ open: false, isDirectory: false });
+
+  const handleCreateConfirm = (name: string) => {
+    if (!rootPath || !name) return;
+    void createNode(rootPath, name, createDialog.isDirectory);
   };
 
-  const handleCreateFolder = () => {
-    if (!rootPath) return;
-    const name = window.prompt("New folder name:");
-    if (name?.trim()) void createNode(rootPath, name.trim(), true);
-  };
+  const openCreateFile = () => setCreateDialog({ open: true, isDirectory: false });
+  const openCreateFolder = () => setCreateDialog({ open: true, isDirectory: true });
 
   if (!rootPath) {
     return (
@@ -91,10 +94,19 @@ export function FileExplorer() {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={handleCreateFile}>New File</ContextMenuItem>
-        <ContextMenuItem onClick={handleCreateFolder}>New Folder</ContextMenuItem>
+        <ContextMenuItem onClick={openCreateFile}>New File</ContextMenuItem>
+        <ContextMenuItem onClick={openCreateFolder}>New Folder</ContextMenuItem>
         <ContextMenuItem onClick={selectRoot}>Open Different Folder</ContextMenuItem>
       </ContextMenuContent>
+      <InputDialog
+        open={createDialog.open}
+        onOpenChange={(open) => setCreateDialog((prev) => ({ ...prev, open }))}
+        title={createDialog.isDirectory ? "New Folder" : "New File"}
+        description={`Create a new ${createDialog.isDirectory ? "folder" : "file"} in the project root.`}
+        label="Name"
+        confirmLabel="Create"
+        onConfirm={handleCreateConfirm}
+      />
     </ContextMenu>
   );
 }

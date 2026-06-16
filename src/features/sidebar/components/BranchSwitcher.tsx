@@ -250,8 +250,8 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             className={cn(
               "rounded p-1 transition-colors",
               canPushPull && ahead > 0
-                ? "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed",
+                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default"
+                : "text-fg-muted/30 cursor-not-allowed",
             )}
           >
             {isPushBusy ? <Spinner size={12} className="animate-spin" /> : <ArrowUp size={12} />}
@@ -267,8 +267,8 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             className={cn(
               "rounded p-1 transition-colors",
               canPushPull && behind > 0
-                ? "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed",
+                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default"
+                : "text-fg-muted/30 cursor-not-allowed",
             )}
           >
             {isPullBusy ? <Spinner size={12} className="animate-spin" /> : <ArrowDown size={12} />}
@@ -282,8 +282,8 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             className={cn(
               "rounded p-1 transition-colors",
               canPushPull
-                ? "text-foreground/70 hover:bg-accent/50 hover:text-foreground"
-                : "text-muted-foreground/30 cursor-not-allowed",
+                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default"
+                : "text-fg-muted/30 cursor-not-allowed",
             )}
           >
             {isFetchBusy ? (
@@ -528,8 +528,8 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md px-3 py-2 text-ui-sm transition-colors",
                   selectedFetchBranch === rb.name
-                    ? "bg-accent/50 font-medium text-foreground"
-                    : "text-foreground/90 hover:bg-accent/30",
+                    ? "bg-bg-active/50 font-medium text-fg-default"
+                    : "text-fg-default/90 hover:bg-bg-hover",
                 )}
               >
                 <GitBranch size={12} className="text-fg-muted" />

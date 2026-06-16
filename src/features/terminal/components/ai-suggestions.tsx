@@ -17,7 +17,7 @@ export function AISuggestionsOverlay({ suggestion, loading, visible }: AISuggest
   return (
     <div
       className={cn(
-        "pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[80%] items-center gap-2 rounded-md border border-border/50 bg-background/95 px-2 py-1.5 shadow-md backdrop-blur-sm",
+        "pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[80%] items-center gap-2 rounded-md border border-border/50 bg-bg-root/95 px-2 py-1.5 shadow-md backdrop-blur-sm",
         !visible && loading && "opacity-70",
       )}
     >
@@ -29,12 +29,12 @@ export function AISuggestionsOverlay({ suggestion, loading, visible }: AISuggest
       {loading && !suggestion ? (
         <Skeleton className="h-4 w-32" />
       ) : (
-        <span className="truncate font-mono text-sm text-muted-foreground">{suggestion}</span>
+        <span className="truncate font-mono text-sm text-fg-muted">{suggestion}</span>
       )}
 
       <div className="ml-1 flex shrink-0 items-center gap-1">
         <Kbd>Tab</Kbd>
-        <span className="text-ui-xs text-muted-foreground">to accept</span>
+        <span className="text-ui-xs text-fg-muted">to accept</span>
       </div>
     </div>
   );

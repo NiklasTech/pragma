@@ -44,7 +44,7 @@ export function SelectionAskAi({ state, x, y, onAsk, onDismiss }: SelectionAskAi
       data-selection-ask-ai
       data-state={state}
       style={{ top: pos.current.top, left: pos.current.left, width: W }}
-      className="fixed z-50 rounded-lg border border-border/60 bg-card/95 p-1 shadow-lg backdrop-blur-md duration-150 ease-out animate-in fade-in zoom-in-95 data-[state=closed]:hidden"
+      className="fixed z-50 rounded-lg border border-border/60 bg-bg-elevated/95 p-1 shadow-lg backdrop-blur-md duration-150 ease-out animate-in fade-in zoom-in-95 data-[state=closed]:hidden"
     >
       <button
         type="button"
@@ -52,7 +52,7 @@ export function SelectionAskAi({ state, x, y, onAsk, onDismiss }: SelectionAskAi
           e.stopPropagation();
           onAsk();
         }}
-        className="flex h-7 w-full items-center justify-between gap-2 rounded-md px-2 text-xs transition-colors hover:bg-accent"
+        className="flex h-7 w-full items-center justify-between gap-2 rounded-md px-2 text-xs transition-colors hover:bg-bg-hover"
       >
         <span>Ask Pragma</span>
         <KbdGroup>

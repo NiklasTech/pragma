@@ -206,14 +206,14 @@ export function AISettings() {
   return (
     <div className="flex flex-col gap-4">
       {/* Auth Mode Tabs */}
-      <div className="flex gap-1 rounded-lg bg-muted p-1">
+      <div className="flex gap-1 rounded-lg bg-bg-hover p-1">
         <button
           type="button"
           onClick={() => setActiveTab("cli")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
             activeTab === "cli"
-              ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-bg-surface text-fg-default shadow-sm"
+              : "text-fg-muted hover:text-fg-default"
           }`}
         >
           <Terminal size={14} />
@@ -224,8 +224,8 @@ export function AISettings() {
           onClick={() => setActiveTab("apikey")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
             activeTab === "apikey"
-              ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-bg-surface text-fg-default shadow-sm"
+              : "text-fg-muted hover:text-fg-default"
           }`}
         >
           <Globe size={14} />
@@ -236,8 +236,8 @@ export function AISettings() {
           onClick={() => setActiveTab("ollama")}
           className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
             activeTab === "ollama"
-              ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-bg-surface text-fg-default shadow-sm"
+              : "text-fg-muted hover:text-fg-default"
           }`}
         >
           <Cpu size={14} />
@@ -248,13 +248,13 @@ export function AISettings() {
       {/* ─── CLI Tab ─────────────────────────────────────────────────────── */}
       {activeTab === "cli" && (
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-fg-muted">
             Use your existing subscription via official CLI tools. Pragma installs and manages them
             automatically.
           </p>
 
           {aiStore.cliManifests.length === 0 && (
-            <p className="text-sm text-muted-foreground">Loading providers...</p>
+            <p className="text-sm text-fg-muted">Loading providers...</p>
           )}
 
           {aiStore.cliManifests.map((manifest) => {
@@ -287,14 +287,12 @@ export function AISettings() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{manifest.description}</p>
+                      <p className="text-xs text-fg-muted">{manifest.description}</p>
                       {status?.version && (
-                        <p className="text-ui-xs text-muted-foreground">v{status.version}</p>
+                        <p className="text-ui-xs text-fg-muted">v{status.version}</p>
                       )}
                       {status?.user && (
-                        <p className="text-ui-xs text-muted-foreground">
-                          Signed in as {status.user}
-                        </p>
+                        <p className="text-ui-xs text-fg-muted">Signed in as {status.user}</p>
                       )}
                     </div>
                   </div>
@@ -345,7 +343,7 @@ export function AISettings() {
                     )}
                   </div>
 
-                  {status?.error && <p className="text-xs text-destructive">{status.error}</p>}
+                  {status?.error && <p className="text-xs text-status-error">{status.error}</p>}
                 </CardContent>
               </Card>
             );
@@ -440,7 +438,7 @@ export function AISettings() {
                       <button
                         type="button"
                         onClick={() => setShowKey((s) => !s)}
-                        className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
                       >
                         {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
                       </button>
@@ -455,17 +453,15 @@ export function AISettings() {
                       </Button>
                     )}
                   </div>
-                  {apiKeyRef && (
-                    <p className="text-xs text-muted-foreground">Saved key: {apiKeyRef}</p>
-                  )}
+                  {apiKeyRef && <p className="text-xs text-fg-muted">Saved key: {apiKeyRef}</p>}
                 </div>
               )}
 
               {activeProvider === "copilot" && (
-                <div className="flex flex-col gap-3 rounded-md bg-muted p-3">
+                <div className="flex flex-col gap-3 rounded-md bg-bg-hover p-3">
                   <div className="flex flex-col gap-1.5">
                     <Label>GitHub OAuth Client ID</Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-fg-muted">
                       Create a GitHub OAuth App and paste its Client ID here.
                     </p>
                     <Input
@@ -507,10 +503,10 @@ export function AISettings() {
 
                   {copilotUserCode && copilotVerificationUri && (
                     <div className="flex flex-col gap-1.5">
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-fg-muted">
                         Enter this code on GitHub if the browser did not open:
                       </p>
-                      <code className="rounded bg-card px-2 py-1 text-center text-sm font-mono">
+                      <code className="rounded bg-bg-surface px-2 py-1 text-center text-sm font-mono">
                         {copilotUserCode}
                       </code>
                       <Button
@@ -524,7 +520,7 @@ export function AISettings() {
                     </div>
                   )}
 
-                  {copilotError && <p className="text-xs text-destructive">{copilotError}</p>}
+                  {copilotError && <p className="text-xs text-status-error">{copilotError}</p>}
                 </div>
               )}
 
@@ -543,7 +539,7 @@ export function AISettings() {
                   </span>
                 )}
                 {testStatus === "error" && (
-                  <span className="flex items-center gap-1 text-xs text-destructive">
+                  <span className="flex items-center gap-1 text-xs text-status-error">
                     <XCircle size={14} /> Failed
                   </span>
                 )}
@@ -593,7 +589,7 @@ export function AISettings() {
             <CardTitle>Ollama — Local Models</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-fg-muted">
               Run AI models locally on your machine. Completely free, works offline, 100% private.
             </p>
 
@@ -626,9 +622,9 @@ export function AISettings() {
               </Select>
             </div>
 
-            <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Not installed?</p>
-              <code className="block bg-card rounded px-2 py-1 mt-1">
+            <div className="rounded-md bg-bg-hover p-3 text-xs text-fg-muted">
+              <p className="font-medium text-fg-default mb-1">Not installed?</p>
+              <code className="block bg-bg-surface rounded px-2 py-1 mt-1">
                 curl -fsSL https://ollama.com/install.sh | sh
               </code>
             </div>

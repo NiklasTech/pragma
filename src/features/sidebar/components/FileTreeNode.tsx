@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   Folder,
   FolderOpen,
@@ -17,6 +17,17 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/shared/components/ui/context-menu";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import type { FileSystemNode } from "@/shared/stores/fileExplorer";
 
 interface FileTreeNodeProps {
@@ -57,27 +68,33 @@ export function FileTreeNode({
     }
   }, [node, onToggleDir, onOpenFile]);
 
-  const handleCreateFile = useCallback(() => {
-    const name = window.prompt("New file name:");
-    if (name?.trim()) onCreate(node.path, name.trim(), false);
-  }, [node.path, onCreate]);
+  const [createDialog, setCreateDialog] = useState<{ open: boolean; isDirectory: boolean }>({
+    open: false,
+    isDirectory: false,
+  });
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const handleCreateFolder = useCallback(() => {
-    const name = window.prompt("New folder name:");
-    if (name?.trim()) onCreate(node.path, name.trim(), true);
-  }, [node.path, onCreate]);
+  const handleCreateConfirm = useCallback(
+    (name: string) => {
+      if (name) onCreate(node.path, name, createDialog.isDirectory);
+    },
+    [node.path, onCreate, createDialog.isDirectory],
+  );
 
-  const handleRename = useCallback(() => {
-    const name = window.prompt("Rename to:", node.name);
-    if (name?.trim() && name.trim() !== node.name) {
-      onRename(node.path, name.trim());
-    }
-  }, [node, onRename]);
+  const handleRenameConfirm = useCallback(
+    (name: string) => {
+      if (name && name !== node.name) {
+        onRename(node.path, name);
+      }
+    },
+    [node, onRename],
+  );
 
-  const handleDelete = useCallback(() => {
-    const confirmed = window.confirm(`Delete "${node.name}"?`);
-    if (confirmed) onDelete(node.path);
-  }, [node, onDelete]);
+  const handleDeleteConfirm = useCallback(() => {
+    onDelete(node.path);
+    setDeleteOpen(false);
+  }, [node.path, onDelete]);
 
   const handleShowLocalHistory = useCallback(() => {
     if (onShowLocalHistory) {
@@ -147,11 +164,15 @@ export function FileTreeNode({
         <ContextMenuContent className="w-48">
           {node.isDirectory ? (
             <>
-              <ContextMenuItem onClick={handleCreateFile}>New File</ContextMenuItem>
-              <ContextMenuItem onClick={handleCreateFolder}>New Folder</ContextMenuItem>
+              <ContextMenuItem onClick={() => setCreateDialog({ open: true, isDirectory: false })}>
+                New File
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => setCreateDialog({ open: true, isDirectory: true })}>
+                New Folder
+              </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
-              <ContextMenuItem variant="destructive" onClick={handleDelete}>
+              <ContextMenuItem onClick={() => setRenameOpen(true)}>Rename</ContextMenuItem>
+              <ContextMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
                 Delete
               </ContextMenuItem>
             </>
@@ -164,14 +185,52 @@ export function FileTreeNode({
                 Local History
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={handleRename}>Rename</ContextMenuItem>
-              <ContextMenuItem variant="destructive" onClick={handleDelete}>
+              <ContextMenuItem onClick={() => setRenameOpen(true)}>Rename</ContextMenuItem>
+              <ContextMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
                 Delete
               </ContextMenuItem>
             </>
           )}
         </ContextMenuContent>
       </ContextMenu>
+
+      <InputDialog
+        open={createDialog.open}
+        onOpenChange={(open) => setCreateDialog((prev) => ({ ...prev, open }))}
+        title={createDialog.isDirectory ? "New Folder" : "New File"}
+        description={`Create a new ${createDialog.isDirectory ? "folder" : "file"} in ${node.name}.`}
+        label="Name"
+        confirmLabel="Create"
+        onConfirm={handleCreateConfirm}
+      />
+
+      <InputDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        title="Rename"
+        description={`Rename ${node.name} to:`}
+        label="New name"
+        defaultValue={node.name}
+        confirmLabel="Rename"
+        onConfirm={handleRenameConfirm}
+      />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {node.isDirectory ? "Folder" : "File"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{node.name}&quot;? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {node.isDirectory && isExpanded && node.children && (
         <div>

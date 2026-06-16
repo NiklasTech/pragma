@@ -54,7 +54,7 @@ export function GitDiffPane({
 
   if (state.kind === "loading" || state.kind === "idle") {
     return (
-      <div className="flex h-full items-center justify-center gap-2 text-ui-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center gap-2 text-ui-xs text-fg-muted">
         <Spinner size={14} className="animate-spin" />
         Loading diff…
       </div>
@@ -63,7 +63,7 @@ export function GitDiffPane({
 
   if (state.kind === "error") {
     return (
-      <div className="flex h-full items-center justify-center px-6 text-center text-ui-sm text-destructive">
+      <div className="flex h-full items-center justify-center px-6 text-center text-ui-sm text-status-error">
         {state.message}
       </div>
     );

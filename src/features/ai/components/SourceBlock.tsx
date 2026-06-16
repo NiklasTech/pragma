@@ -21,14 +21,14 @@ export function SourceBlock({ type, title, url, filename, streaming = false }: S
       icon={icon}
       title={
         <span>
-          <span className="text-muted-foreground">Reading</span>{" "}
-          <span className="font-medium text-foreground">{display}</span>
+          <span className="text-fg-muted">Reading</span>{" "}
+          <span className="font-medium text-fg-default">{display}</span>
         </span>
       }
       streaming={streaming}
       defaultOpen={streaming}
     >
-      <div className="text-ui-xs text-muted-foreground">
+      <div className="text-ui-xs text-fg-muted">
         {url && (
           <a
             href={url}

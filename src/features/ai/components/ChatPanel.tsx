@@ -309,8 +309,8 @@ export function ChatPanel() {
 
             {status === "submitted" && (
               <Message from="assistant">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                  <Robot size={14} className="text-muted-foreground" />
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-hover">
+                  <Robot size={14} className="text-fg-muted" />
                 </div>
                 <MessageContent>
                   <ChatTypingIndicator />
@@ -392,7 +392,7 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={stop}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
             >
               <Stop size={16} weight="bold" />
             </button>

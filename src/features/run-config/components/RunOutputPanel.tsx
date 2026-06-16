@@ -20,7 +20,7 @@ function StatusBadge({ status }: { status: RunStatus }) {
     );
   }
   return (
-    <span className="flex items-center gap-1 text-ui-xs text-muted-foreground">
+    <span className="flex items-center gap-1 text-ui-xs text-fg-muted">
       <Circle size={6} weight="fill" />
       Stopped
     </span>
@@ -44,14 +44,14 @@ export function RunOutputPanel() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col bg-card">
+    <div className="flex h-full w-full flex-col bg-bg-surface">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-foreground">{activeProcess.configName}</span>
+          <span className="text-xs font-medium text-fg-default">{activeProcess.configName}</span>
           <StatusBadge status={activeProcess.status} />
           {activeProcess.exitCode !== null && (
-            <span className="text-ui-xs text-muted-foreground">exit {activeProcess.exitCode}</span>
+            <span className="text-ui-xs text-fg-muted">exit {activeProcess.exitCode}</span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -64,8 +64,8 @@ export function RunOutputPanel() {
                   onClick={() => setActiveProcess(p.id)}
                   className={`flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs ${
                     p.id === activeProcessId
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent/50"
+                      ? "bg-bg-active text-fg-default"
+                      : "text-fg-muted hover:bg-bg-hover"
                   }`}
                 >
                   <Circle
@@ -76,7 +76,7 @@ export function RunOutputPanel() {
                         ? "text-status-success"
                         : p.status === "failed"
                           ? "text-status-error"
-                          : "text-muted-foreground"
+                          : "text-fg-muted"
                     }
                   />
                   {p.configName}
@@ -87,7 +87,7 @@ export function RunOutputPanel() {
           <button
             type="button"
             onClick={() => setActiveProcess(null)}
-            className="flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
             title="Back to Terminal"
           >
             <Terminal size={10} />
@@ -99,7 +99,7 @@ export function RunOutputPanel() {
               setActiveProcess(null);
               removeProcess(activeProcess.id);
             }}
-            className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-fg-default"
             title="Close"
           >
             <X size={12} />
@@ -110,10 +110,10 @@ export function RunOutputPanel() {
       {/* Output */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-3 font-mono text-xs">
         {activeProcess.output.length === 0 ? (
-          <span className="italic text-muted-foreground">No output yet...</span>
+          <span className="italic text-fg-muted">No output yet...</span>
         ) : (
           activeProcess.output.map((line, i) => (
-            <pre key={i} className="break-all whitespace-pre-wrap leading-relaxed text-foreground">
+            <pre key={i} className="break-all whitespace-pre-wrap leading-relaxed text-fg-default">
               {line}
             </pre>
           ))

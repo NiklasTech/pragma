@@ -54,7 +54,6 @@ export function Layout() {
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
                   minSize={`${180}px`}
-                  maxSize={`${480}px`}
                   onResize={handleSidebarResize}
                 >
                   <SidebarContent />
@@ -75,7 +74,6 @@ export function Layout() {
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
                   minSize={`${180}px`}
-                  maxSize={`${480}px`}
                   onResize={handleSidebarResize}
                 >
                   <SidebarContent />
