@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 
 import { useTerminalStore } from "@/shared/stores/terminal";
+import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync";
 import { TerminalSession } from "./TerminalSession";
 import { TerminalTabs } from "./TerminalTabs";
 
 export function Terminal() {
+  useTerminalSettingsSync();
   const { sessions, activeSessionId, defaultShell, addSession } = useTerminalStore();
   const initializedRef = useRef(false);
 

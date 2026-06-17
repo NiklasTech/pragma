@@ -69,6 +69,8 @@ pub fn run() {
             modules::git::commands::git_stash_list,
             modules::git::commands::git_smart_checkout,
             modules::local_history::commands::local_history_snapshots,
+            modules::mcp::mcp_load_config,
+            modules::mcp::mcp_save_config,
             modules::local_history::commands::local_history_diff,
             modules::local_history::commands::local_history_restore,
             modules::local_history::commands::local_history_delete_older_than,

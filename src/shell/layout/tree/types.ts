@@ -47,7 +47,8 @@ export type PanelKind =
   | "output"
   | "problems"
   | "preview"
-  | "markdown";
+  | "markdown"
+  | "settings";
 
 export interface BaseNode {
   id: string;
@@ -122,6 +123,7 @@ export interface LayoutTreeActions {
   closePanel: (panelId: string) => void;
   floatPanel: (panelId: string) => void;
   dockFloatingPanel: (floatingId: string, target?: DropTarget) => void;
+  addFloatingPanel: (kind: PanelKind) => void;
   setActiveTab: (tabsNodeId: string, panelId: string) => void;
   updateSplitSizes: (splitId: string, sizes: number[]) => void;
 

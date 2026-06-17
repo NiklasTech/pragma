@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
 
@@ -75,6 +76,30 @@ export interface StatusbarSettings {
 
 export type ThemeMode = "dark" | "light" | "system";
 
+export interface GitSettings {
+  userName: string;
+  userEmail: string;
+  defaultRemote: string;
+  pullRebase: boolean;
+  gpgSignKey: string;
+  sshKeyPath: string;
+  signOff: boolean;
+  signOffText: string;
+}
+
+export interface McpServerConfig {
+  id: string;
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  autostart: boolean;
+}
+
+export interface McpSettings {
+  servers: McpServerConfig[];
+}
+
 export interface SettingsState {
   editor: EditorSettings;
   terminal: TerminalSettings;
@@ -84,6 +109,8 @@ export interface SettingsState {
   keymap: string;
   layout: LayoutSettings;
   statusbar: StatusbarSettings;
+  git: GitSettings;
+  mcp: McpSettings;
 }
 
 interface SettingsActions {
@@ -95,9 +122,17 @@ interface SettingsActions {
   setKeymap: (keymap: string) => void;
   setLayoutSettings: (settings: Partial<LayoutSettings>) => void;
   setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
+  setGitSettings: (settings: Partial<GitSettings>) => void;
+  setMcpSettings: (settings: Partial<McpSettings>) => void;
+  addMcpServer: (server: Omit<McpServerConfig, "id">) => void;
+  updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
+  removeMcpServer: (id: string) => void;
+  importSettings: (partial: Partial<SettingsState>) => void;
   updateProvider: (provider: AIProvider, config: Partial<ProviderSettings>) => void;
   resetToDefaults: () => void;
 }
+
+const STORAGE_KEY = "pragma.settings.v1";
 
 const defaultSettings: SettingsState = {
   editor: {
@@ -139,7 +174,7 @@ const defaultSettings: SettingsState = {
       copilot: { model: "gpt-4o" },
     },
   },
-  theme: "warm-graphite",
+  theme: "pragma-dark",
   themeMode: "dark",
   keymap: "default",
   layout: {
@@ -162,37 +197,103 @@ const defaultSettings: SettingsState = {
       "theme",
     ],
   },
+  git: {
+    userName: "",
+    userEmail: "",
+    defaultRemote: "origin",
+    pullRebase: false,
+    gpgSignKey: "",
+    sshKeyPath: "",
+    signOff: false,
+    signOffText: "Signed-off-by: {name} <{email}>",
+  },
+  mcp: {
+    servers: [],
+  },
 };
 
-export const useSettingsStore = create<SettingsState & SettingsActions>((set) => ({
-  ...defaultSettings,
+export const useSettingsStore = create<SettingsState & SettingsActions>()(
+  persist(
+    (set) => ({
+      ...defaultSettings,
 
-  setEditorSettings: (settings) => set((state) => ({ editor: { ...state.editor, ...settings } })),
+      setEditorSettings: (settings) =>
+        set((state) => ({ editor: { ...state.editor, ...settings } })),
 
-  setTerminalSettings: (settings) =>
-    set((state) => ({ terminal: { ...state.terminal, ...settings } })),
+      setTerminalSettings: (settings) =>
+        set((state) => ({ terminal: { ...state.terminal, ...settings } })),
 
-  setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
+      setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
 
-  setTheme: (theme) => set({ theme }),
-  setThemeMode: (themeMode) => set({ themeMode }),
-  setKeymap: (keymap) => set({ keymap }),
+      setTheme: (theme) => set({ theme }),
+      setThemeMode: (themeMode) => set({ themeMode }),
+      setKeymap: (keymap) => set({ keymap }),
 
-  setLayoutSettings: (settings) => set((state) => ({ layout: { ...state.layout, ...settings } })),
+      setLayoutSettings: (settings) =>
+        set((state) => ({ layout: { ...state.layout, ...settings } })),
 
-  setStatusbarSettings: (settings) =>
-    set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
+      setStatusbarSettings: (settings) =>
+        set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
 
-  updateProvider: (provider, config) =>
-    set((state) => ({
-      ai: {
-        ...state.ai,
-        providers: {
-          ...state.ai.providers,
-          [provider]: { ...state.ai.providers[provider], ...config },
-        },
-      },
-    })),
+      setGitSettings: (settings) => set((state) => ({ git: { ...state.git, ...settings } })),
 
-  resetToDefaults: () => set({ ...defaultSettings }),
-}));
+      setMcpSettings: (settings) => set((state) => ({ mcp: { ...state.mcp, ...settings } })),
+
+      addMcpServer: (server) =>
+        set((state) => ({
+          mcp: {
+            ...state.mcp,
+            servers: [
+              ...state.mcp.servers,
+              { ...server, id: `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+            ],
+          },
+        })),
+
+      updateMcpServer: (id, server) =>
+        set((state) => ({
+          mcp: {
+            ...state.mcp,
+            servers: state.mcp.servers.map((s) => (s.id === id ? { ...s, ...server } : s)),
+          },
+        })),
+
+      removeMcpServer: (id) =>
+        set((state) => ({
+          mcp: {
+            ...state.mcp,
+            servers: state.mcp.servers.filter((s) => s.id !== id),
+          },
+        })),
+
+      importSettings: (partial) =>
+        set((state) => ({
+          ...state,
+          editor: { ...state.editor, ...partial.editor },
+          terminal: { ...state.terminal, ...partial.terminal },
+          ai: { ...state.ai, ...partial.ai },
+          theme: partial.theme ?? state.theme,
+          themeMode: partial.themeMode ?? state.themeMode,
+          keymap: partial.keymap ?? state.keymap,
+          layout: { ...state.layout, ...partial.layout },
+          statusbar: { ...state.statusbar, ...partial.statusbar },
+          git: { ...state.git, ...partial.git },
+          mcp: { ...state.mcp, ...partial.mcp },
+        })),
+
+      updateProvider: (provider, config) =>
+        set((state) => ({
+          ai: {
+            ...state.ai,
+            providers: {
+              ...state.ai.providers,
+              [provider]: { ...state.ai.providers[provider], ...config },
+            },
+          },
+        })),
+
+      resetToDefaults: () => set({ ...defaultSettings }),
+    }),
+    { name: STORAGE_KEY },
+  ),
+);
