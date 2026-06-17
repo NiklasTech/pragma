@@ -265,10 +265,10 @@ export function Settings() {
   const activeLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label ?? "Settings";
 
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex items-start gap-3">
-        <div className="flex w-44 shrink-0 flex-col gap-3">
-          <div className="relative">
+    <div className="flex h-full flex-col">
+      <div className="flex flex-1 min-h-0 gap-3">
+        <div className="flex w-44 shrink-0 flex-col gap-3 overflow-hidden">
+          <div className="relative shrink-0">
             <MagnifyingGlass
               size={14}
               className="absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
@@ -282,7 +282,7 @@ export function Settings() {
           </div>
 
           {filteredItems.length > 0 ? (
-            <div className="flex flex-col gap-0.5 rounded-md border border-border/60 bg-bg-root p-1">
+            <div className="flex shrink-0 flex-col gap-0.5 rounded-md border border-border/60 bg-bg-root p-1">
               {filteredItems.map((item) => (
                 <button
                   key={item.id}
@@ -298,10 +298,10 @@ export function Settings() {
               ))}
             </div>
           ) : query.trim() ? (
-            <div className="px-1 text-ui-xs text-fg-subtle">No settings found.</div>
+            <div className="shrink-0 px-1 text-ui-xs text-fg-subtle">No settings found.</div>
           ) : null}
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="flex flex-col gap-0.5 pr-2">
               {CATEGORIES.map((category) => {
                 const Icon = category.icon;
@@ -326,7 +326,7 @@ export function Settings() {
             </div>
           </ScrollArea>
 
-          <div className="flex flex-col gap-1.5 border-t border-border/40 pt-3">
+          <div className="flex shrink-0 flex-col gap-1.5 border-t border-border/40 pt-3">
             <Button
               variant="outline"
               size="xs"
@@ -375,12 +375,12 @@ export function Settings() {
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="mb-3 border-b border-border/40 pb-2">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="mb-3 shrink-0 border-b border-border/40 pb-2">
             <h2 className="font-heading text-sm font-semibold text-fg-default">{activeLabel}</h2>
           </div>
-          <ScrollArea className="h-[calc(100%-2rem)]">
-            <div className="pr-3">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="pb-3 pr-3">
               {activeCategory === "editor" && <EditorSettings />}
               {activeCategory === "terminal" && <TerminalSettings />}
               {activeCategory === "ai" && <AISettings />}

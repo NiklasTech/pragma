@@ -185,7 +185,10 @@ pub async fn git_commit(
     if message.trim().is_empty() {
         return Err("Commit message is required".to_string());
     }
-    blocking(move || operations::commit(&repo_path, &message, sign_off_text.as_deref()).map_err(Into::into)).await
+    blocking(move || {
+        operations::commit(&repo_path, &message, sign_off_text.as_deref()).map_err(Into::into)
+    })
+    .await
 }
 
 #[tauri::command]

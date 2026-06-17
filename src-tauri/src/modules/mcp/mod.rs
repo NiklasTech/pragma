@@ -39,8 +39,8 @@ pub async fn mcp_load_config(app: AppHandle) -> Result<Vec<McpServerConfig>, Str
         return Ok(Vec::new());
     }
 
-    let content = std::fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read MCP config: {e}"))?;
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read MCP config: {e}"))?;
 
     let file: McpConfigFile =
         serde_json::from_str(&content).map_err(|e| format!("Failed to parse MCP config: {e}"))?;
@@ -49,10 +49,7 @@ pub async fn mcp_load_config(app: AppHandle) -> Result<Vec<McpServerConfig>, Str
 }
 
 #[tauri::command]
-pub async fn mcp_save_config(
-    app: AppHandle,
-    servers: Vec<McpServerConfig>,
-) -> Result<(), String> {
+pub async fn mcp_save_config(app: AppHandle, servers: Vec<McpServerConfig>) -> Result<(), String> {
     let path = config_path(&app)?;
 
     if let Some(parent) = path.parent() {
