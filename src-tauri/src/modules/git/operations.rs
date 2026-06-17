@@ -255,7 +255,7 @@ pub fn discard(repo_root: &str, paths: &[String]) -> Result<()> {
 
 // -- Commit --------------------------------------------------------------------
 
-pub fn commit(repo_root: &str, message: &str) -> Result<GitCommitResult> {
+pub fn commit(repo_root: &str, message: &str, sign_off_text: Option<&str>) -> Result<GitCommitResult> {
     let repo_root = authorized_repo_root(repo_root)?;
     ensure_git_available()?;
     let trimmed = message.trim();
@@ -263,9 +263,14 @@ pub fn commit(repo_root: &str, message: &str) -> Result<GitCommitResult> {
         return Err(GitError::EmptyCommitMessage);
     }
 
+    let full_message = match sign_off_text {
+        Some(text) if !text.trim().is_empty() => format!("{}\n\n{}", trimmed, text.trim()),
+        _ => trimmed.to_string(),
+    };
+
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
-        [OsStr::new("commit"), OsStr::new("-m"), OsStr::new(trimmed)],
+        [OsStr::new("commit"), OsStr::new("-m"), OsStr::new(&full_message)],
         DEFAULT_TIMEOUT_SECS,
     )?;
     if output.exit_code != Some(0) && nothing_to_commit(&output) {

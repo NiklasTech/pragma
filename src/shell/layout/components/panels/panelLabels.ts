@@ -24,6 +24,8 @@ export const panelLabel = (kind: PanelKind): string => {
       return "Preview";
     case "markdown":
       return "Markdown";
+    case "settings":
+      return "Settings";
     default:
       return kind;
   }

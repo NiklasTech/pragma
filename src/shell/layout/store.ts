@@ -6,6 +6,7 @@ import {
   createFloating,
   createPanel,
   ensureDockedPanel,
+  findPanelByKind,
   findNode,
   moveNode,
   removeNode,
@@ -244,6 +245,26 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
           return {
             root: cleanupTree(next),
             floating: remaining,
+            ...markCustomized(s),
+          };
+        }),
+      addFloatingPanel: (kind) =>
+        set((s) => {
+          if (
+            findPanelByKind(s.root, kind) ||
+            s.floating.some((f) => findPanelByKind(f.child, kind))
+          ) {
+            return s;
+          }
+          const panel = createPanel(kind);
+          const floating = createFloating(panel, {
+            x: 160,
+            y: 120,
+            width: 760,
+            height: 560,
+          });
+          return {
+            floating: [...s.floating, floating],
             ...markCustomized(s),
           };
         }),

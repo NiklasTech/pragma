@@ -21,15 +21,6 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useLayoutStore } from "@/shell/layout";
 import { layoutPresets, presetLabels } from "@/shell/layout/presets";
 import { RunConfigWidget } from "@/features/run-config/components";
-import { AISettings } from "@/features/settings/components/AISettings";
-import { StatusbarSettings } from "@/features/settings/components/StatusbarSettings";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/shared/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +54,6 @@ const terminalModeLabels: Record<string, string> = {
 
 export function Titlebar() {
   const [isMaximized, setIsMaximized] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const win = getCurrentWindow();
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
@@ -81,6 +71,7 @@ export function Titlebar() {
     setSidebarPosition,
     setTerminalMode,
     applyPreset,
+    addFloatingPanel,
   } = useLayoutStore();
 
   const aiOpen = ai.mode !== "hidden";
@@ -237,29 +228,15 @@ export function Titlebar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <SheetTrigger
-            className={cn(
-              "flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm transition-colors",
-              settingsOpen
-                ? "bg-accent-subtle text-primary"
-                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-            )}
-            title="Settings"
-          >
-            <Gear size={16} />
-            <span>Settings</span>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Settings</SheetTitle>
-            </SheetHeader>
-            <div className="py-4 space-y-6">
-              <AISettings />
-              <StatusbarSettings />
-            </div>
-          </SheetContent>
-        </Sheet>
+        <button
+          type="button"
+          onClick={() => addFloatingPanel("settings")}
+          className="flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          title="Settings"
+        >
+          <Gear size={16} />
+          <span>Settings</span>
+        </button>
       </div>
 
       <div className="flex-1" data-tauri-drag-region />

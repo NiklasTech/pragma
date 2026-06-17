@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { DiffViewMode } from "@/features/editor/components/InlineDiff";
 import { saveWorkspace, loadWorkspace } from "./workspace";
+import { useSettingsStore } from "./settings";
 
 export interface GitStatusEntry {
   path: string;
@@ -280,11 +281,20 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
     const { repoPath, commitMessage, loadStatus } = get();
     if (!repoPath || !commitMessage.trim()) return;
 
+    const gitSettings = useSettingsStore.getState().git;
+    const signOffText = gitSettings.signOff
+      ? gitSettings.signOffText
+          .replace(/{name}/g, gitSettings.userName || "")
+          .replace(/{email}/g, gitSettings.userEmail || "")
+          .trim()
+      : undefined;
+
     set({ actionBusy: "commit" });
     try {
       await invoke<{ commit_sha: string }>("git_commit", {
         repoPath,
         message: commitMessage.trim(),
+        sign_off_text: signOffText && signOffText.length > 0 ? signOffText : undefined,
       });
       set({ commitMessage: "" });
       await loadStatus();

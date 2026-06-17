@@ -174,14 +174,18 @@ pub async fn git_diff_content(
 }
 
 #[tauri::command]
-pub async fn git_commit(repo_path: String, message: String) -> Result<GitCommitResult, String> {
+pub async fn git_commit(
+    repo_path: String,
+    message: String,
+    sign_off_text: Option<String>,
+) -> Result<GitCommitResult, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
     }
     if message.trim().is_empty() {
         return Err("Commit message is required".to_string());
     }
-    blocking(move || operations::commit(&repo_path, &message).map_err(Into::into)).await
+    blocking(move || operations::commit(&repo_path, &message, sign_off_text.as_deref()).map_err(Into::into)).await
 }
 
 #[tauri::command]
