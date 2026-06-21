@@ -31,6 +31,7 @@ import {
   PlugsConnected,
   GitBranch,
   Layout,
+  Keyboard,
   MagnifyingGlass,
   ArrowCounterClockwise,
   DownloadSimple,
@@ -43,9 +44,10 @@ import { ThemeSettings } from "./ThemeSettings";
 import { McpSettings } from "./McpSettings";
 import { GitSettings } from "./GitSettings";
 import { LayoutSettings } from "./LayoutSettings";
+import { KeyboardSettings } from "./KeyboardSettings";
 import { exportSettings, importSettings } from "./settings-io";
 
-type Category = "editor" | "terminal" | "ai" | "theme" | "mcp" | "git" | "layout";
+type Category = "editor" | "terminal" | "ai" | "theme" | "mcp" | "git" | "layout" | "keyboard";
 
 interface CategoryDef {
   id: Category;
@@ -61,6 +63,7 @@ const CATEGORIES: CategoryDef[] = [
   { id: "mcp", label: "MCP", icon: PlugsConnected },
   { id: "git", label: "Git", icon: GitBranch },
   { id: "layout", label: "Layout", icon: Layout },
+  { id: "keyboard", label: "Keyboard", icon: Keyboard },
 ];
 
 interface SearchItem {
@@ -229,6 +232,12 @@ const SEARCH_ITEMS: SearchItem[] = [
     label: "Statusbar Items",
     keywords: "statusbar items layout",
     category: "layout",
+  },
+  {
+    id: "keyboard-shortcuts",
+    label: "Keyboard Shortcuts",
+    keywords: "keyboard shortcuts keymap hotkey bindings",
+    category: "keyboard",
   },
 ];
 
@@ -408,6 +417,7 @@ export function Settings() {
                   {activeCategory === "mcp" && <McpSettings />}
                   {activeCategory === "git" && <GitSettings />}
                   {activeCategory === "layout" && <LayoutSettings />}
+                  {activeCategory === "keyboard" && <KeyboardSettings />}
                 </div>
               </div>
             </ScrollArea>

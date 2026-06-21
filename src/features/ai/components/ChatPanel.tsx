@@ -16,7 +16,9 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
+import { matchShortcut } from "@/shared/lib/shortcuts";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AiModelSelector } from "./AiModelSelector";
@@ -131,20 +133,22 @@ export function ChatPanel() {
     }
   }, [status, edit, messages, receiveProposal, cancelEdit, openDiff]);
 
+  const sendShortcut = useSettingsStore((s) => s.shortcuts["chat.send"]);
+
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (contextPickerRef.current?.handleKeyDown(e)) {
         return;
       }
 
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (matchShortcut(e, sendShortcut)) {
         e.preventDefault();
         if (input.trim() && !isLoading) {
           void handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
         }
       }
     },
-    [input, isLoading, handleSubmit],
+    [input, isLoading, handleSubmit, sendShortcut],
   );
 
   const updateCursorPosition = useCallback(() => {

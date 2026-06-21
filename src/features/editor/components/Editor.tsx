@@ -9,12 +9,12 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useAutoSave } from "@/shared/hooks/useAutoSave";
 import { useTheme } from "@/theme";
 import { useSelectionAskAi } from "@/shared/hooks/useSelectionAskAi";
 import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
+import { matchShortcut } from "@/shared/lib/shortcuts";
 import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-text";
 // vim-setup hooks currently unused — re-enable when vim save/close integration is needed
 import { EditorStatusbar } from "./EditorStatusbar";
@@ -233,9 +233,11 @@ function FileEditor({
     });
   }, [themeId, resolvedMode]);
 
+  const shortcuts = useSettingsStore((state) => state.shortcuts);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "l") {
+      if (matchShortcut(e, shortcuts["edit.editWithAI"])) {
         e.preventDefault();
         const text = captureActiveSelection();
         if (text) handleEditWithAI();
@@ -243,7 +245,7 @@ function FileEditor({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [captureActiveSelection, handleEditWithAI]);
+  }, [captureActiveSelection, handleEditWithAI, shortcuts]);
 
   useEffect(() => {
     if (!viewRef.current) return;
@@ -343,31 +345,9 @@ interface EditorProps {
 export function Editor({ panelId }: EditorProps) {
   const { tabs, getPanelActiveTabId, updateFileContent, closeTab } = useEditorStore();
   const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
-  const saveFile = useSaveFile();
 
   const activeTabId = getPanelActiveTabId(panelId ?? null);
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
-
-  const handleClose = () => {
-    if (activeTabId) {
-      closeTab(activeTabId);
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "w" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        handleClose();
-      }
-      if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        void saveFile();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTabId, saveFile]);
 
   if (!activeTab) {
     return (
