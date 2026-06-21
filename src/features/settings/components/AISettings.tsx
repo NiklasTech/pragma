@@ -1,11 +1,8 @@
 "use client";
 
 import * as React from "react";
-
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,19 +26,15 @@ import {
   SignIn,
   SignOut,
   Robot,
-  Terminal,
-  Globe,
-  Cpu,
 } from "@phosphor-icons/react";
-
-type AuthTab = "cli" | "apikey" | "ollama";
+import { SettingSection } from "./ui/SettingSection";
+import { SettingRow } from "./ui/SettingRow";
 
 const NEEDS_KEY: AIProvider[] = ["openai", "anthropic", "deepseek", "kimi", "gemini", "custom"];
 
 export function AISettings() {
   const aiStore = useAIStore();
   const settingsStore = useSettingsStore();
-  const [activeTab, setActiveTab] = React.useState<AuthTab>("cli");
 
   const [keyInput, setKeyInput] = React.useState("");
   const [showKey, setShowKey] = React.useState(false);
@@ -203,52 +196,228 @@ export function AISettings() {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Auth Mode Tabs */}
-      <div className="flex gap-1 rounded-lg bg-bg-hover p-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab("cli")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-            activeTab === "cli"
-              ? "bg-bg-surface text-fg-default shadow-sm"
-              : "text-fg-muted hover:text-fg-default"
-          }`}
-        >
-          <Terminal size={14} />
-          CLI Subscription
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("apikey")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-            activeTab === "apikey"
-              ? "bg-bg-surface text-fg-default shadow-sm"
-              : "text-fg-muted hover:text-fg-default"
-          }`}
-        >
-          <Globe size={14} />
-          API / OAuth
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("ollama")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
-            activeTab === "ollama"
-              ? "bg-bg-surface text-fg-default shadow-sm"
-              : "text-fg-muted hover:text-fg-default"
-          }`}
-        >
-          <Cpu size={14} />
-          Local
-        </button>
-      </div>
+  const isProviderConfigured = (provider: AIProvider): boolean => {
+    if (provider === "copilot") return aiStore.copilotAuth.authenticated;
+    if (provider === "ollama") return Boolean(providerConfig.baseUrl);
+    if (NEEDS_KEY.includes(provider)) return Boolean(apiKeyRef);
+    return false;
+  };
 
-      {/* ─── CLI Tab ─────────────────────────────────────────────────────── */}
-      {activeTab === "cli" && (
+  return (
+    <div className="flex flex-col gap-6">
+      <SettingSection title="Provider">
+        <SettingRow
+          label="Default Provider"
+          description="AI provider used for chat and inline completion"
+          control={
+            <Select
+              value={activeProvider}
+              onValueChange={(v) => handleProviderChange(v as AIProvider)}
+            >
+              <SelectTrigger className="max-w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(PROVIDER_LABELS) as AIProvider[]).map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {PROVIDER_LABELS[p]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
+
+        <div className="flex items-center justify-between rounded-md border border-border/30 bg-bg-root px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span
+              className={`size-2 rounded-full ${isProviderConfigured(activeProvider) ? "bg-status-success" : "bg-fg-subtle"}`}
+            />
+            <span className="text-ui-sm text-fg-default">{PROVIDER_LABELS[activeProvider]}</span>
+            <span className="text-ui-xs text-fg-muted">
+              {isProviderConfigured(activeProvider) ? "Configured" : "Not configured"}
+            </span>
+          </div>
+          {testStatus === "ok" && (
+            <span className="flex items-center gap-1 text-ui-xs text-status-success">
+              <CheckCircle size={14} /> Connected
+            </span>
+          )}
+          {testStatus === "error" && (
+            <span className="flex items-center gap-1 text-ui-xs text-status-error">
+              <XCircle size={14} /> Failed
+            </span>
+          )}
+        </div>
+
+        <SettingRow
+          label="Model"
+          description="Model used for requests"
+          control={
+            activeProvider === "custom" ? (
+              <Input
+                value={providerConfig.model}
+                onChange={(e) => handleModelChange(e.target.value)}
+                placeholder="e.g. gpt-4o"
+                className="max-w-[200px]"
+              />
+            ) : (
+              <Select
+                value={providerConfig.model}
+                onValueChange={(v) => {
+                  if (v) handleModelChange(v);
+                }}
+              >
+                <SelectTrigger className="max-w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDER_MODELS[activeProvider].map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )
+          }
+        />
+
+        {(activeProvider === "ollama" || activeProvider === "custom") && (
+          <SettingRow
+            label="Base URL"
+            description="Endpoint for OpenAI-compatible requests"
+            control={
+              <Input
+                value={providerConfig.baseUrl ?? ""}
+                onChange={(e) => handleBaseUrlChange(e.target.value)}
+                placeholder={
+                  activeProvider === "ollama"
+                    ? "http://localhost:11434"
+                    : "https://api.example.com/v1"
+                }
+                className="max-w-[200px]"
+              />
+            }
+          />
+        )}
+
+        {needsKey && (
+          <SettingRow
+            label="API Key"
+            description="Stored securely in the system keychain"
+            control={
+              <div className="flex max-w-[260px] gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder={apiKeyRef ? `Key saved (${apiKeyRef})` : "Enter API key"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey((s) => !s)}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
+                  >
+                    {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <Button size="sm" onClick={handleSaveKey} disabled={!keyInput.trim()}>
+                  <FloppyDisk size={14} />
+                </Button>
+                {apiKeyRef && (
+                  <Button size="sm" variant="destructive" onClick={handleDeleteKey}>
+                    <Trash size={14} />
+                  </Button>
+                )}
+              </div>
+            }
+          />
+        )}
+
+        {activeProvider === "copilot" && (
+          <div className="flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-ui-sm text-fg-default">GitHub OAuth Client ID</span>
+              <span className="text-ui-xs text-fg-muted">
+                Create a GitHub OAuth App and paste its Client ID here.
+              </span>
+              <Input
+                value={copilotClientIdInput}
+                onChange={(e) => {
+                  setCopilotClientIdInput(e.target.value);
+                  aiStore.setCopilotClientId(e.target.value);
+                }}
+                placeholder="e.g. Iv23li..."
+                disabled={copilotPolling || aiStore.copilotAuth.authenticated}
+              />
+            </div>
+
+            {aiStore.copilotAuth.authenticated ? (
+              <div className="flex flex-col gap-2">
+                <span className="flex items-center gap-1 text-ui-xs text-status-success">
+                  <CheckCircle size={14} /> Connected to GitHub Copilot
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopilotDisconnect}
+                  disabled={copilotPolling}
+                >
+                  <SignOut size={14} className="mr-1" />
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                onClick={handleCopilotConnect}
+                disabled={!copilotClientIdInput.trim() || copilotPolling}
+              >
+                <SignIn size={14} className="mr-1" />
+                {copilotPolling ? "Waiting for authorization..." : "Connect GitHub Account"}
+              </Button>
+            )}
+
+            {copilotUserCode && copilotVerificationUri && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-ui-xs text-fg-muted">
+                  Enter this code on GitHub if the browser did not open:
+                </span>
+                <code className="rounded bg-bg-surface px-2 py-1 text-center text-sm font-mono">
+                  {copilotUserCode}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleOpenVerificationUrl}
+                  disabled={copilotPolling}
+                >
+                  Open GitHub
+                </Button>
+              </div>
+            )}
+
+            {copilotError && <p className="text-ui-xs text-status-error">{copilotError}</p>}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleTest}
+            disabled={testStatus === "loading"}
+          >
+            {testStatus === "loading" ? "Testing..." : "Test Connection"}
+          </Button>
+        </div>
+      </SettingSection>
+
+      <SettingSection title="CLI Providers">
         <div className="flex flex-col gap-3">
-          <p className="text-xs text-fg-muted">
+          <p className="text-ui-xs text-fg-muted">
             Use your existing subscription via official CLI tools. Pragma installs and manages them
             automatically.
           </p>
@@ -264,373 +433,132 @@ export function AISettings() {
             const isLoggingIn = loggingIn === manifest.id;
 
             return (
-              <Card
+              <div
                 key={manifest.id}
-                className={`transition-colors ${isActive ? "border-primary/50" : ""}`}
+                className={`flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3 ${isActive ? "ring-1 ring-primary" : ""}`}
               >
-                <CardContent className="flex flex-col gap-3 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                      <Robot size={16} className="text-primary" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{manifest.name}</p>
-                        {status?.installed && (
-                          <span className="rounded-full bg-status-success/10 px-1.5 py-0.5 text-ui-xs text-status-success">
-                            Installed
-                          </span>
-                        )}
-                        {status?.authenticated && (
-                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-ui-xs text-primary">
-                            Connected
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-fg-muted">{manifest.description}</p>
-                      {status?.version && (
-                        <p className="text-ui-xs text-fg-muted">v{status.version}</p>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Robot size={16} className="text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{manifest.name}</span>
+                      {status?.installed && (
+                        <span className="rounded-full bg-status-success/10 px-1.5 py-0.5 text-ui-xs text-status-success">
+                          Installed
+                        </span>
                       )}
-                      {status?.user && (
-                        <p className="text-ui-xs text-fg-muted">Signed in as {status.user}</p>
+                      {status?.authenticated && (
+                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-ui-xs text-primary">
+                          Connected
+                        </span>
                       )}
                     </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {!status?.installed && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleInstallCLI(manifest.id)}
-                        disabled={isInstalling}
-                      >
-                        <DownloadSimple size={14} className="mr-1" />
-                        {isInstalling ? "Installing..." : "Install"}
-                      </Button>
+                    <p className="text-ui-xs text-fg-muted">{manifest.description}</p>
+                    {status?.version && (
+                      <p className="text-ui-xs text-fg-muted">v{status.version}</p>
                     )}
-
-                    {status?.installed && !status?.authenticated && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleLoginCLI(manifest.id)}
-                        disabled={isLoggingIn}
-                      >
-                        <SignIn size={14} className="mr-1" />
-                        {isLoggingIn ? "Connecting..." : "Connect Account"}
-                      </Button>
-                    )}
-
-                    {status?.authenticated && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant={isActive ? "default" : "outline"}
-                          onClick={() => handleSelectCLI(manifest.id)}
-                        >
-                          {isActive ? "Active" : "Use This"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleLogoutCLI(manifest.id)}
-                        >
-                          <SignOut size={14} className="mr-1" />
-                          Disconnect
-                        </Button>
-                      </>
+                    {status?.user && (
+                      <p className="text-ui-xs text-fg-muted">Signed in as {status.user}</p>
                     )}
                   </div>
-
-                  {status?.error && <p className="text-xs text-status-error">{status.error}</p>}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ─── API Key Tab ─────────────────────────────────────────────────── */}
-      {activeTab === "apikey" && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Provider</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <Label>Default Provider</Label>
-                  <Select
-                    value={activeProvider}
-                    onValueChange={(v) => handleProviderChange(v as AIProvider)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(PROVIDER_LABELS) as AIProvider[]).map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {PROVIDER_LABELS[p]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <Label>Model</Label>
-                  {activeProvider === "custom" ? (
-                    <Input
-                      value={providerConfig.model}
-                      onChange={(e) => handleModelChange(e.target.value)}
-                      placeholder="e.g. gpt-4o, llama-v3p1-405b-instruct"
-                    />
-                  ) : (
-                    <Select
-                      value={providerConfig.model}
-                      onValueChange={(v) => {
-                        if (v) handleModelChange(v);
-                      }}
+                <div className="flex flex-wrap gap-2">
+                  {!status?.installed && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleInstallCLI(manifest.id)}
+                      disabled={isInstalling}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROVIDER_MODELS[activeProvider].map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {m}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              </div>
-
-              {(activeProvider === "ollama" || activeProvider === "custom") && (
-                <div className="flex flex-col gap-1.5">
-                  <Label>Base URL</Label>
-                  <Input
-                    value={providerConfig.baseUrl ?? ""}
-                    onChange={(e) => handleBaseUrlChange(e.target.value)}
-                    placeholder={
-                      activeProvider === "ollama"
-                        ? "http://localhost:11434"
-                        : "https://api.example.com/v1"
-                    }
-                  />
-                </div>
-              )}
-
-              {needsKey && (
-                <div className="flex flex-col gap-1.5">
-                  <Label>API Key</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        type={showKey ? "text" : "password"}
-                        value={keyInput}
-                        onChange={(e) => setKeyInput(e.target.value)}
-                        placeholder={apiKeyRef ? "Key saved (" + apiKeyRef + ")" : "Enter API key"}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowKey((s) => !s)}
-                        className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
-                      >
-                        {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
-                    <Button size="sm" onClick={handleSaveKey} disabled={!keyInput.trim()}>
-                      <FloppyDisk size={14} />
-                      Save
+                      <DownloadSimple size={14} className="mr-1" />
+                      {isInstalling ? "Installing..." : "Install"}
                     </Button>
-                    {apiKeyRef && (
-                      <Button size="sm" variant="destructive" onClick={handleDeleteKey}>
-                        <Trash size={14} />
-                      </Button>
-                    )}
-                  </div>
-                  {apiKeyRef && <p className="text-xs text-fg-muted">Saved key: {apiKeyRef}</p>}
-                </div>
-              )}
+                  )}
 
-              {activeProvider === "copilot" && (
-                <div className="flex flex-col gap-3 rounded-md bg-bg-hover p-3">
-                  <div className="flex flex-col gap-1.5">
-                    <Label>GitHub OAuth Client ID</Label>
-                    <p className="text-xs text-fg-muted">
-                      Create a GitHub OAuth App and paste its Client ID here.
-                    </p>
-                    <Input
-                      value={copilotClientIdInput}
-                      onChange={(e) => {
-                        setCopilotClientIdInput(e.target.value);
-                        aiStore.setCopilotClientId(e.target.value);
-                      }}
-                      placeholder="e.g. Iv23li..."
-                      disabled={copilotPolling || aiStore.copilotAuth.authenticated}
-                    />
-                  </div>
+                  {status?.installed && !status?.authenticated && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleLoginCLI(manifest.id)}
+                      disabled={isLoggingIn}
+                    >
+                      <SignIn size={14} className="mr-1" />
+                      {isLoggingIn ? "Connecting..." : "Connect Account"}
+                    </Button>
+                  )}
 
-                  {aiStore.copilotAuth.authenticated ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="flex items-center gap-1 text-xs text-status-success">
-                        <CheckCircle size={14} /> Connected to GitHub Copilot
-                      </span>
+                  {status?.authenticated && (
+                    <>
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={handleCopilotDisconnect}
-                        disabled={copilotPolling}
+                        variant={isActive ? "default" : "outline"}
+                        onClick={() => handleSelectCLI(manifest.id)}
+                      >
+                        {isActive ? "Active" : "Use This"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleLogoutCLI(manifest.id)}
                       >
                         <SignOut size={14} className="mr-1" />
                         Disconnect
                       </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={handleCopilotConnect}
-                      disabled={!copilotClientIdInput.trim() || copilotPolling}
-                    >
-                      <SignIn size={14} className="mr-1" />
-                      {copilotPolling ? "Waiting for authorization..." : "Connect GitHub Account"}
-                    </Button>
+                    </>
                   )}
-
-                  {copilotUserCode && copilotVerificationUri && (
-                    <div className="flex flex-col gap-1.5">
-                      <p className="text-xs text-fg-muted">
-                        Enter this code on GitHub if the browser did not open:
-                      </p>
-                      <code className="rounded bg-bg-surface px-2 py-1 text-center text-sm font-mono">
-                        {copilotUserCode}
-                      </code>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleOpenVerificationUrl}
-                        disabled={copilotPolling}
-                      >
-                        Open GitHub
-                      </Button>
-                    </div>
-                  )}
-
-                  {copilotError && <p className="text-xs text-status-error">{copilotError}</p>}
                 </div>
-              )}
 
-              <div className="flex items-center gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleTest}
-                  disabled={testStatus === "loading"}
-                >
-                  {testStatus === "loading" ? "Testing..." : "Test Connection"}
-                </Button>
-                {testStatus === "ok" && (
-                  <span className="flex items-center gap-1 text-xs text-status-success">
-                    <CheckCircle size={14} /> Connected
-                  </span>
-                )}
-                {testStatus === "error" && (
-                  <span className="flex items-center gap-1 text-xs text-status-error">
-                    <XCircle size={14} /> Failed
-                  </span>
-                )}
+                {status?.error && <p className="text-ui-xs text-status-error">{status.error}</p>}
               </div>
-            </CardContent>
-          </Card>
+            );
+          })}
+        </div>
+      </SettingSection>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Features</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <Label className="cursor-pointer">Inline Completion</Label>
-                <Switch
-                  checked={settingsStore.ai.inlineCompletion}
-                  onCheckedChange={(v) => settingsStore.setAISettings({ inlineCompletion: v })}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label className="cursor-pointer">Terminal Suggestions</Label>
-                <Switch
-                  checked={settingsStore.ai.terminalSuggestions}
-                  onCheckedChange={(v) => settingsStore.setAISettings({ terminalSuggestions: v })}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Completion Debounce (ms)</Label>
-                <Input
-                  type="number"
-                  value={settingsStore.ai.completionDebounce}
-                  onChange={(e) =>
-                    settingsStore.setAISettings({ completionDebounce: Number(e.target.value) })
-                  }
-                  className="w-24"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
+      <SettingSection title="Inline Completion">
+        <SettingRow
+          label="Enable"
+          description="Show AI ghost-text suggestions in the editor"
+          control={
+            <Switch
+              checked={settingsStore.ai.inlineCompletion}
+              onCheckedChange={(v) => settingsStore.setAISettings({ inlineCompletion: v })}
+            />
+          }
+        />
+        <SettingRow
+          label="Debounce"
+          description="Milliseconds to wait before requesting a suggestion"
+          control={
+            <Input
+              type="number"
+              min={100}
+              step={50}
+              value={settingsStore.ai.completionDebounce}
+              onChange={(e) =>
+                settingsStore.setAISettings({ completionDebounce: Number(e.target.value) })
+              }
+              className="max-w-[180px]"
+            />
+          }
+        />
+      </SettingSection>
 
-      {/* ─── Ollama Tab ──────────────────────────────────────────────────── */}
-      {activeTab === "ollama" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ollama — Local Models</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <p className="text-sm text-fg-muted">
-              Run AI models locally on your machine. Completely free, works offline, 100% private.
-            </p>
-
-            <div className="flex flex-col gap-1.5">
-              <Label>Base URL</Label>
-              <Input
-                value={settingsStore.ai.providers.ollama.baseUrl ?? "http://localhost:11434"}
-                onChange={(e) =>
-                  settingsStore.updateProvider("ollama", { baseUrl: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label>Model</Label>
-              <Select
-                value={settingsStore.ai.providers.ollama.model}
-                onValueChange={(v) => v && settingsStore.updateProvider("ollama", { model: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDER_MODELS.ollama.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="rounded-md bg-bg-hover p-3 text-xs text-fg-muted">
-              <p className="font-medium text-fg-default mb-1">Not installed?</p>
-              <code className="block bg-bg-surface rounded px-2 py-1 mt-1">
-                curl -fsSL https://ollama.com/install.sh | sh
-              </code>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <SettingSection title="Terminal AI">
+        <SettingRow
+          label="Enable"
+          description="Show AI command suggestions in the terminal"
+          control={
+            <Switch
+              checked={settingsStore.ai.terminalSuggestions}
+              onCheckedChange={(v) => settingsStore.setAISettings({ terminalSuggestions: v })}
+            />
+          }
+        />
+      </SettingSection>
     </div>
   );
 }

@@ -7,7 +7,6 @@ import {
   GitDiff,
   MagnifyingGlass,
   SidebarSimple,
-  Sidebar as SidebarIcon,
 } from "@phosphor-icons/react";
 import {
   DockerPanel,
@@ -27,6 +26,50 @@ const tabs = [
 ];
 
 export const DOCK_WIDTH = 48;
+
+function DockTabButton({
+  tab,
+  index,
+  isActive,
+  isRight,
+  onSelect,
+}: {
+  tab: (typeof tabs)[number];
+  index: number;
+  isActive: boolean;
+  isRight: boolean;
+  onSelect: (tabId: (typeof tabs)[number]["id"]) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={tab.label}
+      aria-pressed={isActive}
+      onClick={() => onSelect(tab.id)}
+      className={cn(
+        "relative flex size-9 items-center justify-center rounded-lg outline-none transition-all duration-fast",
+        isActive ? "text-fg-default" : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+      )}
+      title={`${tab.label} (Ctrl+Shift+${index + 1})`}
+    >
+      {isActive && (
+        <span
+          className={cn(
+            "absolute top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary",
+            "shadow-[0_0_6px_var(--color-accent-glow)]",
+            "animate-in fade-in duration-150",
+            isRight ? "right-0" : "left-0",
+          )}
+        />
+      )}
+      <tab.icon
+        size={20}
+        weight={isActive ? "duotone" : "regular"}
+        className="shrink-0 transition-all duration-fast"
+      />
+    </button>
+  );
+}
 
 export function SidebarDock() {
   const { sidebar, setSidebarTab, setSidebarCollapsed } = useLayoutStore();
@@ -50,40 +93,48 @@ export function SidebarDock() {
       )}
     >
       <div className="flex w-full flex-col gap-1 px-1.5">
-        {tabs.map((tab) => {
-          const isActive = tab.id === sidebar.tab && !sidebar.collapsed;
-          return (
-            <button
+        <div className="flex w-full flex-col gap-1">
+          {tabs.slice(0, 2).map((tab, index) => (
+            <DockTabButton
               key={tab.id}
-              type="button"
-              aria-label={tab.label}
-              aria-pressed={isActive}
-              onClick={() => handleSelectView(tab.id)}
-              className={cn(
-                "relative flex size-9 items-center justify-center rounded-lg outline-none transition-all duration-fast",
-                "focus-visible:ring-2 focus-visible:ring-primary/40",
-                isActive
-                  ? "bg-bg-active text-fg-default"
-                  : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-              )}
-              title={tab.label}
-            >
-              {isActive && (
-                <span
-                  className={cn(
-                    "absolute top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-primary shadow-[0_0_8px_var(--color-accent-glow)]",
-                    isRight ? "right-0" : "left-0",
-                  )}
-                />
-              )}
-              <tab.icon
-                size={20}
-                weight={isActive ? "bold" : "regular"}
-                className="shrink-0 transition-all duration-fast"
-              />
-            </button>
-          );
-        })}
+              tab={tab}
+              index={index}
+              isActive={tab.id === sidebar.tab && !sidebar.collapsed}
+              isRight={isRight}
+              onSelect={handleSelectView}
+            />
+          ))}
+        </div>
+
+        <div className="my-1 mx-2 h-px bg-border/30" />
+
+        <div className="flex w-full flex-col gap-1">
+          {tabs.slice(2, 4).map((tab, index) => (
+            <DockTabButton
+              key={tab.id}
+              tab={tab}
+              index={index + 2}
+              isActive={tab.id === sidebar.tab && !sidebar.collapsed}
+              isRight={isRight}
+              onSelect={handleSelectView}
+            />
+          ))}
+        </div>
+
+        <div className="my-1 mx-2 h-px bg-border/30" />
+
+        <div className="flex w-full flex-col gap-1">
+          {tabs.slice(4).map((tab, index) => (
+            <DockTabButton
+              key={tab.id}
+              tab={tab}
+              index={index + 4}
+              isActive={tab.id === sidebar.tab && !sidebar.collapsed}
+              isRight={isRight}
+              onSelect={handleSelectView}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="flex-1" />
@@ -92,12 +143,13 @@ export function SidebarDock() {
         type="button"
         onClick={() => setSidebarCollapsed(!sidebar.collapsed)}
         className={cn(
-          "flex size-9 items-center justify-center rounded-lg text-fg-muted outline-none transition-colors hover:bg-bg-hover hover:text-fg-default",
+          "flex size-9 items-center justify-center rounded-lg outline-none",
+          "text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-muted",
           "focus-visible:ring-2 focus-visible:ring-primary/40",
         )}
-        title={sidebar.collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        title={sidebar.collapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
       >
-        {sidebar.collapsed ? <SidebarSimple size={20} /> : <SidebarIcon size={20} />}
+        <SidebarSimple size={18} />
       </button>
     </div>
   );

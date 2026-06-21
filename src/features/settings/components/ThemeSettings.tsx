@@ -4,26 +4,28 @@ import * as React from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Label } from "@/shared/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
 import { useTheme, type ThemeMode } from "@/theme";
 import { saveCustomTheme, deleteCustomTheme, loadCustomThemes } from "@/theme/customThemes";
 import { validateTheme } from "@/theme/validateTheme";
 import type { Theme, ThemeInput } from "@/theme/types";
-import { Moon, Sun, Desktop, Check, Trash, UploadSimple } from "@phosphor-icons/react";
+import { Check, Trash, UploadSimple } from "@phosphor-icons/react";
+import { cn } from "@/shared/lib/utils";
+import { SettingSection } from "./ui/SettingSection";
 
-const MODE_ICONS: Record<ThemeMode, React.ElementType> = {
-  dark: Moon,
-  light: Sun,
-  system: Desktop,
-};
+const MODES: { value: ThemeMode; label: string }[] = [
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
+  { value: "system", label: "System" },
+];
+
+function getThemePreviewColors(theme: Theme): [string, string, string, string] {
+  const tokens = theme.tokens;
+  const bg = tokens.colors?.background?.root ?? tokens.editor?.background ?? "#1a1b26";
+  const fg = tokens.colors?.foreground?.default ?? tokens.editor?.foreground ?? "#c0caf5";
+  const primary = tokens.colors?.accent?.default ?? "#7aa2f7";
+  const accent = tokens.colors?.accent?.subtle ?? "#565f89";
+  return [bg, fg, primary, accent];
+}
 
 export function ThemeSettings() {
   const { themeId, mode, setTheme, setMode, availableThemes } = useTheme();
@@ -69,119 +71,131 @@ export function ThemeSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label>Mode</Label>
-            <Select value={mode} onValueChange={(v) => setMode(v as ThemeMode)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <SettingSection title="Appearance">
+        <div className="flex rounded-md border border-border/30 p-1">
+          {MODES.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setMode(m.value)}
+              className={cn(
+                "flex-1 rounded px-3 py-1.5 text-ui-xs font-medium transition-colors",
+                mode === m.value
+                  ? "bg-bg-surface text-fg-default shadow-sm"
+                  : "text-fg-muted hover:text-fg-default",
+              )}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </SettingSection>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Built-in Themes</CardTitle>
+      <SettingSection title="Built-in Themes">
+        <div className="mb-2 flex justify-end">
           <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
             <UploadSimple size={14} />
             Import Theme
           </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-2">
-            {builtInThemes.map((theme) => (
-              <ThemeRow
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {builtInThemes.map((theme) => (
+            <ThemeCard
+              key={theme.metadata.id}
+              theme={theme}
+              active={themeId === theme.metadata.id}
+              onSelect={() => setTheme(theme.metadata.id)}
+            />
+          ))}
+        </div>
+      </SettingSection>
+
+      {customThemeList.length > 0 && (
+        <SettingSection title="Custom Themes">
+          <div className="grid grid-cols-2 gap-3">
+            {customThemeList.map((theme) => (
+              <ThemeCard
                 key={theme.metadata.id}
                 theme={theme}
                 active={themeId === theme.metadata.id}
                 onSelect={() => setTheme(theme.metadata.id)}
+                onDelete={() => handleDeleteCustom(theme.metadata.id)}
               />
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      {customThemeList.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Custom Themes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-2">
-              {customThemeList.map((theme) => (
-                <ThemeRow
-                  key={theme.metadata.id}
-                  theme={theme}
-                  active={themeId === theme.metadata.id}
-                  onSelect={() => setTheme(theme.metadata.id)}
-                  onDelete={() => handleDeleteCustom(theme.metadata.id)}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        </SettingSection>
       )}
     </div>
   );
 }
 
-interface ThemeRowProps {
+interface ThemeCardProps {
   theme: Theme;
   active: boolean;
   onSelect: () => void;
   onDelete?: () => void;
 }
 
-function ThemeRow({ theme, active, onSelect, onDelete }: ThemeRowProps) {
-  const ModeIcon = MODE_ICONS[theme.appearance.defaultMode];
+function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
+  const [bg, fg, primary, accent] = getThemePreviewColors(theme);
 
   return (
-    <div
-      className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 transition-colors ${
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "flex flex-col gap-2 rounded-md border p-3 text-left transition-colors",
         active
-          ? "border-primary/50 bg-accent-subtle"
-          : "border-border/60 bg-bg-root hover:border-border hover:bg-bg-hover"
-      }`}
+          ? "border-transparent ring-2 ring-primary"
+          : "border-border/30 bg-bg-root hover:border-border hover:bg-bg-hover",
+      )}
     >
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-ui-sm font-medium text-fg-default">{theme.metadata.name}</span>
-        <span className="text-ui-xs text-fg-muted">
-          {theme.metadata.author ?? "Pragma"} · {theme.appearance.defaultMode}
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <ModeIcon size={14} className="text-fg-subtle" />
-        {active ? (
-          <Check size={14} className="text-primary" />
-        ) : (
-          <Button variant="ghost" size="icon-xs" onClick={onSelect} title="Select theme">
-            <Check size={14} />
-          </Button>
-        )}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-ui-sm font-medium text-fg-default">
+            {theme.metadata.name}
+          </span>
+          <span className="text-ui-xs text-fg-muted">
+            {theme.metadata.author ?? "Pragma"} · {theme.appearance.defaultMode}
+          </span>
+        </div>
+        {active && <Check size={14} className="shrink-0 text-primary" />}
         {onDelete && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={onDelete}
-            title="Delete custom theme"
-            className="text-fg-muted hover:text-status-error"
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                onDelete();
+              }
+            }}
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-muted hover:bg-bg-hover hover:text-status-error"
           >
-            <Trash size={14} />
-          </Button>
+            <Trash size={12} />
+          </span>
         )}
       </div>
-    </div>
+      <div className="flex items-center gap-1.5">
+        <ColorSwatch color={bg} />
+        <ColorSwatch color={fg} />
+        <ColorSwatch color={primary} />
+        <ColorSwatch color={accent} />
+      </div>
+    </button>
+  );
+}
+
+function ColorSwatch({ color }: { color: string }) {
+  return (
+    <span
+      className="size-4 rounded-full border border-border/30"
+      style={{ backgroundColor: color }}
+    />
   );
 }
