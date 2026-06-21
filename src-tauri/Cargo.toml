@@ -42,4 +42,20 @@ futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tokio = { version = "1.52.3", features = ["process", "rt-multi-thread"] }
 shellwords = "1.1.0"
 tracing = "0.1.44"
+sysinfo = "0.34"
 bollard = "0.20"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "file_explorer"
+harness = false
+
+[[bench]]
+name = "git_log"
+harness = false
+
+[[bench]]
+name = "git_graph_layout"
+harness = false

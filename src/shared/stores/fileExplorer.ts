@@ -10,6 +10,30 @@ export interface FileSystemNode {
   error?: string;
 }
 
+export interface VisibleFileNode {
+  node: FileSystemNode;
+  depth: number;
+}
+
+export function getVisibleNodes(
+  nodes: FileSystemNode[],
+  expandedDirs: Set<string>,
+): VisibleFileNode[] {
+  const result: VisibleFileNode[] = [];
+
+  function walk(list: FileSystemNode[], depth: number) {
+    for (const node of list) {
+      result.push({ node, depth });
+      if (node.isDirectory && node.children && expandedDirs.has(node.path)) {
+        walk(node.children, depth + 1);
+      }
+    }
+  }
+
+  walk(nodes, 0);
+  return result;
+}
+
 interface FileExplorerState {
   rootPath: string | null;
   expandedDirs: Set<string>;

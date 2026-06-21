@@ -122,6 +122,7 @@ pub fn run() {
             commands::docker::docker_compose_down,
             commands::docker::docker_compose_build,
             commands::docker::docker_compose_restart,
+            commands::perf::memory_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

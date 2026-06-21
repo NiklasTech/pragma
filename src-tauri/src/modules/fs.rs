@@ -19,6 +19,9 @@ pub struct DirEntry {
     pub is_file: bool,
 }
 
+const MAX_FILE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
+const LARGE_FILE_THRESHOLD_BYTES: u64 = 1024 * 1024;
+
 #[tauri::command]
 pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     let path_ref = Path::new(&path);
@@ -29,6 +32,21 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
 
     if !path_ref.is_file() {
         return Err(format!("Not a file: {}", path));
+    }
+
+    let metadata = fs::metadata(path_ref).map_err(|e| format!("Failed to read metadata: {}", e))?;
+    let file_size = metadata.len();
+
+    if file_size > MAX_FILE_SIZE_BYTES {
+        return Err(format!(
+            "File is too large ({} MB). Maximum supported size is {} MB.",
+            file_size / (1024 * 1024),
+            MAX_FILE_SIZE_BYTES / (1024 * 1024)
+        ));
+    }
+
+    if file_size > LARGE_FILE_THRESHOLD_BYTES {
+        log::warn!("Opening large file: {} ({} bytes)", path, file_size);
     }
 
     let bytes = fs::read(path_ref).map_err(|e| format!("Failed to read file: {}", e))?;

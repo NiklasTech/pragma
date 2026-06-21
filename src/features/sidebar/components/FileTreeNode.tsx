@@ -231,26 +231,6 @@ export function FileTreeNode({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {node.isDirectory && isExpanded && node.children && (
-        <div>
-          {node.children.map((child) => (
-            <FileTreeNode
-              key={child.path}
-              node={child}
-              depth={depth + 1}
-              expandedDirs={expandedDirs}
-              selectedPath={selectedPath}
-              onToggleDir={onToggleDir}
-              onOpenFile={onOpenFile}
-              onCreate={onCreate}
-              onRename={onRename}
-              onDelete={onDelete}
-              onShowLocalHistory={onShowLocalHistory}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

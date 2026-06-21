@@ -8,11 +8,13 @@ import { useLayoutStore } from "@/shell/layout";
 import { useAIInit } from "@/shared/hooks/useAIInit";
 import { ThemeProvider } from "@/theme";
 import { useGlobalShortcuts, type ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
+import { useMemoryStats } from "@/shared/hooks/useMemoryStats";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
 
 export default function App() {
   useAIInit();
+  useMemoryStats();
 
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
