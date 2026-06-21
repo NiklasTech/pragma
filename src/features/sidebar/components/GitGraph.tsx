@@ -450,7 +450,7 @@ function CommitRow({
         ) : null}
       </div>
 
-      {/* SHA — collapsed: nur erste 4 chars */}
+      {/* SHA — collapsed: only first 4 chars */}
       <span
         className={cn(
           "pl-px font-mono text-ui-2xs tabular-nums text-fg-muted",
@@ -473,7 +473,7 @@ function CommitRow({
         {commit.subject || <span className="text-fg-muted">(no subject)</span>}
       </span>
 
-      {/* Author — collapsed: nur Avatar */}
+      {/* Author — collapsed: only avatar */}
       <span
         className={cn(
           "mr-2 inline-flex h-[16px] max-w-full min-w-0 items-center gap-1.5 justify-self-end self-center overflow-hidden rounded-md bg-fg-default/6 pl-1 pr-1.5 text-ui-2xs font-medium text-fg-default/85",
@@ -490,7 +490,7 @@ function CommitRow({
         {!authorCollapsed && <span className="min-w-0 truncate">{commit.author || "Unknown"}</span>}
       </span>
 
-      {/* Date — collapsed: nur Monat+Tag */}
+      {/* Date — collapsed: only month+day */}
       <span
         className="pr-6 text-right font-mono text-ui-xs tabular-nums text-fg-muted/75"
         title={date}
@@ -498,7 +498,7 @@ function CommitRow({
         {dateCollapsed ? date.split(" ").slice(0, 2).join(" ") : date}
       </span>
 
-      {/* Changes — collapsed: nur Gesamt-Δ */}
+      {/* Changes — collapsed: only total delta */}
       <span className="flex min-w-0 items-center justify-end gap-1.5 pl-6 font-mono text-ui-2xs tabular-nums">
         {changesCollapsed ? (
           totalStat > 0 ? (

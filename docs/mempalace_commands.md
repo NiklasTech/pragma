@@ -1,67 +1,66 @@
-# 🏛️ MemPalace Spickzettel (Cheat Sheet)
+# MemPalace Cheat Sheet
 
-Dieses Dokument enthält alle wichtigen Befehle für die Arbeit mit dem MemPalace Gedächtnis-System im **Pragma**-Projekt.
+This document contains the important commands for working with the MemPalace memory system in the **Pragma** project.
 
 ---
 
-## 🛠️ Setup & Initialisierung
+## Setup & Initialization
 
-| Befehl                      | Beschreibung                                                                                              |
-| :-------------------------- | :-------------------------------------------------------------------------------------------------------- |
-| `mempalace init .`          | Initialisiert das aktuelle Verzeichnis als neuen **Wing** (Flügel). Scannt Dateien und schlägt Räume vor. |
-| `mempalace init . --no-llm` | Initialisierung ohne lokale KI (Ollama). Nutzt Heuristiken zur Erkennung.                                 |
-| `mempalace mcp`             | Zeigt die Konfigurationsdaten für MCP-Clients (Claude, Kimi, Cursor) an.                                  |
+| Command                     | Description                                                                         |
+| :-------------------------- | :---------------------------------------------------------------------------------- |
+| `mempalace init .`          | Initialize the current directory as a new **wing**. Scans files and suggests rooms. |
+| `mempalace init . --no-llm` | Initialize without a local LLM (Ollama). Uses heuristics for detection.             |
+| `mempalace mcp`             | Shows configuration data for MCP clients (Claude, Kimi, Cursor).                    |
 
-## ⛏️ Datenverarbeitung (Mining)
+## Data Processing (Mining)
 
-| Befehl                   | Beschreibung                                                                                 |
-| :----------------------- | :------------------------------------------------------------------------------------------- |
-| `mempalace mine .`       | Indiziert alle Dateien im aktuellen Verzeichnis und speichert sie im Palast.                 |
-| `mempalace sweep <pfad>` | Verarbeitet Konversations-Transkripte (z. B. von Claude Code) und speichert sie als Drawers. |
-| `mempalace status`       | Zeigt eine Übersicht über den aktuellen Palast, die installierten Wings und Räume.           |
+| Command                  | Description                                                                            |
+| :----------------------- | :------------------------------------------------------------------------------------- |
+| `mempalace mine .`       | Indexes all files in the current directory and stores them in the palace.              |
+| `mempalace sweep <path>` | Processes conversation transcripts (e.g. from Claude Code) and stores them as drawers. |
+| `mempalace status`       | Shows an overview of the current palace, installed wings and rooms.                    |
 
-## 🔍 Suche (Manuell)
+## Search (Manual)
 
-| Befehl                                     | Beschreibung                                             |
-| :----------------------------------------- | :------------------------------------------------------- |
-| `mempalace search "Begriff"`               | Startet eine semantische Suche über den gesamten Palast. |
-| `mempalace search "Begriff" --wing pragma` | Sucht nur innerhalb des Pragma-Projekts (Wings).         |
+| Command                                 | Description                                        |
+| :-------------------------------------- | :------------------------------------------------- |
+| `mempalace search "term"`               | Starts a semantic search across the entire palace. |
+| `mempalace search "term" --wing pragma` | Searches only within the Pragma project (wing).    |
 
-## 🧠 MCP Tools (Für Kimi / Claude / IDE)
+## MCP Tools (For Kimi / Claude / IDE)
 
-Die KI nutzt diese Befehle automatisch im Hintergrund. Du kannst sie aber auch gezielt dazu auffordern:
+The AI uses these commands automatically in the background. You can also ask for them explicitly:
 
-- **`mempalace_status`**: Übersicht über das gesamte Gedächtnis laden.
-- **`mempalace_search`**: Semantische Suche nach Code oder Konzepten.
-- **`mempalace_get_drawer`**: Den exakten Inhalt einer "Schublade" (Datei/Notiz) lesen.
-- **`mempalace_kg_query`**: Den Knowledge Graph nach Beziehungen zwischen Entitäten abfragen.
-- **`mempalace_diary_write`**: Kimi anweisen, eine Zusammenfassung der aktuellen Session zu speichern.
+- **`mempalace_status`**: Load an overview of the entire memory.
+- **`mempalace_search`**: Semantic search for code or concepts.
+- **`mempalace_get_drawer`**: Read the exact content of a drawer (file/note).
+- **`mempalace_kg_query`**: Query the knowledge graph for relationships between entities.
+- **`mempalace_diary_write`**: Instruct Kimi to save a summary of the current session.
 
-## 📁 Wichtige Pfade
+## Important Paths
 
-- **Konfiguration:** `~/Schreibtisch/Coding/pragma/mempalace.yaml`
-- **Lokale Datenbank:** `~/.mempalace/palace`
-- **MCP Executable:** `/home/niklash/.local/bin/mempalace-mcp`
+- **Configuration:** `~/Schreibtisch/Coding/pragma/mempalace.yaml`
+- **Local database:** `~/.mempalace/palace`
+- **MCP executable:** `/home/niklash/.local/bin/mempalace-mcp`
 
-## 🏗️ Projekt: Pragma
+## Project: Pragma
 
-| Eigenschaft | Wert                                                                |
-| :---------- | :------------------------------------------------------------------ |
-| **Stack**   | Tauri 2 · Rust · React 19 · TypeScript · Vite+ · pnpm · Tailwind v4 |
-| **Wing**    | `pragma`                                                            |
-| **Räume**   | `src`, `src_tauri`, `public`, `documentation`, `general`            |
-| **Plan**    | `docs/PLAN.md` — Vollständiger Projektplan mit Phasen & Architektur |
+| Property  | Value                                                               |
+| :-------- | :------------------------------------------------------------------ |
+| **Stack** | Tauri 2 · Rust · React 19 · TypeScript · Vite+ · pnpm · Tailwind v4 |
+| **Wing**  | `pragma`                                                            |
+| **Rooms** | `src`, `src_tauri`, `public`, `documentation`, `general`            |
 
-### Vite+ Befehle (für Pragma)
+### Vite+ Commands (for Pragma)
 
 ```bash
-vp dev              # Frontend Dev-Server
-vp run tauri:dev    # Volle Tauri App
-vp check            # Oxlint + Oxfmt + TypeCheck
-vp test             # Vitest
-vp run tauri:build  # Release Build
+pnpm exec vp dev              # Frontend dev server
+pnpm exec vp run tauri:dev    # Full Tauri app
+pnpm exec vp check            # Oxlint + Oxfmt + TypeCheck
+pnpm exec vp test             # Vitest
+pnpm exec vp run tauri:build  # Release build
 ```
 
 ---
 
-_Tipp: Führe `mempalace mine .` nach jeder größeren Änderung im Code aus, damit dein KI-Gedächtnis aktuell bleibt._
+_Tip: Run `mempalace mine .` after every larger code change to keep your AI memory up to date._

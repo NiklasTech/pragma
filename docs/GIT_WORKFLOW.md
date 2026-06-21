@@ -1,134 +1,134 @@
-# 🌿 Git Workflow für Pragma
+# Git Workflow for Pragma
 
-> Einfacher Workflow für Solo-Entwicklung ohne technischen Branch-Schutz.
-> Disziplin statt Enforcement — bis das Repo public ist.
-
----
-
-## Branch-Struktur
-
-```
-main          ← Stabil, nur saubere Stände
-  ↑
-dev           ← Aktive Entwicklung, Features sammeln sich hier
-  ↑
-feat/xyz      ← Ein Feature, eine Baustelle
-```
+> Simple workflow for solo development without enforced branch protection.
+> Discipline instead of enforcement — until the repository is public.
 
 ---
 
-## Workflow-Schritt für Schritt
+## Branch Structure
 
-### 1. Auf dev wechseln (oder neuen Feature-Branch starten)
+```
+main          ← Stable, clean state only
+  ↑
+dev           ← Active development, features collect here
+  ↑
+feat/xyz      ← One feature, one construction site
+```
+
+---
+
+## Workflow Step by Step
+
+### 1. Switch to dev (or start a new feature branch)
 
 ```bash
 git checkout dev
 git pull origin dev
 ```
 
-### 2. Feature-Branch erstellen
+### 2. Create a feature branch
 
 ```bash
 git checkout -b feat/custom-titlebar
 ```
 
-**Namenskonventionen:**
+**Naming conventions:**
 
-- `feat/<name>` — Neues Feature
+- `feat/<name>` — New feature
 - `fix/<name>` — Bugfix
-- `chore/<name>` — Tooling, Docs, Refactor
-- `experiment/<name>` — Spike, Prototyp
+- `chore/<name>` — Tooling, docs, refactor
+- `experiment/<name>` — Spike, prototype
 
-### 3. Arbeiten & Committen
+### 3. Work and commit
 
 ```bash
-# Regelmäßig committen
+# Commit regularly
 git add .
 git commit -m "feat: add custom titlebar with window controls"
 ```
 
-**Commit-Format (Conventional Commits):**
+**Commit format (Conventional Commits):**
 
 ```
-feat:     Neue Feature
+feat:     New feature
 fix:      Bugfix
-docs:     Dokumentation
-style:    Formatierung, keine Code-Änderung
-refactor: Code-Änderung ohne neues Feature / Fix
+docs:     Documentation
+style:    Formatting, no code change
+refactor: Code change without new feature / fix
 test:     Tests
-chore:    Tooling, Dependencies, etc.
+chore:    Tooling, dependencies, etc.
 ```
 
-### 4. Feature-Branch pushen
+### 4. Push feature branch
 
 ```bash
 git push -u origin feat/custom-titlebar
 ```
 
-### 5. Pull Request auf GitHub erstellen
+### 5. Create a pull request on GitHub
 
 - Base: `dev`
 - Compare: `feat/custom-titlebar`
-- Selbst reviewen, dann mergen
+- Self-review, then merge
 
-### 6. In dev mergen
+### 6. Merge into dev
 
 ```bash
 git checkout dev
 git pull origin dev
 ```
 
-### 7. dev → main (nur wenn sauber)
+### 7. dev → main (only when clean)
 
-Wenn `dev` stabil läuft und alle Tests passen:
+When `dev` is stable and all tests pass:
 
 ```bash
-# Auf GitHub: PR von dev → main erstellen
-# Oder lokal (nur wenn du dir sicher bist):
+# On GitHub: create a PR from dev → main
+# Or locally (only if you are sure):
 git checkout main
 git merge dev
 git push origin main
 ```
 
-> ⚠️ **Regel:** `main` nur mergen wenn die App baut und läuft.
+> ⚠️ **Rule:** Only merge into `main` when the app builds and runs.
 
 ---
 
-## Schnell-Referenz
+## Quick Reference
 
-| Was                   | Befehl                         |
-| --------------------- | ------------------------------ |
-| Neuer Feature-Branch  | `git checkout -b feat/name`    |
-| Aktuellen Stand holen | `git pull origin dev`          |
-| Branch pushen         | `git push -u origin feat/name` |
-| In dev wechseln       | `git checkout dev`             |
-| dev aktualisieren     | `git pull origin dev`          |
-| Feature in dev mergen | Auf GitHub per PR              |
-| dev in main mergen    | Nur wenn sauber — per PR       |
+| Task                   | Command                        |
+| ---------------------- | ------------------------------ |
+| New feature branch     | `git checkout -b feat/name`    |
+| Get current state      | `git pull origin dev`          |
+| Push branch            | `git push -u origin feat/name` |
+| Switch to dev          | `git checkout dev`             |
+| Update dev             | `git pull origin dev`          |
+| Merge feature into dev | Via PR on GitHub               |
+| Merge dev into main    | Only when clean — via PR       |
 
 ---
 
-## 🚫 Nie direkt auf main pushen
+## Never push directly to main
 
-Bis das Repo public ist und Branch Protection greift:
+Until the repository is public and branch protection is active:
 
 ```bash
-# ❌ Das nicht:
+# ❌ Do not do this:
 git push origin main
 
-# ✅ Stattdessen:
+# ✅ Instead:
 git checkout dev
-# oder
+# or
 git checkout -b feat/...
 ```
 
 ---
 
-## Wann wird public?
+## When will it go public?
 
-Phase 0 abgeschlossen — Layout, Terminal, Editor laufen.
-Dann: Repo public → Branch Protection aktivieren → Workflow bleibt gleich.
+Once Phase 0 is complete — layout, terminal and editor are running.
+Then: repository becomes public → enable branch protection → workflow stays the same.
 
 ---
 
-_Stand: 2026-06-01_
+_Status: 2026-06-01_
