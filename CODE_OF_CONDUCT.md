@@ -1,32 +1,47 @@
 # Code of Conduct
 
-Pragma is a small open-source project and we want it to stay a place people enjoy contributing to.
+## Our commitment
 
-## The rules, briefly
+Pragma is an open project and everyone who participates — by reporting bugs, opening issues, submitting pull requests, or joining any discussion — is expected to make that participation a respectful experience for everyone else.
 
-- **Be respectful.** Disagreement is fine; rudeness, condescension and personal attacks are not.
-- **Assume good faith.** Most miscommunication isn't malicious — clarify before escalating.
-- **Stay on topic.** Issues, PRs and discussions are about Pragma. Take off-topic conversations elsewhere.
-- **No harassment.** Targeted insults, slurs, sustained disruption, sexualized comments, doxxing or threats are not tolerated — anywhere, against anyone.
-- **No spam.** That includes promotional links, irrelevant cross-posting and AI-generated noise that doesn't engage with the actual conversation.
+We are committed to a harassment-free environment regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
 
-This applies to everything inside the project: issues, PRs, discussions, commits and any community space we create later.
+---
 
-## Enforcement
+## Expected behavior
 
-If you see a violation — or experience one — email info@nh-webdev.de with subject `[Pragma conduct]`. Include links and context.
+- Be direct and constructive, not dismissive
+- Assume good faith in technical disagreements
+- Accept that maintainer decisions on scope and direction are final
+- Give and receive feedback professionally
+- Respect that people contribute in their spare time
 
-Maintainers may, at their discretion:
+---
 
-- Edit or delete the offending content
-- Issue a private warning
-- Lock the thread
-- Block the account from the project
+## Unacceptable behavior
 
-We default to the lightest action that resolves the situation. Severe or repeat violations skip steps.
+- Harassment, insults, or personal attacks in any form
+- Sustained disruption of issues, PRs, or discussions
+- Publishing private information about others without consent
+- Sexualized language or imagery
+- Any conduct that would be inappropriate in a professional setting
+
+---
 
 ## Scope
 
-Maintainers act in this project's spaces. We don't police behavior outside the project, but we do consider patterns of behavior elsewhere when deciding on enforcement here.
+This Code of Conduct applies to all project spaces — GitHub Issues, Pull Requests, Discussions, and any other channel where Pragma is represented.
 
-This document is intentionally short. It is inspired by the [Contributor Covenant](https://www.contributor-covenant.org) but kept compact for a small project.
+---
+
+## Enforcement
+
+Violations can be reported to **info@nh-webdev.de**. Reports are handled confidentially.
+
+The maintainer reserves the right to remove comments, close issues or PRs, and block accounts that violate this Code of Conduct — without prior warning for serious violations.
+
+---
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1.

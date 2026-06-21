@@ -176,17 +176,31 @@ cd pragma
 # Install dependencies
 pnpm install
 
-# Start the development app
+# Start the frontend development server
 pnpm exec vp dev
+
+# Start the full Tauri desktop app
+pnpm exec vp run tauri dev
 ```
 
-If you have the Vite+ CLI installed globally, you can also use `vp install` and `vp dev` without the `pnpm exec` prefix.
+If you have the Vite+ CLI installed globally, you can also use `vp install`, `vp dev` and `vp run tauri dev` without the `pnpm exec` prefix.
+
+> **Shortcut:** All commands above are also available as `pnpm run` scripts:
+>
+> ```bash
+> pnpm run dev          # frontend dev server
+> pnpm run dev:desktop  # full Tauri desktop app
+> pnpm run build        # frontend production build
+> pnpm run build:desktop # Tauri release build
+> pnpm run check        # lint + format + type check
+> pnpm run test         # run tests once
+> ```
 
 ### Build a release binary
 
 ```bash
 # Build the frontend and the Tauri application
-pnpm exec tauri build
+pnpm exec vp run tauri build
 ```
 
 > **Note on `vp`:** Pragma uses [Vite+](https://viteplus.dev/) as its build toolchain. The `vp` command is available through `pnpm exec vp ...` after running `pnpm install`, or by installing Vite+ globally with `pnpm add -g vite-plus`.
@@ -196,7 +210,7 @@ The resulting bundles are written to `src-tauri/target/release/bundle/`.
 To build only specific package formats, for example `.deb` and `.rpm` on Linux:
 
 ```bash
-pnpm exec tauri build --bundles deb,rpm
+pnpm exec vp run tauri build --bundles deb,rpm
 ```
 
 ### Run checks

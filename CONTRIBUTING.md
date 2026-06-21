@@ -44,14 +44,29 @@ A 10-minute conversation in an issue saves a 500-line PR that doesn't fit the ro
 
 ```bash
 pnpm install
+
+# Start the frontend development server
 pnpm exec vp dev
+
+# Start the full Tauri desktop app
+pnpm exec vp run tauri dev
 ```
 
 If you have the Vite+ CLI installed globally:
 
 ```bash
 vp dev
+vp run tauri dev
 ```
+
+> **Shortcut:** The same commands are available via `pnpm run`:
+>
+> ```bash
+> pnpm run dev          # frontend dev server
+> pnpm run dev:desktop  # full Tauri desktop app
+> pnpm run check        # lint + format + type check
+> pnpm run test         # run tests once
+> ```
 
 > Pragma targets a binary size under 15 MB. Keep that in mind when pulling in new dependencies.
 

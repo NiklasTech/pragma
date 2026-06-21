@@ -109,7 +109,7 @@ After the `<thinking>` block, use exactly this structure:
 4. **Verification**: Output concrete verification steps:
    - `pnpm exec vp check` (Oxlint + Oxfmt + TypeCheck)
    - `pnpm exec vp test` (Vitest)
-   - `pnpm exec tauri dev` (start the app)
+   - `pnpm exec vp run tauri dev` (start the app)
 
 ### Phase 4: Fallback & Auto-Correction
 
@@ -158,15 +158,15 @@ Available weights: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`
 
 ## Project Commands
 
-| Command                        | Purpose                   |
-| ------------------------------ | ------------------------- |
-| `pnpm exec vp dev`             | Frontend dev server       |
-| `pnpm exec vp run tauri dev`   | Run full Tauri app        |
-| `pnpm exec vp run tauri build` | Tauri release build       |
-| `pnpm exec vp check`           | Lint + Format + TypeCheck |
-| `pnpm exec vp test`            | Vitest                    |
-| `cargo check`                  | Rust check                |
-| `cargo fmt --check`            | Rust format check         |
+| Command                        | `pnpm run` shortcut      | Purpose                   |
+| ------------------------------ | ------------------------ | ------------------------- |
+| `pnpm exec vp dev`             | `pnpm run dev`           | Frontend dev server       |
+| `pnpm exec vp run tauri dev`   | `pnpm run dev:desktop`   | Run full Tauri app        |
+| `pnpm exec vp run tauri build` | `pnpm run build:desktop` | Tauri release build       |
+| `pnpm exec vp check`           | `pnpm run check`         | Lint + Format + TypeCheck |
+| `pnpm exec vp test`            | `pnpm run test`          | Vitest                    |
+| `cargo check`                  | —                        | Rust check                |
+| `cargo fmt --check`            | —                        | Rust format check         |
 
 ## Important Paths
 

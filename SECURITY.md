@@ -1,53 +1,64 @@
-# Security
-
-Pragma runs shells, reads and writes files, stores credentials and talks to AI providers — so security bugs matter. If you find one, please tell us before posting it publicly.
-
-## Reporting
-
-Email **info@nh-webdev.de**. Include:
-
-- What the issue is and what it lets an attacker do
-- Steps to reproduce (a small PoC is great)
-- Version, OS and architecture
-
-We'll get back to you within a few days. Once it's fixed, we'll credit you in the release notes — unless you'd rather stay anonymous.
-
-Please don't open a public GitHub issue for security reports.
+# Security Policy
 
 ## Supported versions
 
-Until 1.0.0, only the latest commit on `main` gets security fixes. Once versioned releases are available, supported versions will be listed here.
+Only the latest release of Pragma receives security fixes. Older versions are not patched.
 
-| Version       | Supported |
-| ------------- | --------- |
-| latest `main` | yes       |
-| older commits | no        |
+| Version | Supported |
+| ------- | --------- |
+| Latest  | ✓         |
+| Older   | ✗         |
 
-## What's in scope
+---
 
-- The Rust backend in `src-tauri/` (PTY, FS, IPC, plugins)
-- The frontend in `src/` — anywhere untrusted input lands (terminal output, file content, AI tool results, credentials)
-- Release artifacts on GitHub
-- MCP server communication and lifecycle
-- The Docker/Podman integration
+## Reporting a vulnerability
 
-## What's not
+**Do not file security issues publicly on GitHub.**
 
-- Bugs in upstream dependencies (Tauri, xterm.js, CodeMirror, Vercel AI SDK, …) — report those upstream. We'll ship the fix once it's released.
-- Anything that needs an already-compromised machine or a local attacker with shell access
-- Older commits that are not on the latest `main`
+Report vulnerabilities by email to **info@nh-webdev.de** with the subject line `[SECURITY] Pragma — <short description>`.
 
-## What we do to keep things safe
+Include in your report:
 
-- **API keys live in the OS keychain** via `keyring` — not on disk, not in `localStorage`, not in logs.
-- **No telemetry.** Pragma only talks to the network when you ask it to (AI requests, MCP servers, web preview).
-- **AI tool approval.** File writes, shell commands and MCP tool calls need your OK before they run.
-- **No Node in the renderer.** The frontend only reaches the host through the allow-listed Tauri commands.
-- **Signed releases.** Updates are verified before they're applied once the release pipeline is in place.
+- A clear description of the vulnerability
+- Steps to reproduce or a proof of concept
+- The potential impact (what an attacker could do)
+- Your environment (OS, Pragma version, Rust/Node versions if relevant)
 
-## What we can't promise
+You will receive an acknowledgment within **72 hours**. If you don't hear back within that window, follow up to the same address.
 
-- Pragma runs whatever you (or the agent) tell it to run, with your permissions. That's kind of the point of a terminal.
-- AI providers see whatever you send them. Read their retention policies.
-- Local LLM endpoints (Ollama, OpenAI-compatible) are trusted at the network level — only point Pragma at servers you control.
-- MCP servers run with your local user permissions. Only connect servers you trust.
+---
+
+## What to expect
+
+- Vulnerabilities are assessed within 7 days of acknowledgment
+- You will be kept informed as the issue is investigated and fixed
+- A fix will be released as soon as reasonably possible depending on severity
+- You will be credited in the release notes unless you prefer to remain anonymous
+
+---
+
+## Scope
+
+Areas of particular concern for Pragma given its architecture:
+
+- **AI tool surface** — anything the AI agent can invoke via MCP or internal tools
+- **IPC command surface** — Tauri commands exposed to the webview
+- **Filesystem access** — workspace authorization, path traversal, symlink handling
+- **PTY / shell spawn** — shell injection, environment variable leakage
+- **MCP server communication** — JSON-RPC surface, server lifecycle
+- **Network paths** — AI provider requests, proxy handling, SSRF
+- **API key handling** — storage, transmission, exposure in logs or UI
+
+---
+
+## Out of scope
+
+- Vulnerabilities in third-party dependencies should be reported to the respective upstream project; mention them to us if you believe Pragma is specifically affected
+- Issues that require physical access to the machine
+- Social engineering
+
+---
+
+## Disclosure policy
+
+Pragma follows **coordinated disclosure**. Please allow a reasonable time to fix and release before publishing your findings publicly. We aim to resolve critical issues within 14 days.

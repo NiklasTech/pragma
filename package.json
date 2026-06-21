@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
+    "dev:desktop": "vp run tauri dev",
     "build": "tsc && vp build",
+    "build:desktop": "vp run tauri build",
     "preview": "vp preview",
+    "check": "vp check",
+    "test": "vp test --run",
     "prepare": "vp config"
   },
   "dependencies": {

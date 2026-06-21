@@ -55,10 +55,20 @@ The AI uses these commands automatically in the background. You can also ask for
 
 ```bash
 pnpm exec vp dev              # Frontend dev server
-pnpm exec vp run tauri:dev    # Full Tauri app
+pnpm exec vp run tauri dev    # Full Tauri app
 pnpm exec vp check            # Oxlint + Oxfmt + TypeCheck
 pnpm exec vp test             # Vitest
-pnpm exec vp run tauri:build  # Release build
+pnpm exec vp run tauri build  # Release build
+```
+
+Or use the `pnpm run` shortcuts defined in `package.json`:
+
+```bash
+pnpm run dev          # Frontend dev server
+pnpm run dev:desktop  # Full Tauri app
+pnpm run check        # Oxlint + Oxfmt + TypeCheck
+pnpm run test         # Vitest
+pnpm run build:desktop # Release build
 ```
 
 ---
