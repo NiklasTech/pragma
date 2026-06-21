@@ -1,6 +1,6 @@
 # Pragma
 
-A lightweight, terminal-first IDE with native AI integration.
+A lightweight, AI-native desktop IDE with an integrated terminal.
 
 Built with Tauri 2, Rust, React 19, TypeScript and CodeMirror 6.
 
@@ -26,12 +26,12 @@ Built with Tauri 2, Rust, React 19, TypeScript and CodeMirror 6.
 
 ## What is Pragma?
 
-Pragma is a desktop code editor designed for developers who spend a lot of time in the terminal and want AI assistance without the bloat of a browser-based IDE.
+Pragma is a desktop code editor designed for developers who want AI assistance without the bloat of a browser-based IDE.
 
-Most existing tools treat the terminal as a secondary panel or add AI through plugins that feel bolted on. Pragma takes a different approach:
+Most existing tools add AI through plugins that feel bolted on or treat the terminal as a secondary panel. Pragma takes a different approach:
 
-- **Terminal-first.** The terminal is a core part of the workflow, not an afterthought. It supports tabs, splits and AI-driven command suggestions.
 - **AI-native.** AI features are integrated directly into the editor, terminal and chat panel. No separate browser window or extension required.
+- **Integrated terminal.** A full xterm.js terminal with tabs, splits and AI-driven command suggestions, built into the workflow instead of tucked away.
 - **Lightweight.** Built with Tauri 2 and Rust instead of Electron. The compressed Linux package is under 10 MB.
 - **Private by default.** API keys are stored in the operating system's keychain, not in plain text.
 - **Hackable.** VIM mode, custom themes, configurable AI provider profiles and MCP server support.
