@@ -1,0 +1,548 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@source "../node_modules/streamdown/dist/*.js";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   PRAGMA DESIGN SYSTEM
+   ----------------------------------------------------------------------------
+   Single source of truth for all visual values. Every component resolves to
+   one of these tokens. No hardcoded values allowed in components.
+
+   Namespaces:
+     --chrome-*  : layout constants
+     --text-*    : font sizes / line heights
+     --bg-*      : background surfaces
+     --fg-*      : foreground colors
+     --border-*  : border colors
+     --color-*   : semantic colors (accent, status, git)
+     --editor-*  : editor-specific tokens
+     --syntax-*  : syntax highlighting tokens
+     --terminal-*: terminal-specific tokens
+     --motion-*  : durations and easings
+   ============================================================================ */
+
+@theme inline {
+  /* --------------------------------------------------------------------------
+     Typography
+     -------------------------------------------------------------------------- */
+  --font-heading: var(--font-sans);
+  --font-sans:
+    "Geist Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono:
+    "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-ui-xs: var(--text-ui-xs);
+  --text-ui-sm: var(--text-ui-sm);
+  --text-ui-base: var(--text-ui-base);
+  --text-ui-md: var(--text-ui-md);
+  --text-ui-lg: var(--text-ui-lg);
+  --text-editor: var(--text-editor);
+
+  --leading-ui-xs: var(--leading-ui-xs);
+  --leading-ui-sm: var(--leading-ui-sm);
+  --leading-ui-base: var(--leading-ui-base);
+  --leading-ui-md: var(--leading-ui-md);
+  --leading-ui-lg: var(--leading-ui-lg);
+  --leading-editor: var(--leading-editor);
+
+  /* --------------------------------------------------------------------------
+     Radius
+     -------------------------------------------------------------------------- */
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-pill: 9999px;
+  --radius-tab: var(--radius-pill);
+
+  /* --------------------------------------------------------------------------
+     Layout
+     -------------------------------------------------------------------------- */
+  --height-header: var(--chrome-header-h);
+  --height-tab: var(--chrome-tab-h);
+  --height-statusbar: var(--chrome-statusbar-h);
+  --height-breadcrumb: var(--chrome-breadcrumb-h);
+
+  --width-sidebar-collapsed: var(--chrome-sidebar-collapsed-w);
+  --width-sidebar-expanded: var(--chrome-sidebar-expanded-w);
+
+  --min-height-panel: var(--chrome-panel-min-h);
+
+  /* --------------------------------------------------------------------------
+     Colors — surfaces & text
+     -------------------------------------------------------------------------- */
+  --color-background: var(--bg-root);
+  --color-foreground: var(--fg-default);
+
+  --color-bg-root: var(--bg-root);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-input: var(--bg-input);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-active: var(--bg-active);
+  --color-bg-overlay: var(--bg-overlay);
+
+  --color-fg-default: var(--fg-default);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-inverse: var(--fg-inverse);
+
+  --color-accent: #2b7fff;
+  --color-accent-subtle: rgba(43, 127, 255, 0.12);
+  --color-accent-glow: rgba(43, 127, 255, 0.35);
+
+  --color-border: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-focus: var(--border-focus);
+
+  /* --------------------------------------------------------------------------
+     Colors — shadcn/ui aliases
+     -------------------------------------------------------------------------- */
+  --color-card: var(--bg-surface);
+  --color-card-foreground: var(--fg-default);
+  --color-popover: var(--bg-elevated);
+  --color-popover-foreground: var(--fg-default);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--fg-inverse);
+  --color-secondary: var(--bg-hover);
+  --color-secondary-foreground: var(--fg-default);
+  --color-muted: var(--bg-hover);
+  --color-muted-foreground: var(--fg-muted);
+  --color-destructive: var(--color-status-error);
+  --color-input: var(--bg-input);
+  --color-ring: var(--color-accent);
+  --color-sidebar: var(--bg-root);
+  --color-sidebar-foreground: var(--fg-default);
+  --color-sidebar-primary: var(--color-accent);
+  --color-sidebar-primary-foreground: var(--fg-inverse);
+  --color-sidebar-accent: var(--bg-hover);
+  --color-sidebar-accent-foreground: var(--fg-default);
+  --color-sidebar-border: var(--border-default);
+  --color-sidebar-ring: var(--color-accent);
+
+  /* --------------------------------------------------------------------------
+     Colors — semantic status & git
+     -------------------------------------------------------------------------- */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+
+  --color-git-added: #22c55e;
+  --color-git-modified: #f59e0b;
+  --color-git-deleted: #ef4444;
+  --color-git-untracked: #3b82f6;
+
+  /* --------------------------------------------------------------------------
+     Colors — editor
+     -------------------------------------------------------------------------- */
+  --color-editor-bg: var(--editor-bg);
+  --color-editor-fg: var(--editor-fg);
+  --color-editor-selection: var(--editor-selection);
+  --color-editor-cursor: var(--editor-cursor);
+  --color-editor-gutter-bg: var(--editor-gutter-bg);
+  --color-editor-gutter-fg: var(--editor-gutter-fg);
+  --color-editor-line-active: var(--editor-line-active);
+
+  --color-syntax-keyword: var(--syntax-keyword);
+  --color-syntax-string: var(--syntax-string);
+  --color-syntax-comment: var(--syntax-comment);
+  --color-syntax-function: var(--syntax-function);
+  --color-syntax-variable: var(--syntax-variable);
+  --color-syntax-number: var(--syntax-number);
+
+  /* --------------------------------------------------------------------------
+     Colors — terminal
+     -------------------------------------------------------------------------- */
+  --color-terminal-bg: var(--terminal-bg);
+  --color-terminal-fg: var(--terminal-fg);
+  --color-terminal-cursor: var(--terminal-cursor);
+  --color-terminal-selection: var(--terminal-selection);
+}
+
+/* ============================================================================
+   DEFAULT THEME: Pragma Dark
+   ============================================================================ */
+
+:root {
+  /* --------------------------------------------------------------------------
+     Accent — Electric Blue
+     -------------------------------------------------------------------------- */
+  --color-accent: #2b7fff;
+  --color-accent-subtle: rgba(43, 127, 255, 0.12);
+  --color-accent-glow: rgba(43, 127, 255, 0.35);
+
+  /* --------------------------------------------------------------------------
+     Backgrounds
+     -------------------------------------------------------------------------- */
+  --bg-root: #09090b;
+  --bg-surface: #0f0f11;
+  --bg-elevated: #151519;
+  --bg-input: #1a1a1f;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(43, 127, 255, 0.1);
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+
+  /* --------------------------------------------------------------------------
+     Foregrounds
+     -------------------------------------------------------------------------- */
+  --fg-default: #f4f4f5;
+  --fg-muted: #a1a1aa;
+  --fg-subtle: #71717a;
+  --fg-inverse: #09090b;
+
+  /* --------------------------------------------------------------------------
+     Borders
+     -------------------------------------------------------------------------- */
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(43, 127, 255, 0.5);
+
+  /* --------------------------------------------------------------------------
+     Status
+     -------------------------------------------------------------------------- */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+
+  /* --------------------------------------------------------------------------
+     Git
+     -------------------------------------------------------------------------- */
+  --color-git-added: #22c55e;
+  --color-git-modified: #f59e0b;
+  --color-git-deleted: #ef4444;
+  --color-git-untracked: #3b82f6;
+
+  /* --------------------------------------------------------------------------
+     Editor
+     -------------------------------------------------------------------------- */
+  --editor-bg: var(--bg-root);
+  --editor-fg: var(--fg-default);
+  --editor-selection: rgba(43, 127, 255, 0.25);
+  --editor-cursor: var(--color-accent);
+  --editor-gutter-bg: var(--bg-root);
+  --editor-gutter-fg: var(--fg-subtle);
+  --editor-line-active: rgba(255, 255, 255, 0.03);
+
+  /* --------------------------------------------------------------------------
+     Syntax Highlighting
+     -------------------------------------------------------------------------- */
+  --syntax-keyword: #c084fc;
+  --syntax-string: #86efac;
+  --syntax-comment: #71717a;
+  --syntax-function: #60a5fa;
+  --syntax-variable: var(--fg-default);
+  --syntax-number: #fdba74;
+  --syntax-property: var(--fg-default);
+  --syntax-type: #f472b6;
+  --syntax-operator: var(--fg-muted);
+  --syntax-tag: #f87171;
+  --syntax-attribute: #facc15;
+
+  /* --------------------------------------------------------------------------
+     Terminal
+     -------------------------------------------------------------------------- */
+  --terminal-bg: var(--bg-root);
+  --terminal-fg: var(--fg-default);
+  --terminal-cursor: var(--color-accent);
+  --terminal-selection: rgba(43, 127, 255, 0.25);
+
+  --terminal-ansi-black: #09090b;
+  --terminal-ansi-red: #ef4444;
+  --terminal-ansi-green: #22c55e;
+  --terminal-ansi-yellow: #f59e0b;
+  --terminal-ansi-blue: #2b7fff;
+  --terminal-ansi-magenta: #c084fc;
+  --terminal-ansi-cyan: #22d3ee;
+  --terminal-ansi-white: #a1a1aa;
+
+  --terminal-ansi-bright-black: #27272a;
+  --terminal-ansi-bright-red: #f87171;
+  --terminal-ansi-bright-green: #4ade80;
+  --terminal-ansi-bright-yellow: #fbbf24;
+  --terminal-ansi-bright-blue: #60a5fa;
+  --terminal-ansi-bright-magenta: #d8b4fe;
+  --terminal-ansi-bright-cyan: #67e8f9;
+  --terminal-ansi-bright-white: #f4f4f5;
+
+  /* --------------------------------------------------------------------------
+     Layout
+     -------------------------------------------------------------------------- */
+  --chrome-header-h: 48px;
+  --chrome-tab-h: 68px;
+  --chrome-statusbar-h: 26px;
+  --chrome-breadcrumb-h: 28px;
+  --chrome-sidebar-collapsed-w: 48px;
+  --chrome-sidebar-expanded-w: 260px;
+  --chrome-panel-min-h: 160px;
+
+  /* --------------------------------------------------------------------------
+     Typography values
+     -------------------------------------------------------------------------- */
+  --text-ui-xs: 11px;
+  --text-ui-sm: 12px;
+  --text-ui-base: 13px;
+  --text-ui-md: 14px;
+  --text-ui-lg: 16px;
+  --text-editor: 14px;
+
+  --leading-ui-xs: 14px;
+  --leading-ui-sm: 16px;
+  --leading-ui-base: 20px;
+  --leading-ui-md: 22px;
+  --leading-ui-lg: 24px;
+  --leading-editor: 22px;
+
+  /* --------------------------------------------------------------------------
+     Radius
+     -------------------------------------------------------------------------- */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* --------------------------------------------------------------------------
+     Motion
+     -------------------------------------------------------------------------- */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 250ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --------------------------------------------------------------------------
+     Scrollbar
+     -------------------------------------------------------------------------- */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.22);
+}
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-bg-root text-fg-default;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  ::selection {
+    background-color: var(--editor-selection);
+  }
+}
+
+/* ============================================================================
+   SCROLLBAR
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color var(--motion-base) var(--motion-ease);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ============================================================================
+   PILL TABS — shared utility classes
+   ============================================================================ */
+
+.pragma-pill-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--chrome-tab-h);
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-ui-sm);
+  line-height: var(--leading-ui-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    color var(--motion-base) var(--motion-ease),
+    background-color var(--motion-base) var(--motion-ease),
+    box-shadow var(--motion-base) var(--motion-ease);
+}
+
+.pragma-pill-tab[data-active="true"] {
+  background-color: var(--bg-elevated);
+  color: var(--fg-default);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+
+.pragma-pill-tab[data-active="false"] {
+  background-color: transparent;
+  color: var(--fg-muted);
+}
+
+.pragma-pill-tab[data-active="false"]:hover {
+  background-color: var(--bg-hover);
+  color: var(--fg-default);
+}
+
+/* ============================================================================
+   CODE MIRROR
+   ============================================================================ */
+
+.cm-editor {
+  background-color: var(--editor-bg);
+  color: var(--editor-fg);
+}
+
+.cm-editor.cm-focused {
+  outline: none;
+}
+
+.cm-gutters {
+  background-color: var(--editor-gutter-bg) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+  color: var(--editor-gutter-fg);
+}
+
+.cm-activeLineGutter {
+  background-color: var(--editor-line-active) !important;
+  color: var(--fg-default);
+}
+
+.cm-activeLine {
+  background-color: var(--editor-line-active) !important;
+}
+
+.cm-selectionBackground {
+  background-color: var(--editor-selection) !important;
+}
+
+.cm-cursor {
+  border-left-color: var(--editor-cursor) !important;
+  border-left-width: 2px;
+}
+
+/* ============================================================================
+   XTERM.JS
+   ============================================================================ */
+
+.xterm-viewport {
+  overflow-y: auto !important;
+  background-color: var(--terminal-bg) !important;
+}
+
+.xterm-screen {
+  color: var(--terminal-fg);
+}
+
+/* ============================================================================
+   CHAT / STREAMDOWN SYNTAX HIGHLIGHTING
+   ============================================================================ */
+
+.tok-keyword,
+.tok-controlKeyword,
+.tok-definitionKeyword,
+.tok-moduleKeyword,
+.tok-operatorKeyword {
+  color: var(--syntax-keyword);
+}
+
+.tok-variableName,
+.tok-definition {
+  color: var(--syntax-variable);
+}
+
+.tok-propertyName {
+  color: var(--syntax-variable);
+}
+
+.tok-typeName,
+.tok-className,
+.tok-interfaceName {
+  color: var(--syntax-function);
+}
+
+.tok-string,
+.tok-string2 {
+  color: var(--syntax-string);
+}
+
+.tok-number,
+.tok-unit,
+.tok-atom {
+  color: var(--syntax-number);
+}
+
+.tok-comment,
+.tok-meta {
+  color: var(--syntax-comment);
+}
+
+.tok-tagName {
+  color: var(--syntax-keyword);
+}
+
+.tok-attributeName {
+  color: var(--syntax-function);
+}
+
+.tok-function,
+.tok-call,
+.tok-name {
+  color: var(--syntax-function);
+}
+
+.tok-operator,
+.tok-punctuation,
+.tok-bracket {
+  color: var(--fg-muted);
+}
+
+.tok-link {
+  color: var(--syntax-function);
+  text-decoration: underline;
+}
+
+.tok-heading {
+  color: var(--syntax-keyword);
+  font-weight: 600;
+}
+
+.tok-modifier {
+  color: var(--syntax-keyword);
+}

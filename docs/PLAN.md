@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Vision & Prinzipien
+## 1. Vision & Prinzipiens
 
 - **Terminal-DNA ohne Terminal-Feeling:** Die App nutzt das Terminal als Kern, fühlt sich aber wie eine vollwertige IDE an — nicht wie ein aufgebohrter Terminal-Emulator
 - **AI als First-Class-Citizen:** Nicht als Plugin nachträglich reingebaut, sondern von Anfang an in Architektur und UX verankert
@@ -214,36 +214,111 @@
 
 ### 4.6 AI Provider System
 
-**Provider-Abstraktion (Rust Trait):**
+Pragma unterstützt **vier Auth-Modelle** für AI-Provider:
+
+#### 1. CLI Subscription (Empfohlen für Abo-Nutzer)
+
+Pragma nutzt die **offiziellen CLI-Tools** der Anbieter. User mit bestehenden Web-App-Abos (ChatGPT Plus, Claude Pro, Kimi Abo) können diese direkt in Pragma nutzen — ohne extra API-Keys.
+
+**Warum CLI statt API?**
+
+Die meisten KI-Anbieter bieten zwei Produkte an:
+
+- **Web-App-Abo** (Flat-Rate, z.B. ChatGPT Plus 20€/Monat) — für Endnutzer
+- **API-Zugang** (Pay-per-Token, teurer) — für Entwickler
+
+Viele Entwickler haben bereits ein Web-App-Abo, wollen aber keine extra API-Kosten. Die offiziellen CLIs der Anbieter nutzen das bestehende Abo — Pragma wrappt diese CLIs in eine schöne UI.
+
+**Flow:**
+
+```
+User klickt "Install" in Pragma Settings
+  → Pragma führt `npm install -g @anthropic-ai/claude-code` aus
+  → User klickt "Connect Account"
+  → Pragma führt `claude login` aus (CLI öffnet Browser)
+  → User loggt sich im Browser ein
+  → CLI speichert Token lokal (Pragma sieht Token nie)
+  → Pragma nutzt `claude --print` für Chat-Requests
+```
+
+**Vorteile:**
+
+- Nutzt bestehendes Abo (keine extra Kosten)
+- 100% ToS-konform (offizielle Tools)
+- 0€ Serverkosten für Pragma
+- Pragma ist die GUI — die CLI ist die Engine
+
+**Unterstützte CLI-Provider (v1.0):**
+
+Jede CLI hat einen eigenen non-interactive Modus. Die Flags müssen pro CLI in deren Dokumentation nachgeschlagen werden:
+
+| CLI          | Paket                       | Auth           | Non-Interactive Command                      | Status           |
+| ------------ | --------------------------- | -------------- | -------------------------------------------- | ---------------- |
+| Claude Code  | `@anthropic-ai/claude-code` | `claude login` | `claude --print --output-format stream-json` | ✅ Implementiert |
+| OpenAI Codex | `@openai/codex`             | `codex login`  | `codex exec --json`                          | ✅ Manifest      |
+| Kimi Code    | `@moonshot-ai/kimi-code`    | `kimi login`   | `kimi --print --output-format stream-json`   | ✅ Manifest      |
+| Gemini CLI   | `@google/gemini-cli`        | `gemini login` | `gemini --print`                             | ✅ Manifest      |
+
+**Wichtig:** Nicht jede CLI hat einen non-interactive Modus. Bevor ein neuer Provider hinzugefügt wird, muss geprüft werden ob die CLI `--print`, `--json`, `exec`, oder ähnliche Flags unterstützt. Ohne non-interactive Modus kann Pragma die CLI nicht als Backend nutzen.
+
+**Erweiterbar für neue CLI-Provider:**
+
+Das System ist so gebaut, dass neue CLI-Provider **ohne Code-Änderung** hinzugefügt werden können. Jeder Provider definiert ein `CLIManifest`:
 
 ```rust
-trait AIProvider: Send + Sync {
-    async fn complete(&self, req: CompletionRequest) -> Result<CompletionResponse>;
-    async fn stream(&self, req: CompletionRequest) -> Result<Stream<CompletionChunk>>;
-    fn models(&self) -> Vec<ModelInfo>;
+CLIManifest {
+    id: "neuer-provider",
+    name: "Neuer Provider",
+    install_cmd: "npm install -g @neuer/provider-cli",
+    check_cmd: "neuer-provider --version",
+    login_cmd: "neuer-provider login",
+    chat_cmd: "neuer-provider --print --json",
+    output_format: OutputFormat::StreamJson,
+    ...
 }
 ```
 
-**Unterstützte Provider (v1.0):**
+Community-Beiträge für neue CLI-Provider sind willkommen. Voraussetzung: Der Anbieter muss eine offizielle CLI mit non-interactive Modus haben.
 
-| Provider        | Auth      | Protokoll     | Modelle                      |
-| --------------- | --------- | ------------- | ---------------------------- |
-| OpenAI          | API Key   | REST          | gpt-4o, o1, o3               |
-| Anthropic       | API Key   | REST          | claude-opus-4, sonnet, haiku |
-| Ollama          | — (lokal) | REST          | alle lokalen Modelle         |
-| Google Gemini   | API Key   | REST          | gemini-2.0-flash, pro        |
-| DeepSeek        | API Key   | OpenAI-compat | deepseek-chat, coder         |
-| Kimi (Moonshot) | API Key   | OpenAI-compat | moonshot-v1-\*               |
-| GitHub Copilot  | OAuth     | REST          | copilot                      |
-| Custom          | API Key   | OpenAI-compat | konfigurierbar               |
+**Architektur:**
 
-**Wichtig:** Alle OpenAI-kompatiblen Anbieter (DeepSeek, Kimi, Groq, Together, etc.) laufen über den "Custom"-Provider mit konfigurierbarer Base-URL — kein separater Code nötig.
+- `CLIManifest` definiert Installations-, Login- und Chat-Commands pro Provider
+- `CLIManager` verwaltet Lifecycle (check, install, login, logout, chat)
+- `cli_chat` Tauri Command spawnt CLI-Prozess, schickt Prompt via stdin, parsed JSON-Output
+- Pragma zeigt CLI-Output als schöne Chat-Bubbles (User sieht nie Terminal)
+
+#### 2. API Key (BYOK — Bring Your Own Key)
+
+Für Power-User und Entwickler mit Pay-per-Use-Konten.
+
+| Provider        | Auth    | Protokoll     | Modelle                      |
+| --------------- | ------- | ------------- | ---------------------------- |
+| OpenAI          | API Key | REST          | gpt-4o, o1, o3               |
+| Anthropic       | API Key | REST          | claude-opus-4, sonnet, haiku |
+| DeepSeek        | API Key | OpenAI-compat | deepseek-chat, coder         |
+| Kimi (Moonshot) | API Key | OpenAI-compat | moonshot-v1-\*               |
+| Custom          | API Key | OpenAI-compat | konfigurierbar               |
+
+API-Keys werden im **OS Keychain** gespeichert (via `keyring` Crate).
+
+#### 3. Ollama (Lokal)
+
+100% kostenlos, offline, Datenschutz-freundlich.
+
+- REST API auf `localhost:11434`
+- Modelle: Llama, Qwen, Codestral, etc.
+
+#### 4. GitHub Copilot OAuth (Phase 4)
+
+- GitHub OAuth Flow
+- Mehrere Modelle (Claude, GPT-4o, Gemini)
+- Erfordert `tauri-plugin-oauth`
 
 **AI Switcher (Sidebar):**
 
-- Quick-Switch zwischen Provider + Modell
-- Verschiedene Profile für verschiedene Tasks (z.B. "Fast" = Haiku local, "Smart" = Claude Sonnet)
-- API Keys sicher via Tauri Keychain (nicht im Klartext in Config)
+- Quick-Switch zwischen allen 4 Auth-Modellen
+- Verschiedene Profile für verschiedene Tasks
+- API Keys sicher via Tauri Keychain
 
 ### 4.7 Theming
 
@@ -325,17 +400,17 @@ pragma/
 │   │   │   └── Titlebar.tsx
 │   │   └── settings/
 │   │       ├── Settings.tsx
-│   │       ├── AISettings.tsx
+│   │       ├── AISettings.tsx    # 4 Säulen: CLI / API Key / Local / Copilot
 │   │       ├── ThemeSettings.tsx
 │   │       └── McpSettings.tsx
 │   ├── stores/
 │   │   ├── editor.ts             # Zustand: Editor State
 │   │   ├── terminal.ts           # Zustand: Terminal Sessions
-│   │   ├── ai.ts                 # Zustand: AI Provider/Model
+│   │   ├── ai.ts                 # Zustand: AI Provider/Model + CLI Status
 │   │   ├── layout.ts             # Zustand: Panel Sizes
 │   │   └── settings.ts           # Zustand: All Settings
 │   ├── hooks/
-│   │   ├── useAI.ts              # Vercel AI SDK Wrapper
+│   │   ├── useAI.ts              # Vercel AI SDK + CLI Transport
 │   │   ├── useLSP.ts
 │   │   ├── useMCP.ts
 │   │   └── useGit.ts
@@ -346,7 +421,7 @@ pragma/
 │   │   │   ├── ollama.ts
 │   │   │   └── custom.ts
 │   │   └── theme/
-│   │       ├── loader.ts
+   │   │       ├── loader.ts
 │   │       └── builtin/          # Built-in Theme JSONs
 │   └── main.tsx
 ├── src-tauri/
@@ -357,7 +432,8 @@ pragma/
 │   │   │   ├── git.rs            # Git Commands
 │   │   │   ├── lsp.rs            # LSP Commands
 │   │   │   ├── mcp.rs            # MCP Commands
-│   │   │   ├── ai.rs             # AI Proxy Commands
+│   │   │   ├── ai.rs             # AI Proxy Commands (API Key / Ollama)
+│   │   │   ├── cli.rs            # CLI Provider Commands
 │   │   │   └── fs.rs             # File System Commands
 │   │   ├── mcp/
 │   │   │   ├── manager.rs        # Process Lifecycle
@@ -369,6 +445,10 @@ pragma/
 │   │   │   ├── bridge.rs         # stdio LSP Bridge
 │   │   │   └── registry.rs       # Known LSP Servers
 │   │   └── ai/
+│   │       ├── cli/              # CLI Provider System
+│   │       │   ├── manifest.rs   # Provider Manifests
+│   │       │   ├── manager.rs    # CLI Lifecycle
+│   │       │   └── mod.rs
 │   │       ├── provider.rs       # Trait + Registry
 │   │       └── keychain.rs       # Secure Key Storage
 │   └── Cargo.toml
@@ -464,13 +544,18 @@ pragma/
 
 ### Phase 3 — AI Foundation (Woche 7–9)
 
-**Ziel:** AI Chat + erste Provider funktionieren
+**Ziel:** AI Chat + alle 4 Auth-Säulen funktionieren
 
-- [ ] AI Provider Trait in Rust
-- [ ] OpenAI + Anthropic + Ollama implementieren
-- [ ] Tauri Keychain für API-Keys
-- [ ] AI Settings UI (Key eingeben, Provider wählen)
-- [ ] AI Chat Panel mit Vercel AI SDK
+- [x] AI Provider Trait in Rust
+- [x] OpenAI + Anthropic + Ollama implementieren
+- [x] Tauri Keychain für API-Keys
+- [x] AI Chat Panel mit Vercel AI SDK
+- [x] Resizable Panel (nicht Overlay)
+- [x] Keyboard Toggle (Ctrl/Cmd+Shift+A)
+- [x] Nachrichten-Bubbles + Auto-Scroll
+- [x] **CLI Provider System:** Manifest + Manager + Commands
+- [x] **CLI Provider:** Claude Code, OpenAI Codex, Kimi Code, Gemini CLI
+- [ ] AI Settings UI vollständig (3 Tabs: CLI / API Key / Local)
 - [ ] Streaming Response + Markdown-Rendering
 - [ ] Codebase-Context: `@filename` Referenzen
 - [ ] AI Switcher Sidebar-Panel
@@ -479,13 +564,14 @@ pragma/
 
 ### Phase 4 — AI Advanced (Woche 10–12)
 
-**Ziel:** Alle 5 AI-Features live
+**Ziel:** Alle 5 AI-Features live + CLI Streaming
 
 - [ ] Inline Ghost-Text (CodeMirror ViewPlugin)
 - [ ] Ghost-Text Debounce + Accept/Reject
 - [ ] Terminal AI Command Suggestions
 - [ ] AI Diff/Edit (Split-Diff + Accept/Reject)
-- [ ] DeepSeek, Kimi, Gemini, Custom-Base-URL Provider
+- [ ] CLI Streaming (echte Stream-Parser pro Provider)
+- [ ] DeepSeek, Kimi API, Custom-Base-URL Provider
 - [ ] GitHub Copilot OAuth Flow
 - [ ] Provider-Profile (Fast/Smart/Local)
 

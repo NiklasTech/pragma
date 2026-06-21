@@ -1,0 +1,31 @@
+import { useEffect } from "react";
+import { useSettingsStore } from "@/shared/stores/settings";
+import { useTerminalStore } from "@/shared/stores/terminal";
+
+export function useTerminalSettingsSync() {
+  const terminalSettings = useSettingsStore((s) => s.terminal);
+  const setDefaultShell = useTerminalStore((s) => s.setDefaultShell);
+  const setFontSize = useTerminalStore((s) => s.setFontSize);
+  const setFontFamily = useTerminalStore((s) => s.setFontFamily);
+  const setScrollback = useTerminalStore((s) => s.setScrollback);
+  const setAiSuggestions = useTerminalStore((s) => s.setAiSuggestions);
+
+  useEffect(() => {
+    setDefaultShell(terminalSettings.shell);
+    setFontSize(terminalSettings.fontSize);
+    setFontFamily(terminalSettings.fontFamily);
+    setScrollback(terminalSettings.scrollback);
+    setAiSuggestions(terminalSettings.aiSuggestions);
+  }, [
+    terminalSettings.shell,
+    terminalSettings.fontSize,
+    terminalSettings.fontFamily,
+    terminalSettings.scrollback,
+    terminalSettings.aiSuggestions,
+    setDefaultShell,
+    setFontSize,
+    setFontFamily,
+    setScrollback,
+    setAiSuggestions,
+  ]);
+}
