@@ -1,11 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
+import { SettingSection } from "./ui/SettingSection";
+import { SettingRow } from "./ui/SettingRow";
 
 export function TerminalSettings() {
   const { terminal, setTerminalSettings } = useSettingsStore();
@@ -24,30 +24,26 @@ export function TerminalSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Shell</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label>Default Shell</Label>
+    <div className="flex flex-col gap-6">
+      <SettingSection title="Shell">
+        <SettingRow
+          label="Default Shell"
+          description="Path to the shell executable. Leave empty to use the system default."
+          control={
             <Input
               value={terminal.shell}
               onChange={(e) => update({ shell: e.target.value })}
               placeholder="/bin/zsh"
+              className="max-w-[180px]"
             />
-          </div>
-        </CardContent>
-      </Card>
+          }
+        />
+      </SettingSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
+      <SettingSection title="Appearance">
+        <div className="grid grid-cols-3 gap-3 py-2.5">
           <div className="flex flex-col gap-1.5">
-            <Label>Font Size</Label>
+            <span className="text-ui-sm text-fg-default">Font Size</span>
             <Input
               type="number"
               min={8}
@@ -56,18 +52,16 @@ export function TerminalSettings() {
               onChange={(e) => update({ fontSize: Number(e.target.value) })}
             />
           </div>
-
           <div className="flex flex-col gap-1.5">
-            <Label>Font Family</Label>
+            <span className="text-ui-sm text-fg-default">Font Family</span>
             <Input
               value={terminal.fontFamily}
               onChange={(e) => update({ fontFamily: e.target.value })}
               placeholder="JetBrains Mono"
             />
           </div>
-
           <div className="flex flex-col gap-1.5">
-            <Label>Scrollback Lines</Label>
+            <span className="text-ui-sm text-fg-default">Scrollback</span>
             <Input
               type="number"
               min={1000}
@@ -76,26 +70,21 @@ export function TerminalSettings() {
               onChange={(e) => update({ scrollback: Number(e.target.value) })}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SettingSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>AI</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <Label className="cursor-pointer" htmlFor="terminal-ai-suggestions">
-              Command Suggestions
-            </Label>
+      <SettingSection title="AI">
+        <SettingRow
+          label="Command Suggestions"
+          description="Show AI-powered command suggestions while typing"
+          control={
             <Switch
-              id="terminal-ai-suggestions"
               checked={terminal.aiSuggestions}
               onCheckedChange={(v) => update({ aiSuggestions: v })}
             />
-          </div>
-        </CardContent>
-      </Card>
+          }
+        />
+      </SettingSection>
     </div>
   );
 }

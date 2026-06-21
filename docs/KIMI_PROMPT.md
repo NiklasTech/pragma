@@ -109,7 +109,7 @@ Nach dem `<thinking>`-Block exakt diese Struktur:
 4. **Verification**: Konkrete Prüfschritte ausgeben:
    - `vp check` (Oxlint + Oxfmt + TypeCheck)
    - `vp test` (Vitest)
-   - `vp run tauri:dev` (App starten)
+   - `vpr tauri dev` (App starten)
 
 ### Phase 4: Fallback & Auto-Correction
 
@@ -158,15 +158,15 @@ Verfügbare Gewichte: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`
 
 ## Projekt-Befehle
 
-| Befehl               | Zweck                     |
-| -------------------- | ------------------------- |
-| `vp dev`             | Frontend Dev-Server       |
-| `vp run tauri:dev`   | Volle Tauri App           |
-| `vp check`           | Lint + Format + TypeCheck |
-| `vp test`            | Vitest                    |
-| `vp run tauri:build` | Release Build             |
-| `cargo check`        | Rust Check                |
-| `cargo fmt --check`  | Rust Format Check         |
+| Befehl              | Zweck                                    |
+| ------------------- | ---------------------------------------- |
+| `vp dev`            | Frontend Dev-Server                      |
+| `vpr tauri dev`     | Volle Tauri App starten (via Vite+-Task) |
+| `vpr tauri build`   | Tauri Release Build                      |
+| `vp check`          | Lint + Format + TypeCheck                |
+| `vp test`           | Vitest                                   |
+| `cargo check`       | Rust Check                               |
+| `cargo fmt --check` | Rust Format Check                        |
 
 ## Wichtige Pfade
 
@@ -186,4 +186,4 @@ Verfügbare Gewichte: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`
 
 ---
 
-Stand: 2026-06-01 | Projekt: Pragma
+Stand: 2026-06-21 | Projekt: Pragma

@@ -1,5 +1,5 @@
-import { useRef, useCallback } from "react";
-import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
+import { useRef } from "react";
+import type { PanelImperativeHandle } from "react-resizable-panels";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -21,16 +21,6 @@ export function Layout() {
 
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
 
-  const handleSidebarResize = useCallback(
-    (size: PanelSize) => {
-      const px = size.inPixels;
-      if (px > 0) {
-        setSidebarWidth(px);
-      }
-    },
-    [setSidebarWidth],
-  );
-
   const showSidebar = sidebar.position !== "hidden";
   const aiDrawerLeft = ai.mode === "drawer-left";
   const aiDrawerRight = ai.mode === "drawer-right";
@@ -46,7 +36,16 @@ export function Layout() {
         {showSidebar && sidebar.position === "left" && <SidebarDock />}
 
         {sidebarExpanded ? (
-          <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1 overflow-hidden">
+          <ResizablePanelGroup
+            orientation="horizontal"
+            className="min-h-0 flex-1 overflow-hidden"
+            onLayoutChanged={() => {
+              const size = sidebarRef.current?.getSize().inPixels;
+              if (size && size > 0) {
+                setSidebarWidth(size);
+              }
+            }}
+          >
             {sidebar.position === "left" && (
               <>
                 <ResizablePanel
@@ -54,7 +53,6 @@ export function Layout() {
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
                   minSize={`${180}px`}
-                  onResize={handleSidebarResize}
                 >
                   <SidebarContent />
                 </ResizablePanel>
@@ -74,7 +72,6 @@ export function Layout() {
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
                   minSize={`${180}px`}
-                  onResize={handleSidebarResize}
                 >
                   <SidebarContent />
                 </ResizablePanel>
