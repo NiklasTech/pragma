@@ -7,7 +7,7 @@ import { Compartment } from "@codemirror/state";
 
 export const themeCompartment = new Compartment();
 
-export type EditorThemeName = "pragma-dark" | "one-dark";
+export type EditorThemeName = "dark-default" | "one-dark";
 
 const pragmaDarkBase = EditorView.theme({
   "&": {
@@ -131,7 +131,7 @@ export const pragmaDarkTheme: Extension[] = [
 ];
 
 const themeRegistry: Record<EditorThemeName, Extension[]> = {
-  "pragma-dark": pragmaDarkTheme,
+  "dark-default": pragmaDarkTheme,
   "one-dark": [oneDark],
 };
 
@@ -139,4 +139,4 @@ export function getTheme(name: EditorThemeName): Extension[] {
   return themeRegistry[name] ?? pragmaDarkTheme;
 }
 
-export const defaultThemeName: EditorThemeName = "pragma-dark";
+export const defaultThemeName: EditorThemeName = "dark-default";

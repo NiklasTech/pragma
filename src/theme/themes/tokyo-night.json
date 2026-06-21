@@ -3,56 +3,56 @@
   "format": "pragma-theme-v1",
 
   "metadata": {
-    "id": "pragma-dark",
-    "name": "Pragma Dark",
+    "id": "tokyo-night",
+    "name": "Tokyo Night",
     "author": "Pragma Team",
-    "description": "A deep, high-contrast dark theme with electric blue accents. Built for focus.",
-    "version": "2.0.0",
+    "description": "A dark, low-contrast theme inspired by the Tokyo Night palette.",
+    "version": "1.0.0",
     "license": "MIT"
   },
 
   "appearance": {
     "defaultMode": "dark",
     "supportedModes": ["dark"],
-    "preferredEditorTheme": "pragma-dark"
+    "preferredEditorTheme": "dark-default"
   },
 
   "tokens": {
     "colors": {
       "background": {
-        "root": "#09090b",
-        "surface": "#0f0f11",
-        "elevated": "#151519",
-        "input": "#1a1a1f",
-        "hover": "rgba(255, 255, 255, 0.05)",
-        "active": "rgba(43, 127, 255, 0.10)",
-        "overlay": "rgba(0, 0, 0, 0.65)"
+        "root": "#1a1b26",
+        "surface": "#16161e",
+        "elevated": "#1f2336",
+        "input": "#24283b",
+        "hover": "rgba(192, 202, 245, 0.05)",
+        "active": "rgba(122, 162, 247, 0.12)",
+        "overlay": "rgba(0, 0, 0, 0.55)"
       },
       "foreground": {
-        "default": "#f4f4f5",
-        "muted": "#a1a1aa",
-        "subtle": "#71717a",
-        "inverse": "#09090b"
+        "default": "#c0caf5",
+        "muted": "#a9b1d6",
+        "subtle": "#565f89",
+        "inverse": "#1a1b26"
       },
       "accent": {
-        "default": "#2b7fff",
-        "subtle": "rgba(43, 127, 255, 0.12)",
-        "glow": "rgba(43, 127, 255, 0.35)"
+        "default": "#7aa2f7",
+        "subtle": "rgba(122, 162, 247, 0.15)",
+        "glow": "rgba(122, 162, 247, 0.35)"
       },
       "border": {
-        "default": "rgba(255, 255, 255, 0.08)",
-        "subtle": "rgba(255, 255, 255, 0.05)",
-        "focus": "rgba(43, 127, 255, 0.50)"
+        "default": "rgba(192, 202, 245, 0.10)",
+        "subtle": "rgba(192, 202, 245, 0.06)",
+        "focus": "rgba(122, 162, 247, 0.50)"
       },
       "status": {
-        "success": "#22c55e",
-        "successBg": "rgba(34, 197, 94, 0.12)",
-        "warning": "#f59e0b",
-        "warningBg": "rgba(245, 158, 11, 0.12)",
-        "error": "#ef4444",
-        "errorBg": "rgba(239, 68, 68, 0.12)",
-        "info": "#3b82f6",
-        "infoBg": "rgba(59, 130, 246, 0.12)"
+        "success": "#9ece6a",
+        "successBg": "rgba(158, 206, 106, 0.12)",
+        "warning": "#e0af68",
+        "warningBg": "rgba(224, 175, 104, 0.12)",
+        "error": "#f7768e",
+        "errorBg": "rgba(247, 118, 142, 0.12)",
+        "info": "#7aa2f7",
+        "infoBg": "rgba(122, 162, 247, 0.12)"
       },
       "git": {
         "added": "{colors.status.success}",
@@ -64,17 +64,17 @@
         "untracked": "{colors.status.info}",
         "untrackedBg": "{colors.status.infoBg}",
         "ignored": "{colors.foreground.subtle}",
-        "conflict": "#c084fc"
+        "conflict": "#bb9af7"
       },
       "thread": {
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(43, 127, 255, 0.25)",
+      "selection": "rgba(122, 162, 247, 0.25)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "rgba(255, 255, 255, 0.12)",
-        "thumbHover": "rgba(255, 255, 255, 0.22)"
+        "thumb": "rgba(192, 202, 245, 0.12)",
+        "thumbHover": "rgba(192, 202, 245, 0.22)"
       }
     },
 
@@ -89,17 +89,17 @@
         "activeBackground": "{colors.background.surface}"
       },
       "line": {
-        "active": "rgba(255, 255, 255, 0.03)",
-        "highlight": "rgba(43, 127, 255, 0.06)"
+        "active": "rgba(192, 202, 245, 0.03)",
+        "highlight": "rgba(122, 162, 247, 0.06)"
       },
       "syntax": {
-        "keyword": "#c084fc",
-        "string": "#86efac",
+        "keyword": "#bb9af7",
+        "string": "#9ece6a",
         "comment": "{colors.foreground.subtle}",
-        "function": "#60a5fa",
+        "function": "#7aa2f7",
         "variable": "{colors.foreground.default}",
-        "number": "#fdba74",
-        "type": "#93c5fd",
+        "number": "#ff9e64",
+        "type": "#2ac3de",
         "tag": "{colors.status.error}",
         "attribute": "{colors.accent.default}",
         "property": "{colors.foreground.default}",
@@ -114,24 +114,24 @@
       "cursorAccent": "{colors.accent.default}",
       "selection": "{colors.selection}",
       "ansi": {
-        "black": "#09090b",
-        "red": "#ef4444",
-        "green": "#22c55e",
-        "yellow": "#f59e0b",
-        "blue": "#2b7fff",
-        "magenta": "#c084fc",
-        "cyan": "#22d3ee",
-        "white": "#a1a1aa"
+        "black": "#1a1b26",
+        "red": "#f7768e",
+        "green": "#9ece6a",
+        "yellow": "#e0af68",
+        "blue": "#7aa2f7",
+        "magenta": "#bb9af7",
+        "cyan": "#2ac3de",
+        "white": "#a9b1d6"
       },
       "ansiBright": {
-        "black": "#27272a",
-        "red": "#f87171",
-        "green": "#4ade80",
-        "yellow": "#fbbf24",
-        "blue": "#60a5fa",
-        "magenta": "#d8b4fe",
-        "cyan": "#67e8f9",
-        "white": "#f4f4f5"
+        "black": "#414868",
+        "red": "#ff8fab",
+        "green": "#c3e88d",
+        "yellow": "#ffdb96",
+        "blue": "#a0c6ff",
+        "magenta": "#d5b4fe",
+        "cyan": "#73daca",
+        "white": "#c0caf5"
       }
     },
 

@@ -17,12 +17,23 @@ export default defineConfig({
     host: mobile ? "0.0.0.0" : false,
     port: 5173,
     strictPort: true,
+    watch: {
+      ignored: ["**/src-tauri/**"],
+    },
   },
   envPrefix: ["VITE_", "TAURI_ENV_"],
   build: {
     target: mobile ? ["es2020", "chrome111", "safari13"] : ["chrome120"],
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+  },
+  run: {
+    tasks: {
+      tauri: {
+        command: "tauri",
+        cache: false,
+      },
+    },
   },
   staged: {
     "*": "vp check --fix",

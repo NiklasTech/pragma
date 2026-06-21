@@ -1,0 +1,197 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+
+  "metadata": {
+    "id": "gruvbox",
+    "name": "Gruvbox",
+    "author": "Pragma Team",
+    "description": "A warm, retro dark theme inspired by Gruvbox Dark.",
+    "version": "1.0.0",
+    "license": "MIT"
+  },
+
+  "appearance": {
+    "defaultMode": "dark",
+    "supportedModes": ["dark"],
+    "preferredEditorTheme": "dark-default"
+  },
+
+  "tokens": {
+    "colors": {
+      "background": {
+        "root": "#282828",
+        "surface": "#1d2021",
+        "elevated": "#3c3836",
+        "input": "#504945",
+        "hover": "rgba(235, 219, 178, 0.05)",
+        "active": "rgba(131, 165, 152, 0.15)",
+        "overlay": "rgba(0, 0, 0, 0.55)"
+      },
+      "foreground": {
+        "default": "#ebdbb2",
+        "muted": "#d5c4a1",
+        "subtle": "#928374",
+        "inverse": "#282828"
+      },
+      "accent": {
+        "default": "#83a598",
+        "subtle": "rgba(131, 165, 152, 0.15)",
+        "glow": "rgba(131, 165, 152, 0.35)"
+      },
+      "border": {
+        "default": "rgba(235, 219, 178, 0.10)",
+        "subtle": "rgba(235, 219, 178, 0.06)",
+        "focus": "rgba(131, 165, 152, 0.50)"
+      },
+      "status": {
+        "success": "#b8bb26",
+        "successBg": "rgba(184, 187, 38, 0.12)",
+        "warning": "#fabd2f",
+        "warningBg": "rgba(250, 189, 47, 0.12)",
+        "error": "#fb4934",
+        "errorBg": "rgba(251, 73, 52, 0.12)",
+        "info": "#83a598",
+        "infoBg": "rgba(131, 165, 152, 0.12)"
+      },
+      "git": {
+        "added": "{colors.status.success}",
+        "addedBg": "{colors.status.successBg}",
+        "modified": "{colors.status.warning}",
+        "modifiedBg": "{colors.status.warningBg}",
+        "deleted": "{colors.status.error}",
+        "deletedBg": "{colors.status.errorBg}",
+        "untracked": "{colors.status.info}",
+        "untrackedBg": "{colors.status.infoBg}",
+        "ignored": "{colors.foreground.subtle}",
+        "conflict": "#d3869b"
+      },
+      "thread": {
+        "default": "{colors.accent.subtle}",
+        "active": "{colors.accent.default}"
+      },
+      "selection": "rgba(131, 165, 152, 0.25)",
+      "scrollbar": {
+        "track": "transparent",
+        "thumb": "rgba(235, 219, 178, 0.12)",
+        "thumbHover": "rgba(235, 219, 178, 0.22)"
+      }
+    },
+
+    "editor": {
+      "background": "{colors.background.root}",
+      "foreground": "{colors.foreground.default}",
+      "selection": "{colors.selection}",
+      "cursor": "{colors.accent.default}",
+      "gutter": {
+        "background": "{colors.background.root}",
+        "foreground": "{colors.foreground.subtle}",
+        "activeBackground": "{colors.background.surface}"
+      },
+      "line": {
+        "active": "rgba(235, 219, 178, 0.03)",
+        "highlight": "rgba(131, 165, 152, 0.06)"
+      },
+      "syntax": {
+        "keyword": "#d3869b",
+        "string": "#b8bb26",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#83a598",
+        "variable": "{colors.foreground.default}",
+        "number": "#fe8019",
+        "type": "#8ec07c",
+        "tag": "{colors.status.error}",
+        "attribute": "{colors.accent.default}",
+        "property": "{colors.foreground.default}",
+        "operator": "{colors.foreground.muted}"
+      }
+    },
+
+    "terminal": {
+      "background": "{colors.background.root}",
+      "foreground": "{colors.foreground.default}",
+      "cursor": "{colors.accent.default}",
+      "cursorAccent": "{colors.accent.default}",
+      "selection": "{colors.selection}",
+      "ansi": {
+        "black": "#282828",
+        "red": "#cc241d",
+        "green": "#98971a",
+        "yellow": "#d79921",
+        "blue": "#458588",
+        "magenta": "#b16286",
+        "cyan": "#689d6a",
+        "white": "#a89984"
+      },
+      "ansiBright": {
+        "black": "#928374",
+        "red": "#fb4934",
+        "green": "#b8bb26",
+        "yellow": "#fabd2f",
+        "blue": "#83a598",
+        "magenta": "#d3869b",
+        "cyan": "#8ec07c",
+        "white": "#ebdbb2"
+      }
+    },
+
+    "layout": {
+      "headerHeight": 48,
+      "tabHeight": 34,
+      "statusbarHeight": 26,
+      "breadcrumbHeight": 28,
+      "inputbarHeight": 42,
+      "sidebarWidth": 260,
+      "sidebarCollapsedWidth": 48,
+      "sidebarMinWidth": 180,
+      "sidebarMaxWidth": 480,
+      "panelMinHeight": 160,
+      "panelDefaultHeight": 240,
+      "rowHeight": 26,
+      "padding": {
+        "xs": 4,
+        "sm": 6,
+        "md": 8,
+        "lg": 12
+      }
+    },
+
+    "typography": {
+      "ui": {
+        "2xs": "9px",
+        "xs": "11px",
+        "sm": "12px",
+        "base": "13px",
+        "md": "14px",
+        "lg": "16px"
+      },
+      "editor": "14px",
+      "lineHeight": {
+        "ui": {
+          "2xs": "12px",
+          "xs": "14px",
+          "sm": "16px",
+          "base": "20px",
+          "md": "22px",
+          "lg": "24px"
+        },
+        "editor": "22px"
+      }
+    },
+
+    "motion": {
+      "duration": {
+        "fast": "150ms",
+        "base": "200ms",
+        "slow": "250ms",
+        "layout": "300ms"
+      },
+      "ease": {
+        "default": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "out": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "inOut": "cubic-bezier(0.2, 0, 0, 1)",
+        "spring": "cubic-bezier(0.34, 1.56, 0.64, 1)"
+      }
+    }
+  }
+}

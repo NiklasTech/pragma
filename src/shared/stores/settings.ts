@@ -174,7 +174,7 @@ const defaultSettings: SettingsState = {
       copilot: { model: "gpt-4o" },
     },
   },
-  theme: "pragma-dark",
+  theme: "dark-default",
   themeMode: "dark",
   keymap: "default",
   layout: {
