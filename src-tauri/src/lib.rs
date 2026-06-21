@@ -87,6 +87,8 @@ pub fn run() {
             modules::workspace::workspace_save,
             modules::workspace::workspace_load,
             modules::workspace::workspace_delete,
+            modules::app_state::get_onboarding_completed,
+            modules::app_state::set_onboarding_completed,
             modules::run::run_list_configs,
             modules::run::run_start,
             modules::run::run_stop,

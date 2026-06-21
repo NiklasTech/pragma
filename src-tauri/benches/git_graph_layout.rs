@@ -7,7 +7,11 @@ fn generate_linear_commits(count: usize) -> Vec<CommitRef> {
         .enumerate()
         .map(|(i, sha)| CommitRef {
             sha: sha.clone(),
-            parents: if i == 0 { vec![] } else { vec![shas[i - 1].clone()] },
+            parents: if i == 0 {
+                vec![]
+            } else {
+                vec![shas[i - 1].clone()]
+            },
         })
         .collect()
 }

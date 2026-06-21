@@ -11,7 +11,10 @@ pub fn lane_color(index: usize) -> &'static str {
 #[derive(Clone, Debug, Serialize, PartialEq)]
 #[serde(tag = "kind")]
 pub enum GraphEdge {
-    Straight { lane: usize, color: String },
+    Straight {
+        lane: usize,
+        color: String,
+    },
     Merge {
         from_lane: usize,
         to_lane: usize,
@@ -46,13 +49,13 @@ fn trim_trailing(lanes: &mut Vec<Option<String>>) {
 }
 
 fn first_free_slot(lanes: &[Option<String>]) -> usize {
-    lanes.iter().position(|l| l.is_none()).unwrap_or(lanes.len())
+    lanes
+        .iter()
+        .position(|l| l.is_none())
+        .unwrap_or(lanes.len())
 }
 
-pub fn layout_graph(
-    commits: &[CommitRef],
-    previous: &GraphState,
-) -> (Vec<GraphRow>, GraphState) {
+pub fn layout_graph(commits: &[CommitRef], previous: &GraphState) -> (Vec<GraphRow>, GraphState) {
     let mut lanes = previous.lanes.clone();
     let mut rows = Vec::with_capacity(commits.len());
 

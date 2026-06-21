@@ -4,10 +4,8 @@ use std::fs;
 use std::path::PathBuf;
 
 fn create_temp_dir_with_files(count: usize) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!(
-        "pragma_bench_file_explorer_{}",
-        std::process::id()
-    ));
+    let dir =
+        std::env::temp_dir().join(format!("pragma_bench_file_explorer_{}", std::process::id()));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(&dir).unwrap();
 

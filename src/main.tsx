@@ -9,6 +9,18 @@ import { initRunConfigListeners } from "@/shared/stores/runConfig";
 
 initRunConfigListeners();
 
+if (import.meta.env.DEV) {
+  void (async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    (window as unknown as Record<string, unknown>).__pragma = {
+      resetOnboarding: async () => {
+        await invoke("set_onboarding_completed", { completed: false });
+        location.reload();
+      },
+    };
+  })();
+}
+
 if (import.meta.hot) {
   import.meta.hot.on("vite:beforeFullReload", () => {
     throw new Error("Pragma: full-reload blocked to preserve state");

@@ -9,12 +9,15 @@ import { useAIInit } from "@/shared/hooks/useAIInit";
 import { ThemeProvider } from "@/theme";
 import { useGlobalShortcuts, type ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
 import { useMemoryStats } from "@/shared/hooks/useMemoryStats";
+import { useOnboarding } from "@/shared/hooks/useOnboarding";
+import { Onboarding } from "@/components/onboarding/Onboarding";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
 
 export default function App() {
   useAIInit();
   useMemoryStats();
+  const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
@@ -65,6 +68,7 @@ export default function App() {
     <ThemeProvider>
       <WindowResizeHandles />
       <Layout />
+      {!onboardingLoading && !onboardingCompleted && <Onboarding />}
       <Toaster position="bottom-right" />
     </ThemeProvider>
   );
