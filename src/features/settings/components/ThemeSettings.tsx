@@ -41,7 +41,7 @@ export function ThemeSettings() {
   const handleDeleteCustom = (id: string) => {
     deleteCustomTheme(id);
     if (themeId === id) {
-      setTheme("pragma-dark");
+      setTheme("dark-default");
     }
     refreshCustomThemes();
   };
