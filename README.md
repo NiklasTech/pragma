@@ -174,11 +174,13 @@ git clone https://github.com/NiklasTech/pragma.git
 cd pragma
 
 # Install dependencies
-vp install
+pnpm install
 
 # Start the development app
-vp dev
+pnpm exec vp dev
 ```
+
+If you have the Vite+ CLI installed globally, you can also use `vp install` and `vp dev` without the `pnpm exec` prefix.
 
 ### Build a release binary
 
@@ -186,6 +188,8 @@ vp dev
 # Build the frontend and the Tauri application
 pnpm exec tauri build
 ```
+
+> **Note on `vp`:** Pragma uses [Vite+](https://viteplus.dev/) as its build toolchain. The `vp` command is available through `pnpm exec vp ...` after running `pnpm install`, or by installing Vite+ globally with `pnpm add -g vite-plus`.
 
 The resulting bundles are written to `src-tauri/target/release/bundle/`.
 
@@ -200,8 +204,8 @@ pnpm exec tauri build --bundles deb,rpm
 Before committing, run the full check suite:
 
 ```bash
-vp check
-vp test
+pnpm exec vp check
+pnpm exec vp test
 cd src-tauri && cargo test
 ```
 

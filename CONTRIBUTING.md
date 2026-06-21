@@ -21,22 +21,26 @@ git clone https://github.com/NiklasTech/pragma.git
 cd pragma
 
 # Install dependencies
-vp install
+pnpm install
 
 # Start the Tauri dev app
-vp dev
+pnpm exec vp dev
 ```
+
+If you have the Vite+ CLI installed globally, you can also use `vp install` and `vp dev` without the `pnpm exec` prefix.
 
 ### Useful Commands
 
 | Command                | Purpose                                   |
 | ---------------------- | ----------------------------------------- |
-| `vp dev`               | Start the Tauri development app           |
-| `vp build`             | Build the production frontend             |
-| `vp check`             | Run lint, format check and type check     |
-| `vp test`              | Run the test suite                        |
+| `pnpm exec vp dev`     | Start the Tauri development app           |
+| `pnpm exec vp build`   | Build the production frontend             |
+| `pnpm exec vp check`   | Run lint, format check and type check     |
+| `pnpm exec vp test`    | Run the test suite                        |
 | `cargo test`           | Run Rust tests (from `src-tauri/`)        |
 | `cargo fmt -- --check` | Check Rust formatting (from `src-tauri/`) |
+
+> If `vp` is installed globally, you can omit the `pnpm exec` prefix.
 
 > Learn more about Vite+ commands in [AGENTS.md](AGENTS.md) or at https://viteplus.dev/guide/.
 
@@ -108,8 +112,8 @@ chore(deps): bump tauri to 2.11.2
 1. Create a feature branch from `dev`.
 2. Make your changes and commit using Conventional Commits.
 3. Ensure the following checks pass before opening a PR:
-   - `vp check`
-   - `vp test`
+   - `pnpm exec vp check`
+   - `pnpm exec vp test`
    - `cargo test` (inside `src-tauri/`)
 4. Push your branch and open a pull request against `dev`.
 5. Fill out the pull request template.
@@ -125,6 +129,7 @@ chore(deps): bump tauri to 2.11.2
 - Use TypeScript strict mode.
 - Prefer functional components and hooks.
 - Use `pnpm exec vp check` to verify formatting, linting and types.
+- If Vite+ is installed globally, you can use `vp check` directly.
 - Keep components focused; extract reusable UI to `src/components/ui` or `src/shared/components/ui`.
 - State management: prefer Zustand stores in `src/shared/stores`.
 
