@@ -17,6 +17,7 @@
     "fs:allow-write-text-file",
     "shell:allow-open",
     "shell:allow-execute",
-    "store:default"
+    "store:default",
+    "log:default"
   ]
 }

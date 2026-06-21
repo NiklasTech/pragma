@@ -4,6 +4,7 @@ pub mod modules;
 
 use modules::pty::PtyManager;
 use modules::run::RunManager;
+use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,14 +15,23 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(log::LevelFilter::Info)
+                .target(Target::new(TargetKind::LogDir {
+                    file_name: Some("pragma".into()),
+                }))
+                .build(),
+        )
+        .setup(|_app| {
+            std::panic::set_hook(Box::new(|info| {
+                let location = info
+                    .location()
+                    .map(|loc| format!("{}:{}", loc.file(), loc.line()))
+                    .unwrap_or_else(|| "unknown".to_string());
+                log::error!("Panic at {}: {}", location, info);
+            }));
+
             if let Err(e) = modules::env_loader::load_shell_env() {
                 log::warn!("Failed to load shell environment: {e}");
             }
