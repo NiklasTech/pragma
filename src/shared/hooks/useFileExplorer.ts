@@ -56,16 +56,18 @@ export function useFileExplorer() {
       path = await open({ multiple: false, directory: true });
     } catch (err) {
       toast.error(`Failed to open dialog: ${String(err)}`);
-      return;
+      return false;
     }
-    if (typeof path !== "string" || path.length === 0) return;
+    if (typeof path !== "string" || path.length === 0) return false;
     store.setRootPath(path);
     store.setIsLoading(true);
     try {
       const entries = await invoke<DirEntry[]>("list_directory", { path });
       store.setTree(entries.map(entryToNode));
+      return true;
     } catch (err) {
       toast.error(String(err));
+      return false;
     } finally {
       store.setIsLoading(false);
     }

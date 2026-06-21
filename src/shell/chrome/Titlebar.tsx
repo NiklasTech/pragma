@@ -12,7 +12,9 @@ import {
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout";
+import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { RunConfigWidget } from "@/features/run-config/components";
 
 export function Titlebar() {
@@ -21,6 +23,8 @@ export function Titlebar() {
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
   const { tabs, activeTabId } = useEditorStore();
+  const shortcuts = useSettingsStore((s) => s.shortcuts);
+  const isMac = getIsMac();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const canSave = activeTab?.kind === "file" ? activeTab.isModified : false;
@@ -62,7 +66,7 @@ export function Titlebar() {
           type="button"
           onClick={openFile}
           className="flex h-8 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          title="Open File (Ctrl+O)"
+          title={`Open File (${formatShortcut(shortcuts["file.open"], isMac)})`}
         >
           <FolderOpen size={16} />
         </button>
@@ -72,7 +76,7 @@ export function Titlebar() {
           onClick={saveFile}
           disabled={!canSave}
           className="flex h-8 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
-          title="Save File (Ctrl+S)"
+          title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
         >
           <FloppyDisk size={16} />
         </button>
@@ -89,7 +93,7 @@ export function Titlebar() {
             type="button"
             onClick={() => addFloatingPanel("settings")}
             className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            title="Settings (Ctrl+,)"
+            title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
           >
             <Gear size={16} />
           </button>

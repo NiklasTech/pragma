@@ -1,5 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  getDefaultShortcuts,
+  getIsMac,
+  type ShortcutActionId,
+  type ShortcutBinding,
+  type ShortcutMap,
+} from "@/shared/lib/shortcuts";
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
 
@@ -111,6 +118,7 @@ export interface SettingsState {
   statusbar: StatusbarSettings;
   git: GitSettings;
   mcp: McpSettings;
+  shortcuts: ShortcutMap;
 }
 
 interface SettingsActions {
@@ -129,6 +137,9 @@ interface SettingsActions {
   removeMcpServer: (id: string) => void;
   importSettings: (partial: Partial<SettingsState>) => void;
   updateProvider: (provider: AIProvider, config: Partial<ProviderSettings>) => void;
+  setShortcut: (actionId: ShortcutActionId, binding: ShortcutBinding | null) => void;
+  resetShortcut: (actionId: ShortcutActionId) => void;
+  resetAllShortcuts: () => void;
   resetToDefaults: () => void;
 }
 
@@ -210,6 +221,7 @@ const defaultSettings: SettingsState = {
   mcp: {
     servers: [],
   },
+  shortcuts: getDefaultShortcuts(getIsMac()),
 };
 
 export const useSettingsStore = create<SettingsState & SettingsActions>()(
@@ -279,6 +291,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
           statusbar: { ...state.statusbar, ...partial.statusbar },
           git: { ...state.git, ...partial.git },
           mcp: { ...state.mcp, ...partial.mcp },
+          shortcuts: { ...state.shortcuts, ...partial.shortcuts },
         })),
 
       updateProvider: (provider, config) =>
@@ -291,6 +304,24 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
             },
           },
         })),
+
+      setShortcut: (actionId, binding) =>
+        set((state) => ({
+          shortcuts: { ...state.shortcuts, [actionId]: binding },
+        })),
+
+      resetShortcut: (actionId) =>
+        set((state) => ({
+          shortcuts: {
+            ...state.shortcuts,
+            [actionId]: getDefaultShortcuts(getIsMac())[actionId],
+          },
+        })),
+
+      resetAllShortcuts: () =>
+        set({
+          shortcuts: getDefaultShortcuts(getIsMac()),
+        }),
 
       resetToDefaults: () => set({ ...defaultSettings }),
     }),

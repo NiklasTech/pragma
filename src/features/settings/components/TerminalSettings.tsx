@@ -65,9 +65,13 @@ export function TerminalSettings() {
             <Input
               type="number"
               min={1000}
+              max={100000}
               step={1000}
               value={terminal.scrollback}
-              onChange={(e) => update({ scrollback: Number(e.target.value) })}
+              onChange={(e) => {
+                const value = Math.min(100000, Math.max(1000, Number(e.target.value)));
+                update({ scrollback: Number.isNaN(value) ? 10000 : value });
+              }}
             />
           </div>
         </div>
