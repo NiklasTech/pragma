@@ -11,10 +11,9 @@ import {
 } from "@/shared/components/ui/select";
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { PROVIDER_LABELS, PROVIDER_MODELS } from "@/shared/lib/ai-providers";
+import { PROVIDER_LABELS, PROVIDER_MODELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 
-const NEEDS_KEY: AIProvider[] = ["openai", "anthropic", "deepseek", "kimi", "gemini", "custom"];
 const ONBOARDING_PROVIDERS: AIProvider[] = [
   "anthropic",
   "openai",
@@ -40,7 +39,9 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
-    NEEDS_KEY.forEach((p) => void aiStore.loadKeyStatus(p));
+    ONBOARDING_PROVIDERS.filter((p) => !isKeyOptionalProvider(p)).forEach(
+      (p) => void aiStore.loadKeyStatus(p),
+    );
   }, [aiStore]);
 
   const handleProviderChange = (provider: AIProvider) => {
@@ -61,13 +62,18 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
     aiStore.setActiveModel(model);
   };
 
+  const handleBaseUrlChange = (baseUrl: string) => {
+    settingsStore.updateProvider(activeProvider, { baseUrl });
+    aiStore.updateProviderConfig(activeProvider, { baseUrl });
+  };
+
   const handleSaveKey = async () => {
     if (!keyInput.trim()) return;
     await aiStore.storeApiKey(activeProvider, keyInput.trim());
     setKeyInput("");
   };
 
-  const needsKey = NEEDS_KEY.includes(activeProvider);
+  const needsKey = !isKeyOptionalProvider(activeProvider);
   const apiKeyRef = aiStore.apiKeyRefs[activeProvider];
 
   return (
@@ -99,20 +105,41 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
           </Select>
         </div>
 
+        {(activeProvider === "ollama" || activeProvider === "custom") && (
+          <div className="space-y-1.5">
+            <Label>Base URL</Label>
+            <Input
+              value={providerConfig.baseUrl ?? ""}
+              onChange={(e) => handleBaseUrlChange(e.target.value)}
+              placeholder={
+                activeProvider === "ollama" ? "http://localhost:11434" : "http://127.0.0.1:1234/v1"
+              }
+            />
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <Label>Model</Label>
-          <Select value={providerConfig.model} onValueChange={(v) => handleModelChange(v ?? "")}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PROVIDER_MODELS[activeProvider].map((model) => (
-                <SelectItem key={model} value={model}>
-                  {model}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {activeProvider === "custom" ? (
+            <Input
+              value={providerConfig.model}
+              onChange={(e) => handleModelChange(e.target.value)}
+              placeholder="e.g. qwen/qwen3.5-9b"
+            />
+          ) : (
+            <Select value={providerConfig.model} onValueChange={(v) => handleModelChange(v ?? "")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROVIDER_MODELS[activeProvider].map((model) => (
+                  <SelectItem key={model} value={model}>
+                    {model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {needsKey && (

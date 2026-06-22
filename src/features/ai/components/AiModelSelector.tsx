@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { cn } from "@/shared/lib/utils";
 import {
   LOCAL_PROVIDER,
@@ -51,12 +52,14 @@ function isCLIAuthenticated(
 
 function isProviderAvailable(
   provider: AIProvider,
+  config: { baseUrl?: string; model: string },
   apiKeyRefs: Record<AIProvider, string | null>,
   activeCLIProvider: string | null,
   cliStatuses: Record<string, { authenticated?: boolean }>,
   copilotAuthenticated: boolean,
 ): boolean {
   if (provider === "ollama") return true;
+  if (provider === "custom") return Boolean(config.baseUrl) && config.model.length > 0;
   if (provider === "copilot") return copilotAuthenticated;
   if (apiKeyRefs[provider] !== null) return true;
   return isCLIAuthenticated(CLI_PROVIDER_IDS[provider], activeCLIProvider, cliStatuses);
@@ -74,8 +77,10 @@ export function AiModelSelector() {
     copilotAuth,
     setActiveProvider,
     setActiveModel,
+    setActiveCLIProvider,
     updateProviderConfig,
   } = useAIStore();
+  const settingsStore = useSettingsStore();
 
   const activeConfig = providers[activeProvider];
 
@@ -93,6 +98,7 @@ export function AiModelSelector() {
     (Object.keys(map) as AIProvider[]).forEach((p) => {
       map[p] = isProviderAvailable(
         p,
+        providers[p],
         apiKeyRefs,
         activeCLIProvider,
         cliStatuses,
@@ -106,17 +112,20 @@ export function AiModelSelector() {
 
   const handleProviderChange = (provider: AIProvider) => {
     setActiveProvider(provider);
+    setActiveCLIProvider(null);
     const models = PROVIDER_MODELS[provider];
     const fallback = providers[provider].model;
     const nextModel = models[0] ?? fallback ?? "";
     setActiveModel(nextModel);
     updateProviderConfig(provider, { model: nextModel });
+    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
   };
 
   const handleModelChange = (model: string | null) => {
     if (!model) return;
     setActiveModel(model);
     updateProviderConfig(activeProvider, { model });
+    settingsStore.setAISettings({ defaultModel: model });
   };
 
   const handleModeChange = (mode: ProviderMode) => {
@@ -125,8 +134,13 @@ export function AiModelSelector() {
       const fallback = providers[LOCAL_PROVIDER].model;
       const nextModel = models[0] ?? fallback ?? "";
       setActiveProvider(LOCAL_PROVIDER);
+      setActiveCLIProvider(null);
       setActiveModel(nextModel);
       updateProviderConfig(LOCAL_PROVIDER, { model: nextModel });
+      settingsStore.setAISettings({
+        defaultProvider: LOCAL_PROVIDER,
+        defaultModel: nextModel,
+      });
       return;
     }
 
@@ -134,6 +148,7 @@ export function AiModelSelector() {
     if (!targetModel) return;
     setActiveModel(targetModel);
     updateProviderConfig(activeProvider, { model: targetModel });
+    settingsStore.setAISettings({ defaultModel: targetModel });
   };
 
   const currentMode: ProviderMode | null = useMemo(() => {

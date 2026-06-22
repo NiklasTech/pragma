@@ -33,6 +33,13 @@ export const MODE_LABELS: Record<ProviderMode, string> = {
 export const LOCAL_PROVIDER: AIProvider = "ollama";
 
 /**
+ * Providers that can be used without an API key (e.g. local servers).
+ */
+export function isKeyOptionalProvider(provider: AIProvider): boolean {
+  return provider === "ollama" || provider === "custom";
+}
+
+/**
  * Per-provider model recommendation for Fast / Smart modes.
  * Local mode always switches to {@link LOCAL_PROVIDER}.
  */

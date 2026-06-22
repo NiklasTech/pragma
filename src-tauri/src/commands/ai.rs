@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+use std::sync::Mutex;
+
 use serde::{Deserialize, Serialize};
 
 use tauri::ipc::Channel;
+use tokio_util::sync::CancellationToken;
 
 use crate::ai::{
     config::ProviderConfig,
@@ -22,6 +26,7 @@ pub struct ChatRequest {
     pub messages: Vec<ChatMessageInput>,
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
+    pub stream_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -68,6 +73,24 @@ pub struct StoreKeyRequest {
 #[derive(Debug, Deserialize)]
 pub struct ProviderRequest {
     pub provider: String,
+}
+
+static ACTIVE_STREAM_CANCELLATIONS: Mutex<Option<HashMap<String, CancellationToken>>> =
+    Mutex::new(None);
+
+fn register_stream_cancellation(stream_id: &str) -> CancellationToken {
+    let token = CancellationToken::new();
+    let mut guard = ACTIVE_STREAM_CANCELLATIONS.lock().unwrap();
+    let map = guard.get_or_insert_with(HashMap::new);
+    map.insert(stream_id.to_string(), token.clone());
+    token
+}
+
+fn unregister_stream_cancellation(stream_id: &str) {
+    let mut guard = ACTIVE_STREAM_CANCELLATIONS.lock().unwrap();
+    if let Some(map) = guard.as_mut() {
+        map.remove(stream_id);
+    }
 }
 
 fn mask_key(key: &str) -> String {
@@ -229,6 +252,113 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
             finish_reason: "stop".to_string(),
         }],
     })
+}
+
+// ─── Test Connection ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+pub struct TestConnectionResponse {
+    pub ok: bool,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionResponse, String> {
+    if req.provider.is_empty() {
+        return Ok(TestConnectionResponse {
+            ok: false,
+            error: Some("provider is required".to_string()),
+        });
+    }
+    if req.model.is_empty() {
+        return Ok(TestConnectionResponse {
+            ok: false,
+            error: Some("model is required".to_string()),
+        });
+    }
+
+    let config = ProviderConfig {
+        base_url: req.base_url.unwrap_or_default(),
+        model: req.model,
+        timeout_seconds: 30,
+        api_key: None,
+        extra_headers: None,
+    };
+
+    let messages: Vec<Message> = req
+        .messages
+        .into_iter()
+        .map(|m| Message {
+            role: match m.role.as_str() {
+                "system" => Role::System,
+                "assistant" => Role::Assistant,
+                _ => Role::User,
+            },
+            content: m.content,
+        })
+        .collect();
+
+    // Ensure at least one user message exists; use a tiny prompt.
+    let messages = if messages.is_empty() {
+        vec![Message {
+            role: Role::User,
+            content: "hi".to_string(),
+        }]
+    } else {
+        messages
+    };
+
+    let completion_req = CompletionRequest {
+        messages,
+        temperature: Some(0.1),
+        max_tokens: Some(8),
+        stream: false,
+    };
+
+    let result = match req.provider.as_str() {
+        "openai" | "deepseek" | "kimi" => {
+            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
+                .map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "custom" => {
+            let provider = CustomProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "gemini" => {
+            let provider = GeminiProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "anthropic" => {
+            let provider = AnthropicProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "ollama" => {
+            let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "copilot" => {
+            let provider = CopilotProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        _ => {
+            return Ok(TestConnectionResponse {
+                ok: false,
+                error: Some(format!("unsupported provider: {}", req.provider)),
+            })
+        }
+    };
+
+    match result {
+        Ok(_) => Ok(TestConnectionResponse {
+            ok: true,
+            error: None,
+        }),
+        Err(e) => Ok(TestConnectionResponse {
+            ok: false,
+            error: Some(e.to_string()),
+        }),
+    }
 }
 
 // ─── Inline Completion ───────────────────────────────────────────────────────
@@ -421,46 +551,81 @@ When showing file contents, preserve the full code and include the language tag.
         _ => return Err(format!("unsupported provider: {}", req.provider)),
     };
 
-    let mut rx = provider
-        .stream_chunks(completion_req)
-        .await
-        .map_err(|e| e.to_string())?;
+    let stream_id = req.stream_id.clone().unwrap_or_default();
+    let cancel_token = if stream_id.is_empty() {
+        None
+    } else {
+        Some(register_stream_cancellation(&stream_id))
+    };
 
-    while let Some(result) = rx.recv().await {
-        match result {
-            Ok(CompletionChunk {
-                content,
-                finish_reason,
-            }) => {
-                let done = finish_reason.as_deref() == Some("stop");
-                let text = if content.is_empty() && !done {
-                    None
-                } else {
-                    Some(content)
-                };
-                let chunk = StreamChunk {
-                    text,
-                    error: None,
-                    done,
-                };
-                if channel.send(chunk).is_err() {
-                    break;
-                }
-                if done {
-                    break;
-                }
-            }
-            Err(e) => {
-                let _ = channel.send(StreamChunk {
-                    text: None,
-                    error: Some(e.to_string()),
-                    done: false,
-                });
+    let result: Result<(), String> = async {
+        let mut rx = provider
+            .stream_chunks_with_cancel(completion_req, cancel_token.clone())
+            .await
+            .map_err(|e| e.to_string())?;
+
+        while let Some(result) = rx.recv().await {
+            if cancel_token.as_ref().is_some_and(|t| t.is_cancelled()) {
                 break;
             }
+            match result {
+                Ok(CompletionChunk {
+                    content,
+                    finish_reason,
+                }) => {
+                    let done = finish_reason.as_deref() == Some("stop");
+                    let text = if content.is_empty() && !done {
+                        None
+                    } else {
+                        Some(content)
+                    };
+                    let chunk = StreamChunk {
+                        text,
+                        error: None,
+                        done,
+                    };
+                    if channel.send(chunk).is_err() {
+                        break;
+                    }
+                    if done {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    let _ = channel.send(StreamChunk {
+                        text: None,
+                        error: Some(e.to_string()),
+                        done: false,
+                    });
+                    break;
+                }
+            }
         }
+
+        Ok(())
+    }
+    .await;
+
+    if !stream_id.is_empty() {
+        unregister_stream_cancellation(&stream_id);
     }
 
+    result
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CancelChatStreamRequest {
+    pub stream_id: String,
+}
+
+#[tauri::command]
+pub fn cancel_ai_chat_stream(req: CancelChatStreamRequest) -> Result<(), String> {
+    let mut guard = ACTIVE_STREAM_CANCELLATIONS.lock().unwrap();
+    if let Some(map) = guard.as_mut() {
+        if let Some(token) = map.get(&req.stream_id) {
+            token.cancel();
+        }
+    }
     Ok(())
 }
 

@@ -102,7 +102,7 @@ export function AIChatHost() {
       >
         <ResizeHandle
           className={cn("top-0 bottom-0 w-1 cursor-ew-resize", isLeft ? "right-0" : "left-0")}
-          onResize={(delta) => setAISize(ai.size + (isLeft ? -delta : delta))}
+          onResize={(delta) => setAISize(ai.size + (isLeft ? delta : -delta))}
         />
         <div className="flex shrink-0 items-center gap-2 px-3 py-2 border-b border-border/60">
           <AIHeader />
@@ -137,7 +137,7 @@ export function AIChatHost() {
     >
       <ResizeHandle
         className="left-0 right-0 top-0 h-1 cursor-ns-resize"
-        onResize={(delta) => setAISize(ai.size - delta)}
+        onResize={(delta) => setAISize(ai.size + delta)}
       />
       <div className="flex shrink-0 items-center gap-2 px-3 py-2 border-b border-border/60">
         <AIHeader />

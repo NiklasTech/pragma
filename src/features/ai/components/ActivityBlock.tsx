@@ -41,7 +41,7 @@ export function ActivityBlock({
       {open && (
         <div
           data-state={streaming ? "streaming" : "done"}
-          className="border-t border-border/30 px-3 py-2 data-[state=streaming]:animate-pulse"
+          className="max-h-48 overflow-y-auto border-t border-border/30 px-3 py-2 data-[state=streaming]:animate-pulse"
         >
           {children}
         </div>

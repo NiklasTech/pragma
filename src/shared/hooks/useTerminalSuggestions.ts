@@ -134,6 +134,7 @@ export function useTerminalSuggestions({
   const fetchSuggestion = useCallback(
     async (currentInput: string) => {
       if (!enabled || !term) return;
+      if (provider === "custom" && !baseUrl) return;
 
       const lastOutput = lastOutputRef.current.slice(-MAX_OUTPUT_LEN);
 

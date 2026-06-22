@@ -14,7 +14,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { invoke } from "@tauri-apps/api/core";
-import { PROVIDER_LABELS, PROVIDER_MODELS } from "@/shared/lib/ai-providers";
+import { PROVIDER_LABELS, PROVIDER_MODELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
 import {
   Eye,
   EyeSlash,
@@ -30,7 +30,17 @@ import {
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 
-const NEEDS_KEY: AIProvider[] = ["openai", "anthropic", "deepseek", "kimi", "gemini", "custom"];
+function isProviderConfigured(
+  provider: AIProvider,
+  config: { baseUrl?: string; model: string },
+  apiKeyRef: string | null,
+  copilotAuthenticated: boolean,
+): boolean {
+  if (provider === "copilot") return copilotAuthenticated;
+  if (provider === "ollama") return Boolean(config.baseUrl);
+  if (provider === "custom") return Boolean(config.baseUrl) && config.model.length > 0;
+  return Boolean(apiKeyRef);
+}
 
 export function AISettings() {
   const aiStore = useAIStore();
@@ -39,6 +49,7 @@ export function AISettings() {
   const [keyInput, setKeyInput] = React.useState("");
   const [showKey, setShowKey] = React.useState(false);
   const [testStatus, setTestStatus] = React.useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [testError, setTestError] = React.useState<string | null>(null);
   const [installing, setInstalling] = React.useState<string | null>(null);
   const [loggingIn, setLoggingIn] = React.useState<string | null>(null);
 
@@ -51,10 +62,12 @@ export function AISettings() {
   const activeProvider = settingsStore.ai.defaultProvider;
   const providerConfig = settingsStore.ai.providers[activeProvider];
   const apiKeyRef = aiStore.apiKeyRefs[activeProvider];
-  const needsKey = NEEDS_KEY.includes(activeProvider);
+  const needsKey = !isKeyOptionalProvider(activeProvider);
 
   React.useEffect(() => {
-    NEEDS_KEY.forEach((p) => void aiStore.loadKeyStatus(p));
+    (Object.keys(PROVIDER_LABELS) as AIProvider[])
+      .filter((p) => !isKeyOptionalProvider(p))
+      .forEach((p) => void aiStore.loadKeyStatus(p));
     void aiStore.loadCLIManifests();
     void aiStore.loadCLIStatuses();
     void aiStore.loadCopilotAuthStatus();
@@ -62,14 +75,18 @@ export function AISettings() {
   }, []);
 
   const handleProviderChange = (provider: AIProvider) => {
-    settingsStore.setAISettings({ defaultProvider: provider });
     const models = PROVIDER_MODELS[provider];
+    const nextModel = models[0] ?? settingsStore.ai.providers[provider].model;
+    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
     if (models.length > 0) {
-      settingsStore.updateProvider(provider, { model: models[0] });
-      settingsStore.setAISettings({ defaultModel: models[0] });
+      settingsStore.updateProvider(provider, { model: nextModel });
     }
+    aiStore.setActiveProvider(provider);
+    aiStore.setActiveModel(nextModel);
+    aiStore.updateProviderConfig(provider, { model: nextModel });
     setKeyInput("");
     setTestStatus("idle");
+    setTestError(null);
     setCopilotError(null);
     setCopilotUserCode(null);
     setCopilotVerificationUri(null);
@@ -78,10 +95,13 @@ export function AISettings() {
   const handleModelChange = (model: string) => {
     settingsStore.updateProvider(activeProvider, { model });
     settingsStore.setAISettings({ defaultModel: model });
+    aiStore.setActiveModel(model);
+    aiStore.updateProviderConfig(activeProvider, { model });
   };
 
   const handleBaseUrlChange = (baseUrl: string) => {
     settingsStore.updateProvider(activeProvider, { baseUrl });
+    aiStore.updateProviderConfig(activeProvider, { baseUrl });
   };
 
   const handleSaveKey = async () => {
@@ -97,11 +117,25 @@ export function AISettings() {
 
   const handleTest = async () => {
     setTestStatus("loading");
+    setTestError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setTestStatus("ok");
-    } catch {
+      const result = await invoke<{ ok: boolean; error?: string }>("ai_test_connection", {
+        req: {
+          provider: activeProvider,
+          model: providerConfig.model,
+          base_url: providerConfig.baseUrl,
+          messages: [{ role: "user", content: "hi" }],
+        },
+      });
+      if (result.ok) {
+        setTestStatus("ok");
+      } else {
+        setTestStatus("error");
+        setTestError(result.error ?? "Connection failed");
+      }
+    } catch (err) {
       setTestStatus("error");
+      setTestError(String(err));
     }
   };
 
@@ -124,7 +158,18 @@ export function AISettings() {
   };
 
   const handleLogoutCLI = async (providerId: string) => {
-    await aiStore.logoutCLI(providerId);
+    try {
+      await aiStore.logoutCLI(providerId);
+    } catch (err) {
+      // Some CLIs (e.g. Kimi Code) do not expose a logout command.
+      // We still want to let the user deactivate the provider locally.
+      if (!String(err).includes("logout not supported")) {
+        console.error("[CLI Logout Error]", err);
+      }
+    } finally {
+      aiStore.setActiveCLIProvider(null);
+      await aiStore.loadCLIStatuses();
+    }
   };
 
   const handleSelectCLI = (providerId: string) => {
@@ -196,12 +241,12 @@ export function AISettings() {
     }
   };
 
-  const isProviderConfigured = (provider: AIProvider): boolean => {
-    if (provider === "copilot") return aiStore.copilotAuth.authenticated;
-    if (provider === "ollama") return Boolean(providerConfig.baseUrl);
-    if (NEEDS_KEY.includes(provider)) return Boolean(apiKeyRef);
-    return false;
-  };
+  const configured = isProviderConfigured(
+    activeProvider,
+    providerConfig,
+    apiKeyRef,
+    aiStore.copilotAuth.authenticated,
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -231,11 +276,11 @@ export function AISettings() {
         <div className="flex items-center justify-between rounded-md border border-border/30 bg-bg-root px-3 py-2">
           <div className="flex items-center gap-2">
             <span
-              className={`size-2 rounded-full ${isProviderConfigured(activeProvider) ? "bg-status-success" : "bg-fg-subtle"}`}
+              className={`size-2 rounded-full ${configured ? "bg-status-success" : "bg-fg-subtle"}`}
             />
             <span className="text-ui-sm text-fg-default">{PROVIDER_LABELS[activeProvider]}</span>
             <span className="text-ui-xs text-fg-muted">
-              {isProviderConfigured(activeProvider) ? "Configured" : "Not configured"}
+              {configured ? "Configured" : "Not configured"}
             </span>
           </div>
           {testStatus === "ok" && (
@@ -403,15 +448,16 @@ export function AISettings() {
           </div>
         )}
 
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex flex-col items-start gap-2 pt-1">
           <Button
             size="sm"
             variant="outline"
             onClick={handleTest}
-            disabled={testStatus === "loading"}
+            disabled={testStatus === "loading" || !configured}
           >
             {testStatus === "loading" ? "Testing..." : "Test Connection"}
           </Button>
+          {testError && <p className="text-ui-xs text-status-error">{testError}</p>}
         </div>
       </SettingSection>
 

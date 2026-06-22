@@ -16,9 +16,9 @@ export function ReasoningBlock({ reasoning, streaming = false }: ReasoningBlockP
   return (
     <ActivityBlock
       icon={<Brain size={12} />}
-      title={streaming ? "Thinking…" : "Thought process"}
+      title="Thinking"
       streaming={streaming}
-      defaultOpen={streaming}
+      defaultOpen={false}
     >
       <pre className="whitespace-pre-wrap font-mono text-ui-xs leading-relaxed text-fg-muted">
         {trimmed}

@@ -39,7 +39,8 @@ sha2 = "0.10"
 keyring = "3.6.3"
 reqwest = { version = "0.13.3", features = ["json", "stream"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
-tokio = { version = "1.52.3", features = ["process", "rt-multi-thread"] }
+tokio = { version = "1.52.3", features = ["process", "rt-multi-thread", "macros"] }
+tokio-util = "0.7"
 shellwords = "1.1.0"
 tracing = "0.1.44"
 sysinfo = "0.34"
