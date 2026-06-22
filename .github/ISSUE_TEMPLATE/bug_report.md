@@ -6,36 +6,39 @@ labels: bug
 assignees: ""
 ---
 
-## Description
+## What happened?
 
-A clear and concise description of the bug.
+<!-- A clear and concise description of the bug. -->
 
-## Steps to Reproduce
+## How can we reproduce it?
 
-1. Go to '...'
-2. Click on '...'
-3. Scroll down to '...'
-4. See error
+<!-- Minimal steps that reliably trigger the bug. -->
 
-## Expected Behavior
+1.
+2.
+3.
 
-A clear and concise description of what you expected to happen.
+## What should have happened?
 
-## Actual Behavior
+<!-- What you expected to happen. -->
 
-What actually happened.
+## What actually happened?
 
-## Screenshots
+<!-- What actually happened. Include error messages or UI state. -->
 
-If applicable, add screenshots to help explain the problem.
+## Screenshots or screen recording
 
-## Environment
+<!-- If applicable, add screenshots or a short screen recording. -->
+
+## Your environment
+
+<!-- Fill in as much as you can. -->
 
 - OS: [e.g. macOS 15, Windows 11, Ubuntu 24.04]
-- Pragma version: [e.g. 0.0.0 or commit hash]
+- Pragma version or commit: [e.g. 0.0.0 or abc1234]
 - Node version: [e.g. 24.x]
 - Rust version: [e.g. 1.85]
 
-## Additional Context
+## Logs or additional context
 
-Add any other context about the problem here, such as logs or relevant configuration.
+<!-- Relevant logs, console output, or configuration. On desktop: check the terminal/devtools output if available. -->

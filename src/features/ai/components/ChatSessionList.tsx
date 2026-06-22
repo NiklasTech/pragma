@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { ClockCounterClockwise, Trash, ChatCircle } from "@phosphor-icons/react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import { useAIStore } from "@/shared/stores/ai";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
 
 function formatSessionDate(timestamp: number): string {
@@ -41,8 +42,8 @@ function getSessionPreview(session: {
 }
 
 export function ChatSessionList() {
-  const { chatSessions, activeChatSessionId, setActiveChatSession, removeChatSession } =
-    useAIStore();
+  const { chatSessions, activeChatSessionId, setActiveChatSession, deleteSession } = useAIStore();
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   const handleSelect = useCallback(
     (sessionId: string) => {
@@ -54,12 +55,10 @@ export function ChatSessionList() {
   const handleDelete = useCallback(
     (e: React.MouseEvent, sessionId: string) => {
       e.stopPropagation();
-      removeChatSession(sessionId);
+      void deleteSession(rootPath, sessionId);
     },
-    [removeChatSession],
+    [deleteSession, rootPath],
   );
-
-  const otherSessions = chatSessions.filter((s) => s.id !== activeChatSessionId);
 
   return (
     <Popover>
@@ -77,13 +76,13 @@ export function ChatSessionList() {
           </span>
         </div>
 
-        {otherSessions.length === 0 ? (
+        {chatSessions.length === 0 ? (
           <div className="px-3 py-4 text-center text-xs text-fg-muted">
-            No other sessions. Start a new chat to create one.
+            No sessions yet. Start a new chat to create one.
           </div>
         ) : (
           <div className="max-h-64 overflow-y-auto py-1">
-            {otherSessions.map((session) => (
+            {chatSessions.map((session) => (
               <div
                 key={session.id}
                 className={cn(

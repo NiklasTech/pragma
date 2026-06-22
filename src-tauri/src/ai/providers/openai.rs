@@ -36,20 +36,28 @@ impl OpenAIProvider {
         config: ProviderConfig,
         keychain_name: impl AsRef<str>,
     ) -> Result<Self, AIError> {
+        let keychain_name = keychain_name.as_ref();
+        let is_key_optional = keychain_name == "custom";
+
         let api_key = match &config.api_key {
-            Some(key) if !key.is_empty() => key.clone(),
-            _ => match keychain::get_api_key(keychain_name.as_ref())? {
-                Some(key) => key,
-                None => return Err(AIError::InvalidApiKey),
-            },
+            Some(key) if !key.is_empty() => Some(key.clone()),
+            _ => keychain::get_api_key(keychain_name)?,
+        };
+
+        let api_key = match api_key {
+            Some(key) => Some(key),
+            None if is_key_optional => None,
+            None => return Err(AIError::InvalidApiKey),
         };
 
         let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-            reqwest::header::AUTHORIZATION,
-            reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
-                .map_err(|e| AIError::Provider(format!("invalid api key header: {e}")))?,
-        );
+        if let Some(api_key) = api_key {
+            headers.insert(
+                reqwest::header::AUTHORIZATION,
+                reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
+                    .map_err(|e| AIError::Provider(format!("invalid api key header: {e}")))?,
+            );
+        }
         headers.insert(
             reqwest::header::CONTENT_TYPE,
             reqwest::header::HeaderValue::from_static("application/json"),
@@ -148,8 +156,23 @@ impl AIProvider for OpenAIProvider {
                 .next()
                 .ok_or_else(|| AIError::Provider("no choices in response".to_string()))?;
 
+            let content = choice
+                .message
+                .content
+                .clone()
+                .filter(|c| !c.is_empty())
+                .unwrap_or_else(|| {
+                    choice
+                        .message
+                        .reasoning_content
+                        .clone()
+                        .filter(|c| !c.is_empty())
+                        .map(|r| format!("<thinking>{}</thinking>", r))
+                        .unwrap_or_default()
+                });
+
             Ok(CompletionResponse {
-                content: choice.message.content.unwrap_or_default(),
+                content,
                 model: openai_resp.model,
                 usage: openai_resp.usage.map(|u| Usage {
                     prompt_tokens: u.prompt_tokens,
@@ -193,6 +216,7 @@ impl AIProvider for OpenAIProvider {
             let text = String::from_utf8_lossy(&bytes);
 
             let mut chunks = Vec::new();
+            let mut in_reasoning = false;
             for line in text.lines() {
                 let line = line.trim();
                 if line.is_empty() || line == "data: [DONE]" {
@@ -203,9 +227,46 @@ impl AIProvider for OpenAIProvider {
                         .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
 
                     if let Some(choice) = event.choices.into_iter().next() {
-                        if let Some(content) = choice.delta.content {
+                        let has_content = choice
+                            .delta
+                            .content
+                            .as_ref()
+                            .map(|c| !c.is_empty())
+                            .unwrap_or(false);
+                        let has_reasoning = choice
+                            .delta
+                            .reasoning_content
+                            .as_ref()
+                            .map(|c| !c.is_empty())
+                            .unwrap_or(false);
+
+                        if has_content || has_reasoning {
+                            let mut chunk = String::new();
+
+                            if has_content {
+                                if in_reasoning {
+                                    chunk.push_str("</thinking>");
+                                    in_reasoning = false;
+                                }
+                                chunk.push_str(choice.delta.content.as_deref().unwrap_or_default());
+                            }
+
+                            if has_reasoning {
+                                if !in_reasoning {
+                                    chunk.push_str("<thinking>");
+                                    in_reasoning = true;
+                                }
+                                chunk.push_str(
+                                    choice
+                                        .delta
+                                        .reasoning_content
+                                        .as_deref()
+                                        .unwrap_or_default(),
+                                );
+                            }
+
                             chunks.push(CompletionChunk {
-                                content,
+                                content: chunk,
                                 finish_reason: choice.finish_reason,
                             });
                         }
@@ -220,6 +281,15 @@ impl AIProvider for OpenAIProvider {
     fn stream_chunks(
         &self,
         req: CompletionRequest,
+    ) -> BoxFuture<'_, Result<tokio::sync::mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>
+    {
+        self.stream_chunks_with_cancel(req, None)
+    }
+
+    fn stream_chunks_with_cancel(
+        &self,
+        req: CompletionRequest,
+        cancel_token: Option<tokio_util::sync::CancellationToken>,
     ) -> BoxFuture<'_, Result<tokio::sync::mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>
     {
         Box::pin(async move {
@@ -250,10 +320,27 @@ impl AIProvider for OpenAIProvider {
             tokio::spawn(async move {
                 let mut buffer = String::new();
                 let mut event_data: Vec<String> = Vec::new();
+                let mut in_reasoning = false;
 
-                while let Some(result) = stream.next().await {
-                    match result {
-                        Ok(bytes) => {
+                loop {
+                    if cancel_token.as_ref().is_some_and(|t| t.is_cancelled()) {
+                        break;
+                    }
+
+                    let cancel_fut = async {
+                        match &cancel_token {
+                            Some(token) => token.cancelled().await,
+                            None => std::future::pending().await,
+                        }
+                    };
+
+                    match tokio::select! {
+                        biased;
+                        _ = cancel_fut => None,
+                        result = stream.next() => Some(result),
+                    } {
+                        None => break,
+                        Some(Some(Ok(bytes))) => {
                             buffer.push_str(&String::from_utf8_lossy(&bytes));
 
                             while let Some(pos) = buffer.find('\n') {
@@ -261,38 +348,79 @@ impl AIProvider for OpenAIProvider {
                                 let line = line.trim_end_matches('\n').trim_end_matches('\r');
 
                                 if line.is_empty() {
-                                    for data_line in &event_data {
-                                        if let Some(data) = data_line.strip_prefix("data: ") {
-                                            if data == "[DONE]" {
-                                                continue;
-                                            }
+                                    for data in &event_data {
+                                        if data == "[DONE]" {
+                                            continue;
+                                        }
 
-                                            match serde_json::from_str::<OpenAIStreamEvent>(data) {
-                                                Ok(event) => {
-                                                    if let Some(choice) =
-                                                        event.choices.into_iter().next()
-                                                    {
-                                                        if let Some(content) = choice.delta.content
-                                                        {
-                                                            if !content.is_empty() {
-                                                                let _ = tx
-                                                                    .send(Ok(CompletionChunk {
-                                                                        content,
-                                                                        finish_reason: choice
-                                                                            .finish_reason,
-                                                                    }))
-                                                                    .await;
+                                        match serde_json::from_str::<OpenAIStreamEvent>(data) {
+                                            Ok(event) => {
+                                                if let Some(choice) =
+                                                    event.choices.into_iter().next()
+                                                {
+                                                    let has_content = choice
+                                                        .delta
+                                                        .content
+                                                        .as_ref()
+                                                        .map(|c| !c.is_empty())
+                                                        .unwrap_or(false);
+                                                    let has_reasoning = choice
+                                                        .delta
+                                                        .reasoning_content
+                                                        .as_ref()
+                                                        .map(|c| !c.is_empty())
+                                                        .unwrap_or(false);
+
+                                                    if has_content || has_reasoning {
+                                                        let mut chunk = String::new();
+
+                                                        if has_content {
+                                                            if in_reasoning {
+                                                                chunk.push_str("</thinking>");
+                                                                in_reasoning = false;
                                                             }
+                                                            chunk.push_str(
+                                                                choice
+                                                                    .delta
+                                                                    .content
+                                                                    .as_deref()
+                                                                    .unwrap_or_default(),
+                                                            );
+                                                        }
+
+                                                        if has_reasoning {
+                                                            if !in_reasoning {
+                                                                chunk.push_str("<thinking>");
+                                                                in_reasoning = true;
+                                                            }
+                                                            chunk.push_str(
+                                                                choice
+                                                                    .delta
+                                                                    .reasoning_content
+                                                                    .as_deref()
+                                                                    .unwrap_or_default(),
+                                                            );
+                                                        }
+
+                                                        if tx
+                                                            .send(Ok(CompletionChunk {
+                                                                content: chunk,
+                                                                finish_reason: choice.finish_reason,
+                                                            }))
+                                                            .await
+                                                            .is_err()
+                                                        {
+                                                            break;
                                                         }
                                                     }
                                                 }
-                                                Err(e) => {
-                                                    let _ = tx
-                                                        .send(Err(AIError::Stream(format!(
-                                                            "invalid sse event: {e}"
-                                                        ))))
-                                                        .await;
-                                                }
+                                            }
+                                            Err(e) => {
+                                                let _ = tx
+                                                    .send(Err(AIError::Stream(format!(
+                                                        "invalid sse event: {e}"
+                                                    ))))
+                                                    .await;
                                             }
                                         }
                                     }
@@ -302,10 +430,11 @@ impl AIProvider for OpenAIProvider {
                                 }
                             }
                         }
-                        Err(e) => {
+                        Some(Some(Err(e))) => {
                             let _ = tx.send(Err(map_reqwest_error(e))).await;
                             break;
                         }
+                        Some(None) => break,
                     }
                 }
             });
@@ -395,6 +524,7 @@ struct OpenAIChoice {
 #[derive(Debug, Deserialize)]
 struct OpenAIResponseMessage {
     content: Option<String>,
+    reasoning_content: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -418,4 +548,5 @@ struct OpenAIStreamChoice {
 #[derive(Debug, Deserialize)]
 struct OpenAIStreamDelta {
     content: Option<String>,
+    reasoning_content: Option<String>,
 }

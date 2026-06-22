@@ -3,6 +3,7 @@ use std::pin::Pin;
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 
 use super::config::ProviderConfig;
 use super::error::AIError;
@@ -109,4 +110,15 @@ pub trait AIProvider: Send + Sync {
         &self,
         req: CompletionRequest,
     ) -> BoxFuture<'_, Result<mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>;
+
+    /// Stream completion chunks with optional cancellation support.
+    /// Providers that do not override this default will simply ignore the token.
+    fn stream_chunks_with_cancel(
+        &self,
+        req: CompletionRequest,
+        cancel_token: Option<CancellationToken>,
+    ) -> BoxFuture<'_, Result<mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>> {
+        let _ = cancel_token;
+        self.stream_chunks(req)
+    }
 }

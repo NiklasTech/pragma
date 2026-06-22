@@ -20,8 +20,12 @@ export function useMemoryStats(enabled: boolean = true): void {
 
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let running = false;
 
     const logStats = async () => {
+      if (running) return;
+      running = true;
+
       try {
         const stats = await invoke<MemoryStats>("memory_stats");
         await log.info(
@@ -29,6 +33,8 @@ export function useMemoryStats(enabled: boolean = true): void {
         );
       } catch (error) {
         await log.error(`Failed to fetch memory stats: ${String(error)}`);
+      } finally {
+        running = false;
       }
 
       if (!cancelled) {

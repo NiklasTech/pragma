@@ -30,7 +30,10 @@ import { Message, MessageContent, MessageResponse } from "./Message";
 import { ReasoningBlock } from "./ReasoningBlock";
 import { SourceBlock } from "./SourceBlock";
 
-function extractInlineReasoning(text: string): { text: string; reasoning: string } {
+function extractInlineReasoning(
+  text: string,
+  streaming = false,
+): { text: string; reasoning: string } {
   const tags = [
     { open: "<thinking>", close: "</thinking>" },
     { open: "<reasoning>", close: "</reasoning>" },
@@ -44,9 +47,13 @@ function extractInlineReasoning(text: string): { text: string; reasoning: string
     const start = cleaned.indexOf(open);
     if (start === -1) continue;
     const end = cleaned.indexOf(close, start + open.length);
-    if (end === -1) continue;
-    reasoning += cleaned.slice(start + open.length, end).trim() + "\n\n";
-    cleaned = cleaned.slice(0, start) + cleaned.slice(end + close.length);
+    if (end !== -1) {
+      reasoning += cleaned.slice(start + open.length, end).trim() + "\n\n";
+      cleaned = cleaned.slice(0, start) + cleaned.slice(end + close.length);
+    } else if (streaming) {
+      reasoning += cleaned.slice(start + open.length).trim();
+      cleaned = cleaned.slice(0, start);
+    }
   }
 
   return { text: cleaned.trim(), reasoning: reasoning.trim() };
@@ -67,7 +74,6 @@ export function ChatPanel() {
     canChat,
     isCLIActive,
     activeCLIProvider,
-    sessionId,
     createChatSession,
   } = useAI();
   const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
@@ -180,7 +186,7 @@ export function ChatPanel() {
   );
 
   const handleNewSession = useCallback(() => {
-    createChatSession();
+    void createChatSession();
   }, [createChatSession]);
 
   const handleRetry = useCallback(() => {
@@ -201,9 +207,16 @@ export function ChatPanel() {
           <span className="truncate text-ui-xs text-fg-muted">
             {activeSession?.title ?? "Chat"}
           </span>
-          <span className="shrink-0 font-mono text-ui-xs text-fg-subtle">
-            {sessionId.slice(0, 12)}
-          </span>
+          {activeSession && (
+            <span className="shrink-0 text-ui-xs text-fg-subtle">
+              {new Date(activeSession.createdAt).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <AiModelSelector />
@@ -262,8 +275,13 @@ export function ChatPanel() {
               const isStreaming = msg.id === streamingMessageId;
 
               // Some providers/models emit reasoning as inline <thinking> tags inside the text.
-              const { text, reasoning: inlineReasoning } = extractInlineReasoning(rawText);
-              const reasoning = reasoningParts || inlineReasoning;
+              const { text, reasoning: inlineReasoning } = extractInlineReasoning(
+                rawText,
+                isStreaming,
+              );
+              const reasoning = reasoningParts
+                ? `${reasoningParts}\n\n${inlineReasoning}`.trim()
+                : inlineReasoning;
 
               if (msg.role === "user") {
                 return (

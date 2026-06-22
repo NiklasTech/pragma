@@ -84,8 +84,11 @@ function FileEditor({
   const providerConfig = providers[activeProvider];
   const canComplete =
     inlineCompletion &&
-    (activeProvider === "ollama" || apiKeyRefs[activeProvider] !== null) &&
-    !(activeProvider === "custom" && !providerConfig.baseUrl);
+    (activeProvider === "ollama"
+      ? true
+      : activeProvider === "custom"
+        ? Boolean(providerConfig.baseUrl)
+        : apiKeyRefs[activeProvider] !== null);
 
   const createExtensions = useCallback(
     (

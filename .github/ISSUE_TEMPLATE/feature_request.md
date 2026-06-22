@@ -6,18 +6,18 @@ labels: enhancement
 assignees: ""
 ---
 
-## Problem
+## What problem are you trying to solve?
 
-A clear and concise description of what problem this feature would solve. Ex. "I'm always frustrated when ..."
+<!-- What problem are you trying to solve? Who is affected and when does it happen? Be specific. -->
 
-## Proposed Solution
+## What solution would you like?
 
-Describe the solution you'd like to see.
+<!-- Describe the solution you'd like. Keep it high-level — implementation details can be discussed in the issue. -->
 
-## Alternatives
+## What alternatives have you considered?
 
-Describe any alternative solutions or features you've considered.
+<!-- What alternatives have you considered? Why are they not good enough? -->
 
-## Additional Context
+## Additional context
 
-Add any other context, mockups, or examples here.
+<!-- Mockups, examples from other tools, or anything else that helps understand the request. -->

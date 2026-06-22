@@ -1,9 +1,9 @@
-import { useMemo, useCallback, useState } from "react";
+import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import type { ChatTransport, UIMessageChunk } from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
-import { useAIStore } from "@/shared/stores/ai";
+import { useAIStore, type ChatMessage } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import {
@@ -20,6 +20,7 @@ interface APIChatRequest {
   model: string;
   base_url?: string;
   messages: Array<{ role: string; content: string }>;
+  stream_id?: string;
 }
 
 interface CLIChatMessage {
@@ -52,6 +53,25 @@ export function getMessageText(msg: UIMessage): string {
     .join("");
 }
 
+function uiMessageToStored(msg: UIMessage): ChatMessage {
+  return {
+    id: msg.id,
+    role: msg.role,
+    content: getMessageText(msg),
+    timestamp: Date.now(),
+  };
+}
+
+function storedMessagesToUI(messages: ChatMessage[]): UIMessage[] {
+  return messages.map(
+    (m): UIMessage => ({
+      id: m.id,
+      role: m.role,
+      parts: [{ type: "text", text: m.content }],
+    }),
+  );
+}
+
 // ─── Streaming Transport ─────────────────────────────────────────────────────
 
 function createStreamTransport(
@@ -62,8 +82,9 @@ function createStreamTransport(
   activeCLIProvider: string | null,
 ): ChatTransport<UIMessage> {
   return {
-    async sendMessages({ messages }) {
+    async sendMessages({ messages, abortSignal }) {
       const chunkId = generateId();
+      const streamId = generateId();
 
       return new ReadableStream<UIMessageChunk>({
         start(controller) {
@@ -92,6 +113,8 @@ function createStreamTransport(
           const channel = new Channel<StreamChunk>();
 
           channel.onmessage = (chunk) => {
+            if (closed) return;
+
             if (!started) {
               started = true;
               safeEnqueue({ type: "text-start", id: chunkId });
@@ -111,6 +134,20 @@ function createStreamTransport(
               finish();
             }
           };
+
+          const abortHandler = () => {
+            closed = true;
+            try {
+              controller.error(new Error("aborted"));
+            } catch {
+              // ignore
+            }
+            if (!isCLIActive) {
+              void invoke("cancel_ai_chat_stream", { req: { stream_id: streamId } });
+            }
+          };
+
+          abortSignal?.addEventListener("abort", abortHandler);
 
           const send = async () => {
             try {
@@ -133,6 +170,7 @@ function createStreamTransport(
                     role: m.role,
                     content: getMessageText(m),
                   })),
+                  stream_id: streamId,
                 };
                 await invoke("ai_chat_stream", { req, channel });
               }
@@ -142,8 +180,14 @@ function createStreamTransport(
               }
               finish();
             } catch (err) {
-              safeEnqueue({ type: "error", errorText: String(err) });
-              safeClose();
+              if (String(err).includes("aborted")) {
+                safeClose();
+              } else {
+                safeEnqueue({ type: "error", errorText: String(err) });
+                safeClose();
+              }
+            } finally {
+              abortSignal?.removeEventListener("abort", abortHandler);
             }
           };
 
@@ -169,7 +213,13 @@ export function useAI() {
     apiKeyRefs,
     copilotAuth,
     activeChatSessionId,
+    chatSessions,
     createChatSession,
+    loadSessions,
+    loadSessionMessages,
+    updateChatSessionMessages,
+    saveSessionMessages,
+    saveSession,
   } = useAIStore();
 
   const providerConfig = providers[activeProvider];
@@ -177,6 +227,7 @@ export function useAI() {
   const isCLIActive = activeCLIProvider !== null;
 
   const sessionId = activeChatSessionId ?? "default";
+  const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -190,14 +241,48 @@ export function useAI() {
     [activeProvider, activeModel, providerConfig.baseUrl, isCLIActive, activeCLIProvider],
   );
 
+  const initialMessages = useMemo<UIMessage[]>(() => {
+    if (activeSession?.messages.length) {
+      return storedMessagesToUI(activeSession.messages);
+    }
+    return [];
+  }, [activeSession?.id]);
+
   const chat = useChat({
-    id: sessionId,
+    // Include provider/model in the id so that the @ai-sdk/react Chat instance
+    // is recreated when the active provider changes. Otherwise it keeps using
+    // the transport that was passed on first render.
+    id: `${sessionId}:${activeProvider}:${activeModel}`,
     transport,
+    messages: initialMessages,
     experimental_throttle: 50,
   });
 
   const [input, setInput] = useState("");
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+
+  // Load sessions whenever the workspace changes.
+  useEffect(() => {
+    void loadSessions(rootPath);
+  }, [rootPath, loadSessions]);
+
+  // Load messages for the active session if they are not in memory yet.
+  useEffect(() => {
+    if (!activeChatSessionId) return;
+    const session = chatSessions.find((s) => s.id === activeChatSessionId);
+    if (session && session.messages.length === 0) {
+      void loadSessionMessages(rootPath, activeChatSessionId);
+    }
+  }, [activeChatSessionId, rootPath, chatSessions, loadSessionMessages]);
+
+  // When loaded messages arrive for the active session and the chat is empty,
+  // populate the chat (e.g. on startup or session switch).
+  useEffect(() => {
+    if (!activeSession?.messages.length) return;
+    if (chat.messages.length === 0 && chat.status === "ready") {
+      chat.setMessages(storedMessagesToUI(activeSession.messages));
+    }
+  }, [activeSession?.messages, chat.messages.length, chat.status, chat.setMessages]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -238,10 +323,76 @@ export function useAI() {
     [input, chat, rootPath],
   );
 
+  // Sync chat messages into the active store session.
+  const messagesJsonRef = useRef<string>("");
+  useEffect(() => {
+    if (!activeChatSessionId) return;
+
+    const snapshot = chat.messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: getMessageText(m),
+    }));
+    const json = JSON.stringify(snapshot);
+    if (json === messagesJsonRef.current) return;
+    messagesJsonRef.current = json;
+
+    updateChatSessionMessages(activeChatSessionId, chat.messages.map(uiMessageToStored));
+  }, [activeChatSessionId, chat.messages, updateChatSessionMessages]);
+
+  // When switching sessions, reset the cached JSON so the new session's messages
+  // are synced even if they happen to serialize to the same value.
+  useEffect(() => {
+    messagesJsonRef.current = "";
+  }, [activeChatSessionId]);
+
+  // Persist session metadata and messages to disk.
+  const previousStatusRef = useRef(chat.status);
+  useEffect(() => {
+    const previous = previousStatusRef.current;
+    previousStatusRef.current = chat.status;
+
+    if (!activeChatSessionId) return;
+    const session = chatSessions.find((s) => s.id === activeChatSessionId);
+    if (!session) return;
+
+    // Save metadata whenever the title changes.
+    void saveSession(rootPath, session);
+
+    // Save messages when streaming finishes or when the message list grows.
+    const wasStreaming = previous === "streaming" || previous === "submitted";
+    const isReady = chat.status === "ready";
+    if (wasStreaming && isReady) {
+      void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
+    }
+  }, [chat.status, activeChatSessionId, rootPath, chatSessions, saveSession, saveSessionMessages]);
+
+  // Debounced persist of messages while typing/streaming.
+  const debouncedSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!activeChatSessionId) return;
+    const session = chatSessions.find((s) => s.id === activeChatSessionId);
+    if (!session) return;
+
+    if (debouncedSaveRef.current) {
+      clearTimeout(debouncedSaveRef.current);
+    }
+    debouncedSaveRef.current = setTimeout(() => {
+      void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
+    }, 1000);
+
+    return () => {
+      if (debouncedSaveRef.current) {
+        clearTimeout(debouncedSaveRef.current);
+      }
+    };
+  }, [activeChatSessionId, rootPath, chatSessions, saveSessionMessages]);
+
   const canChat =
     isCLIActive ||
     hasAPIKey ||
     activeProvider === "ollama" ||
+    (activeProvider === "custom" && Boolean(providerConfig.baseUrl)) ||
     (activeProvider === "copilot" && copilotAuth.authenticated);
 
   return {
@@ -259,6 +410,8 @@ export function useAI() {
     isCLIActive,
     activeCLIProvider,
     sessionId,
-    createChatSession,
+    createChatSession: () => {
+      return createChatSession(rootPath);
+    },
   };
 }

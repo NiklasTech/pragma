@@ -1,6 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
+import {
+  deleteSession as deleteStoredSession,
+  loadSessionMessages as loadStoredSessionMessages,
+  loadSessions as loadStoredSessions,
+  saveSession as saveStoredSession,
+  saveSessionMessages as saveStoredSessionMessages,
+} from "@/shared/lib/chat-storage";
+
 export type AIProvider =
   | "openai"
   | "anthropic"
@@ -85,11 +93,25 @@ interface AIActions {
   setTerminalSuggestionProvider: (provider: AIProvider | null) => void;
   setTerminalSuggestionModel: (model: string | null) => void;
   updateProviderConfig: (provider: AIProvider, config: Partial<ProviderConfig>) => void;
+
+  // Chat sessions backed by the file system.
+  loadSessions: (rootPath: string) => Promise<void>;
+  loadSessionMessages: (rootPath: string, sessionId: string) => Promise<void>;
   addChatSession: (session: ChatSession) => void;
   removeChatSession: (sessionId: string) => void;
   setActiveChatSession: (sessionId: string | null) => void;
+  updateChatSessionMessages: (sessionId: string, messages: ChatMessage[]) => void;
+  createChatSession: (rootPath: string) => Promise<ChatSession>;
+  deleteSession: (rootPath: string, sessionId: string) => Promise<void>;
+  saveSession: (rootPath: string, session: ChatSession) => Promise<void>;
+  saveSessionMessages: (
+    rootPath: string,
+    sessionId: string,
+    messages: ChatMessage[],
+  ) => Promise<void>;
+
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
-  createChatSession: () => ChatSession;
+
   setApiKeyRef: (provider: AIProvider, ref: string | null) => void;
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
   loadKeyStatus: (provider: AIProvider) => Promise<void>;
@@ -181,6 +203,40 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
     });
   },
 
+  loadSessions: async (rootPath) => {
+    const sessions = await loadStoredSessions(rootPath);
+    if (sessions.length === 0) {
+      const session: ChatSession = {
+        id: crypto.randomUUID(),
+        title: "New Chat",
+        messages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      await saveStoredSession(rootPath, session);
+      set({ chatSessions: [session], activeChatSessionId: session.id });
+      return;
+    }
+
+    const sorted = sessions.sort((a, b) => b.updatedAt - a.updatedAt);
+    const { activeChatSessionId } = get();
+    const activeStillExists = activeChatSessionId
+      ? sorted.some((s) => s.id === activeChatSessionId)
+      : false;
+
+    set({
+      chatSessions: sorted,
+      activeChatSessionId: activeStillExists ? activeChatSessionId : sorted[0].id,
+    });
+  },
+
+  loadSessionMessages: async (rootPath, sessionId) => {
+    const messages = await loadStoredSessionMessages(rootPath, sessionId);
+    set({
+      chatSessions: get().chatSessions.map((s) => (s.id === sessionId ? { ...s, messages } : s)),
+    });
+  },
+
   addChatSession: (session) => {
     const { chatSessions } = get();
     set({
@@ -204,6 +260,54 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
 
   setActiveChatSession: (sessionId) => set({ activeChatSessionId: sessionId }),
 
+  updateChatSessionMessages: (sessionId, messages) => {
+    const { chatSessions } = get();
+    set({
+      chatSessions: chatSessions.map((s) => {
+        if (s.id !== sessionId) return s;
+
+        const firstUserMsg = messages.find((m) => m.role === "user");
+        const title =
+          s.title === "New Chat" && firstUserMsg
+            ? firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? "…" : "")
+            : s.title;
+
+        return {
+          ...s,
+          title,
+          messages,
+          updatedAt: Date.now(),
+        };
+      }),
+    });
+  },
+
+  createChatSession: async (rootPath) => {
+    const session: ChatSession = {
+      id: crypto.randomUUID(),
+      title: "New Chat",
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await saveStoredSession(rootPath, session);
+    get().addChatSession(session);
+    return session;
+  },
+
+  deleteSession: async (rootPath, sessionId) => {
+    await deleteStoredSession(rootPath, sessionId);
+    get().removeChatSession(sessionId);
+  },
+
+  saveSession: async (rootPath, session) => {
+    await saveStoredSession(rootPath, session);
+  },
+
+  saveSessionMessages: async (rootPath, sessionId, messages) => {
+    await saveStoredSessionMessages(rootPath, sessionId, messages);
+  },
+
   addChatMessage: (sessionId, message) => {
     const { chatSessions } = get();
     set({
@@ -217,22 +321,6 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
           : s,
       ),
     });
-  },
-
-  createChatSession: () => {
-    const session: ChatSession = {
-      id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      title: "New Chat",
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    const { chatSessions } = get();
-    set({
-      chatSessions: [...chatSessions, session],
-      activeChatSessionId: session.id,
-    });
-    return session;
   },
 
   setApiKeyRef: (provider, ref) => {

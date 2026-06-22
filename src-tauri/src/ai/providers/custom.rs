@@ -69,4 +69,13 @@ impl AIProvider for CustomProvider {
     {
         self.inner.stream_chunks(req)
     }
+
+    fn stream_chunks_with_cancel(
+        &self,
+        req: CompletionRequest,
+        cancel_token: Option<tokio_util::sync::CancellationToken>,
+    ) -> BoxFuture<'_, Result<tokio::sync::mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>>
+    {
+        self.inner.stream_chunks_with_cancel(req, cancel_token)
+    }
 }
