@@ -150,8 +150,8 @@ pub async fn ai_load_session_messages(
         if line.is_empty() {
             continue;
         }
-        let message: ChatMessage = serde_json::from_str(line)
-            .map_err(|e| format!("failed to parse context line: {e}"))?;
+        let message: ChatMessage =
+            serde_json::from_str(line).map_err(|e| format!("failed to parse context line: {e}"))?;
         messages.push(message);
     }
 
@@ -171,10 +171,7 @@ async fn write_file(path: &std::path::Path, content: &[u8]) -> Result<(), String
 }
 
 #[tauri::command]
-pub async fn ai_save_session(
-    app: AppHandle,
-    req: SaveSessionRequest,
-) -> Result<(), String> {
+pub async fn ai_save_session(app: AppHandle, req: SaveSessionRequest) -> Result<(), String> {
     let dir = session_dir(&app, &req.root_path, &req.session.id)?;
     let path = dir.join("state.json");
     let content = serde_json::to_string_pretty(&req.session)
@@ -205,10 +202,7 @@ pub async fn ai_save_session_messages(
 }
 
 #[tauri::command]
-pub async fn ai_delete_session(
-    app: AppHandle,
-    req: DeleteSessionRequest,
-) -> Result<(), String> {
+pub async fn ai_delete_session(app: AppHandle, req: DeleteSessionRequest) -> Result<(), String> {
     let dir = session_dir(&app, &req.root_path, &req.session_id)?;
     if dir.exists() {
         tokio::fs::remove_dir_all(&dir)

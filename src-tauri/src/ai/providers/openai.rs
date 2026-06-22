@@ -257,7 +257,11 @@ impl AIProvider for OpenAIProvider {
                                     in_reasoning = true;
                                 }
                                 chunk.push_str(
-                                    choice.delta.reasoning_content.as_deref().unwrap_or_default(),
+                                    choice
+                                        .delta
+                                        .reasoning_content
+                                        .as_deref()
+                                        .unwrap_or_default(),
                                 );
                             }
 
@@ -376,7 +380,11 @@ impl AIProvider for OpenAIProvider {
                                                                 in_reasoning = false;
                                                             }
                                                             chunk.push_str(
-                                                                choice.delta.content.as_deref().unwrap_or_default(),
+                                                                choice
+                                                                    .delta
+                                                                    .content
+                                                                    .as_deref()
+                                                                    .unwrap_or_default(),
                                                             );
                                                         }
 
@@ -397,8 +405,7 @@ impl AIProvider for OpenAIProvider {
                                                         if tx
                                                             .send(Ok(CompletionChunk {
                                                                 content: chunk,
-                                                                finish_reason: choice
-                                                                    .finish_reason,
+                                                                finish_reason: choice.finish_reason,
                                                             }))
                                                             .await
                                                             .is_err()
