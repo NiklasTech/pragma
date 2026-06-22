@@ -74,7 +74,7 @@ vp run tauri dev
 
 ## Branch and commit conventions
 
-Branch off `dev`. Use these prefixes in kebab-case:
+Branch off `main`. Use these prefixes in kebab-case:
 
 | Prefix      | Use for                                 |
 | ----------- | --------------------------------------- |
@@ -87,7 +87,7 @@ Branch off `dev`. Use these prefixes in kebab-case:
 
 Examples: `feat/mcp-server-manager`, `fix/terminal-split-focus`, `security/ai-path-guard`
 
-Don't open PRs from your fork's `main` or `dev` branch — always work on a feature branch.
+Don't open PRs from your fork's `main` branch — always work on a feature branch.
 
 **Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):**
 
@@ -111,10 +111,11 @@ Individual commits within a PR can be free-form — the PR title becomes the squ
 
 Every PR is checked against:
 
-- `pnpm exec vp check` passes clean
+- `pnpm exec vp check` passes clean (lint, format, type check)
 - `pnpm exec vp test` passes
-- `cargo clippy` clean and `cargo fmt` applied (inside `src-tauri/`)
-- `cargo test` passes (inside `src-tauri/`)
+- `cargo check` passes (inside `src-tauri/`)
+- `cargo fmt -- --check` passes (inside `src-tauri/`)
+- `cargo clippy` is clean and `cargo test` passes for changes that touch core Rust subsystems
 - No performance regressions in known hot paths: terminal renderer, PTY stream, AI streaming, file explorer, CodeMirror editor
 - No new heavy dependencies (>50 KB gzip client-side, >5 MB compiled Rust-side) without justification — binary size budget is real
 - Platform parity maintained — macOS, Linux, and Windows still work
@@ -171,7 +172,7 @@ Even when those changes are improvements, they make review harder and slow every
 2. **Fill out the PR template** — what changed, why, how you tested it
 3. **Screenshots or GIFs** for any UI change — "tested manually by..." is the bare minimum
 4. **Mark ready for review** when the checklist is done
-5. **If `dev` moves under you** — rebase if the change is still small and relevant; large stale PRs may be closed with an offer to reopen after rebase
+5. **If `main` moves under you** — rebase if the change is still small and relevant; large stale PRs may be closed with an offer to reopen after rebase
 
 **What gets merged fast:**
 
@@ -229,7 +230,7 @@ Focus on your stated goal. Submit cleanup as a separate PR after discussion if i
 **How long does review take?**
 Small bugfix or docs: usually within a few days. Larger feature: a week or two. Pre-discussed work moves faster.
 
-**My PR conflicts after `dev` moved. Should I rebase?**
+**My PR conflicts after `main` moved. Should I rebase?**
 If the change is still relevant and reasonably small — yes, rebase. Large stale PRs may be closed with an offer to reopen after rebase.
 
 ---
