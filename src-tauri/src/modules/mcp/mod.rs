@@ -1,3 +1,6 @@
+pub mod client;
+pub mod error;
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
