@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
-use tokio::process::Command;
+use tokio::process::{Child, ChildStderr, Command};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 const JSONRPC_VERSION: &str = "2.0";
@@ -89,7 +89,7 @@ pub struct McpClient {
 impl McpClient {
     pub async fn start(
         config: McpClientConfig,
-    ) -> Result<(Self, mpsc::UnboundedReceiver<Notification>)> {
+    ) -> Result<(Self, Child, mpsc::UnboundedReceiver<Notification>)> {
         if config.command.is_empty() {
             return Err(McpError::Serialization("command is required".to_string()));
         }
@@ -100,13 +100,17 @@ impl McpClient {
             .envs(&config.env)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null());
+            .stderr(Stdio::piped());
 
         let mut child = cmd.spawn()?;
         let stdin = child.stdin.take().ok_or(McpError::MissingStdio)?;
         let stdout = child.stdout.take().ok_or(McpError::MissingStdio)?;
+        let stderr = child.stderr.take().ok_or(McpError::MissingStdio)?;
 
-        Self::with_io(stdout, stdin, timeout).await
+        let (client, notifications) = Self::with_io(stdout, stdin, timeout).await?;
+        spawn_stderr_logger(stderr);
+
+        Ok((client, child, notifications))
     }
 
     async fn with_io<R, W>(
@@ -230,6 +234,15 @@ where
     writer.write_all(message.as_bytes()).await?;
     writer.write_all(b"\n").await?;
     writer.flush().await
+}
+
+fn spawn_stderr_logger(stderr: ChildStderr) {
+    tokio::spawn(async move {
+        let mut lines = BufReader::new(stderr).lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            log::warn!("[mcp server stderr] {line}");
+        }
+    });
 }
 
 fn spawn_reader<R>(

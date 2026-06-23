@@ -23,7 +23,7 @@ pub fn run() {
                 }))
                 .build(),
         )
-        .setup(|_app| {
+        .setup(|app| {
             std::panic::set_hook(Box::new(|info| {
                 let location = info
                     .location()
@@ -35,6 +35,13 @@ pub fn run() {
             if let Err(e) = modules::env_loader::load_shell_env() {
                 log::warn!("Failed to load shell environment: {e}");
             }
+
+            if let Err(e) = tauri::async_runtime::block_on(modules::mcp::McpManager::initialize(
+                app.handle().clone(),
+            )) {
+                log::warn!("Failed to initialize MCP manager: {e}");
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -81,6 +88,10 @@ pub fn run() {
             modules::local_history::commands::local_history_snapshots,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
+            modules::mcp::mcp_list_servers,
+            modules::mcp::mcp_start_server,
+            modules::mcp::mcp_stop_server,
+            modules::mcp::mcp_restart_server,
             modules::local_history::commands::local_history_diff,
             modules::local_history::commands::local_history_restore,
             modules::local_history::commands::local_history_delete_older_than,

@@ -1,10 +1,13 @@
 pub mod client;
 pub mod error;
+pub mod manager;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
+
+pub use manager::{McpManager, McpServerState, McpServerStatus};
 
 const CONFIG_FILE: &str = "mcp.json";
 
@@ -22,8 +25,8 @@ pub struct McpServerConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct McpConfigFile {
-    servers: Vec<McpServerConfig>,
+pub struct McpConfigFile {
+    pub servers: Vec<McpServerConfig>,
 }
 
 fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -42,8 +45,9 @@ pub async fn mcp_load_config(app: AppHandle) -> Result<Vec<McpServerConfig>, Str
         return Ok(Vec::new());
     }
 
-    let content =
-        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read MCP config: {e}"))?;
+    let content = tokio::fs::read_to_string(&path)
+        .await
+        .map_err(|e| format!("Failed to read MCP config: {e}"))?;
 
     let file: McpConfigFile =
         serde_json::from_str(&content).map_err(|e| format!("Failed to parse MCP config: {e}"))?;
@@ -56,7 +60,8 @@ pub async fn mcp_save_config(app: AppHandle, servers: Vec<McpServerConfig>) -> R
     let path = config_path(&app)?;
 
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
+        tokio::fs::create_dir_all(parent)
+            .await
             .map_err(|e| format!("Failed to create config directory: {e}"))?;
     }
 
@@ -64,7 +69,29 @@ pub async fn mcp_save_config(app: AppHandle, servers: Vec<McpServerConfig>) -> R
     let content = serde_json::to_string_pretty(&file)
         .map_err(|e| format!("Failed to serialize MCP config: {e}"))?;
 
-    std::fs::write(&path, content).map_err(|e| format!("Failed to write MCP config: {e}"))?;
+    tokio::fs::write(&path, content)
+        .await
+        .map_err(|e| format!("Failed to write MCP config: {e}"))?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn mcp_list_servers(state: State<'_, McpManager>) -> Result<Vec<McpServerState>, String> {
+    Ok(state.list_servers().await)
+}
+
+#[tauri::command]
+pub async fn mcp_start_server(state: State<'_, McpManager>, id: String) -> Result<(), String> {
+    state.start_server(&id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn mcp_stop_server(state: State<'_, McpManager>, id: String) -> Result<(), String> {
+    state.stop_server(&id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn mcp_restart_server(state: State<'_, McpManager>, id: String) -> Result<(), String> {
+    state.restart_server(&id).await.map_err(|e| e.to_string())
 }

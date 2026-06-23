@@ -67,6 +67,10 @@ pub enum McpError {
         message: String,
         data: Option<Value>,
     },
+    Config(String),
+    Watcher(String),
+    ServerNotFound(String),
+    AlreadyRunning(String),
 }
 
 impl McpError {
@@ -89,6 +93,10 @@ impl fmt::Display for McpError {
             McpError::Timeout => write!(f, "request timed out"),
             McpError::TooManyConcurrentRequests => write!(f, "too many concurrent requests"),
             McpError::Rpc { code, message, .. } => write!(f, "JSON-RPC error {code}: {message}"),
+            McpError::Config(msg) => write!(f, "MCP config error: {msg}"),
+            McpError::Watcher(msg) => write!(f, "MCP watcher error: {msg}"),
+            McpError::ServerNotFound(id) => write!(f, "MCP server not found: {id}"),
+            McpError::AlreadyRunning(id) => write!(f, "MCP server already running: {id}"),
         }
     }
 }
