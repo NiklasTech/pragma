@@ -8,9 +8,20 @@ import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useSettingsStore, type McpServerConfig } from "@/shared/stores/settings";
-import { Plus, PencilSimple, Trash, FloppyDisk, X, Play, Stop } from "@phosphor-icons/react";
+import {
+  Plus,
+  PencilSimple,
+  Trash,
+  FloppyDisk,
+  X,
+  Play,
+  Stop,
+  ArrowClockwise,
+} from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { SettingSection } from "./ui/SettingSection";
+import { useMcpServers, type McpServerStatus } from "../hooks/useMcpServers";
+import { McpServerLogSheet, LogButton } from "./McpServerLogSheet";
 
 interface EditForm {
   name: string;
@@ -55,13 +66,51 @@ function parseEnv(text: string): Record<string, string> {
   return env;
 }
 
+function statusColor(status: McpServerStatus): string {
+  switch (status) {
+    case "running":
+      return "bg-status-success";
+    case "starting":
+      return "bg-status-warning";
+    case "error":
+      return "bg-status-error";
+    case "stopped":
+    default:
+      return "bg-fg-subtle";
+  }
+}
+
+function statusLabel(status: McpServerStatus): string {
+  switch (status) {
+    case "running":
+      return "Running";
+    case "starting":
+      return "Starting";
+    case "error":
+      return "Error";
+    case "stopped":
+    default:
+      return "Stopped";
+  }
+}
+
 export function McpSettings() {
   const { mcp, addMcpServer, updateMcpServer, removeMcpServer, setMcpSettings } =
     useSettingsStore();
+  const {
+    statuses,
+    logs,
+    loading: statusLoading,
+    load,
+    startServer,
+    stopServer,
+    restartServer,
+    clearLogs,
+  } = useMcpServers();
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [form, setForm] = React.useState<EditForm>(serverToForm());
   const [loading, setLoading] = React.useState(false);
-  const [runningServerIds, setRunningServerIds] = React.useState<Set<string>>(new Set());
+  const [logServerId, setLogServerId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setLoading(true);
@@ -78,6 +127,7 @@ export function McpSettings() {
   const persist = async (servers: McpServerConfig[]) => {
     try {
       await invoke("mcp_save_config", { servers });
+      await load();
     } catch (err) {
       console.error("[MCP Save]", err);
     }
@@ -124,25 +174,12 @@ export function McpSettings() {
 
   const handleDelete = (id: string) => {
     removeMcpServer(id);
-    setRunningServerIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
     void persist(useSettingsStore.getState().mcp.servers.filter((s) => s.id !== id));
   };
 
-  const toggleRunning = (id: string) => {
-    setRunningServerIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
+  const activeLogServer = logServerId
+    ? (mcp.servers.find((s) => s.id === logServerId) ?? null)
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -154,7 +191,7 @@ export function McpSettings() {
           </Button>
         </div>
 
-        {loading && <p className="text-ui-xs text-fg-muted">Loading configuration...</p>}
+        {(loading || statusLoading) && <p className="text-ui-xs text-fg-muted">Loading...</p>}
 
         {editingId !== null && (
           <div className="flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3">
@@ -231,7 +268,8 @@ export function McpSettings() {
 
         <div className="flex flex-col">
           {mcp.servers.map((server) => {
-            const running = runningServerIds.has(server.id);
+            const status = statuses[server.id] ?? "stopped";
+            const isRunning = status === "running" || status === "starting";
             return (
               <div
                 key={server.id}
@@ -239,15 +277,13 @@ export function McpSettings() {
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className={cn(
-                      "size-2 shrink-0 rounded-full",
-                      running ? "bg-status-success" : "bg-fg-subtle",
-                    )}
-                    title={running ? "Running" : "Stopped"}
+                    className={cn("size-2 shrink-0 rounded-full", statusColor(status))}
+                    title={statusLabel(status)}
                   />
                   <div className="flex min-w-0 flex-col">
                     <div className="flex items-center gap-2">
                       <span className="text-ui-sm font-medium text-fg-default">{server.name}</span>
+                      <span className="text-ui-xs text-fg-subtle">{statusLabel(status)}</span>
                       {server.autostart && (
                         <span className="rounded-full border border-border/30 px-1.5 py-0.5 text-ui-xs text-fg-muted">
                           autostart
@@ -264,11 +300,25 @@ export function McpSettings() {
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    onClick={() => toggleRunning(server.id)}
-                    title={running ? "Stop server" : "Start server"}
+                    onClick={() => (isRunning ? stopServer(server.id) : startServer(server.id))}
+                    title={isRunning ? "Stop server" : "Start server"}
+                    disabled={status === "starting"}
                   >
-                    {running ? <Stop size={14} /> : <Play size={14} />}
+                    {isRunning ? <Stop size={14} /> : <Play size={14} />}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => restartServer(server.id)}
+                    title="Restart server"
+                    disabled={status === "starting"}
+                  >
+                    <ArrowClockwise size={14} />
+                  </Button>
+                  <LogButton
+                    onClick={() => setLogServerId(server.id)}
+                    logCount={(logs[server.id] ?? []).length}
+                  />
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -292,6 +342,19 @@ export function McpSettings() {
           })}
         </div>
       </SettingSection>
+
+      {activeLogServer && (
+        <McpServerLogSheet
+          serverId={activeLogServer.id}
+          serverName={activeLogServer.name}
+          logs={logs[activeLogServer.id] ?? []}
+          open={logServerId !== null}
+          onOpenChange={(open) => {
+            if (!open) setLogServerId(null);
+          }}
+          onClear={clearLogs}
+        />
+      )}
     </div>
   );
 }

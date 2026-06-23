@@ -89,7 +89,12 @@ pub struct McpClient {
 impl McpClient {
     pub async fn start(
         config: McpClientConfig,
-    ) -> Result<(Self, Child, mpsc::UnboundedReceiver<Notification>)> {
+    ) -> Result<(
+        Self,
+        Child,
+        mpsc::UnboundedReceiver<Notification>,
+        mpsc::UnboundedReceiver<String>,
+    )> {
         if config.command.is_empty() {
             return Err(McpError::Serialization("command is required".to_string()));
         }
@@ -108,9 +113,9 @@ impl McpClient {
         let stderr = child.stderr.take().ok_or(McpError::MissingStdio)?;
 
         let (client, notifications) = Self::with_io(stdout, stdin, timeout).await?;
-        spawn_stderr_logger(stderr);
+        let stderr_lines = spawn_stderr_reader(stderr);
 
-        Ok((client, child, notifications))
+        Ok((client, child, notifications, stderr_lines))
     }
 
     async fn with_io<R, W>(
@@ -236,13 +241,19 @@ where
     writer.flush().await
 }
 
-fn spawn_stderr_logger(stderr: ChildStderr) {
+fn spawn_stderr_reader(stderr: ChildStderr) -> mpsc::UnboundedReceiver<String> {
+    let (tx, rx) = mpsc::unbounded_channel::<String>();
+
     tokio::spawn(async move {
         let mut lines = BufReader::new(stderr).lines();
         while let Ok(Some(line)) = lines.next_line().await {
-            log::warn!("[mcp server stderr] {line}");
+            if tx.send(line).is_err() {
+                break;
+            }
         }
     });
+
+    rx
 }
 
 fn spawn_reader<R>(

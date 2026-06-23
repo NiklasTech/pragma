@@ -44,6 +44,13 @@ struct McpNotificationEvent {
     params: Option<Value>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct McpLogEvent {
+    server_id: String,
+    timestamp: String,
+    line: String,
+}
+
 struct RunningServer {
     #[allow(dead_code)]
     client: McpClient,
@@ -53,6 +60,8 @@ struct RunningServer {
     notification_handle: tokio::task::JoinHandle<()>,
     #[allow(dead_code)]
     supervisor_handle: tokio::task::JoinHandle<()>,
+    #[allow(dead_code)]
+    log_handle: tokio::task::JoinHandle<()>,
 }
 
 pub struct McpManager {
@@ -240,7 +249,7 @@ impl McpManager {
 
         self.emit_status(&config.id, McpServerStatus::Starting, None);
 
-        let (client, child, notifications) = McpClient::start(client_config).await?;
+        let (client, child, notifications, stderr_lines) = McpClient::start(client_config).await?;
         let child = Arc::new(Mutex::new(child));
         let status = Arc::new(Mutex::new(McpServerStatus::Running));
 
@@ -255,6 +264,11 @@ impl McpManager {
             Arc::clone(&child),
             Arc::clone(&status),
         ));
+        let log_handle = tokio::spawn(Self::forward_logs(
+            self.app_handle.clone(),
+            config.id.clone(),
+            stderr_lines,
+        ));
 
         {
             let mut servers = self.servers.lock().await;
@@ -266,6 +280,7 @@ impl McpManager {
                     status,
                     notification_handle,
                     supervisor_handle,
+                    log_handle,
                 },
             );
         }
@@ -281,6 +296,7 @@ impl McpManager {
         }
         server.notification_handle.abort();
         server.supervisor_handle.abort();
+        server.log_handle.abort();
     }
 
     async fn supervise(
@@ -335,6 +351,21 @@ impl McpManager {
                 params: notification.params,
             };
             let _ = app_handle.emit("mcp_notification", event);
+        }
+    }
+
+    async fn forward_logs(
+        app_handle: AppHandle,
+        id: String,
+        mut rx: mpsc::UnboundedReceiver<String>,
+    ) {
+        while let Some(line) = rx.recv().await {
+            let event = McpLogEvent {
+                server_id: id.clone(),
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                line,
+            };
+            let _ = app_handle.emit("mcp_log", event);
         }
     }
 
