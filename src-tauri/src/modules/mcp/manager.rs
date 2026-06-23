@@ -1,5 +1,6 @@
 use crate::modules::mcp::client::{McpClient, McpClientConfig, Notification};
 use crate::modules::mcp::error::McpError;
+use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
 use crate::modules::mcp::{config_path, McpServerConfig};
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
@@ -67,6 +68,7 @@ struct RunningServer {
 pub struct McpManager {
     app_handle: AppHandle,
     servers: Mutex<HashMap<String, RunningServer>>,
+    tools: Mutex<HashMap<String, Vec<McpTool>>>,
     config: Mutex<Vec<McpServerConfig>>,
     watcher: Mutex<RecommendedWatcher>,
     watcher_rx: Mutex<mpsc::Receiver<()>>,
@@ -94,6 +96,7 @@ impl McpManager {
         let manager = Self {
             app_handle: app_handle.clone(),
             servers: Mutex::new(HashMap::new()),
+            tools: Mutex::new(HashMap::new()),
             config: Mutex::new(Vec::new()),
             watcher: Mutex::new(watcher),
             watcher_rx: Mutex::new(watcher_rx),
@@ -155,6 +158,11 @@ impl McpManager {
         }
 
         *self.config.lock().await = new_config.clone();
+
+        {
+            let mut tools = self.tools.lock().await;
+            tools.clear();
+        }
 
         for config in new_config {
             if config.autostart {
@@ -285,8 +293,59 @@ impl McpManager {
             );
         }
 
+        self.refresh_tools(&config.id).await;
         self.emit_status(&config.id, McpServerStatus::Running, None);
         Ok(())
+    }
+
+    pub async fn get_tools(&self, id: &str) -> Vec<McpTool> {
+        let tools = self.tools.lock().await;
+        tools.get(id).cloned().unwrap_or_default()
+    }
+
+    pub async fn refresh_tools(&self, id: &str) {
+        let client = {
+            let servers = self.servers.lock().await;
+            match servers.get(id) {
+                Some(server) => Some(server.client.clone()),
+                None => None,
+            }
+        };
+
+        if let Some(client) = client {
+            match list_tools(&client).await {
+                Ok(tools) => {
+                    let mut cache = self.tools.lock().await;
+                    cache.insert(id.to_string(), tools);
+                }
+                Err(e) => {
+                    log::warn!("Failed to list tools for MCP server {id}: {e}");
+                }
+            }
+        }
+    }
+
+    pub async fn call_tool(
+        &self,
+        id: &str,
+        tool_name: &str,
+        arguments: Option<Value>,
+    ) -> crate::modules::mcp::error::Result<McpToolCallResult> {
+        let client = {
+            let servers = self.servers.lock().await;
+            match servers.get(id) {
+                Some(server) => Some(server.client.clone()),
+                None => None,
+            }
+        };
+
+        let client = client.ok_or_else(|| McpError::ServerNotFound(id.to_string()))?;
+
+        let result = call_tool(&client, tool_name, arguments)
+            .await
+            .map_err(|e| McpError::ToolCallFailed(e.to_string()))?;
+
+        Ok(result)
     }
 
     async fn stop_running_server(server: RunningServer) {

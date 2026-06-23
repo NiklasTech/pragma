@@ -22,6 +22,7 @@ import { cn } from "@/shared/lib/utils";
 import { SettingSection } from "./ui/SettingSection";
 import { useMcpServers, type McpServerStatus } from "../hooks/useMcpServers";
 import { McpServerLogSheet, LogButton } from "./McpServerLogSheet";
+import { McpServerTools } from "./McpServerTools";
 
 interface EditForm {
   name: string;
@@ -99,6 +100,7 @@ export function McpSettings() {
     useSettingsStore();
   const {
     statuses,
+    tools,
     logs,
     loading: statusLoading,
     load,
@@ -293,6 +295,7 @@ export function McpSettings() {
                     <code className="truncate text-ui-xs text-fg-muted">
                       {server.command} {server.args.join(" ")}
                     </code>
+                    <McpServerTools tools={tools[server.id] ?? []} />
                   </div>
                 </div>
 

@@ -1,6 +1,7 @@
 pub mod client;
 pub mod error;
 pub mod manager;
+pub mod tools;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -8,6 +9,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager, State};
 
 pub use manager::{McpManager, McpServerState, McpServerStatus};
+pub use tools::{McpTool, McpToolCallResult};
 
 const CONFIG_FILE: &str = "mcp.json";
 

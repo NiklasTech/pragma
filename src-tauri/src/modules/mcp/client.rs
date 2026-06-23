@@ -82,8 +82,18 @@ struct ClientInner {
 
 pub struct McpClient {
     inner: Arc<ClientInner>,
-    _reader_handle: tokio::task::JoinHandle<()>,
-    _writer_handle: tokio::task::JoinHandle<()>,
+    _reader_handle: Option<tokio::task::JoinHandle<()>>,
+    _writer_handle: Option<tokio::task::JoinHandle<()>>,
+}
+
+impl Clone for McpClient {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+            _reader_handle: None,
+            _writer_handle: None,
+        }
+    }
 }
 
 impl McpClient {
@@ -142,8 +152,8 @@ impl McpClient {
 
         let client = McpClient {
             inner,
-            _reader_handle: reader_handle,
-            _writer_handle: writer_handle,
+            _reader_handle: Some(reader_handle),
+            _writer_handle: Some(writer_handle),
         };
 
         Ok((client, notification_rx))

@@ -71,6 +71,8 @@ pub enum McpError {
     Watcher(String),
     ServerNotFound(String),
     AlreadyRunning(String),
+    ToolCallFailed(String),
+    ToolNotFound(String),
 }
 
 impl McpError {
@@ -97,6 +99,8 @@ impl fmt::Display for McpError {
             McpError::Watcher(msg) => write!(f, "MCP watcher error: {msg}"),
             McpError::ServerNotFound(id) => write!(f, "MCP server not found: {id}"),
             McpError::AlreadyRunning(id) => write!(f, "MCP server already running: {id}"),
+            McpError::ToolCallFailed(msg) => write!(f, "MCP tool call failed: {msg}"),
+            McpError::ToolNotFound(name) => write!(f, "MCP tool not found: {name}"),
         }
     }
 }

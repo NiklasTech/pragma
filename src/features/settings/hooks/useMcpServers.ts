@@ -30,10 +30,17 @@ export interface McpNotificationEvent {
   params?: unknown;
 }
 
+export interface McpTool {
+  name: string;
+  description: string;
+  input_schema: unknown;
+}
+
 const MAX_LOGS_PER_SERVER = 1000;
 
 export function useMcpServers() {
   const [statuses, setStatuses] = useState<Record<string, McpServerStatus>>({});
+  const [tools, setTools] = useState<Record<string, McpTool[]>>({});
   const [logs, setLogs] = useState<Record<string, McpLogEvent[]>>({});
   const [loading, setLoading] = useState(false);
 
@@ -52,6 +59,22 @@ export function useMcpServers() {
       setLoading(false);
     }
   }, []);
+
+  const loadTools = useCallback(async () => {
+    const serverIds = Object.keys(statuses);
+    if (serverIds.length === 0) return;
+
+    const next: Record<string, McpTool[]> = {};
+    for (const id of serverIds) {
+      try {
+        const result = await invoke<McpTool[]>("mcp_list_tools", { id });
+        next[id] = result;
+      } catch (err) {
+        console.error(`[MCP] failed to list tools for ${id}:`, err);
+      }
+    }
+    setTools(next);
+  }, [statuses]);
 
   const startServer = useCallback(async (id: string) => {
     try {
@@ -140,11 +163,19 @@ export function useMcpServers() {
     };
   }, [load]);
 
+  useEffect(() => {
+    if (Object.keys(statuses).length === 0) return;
+    if (Object.keys(tools).length > 0) return;
+    void loadTools();
+  }, [statuses, tools, loadTools]);
+
   return {
     statuses,
+    tools,
     logs,
     loading,
     load,
+    loadTools,
     startServer,
     stopServer,
     restartServer,
