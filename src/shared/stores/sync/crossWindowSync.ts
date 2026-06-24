@@ -51,15 +51,18 @@ export function crossWindowSync<T extends object>(storeName: string) {
       void listen(`pragma:store:${storeName}:snapshot`, (event) => {
         const currentLabel = getWindowLabel();
         const payload = event.payload as { source: string; state: T };
-        // eslint-disable-next-line no-console
-        console.log(`[crossWindowSync:${storeName}] snapshot received`, {
-          currentLabel,
-          source: payload.source,
-          keys: Object.keys(payload.state as object),
-        });
         if (!currentLabel || payload.source === currentLabel) return;
         isRemote = true;
-        set(payload.state as T, true);
+        // Keep the local actions (functions) because the serialized snapshot
+        // cannot transport functions and would otherwise wipe them out.
+        const current = get();
+        const actions: Partial<T> = {};
+        for (const key of Object.keys(current) as Array<keyof T>) {
+          if (typeof current[key] === "function") {
+            actions[key] = current[key];
+          }
+        }
+        set({ ...payload.state, ...actions } as T, true);
         isRemote = false;
         isReady = true;
       });

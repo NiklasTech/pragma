@@ -22,63 +22,6 @@
             resolved === "dark" ? "#09090b" : "#ffffff";
         } catch (e) {}
       })();
-
-      (function () {
-        const logEl = document.createElement("pre");
-        logEl.id = "floating-log";
-        logEl.style.cssText =
-          "position:fixed;left:0;right:0;top:0;max-height:35vh;margin:0;padding:12px;overflow:auto;background:rgba(0,0,0,0.85);color:#4ade80;font-family:monospace;font-size:11px;white-space:pre-wrap;z-index:9998;";
-        document.body.appendChild(logEl);
-
-        const originalLog = console.log;
-        const originalError = console.error;
-        const originalWarn = console.warn;
-
-        function append(level, args) {
-          try {
-            const line =
-              level +
-              " " +
-              Array.from(args)
-                .map((a) => (typeof a === "object" ? JSON.stringify(a, null, 2) : String(a)))
-                .join(" ") +
-              "\n";
-            logEl.textContent += line;
-            logEl.scrollTop = logEl.scrollHeight;
-          } catch (e) {}
-        }
-
-        console.log = function (...args) {
-          append("[LOG]", args);
-          return originalLog.apply(this, args);
-        };
-        console.error = function (...args) {
-          append("[ERR]", args);
-          return originalError.apply(this, args);
-        };
-        console.warn = function (...args) {
-          append("[WRN]", args);
-          return originalWarn.apply(this, args);
-        };
-
-        console.log("[floating.html] inline script ran", window.location.href);
-      })();
-
-      window.addEventListener("error", function (e) {
-        const el = document.getElementById("floating-error");
-        if (el) {
-          el.textContent += "ERROR: " + (e.error?.stack || e.message) + "\n";
-        }
-        console.error("[floating.html] runtime error", e.error || e.message);
-      });
-
-      window.addEventListener("unhandledrejection", function (e) {
-        const el = document.getElementById("floating-error");
-        if (el) {
-          el.textContent += "UNHANDLED REJECTION: " + (e.reason?.stack || e.reason) + "\n";
-        }
-        console.error("[floating.html] unhandled rejection", e.reason);
-      });
     </script>
   </head>
 
@@ -100,25 +43,6 @@
         Loading external panel…
       </div>
     </div>
-    <pre
-      id="floating-error"
-      style="
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        max-height: 40vh;
-        margin: 0;
-        padding: 12px;
-        overflow: auto;
-        background: rgba(0, 0, 0, 0.85);
-        color: #ff6b6b;
-        font-family: monospace;
-        font-size: 12px;
-        white-space: pre-wrap;
-        z-index: 9999;
-      "
-    ></pre>
     <script type="module" src="/src/shell/external/main.tsx"></script>
   </body>
 </html>

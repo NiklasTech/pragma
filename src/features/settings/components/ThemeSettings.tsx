@@ -4,8 +4,7 @@ import * as React from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { Button } from "@/shared/components/ui/button";
-import { useTheme, type ThemeMode } from "@/theme";
-import { saveCustomTheme, deleteCustomTheme, loadCustomThemes } from "@/theme/customThemes";
+import { useTheme, type ThemeMode, builtInThemeList } from "@/theme";
 import { validateTheme } from "@/theme/validateTheme";
 import type { Theme, ThemeInput } from "@/theme/types";
 import { Check, Trash, UploadSimple } from "@phosphor-icons/react";
@@ -28,24 +27,18 @@ function getThemePreviewColors(theme: Theme): [string, string, string, string] {
 }
 
 export function ThemeSettings() {
-  const { themeId, mode, setTheme, setMode, availableThemes } = useTheme();
-  const [customThemes, setCustomThemes] = React.useState<Record<string, Theme>>(() =>
-    loadCustomThemes(),
-  );
+  const { themeId, mode, setTheme, setMode, availableThemes, addCustomTheme, deleteCustomTheme } =
+    useTheme();
 
-  const builtInThemes = availableThemes.filter((t) => !customThemes[t.metadata.id]);
-  const customThemeList = Object.values(customThemes);
-
-  const refreshCustomThemes = () => {
-    setCustomThemes(loadCustomThemes());
-  };
+  const builtInIds = React.useMemo(() => new Set(builtInThemeList.map((t) => t.metadata.id)), []);
+  const builtInThemes = availableThemes.filter((t) => builtInIds.has(t.metadata.id));
+  const customThemeList = availableThemes.filter((t) => !builtInIds.has(t.metadata.id));
 
   const handleDeleteCustom = (id: string) => {
     deleteCustomTheme(id);
     if (themeId === id) {
       setTheme("dark-default");
     }
-    refreshCustomThemes();
   };
 
   const handleImport = async () => {
@@ -65,8 +58,7 @@ export function ThemeSettings() {
     }
 
     const theme = parsed as Theme;
-    saveCustomTheme(theme);
-    refreshCustomThemes();
+    addCustomTheme(theme);
     setTheme(theme.metadata.id);
   };
 

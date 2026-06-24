@@ -79,12 +79,15 @@ pub fn create_external_window(
         .position(request.bounds.x as f64, request.bounds.y as f64)
         .build()
         .map_err(|err| {
-        let msg = format!("Failed to create external window: {err}");
-        log::error!("{msg}");
-        msg
-    })?;
+            let msg = format!("Failed to create external window: {err}");
+            log::error!("{msg}");
+            msg
+        })?;
 
-    log::info!("external window {label} created with label {}", window.label());
+    log::info!(
+        "external window {label} created with label {}",
+        window.label()
+    );
     Ok(label)
 }
 

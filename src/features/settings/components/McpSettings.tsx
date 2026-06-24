@@ -56,12 +56,18 @@ function parseEnv(text: string): Record<string, string> {
 }
 
 export function McpSettings() {
-  const { mcp, addMcpServer, updateMcpServer, removeMcpServer, setMcpSettings } =
-    useSettingsStore();
+  const {
+    mcp,
+    mcpRunningServerIds,
+    addMcpServer,
+    updateMcpServer,
+    removeMcpServer,
+    setMcpSettings,
+    toggleMcpServerRunning,
+  } = useSettingsStore();
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [form, setForm] = React.useState<EditForm>(serverToForm());
   const [loading, setLoading] = React.useState(false);
-  const [runningServerIds, setRunningServerIds] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     setLoading(true);
@@ -124,24 +130,11 @@ export function McpSettings() {
 
   const handleDelete = (id: string) => {
     removeMcpServer(id);
-    setRunningServerIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
     void persist(useSettingsStore.getState().mcp.servers.filter((s) => s.id !== id));
   };
 
   const toggleRunning = (id: string) => {
-    setRunningServerIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    toggleMcpServerRunning(id);
   };
 
   return (
@@ -231,7 +224,7 @@ export function McpSettings() {
 
         <div className="flex flex-col">
           {mcp.servers.map((server) => {
-            const running = runningServerIds.has(server.id);
+            const running = mcpRunningServerIds.includes(server.id);
             return (
               <div
                 key={server.id}

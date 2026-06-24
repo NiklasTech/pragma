@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
+import { getAllWebviewWindows } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -24,10 +25,8 @@ function isMainWindow(): boolean {
   return getCurrentWindow().label === "main";
 }
 
-async function sendSnapshot(label: string) {
+async function sendSnapshot() {
   const source = getCurrentWindow().label;
-  // eslint-disable-next-line no-console
-  console.log("[useExternalWindowManager] sending snapshots to", label);
 
   await emit(`pragma:store:settings:snapshot`, {
     source,
@@ -55,19 +54,47 @@ export function useExternalWindowManager(): void {
   useEffect(() => {
     if (!isMainWindow()) return;
 
+    // Clean up stale external-window entries: if the store says a panel is
+    // hosted in an external window but that Tauri window no longer exists,
+    // dock it back into the main layout so it can be reopened.
+    const cleanupStale = async () => {
+      try {
+        const windows = await getAllWebviewWindows();
+        const labels = new Set(windows.map((w) => w.label));
+        const { floating, dockExternalWindow } = useLayoutStore.getState();
+        for (const f of floating) {
+          if (f.external && !labels.has(f.external)) {
+            dockExternalWindow(f.external, undefined);
+          }
+        }
+      } catch {
+        // ignore cleanup errors
+      }
+    };
+
     let unlistenReady: (() => void) | null = null;
     let unlistenClose: (() => void) | null = null;
 
     const setup = async () => {
-      unlistenReady = await listen<ExternalWindowReadyPayload>("pragma:external:ready", (event) => {
-        // eslint-disable-next-line no-console
-        console.log("[useExternalWindowManager] ready received", event.payload);
-        void sendSnapshot(event.payload.label);
+      await cleanupStale();
+
+      unlistenReady = await listen<ExternalWindowReadyPayload>("pragma:external:ready", () => {
+        void sendSnapshot();
       });
 
       unlistenClose = await listen<ExternalWindowClosePayload>("pragma:external:close", (event) => {
         const { label, x, y, width, height } = event.payload;
-        useLayoutStore.getState().dockExternalWindow(label, { x, y, width, height });
+        const state = useLayoutStore.getState();
+        const floating = state.floating.find((f) => f.external === label);
+        if (!floating) return;
+
+        // Persist the final bounds before docking back into the main layout.
+        useLayoutStore.setState({
+          floating: state.floating.map((f) =>
+            f.id === floating.id ? { ...f, x, y, width, height } : f,
+          ),
+        });
+        state.dockFloatingPanel(floating.id);
       });
     };
 

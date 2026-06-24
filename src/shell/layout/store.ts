@@ -285,10 +285,17 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     }),
   addFloatingPanel: (kind) =>
     set((s) => {
-      if (findPanelByKind(s.root, kind) || s.floating.some((f) => findPanelByKind(f.child, kind))) {
+      // Already floating externally — the external window manager will focus it.
+      if (s.floating.some((f) => findPanelByKind(f.child, kind) && f.external)) {
         return s;
       }
-      const panel = createPanel(kind);
+      // Already floating in-app — nothing to do.
+      if (s.floating.some((f) => findPanelByKind(f.child, kind))) {
+        return s;
+      }
+      const existing = findPanelByKind(s.root, kind);
+      const panel = existing ?? createPanel(kind);
+      const cleaned = existing ? removeNode(s.root, existing.id) : s.root;
       const floating = createFloating(panel, {
         x: 160,
         y: 120,
@@ -296,6 +303,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
         height: 560,
       });
       return {
+        root: cleanupTree(cleaned ?? createPanel("welcome")),
         floating: [...s.floating, floating],
         ...markCustomized(s),
       };

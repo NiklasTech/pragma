@@ -1,5 +1,6 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
+import type { Theme } from "@/theme/types";
 import { crossWindowSync } from "./sync/crossWindowSync";
 import {
   getDefaultShortcuts,
@@ -119,6 +120,8 @@ export interface SettingsState {
   statusbar: StatusbarSettings;
   git: GitSettings;
   mcp: McpSettings;
+  mcpRunningServerIds: string[];
+  customThemes: Record<string, Theme>;
   shortcuts: ShortcutMap;
 }
 
@@ -136,6 +139,10 @@ interface SettingsActions {
   addMcpServer: (server: Omit<McpServerConfig, "id">) => void;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;
+  setMcpServerRunning: (id: string, running: boolean) => void;
+  toggleMcpServerRunning: (id: string) => void;
+  addCustomTheme: (theme: Theme) => void;
+  deleteCustomTheme: (id: string) => void;
   importSettings: (partial: Partial<SettingsState>) => void;
   updateProvider: (provider: AIProvider, config: Partial<ProviderSettings>) => void;
   setShortcut: (actionId: ShortcutActionId, binding: ShortcutBinding | null) => void;
@@ -222,6 +229,8 @@ const defaultSettings: SettingsState = {
   mcp: {
     servers: [],
   },
+  mcpRunningServerIds: [],
+  customThemes: {},
   shortcuts: getDefaultShortcuts(getIsMac()),
 };
 
@@ -275,7 +284,37 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
         ...state.mcp,
         servers: state.mcp.servers.filter((s) => s.id !== id),
       },
+      mcpRunningServerIds: state.mcpRunningServerIds.filter((runningId) => runningId !== id),
     })),
+
+  setMcpServerRunning: (id, running) =>
+    set((state) => ({
+      mcpRunningServerIds: running
+        ? [...state.mcpRunningServerIds, id]
+        : state.mcpRunningServerIds.filter((runningId) => runningId !== id),
+    })),
+
+  toggleMcpServerRunning: (id) =>
+    set((state) => {
+      const running = state.mcpRunningServerIds.includes(id);
+      return {
+        mcpRunningServerIds: running
+          ? state.mcpRunningServerIds.filter((runningId) => runningId !== id)
+          : [...state.mcpRunningServerIds, id],
+      };
+    }),
+
+  addCustomTheme: (theme) =>
+    set((state) => ({
+      customThemes: { ...state.customThemes, [theme.metadata.id]: theme },
+    })),
+
+  deleteCustomTheme: (id) =>
+    set((state) => {
+      const next = { ...state.customThemes };
+      delete next[id];
+      return { customThemes: next };
+    }),
 
   importSettings: (partial) =>
     set((state) => ({
@@ -290,6 +329,8 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       statusbar: { ...state.statusbar, ...partial.statusbar },
       git: { ...state.git, ...partial.git },
       mcp: { ...state.mcp, ...partial.mcp },
+      mcpRunningServerIds: partial.mcpRunningServerIds ?? state.mcpRunningServerIds,
+      customThemes: { ...state.customThemes, ...partial.customThemes },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },
     })),
 
@@ -326,5 +367,12 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 }));
 
 export const useSettingsStore = create<SettingsState & SettingsActions>()(
-  persist(settingsStoreCreator, { name: STORAGE_KEY }),
+  persist(settingsStoreCreator, {
+    name: STORAGE_KEY,
+    partialize: (state) => ({
+      ...state,
+      // Running state is session-only and should not survive app restarts.
+      mcpRunningServerIds: [],
+    }),
+  }),
 );

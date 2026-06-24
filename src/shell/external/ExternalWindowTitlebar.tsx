@@ -39,7 +39,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-header shrink-0 select-none items-center justify-between border-b border-border/60 bg-bg-surface"
+      className="relative z-[60] flex h-header shrink-0 select-none items-center justify-between border-b border-border/60 bg-bg-surface"
     >
       <div
         data-tauri-drag-region
