@@ -132,6 +132,8 @@ pub fn run() {
             commands::docker::docker_compose_down,
             commands::docker::docker_compose_build,
             commands::docker::docker_compose_restart,
+            commands::docker::docker_compose_changed_between_branches,
+            commands::docker::docker_compose_up_build,
             commands::perf::memory_stats,
         ])
         .run(tauri::generate_context!())
