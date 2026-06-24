@@ -11,6 +11,14 @@ pub struct WindowBounds {
     pub height: u32,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateExternalWindowRequest {
+    pub node_id: String,
+    pub title: String,
+    pub bounds: WindowBounds,
+}
+
 fn is_valid_node_id(node_id: &str) -> bool {
     !node_id.is_empty()
         && node_id
@@ -26,33 +34,31 @@ fn build_label(node_id: &str) -> String {
 #[tauri::command]
 pub fn create_external_window(
     app: AppHandle,
-    node_id: String,
-    title: String,
-    bounds: WindowBounds,
+    request: CreateExternalWindowRequest,
 ) -> Result<String, String> {
-    if !is_valid_node_id(&node_id) {
-        return Err(format!("Invalid node id: {node_id}"));
+    if !is_valid_node_id(&request.node_id) {
+        return Err(format!("Invalid node id: {}", request.node_id));
     }
 
-    if bounds.width == 0 || bounds.height == 0 {
+    if request.bounds.width == 0 || request.bounds.height == 0 {
         return Err("Window width and height must be greater than 0".to_string());
     }
 
-    let label = build_label(&node_id);
+    let label = build_label(&request.node_id);
 
     if app.get_webview_window(&label).is_some() {
         return Err(format!("External window {label} already exists"));
     }
 
-    let url = format!("floating.html?nodeId={node_id}");
+    let url = format!("floating.html?nodeId={}", request.node_id);
 
     WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
-        .title(title)
+        .title(request.title)
         .decorations(false)
         .resizable(true)
         .visible(false)
-        .inner_size(bounds.width as f64, bounds.height as f64)
-        .position(bounds.x as f64, bounds.y as f64)
+        .inner_size(request.bounds.width as f64, request.bounds.height as f64)
+        .position(request.bounds.x as f64, request.bounds.y as f64)
         .build()
         .map(|_| label)
         .map_err(|err| format!("Failed to create external window: {err}"))

@@ -48,10 +48,27 @@ export function FloatingWindow({
       const startPosX = x;
       const startPosY = y;
 
+      let externalized = false;
+
       const handleMouseMove = (ev: MouseEvent) => {
+        if (externalized) return;
         const dx = ev.clientX - startX;
         const dy = ev.clientY - startY;
         onMove(startPosX + dx, startPosY + dy);
+
+        if (
+          onExternalize &&
+          (ev.clientX < 0 ||
+            ev.clientY < 0 ||
+            ev.clientX > window.innerWidth ||
+            ev.clientY > window.innerHeight)
+        ) {
+          externalized = true;
+          setIsDragging(false);
+          window.removeEventListener("mousemove", handleMouseMove);
+          window.removeEventListener("mouseup", handleMouseUp);
+          onExternalize();
+        }
       };
 
       const handleMouseUp = () => {
@@ -63,7 +80,7 @@ export function FloatingWindow({
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [x, y, onMove],
+    [x, y, onMove, onExternalize],
   );
 
   const handleResizeStart = useCallback(

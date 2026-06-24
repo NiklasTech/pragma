@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 import { useLayoutStore } from "@/shell/layout";
 import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
@@ -27,19 +28,23 @@ export function FloatingHost() {
         // Close any stale external window for this node before creating a new one.
         await invoke("close_external_window", { label }).catch(() => {});
         const newLabel = await invoke<string>("create_external_window", {
-          nodeId: node.id,
-          title,
-          bounds: {
-            x: Math.round(node.x),
-            y: Math.round(node.y),
-            width: Math.round(node.width),
-            height: Math.round(node.height),
+          request: {
+            nodeId: node.id,
+            title,
+            bounds: {
+              x: Math.round(node.x),
+              y: Math.round(node.y),
+              width: Math.round(node.width),
+              height: Math.round(node.height),
+            },
           },
         });
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
         // eslint-disable-next-line no-console
         console.error("Failed to create external window:", err);
+        toast.error(`External window failed: ${message}`);
       }
     },
     [moveFloatingToExternal],
