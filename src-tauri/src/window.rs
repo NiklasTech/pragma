@@ -27,7 +27,11 @@ fn is_valid_node_id(node_id: &str) -> bool {
 }
 
 fn build_label(node_id: &str) -> String {
-    format!("{LABEL_PREFIX}{node_id}")
+    if node_id.starts_with(LABEL_PREFIX) {
+        node_id.to_string()
+    } else {
+        format!("{LABEL_PREFIX}{node_id}")
+    }
 }
 
 /// Creates a new external floating window for the given layout node.

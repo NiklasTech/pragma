@@ -24,7 +24,11 @@ interface ExternalPanelAppProps {
 }
 
 export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
+  // eslint-disable-next-line no-console
+  console.log("[ExternalPanelApp] rendering for nodeId", nodeId);
   const node = useLayoutStore((s) => s.floating.find((f) => f.id === nodeId));
+  // eslint-disable-next-line no-console
+  console.log("[ExternalPanelApp] node resolved", node);
   const title = useMemo(() => (node ? externalTitle(node.child) : "Pragma"), [node]);
   const actions = useAppShortcutActions();
 
@@ -32,6 +36,8 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
 
   useEffect(() => {
     const win = getCurrentWindow();
+    // eslint-disable-next-line no-console
+    console.log("[ExternalPanelApp] emitting ready", { label: win.label, nodeId });
 
     void emit("pragma:external:ready", { label: win.label, nodeId });
 

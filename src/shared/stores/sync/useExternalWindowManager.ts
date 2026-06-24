@@ -24,8 +24,10 @@ function isMainWindow(): boolean {
   return getCurrentWindow().label === "main";
 }
 
-async function sendSnapshot(_label: string) {
+async function sendSnapshot(label: string) {
   const source = getCurrentWindow().label;
+  // eslint-disable-next-line no-console
+  console.log("[useExternalWindowManager] sending snapshots to", label);
 
   await emit(`pragma:store:settings:snapshot`, {
     source,
@@ -58,6 +60,8 @@ export function useExternalWindowManager(): void {
 
     const setup = async () => {
       unlistenReady = await listen<ExternalWindowReadyPayload>("pragma:external:ready", (event) => {
+        // eslint-disable-next-line no-console
+        console.log("[useExternalWindowManager] ready received", event.payload);
         void sendSnapshot(event.payload.label);
       });
 

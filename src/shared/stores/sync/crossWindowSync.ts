@@ -51,6 +51,12 @@ export function crossWindowSync<T extends object>(storeName: string) {
       void listen(`pragma:store:${storeName}:snapshot`, (event) => {
         const currentLabel = getWindowLabel();
         const payload = event.payload as { source: string; state: T };
+        // eslint-disable-next-line no-console
+        console.log(`[crossWindowSync:${storeName}] snapshot received`, {
+          currentLabel,
+          source: payload.source,
+          keys: Object.keys(payload.state as object),
+        });
         if (!currentLabel || payload.source === currentLabel) return;
         isRemote = true;
         set(payload.state as T, true);
@@ -73,18 +79,6 @@ export function crossWindowSync<T extends object>(storeName: string) {
           void emit(`pragma:store:${storeName}`, { source: currentLabel, partial: diff });
         }
       });
-
-      const sendReady = () => {
-        const label = getWindowLabel();
-        if (!label) {
-          setTimeout(sendReady, 10);
-          return;
-        }
-        if (label !== "main") {
-          void emit("pragma:external:ready", { source: label, name: storeName });
-        }
-      };
-      sendReady();
 
       return state;
     };

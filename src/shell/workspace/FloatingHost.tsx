@@ -52,7 +52,7 @@ export function FloatingHost() {
   const handleExternalize = useCallback(
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
-      const label = `floating-${node.id}`;
+      const label = node.id;
       const bounds = {
         x: Math.round(node.x),
         y: Math.round(node.y),
