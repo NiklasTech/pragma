@@ -274,24 +274,45 @@ export function ChatPanel() {
                 url: string;
                 title?: string;
               }>;
-              const toolInvocations = msg.parts.filter(
-                (p) => p.type === "tool-invocation",
-              ) as unknown as Array<{
-                type: "tool-invocation";
-                toolInvocation: {
-                  state:
-                    | "input-streaming"
-                    | "input-available"
-                    | "output-streaming"
-                    | "output-available"
-                    | "output-error";
-                  toolCallId: string;
-                  toolName: string;
-                  input: unknown;
-                  output?: unknown;
-                  errorText?: string;
-                };
-              }>;
+              const toolInvocations = msg.parts
+                .map((p) => {
+                  if (p.type === "tool-invocation" && "toolInvocation" in p) {
+                    return (p as { toolInvocation: unknown }).toolInvocation as {
+                      state:
+                        | "input-streaming"
+                        | "input-available"
+                        | "output-streaming"
+                        | "output-available"
+                        | "output-error";
+                      toolCallId: string;
+                      toolName: string;
+                      input: unknown;
+                      output?: unknown;
+                      errorText?: string;
+                    };
+                  }
+                  if (
+                    p.type === "dynamic-tool" ||
+                    (typeof p.type === "string" && p.type.startsWith("tool-"))
+                  ) {
+                    const part = p as {
+                      state:
+                        | "input-streaming"
+                        | "input-available"
+                        | "output-streaming"
+                        | "output-available"
+                        | "output-error";
+                      toolCallId: string;
+                      toolName: string;
+                      input: unknown;
+                      output?: unknown;
+                      errorText?: string;
+                    };
+                    return part;
+                  }
+                  return null;
+                })
+                .filter((inv): inv is NonNullable<typeof inv> => inv !== null);
               const isStreaming = msg.id === streamingMessageId;
 
               // Some providers/models emit reasoning as inline <thinking> tags inside the text.
@@ -340,13 +361,13 @@ export function ChatPanel() {
                     {reasoning && <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />}
                     {toolInvocations.map((inv) => (
                       <ToolInvocationBlock
-                        key={inv.toolInvocation.toolCallId}
-                        toolCallId={inv.toolInvocation.toolCallId}
-                        toolName={inv.toolInvocation.toolName}
-                        state={inv.toolInvocation.state}
-                        input={inv.toolInvocation.input}
-                        output={inv.toolInvocation.output}
-                        errorText={inv.toolInvocation.errorText}
+                        key={inv.toolCallId}
+                        toolCallId={inv.toolCallId}
+                        toolName={inv.toolName}
+                        state={inv.state}
+                        input={inv.input}
+                        output={inv.output}
+                        errorText={inv.errorText}
                       />
                     ))}
                     <MessageResponse streaming={isStreaming}>{text}</MessageResponse>

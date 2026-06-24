@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { useChat, type UIMessage, type UseChatHelpers } from "@ai-sdk/react";
-import type { ChatTransport, UIMessageChunk } from "ai";
+import {
+  getToolName,
+  isToolUIPart,
+  type ChatTransport,
+  type DynamicToolUIPart,
+  type UIMessageChunk,
+} from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 import { useAIStore, type ChatMessage } from "@/shared/stores/ai";
@@ -115,14 +121,62 @@ export function getMessageText(msg: UIMessage): string {
   return stripReasoningTags(text);
 }
 
-function isToolInvocationPart(part: UIMessage["parts"][number]): boolean {
-  return part.type === "tool-invocation";
+interface ToolInvocationLike {
+  state:
+    | "input-streaming"
+    | "input-available"
+    | "output-streaming"
+    | "output-available"
+    | "output-error";
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+  output?: unknown;
+  errorText?: string;
+}
+
+function getToolInvocation(part: UIMessage["parts"][number]): ToolInvocationLike | undefined {
+  if (part.type === "tool-invocation" && "toolInvocation" in part) {
+    const inv = (part as unknown as ToolInvocationPart).toolInvocation;
+    return {
+      state: inv.state,
+      toolCallId: inv.toolCallId,
+      toolName: inv.toolName,
+      input: inv.input,
+      output: inv.output,
+      errorText: inv.errorText,
+    };
+  }
+
+  if (isToolUIPart(part as Parameters<typeof isToolUIPart>[0])) {
+    const p = part as unknown as DynamicToolUIPart;
+    const supportedStates = [
+      "input-streaming",
+      "input-available",
+      "output-streaming",
+      "output-available",
+      "output-error",
+    ] as const;
+    if (!supportedStates.includes(p.state as (typeof supportedStates)[number])) {
+      return undefined;
+    }
+    return {
+      state: p.state as ToolInvocationLike["state"],
+      toolCallId: p.toolCallId,
+      toolName: getToolName(p),
+      input: p.input,
+      output: p.output,
+      errorText: p.errorText,
+    };
+  }
+
+  return undefined;
 }
 
 function getToolCalls(msg: UIMessage): BackendToolCall[] | undefined {
   const invocations = msg.parts
-    .filter(isToolInvocationPart)
-    .map((p) => (p as unknown as ToolInvocationPart).toolInvocation);
+    .map(getToolInvocation)
+    .filter((inv): inv is ToolInvocationLike => inv !== undefined);
   if (invocations.length === 0) return undefined;
 
   return invocations.map((inv) => ({
@@ -148,8 +202,9 @@ function uiMessageToBackendMessages(msg: UIMessage): APIChatRequest["messages"] 
       },
     ];
 
-    for (const part of msg.parts.filter(isToolInvocationPart)) {
-      const inv = (part as unknown as ToolInvocationPart).toolInvocation;
+    for (const part of msg.parts) {
+      const inv = getToolInvocation(part);
+      if (!inv) continue;
       if (inv.state === "output-available" || inv.state === "output-error") {
         messages.push({
           role: "tool",
@@ -449,7 +504,7 @@ export function useAI() {
           error?: string;
         }>("mcp_call_tool", {
           id: tool.serverId,
-          tool_name: tool.toolName,
+          toolName: tool.toolName,
           arguments: typeof toolCall.input === "object" ? toolCall.input : {},
         });
 
@@ -487,10 +542,15 @@ export function useAI() {
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage || lastMessage.role !== "assistant") return false;
 
+    // Only auto-continue when the assistant message contains a completed tool
+    // call but has not produced an answer yet. Once the model generated text,
+    // we must not resubmit to avoid an infinite loop.
+    if (getMessageText(lastMessage).trim().length > 0) return false;
+
     return lastMessage.parts.some((part) => {
-      if (!isToolInvocationPart(part)) return false;
-      const state = (part as unknown as ToolInvocationPart).toolInvocation.state;
-      return state === "output-available" || state === "output-error";
+      const inv = getToolInvocation(part);
+      if (!inv) return false;
+      return inv.state === "output-available" || inv.state === "output-error";
     });
   }, []);
 
