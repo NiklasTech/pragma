@@ -70,19 +70,28 @@ pub fn create_external_window(
     let url = format!("floating.html?nodeId={}", request.node_id);
     log::info!("building external window {label} at url={url}");
 
-    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+    let mut builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(request.title)
         .decorations(false)
+        .transparent(true)
         .resizable(true)
-        .visible(true)
+        .visible(false)
+        .always_on_top(true)
         .inner_size(request.bounds.width as f64, request.bounds.height as f64)
-        .position(request.bounds.x as f64, request.bounds.y as f64)
-        .build()
-        .map_err(|err| {
-            let msg = format!("Failed to create external window: {err}");
-            log::error!("{msg}");
-            msg
-        })?;
+        .position(request.bounds.x as f64, request.bounds.y as f64);
+
+    // Tie lifecycle to the main window on Windows/Linux so the floating panel
+    // minimizes/closes with the main app (matching Terax).
+    #[cfg(not(target_os = "macos"))]
+    if let Some(main) = app.get_webview_window("main") {
+        builder = builder.parent(&main).map_err(|e| e.to_string())?;
+    }
+
+    let window = builder.build().map_err(|err| {
+        let msg = format!("Failed to create external window: {err}");
+        log::error!("{msg}");
+        msg
+    })?;
 
     log::info!("external window {label} created with label {}", window.label());
     Ok(label)
