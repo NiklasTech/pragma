@@ -22,11 +22,62 @@
             resolved === "dark" ? "#09090b" : "#ffffff";
         } catch (e) {}
       })();
+
+      window.addEventListener("error", function (e) {
+        const el = document.getElementById("floating-error");
+        if (el) {
+          el.textContent += "ERROR: " + (e.error?.stack || e.message) + "\n";
+        }
+        console.error("[floating.html] runtime error", e.error || e.message);
+      });
+
+      window.addEventListener("unhandledrejection", function (e) {
+        const el = document.getElementById("floating-error");
+        if (el) {
+          el.textContent += "UNHANDLED REJECTION: " + (e.reason?.stack || e.reason) + "\n";
+        }
+        console.error("[floating.html] unhandled rejection", e.reason);
+      });
     </script>
   </head>
 
   <body>
-    <div id="floating-root"></div>
+    <div id="floating-root">
+      <div
+        id="floating-boot"
+        style="
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: system-ui, sans-serif;
+          font-size: 14px;
+          color: #888;
+        "
+      >
+        Loading external panel…
+      </div>
+    </div>
+    <pre
+      id="floating-error"
+      style="
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-height: 40vh;
+        margin: 0;
+        padding: 12px;
+        overflow: auto;
+        background: rgba(0, 0, 0, 0.85);
+        color: #ff6b6b;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        z-index: 9999;
+      "
+    ></pre>
     <script type="module" src="/src/shell/external/main.tsx"></script>
   </body>
 </html>
