@@ -15,7 +15,7 @@ export function Terminal() {
     initializedRef.current = true;
 
     if (sessions.length === 0) {
-      addSession({
+      void addSession({
         id: crypto.randomUUID(),
         name: "Terminal",
         type: "shell",

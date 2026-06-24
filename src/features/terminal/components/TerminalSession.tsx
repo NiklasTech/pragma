@@ -78,30 +78,44 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       unlistenFn = unlisten;
 
       fit.fit();
-      const { cols, rows } = t;
 
-      try {
-        let ptyId: string;
-        if (session.command) {
-          ptyId = await invoke<string>("create_pty_command", {
-            command: session.command,
-            cwd: session.cwd ?? null,
-            cols: Math.max(cols, 10),
-            rows: Math.max(rows, 2),
-          });
-        } else {
-          const shellArg = session.shell?.trim().length ? session.shell : undefined;
-          ptyId = await invoke<string>("create_pty", {
-            shell: shellArg,
-            cols: Math.max(cols, 10),
-            rows: Math.max(rows, 2),
-          });
+      if (session.ptyId) {
+        ptyIdRef.current = session.ptyId;
+      } else {
+        const { cols, rows } = t;
+        try {
+          let ptyId: string;
+          if (session.command) {
+            ptyId = await invoke<string>("create_pty_command", {
+              command: session.command,
+              cwd: session.cwd ?? null,
+              cols: Math.max(cols, 10),
+              rows: Math.max(rows, 2),
+            });
+          } else {
+            const shellArg = session.shell?.trim().length ? session.shell : undefined;
+            ptyId = await invoke<string>("create_pty", {
+              shell: shellArg,
+              cols: Math.max(cols, 10),
+              rows: Math.max(rows, 2),
+            });
+          }
+          if (disposed) return;
+          ptyIdRef.current = ptyId;
+          useTerminalStore.getState().attachPty(session.id, ptyId);
+        } catch (err) {
+          t.writeln(`\r\nFailed to start shell: ${String(err)}`);
+          return;
         }
-        if (disposed) return;
-        ptyIdRef.current = ptyId;
-      } catch (err) {
-        t.writeln(`\r\nFailed to start shell: ${String(err)}`);
-        return;
+      }
+
+      const { cols: fitCols, rows: fitRows } = t;
+      if (fitCols > 0 && fitRows > 0 && ptyIdRef.current) {
+        void invoke("resize_pty", {
+          id: ptyIdRef.current,
+          rows: fitRows,
+          cols: fitCols,
+        });
       }
 
       resizeObserver = new ResizeObserver(() => {
@@ -147,12 +161,18 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;
-      if (ptyIdRef.current) {
-        void invoke("kill_pty", { id: ptyIdRef.current });
-      }
       ptyIdRef.current = null;
     };
-  }, [session.command, session.shell, session.cwd, fontSize, fontFamily, scrollback]);
+  }, [
+    session.command,
+    session.shell,
+    session.cwd,
+    session.ptyId,
+    fontSize,
+    fontFamily,
+    scrollback,
+    session.id,
+  ]);
 
   useEffect(() => {
     if (!termRef.current) return;
@@ -215,7 +235,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full relative overflow-hidden"
+      className="relative h-full w-full overflow-hidden"
       style={{ display: isActive ? "block" : "none" }}
     >
       <AISuggestionsOverlay

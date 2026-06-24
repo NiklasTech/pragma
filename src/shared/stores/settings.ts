@@ -1,5 +1,6 @@
-import { create } from "zustand";
+import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
+import { crossWindowSync } from "./sync/crossWindowSync";
 import {
   getDefaultShortcuts,
   getIsMac,
@@ -224,107 +225,106 @@ const defaultSettings: SettingsState = {
   shortcuts: getDefaultShortcuts(getIsMac()),
 };
 
-export const useSettingsStore = create<SettingsState & SettingsActions>()(
-  persist(
-    (set) => ({
-      ...defaultSettings,
+const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = crossWindowSync<
+  SettingsState & SettingsActions
+>("settings")((set) => ({
+  ...defaultSettings,
 
-      setEditorSettings: (settings) =>
-        set((state) => ({ editor: { ...state.editor, ...settings } })),
+  setEditorSettings: (settings) => set((state) => ({ editor: { ...state.editor, ...settings } })),
 
-      setTerminalSettings: (settings) =>
-        set((state) => ({ terminal: { ...state.terminal, ...settings } })),
+  setTerminalSettings: (settings) =>
+    set((state) => ({ terminal: { ...state.terminal, ...settings } })),
 
-      setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
+  setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
 
-      setTheme: (theme) => set({ theme }),
-      setThemeMode: (themeMode) => set({ themeMode }),
-      setKeymap: (keymap) => set({ keymap }),
+  setTheme: (theme) => set({ theme }),
+  setThemeMode: (themeMode) => set({ themeMode }),
+  setKeymap: (keymap) => set({ keymap }),
 
-      setLayoutSettings: (settings) =>
-        set((state) => ({ layout: { ...state.layout, ...settings } })),
+  setLayoutSettings: (settings) => set((state) => ({ layout: { ...state.layout, ...settings } })),
 
-      setStatusbarSettings: (settings) =>
-        set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
+  setStatusbarSettings: (settings) =>
+    set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
 
-      setGitSettings: (settings) => set((state) => ({ git: { ...state.git, ...settings } })),
+  setGitSettings: (settings) => set((state) => ({ git: { ...state.git, ...settings } })),
 
-      setMcpSettings: (settings) => set((state) => ({ mcp: { ...state.mcp, ...settings } })),
+  setMcpSettings: (settings) => set((state) => ({ mcp: { ...state.mcp, ...settings } })),
 
-      addMcpServer: (server) =>
-        set((state) => ({
-          mcp: {
-            ...state.mcp,
-            servers: [
-              ...state.mcp.servers,
-              { ...server, id: `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
-            ],
-          },
-        })),
+  addMcpServer: (server) =>
+    set((state) => ({
+      mcp: {
+        ...state.mcp,
+        servers: [
+          ...state.mcp.servers,
+          { ...server, id: `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
+        ],
+      },
+    })),
 
-      updateMcpServer: (id, server) =>
-        set((state) => ({
-          mcp: {
-            ...state.mcp,
-            servers: state.mcp.servers.map((s) => (s.id === id ? { ...s, ...server } : s)),
-          },
-        })),
+  updateMcpServer: (id, server) =>
+    set((state) => ({
+      mcp: {
+        ...state.mcp,
+        servers: state.mcp.servers.map((s) => (s.id === id ? { ...s, ...server } : s)),
+      },
+    })),
 
-      removeMcpServer: (id) =>
-        set((state) => ({
-          mcp: {
-            ...state.mcp,
-            servers: state.mcp.servers.filter((s) => s.id !== id),
-          },
-        })),
+  removeMcpServer: (id) =>
+    set((state) => ({
+      mcp: {
+        ...state.mcp,
+        servers: state.mcp.servers.filter((s) => s.id !== id),
+      },
+    })),
 
-      importSettings: (partial) =>
-        set((state) => ({
-          ...state,
-          editor: { ...state.editor, ...partial.editor },
-          terminal: { ...state.terminal, ...partial.terminal },
-          ai: { ...state.ai, ...partial.ai },
-          theme: partial.theme ?? state.theme,
-          themeMode: partial.themeMode ?? state.themeMode,
-          keymap: partial.keymap ?? state.keymap,
-          layout: { ...state.layout, ...partial.layout },
-          statusbar: { ...state.statusbar, ...partial.statusbar },
-          git: { ...state.git, ...partial.git },
-          mcp: { ...state.mcp, ...partial.mcp },
-          shortcuts: { ...state.shortcuts, ...partial.shortcuts },
-        })),
+  importSettings: (partial) =>
+    set((state) => ({
+      ...state,
+      editor: { ...state.editor, ...partial.editor },
+      terminal: { ...state.terminal, ...partial.terminal },
+      ai: { ...state.ai, ...partial.ai },
+      theme: partial.theme ?? state.theme,
+      themeMode: partial.themeMode ?? state.themeMode,
+      keymap: partial.keymap ?? state.keymap,
+      layout: { ...state.layout, ...partial.layout },
+      statusbar: { ...state.statusbar, ...partial.statusbar },
+      git: { ...state.git, ...partial.git },
+      mcp: { ...state.mcp, ...partial.mcp },
+      shortcuts: { ...state.shortcuts, ...partial.shortcuts },
+    })),
 
-      updateProvider: (provider, config) =>
-        set((state) => ({
-          ai: {
-            ...state.ai,
-            providers: {
-              ...state.ai.providers,
-              [provider]: { ...state.ai.providers[provider], ...config },
-            },
-          },
-        })),
+  updateProvider: (provider, config) =>
+    set((state) => ({
+      ai: {
+        ...state.ai,
+        providers: {
+          ...state.ai.providers,
+          [provider]: { ...state.ai.providers[provider], ...config },
+        },
+      },
+    })),
 
-      setShortcut: (actionId, binding) =>
-        set((state) => ({
-          shortcuts: { ...state.shortcuts, [actionId]: binding },
-        })),
+  setShortcut: (actionId, binding) =>
+    set((state) => ({
+      shortcuts: { ...state.shortcuts, [actionId]: binding },
+    })),
 
-      resetShortcut: (actionId) =>
-        set((state) => ({
-          shortcuts: {
-            ...state.shortcuts,
-            [actionId]: getDefaultShortcuts(getIsMac())[actionId],
-          },
-        })),
+  resetShortcut: (actionId) =>
+    set((state) => ({
+      shortcuts: {
+        ...state.shortcuts,
+        [actionId]: getDefaultShortcuts(getIsMac())[actionId],
+      },
+    })),
 
-      resetAllShortcuts: () =>
-        set({
-          shortcuts: getDefaultShortcuts(getIsMac()),
-        }),
-
-      resetToDefaults: () => set({ ...defaultSettings }),
+  resetAllShortcuts: () =>
+    set({
+      shortcuts: getDefaultShortcuts(getIsMac()),
     }),
-    { name: STORAGE_KEY },
-  ),
+
+  resetToDefaults: () => set({ ...defaultSettings }),
+}));
+
+export const useSettingsStore = create<SettingsState & SettingsActions>()(
+  persist(settingsStoreCreator, { name: STORAGE_KEY }),
 );

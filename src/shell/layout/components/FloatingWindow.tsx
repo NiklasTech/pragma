@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 
 interface FloatingWindowProps {
@@ -12,6 +13,7 @@ interface FloatingWindowProps {
   onMove: (x: number, y: number) => void;
   onResize: (width: number, height: number) => void;
   onClose?: () => void;
+  onExternalize?: () => void;
   className?: string;
   children: ReactNode;
 }
@@ -27,6 +29,7 @@ export function FloatingWindow({
   onMove,
   onResize,
   onClose,
+  onExternalize,
   className,
   children,
 }: FloatingWindowProps) {
@@ -113,12 +116,23 @@ export function FloatingWindow({
         onMouseDown={handleDragStart}
       >
         {title}
+        {onExternalize && (
+          <button
+            type="button"
+            data-no-drag
+            onClick={onExternalize}
+            className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+            aria-label="Move to native window"
+          >
+            <ArrowSquareOut size={14} />
+          </button>
+        )}
         {onClose && (
           <button
             type="button"
             data-no-drag
             onClick={onClose}
-            className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+            className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
             aria-label="Close"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
