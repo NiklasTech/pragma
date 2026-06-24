@@ -44,13 +44,13 @@ pub fn create_external_window(
         return Err(format!("External window {label} already exists"));
     }
 
-    let url = format!("index.html#/floating/{node_id}");
+    let url = format!("floating.html?nodeId={node_id}");
 
     WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(title)
         .decorations(false)
         .resizable(true)
-        .visible(true)
+        .visible(false)
         .inner_size(bounds.width as f64, bounds.height as f64)
         .position(bounds.x as f64, bounds.y as f64)
         .build()

@@ -1,8 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Toaster } from "@/shared/components/ui/sonner";
-import { ThemeProvider } from "@/theme";
 import { useGlobalShortcuts } from "@/shared/hooks/useGlobalShortcuts";
 import { useAppShortcutActions } from "@/app/useAppShortcutActions";
 import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
@@ -19,13 +17,6 @@ function externalTitle(child: LayoutNode): string {
     return `${child.children.length} tabs`;
   }
   return "Floating Panel";
-}
-
-function parseExternalNodeId(): string | null {
-  const prefix = "#/floating/";
-  if (!window.location.hash.startsWith(prefix)) return null;
-  const rest = window.location.hash.slice(prefix.length).replace(/\/$/, "");
-  return rest || null;
 }
 
 interface ExternalPanelAppProps {
@@ -69,7 +60,7 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
   }, [nodeId]);
 
   return (
-    <ThemeProvider>
+    <>
       <WindowResizeHandles />
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
         <ExternalWindowTitlebar title={title} />
@@ -86,13 +77,6 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
           )}
         </div>
       </div>
-      <Toaster position="bottom-right" />
-    </ThemeProvider>
+    </>
   );
-}
-
-export function ExternalPanelEntry() {
-  const nodeId = parseExternalNodeId();
-  if (!nodeId) return null;
-  return <ExternalPanelApp nodeId={nodeId} />;
 }

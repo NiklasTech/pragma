@@ -5,12 +5,9 @@ import { error as logError } from "@tauri-apps/plugin-log";
 import "./globals.css";
 import App from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
-import { ExternalPanelEntry } from "./shell/external";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
 
-if (!isExternalPanel()) {
-  initRunConfigListeners();
-}
+initRunConfigListeners();
 
 if (import.meta.env.DEV) {
   void (async () => {
@@ -59,12 +56,10 @@ window.addEventListener("unhandledrejection", (event) => {
   toast.error("An unexpected error occurred. Details were logged.");
 });
 
-function isExternalPanel(): boolean {
-  return window.location.hash.startsWith("#/floating/");
-}
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ErrorBoundary>{isExternalPanel() ? <ExternalPanelEntry /> : <App />}</ErrorBoundary>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

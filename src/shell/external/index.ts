@@ -1,2 +1,2 @@
-export { ExternalPanelApp, ExternalPanelEntry } from "./ExternalPanelApp";
+export { ExternalPanelApp } from "./ExternalPanelApp";
 export { ExternalWindowTitlebar } from "./ExternalWindowTitlebar";
