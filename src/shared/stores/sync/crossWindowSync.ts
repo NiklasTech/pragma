@@ -6,6 +6,14 @@ function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+function getWindowLabel(): string | null {
+  try {
+    return getCurrentWindow().label;
+  } catch {
+    return null;
+  }
+}
+
 function shallowDiff<T extends object>(prev: T, next: T): Partial<T> | null {
   const diff: Partial<T> = {};
   let changed = false;
@@ -27,23 +35,23 @@ export function crossWindowSync<T extends object>(storeName: string) {
         return state;
       }
 
-      const win = getCurrentWindow();
-      const currentLabel = win.label;
       let isRemote = false;
-      let isReady = currentLabel === "main";
+      let isReady = false;
       let lastState = get();
 
       void listen(`pragma:store:${storeName}`, (event) => {
+        const currentLabel = getWindowLabel();
         const payload = event.payload as { source: string; partial: Partial<T> };
-        if (payload.source === currentLabel) return;
+        if (!currentLabel || payload.source === currentLabel) return;
         isRemote = true;
         set(payload.partial);
         isRemote = false;
       });
 
       void listen(`pragma:store:${storeName}:snapshot`, (event) => {
+        const currentLabel = getWindowLabel();
         const payload = event.payload as { source: string; state: T };
-        if (payload.source === currentLabel) return;
+        if (!currentLabel || payload.source === currentLabel) return;
         isRemote = true;
         set(payload.state as T, true);
         isRemote = false;
@@ -51,8 +59,12 @@ export function crossWindowSync<T extends object>(storeName: string) {
       });
 
       api.subscribe((newState) => {
-        if (lastState === undefined || isRemote || !isReady || !currentLabel) {
+        const currentLabel = getWindowLabel();
+        if (!currentLabel || lastState === undefined || isRemote || !isReady) {
           lastState = newState;
+          if (currentLabel === "main") {
+            isReady = true;
+          }
           return;
         }
         const diff = shallowDiff(lastState, newState);
@@ -62,9 +74,17 @@ export function crossWindowSync<T extends object>(storeName: string) {
         }
       });
 
-      if (currentLabel !== "main") {
-        void emit("pragma:external:ready", { source: currentLabel, name: storeName });
-      }
+      const sendReady = () => {
+        const label = getWindowLabel();
+        if (!label) {
+          setTimeout(sendReady, 10);
+          return;
+        }
+        if (label !== "main") {
+          void emit("pragma:external:ready", { source: label, name: storeName });
+        }
+      };
+      sendReady();
 
       return state;
     };
