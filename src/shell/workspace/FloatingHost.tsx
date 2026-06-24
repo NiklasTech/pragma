@@ -73,6 +73,8 @@ export function FloatingHost() {
         // eslint-disable-next-line no-console
         console.error("Failed to create external window:", err);
         toast.error(`External window failed: ${message}`);
+        // eslint-disable-next-line no-alert
+        alert(`External window failed: ${message}`);
       }
     },
     [moveFloatingToExternal],
