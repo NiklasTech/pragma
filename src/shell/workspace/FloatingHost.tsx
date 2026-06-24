@@ -1,8 +1,11 @@
+import { useCallback, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 import { useLayoutStore } from "@/shell/layout";
 import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
-import type { LayoutNode } from "@/shell/layout/tree/types";
+import type { FloatingNode, LayoutNode } from "@/shell/layout/tree/types";
 
 function floatingTitle(child: LayoutNode): string {
   if (child.type === "panel") return panelLabel(child.kind);
@@ -13,12 +16,73 @@ function floatingTitle(child: LayoutNode): string {
   return "Floating Panel";
 }
 
+const VISIBLE_GRIP = 40;
+
+function clampFloating(node: FloatingNode): FloatingNode {
+  const maxX = Math.max(0, window.innerWidth - VISIBLE_GRIP);
+  const maxY = Math.max(0, window.innerHeight - VISIBLE_GRIP);
+  return {
+    ...node,
+    x: Math.max(0, Math.min(node.x, maxX)),
+    y: Math.max(0, Math.min(node.y, maxY)),
+  };
+}
+
 export function FloatingHost() {
-  const { floating, dockFloatingPanel } = useLayoutStore();
+  const floating = useLayoutStore((s) => s.floating);
+  const dockFloatingPanel = useLayoutStore((s) => s.dockFloatingPanel);
+  const moveFloatingToExternal = useLayoutStore((s) => s.moveFloatingToExternal);
+  const visible = floating.filter((node) => !node.external);
+
+  // Clamp floating panels to the viewport on mount and resize so a persisted
+  // off-screen position cannot trap the panel or block the titlebar.
+  useEffect(() => {
+    const clampAll = () => {
+      const next = floating.map(clampFloating);
+      if (next.some((f, i) => f.x !== floating[i].x || f.y !== floating[i].y)) {
+        useLayoutStore.setState({ floating: next });
+      }
+    };
+
+    clampAll();
+    window.addEventListener("resize", clampAll);
+    return () => window.removeEventListener("resize", clampAll);
+  }, [floating]);
+
+  const handleExternalize = useCallback(
+    async (node: FloatingNode) => {
+      const title = floatingTitle(node.child);
+      const label = node.id;
+      const bounds = {
+        x: Math.round(node.x),
+        y: Math.round(node.y),
+        width: Math.round(node.width),
+        height: Math.round(node.height),
+      };
+      try {
+        // Close any stale external window for this node before creating a new one.
+        await invoke("close_external_window", { label }).catch(() => {});
+        // eslint-disable-next-line no-console
+        console.log("[FloatingHost] externalizing node", node.id, { title, bounds });
+        const newLabel = await invoke<string>("create_external_window", {
+          request: { nodeId: node.id, title, bounds },
+        });
+        moveFloatingToExternal(node.id, newLabel);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        // eslint-disable-next-line no-console
+        console.error("Failed to create external window:", err);
+        toast.error(`External window failed: ${message}`);
+        // eslint-disable-next-line no-alert
+        alert(`External window failed: ${message}`);
+      }
+    },
+    [moveFloatingToExternal],
+  );
 
   return (
     <>
-      {floating.map((node) => (
+      {visible.map((node) => (
         <FloatingWindow
           key={node.id}
           x={node.x}
@@ -33,8 +97,9 @@ export function FloatingHost() {
             </span>
           }
           onMove={(x, y) => {
-            // Update floating node position in place.
-            const next = floating.map((f) => (f.id === node.id ? { ...f, x, y } : f));
+            const next = floating.map((f) =>
+              f.id === node.id ? clampFloating({ ...f, x, y }) : f,
+            );
             useLayoutStore.setState({ floating: next });
           }}
           onResize={(width, height) => {
@@ -42,6 +107,7 @@ export function FloatingHost() {
             useLayoutStore.setState({ floating: next });
           }}
           onClose={() => dockFloatingPanel(node.id)}
+          onExternalize={() => void handleExternalize(node)}
         >
           <div className="h-full w-full">
             <LayoutTreeRenderer node={node.child} />

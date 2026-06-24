@@ -39,6 +39,7 @@ interface DockerActions {
   stopContainer: (id: string) => Promise<void>;
   restartContainer: (id: string) => Promise<void>;
   composeUp: () => Promise<void>;
+  composeUpBuild: () => Promise<void>;
   composeDown: () => Promise<void>;
   composeBuild: () => Promise<void>;
   composeRestart: () => Promise<void>;
@@ -138,6 +139,20 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
     }
   },
 
+  composeUpBuild: async () => {
+    const { workspaceRoot } = get();
+    if (!workspaceRoot) return;
+    set({ actionBusy: "compose-up-build" });
+    try {
+      await invoke("docker_compose_up_build", { req: { workspaceRoot } });
+      await get().loadContainers();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
   composeDown: async () => {
     const { workspaceRoot } = get();
     if (!workspaceRoot) return;
@@ -183,7 +198,7 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   openLogsTab: (container) => {
     const { runtime } = get();
     const binary = runtime?.available ? runtime.binary_path : "docker";
-    useTerminalStore.getState().addSession({
+    void useTerminalStore.getState().addSession({
       id: crypto.randomUUID(),
       name: `Logs: ${firstName(container)}`,
       type: "docker-logs",
@@ -195,7 +210,7 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   openExecTab: (container, shell = "/bin/sh") => {
     const { runtime } = get();
     const binary = runtime?.available ? runtime.binary_path : "docker";
-    useTerminalStore.getState().addSession({
+    void useTerminalStore.getState().addSession({
       id: crypto.randomUUID(),
       name: `Exec: ${firstName(container)}`,
       type: "docker-exec",

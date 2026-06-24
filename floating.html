@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pragma — Floating Panel</title>
+    <script>
+      (function () {
+        try {
+          const raw = localStorage.getItem("pragma.settings.v1");
+          const stored = raw ? JSON.parse(raw) : null;
+          const mode = stored?.state?.themeMode;
+          const resolved =
+            mode === "light" || mode === "dark"
+              ? mode
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.classList.add(resolved);
+          document.documentElement.style.backgroundColor =
+            resolved === "dark" ? "#09090b" : "#ffffff";
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="floating-root">
+      <div
+        id="floating-boot"
+        style="
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: system-ui, sans-serif;
+          font-size: 14px;
+          color: #888;
+        "
+      >
+        Loading external panel…
+      </div>
+    </div>
+    <script type="module" src="/src/shell/external/main.tsx"></script>
+  </body>
+</html>

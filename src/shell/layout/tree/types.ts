@@ -79,6 +79,7 @@ export interface FloatingNode extends BaseNode {
   width: number;
   height: number;
   child: LayoutNode;
+  external?: string;
 }
 
 export type LayoutNode = SplitNode | TabsNode | PanelNode | FloatingNode;
@@ -124,6 +125,8 @@ export interface LayoutTreeActions {
   floatPanel: (panelId: string) => void;
   dockFloatingPanel: (floatingId: string, target?: DropTarget) => void;
   addFloatingPanel: (kind: PanelKind) => void;
+  moveFloatingToExternal: (floatingId: string, label: string) => void;
+  dockExternalWindow: (label: string, bounds?: Partial<FloatingState>) => void;
   setActiveTab: (tabsNodeId: string, panelId: string) => void;
   updateSplitSizes: (splitId: string, sizes: number[]) => void;
 

@@ -1,6 +1,7 @@
 pub mod ai;
 pub mod commands;
 pub mod modules;
+pub mod window;
 
 use modules::pty::PtyManager;
 use modules::run::RunManager;
@@ -145,7 +146,11 @@ pub fn run() {
             commands::docker::docker_compose_down,
             commands::docker::docker_compose_build,
             commands::docker::docker_compose_restart,
+            commands::docker::docker_compose_changed_between_branches,
+            commands::docker::docker_compose_up_build,
             commands::perf::memory_stats,
+            window::create_external_window,
+            window::close_external_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
