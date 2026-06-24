@@ -8,7 +8,9 @@ import { ErrorBoundary } from "./app/ErrorBoundary";
 import { ExternalPanelEntry } from "./shell/external";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
 
-initRunConfigListeners();
+if (!isExternalPanel()) {
+  initRunConfigListeners();
+}
 
 if (import.meta.env.DEV) {
   void (async () => {

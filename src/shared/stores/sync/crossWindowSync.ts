@@ -1,4 +1,6 @@
 import { type StateCreator } from "zustand";
+import { emit, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -25,54 +27,45 @@ export function crossWindowSync<T extends object>(storeName: string) {
         return state;
       }
 
+      const win = getCurrentWindow();
+      const currentLabel = win.label;
       let isRemote = false;
-      let isReady = false;
-      let currentLabel: string | null = null;
+      let isReady = currentLabel === "main";
       let lastState = get();
 
-      const init = async () => {
-        const [{ emit, listen }, { getCurrentWindow }] = await Promise.all([
-          import("@tauri-apps/api/event"),
-          import("@tauri-apps/api/window"),
-        ]);
+      void listen(`pragma:store:${storeName}`, (event) => {
+        const payload = event.payload as { source: string; partial: Partial<T> };
+        if (payload.source === currentLabel) return;
+        isRemote = true;
+        set(payload.partial);
+        isRemote = false;
+      });
 
-        const win = getCurrentWindow();
-        currentLabel = win.label;
-        // The main window is authoritative from startup; external windows wait
-        // for the initial snapshot before broadcasting their own changes.
-        isReady = currentLabel === "main";
+      void listen(`pragma:store:${storeName}:snapshot`, (event) => {
+        const payload = event.payload as { source: string; state: T };
+        if (payload.source === currentLabel) return;
+        isRemote = true;
+        set(payload.state as T, true);
+        isRemote = false;
+        isReady = true;
+      });
 
-        await listen(`pragma:store:${storeName}`, (event) => {
-          const payload = event.payload as { source: string; partial: Partial<T> };
-          if (payload.source === currentLabel) return;
-          isRemote = true;
-          set(payload.partial);
-          isRemote = false;
-        });
-
-        await listen(`pragma:store:${storeName}:snapshot`, (event) => {
-          const payload = event.payload as { source: string; state: T };
-          if (payload.source === currentLabel) return;
-          isRemote = true;
-          set(payload.state as T, true);
-          isRemote = false;
-          isReady = true;
-        });
-
-        api.subscribe((newState) => {
-          if (lastState === undefined || isRemote || !isReady || !currentLabel) {
-            lastState = newState;
-            return;
-          }
-          const diff = shallowDiff(lastState, newState);
+      api.subscribe((newState) => {
+        if (lastState === undefined || isRemote || !isReady || !currentLabel) {
           lastState = newState;
-          if (diff) {
-            void emit(`pragma:store:${storeName}`, { source: currentLabel, partial: diff });
-          }
-        });
-      };
+          return;
+        }
+        const diff = shallowDiff(lastState, newState);
+        lastState = newState;
+        if (diff) {
+          void emit(`pragma:store:${storeName}`, { source: currentLabel, partial: diff });
+        }
+      });
 
-      void init();
+      if (currentLabel !== "main") {
+        void emit("pragma:external:ready", { source: currentLabel, name: storeName });
+      }
+
       return state;
     };
   };
