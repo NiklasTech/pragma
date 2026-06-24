@@ -54,16 +54,25 @@ export function FloatingWindow({
         onMove(startPosX + dx, startPosY + dy);
       };
 
-      const handleMouseUp = () => {
+      const handleMouseUp = (ev: MouseEvent) => {
         setIsDragging(false);
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
+
+        // Auto-externalize when the panel is dragged outside the main window.
+        if (onExternalize) {
+          const outsideX = ev.clientX < 0 || ev.clientX > window.innerWidth;
+          const outsideY = ev.clientY < 0 || ev.clientY > window.innerHeight;
+          if (outsideX || outsideY) {
+            onExternalize();
+          }
+        }
       };
 
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [x, y, onMove],
+    [x, y, onMove, onExternalize],
   );
 
   const handleResizeStart = useCallback(
