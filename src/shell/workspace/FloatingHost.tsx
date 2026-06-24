@@ -22,8 +22,11 @@ export function FloatingHost() {
   const handleExternalize = useCallback(
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
+      const label = `floating-${node.id}`;
       try {
-        const label = await invoke<string>("create_external_window", {
+        // Close any stale external window for this node before creating a new one.
+        await invoke("close_external_window", { label }).catch(() => {});
+        const newLabel = await invoke<string>("create_external_window", {
           nodeId: node.id,
           title,
           bounds: {
@@ -33,7 +36,7 @@ export function FloatingHost() {
             height: Math.round(node.height),
           },
         });
-        moveFloatingToExternal(node.id, label);
+        moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("Failed to create external window:", err);
