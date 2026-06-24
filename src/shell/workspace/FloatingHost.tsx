@@ -53,20 +53,19 @@ export function FloatingHost() {
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
       const label = `floating-${node.id}`;
+      const bounds = {
+        x: Math.round(node.x),
+        y: Math.round(node.y),
+        width: Math.round(node.width),
+        height: Math.round(node.height),
+      };
       try {
         // Close any stale external window for this node before creating a new one.
         await invoke("close_external_window", { label }).catch(() => {});
+        // eslint-disable-next-line no-console
+        console.log("[FloatingHost] externalizing node", node.id, { title, bounds });
         const newLabel = await invoke<string>("create_external_window", {
-          request: {
-            nodeId: node.id,
-            title,
-            bounds: {
-              x: Math.round(node.x),
-              y: Math.round(node.y),
-              width: Math.round(node.width),
-              height: Math.round(node.height),
-            },
-          },
+          request: { nodeId: node.id, title, bounds },
         });
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {

@@ -36,32 +36,52 @@ pub fn create_external_window(
     app: AppHandle,
     request: CreateExternalWindowRequest,
 ) -> Result<String, String> {
+    log::info!(
+        "create_external_window called: node_id={}, title={}, bounds={:?}",
+        request.node_id,
+        request.title,
+        request.bounds
+    );
+
     if !is_valid_node_id(&request.node_id) {
-        return Err(format!("Invalid node id: {}", request.node_id));
+        let msg = format!("Invalid node id: {}", request.node_id);
+        log::error!("{msg}");
+        return Err(msg);
     }
 
     if request.bounds.width == 0 || request.bounds.height == 0 {
-        return Err("Window width and height must be greater than 0".to_string());
+        let msg = "Window width and height must be greater than 0".to_string();
+        log::error!("{msg}");
+        return Err(msg);
     }
 
     let label = build_label(&request.node_id);
 
     if app.get_webview_window(&label).is_some() {
-        return Err(format!("External window {label} already exists"));
+        let msg = format!("External window {label} already exists");
+        log::warn!("{msg}");
+        return Err(msg);
     }
 
     let url = format!("floating.html?nodeId={}", request.node_id);
+    log::info!("building external window {label} at url={url}");
 
-    WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(request.title)
         .decorations(false)
         .resizable(true)
-        .visible(false)
+        .visible(true)
         .inner_size(request.bounds.width as f64, request.bounds.height as f64)
         .position(request.bounds.x as f64, request.bounds.y as f64)
         .build()
-        .map(|_| label)
-        .map_err(|err| format!("Failed to create external window: {err}"))
+        .map_err(|err| {
+            let msg = format!("Failed to create external window: {err}");
+            log::error!("{msg}");
+            msg
+        })?;
+
+    log::info!("external window {label} created with label {}", window.label());
+    Ok(label)
 }
 
 /// Closes an external floating window by label.
