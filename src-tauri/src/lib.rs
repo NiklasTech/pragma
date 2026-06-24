@@ -92,6 +92,8 @@ pub fn run() {
             modules::mcp::mcp_start_server,
             modules::mcp::mcp_stop_server,
             modules::mcp::mcp_restart_server,
+            modules::mcp::mcp_list_tools,
+            modules::mcp::mcp_call_tool,
             modules::local_history::commands::local_history_diff,
             modules::local_history::commands::local_history_restore,
             modules::local_history::commands::local_history_delete_older_than,

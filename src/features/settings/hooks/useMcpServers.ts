@@ -33,10 +33,24 @@ export interface McpNotificationEvent {
 export interface McpTool {
   name: string;
   description: string;
-  input_schema: unknown;
+  inputSchema: unknown;
 }
 
 const MAX_LOGS_PER_SERVER = 1000;
+
+function statusesEqual(
+  a: Record<string, McpServerStatus>,
+  b: Record<string, McpServerStatus>,
+): boolean {
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  return aKeys.every((k) => a[k] === b[k]);
+}
+
+function toolsEqual(a: Record<string, McpTool[]>, b: Record<string, McpTool[]>): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 export function useMcpServers() {
   const [statuses, setStatuses] = useState<Record<string, McpServerStatus>>({});
@@ -45,18 +59,15 @@ export function useMcpServers() {
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const result = await invoke<McpServerState[]>("mcp_list_servers");
       const next: Record<string, McpServerStatus> = {};
       for (const server of result) {
         next[server.config.id] = server.status;
       }
-      setStatuses(next);
+      setStatuses((prev) => (statusesEqual(prev, next) ? prev : next));
     } catch (err) {
       console.error("[MCP] failed to list servers:", err);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -73,7 +84,7 @@ export function useMcpServers() {
         console.error(`[MCP] failed to list tools for ${id}:`, err);
       }
     }
-    setTools(next);
+    setTools((prev) => (toolsEqual(prev, next) ? prev : next));
   }, [statuses]);
 
   const startServer = useCallback(async (id: string) => {
@@ -105,58 +116,72 @@ export function useMcpServers() {
   }, []);
 
   useEffect(() => {
-    void load();
+    setLoading(true);
+    void load().finally(() => setLoading(false));
+
+    const interval = setInterval(() => void load(), 5000);
 
     let unlistenStatus: (() => void) | undefined;
     let unlistenLog: (() => void) | undefined;
     let unlistenNotification: (() => void) | undefined;
+    let active = true;
 
-    void listen<McpStatusChangedEvent>("mcp_status_changed", (event) => {
-      setStatuses((prev) => ({
-        ...prev,
-        [event.payload.server_id]: event.payload.status,
-      }));
-    }).then((unlisten) => {
-      unlistenStatus = unlisten;
-    });
-
-    void listen<McpLogEvent>("mcp_log", (event) => {
-      const { server_id, timestamp, line } = event.payload;
-      setLogs((prev) => {
-        const existing = prev[server_id] ?? [];
-        const next = [...existing, { server_id, timestamp, line }];
-        if (next.length > MAX_LOGS_PER_SERVER) {
-          next.shift();
-        }
-        return { ...prev, [server_id]: next };
+    void (async () => {
+      unlistenStatus = await listen<McpStatusChangedEvent>("mcp_status_changed", (event) => {
+        setStatuses((prev) => ({
+          ...prev,
+          [event.payload.server_id]: event.payload.status,
+        }));
       });
-    }).then((unlisten) => {
-      unlistenLog = unlisten;
-    });
+      if (!active) {
+        unlistenStatus();
+        unlistenStatus = undefined;
+      }
 
-    void listen<McpNotificationEvent>("mcp_notification", (event) => {
-      const { server_id, method, params } = event.payload;
-      const line = params ? `${method}: ${JSON.stringify(params)}` : method;
-      setLogs((prev) => {
-        const existing = prev[server_id] ?? [];
-        const next = [
-          ...existing,
-          {
-            server_id,
-            timestamp: new Date().toISOString(),
-            line: `[notification] ${line}`,
-          },
-        ];
-        if (next.length > MAX_LOGS_PER_SERVER) {
-          next.shift();
-        }
-        return { ...prev, [server_id]: next };
+      unlistenLog = await listen<McpLogEvent>("mcp_log", (event) => {
+        const { server_id, timestamp, line } = event.payload;
+        setLogs((prev) => {
+          const existing = prev[server_id] ?? [];
+          const next = [...existing, { server_id, timestamp, line }];
+          if (next.length > MAX_LOGS_PER_SERVER) {
+            next.shift();
+          }
+          return { ...prev, [server_id]: next };
+        });
       });
-    }).then((unlisten) => {
-      unlistenNotification = unlisten;
-    });
+      if (!active) {
+        unlistenLog();
+        unlistenLog = undefined;
+      }
+
+      unlistenNotification = await listen<McpNotificationEvent>("mcp_notification", (event) => {
+        const { server_id, method, params } = event.payload;
+        const line = params ? `${method}: ${JSON.stringify(params)}` : method;
+        setLogs((prev) => {
+          const existing = prev[server_id] ?? [];
+          const next = [
+            ...existing,
+            {
+              server_id,
+              timestamp: new Date().toISOString(),
+              line: `[notification] ${line}`,
+            },
+          ];
+          if (next.length > MAX_LOGS_PER_SERVER) {
+            next.shift();
+          }
+          return { ...prev, [server_id]: next };
+        });
+      });
+      if (!active) {
+        unlistenNotification();
+        unlistenNotification = undefined;
+      }
+    })();
 
     return () => {
+      active = false;
+      clearInterval(interval);
       unlistenStatus?.();
       unlistenLog?.();
       unlistenNotification?.();

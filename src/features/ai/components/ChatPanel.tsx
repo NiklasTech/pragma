@@ -29,6 +29,7 @@ import { Conversation, ConversationContent, ConversationScrollButton } from "./C
 import { Message, MessageContent, MessageResponse } from "./Message";
 import { ReasoningBlock } from "./ReasoningBlock";
 import { SourceBlock } from "./SourceBlock";
+import { ToolInvocationBlock } from "./ToolInvocationBlock";
 
 function extractInlineReasoning(
   text: string,
@@ -75,6 +76,7 @@ export function ChatPanel() {
     isCLIActive,
     activeCLIProvider,
     createChatSession,
+    mcpLoaded,
   } = useAI();
   const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
   const { edit, prefillPrompt, consumePrefill, receiveProposal, cancelEdit } = useAIEditStore();
@@ -272,6 +274,24 @@ export function ChatPanel() {
                 url: string;
                 title?: string;
               }>;
+              const toolInvocations = msg.parts.filter(
+                (p) => p.type === "tool-invocation",
+              ) as unknown as Array<{
+                type: "tool-invocation";
+                toolInvocation: {
+                  state:
+                    | "input-streaming"
+                    | "input-available"
+                    | "output-streaming"
+                    | "output-available"
+                    | "output-error";
+                  toolCallId: string;
+                  toolName: string;
+                  input: unknown;
+                  output?: unknown;
+                  errorText?: string;
+                };
+              }>;
               const isStreaming = msg.id === streamingMessageId;
 
               // Some providers/models emit reasoning as inline <thinking> tags inside the text.
@@ -318,6 +338,17 @@ export function ChatPanel() {
                       />
                     ))}
                     {reasoning && <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />}
+                    {toolInvocations.map((inv) => (
+                      <ToolInvocationBlock
+                        key={inv.toolInvocation.toolCallId}
+                        toolCallId={inv.toolInvocation.toolCallId}
+                        toolName={inv.toolInvocation.toolName}
+                        state={inv.toolInvocation.state}
+                        input={inv.toolInvocation.input}
+                        output={inv.toolInvocation.output}
+                        errorText={inv.toolInvocation.errorText}
+                      />
+                    ))}
                     <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
                     {isStreaming && (
                       <span className="mt-2 inline-flex h-4 items-center">
@@ -387,6 +418,13 @@ export function ChatPanel() {
           </div>
         )}
 
+        {!mcpLoaded && (
+          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
+            <Robot size={12} className="animate-pulse" />
+            <span>Loading MCP tools...</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <Textarea
@@ -421,7 +459,7 @@ export function ChatPanel() {
           ) : (
             <button
               type="submit"
-              disabled={!input.trim() || isLoading || !canChat}
+              disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
             >
               <PaperPlaneRight size={16} weight="bold" />

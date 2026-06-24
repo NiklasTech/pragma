@@ -36,11 +36,11 @@ export function McpServerTools({ tools }: McpServerToolsProps) {
                 {tool.description && (
                   <p className="mt-0.5 text-ui-xs text-fg-muted">{tool.description}</p>
                 )}
-                {typeof tool.input_schema === "object" &&
-                  tool.input_schema !== null &&
-                  Object.keys(tool.input_schema).length > 0 && (
+                {typeof tool.inputSchema === "object" &&
+                  tool.inputSchema !== null &&
+                  Object.keys(tool.inputSchema).length > 0 && (
                     <pre className="mt-1.5 overflow-auto rounded bg-bg-surface p-1.5 text-ui-xs text-fg-subtle">
-                      {JSON.stringify(tool.input_schema, null, 2)}
+                      {JSON.stringify(tool.inputSchema, null, 2)}
                     </pre>
                   )}
               </div>

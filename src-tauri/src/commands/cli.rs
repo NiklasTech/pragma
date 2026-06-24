@@ -166,6 +166,7 @@ pub async fn cli_chat_stream(
                 text,
                 error: None,
                 done,
+                tool_calls: None,
             })
             .is_err()
         {

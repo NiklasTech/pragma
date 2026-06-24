@@ -1,11 +1,13 @@
 use crate::modules::mcp::client::{McpClient, McpClientConfig, Notification};
 use crate::modules::mcp::error::McpError;
 use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
-use crate::modules::mcp::{config_path, McpServerConfig};
+use crate::modules::mcp::{
+    config_path, load_tools_cache, save_tools_cache, McpServerConfig,
+};
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
@@ -103,6 +105,9 @@ impl McpManager {
         };
 
         manager.reload_config().await?;
+        if let Err(e) = manager.hydrate_tools_cache().await {
+            log::warn!("Failed to hydrate MCP tools cache: {e}");
+        }
 
         let path = config_path(&app_handle).map_err(|e| McpError::Config(e))?;
         if let Some(parent) = path.parent() {
@@ -160,8 +165,17 @@ impl McpManager {
         *self.config.lock().await = new_config.clone();
 
         {
+            let previous_ids: Vec<String> = {
+                let tools = self.tools.lock().await;
+                tools.keys().cloned().collect()
+            };
+            let new_ids: HashSet<String> = new_config.iter().map(|c| c.id.clone()).collect();
             let mut tools = self.tools.lock().await;
-            tools.clear();
+            for id in previous_ids {
+                if !new_ids.contains(&id) {
+                    tools.remove(&id);
+                }
+            }
         }
 
         for config in new_config {
@@ -174,21 +188,22 @@ impl McpManager {
     }
 
     pub async fn list_servers(&self) -> Vec<McpServerState> {
-        let config = self.config.lock().await;
+        let configs = self.config.lock().await.clone();
         let servers = self.servers.lock().await;
 
-        config
-            .iter()
+        let mut statuses: HashMap<String, McpServerStatus> = HashMap::new();
+        for (id, server) in servers.iter() {
+            statuses.insert(id.clone(), *server.status.lock().await);
+        }
+
+        configs
+            .into_iter()
             .map(|c| {
-                let status = if let Some(server) = servers.get(&c.id) {
-                    *server.status.blocking_lock()
-                } else {
-                    McpServerStatus::Stopped
-                };
-                McpServerState {
-                    config: c.clone(),
-                    status,
-                }
+                let status = statuses
+                    .get(&c.id)
+                    .copied()
+                    .unwrap_or(McpServerStatus::Stopped);
+                McpServerState { config: c, status }
             })
             .collect()
     }
@@ -303,6 +318,24 @@ impl McpManager {
         tools.get(id).cloned().unwrap_or_default()
     }
 
+    async fn hydrate_tools_cache(&self) -> crate::modules::mcp::error::Result<()> {
+        let cache = load_tools_cache(&self.app_handle)
+            .await
+            .map_err(|e| McpError::Config(e))?;
+        let mut tools = self.tools.lock().await;
+        for (id, server_tools) in cache {
+            tools.entry(id).or_insert(server_tools);
+        }
+        Ok(())
+    }
+
+    async fn persist_tools_cache(&self) {
+        let cache = self.tools.lock().await.clone();
+        if let Err(e) = save_tools_cache(&self.app_handle, &cache).await {
+            log::warn!("Failed to save MCP tools cache: {e}");
+        }
+    }
+
     pub async fn refresh_tools(&self, id: &str) {
         let client = {
             let servers = self.servers.lock().await;
@@ -317,6 +350,8 @@ impl McpManager {
                 Ok(tools) => {
                     let mut cache = self.tools.lock().await;
                     cache.insert(id.to_string(), tools);
+                    drop(cache);
+                    self.persist_tools_cache().await;
                 }
                 Err(e) => {
                     log::warn!("Failed to list tools for MCP server {id}: {e}");

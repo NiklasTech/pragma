@@ -168,6 +168,8 @@ impl AIProvider for CopilotProvider {
                     completion_tokens: u.completion_tokens,
                     total_tokens: u.total_tokens,
                 }),
+                tool_calls: None,
+                finish_reason: None,
             })
         })
     }
@@ -221,6 +223,7 @@ impl AIProvider for CopilotProvider {
                             chunks.push(CompletionChunk {
                                 content,
                                 finish_reason: choice.finish_reason,
+                                tool_calls: None,
                             });
                         }
                     }
@@ -296,6 +299,7 @@ impl AIProvider for CopilotProvider {
                                                                         content,
                                                                         finish_reason: choice
                                                                             .finish_reason,
+                                                                        tool_calls: None,
                                                                     }))
                                                                     .await;
                                                             }
@@ -388,6 +392,7 @@ impl From<Message> for CopilotMessage {
                 Role::System => "system",
                 Role::User => "user",
                 Role::Assistant => "assistant",
+                Role::Tool => "tool",
             }
             .to_string(),
             content: msg.content,

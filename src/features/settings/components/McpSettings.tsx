@@ -47,9 +47,22 @@ function serverToForm(server?: McpServerConfig): EditForm {
 }
 
 function parseArgs(text: string): string[] {
-  return text
-    .split(/\s+/)
-    .map((s) => s.trim())
+  const raw = text.includes("\n") ? text.split("\n") : text.split(/\s+/);
+  return raw
+    .map((s) => {
+      let trimmed = s.trim();
+      // Allow copy-pasted JSON-style values like: "-y",
+      if (
+        (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ) {
+        trimmed = trimmed.slice(1, -1);
+      }
+      if (trimmed.endsWith(",")) {
+        trimmed = trimmed.slice(0, -1);
+      }
+      return trimmed.trim();
+    })
     .filter(Boolean);
 }
 
@@ -95,6 +108,10 @@ function statusLabel(status: McpServerStatus): string {
   }
 }
 
+function serversEqual(a: McpServerConfig[], b: McpServerConfig[]): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 export function McpSettings() {
   const { mcp, addMcpServer, updateMcpServer, removeMcpServer, setMcpSettings } =
     useSettingsStore();
@@ -114,17 +131,33 @@ export function McpSettings() {
   const [loading, setLoading] = React.useState(false);
   const [logServerId, setLogServerId] = React.useState<string | null>(null);
 
+  const loadConfig = React.useCallback(async () => {
+    // Don't overwrite the form while the user is editing.
+    if (editingId !== null) return;
+    try {
+      const servers = await invoke<McpServerConfig[]>("mcp_load_config");
+      const current = useSettingsStore.getState().mcp.servers;
+      if (!serversEqual(servers, current)) {
+        setMcpSettings({ servers });
+      }
+    } catch (err) {
+      console.error("[MCP Load]", err);
+    }
+  }, [editingId, setMcpSettings]);
+
   React.useEffect(() => {
     setLoading(true);
-    invoke<McpServerConfig[]>("mcp_load_config")
-      .then((servers) => {
-        if (servers.length > 0 && mcp.servers.length === 0) {
-          setMcpSettings({ servers });
-        }
-      })
-      .catch((err) => console.error("[MCP Load]", err))
-      .finally(() => setLoading(false));
-  }, [mcp.servers.length, setMcpSettings]);
+    void loadConfig().finally(() => setLoading(false));
+
+    const interval = setInterval(() => void loadConfig(), 5000);
+    const handleFocus = () => void loadConfig();
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [loadConfig]);
 
   const persist = async (servers: McpServerConfig[]) => {
     try {
@@ -211,7 +244,7 @@ export function McpSettings() {
               <Input
                 value={form.command}
                 onChange={(e) => setForm((f) => ({ ...f, command: e.target.value }))}
-                placeholder="e.g. npx"
+                placeholder="e.g. npm"
               />
             </div>
 
@@ -220,7 +253,7 @@ export function McpSettings() {
               <Textarea
                 value={form.argsText}
                 onChange={(e) => setForm((f) => ({ ...f, argsText: e.target.value }))}
-                placeholder="-y&#10;@modelcontextprotocol/server-filesystem&#10;/home/user"
+                placeholder="exec&#10;--yes&#10;@modelcontextprotocol/server-filesystem&#10;/home/user"
                 className="min-h-20 font-mono"
               />
             </div>

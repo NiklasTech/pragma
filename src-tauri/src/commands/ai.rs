@@ -9,7 +9,9 @@ use tokio_util::sync::CancellationToken;
 use crate::ai::{
     config::ProviderConfig,
     keychain,
-    provider::{AIProvider, CompletionChunk, CompletionRequest, Message, Role},
+    provider::{
+        AIProvider, CompletionChunk, CompletionRequest, Message, Role, ToolCall, ToolDefinition,
+    },
     providers::{
         anthropic::AnthropicProvider, copilot::CopilotProvider, custom::CustomProvider,
         gemini::GeminiProvider, ollama::OllamaProvider, openai::OpenAIProvider,
@@ -27,12 +29,18 @@ pub struct ChatRequest {
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
     pub stream_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<ToolDefinition>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ChatMessageInput {
     pub role: String,
     pub content: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<ToolCall>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -160,6 +168,13 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
         return Err("messages are required".to_string());
     }
 
+    log::info!(
+        "[ai_chat_stream] provider={} model={} tools={}",
+        req.provider,
+        req.model,
+        req.tools.as_ref().map(|t| t.len()).unwrap_or(0)
+    );
+
     let config = ProviderConfig {
         base_url: req.base_url.unwrap_or_default(),
         model: req.model,
@@ -175,9 +190,12 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
             role: match m.role.as_str() {
                 "system" => Role::System,
                 "assistant" => Role::Assistant,
+                "tool" => Role::Tool,
                 _ => Role::User,
             },
             content: m.content,
+            tool_calls: m.tool_calls,
+            tool_call_id: m.tool_call_id,
         })
         .collect();
 
@@ -186,6 +204,7 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
         temperature: req.temperature,
         max_tokens: req.max_tokens,
         stream: false,
+        tools: req.tools,
     };
 
     let response = match req.provider.as_str() {
@@ -292,9 +311,12 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
             role: match m.role.as_str() {
                 "system" => Role::System,
                 "assistant" => Role::Assistant,
+                "tool" => Role::Tool,
                 _ => Role::User,
             },
             content: m.content,
+            tool_calls: m.tool_calls,
+            tool_call_id: m.tool_call_id,
         })
         .collect();
 
@@ -303,6 +325,8 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
         vec![Message {
             role: Role::User,
             content: "hi".to_string(),
+            tool_calls: None,
+            tool_call_id: None,
         }]
     } else {
         messages
@@ -313,6 +337,7 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
         temperature: Some(0.1),
         max_tokens: Some(8),
         stream: false,
+        tools: None,
     };
 
     let result = match req.provider.as_str() {
@@ -404,10 +429,14 @@ pub async fn ai_inline_completion(
         Message {
             role: Role::System,
             content: "You are a concise code completion assistant.".to_string(),
+            tool_calls: None,
+            tool_call_id: None,
         },
         Message {
             role: Role::User,
             content: prompt,
+            tool_calls: None,
+            tool_call_id: None,
         },
     ];
 
@@ -424,6 +453,7 @@ pub async fn ai_inline_completion(
         temperature: Some(0.1),
         max_tokens: Some(256),
         stream: false,
+        tools: None,
     };
 
     let response = match req.provider.as_str() {
@@ -485,6 +515,8 @@ pub struct StreamChunk {
     pub text: Option<String>,
     pub error: Option<String>,
     pub done: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<ToolCall>>,
 }
 
 #[tauri::command]
@@ -519,9 +551,12 @@ When showing file contents, preserve the full code and include the language tag.
             role: match m.role.as_str() {
                 "system" => Role::System,
                 "assistant" => Role::Assistant,
+                "tool" => Role::Tool,
                 _ => Role::User,
             },
             content: m.content,
+            tool_calls: m.tool_calls,
+            tool_call_id: m.tool_call_id,
         })
         .collect();
 
@@ -529,6 +564,8 @@ When showing file contents, preserve the full code and include the language tag.
     messages_with_system.push(Message {
         role: Role::System,
         content: SYSTEM_PROMPT.to_string(),
+        tool_calls: None,
+        tool_call_id: None,
     });
     messages_with_system.extend(messages);
 
@@ -537,6 +574,7 @@ When showing file contents, preserve the full code and include the language tag.
         temperature: req.temperature,
         max_tokens: req.max_tokens,
         stream: true,
+        tools: req.tools,
     };
 
     let provider: Box<dyn AIProvider> = match req.provider.as_str() {
@@ -572,6 +610,7 @@ When showing file contents, preserve the full code and include the language tag.
                 Ok(CompletionChunk {
                     content,
                     finish_reason,
+                    tool_calls,
                 }) => {
                     let done = finish_reason.as_deref() == Some("stop");
                     let text = if content.is_empty() && !done {
@@ -583,11 +622,12 @@ When showing file contents, preserve the full code and include the language tag.
                         text,
                         error: None,
                         done,
+                        tool_calls,
                     };
                     if channel.send(chunk).is_err() {
                         break;
                     }
-                    if done {
+                    if done || finish_reason.as_deref() == Some("tool_calls") {
                         break;
                     }
                 }
@@ -596,6 +636,7 @@ When showing file contents, preserve the full code and include the language tag.
                         text: None,
                         error: Some(e.to_string()),
                         done: false,
+                        tool_calls: None,
                     });
                     break;
                 }
@@ -704,10 +745,14 @@ pub async fn ai_terminal_suggestion(
         Message {
             role: Role::System,
             content: system_message,
+            tool_calls: None,
+            tool_call_id: None,
         },
         Message {
             role: Role::User,
             content: user_message,
+            tool_calls: None,
+            tool_call_id: None,
         },
     ];
 
@@ -724,6 +769,7 @@ pub async fn ai_terminal_suggestion(
         temperature: Some(0.1),
         max_tokens: Some(64),
         stream: false,
+        tools: None,
     };
 
     let response = match req.provider.as_str() {

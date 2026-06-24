@@ -8,8 +8,8 @@ use crate::ai::{
     error::AIError,
     keychain,
     provider::{
-        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse, Message,
-        ModelInfo, Role, Usage,
+        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse,
+        FunctionCall, Message, ModelInfo, Role, ToolCall, ToolDefinition, Usage,
     },
 };
 
@@ -157,6 +157,7 @@ impl AIProvider for AnthropicProvider {
                 messages,
                 temperature,
                 max_tokens,
+                req.tools.clone(),
             );
             let url = format!("{}{}", self.base_url(), MESSAGES_PATH);
 
@@ -179,14 +180,23 @@ impl AIProvider for AnthropicProvider {
                 .await
                 .map_err(|e| AIError::Serialization(e.to_string()))?;
 
-            let content = anthropic_resp
-                .content
-                .into_iter()
-                .filter_map(|c| match c {
-                    AnthropicContent::Text { text } => Some(text),
-                })
-                .collect::<Vec<_>>()
-                .join("");
+            let mut content = String::new();
+            let mut tool_calls = Vec::new();
+            for block in anthropic_resp.content {
+                match block {
+                    AnthropicContent::Text { text } => content.push_str(&text),
+                    AnthropicContent::ToolUse { id, name, input } => {
+                        tool_calls.push(ToolCall {
+                            id,
+                            r#type: "function".to_string(),
+                            function: FunctionCall {
+                                name,
+                                arguments: input.to_string(),
+                            },
+                        });
+                    }
+                }
+            }
 
             Ok(CompletionResponse {
                 content,
@@ -196,6 +206,12 @@ impl AIProvider for AnthropicProvider {
                     completion_tokens: u.output_tokens,
                     total_tokens: u.input_tokens + u.output_tokens,
                 }),
+                tool_calls: if tool_calls.is_empty() {
+                    None
+                } else {
+                    Some(tool_calls)
+                },
+                finish_reason: Some("stop".to_string()),
             })
         })
     }
@@ -214,6 +230,7 @@ impl AIProvider for AnthropicProvider {
                 messages,
                 temperature,
                 max_tokens,
+                req.tools.clone(),
             );
             body.stream = true;
 
@@ -240,6 +257,7 @@ impl AIProvider for AnthropicProvider {
             let text = String::from_utf8_lossy(&bytes);
 
             let mut chunks = Vec::new();
+            let mut current_block: Option<AnthropicCurrentBlock> = None;
             for line in text.lines() {
                 let line = line.trim();
                 if line.is_empty() {
@@ -255,15 +273,56 @@ impl AIProvider for AnthropicProvider {
                         .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
 
                     match event {
-                        AnthropicStreamEvent::ContentBlockDelta { delta } => {
-                            let AnthropicDelta::TextDelta { text } = delta;
-                            chunks.push(CompletionChunk {
-                                content: text,
-                                finish_reason: None,
+                        AnthropicStreamEvent::ContentBlockStart { content_block } => {
+                            current_block = Some(match content_block {
+                                AnthropicContentBlock::Text => AnthropicCurrentBlock::Text,
+                                AnthropicContentBlock::ToolUse { id, name } => {
+                                    AnthropicCurrentBlock::ToolUse {
+                                        id,
+                                        name,
+                                        input: String::new(),
+                                    }
+                                }
                             });
                         }
+                        AnthropicStreamEvent::ContentBlockDelta { delta } => match delta {
+                            AnthropicDelta::TextDelta { text } => {
+                                if !text.is_empty() {
+                                    chunks.push(CompletionChunk {
+                                        content: text,
+                                        finish_reason: None,
+                                        tool_calls: None,
+                                    });
+                                }
+                            }
+                            AnthropicDelta::InputJsonDelta { partial_json } => {
+                                if let Some(AnthropicCurrentBlock::ToolUse { input, .. }) =
+                                    &mut current_block
+                                {
+                                    input.push_str(&partial_json);
+                                }
+                            }
+                        },
+                        AnthropicStreamEvent::ContentBlockStop => {
+                            if let Some(AnthropicCurrentBlock::ToolUse { id, name, input }) =
+                                current_block.take()
+                            {
+                                chunks.push(CompletionChunk {
+                                    content: String::new(),
+                                    finish_reason: Some("tool_calls".to_string()),
+                                    tool_calls: Some(vec![ToolCall {
+                                        id,
+                                        r#type: "function".to_string(),
+                                        function: FunctionCall {
+                                            name,
+                                            arguments: input,
+                                        },
+                                    }]),
+                                });
+                            }
+                        }
                         AnthropicStreamEvent::MessageDelta { usage, .. } => {
-                            if let Some(_u) = usage {
+                            if usage.is_some() {
                                 if let Some(last) = chunks.last_mut() {
                                     last.finish_reason = Some("stop".to_string());
                                 }
@@ -293,6 +352,7 @@ impl AIProvider for AnthropicProvider {
                 messages,
                 temperature,
                 max_tokens,
+                req.tools.clone(),
             );
             body.stream = true;
 
@@ -318,6 +378,7 @@ impl AIProvider for AnthropicProvider {
             tokio::spawn(async move {
                 let mut buffer = String::new();
                 let mut event_data: Vec<String> = Vec::new();
+                let mut current_block: Option<AnthropicCurrentBlock> = None;
 
                 while let Some(result) = stream.next().await {
                     match result {
@@ -329,27 +390,58 @@ impl AIProvider for AnthropicProvider {
                                 let line = line.trim_end_matches('\n').trim_end_matches('\r');
 
                                 if line.is_empty() {
-                                    for data_line in &event_data {
-                                        if let Some(data) = data_line.strip_prefix("data: ") {
-                                            if data == "[DONE]" {
-                                                continue;
-                                            }
+                                    for data in &event_data {
+                                        if data == "[DONE]" {
+                                            continue;
+                                        }
 
-                                            match serde_json::from_str::<AnthropicStreamEvent>(data)
-                                            {
-                                                Ok(event) => match event {
+                                        match serde_json::from_str::<AnthropicStreamEvent>(data) {
+                                            Ok(event) => {
+                                                match event {
+                                                    AnthropicStreamEvent::ContentBlockStart {
+                                                        content_block,
+                                                    } => {
+                                                        current_block = Some(match content_block {
+                                                            AnthropicContentBlock::Text => {
+                                                                AnthropicCurrentBlock::Text
+                                                            }
+                                                            AnthropicContentBlock::ToolUse {
+                                                                id,
+                                                                name,
+                                                            } => AnthropicCurrentBlock::ToolUse {
+                                                                id,
+                                                                name,
+                                                                input: String::new(),
+                                                            },
+                                                        });
+                                                    }
                                                     AnthropicStreamEvent::ContentBlockDelta {
                                                         delta,
                                                     } => {
-                                                        let AnthropicDelta::TextDelta { text } =
-                                                            delta;
-                                                        if !text.is_empty() {
-                                                            let _ = tx
-                                                                .send(Ok(CompletionChunk {
-                                                                    content: text,
-                                                                    finish_reason: None,
-                                                                }))
-                                                                .await;
+                                                        match delta {
+                                                            AnthropicDelta::TextDelta { text } => {
+                                                                if !text.is_empty() {
+                                                                    let _ = tx
+                                                                        .send(Ok(CompletionChunk {
+                                                                            content: text,
+                                                                            finish_reason: None,
+                                                                            tool_calls: None,
+                                                                        }))
+                                                                        .await;
+                                                                }
+                                                            }
+                                                            AnthropicDelta::InputJsonDelta {
+                                                                partial_json,
+                                                            } => {
+                                                                if let Some(AnthropicCurrentBlock::ToolUse { input, .. }) = &mut current_block {
+                                                                    input.push_str(&partial_json);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    AnthropicStreamEvent::ContentBlockStop => {
+                                                        if let Some(block) = current_block.take() {
+                                                            send_tool_call_chunk(block, &tx).await;
                                                         }
                                                     }
                                                     AnthropicStreamEvent::MessageDelta {
@@ -363,19 +455,20 @@ impl AIProvider for AnthropicProvider {
                                                                     finish_reason: Some(
                                                                         "stop".to_string(),
                                                                     ),
+                                                                    tool_calls: None,
                                                                 }))
                                                                 .await;
                                                         }
                                                     }
                                                     _ => {}
-                                                },
-                                                Err(e) => {
-                                                    let _ = tx
-                                                        .send(Err(AIError::Stream(format!(
-                                                            "invalid sse event: {e}"
-                                                        ))))
-                                                        .await;
                                                 }
+                                            }
+                                            Err(e) => {
+                                                let _ = tx
+                                                    .send(Err(AIError::Stream(format!(
+                                                        "invalid sse event: {e}"
+                                                    ))))
+                                                    .await;
                                             }
                                         }
                                     }
@@ -390,6 +483,10 @@ impl AIProvider for AnthropicProvider {
                             break;
                         }
                     }
+                }
+
+                if let Some(block) = current_block.take() {
+                    send_tool_call_chunk(block, &tx).await;
                 }
             });
 
@@ -430,6 +527,8 @@ struct AnthropicRequestBody {
     max_tokens: Option<u32>,
     #[serde(skip_serializing_if = "std::ops::Not::not", rename = "stream")]
     stream: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<AnthropicToolDefinition>>,
 }
 
 impl AnthropicRequestBody {
@@ -439,6 +538,7 @@ impl AnthropicRequestBody {
         messages: Vec<AnthropicMessage>,
         temperature: Option<f32>,
         max_tokens: Option<u32>,
+        tools: Option<Vec<ToolDefinition>>,
     ) -> Self {
         Self {
             model: model.to_string(),
@@ -447,6 +547,25 @@ impl AnthropicRequestBody {
             temperature,
             max_tokens,
             stream: false,
+            tools: tools.map(|tools| tools.into_iter().map(Into::into).collect()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct AnthropicToolDefinition {
+    name: String,
+    description: String,
+    #[serde(rename = "input_schema")]
+    input_schema: serde_json::Value,
+}
+
+impl From<ToolDefinition> for AnthropicToolDefinition {
+    fn from(tool: ToolDefinition) -> Self {
+        Self {
+            name: tool.function.name,
+            description: tool.function.description,
+            input_schema: tool.function.parameters,
         }
     }
 }
@@ -454,19 +573,34 @@ impl AnthropicRequestBody {
 #[derive(Debug, Serialize, Deserialize)]
 struct AnthropicMessage {
     role: String,
-    content: String,
+    content: serde_json::Value,
 }
 
 impl From<Message> for AnthropicMessage {
     fn from(msg: Message) -> Self {
-        Self {
-            role: match msg.role {
-                Role::System => "user",
-                Role::User => "user",
-                Role::Assistant => "assistant",
+        match msg.role {
+            Role::Tool => {
+                let tool_use_id = msg.tool_call_id.unwrap_or_default();
+                let content = serde_json::json!([{
+                    "type": "tool_result",
+                    "tool_use_id": tool_use_id,
+                    "content": msg.content,
+                }]);
+                Self {
+                    role: "user".to_string(),
+                    content,
+                }
             }
-            .to_string(),
-            content: msg.content,
+            _ => Self {
+                role: match msg.role {
+                    Role::System => "user",
+                    Role::User => "user",
+                    Role::Assistant => "assistant",
+                    Role::Tool => "user",
+                }
+                .to_string(),
+                content: serde_json::Value::String(msg.content),
+            },
         }
     }
 }
@@ -483,6 +617,12 @@ struct AnthropicResponse {
 enum AnthropicContent {
     #[serde(rename = "text")]
     Text { text: String },
+    #[serde(rename = "tool_use")]
+    ToolUse {
+        id: String,
+        name: String,
+        input: serde_json::Value,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -501,7 +641,9 @@ enum AnthropicStreamEvent {
     #[serde(rename = "message_start")]
     MessageStart,
     #[serde(rename = "content_block_start")]
-    ContentBlockStart,
+    ContentBlockStart {
+        content_block: AnthropicContentBlock,
+    },
     #[serde(rename = "content_block_stop")]
     ContentBlockStop,
     #[serde(rename = "message_stop")]
@@ -512,7 +654,49 @@ enum AnthropicStreamEvent {
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
+enum AnthropicContentBlock {
+    #[serde(rename = "text")]
+    Text,
+    #[serde(rename = "tool_use")]
+    ToolUse { id: String, name: String },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
 enum AnthropicDelta {
     #[serde(rename = "text_delta")]
     TextDelta { text: String },
+    #[serde(rename = "input_json_delta")]
+    InputJsonDelta { partial_json: String },
+}
+
+enum AnthropicCurrentBlock {
+    Text,
+    ToolUse {
+        id: String,
+        name: String,
+        input: String,
+    },
+}
+
+async fn send_tool_call_chunk(
+    block: AnthropicCurrentBlock,
+    tx: &tokio::sync::mpsc::Sender<Result<CompletionChunk, AIError>>,
+) {
+    if let AnthropicCurrentBlock::ToolUse { id, name, input } = block {
+        let _ = tx
+            .send(Ok(CompletionChunk {
+                content: String::new(),
+                finish_reason: Some("tool_calls".to_string()),
+                tool_calls: Some(vec![ToolCall {
+                    id,
+                    r#type: "function".to_string(),
+                    function: FunctionCall {
+                        name,
+                        arguments: input,
+                    },
+                }]),
+            }))
+            .await;
+    }
 }
