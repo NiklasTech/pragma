@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useGitStore } from "@/shared/stores/git";
+import { useDockerStore } from "@/shared/stores/docker";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -23,6 +25,7 @@ import {
   ArrowDown,
   ArrowsClockwise,
   DownloadSimple,
+  Cube,
 } from "@phosphor-icons/react";
 
 interface BranchSwitcherProps {
@@ -53,6 +56,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     clearPushPullError,
     loadRemoteBranches,
   } = useGitStore();
+  const { workspaceRoot, composeUpBuild } = useDockerStore();
 
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -63,6 +67,9 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
   const [showPullOptions, setShowPullOptions] = useState(false);
   const [showFetchDialog, setShowFetchDialog] = useState(false);
   const [selectedFetchBranch, setSelectedFetchBranch] = useState<string>("");
+  const [showComposeRebuild, setShowComposeRebuild] = useState(false);
+  const [composeRebuildBranch, setComposeRebuildBranch] = useState<string | null>(null);
+  const [composeRebuildAfterSwitch, setComposeRebuildAfterSwitch] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -90,6 +97,21 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
+  const checkComposeChange = useCallback(
+    async (sourceBranch: string, targetBranch: string) => {
+      const repoPath = useGitStore.getState().repoPath;
+      if (!repoPath || !workspaceRoot) return false;
+      try {
+        return await invoke<boolean>("docker_compose_changed_between_branches", {
+          req: { repoPath, workspaceRoot, sourceBranch, targetBranch },
+        });
+      } catch {
+        return false;
+      }
+    },
+    [workspaceRoot],
+  );
+
   const handleSelectBranch = useCallback(
     async (branchName: string) => {
       if (branchName === currentBranch) {
@@ -105,30 +127,71 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         return;
       }
 
+      const composeChanged = await checkComposeChange(currentBranch, branchName);
+      if (composeChanged) {
+        setComposeRebuildBranch(branchName);
+        setComposeRebuildAfterSwitch(false);
+        setShowComposeRebuild(true);
+        setOpen(false);
+        return;
+      }
+
       setPendingBranch(branchName);
       await checkoutBranch(branchName);
       setPendingBranch(null);
       setOpen(false);
     },
-    [currentBranch, hasUncommittedChanges, checkoutBranch],
+    [currentBranch, hasUncommittedChanges, checkoutBranch, checkComposeChange],
   );
 
   const handleSmartSwitch = async () => {
     if (!warningBranch) return;
     setShowWarning(false);
     setPendingBranch(warningBranch);
+    const sourceBranch = currentBranch;
     await smartCheckout(warningBranch);
     setPendingBranch(null);
     setWarningBranch(null);
+    const composeChanged = await checkComposeChange(sourceBranch, warningBranch);
+    if (composeChanged) {
+      setComposeRebuildBranch(warningBranch);
+      setComposeRebuildAfterSwitch(true);
+      setShowComposeRebuild(true);
+    }
   };
 
   const handleNormalSwitch = async () => {
     if (!warningBranch) return;
     setShowWarning(false);
     setPendingBranch(warningBranch);
+    const sourceBranch = currentBranch;
     await checkoutBranch(warningBranch);
     setPendingBranch(null);
     setWarningBranch(null);
+    const composeChanged = await checkComposeChange(sourceBranch, warningBranch);
+    if (composeChanged) {
+      setComposeRebuildBranch(warningBranch);
+      setComposeRebuildAfterSwitch(true);
+      setShowComposeRebuild(true);
+    }
+  };
+
+  const handleComposeRebuildConfirm = async (rebuild: boolean) => {
+    const branch = composeRebuildBranch;
+    const afterSwitch = composeRebuildAfterSwitch;
+    setShowComposeRebuild(false);
+    setComposeRebuildBranch(null);
+    setComposeRebuildAfterSwitch(false);
+    if (!branch) return;
+
+    if (!afterSwitch) {
+      setPendingBranch(branch);
+      await checkoutBranch(branch);
+      setPendingBranch(null);
+    }
+    if (rebuild) {
+      await composeUpBuild();
+    }
   };
 
   const handleCreateBranch = async () => {
@@ -481,6 +544,39 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               className="text-ui-sm"
             >
               Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Compose rebuild dialog */}
+      <Dialog open={showComposeRebuild} onOpenChange={setShowComposeRebuild}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-ui-md">
+              <Cube size={18} className="text-primary" />
+              Compose changed — rebuild?
+            </DialogTitle>
+            <DialogDescription className="text-ui-sm">
+              docker-compose.yml differs between branches. Rebuild containers now?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleComposeRebuildConfirm(false)}
+              className="text-ui-sm"
+            >
+              No
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => void handleComposeRebuildConfirm(true)}
+              className="text-ui-sm"
+            >
+              Yes
             </Button>
           </DialogFooter>
         </DialogContent>

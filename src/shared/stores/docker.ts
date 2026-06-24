@@ -39,6 +39,7 @@ interface DockerActions {
   stopContainer: (id: string) => Promise<void>;
   restartContainer: (id: string) => Promise<void>;
   composeUp: () => Promise<void>;
+  composeUpBuild: () => Promise<void>;
   composeDown: () => Promise<void>;
   composeBuild: () => Promise<void>;
   composeRestart: () => Promise<void>;
@@ -130,6 +131,20 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
     set({ actionBusy: "compose-up" });
     try {
       await invoke("docker_compose_up", { req: { workspaceRoot } });
+      await get().loadContainers();
+    } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  composeUpBuild: async () => {
+    const { workspaceRoot } = get();
+    if (!workspaceRoot) return;
+    set({ actionBusy: "compose-up-build" });
+    try {
+      await invoke("docker_compose_up_build", { req: { workspaceRoot } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
