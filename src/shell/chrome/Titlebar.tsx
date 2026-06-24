@@ -56,7 +56,7 @@ export function Titlebar() {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-header shrink-0 items-center justify-between select-none border-b border-border/60 bg-bg-surface"
+      className="relative z-[60] flex h-header shrink-0 items-center justify-between select-none border-b border-border/60 bg-bg-surface"
     >
       <div className="flex items-center gap-2 px-3">
         <img src="/favicon.svg" alt="" className="h-5 w-5" />

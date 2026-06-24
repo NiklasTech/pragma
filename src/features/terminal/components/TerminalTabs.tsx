@@ -8,7 +8,7 @@ interface TerminalTabsProps {
 }
 
 export function TerminalTabs({ sessions, activeSessionId }: TerminalTabsProps) {
-  const { setActiveSession, removeSession } = useTerminalStore();
+  const { setActiveSession, killSession } = useTerminalStore();
 
   if (sessions.length <= 1) {
     return null;
@@ -30,7 +30,7 @@ export function TerminalTabs({ sessions, activeSessionId }: TerminalTabsProps) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                removeSession(session.id);
+                void killSession(session.id);
               }}
               className="ml-0.5 rounded-sm p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
               aria-label={`Close ${session.name}`}

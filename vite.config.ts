@@ -26,6 +26,12 @@ export default defineConfig({
     target: mobile ? ["es2020", "chrome111", "safari13"] : ["chrome120"],
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        floating: path.resolve(__dirname, "floating.html"),
+      },
+    },
   },
   run: {
     tasks: {

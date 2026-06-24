@@ -58,7 +58,7 @@ function ResizeHandle({ edge }: { edge: ResizeEdge }) {
 
   return (
     <div
-      className={cn("fixed z-[9999]", EDGE_MAP[edge])}
+      className={cn("fixed z-[50]", EDGE_MAP[edge])}
       onMouseDown={handleMouseDown}
       aria-hidden="true"
     />
