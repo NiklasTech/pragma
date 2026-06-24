@@ -60,7 +60,7 @@ export function crossWindowSync<T extends object>(storeName: string) {
         });
 
         api.subscribe((newState) => {
-          if (isRemote || !isReady || !currentLabel) {
+          if (lastState === undefined || isRemote || !isReady || !currentLabel) {
             lastState = newState;
             return;
           }
