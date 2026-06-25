@@ -196,6 +196,8 @@ impl AIProvider for GeminiProvider {
                     completion_tokens: u.candidates_token_count,
                     total_tokens: u.total_token_count,
                 }),
+                tool_calls: None,
+                finish_reason: None,
             })
         })
     }
@@ -248,6 +250,7 @@ impl AIProvider for GeminiProvider {
                             chunks.push(CompletionChunk {
                                 content,
                                 finish_reason: event.finish_reason(),
+                                tool_calls: None,
                             });
                         }
                     }
@@ -313,6 +316,7 @@ impl AIProvider for GeminiProvider {
                                                         .send(Ok(CompletionChunk {
                                                             content,
                                                             finish_reason: event.finish_reason(),
+                                                            tool_calls: None,
                                                         }))
                                                         .await;
                                                 }
@@ -419,6 +423,7 @@ impl From<Message> for GeminiContent {
                     Role::User => "user",
                     Role::Assistant => "model",
                     Role::System => "user",
+                    Role::Tool => "user",
                 }
                 .to_string(),
             ),

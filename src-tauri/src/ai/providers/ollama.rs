@@ -145,6 +145,8 @@ impl AIProvider for OllamaProvider {
                         completion_tokens: completion_tokens as u32,
                         total_tokens: (prompt_tokens + completion_tokens) as u32,
                     }),
+                tool_calls: None,
+                finish_reason: None,
             })
         })
     }
@@ -199,6 +201,7 @@ impl AIProvider for OllamaProvider {
                         } else {
                             None
                         },
+                        tool_calls: None,
                     });
                 }
             }
@@ -264,6 +267,7 @@ impl AIProvider for OllamaProvider {
                                                     } else {
                                                         None
                                                     },
+                                                    tool_calls: None,
                                                 }))
                                                 .await;
                                         }
@@ -344,6 +348,7 @@ impl From<Message> for OllamaMessage {
                 Role::System => "system",
                 Role::User => "user",
                 Role::Assistant => "assistant",
+                Role::Tool => "tool",
             }
             .to_string(),
             content: msg.content,

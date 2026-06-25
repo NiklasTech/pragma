@@ -8,8 +8,8 @@ use crate::ai::{
     error::AIError,
     keychain,
     provider::{
-        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse, Message,
-        ModelInfo, Role, Usage,
+        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse,
+        FunctionCall, Message, ModelInfo, Role, ToolCall, ToolDefinition, Usage,
     },
 };
 
@@ -77,6 +77,7 @@ impl OpenAIProvider {
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .timeout(Duration::from_secs(config.timeout_seconds))
+            .pool_max_idle_per_host(0)
             .build()
             .map_err(|e| AIError::Network(e.to_string()))?;
 
@@ -171,6 +172,24 @@ impl AIProvider for OpenAIProvider {
                         .unwrap_or_default()
                 });
 
+            let tool_calls = if let Some(calls) = choice.message.tool_calls {
+                Some(
+                    calls
+                        .into_iter()
+                        .map(|call| ToolCall {
+                            id: call.id,
+                            r#type: call.r#type,
+                            function: FunctionCall {
+                                name: call.function.name,
+                                arguments: call.function.arguments,
+                            },
+                        })
+                        .collect(),
+                )
+            } else {
+                extract_tool_calls_from_content(&content)
+            };
+
             Ok(CompletionResponse {
                 content,
                 model: openai_resp.model,
@@ -179,6 +198,8 @@ impl AIProvider for OpenAIProvider {
                     completion_tokens: u.completion_tokens,
                     total_tokens: u.total_tokens,
                 }),
+                tool_calls,
+                finish_reason: choice.finish_reason,
             })
         })
     }
@@ -268,6 +289,7 @@ impl AIProvider for OpenAIProvider {
                             chunks.push(CompletionChunk {
                                 content: chunk,
                                 finish_reason: choice.finish_reason,
+                                tool_calls: None,
                             });
                         }
                     }
@@ -321,6 +343,9 @@ impl AIProvider for OpenAIProvider {
                 let mut buffer = String::new();
                 let mut event_data: Vec<String> = Vec::new();
                 let mut in_reasoning = false;
+                let mut content_buffer = String::new();
+                let mut partial_tool_calls: std::collections::HashMap<usize, PartialToolCall> =
+                    std::collections::HashMap::new();
 
                 loop {
                     if cancel_token.as_ref().is_some_and(|t| t.is_cancelled()) {
@@ -339,7 +364,14 @@ impl AIProvider for OpenAIProvider {
                         _ = cancel_fut => None,
                         result = stream.next() => Some(result),
                     } {
-                        None => break,
+                        None => {
+                            let remaining: Vec<ToolCall> = partial_tool_calls
+                                .drain()
+                                .map(|(_, partial)| partial.into())
+                                .collect();
+                            send_tool_call_chunk(remaining, &tx).await;
+                            break;
+                        }
                         Some(Some(Ok(bytes))) => {
                             buffer.push_str(&String::from_utf8_lossy(&bytes));
 
@@ -402,16 +434,60 @@ impl AIProvider for OpenAIProvider {
                                                             );
                                                         }
 
+                                                        content_buffer.push_str(&chunk);
+
                                                         if tx
                                                             .send(Ok(CompletionChunk {
                                                                 content: chunk,
-                                                                finish_reason: choice.finish_reason,
+                                                                finish_reason: choice
+                                                                    .finish_reason
+                                                                    .clone(),
+                                                                tool_calls: None,
                                                             }))
                                                             .await
                                                             .is_err()
                                                         {
                                                             break;
                                                         }
+                                                    }
+
+                                                    if let Some(deltas) = choice.delta.tool_calls {
+                                                        log::info!("[OpenAI stream] received tool_calls delta: {:?}", deltas);
+                                                        for delta in deltas {
+                                                            let partial = partial_tool_calls
+                                                                .entry(delta.index)
+                                                                .or_default();
+                                                            if let Some(id) = delta.id {
+                                                                partial.id = id;
+                                                            }
+                                                            if let Some(r#type) = delta.r#type {
+                                                                partial.r#type = r#type;
+                                                            }
+                                                            if let Some(function) = delta.function {
+                                                                if let Some(name) = function.name {
+                                                                    partial.name = Some(name);
+                                                                }
+                                                                if let Some(args) =
+                                                                    function.arguments
+                                                                {
+                                                                    partial
+                                                                        .arguments
+                                                                        .push_str(&args);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if choice.finish_reason.as_deref()
+                                                        == Some("tool_calls")
+                                                    {
+                                                        let completed: Vec<ToolCall> =
+                                                            partial_tool_calls
+                                                                .drain()
+                                                                .map(|(_, partial)| partial.into())
+                                                                .collect();
+                                                        log::info!("[OpenAI stream] finish_reason tool_calls, sending {:?}", completed);
+                                                        send_tool_call_chunk(completed, &tx).await;
                                                     }
                                                 }
                                             }
@@ -434,13 +510,118 @@ impl AIProvider for OpenAIProvider {
                             let _ = tx.send(Err(map_reqwest_error(e))).await;
                             break;
                         }
-                        Some(None) => break,
+                        Some(None) => {
+                            let remaining: Vec<ToolCall> = partial_tool_calls
+                                .drain()
+                                .map(|(_, partial)| partial.into())
+                                .collect();
+                            log::info!("[OpenAI stream] stream ended, partial_tool_calls: {:?}, content_buffer: {:?}", remaining, content_buffer);
+                            if remaining.is_empty() {
+                                if let Some(calls) =
+                                    extract_tool_calls_from_content(&content_buffer)
+                                {
+                                    log::info!(
+                                        "[OpenAI stream] fallback extracted calls: {:?}",
+                                        calls
+                                    );
+                                    send_tool_call_chunk(calls, &tx).await;
+                                }
+                            } else {
+                                send_tool_call_chunk(remaining, &tx).await;
+                            }
+                            break;
+                        }
                     }
                 }
             });
 
             Ok(rx)
         })
+    }
+}
+
+fn extract_tool_calls_from_content(content: &str) -> Option<Vec<ToolCall>> {
+    let mut calls = Vec::new();
+
+    let mut search_from = 0;
+    while let Some(start) = content[search_from..].find("<tool_call>") {
+        let start_abs = search_from + start + "<tool_call>".len();
+        if let Some(end_rel) = content[start_abs..].find("</tool_call>") {
+            let end_abs = start_abs + end_rel;
+            let json_str = content[start_abs..end_abs].trim();
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(json_str) {
+                if let (Some(name), arguments) = (
+                    value.get("name").and_then(|v| v.as_str()).map(String::from),
+                    value
+                        .get("arguments")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new())),
+                ) {
+                    calls.push(ToolCall {
+                        id: format!("fallback-{}", calls.len()),
+                        r#type: "function".to_string(),
+                        function: FunctionCall {
+                            name,
+                            arguments: arguments.to_string(),
+                        },
+                    });
+                }
+            }
+            search_from = end_abs + "</tool_call>".len();
+        } else {
+            break;
+        }
+    }
+
+    search_from = 0;
+    while let Some(start) = content[search_from..].find("[TOOL_REQUEST]") {
+        let start_abs = search_from + start + "[TOOL_REQUEST]".len();
+        if let Some(end_rel) = content[start_abs..].find("[END_TOOL_REQUEST]") {
+            let end_abs = start_abs + end_rel;
+            let json_str = content[start_abs..end_abs].trim();
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(json_str) {
+                if let (Some(name), arguments) = (
+                    value.get("name").and_then(|v| v.as_str()).map(String::from),
+                    value
+                        .get("arguments")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new())),
+                ) {
+                    calls.push(ToolCall {
+                        id: format!("fallback-{}", calls.len()),
+                        r#type: "function".to_string(),
+                        function: FunctionCall {
+                            name,
+                            arguments: arguments.to_string(),
+                        },
+                    });
+                }
+            }
+            search_from = end_abs + "[END_TOOL_REQUEST]".len();
+        } else {
+            break;
+        }
+    }
+
+    if calls.is_empty() {
+        None
+    } else {
+        Some(calls)
+    }
+}
+
+async fn send_tool_call_chunk(
+    calls: Vec<ToolCall>,
+    tx: &tokio::sync::mpsc::Sender<Result<CompletionChunk, AIError>>,
+) {
+    if !calls.is_empty() {
+        let _ = tx
+            .send(Ok(CompletionChunk {
+                content: String::new(),
+                finish_reason: Some("tool_calls".to_string()),
+                tool_calls: Some(calls),
+            }))
+            .await;
     }
 }
 
@@ -465,6 +646,15 @@ fn map_openai_error(status: reqwest::StatusCode, body: &str) -> AIError {
     AIError::Provider(format!("HTTP {status}: {body}"))
 }
 
+fn sanitize_tool_parameters(parameters: serde_json::Value) -> serde_json::Value {
+    if let serde_json::Value::Object(mut map) = parameters {
+        map.remove("$schema");
+        serde_json::Value::Object(map)
+    } else {
+        parameters
+    }
+}
+
 #[derive(Debug, Serialize)]
 struct OpenAIRequestBody {
     model: String,
@@ -475,6 +665,8 @@ struct OpenAIRequestBody {
     max_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<OpenAIToolDefinition>>,
 }
 
 impl OpenAIRequestBody {
@@ -482,17 +674,56 @@ impl OpenAIRequestBody {
         Self {
             model: model.to_string(),
             messages: req.messages.into_iter().map(Into::into).collect(),
-            temperature: req.temperature,
-            max_tokens: req.max_tokens,
+            temperature: req.temperature.or_else(|| {
+                if req.tools.is_some() {
+                    Some(0.1)
+                } else {
+                    None
+                }
+            }),
+            max_tokens: req.max_tokens.or(Some(4096)),
             stream: None,
+            tools: req
+                .tools
+                .map(|tools| tools.into_iter().map(Into::into).collect()),
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+struct OpenAIToolDefinition {
+    r#type: String,
+    function: OpenAIFunctionDefinition,
+}
+
+impl From<ToolDefinition> for OpenAIToolDefinition {
+    fn from(tool: ToolDefinition) -> Self {
+        Self {
+            r#type: tool.r#type,
+            function: OpenAIFunctionDefinition {
+                name: tool.function.name,
+                description: tool.function.description,
+                parameters: sanitize_tool_parameters(tool.function.parameters),
+            },
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct OpenAIFunctionDefinition {
+    name: String,
+    description: String,
+    parameters: serde_json::Value,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct OpenAIMessage {
     role: String,
     content: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_calls: Option<Vec<OpenAIToolCall>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_call_id: Option<String>,
 }
 
 impl From<Message> for OpenAIMessage {
@@ -502,9 +733,24 @@ impl From<Message> for OpenAIMessage {
                 Role::System => "system",
                 Role::User => "user",
                 Role::Assistant => "assistant",
+                Role::Tool => "tool",
             }
             .to_string(),
             content: msg.content,
+            tool_calls: msg.tool_calls.map(|calls| {
+                calls
+                    .into_iter()
+                    .map(|call| OpenAIToolCall {
+                        id: call.id,
+                        r#type: call.r#type,
+                        function: OpenAIFunctionCall {
+                            name: call.function.name,
+                            arguments: call.function.arguments,
+                        },
+                    })
+                    .collect()
+            }),
+            tool_call_id: msg.tool_call_id,
         }
     }
 }
@@ -519,12 +765,28 @@ struct OpenAIResponse {
 #[derive(Debug, Deserialize)]
 struct OpenAIChoice {
     message: OpenAIResponseMessage,
+    finish_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct OpenAIResponseMessage {
     content: Option<String>,
     reasoning_content: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_calls: Option<Vec<OpenAIToolCall>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct OpenAIToolCall {
+    id: String,
+    r#type: String,
+    function: OpenAIFunctionCall,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct OpenAIFunctionCall {
+    name: String,
+    arguments: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -549,4 +811,45 @@ struct OpenAIStreamChoice {
 struct OpenAIStreamDelta {
     content: Option<String>,
     reasoning_content: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_calls: Option<Vec<OpenAIStreamToolCallDelta>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIStreamToolCallDelta {
+    index: usize,
+    id: Option<String>,
+    r#type: Option<String>,
+    function: Option<OpenAIStreamFunctionCallDelta>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIStreamFunctionCallDelta {
+    name: Option<String>,
+    arguments: Option<String>,
+}
+
+#[derive(Debug, Default)]
+struct PartialToolCall {
+    id: String,
+    r#type: String,
+    name: Option<String>,
+    arguments: String,
+}
+
+impl From<PartialToolCall> for ToolCall {
+    fn from(partial: PartialToolCall) -> Self {
+        Self {
+            id: partial.id,
+            r#type: if partial.r#type.is_empty() {
+                "function".to_string()
+            } else {
+                partial.r#type
+            },
+            function: FunctionCall {
+                name: partial.name.unwrap_or_default(),
+                arguments: partial.arguments,
+            },
+        }
+    }
 }

@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useCallback, useState } from "react";
-import { useChat, type UIMessage } from "@ai-sdk/react";
-import type { ChatTransport, UIMessageChunk } from "ai";
+import { useChat, type UIMessage, type UseChatHelpers } from "@ai-sdk/react";
+import {
+  getToolName,
+  isToolUIPart,
+  type ChatTransport,
+  type DynamicToolUIPart,
+  type UIMessageChunk,
+} from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 import { useAIStore, type ChatMessage } from "@/shared/stores/ai";
@@ -12,15 +18,40 @@ import {
   stripMentions,
   type ChatContextResult,
 } from "@/shared/lib/chat-context";
+import { useMcpChatTools } from "./useMcpChatTools";
 
 // ─── Request Types ───────────────────────────────────────────────────────────
+
+interface BackendToolCall {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+interface BackendToolDefinition {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: unknown;
+  };
+}
 
 interface APIChatRequest {
   provider: string;
   model: string;
   base_url?: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: Array<{
+    role: string;
+    content: string;
+    tool_calls?: BackendToolCall[];
+    tool_call_id?: string;
+  }>;
   stream_id?: string;
+  tools?: BackendToolDefinition[];
 }
 
 interface CLIChatMessage {
@@ -38,6 +69,24 @@ interface StreamChunk {
   text?: string;
   error?: string;
   done?: boolean;
+  tool_calls?: BackendToolCall[];
+}
+
+interface ToolInvocationPart {
+  type: "tool-invocation";
+  toolInvocation: {
+    state:
+      | "input-streaming"
+      | "input-available"
+      | "output-streaming"
+      | "output-available"
+      | "output-error";
+    toolCallId: string;
+    toolName: string;
+    input: unknown;
+    output?: unknown;
+    errorText?: string;
+  };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -46,11 +95,134 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function stripReasoningTags(text: string): string {
+  const tags = [
+    { open: "<thinking>", close: "</thinking>" },
+    { open: "<reasoning>", close: "</reasoning>" },
+    { open: "<think>", close: "</think>" },
+  ];
+
+  let cleaned = text;
+  for (const { open, close } of tags) {
+    const pattern = new RegExp(
+      `${open.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?${close.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+      "g",
+    );
+    cleaned = cleaned.replace(pattern, "");
+  }
+  return cleaned.trim();
+}
+
 export function getMessageText(msg: UIMessage): string {
-  return msg.parts
+  const text = msg.parts
     .filter((p) => p.type === "text")
     .map((p) => (p as { text: string }).text)
     .join("");
+  return stripReasoningTags(text);
+}
+
+interface ToolInvocationLike {
+  state:
+    | "input-streaming"
+    | "input-available"
+    | "output-streaming"
+    | "output-available"
+    | "output-error";
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+  output?: unknown;
+  errorText?: string;
+}
+
+function getToolInvocation(part: UIMessage["parts"][number]): ToolInvocationLike | undefined {
+  if (part.type === "tool-invocation" && "toolInvocation" in part) {
+    const inv = (part as unknown as ToolInvocationPart).toolInvocation;
+    return {
+      state: inv.state,
+      toolCallId: inv.toolCallId,
+      toolName: inv.toolName,
+      input: inv.input,
+      output: inv.output,
+      errorText: inv.errorText,
+    };
+  }
+
+  if (isToolUIPart(part as Parameters<typeof isToolUIPart>[0])) {
+    const p = part as unknown as DynamicToolUIPart;
+    const supportedStates = [
+      "input-streaming",
+      "input-available",
+      "output-streaming",
+      "output-available",
+      "output-error",
+    ] as const;
+    if (!supportedStates.includes(p.state as (typeof supportedStates)[number])) {
+      return undefined;
+    }
+    return {
+      state: p.state as ToolInvocationLike["state"],
+      toolCallId: p.toolCallId,
+      toolName: getToolName(p),
+      input: p.input,
+      output: p.output,
+      errorText: p.errorText,
+    };
+  }
+
+  return undefined;
+}
+
+function getToolCalls(msg: UIMessage): BackendToolCall[] | undefined {
+  const invocations = msg.parts
+    .map(getToolInvocation)
+    .filter((inv): inv is ToolInvocationLike => inv !== undefined);
+  if (invocations.length === 0) return undefined;
+
+  return invocations.map((inv) => ({
+    id: inv.toolCallId,
+    type: "function" as const,
+    function: {
+      name: inv.toolName,
+      arguments: typeof inv.input === "string" ? inv.input : JSON.stringify(inv.input ?? {}),
+    },
+  }));
+}
+
+function uiMessageToBackendMessages(msg: UIMessage): APIChatRequest["messages"] {
+  const text = getMessageText(msg);
+
+  if (msg.role === "assistant") {
+    const toolCalls = getToolCalls(msg);
+    const messages: APIChatRequest["messages"] = [
+      {
+        role: "assistant",
+        content: text,
+        tool_calls: toolCalls,
+      },
+    ];
+
+    for (const part of msg.parts) {
+      const inv = getToolInvocation(part);
+      if (!inv) continue;
+      if (inv.state === "output-available" || inv.state === "output-error") {
+        messages.push({
+          role: "tool",
+          content:
+            inv.state === "output-error"
+              ? (inv.errorText ?? "tool execution failed")
+              : typeof inv.output === "string"
+                ? inv.output
+                : JSON.stringify(inv.output ?? ""),
+          tool_call_id: inv.toolCallId,
+        });
+      }
+    }
+
+    return messages;
+  }
+
+  return [{ role: msg.role, content: text }];
 }
 
 function uiMessageToStored(msg: UIMessage): ChatMessage {
@@ -80,6 +252,7 @@ function createStreamTransport(
   baseUrl: string | undefined,
   isCLIActive: boolean,
   activeCLIProvider: string | null,
+  tools: BackendToolDefinition[],
 ): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages, abortSignal }) {
@@ -104,9 +277,14 @@ function createStreamTransport(
             }
           };
 
+          let hadToolCalls = false;
+
           const finish = () => {
             safeEnqueue({ type: "text-end", id: chunkId });
-            safeEnqueue({ type: "finish", finishReason: "stop" });
+            safeEnqueue({
+              type: "finish",
+              finishReason: hadToolCalls ? "tool-calls" : "stop",
+            });
             safeClose();
           };
 
@@ -115,19 +293,38 @@ function createStreamTransport(
           channel.onmessage = (chunk) => {
             if (closed) return;
 
-            if (!started) {
-              started = true;
-              safeEnqueue({ type: "text-start", id: chunkId });
-            }
-
             if (chunk.error) {
               safeEnqueue({ type: "error", errorText: chunk.error });
               safeClose();
               return;
             }
 
+            if (!started) {
+              started = true;
+              safeEnqueue({ type: "text-start", id: chunkId });
+            }
+
             if (chunk.text) {
               safeEnqueue({ type: "text-delta", id: chunkId, delta: chunk.text });
+            }
+
+            if (chunk.tool_calls && chunk.tool_calls.length > 0) {
+              hadToolCalls = true;
+              for (const call of chunk.tool_calls) {
+                let input: unknown;
+                try {
+                  input = JSON.parse(call.function.arguments);
+                } catch {
+                  input = call.function.arguments;
+                }
+
+                safeEnqueue({
+                  type: "tool-input-available",
+                  toolCallId: call.id,
+                  toolName: call.function.name,
+                  input,
+                });
+              }
             }
 
             if (chunk.done) {
@@ -166,11 +363,9 @@ function createStreamTransport(
                   provider: activeProvider,
                   model: activeModel,
                   base_url: baseUrl,
-                  messages: messages.map((m: UIMessage) => ({
-                    role: m.role,
-                    content: getMessageText(m),
-                  })),
+                  messages: messages.flatMap(uiMessageToBackendMessages),
                   stream_id: streamId,
+                  tools: tools.length > 0 ? tools : undefined,
                 };
                 await invoke("ai_chat_stream", { req, channel });
               }
@@ -222,6 +417,25 @@ export function useAI() {
     saveSession,
   } = useAIStore();
 
+  const {
+    toolDefinitions,
+    resolveTool,
+    ready: mcpReady,
+    loaded: mcpLoaded,
+    serverCount: mcpServerCount,
+  } = useMcpChatTools();
+
+  const mcpReadyRef = useRef(mcpReady);
+  const mcpServerCountRef = useRef(mcpServerCount);
+
+  useEffect(() => {
+    mcpReadyRef.current = mcpReady;
+  }, [mcpReady]);
+
+  useEffect(() => {
+    mcpServerCountRef.current = mcpServerCount;
+  }, [mcpServerCount]);
+
   const providerConfig = providers[activeProvider];
   const hasAPIKey = apiKeyRefs[activeProvider] !== null;
   const isCLIActive = activeCLIProvider !== null;
@@ -237,8 +451,16 @@ export function useAI() {
         providerConfig.baseUrl,
         isCLIActive,
         activeCLIProvider,
+        isCLIActive ? [] : toolDefinitions,
       ),
-    [activeProvider, activeModel, providerConfig.baseUrl, isCLIActive, activeCLIProvider],
+    [
+      activeProvider,
+      activeModel,
+      providerConfig.baseUrl,
+      isCLIActive,
+      activeCLIProvider,
+      toolDefinitions,
+    ],
   );
 
   const initialMessages = useMemo<UIMessage[]>(() => {
@@ -248,15 +470,100 @@ export function useAI() {
     return [];
   }, [activeSession?.id]);
 
+  const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
+
+  const onToolCall = useCallback(
+    async ({
+      toolCall,
+    }: {
+      toolCall: {
+        toolCallId: string;
+        toolName: string;
+        input: unknown;
+      };
+    }) => {
+      console.log("[onToolCall]", toolCall.toolName, toolCall.input);
+      const chat = chatRef.current;
+      if (!chat) return;
+
+      const tool = resolveTool(toolCall.toolName);
+      if (!tool) {
+        chat.addToolOutput({
+          tool: toolCall.toolName,
+          toolCallId: toolCall.toolCallId,
+          state: "output-error",
+          errorText: `Tool ${toolCall.toolName} is not available`,
+        });
+        return;
+      }
+
+      try {
+        const result = await invoke<{
+          content: unknown;
+          is_error?: boolean;
+          error?: string;
+        }>("mcp_call_tool", {
+          id: tool.serverId,
+          toolName: tool.toolName,
+          arguments: typeof toolCall.input === "object" ? toolCall.input : {},
+        });
+
+        const output =
+          typeof result.content === "string" ? result.content : JSON.stringify(result.content);
+
+        if (result.is_error || result.error) {
+          chat.addToolOutput({
+            tool: toolCall.toolName,
+            toolCallId: toolCall.toolCallId,
+            state: "output-error",
+            errorText: result.error ?? output,
+          });
+        } else {
+          chat.addToolOutput({
+            tool: toolCall.toolName,
+            toolCallId: toolCall.toolCallId,
+            output,
+          });
+        }
+      } catch (err) {
+        const errorText = String(err);
+        chat.addToolOutput({
+          tool: toolCall.toolName,
+          toolCallId: toolCall.toolCallId,
+          state: "output-error",
+          errorText,
+        });
+      }
+    },
+    [resolveTool],
+  );
+
+  const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "assistant") return false;
+
+    // Only auto-continue when the assistant message contains a completed tool
+    // call but has not produced an answer yet. Once the model generated text,
+    // we must not resubmit to avoid an infinite loop.
+    if (getMessageText(lastMessage).trim().length > 0) return false;
+
+    return lastMessage.parts.some((part) => {
+      const inv = getToolInvocation(part);
+      if (!inv) return false;
+      return inv.state === "output-available" || inv.state === "output-error";
+    });
+  }, []);
+
   const chat = useChat({
-    // Include provider/model in the id so that the @ai-sdk/react Chat instance
-    // is recreated when the active provider changes. Otherwise it keeps using
-    // the transport that was passed on first render.
     id: `${sessionId}:${activeProvider}:${activeModel}`,
     transport,
     messages: initialMessages,
     experimental_throttle: 50,
+    onToolCall,
+    sendAutomaticallyWhen,
   });
+
+  chatRef.current = chat;
 
   const [input, setInput] = useState("");
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
@@ -317,10 +624,24 @@ export function useAI() {
         submitPrompt();
       }
 
+      if (!mcpLoaded) {
+        const start = Date.now();
+        while (!mcpLoaded && Date.now() - start < 5000) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
+      if (mcpServerCountRef.current > 0) {
+        const start = Date.now();
+        while (!mcpReadyRef.current && Date.now() - start < 5000) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
       void chat.sendMessage({ text: messageText });
       setInput("");
     },
-    [input, chat, rootPath],
+    [input, chat, rootPath, mcpServerCount, mcpLoaded],
   );
 
   // Sync chat messages into the active store session.
@@ -410,6 +731,9 @@ export function useAI() {
     isCLIActive,
     activeCLIProvider,
     sessionId,
+    mcpReady,
+    mcpLoaded,
+    mcpServerCount,
     createChatSession: () => {
       return createChatSession(rootPath);
     },
