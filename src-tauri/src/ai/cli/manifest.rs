@@ -105,6 +105,20 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: false,
             env: None,
         },
+        CLIManifest {
+            id: "moonshot-kimi-acp".to_string(),
+            name: "Kimi Code (ACP)".to_string(),
+            description: "Moonshot Kimi Code CLI via Agent Client Protocol — supports tools and MCP".to_string(),
+            install_cmd: "npm install -g @moonshot-ai/kimi-code".to_string(),
+            check_cmd: "kimi --version".to_string(),
+            login_cmd: "kimi login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "kimi acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            env: None,
+        },
     ]
 }
 

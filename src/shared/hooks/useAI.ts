@@ -65,11 +65,19 @@ interface CLIChatRequest {
   session_id?: string;
 }
 
+interface AcpChatRequest {
+  provider_id: string;
+  chat_session_id: string;
+  cwd: string;
+  messages: CLIChatMessage[];
+}
+
 interface StreamChunk {
   text?: string;
   error?: string;
   done?: boolean;
   tool_calls?: BackendToolCall[];
+  tool_results?: { tool_call_id: string; output: string; is_error: boolean }[];
 }
 
 interface ToolInvocationPart {
@@ -253,7 +261,10 @@ function createStreamTransport(
   isCLIActive: boolean,
   activeCLIProvider: string | null,
   tools: BackendToolDefinition[],
+  rootPath: string,
+  activeChatSessionId: string | null,
 ): ChatTransport<UIMessage> {
+  const isAcpActive = activeCLIProvider === "moonshot-kimi-acp";
   return {
     async sendMessages({ messages, abortSignal }) {
       const chunkId = generateId();
@@ -339,7 +350,9 @@ function createStreamTransport(
             } catch {
               // ignore
             }
-            if (!isCLIActive) {
+            if (isAcpActive && activeChatSessionId) {
+              void invoke("cli_acp_cancel", { req: { chat_session_id: activeChatSessionId } });
+            } else if (!isCLIActive) {
               void invoke("cancel_ai_chat_stream", { req: { stream_id: streamId } });
             }
           };
@@ -348,7 +361,18 @@ function createStreamTransport(
 
           const send = async () => {
             try {
-              if (isCLIActive && activeCLIProvider) {
+              if (isAcpActive && activeChatSessionId) {
+                const req: AcpChatRequest = {
+                  provider_id: activeCLIProvider,
+                  chat_session_id: activeChatSessionId,
+                  cwd: rootPath,
+                  messages: messages.map((m: UIMessage) => ({
+                    role: m.role,
+                    content: getMessageText(m),
+                  })),
+                };
+                await invoke("cli_acp_chat_stream", { req, channel });
+              } else if (isCLIActive && activeCLIProvider) {
                 const req: CLIChatRequest = {
                   provider_id: activeCLIProvider,
                   messages: messages.map((m: UIMessage) => ({
@@ -442,6 +466,7 @@ export function useAI() {
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -452,6 +477,8 @@ export function useAI() {
         isCLIActive,
         activeCLIProvider,
         isCLIActive ? [] : toolDefinitions,
+        rootPath,
+        activeChatSessionId,
       ),
     [
       activeProvider,
@@ -460,6 +487,8 @@ export function useAI() {
       isCLIActive,
       activeCLIProvider,
       toolDefinitions,
+      rootPath,
+      activeChatSessionId,
     ],
   );
 
@@ -485,6 +514,11 @@ export function useAI() {
       console.log("[onToolCall]", toolCall.toolName, toolCall.input);
       const chat = chatRef.current;
       if (!chat) return;
+
+      // Kimi ACP executes tools itself via reverse-RPC; the frontend only displays results.
+      if (activeCLIProvider === "moonshot-kimi-acp") {
+        return;
+      }
 
       const tool = resolveTool(toolCall.toolName);
       if (!tool) {
@@ -535,7 +569,7 @@ export function useAI() {
         });
       }
     },
-    [resolveTool],
+    [resolveTool, activeCLIProvider],
   );
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
@@ -555,7 +589,7 @@ export function useAI() {
   }, []);
 
   const chat = useChat({
-    id: `${sessionId}:${activeProvider}:${activeModel}`,
+    id: `${sessionId}:${activeProvider}:${activeModel}:${activeCLIProvider ?? "api"}`,
     transport,
     messages: initialMessages,
     experimental_throttle: 50,
@@ -566,7 +600,6 @@ export function useAI() {
   chatRef.current = chat;
 
   const [input, setInput] = useState("");
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   // Load sessions whenever the workspace changes.
   useEffect(() => {

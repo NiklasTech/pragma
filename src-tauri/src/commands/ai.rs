@@ -511,12 +511,21 @@ pub async fn ai_inline_completion(
 // ─── Streaming Chat ──────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct ToolResult {
+    pub tool_call_id: String,
+    pub output: String,
+    pub is_error: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct StreamChunk {
     pub text: Option<String>,
     pub error: Option<String>,
     pub done: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ToolCall>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_results: Option<Vec<ToolResult>>,
 }
 
 #[tauri::command]
@@ -623,6 +632,7 @@ When showing file contents, preserve the full code and include the language tag.
                         error: None,
                         done,
                         tool_calls,
+                        tool_results: None,
                     };
                     if channel.send(chunk).is_err() {
                         break;
@@ -637,6 +647,7 @@ When showing file contents, preserve the full code and include the language tag.
                         error: Some(e.to_string()),
                         done: false,
                         tool_calls: None,
+                        tool_results: None,
                     });
                     break;
                 }

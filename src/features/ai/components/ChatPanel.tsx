@@ -8,8 +8,12 @@ import {
   Stop,
   Robot,
   ArrowCounterClockwise,
+  Check,
+  X,
 } from "@phosphor-icons/react";
 
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useAI, getMessageText } from "@/shared/hooks/useAI";
 import { useAIStore } from "@/shared/stores/ai";
@@ -85,6 +89,15 @@ export function ChatPanel() {
   const contextPickerRef = useRef<ContextPickerRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState<
+    Array<{
+      session_id: string;
+      tool_call_id: string;
+      tool_name: string;
+      args?: unknown;
+      description?: string;
+    }>
+  >([]);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
@@ -140,6 +153,39 @@ export function ChatPanel() {
       });
     }
   }, [status, edit, messages, receiveProposal, cancelEdit, openDiff]);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let active = true;
+
+    void (async () => {
+      unlisten = await listen<
+        Array<{
+          session_id: string;
+          tool_call_id: string;
+          tool_name: string;
+          args?: unknown;
+          description?: string;
+        }>[number]
+      >("acp_request_permission", (event) => {
+        setPendingApprovals((prev) => [...prev, event.payload]);
+      });
+      if (!active) {
+        unlisten();
+        unlisten = undefined;
+      }
+    })();
+
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, []);
+
+  const handleApproval = useCallback(async (toolCallId: string, approved: boolean) => {
+    await invoke("cli_acp_approve", { req: { tool_call_id: toolCallId, approved } });
+    setPendingApprovals((prev) => prev.filter((a) => a.tool_call_id !== toolCallId));
+  }, []);
 
   const sendShortcut = useSettingsStore((s) => s.shortcuts["chat.send"]);
 
@@ -443,6 +489,47 @@ export function ChatPanel() {
           <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
+          </div>
+        )}
+
+        {pendingApprovals.length > 0 && (
+          <div className="mb-2 flex flex-col gap-2">
+            {pendingApprovals.map((approval) => (
+              <div
+                key={approval.tool_call_id}
+                className="flex flex-col gap-2 rounded-md border border-border/60 bg-bg-root p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-ui-sm font-medium">Allow tool: {approval.tool_name}</span>
+                </div>
+                {approval.description && (
+                  <p className="text-ui-xs text-fg-muted">{approval.description}</p>
+                )}
+                {approval.args ? (
+                  <pre className="max-h-32 overflow-auto rounded bg-bg-surface p-2 text-ui-xs text-fg-muted">
+                    {JSON.stringify(approval.args, null, 2)}
+                  </pre>
+                ) : null}
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleApproval(approval.tool_call_id, false)}
+                    className="flex items-center gap-1 rounded-md bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-error/90"
+                  >
+                    <X size={12} weight="bold" />
+                    Deny
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproval(approval.tool_call_id, true)}
+                    className="flex items-center gap-1 rounded-md bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-success/90"
+                  >
+                    <Check size={12} weight="bold" />
+                    Allow
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
