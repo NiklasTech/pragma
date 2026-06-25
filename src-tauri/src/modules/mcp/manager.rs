@@ -1,9 +1,7 @@
 use crate::modules::mcp::client::{McpClient, McpClientConfig, Notification};
 use crate::modules::mcp::error::McpError;
 use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
-use crate::modules::mcp::{
-    config_path, load_tools_cache, save_tools_cache, McpServerConfig,
-};
+use crate::modules::mcp::{config_path, load_tools_cache, save_tools_cache, McpServerConfig};
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
 use serde_json::Value;

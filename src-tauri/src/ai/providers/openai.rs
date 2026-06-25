@@ -520,7 +520,10 @@ impl AIProvider for OpenAIProvider {
                                 if let Some(calls) =
                                     extract_tool_calls_from_content(&content_buffer)
                                 {
-                                    log::info!("[OpenAI stream] fallback extracted calls: {:?}", calls);
+                                    log::info!(
+                                        "[OpenAI stream] fallback extracted calls: {:?}",
+                                        calls
+                                    );
                                     send_tool_call_chunk(calls, &tx).await;
                                 }
                             } else {
@@ -549,9 +552,10 @@ fn extract_tool_calls_from_content(content: &str) -> Option<Vec<ToolCall>> {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(json_str) {
                 if let (Some(name), arguments) = (
                     value.get("name").and_then(|v| v.as_str()).map(String::from),
-                    value.get("arguments").cloned().unwrap_or_else(|| {
-                        serde_json::Value::Object(serde_json::Map::new())
-                    }),
+                    value
+                        .get("arguments")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new())),
                 ) {
                     calls.push(ToolCall {
                         id: format!("fallback-{}", calls.len()),
@@ -578,9 +582,10 @@ fn extract_tool_calls_from_content(content: &str) -> Option<Vec<ToolCall>> {
             if let Ok(value) = serde_json::from_str::<serde_json::Value>(json_str) {
                 if let (Some(name), arguments) = (
                     value.get("name").and_then(|v| v.as_str()).map(String::from),
-                    value.get("arguments").cloned().unwrap_or_else(|| {
-                        serde_json::Value::Object(serde_json::Map::new())
-                    }),
+                    value
+                        .get("arguments")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::Value::Object(serde_json::Map::new())),
                 ) {
                     calls.push(ToolCall {
                         id: format!("fallback-{}", calls.len()),

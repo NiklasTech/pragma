@@ -49,9 +49,7 @@ fn tools_cache_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join(TOOLS_CACHE_FILE))
 }
 
-pub async fn load_tools_cache(
-    app: &AppHandle,
-) -> Result<HashMap<String, Vec<McpTool>>, String> {
+pub async fn load_tools_cache(app: &AppHandle) -> Result<HashMap<String, Vec<McpTool>>, String> {
     let path = tools_cache_path(app)?;
     if !path.exists() {
         return Ok(HashMap::new());
