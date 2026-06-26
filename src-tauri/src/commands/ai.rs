@@ -523,6 +523,8 @@ pub struct StreamChunk {
     pub error: Option<String>,
     pub done: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ToolCall>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_results: Option<Vec<ToolResult>>,
@@ -631,6 +633,7 @@ When showing file contents, preserve the full code and include the language tag.
                         text,
                         error: None,
                         done,
+                        reasoning: None,
                         tool_calls,
                         tool_results: None,
                     };
@@ -646,6 +649,7 @@ When showing file contents, preserve the full code and include the language tag.
                         text: None,
                         error: Some(e.to_string()),
                         done: false,
+                        reasoning: None,
                         tool_calls: None,
                         tool_results: None,
                     });

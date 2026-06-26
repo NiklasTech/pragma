@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 
 // ─── JSON-RPC envelope ───────────────────────────────────────────────────────
 
@@ -41,7 +40,7 @@ pub struct JsonRpcErrorObject {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InitializeRequest {
-    pub protocol_version: String,
+    pub protocol_version: u64,
     pub client_capabilities: ClientCapabilities,
 }
 
@@ -210,19 +209,21 @@ pub enum SessionUpdateDetail {
     AgentThoughtChunk { content: ContentBlock },
     #[serde(rename = "tool_call")]
     ToolCall {
+        #[serde(rename = "toolCallId")]
         tool_call_id: String,
         title: String,
         #[serde(default)]
         kind: Option<String>,
         #[serde(default)]
         status: Option<String>,
-        #[serde(default)]
+        #[serde(default, rename = "rawInput")]
         raw_input: Option<Value>,
         #[serde(default)]
         content: Option<Vec<ToolCallContent>>,
     },
     #[serde(rename = "tool_call_update")]
     ToolCallUpdate {
+        #[serde(rename = "toolCallId")]
         tool_call_id: String,
         #[serde(default)]
         title: Option<String>,
@@ -230,15 +231,18 @@ pub enum SessionUpdateDetail {
         kind: Option<String>,
         #[serde(default)]
         status: Option<String>,
-        #[serde(default)]
+        #[serde(default, rename = "rawInput")]
         raw_input: Option<Value>,
         #[serde(default)]
         content: Option<Vec<ToolCallContent>>,
-        #[serde(default)]
+        #[serde(default, rename = "rawOutput")]
         raw_output: Option<Value>,
     },
     #[serde(rename = "turn_ended")]
-    TurnEnded { stop_reason: String },
+    TurnEnded {
+        #[serde(default)]
+        stop_reason: Option<String>,
+    },
     #[serde(rename = "error")]
     Error { message: String },
     #[serde(other)]
@@ -281,7 +285,9 @@ pub struct ToolCallContent {
 #[serde(rename_all = "camelCase")]
 pub struct McpServer {
     pub name: String,
-    pub transport: String,
+    /// Transport discriminator. `None` means stdio per ACP 0.23 schema.
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub type_: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -289,7 +295,23 @@ pub struct McpServer {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub env: Option<HashMap<String, String>>,
+    pub headers: Option<Vec<McpHeader>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub env: Option<Vec<McpEnvVar>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpHeader {
+    pub name: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpEnvVar {
+    pub name: String,
+    pub value: String,
 }
 
 // ─── Reverse-RPC: fs ─────────────────────────────────────────────────────────
@@ -333,6 +355,14 @@ pub struct ToolCallUpdate {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ToolCallRequest {
+    pub session_id: String,
+    pub name: String,
+    pub arguments: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RequestPermissionRequest {
     pub session_id: String,
     pub options: Vec<PermissionOption>,
@@ -356,6 +386,9 @@ pub struct RequestPermissionResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum PermissionOutcome {
-    Selected { option_id: String },
+    Selected {
+        #[serde(rename = "optionId")]
+        option_id: String,
+    },
     Cancelled,
 }

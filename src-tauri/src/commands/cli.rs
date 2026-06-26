@@ -187,6 +187,7 @@ pub async fn cli_chat_stream(
                 text,
                 error: None,
                 done,
+                reasoning: None,
                 tool_calls: None,
                 tool_results: None,
             })
@@ -211,6 +212,11 @@ pub async fn cli_acp_chat_stream(
     channel: Channel<StreamChunk>,
     state: State<'_, AcpSessionManager>,
 ) -> Result<(), String> {
+    log::info!(
+        "cli_acp_chat_stream called for chat_session_id={} provider={}",
+        req.chat_session_id,
+        req.provider_id
+    );
     if req.provider_id.is_empty() {
         return Err("provider_id is required".to_string());
     }
@@ -272,6 +278,11 @@ pub async fn cli_acp_approve(
     req: AcpApproveRequest,
     state: State<'_, AcpSessionManager>,
 ) -> Result<(), String> {
+    log::info!(
+        "cli_acp_approve called tool_call_id={} approved={}",
+        req.tool_call_id,
+        req.approved
+    );
     if req.tool_call_id.is_empty() {
         return Err("tool_call_id is required".to_string());
     }

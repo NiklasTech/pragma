@@ -76,6 +76,7 @@ interface StreamChunk {
   text?: string;
   error?: string;
   done?: boolean;
+  reasoning?: string;
   tool_calls?: BackendToolCall[];
   tool_results?: { tool_call_id: string; output: string; is_error: boolean }[];
 }
@@ -264,7 +265,7 @@ function createStreamTransport(
   rootPath: string,
   activeChatSessionId: string | null,
 ): ChatTransport<UIMessage> {
-  const isAcpActive = activeCLIProvider === "moonshot-kimi-acp";
+  const isAcpActive = activeCLIProvider === "moonshot-kimi";
   return {
     async sendMessages({ messages, abortSignal }) {
       const chunkId = generateId();
@@ -289,8 +290,12 @@ function createStreamTransport(
           };
 
           let hadToolCalls = false;
+          let reasoningStarted = false;
 
           const finish = () => {
+            if (reasoningStarted) {
+              safeEnqueue({ type: "reasoning-end", id: chunkId });
+            }
             safeEnqueue({ type: "text-end", id: chunkId });
             safeEnqueue({
               type: "finish",
@@ -317,6 +322,18 @@ function createStreamTransport(
 
             if (chunk.text) {
               safeEnqueue({ type: "text-delta", id: chunkId, delta: chunk.text });
+            }
+
+            if (chunk.reasoning) {
+              if (!reasoningStarted) {
+                reasoningStarted = true;
+                safeEnqueue({ type: "reasoning-start", id: chunkId });
+              }
+              safeEnqueue({
+                type: "reasoning-delta",
+                id: chunkId,
+                delta: chunk.reasoning,
+              });
             }
 
             if (chunk.tool_calls && chunk.tool_calls.length > 0) {
@@ -529,12 +546,11 @@ export function useAI() {
         input: unknown;
       };
     }) => {
-      console.log("[onToolCall]", toolCall.toolName, toolCall.input);
       const chat = chatRef.current;
       if (!chat) return;
 
       // Kimi ACP executes tools itself via reverse-RPC; the frontend only displays results.
-      if (activeCLIProvider === "moonshot-kimi-acp") {
+      if (activeCLIProvider === "moonshot-kimi") {
         return;
       }
 

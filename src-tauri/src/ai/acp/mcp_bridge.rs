@@ -1,17 +1,24 @@
 use crate::modules::mcp::McpServerConfig;
 
-use super::types::McpServer;
+use super::types::{McpEnvVar, McpServer};
 
 pub fn configs_to_acp_servers(configs: Vec<McpServerConfig>) -> Vec<McpServer> {
     configs
         .into_iter()
         .map(|config| McpServer {
             name: config.name,
-            transport: "stdio".to_string(),
+            type_: None, // Pragma MCP configs are implicitly stdio.
             command: Some(config.command),
             args: Some(config.args),
             url: None,
-            env: Some(config.env),
+            headers: None,
+            env: Some(
+                config
+                    .env
+                    .into_iter()
+                    .map(|(name, value)| McpEnvVar { name, value })
+                    .collect(),
+            ),
         })
         .collect()
 }
@@ -40,10 +47,17 @@ mod tests {
 
         let server = &servers[0];
         assert_eq!(server.name, "Test Server");
-        assert_eq!(server.transport, "stdio");
+        assert!(server.type_.is_none());
         assert_eq!(server.command, Some("node".to_string()));
         assert_eq!(server.args, Some(vec!["index.js".to_string()]));
         assert!(server.url.is_none());
-        assert!(server.env.is_some());
+        assert!(server.headers.is_none());
+        assert_eq!(
+            server.env.as_ref().unwrap()[0],
+            McpEnvVar {
+                name: "KEY".to_string(),
+                value: "value".to_string(),
+            }
+        );
     }
 }

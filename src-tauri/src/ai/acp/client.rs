@@ -14,7 +14,7 @@ use super::error::{AcpError, Result};
 use super::types::{JsonRpcErrorObject, JsonRpcRequest, JsonRpcResponse, JsonRpcResponseBody};
 
 const JSONRPC_VERSION: &str = "2.0";
-const DEFAULT_TIMEOUT_MS: u64 = 30_000;
+pub const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 const MAX_CONCURRENT_REQUESTS: usize = 64;
 
 #[derive(Debug, Clone)]
@@ -46,7 +46,7 @@ pub struct ReverseRpcRequest {
 struct ClientInner {
     next_id: AtomicU64,
     pending: Mutex<HashMap<u64, oneshot::Sender<Result<Value>>>>,
-    request_timeout_ms: u64,
+    request_timeout_ms: Option<u64>,
     outgoing_tx: mpsc::Sender<String>,
 }
 
@@ -83,7 +83,7 @@ impl AcpClient {
             return Err(AcpError::Serialization("command is required".to_string()));
         }
 
-        let request_timeout_ms = config.request_timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS);
+        let request_timeout_ms = config.request_timeout_ms;
         let mut cmd = Command::new(&config.command);
         cmd.args(&config.args)
             .envs(&config.env)
@@ -105,7 +105,7 @@ impl AcpClient {
     pub async fn with_io<R, W>(
         reader: R,
         writer: W,
-        request_timeout_ms: u64,
+        request_timeout_ms: Option<u64>,
     ) -> Result<(
         Self,
         mpsc::UnboundedReceiver<Notification>,
@@ -179,15 +179,21 @@ impl AcpClient {
             .await
             .map_err(|_| AcpError::ConnectionClosed)?;
 
-        let timeout_ms = options.timeout_ms.unwrap_or(self.inner.request_timeout_ms);
-        match timeout(Duration::from_millis(timeout_ms), rx).await {
-            Ok(Ok(result)) => result,
-            Ok(Err(_)) => Err(AcpError::ConnectionClosed),
-            Err(_) => {
-                let mut pending = self.inner.pending.lock().await;
-                pending.remove(&id);
-                Err(AcpError::RequestTimeout)
-            }
+        let timeout_ms = options.timeout_ms.or(self.inner.request_timeout_ms);
+        match timeout_ms {
+            Some(ms) => match timeout(Duration::from_millis(ms), rx).await {
+                Ok(Ok(result)) => result,
+                Ok(Err(_)) => Err(AcpError::ConnectionClosed),
+                Err(_) => {
+                    let mut pending = self.inner.pending.lock().await;
+                    pending.remove(&id);
+                    Err(AcpError::RequestTimeout)
+                }
+            },
+            None => match rx.await {
+                Ok(result) => result,
+                Err(_) => Err(AcpError::ConnectionClosed),
+            },
         }
     }
 
@@ -222,6 +228,7 @@ where
 {
     tokio::spawn(async move {
         while let Some(message) = outgoing_rx.recv().await {
+            log::debug!("acp -> out: {message}");
             if writer
                 .write_all(format!("{message}\n").as_bytes())
                 .await
@@ -253,6 +260,8 @@ where
                 continue;
             }
 
+            log::debug!("acp <- in: {line}");
+
             let value: Value = match serde_json::from_str(&line) {
                 Ok(v) => v,
                 Err(e) => {
@@ -261,8 +270,10 @@ where
                 }
             };
 
-            // Incoming request (reverse-RPC) has method + id.
-            if value.get("method").is_some() && value.get("id").is_some() {
+            // Incoming request (reverse-RPC) has method + non-null id.
+            if value.get("method").is_some()
+                && value.get("id").map(|v| !v.is_null()).unwrap_or(false)
+            {
                 let id = value["id"].clone();
                 let method = value["method"].as_str().unwrap_or("").to_string();
                 let params = value.get("params").cloned();
@@ -279,18 +290,16 @@ where
                     continue;
                 }
 
-                let response =
-                    match timeout(Duration::from_millis(inner.request_timeout_ms), response_rx)
-                        .await
-                    {
+                let response = match inner.request_timeout_ms {
+                    Some(ms) => match timeout(Duration::from_millis(ms), response_rx).await {
                         Ok(Ok(Ok(value))) => JsonRpcResponse {
                             jsonrpc: JSONRPC_VERSION.to_string(),
-                            id: Some(id),
+                            id: Some(id.clone()),
                             body: JsonRpcResponseBody::Result(value),
                         },
                         Ok(Ok(Err(err))) => JsonRpcResponse {
                             jsonrpc: JSONRPC_VERSION.to_string(),
-                            id: Some(id),
+                            id: Some(id.clone()),
                             body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
                                 code: -32000,
                                 message: err.to_string(),
@@ -299,14 +308,40 @@ where
                         },
                         _ => JsonRpcResponse {
                             jsonrpc: JSONRPC_VERSION.to_string(),
-                            id: Some(id),
+                            id: Some(id.clone()),
                             body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
                                 code: -32000,
                                 message: "Reverse-RPC handler timeout".to_string(),
                                 data: None,
                             }),
                         },
-                    };
+                    },
+                    None => match response_rx.await {
+                        Ok(Ok(value)) => JsonRpcResponse {
+                            jsonrpc: JSONRPC_VERSION.to_string(),
+                            id: Some(id.clone()),
+                            body: JsonRpcResponseBody::Result(value),
+                        },
+                        Ok(Err(err)) => JsonRpcResponse {
+                            jsonrpc: JSONRPC_VERSION.to_string(),
+                            id: Some(id.clone()),
+                            body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
+                                code: -32000,
+                                message: err.to_string(),
+                                data: None,
+                            }),
+                        },
+                        Err(_) => JsonRpcResponse {
+                            jsonrpc: JSONRPC_VERSION.to_string(),
+                            id: Some(id.clone()),
+                            body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
+                                code: -32000,
+                                message: "Reverse-RPC handler closed".to_string(),
+                                data: None,
+                            }),
+                        },
+                    },
+                };
 
                 let message = match serde_json::to_string(&response) {
                     Ok(m) => m,
@@ -320,8 +355,8 @@ where
                 continue;
             }
 
-            // Response has id + result/error.
-            if value.get("id").is_some()
+            // Response has non-null id + result/error.
+            if value.get("id").map(|v| !v.is_null()).unwrap_or(false)
                 && (value.get("result").is_some() || value.get("error").is_some())
             {
                 let response: JsonRpcResponse = match serde_json::from_value(value) {
@@ -375,7 +410,7 @@ where
                 continue;
             }
 
-            log::warn!("acp: unrecognized JSON-RPC message");
+            log::warn!("acp: unrecognized JSON-RPC message: {value}");
         }
     })
 }
@@ -408,7 +443,7 @@ mod tests {
         let (mut server_read, client_write) = tokio::io::duplex(1024);
 
         let (client, _notifications, _reverse_requests) =
-            AcpClient::with_io(client_read, client_write, 1000)
+            AcpClient::with_io(client_read, client_write, Some(1000))
                 .await
                 .unwrap();
 
@@ -452,7 +487,7 @@ mod tests {
         let (mut server_read, client_write) = tokio::io::duplex(1024);
 
         let (_client, _notifications, mut reverse_requests) =
-            AcpClient::with_io(client_read, client_write, 1000)
+            AcpClient::with_io(client_read, client_write, Some(1000))
                 .await
                 .unwrap();
 

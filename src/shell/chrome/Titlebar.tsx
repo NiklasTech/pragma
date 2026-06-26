@@ -59,7 +59,7 @@ export function Titlebar() {
       className="relative z-[60] flex h-header shrink-0 items-center justify-between select-none border-b border-border/60 bg-bg-surface"
     >
       <div className="flex items-center gap-2 px-3">
-        <img src="/favicon.svg" alt="" className="h-5 w-5" />
+        <img src="/pragma_logo.svg" alt="" className="h-5 w-5" />
         <span className="text-ui-xs font-semibold text-fg-default">Pragma</span>
 
         <button

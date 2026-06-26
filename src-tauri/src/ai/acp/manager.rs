@@ -8,10 +8,13 @@ use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
 
 use super::approval_bridge::ApprovalBridge;
-use super::client::{AcpClient, AcpClientConfig, Notification, ReverseRpcRequest};
+use super::client::{
+    AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest, DEFAULT_TIMEOUT_MS,
+};
 use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
+use super::tools_bridge::handle_tool_call;
 use super::types::{
     ClientCapabilities, ContentBlock, FsCapabilities, InitializeRequest, NewSessionRequest,
     PromptContent, PromptRequest, SessionUpdate, SessionUpdateDetail, ToolCallContent,
@@ -19,7 +22,7 @@ use super::types::{
 use crate::ai::cli::{enriched_path, get_manifest};
 use crate::commands::ai::StreamChunk;
 
-const ACP_PROTOCOL_VERSION: &str = "0.23.0";
+const ACP_PROTOCOL_VERSION: u64 = 1;
 
 pub struct AcpSession {
     client: AcpClient,
@@ -83,16 +86,18 @@ impl AcpSessionManager {
             command: cmd_parts.remove(0),
             args: cmd_parts,
             env,
-            request_timeout_ms: None,
+            request_timeout_ms: Some(DEFAULT_TIMEOUT_MS),
         };
 
         let (client, child, notifications, reverse_requests) = AcpClient::start(config).await?;
+
+        log::info!("acp: starting session for chat {chat_session_id}");
 
         let init_response = client
             .request(
                 "initialize",
                 Some(serde_json::to_value(InitializeRequest {
-                    protocol_version: ACP_PROTOCOL_VERSION.to_string(),
+                    protocol_version: ACP_PROTOCOL_VERSION,
                     client_capabilities: ClientCapabilities {
                         fs: Some(FsCapabilities {
                             read_text_file: true,
@@ -127,6 +132,8 @@ impl AcpSessionManager {
                 Default::default(),
             )
             .await?;
+
+        log::info!("acp: session/new response: {new_session_resp:?}");
 
         let acp_session_id = new_session_resp
             .get("sessionId")
@@ -186,27 +193,42 @@ impl AcpSessionManager {
             prompt: messages,
         };
 
+        let acp_session_id = session.acp_session_id.clone();
+        log::info!("acp: sending session/prompt for {}", acp_session_id);
+
         let client = session.client.clone();
 
         tokio::spawn(async move {
-            if let Err(e) = client
+            let result = client
                 .request(
                     "session/prompt",
                     Some(serde_json::to_value(req).unwrap_or(Value::Null)),
-                    Default::default(),
+                    RequestOptions { timeout_ms: None },
                 )
-                .await
-            {
-                let _ = tx
-                    .send(StreamChunk {
-                        text: None,
-                        error: Some(e.to_string()),
-                        done: true,
-                        tool_calls: None,
-                        tool_results: None,
-                    })
-                    .await;
+                .await;
+            match &result {
+                Ok(value) => {
+                    log::info!(
+                        "acp: session/prompt response for {}: {value}",
+                        acp_session_id
+                    );
+                }
+                Err(e) => {
+                    log::warn!("acp: session/prompt failed: {e}");
+                }
             }
+            // Signal stream end once the prompt RPC completes. Turn-ended notifications
+            // may arrive earlier; the frontend ignores chunks after the first done.
+            let _ = tx
+                .send(StreamChunk {
+                    text: None,
+                    error: result.err().map(|e| e.to_string()),
+                    done: true,
+                    reasoning: None,
+                    tool_calls: None,
+                    tool_results: None,
+                })
+                .await;
         });
 
         Ok(rx)
@@ -252,22 +274,42 @@ fn spawn_notification_handler(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         while let Some(notification) = notifications.recv().await {
+            log::debug!(
+                "acp: notification {} for session {}",
+                notification.method,
+                acp_session_id
+            );
             if notification.method != "session/update" {
                 continue;
             }
 
             let Some(params) = notification.params else {
+                log::warn!("acp: session/update without params");
                 continue;
             };
-            let Ok(update) = serde_json::from_value::<SessionUpdate>(params) else {
-                continue;
+            let update = match serde_json::from_value::<SessionUpdate>(params.clone()) {
+                Ok(u) => u,
+                Err(e) => {
+                    log::warn!("acp: failed to parse session/update: {e}, params: {params}");
+                    continue;
+                }
             };
 
+            if matches!(update.update, SessionUpdateDetail::Other) {
+                log::warn!("acp: session/update with unhandled type, params: {params}");
+            }
+
             if update.session_id != acp_session_id {
+                log::warn!(
+                    "acp: session/update for wrong session {} (expected {})",
+                    update.session_id,
+                    acp_session_id
+                );
                 continue;
             }
 
-            let chunk = session_update_to_chunk(update.update);
+            let chunk = session_update_to_chunk(update.update.clone());
+            log::debug!("acp: emitting chunk {:?}", chunk);
             if let Some(tx) = chunk_tx.lock().await.as_ref() {
                 let _ = tx.send(chunk).await;
             }
@@ -281,13 +323,15 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             text: Some(extract_text(content)),
             error: None,
             done: false,
+            reasoning: None,
             tool_calls: None,
             tool_results: None,
         },
         SessionUpdateDetail::AgentThoughtChunk { content } => StreamChunk {
-            text: Some(format!("[thinking: {}]", extract_text(content))),
+            text: None,
             error: None,
             done: false,
+            reasoning: Some(extract_text(content)),
             tool_calls: None,
             tool_results: None,
         },
@@ -307,9 +351,10 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                 .or_else(|| content.as_ref().and_then(|c| extract_first_text(c)))
                 .unwrap_or_default();
             StreamChunk {
-                text: Some(format!("[tool: {title}]")),
+                text: None,
                 error: None,
                 done: false,
+                reasoning: None,
                 tool_calls: Some(vec![crate::ai::provider::ToolCall {
                     id: tool_call_id,
                     r#type: "function".to_string(),
@@ -339,9 +384,10 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                     .or_else(|| content.as_ref().and_then(|c| extract_first_text(c)))
                     .unwrap_or_default();
                 StreamChunk {
-                    text: Some(format!("[tool result: {output_text}]")),
+                    text: None,
                     error: None,
                     done: false,
+                    reasoning: None,
                     tool_calls: None,
                     tool_results: Some(vec![crate::commands::ai::ToolResult {
                         tool_call_id,
@@ -350,22 +396,14 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                     }]),
                 }
             } else {
-                let input_text = content
-                    .as_ref()
-                    .and_then(|c| extract_first_text(c))
-                    .unwrap_or_default();
+                // Ignore intermediate tool_call_update chunks that only stream input.
+                // The final result is delivered via the completed/failed branch above.
                 StreamChunk {
-                    text: Some(format!("[tool update: {input_text}]")),
+                    text: None,
                     error: None,
                     done: false,
-                    tool_calls: Some(vec![crate::ai::provider::ToolCall {
-                        id: tool_call_id,
-                        r#type: "function".to_string(),
-                        function: crate::ai::provider::FunctionCall {
-                            name: String::new(),
-                            arguments: input_text,
-                        },
-                    }]),
+                    reasoning: None,
+                    tool_calls: None,
                     tool_results: None,
                 }
             }
@@ -374,6 +412,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             text: None,
             error: None,
             done: true,
+            reasoning: None,
             tool_calls: None,
             tool_results: None,
         },
@@ -381,6 +420,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             text: None,
             error: Some(message),
             done: true,
+            reasoning: None,
             tool_calls: None,
             tool_results: None,
         },
@@ -388,6 +428,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             text: None,
             error: None,
             done: false,
+            reasoning: None,
             tool_calls: None,
             tool_results: None,
         },
@@ -418,6 +459,7 @@ fn spawn_reverse_rpc_handler(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         while let Some(req) = reverse_requests.recv().await {
+            log::info!("acp: reverse-RPC {} received", req.method);
             let result = match req.method.as_str() {
                 "fs/read_text_file" | "fs/write_text_file" => {
                     handle_fs_request(&req.method, req.params, &cwd)
@@ -425,11 +467,15 @@ fn spawn_reverse_rpc_handler(
                 "session/request_permission" => {
                     approval_bridge.request_permission(req.params).await
                 }
+                "tools/call" => handle_tool_call(req.params, &cwd).await,
                 _ => Err(AcpError::Protocol(format!(
                     "unsupported reverse-RPC method: {}",
                     req.method
                 ))),
             };
+            if let Err(ref e) = result {
+                log::warn!("acp: reverse-RPC {} failed: {e}", req.method);
+            }
 
             let _ = req.response_tx.send(result);
         }
