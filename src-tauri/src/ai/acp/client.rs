@@ -73,8 +73,12 @@ impl Clone for AcpClient {
 impl AcpClient {
     pub async fn start(
         config: AcpClientConfig,
-    ) -> Result<(Self, Child, mpsc::UnboundedReceiver<Notification>, mpsc::Receiver<ReverseRpcRequest>)>
-    {
+    ) -> Result<(
+        Self,
+        Child,
+        mpsc::UnboundedReceiver<Notification>,
+        mpsc::Receiver<ReverseRpcRequest>,
+    )> {
         if config.command.is_empty() {
             return Err(AcpError::Serialization("command is required".to_string()));
         }
@@ -87,9 +91,7 @@ impl AcpClient {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let mut child = cmd
-            .spawn()
-            .map_err(|e| AcpError::Spawn(format!("{e}")))?;
+        let mut child = cmd.spawn().map_err(|e| AcpError::Spawn(format!("{e}")))?;
 
         let stdin = child.stdin.take().ok_or(AcpError::MissingStdio)?;
         let stdout = child.stdout.take().ok_or(AcpError::MissingStdio)?;
@@ -115,7 +117,8 @@ impl AcpClient {
     {
         let (outgoing_tx, outgoing_rx) = mpsc::channel::<String>(MAX_CONCURRENT_REQUESTS);
         let (notification_tx, notification_rx) = mpsc::unbounded_channel::<Notification>();
-        let (reverse_rpc_tx, reverse_rpc_rx) = mpsc::channel::<ReverseRpcRequest>(MAX_CONCURRENT_REQUESTS);
+        let (reverse_rpc_tx, reverse_rpc_rx) =
+            mpsc::channel::<ReverseRpcRequest>(MAX_CONCURRENT_REQUESTS);
 
         let inner = Arc::new(ClientInner {
             next_id: AtomicU64::new(1),
@@ -276,36 +279,34 @@ where
                     continue;
                 }
 
-                let response = match timeout(
-                    Duration::from_millis(inner.request_timeout_ms),
-                    response_rx,
-                )
-                .await
-                {
-                    Ok(Ok(Ok(value))) => JsonRpcResponse {
-                        jsonrpc: JSONRPC_VERSION.to_string(),
-                        id: Some(id),
-                        body: JsonRpcResponseBody::Result(value),
-                    },
-                    Ok(Ok(Err(err))) => JsonRpcResponse {
-                        jsonrpc: JSONRPC_VERSION.to_string(),
-                        id: Some(id),
-                        body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
-                            code: -32000,
-                            message: err.to_string(),
-                            data: None,
-                        }),
-                    },
-                    _ => JsonRpcResponse {
-                        jsonrpc: JSONRPC_VERSION.to_string(),
-                        id: Some(id),
-                        body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
-                            code: -32000,
-                            message: "Reverse-RPC handler timeout".to_string(),
-                            data: None,
-                        }),
-                    },
-                };
+                let response =
+                    match timeout(Duration::from_millis(inner.request_timeout_ms), response_rx)
+                        .await
+                    {
+                        Ok(Ok(Ok(value))) => JsonRpcResponse {
+                            jsonrpc: JSONRPC_VERSION.to_string(),
+                            id: Some(id),
+                            body: JsonRpcResponseBody::Result(value),
+                        },
+                        Ok(Ok(Err(err))) => JsonRpcResponse {
+                            jsonrpc: JSONRPC_VERSION.to_string(),
+                            id: Some(id),
+                            body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
+                                code: -32000,
+                                message: err.to_string(),
+                                data: None,
+                            }),
+                        },
+                        _ => JsonRpcResponse {
+                            jsonrpc: JSONRPC_VERSION.to_string(),
+                            id: Some(id),
+                            body: JsonRpcResponseBody::Error(JsonRpcErrorObject {
+                                code: -32000,
+                                message: "Reverse-RPC handler timeout".to_string(),
+                                data: None,
+                            }),
+                        },
+                    };
 
                 let message = match serde_json::to_string(&response) {
                     Ok(m) => m,
@@ -413,7 +414,11 @@ mod tests {
 
         let request_task = tokio::spawn(async move {
             client
-                .request("initialize", Some(Value::String("params".to_string())), Default::default())
+                .request(
+                    "initialize",
+                    Some(Value::String("params".to_string())),
+                    Default::default(),
+                )
                 .await
         });
 
@@ -466,7 +471,9 @@ mod tests {
         let received = reverse_requests.recv().await.unwrap();
         assert_eq!(received.method, "fs/read_text_file");
 
-        let _ = received.response_tx.send(Ok(Value::String("content".to_string())));
+        let _ = received
+            .response_tx
+            .send(Ok(Value::String("content".to_string())));
 
         let mut line = String::new();
         let mut buf = BufReader::new(&mut server_read);

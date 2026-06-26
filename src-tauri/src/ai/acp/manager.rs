@@ -13,8 +13,8 @@ use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
 use super::types::{
-    ClientCapabilities, FsCapabilities, InitializeRequest, NewSessionRequest, PromptContent,
-    PromptRequest, SessionUpdate, SessionUpdatePayload,
+    ClientCapabilities, ContentBlock, FsCapabilities, InitializeRequest, NewSessionRequest,
+    PromptContent, PromptRequest, SessionUpdate, SessionUpdateDetail, ToolCallContent,
 };
 use crate::ai::cli::{enriched_path, get_manifest};
 use crate::commands::ai::StreamChunk;
@@ -146,11 +146,8 @@ impl AcpSessionManager {
             notifications,
         );
 
-        let reverse_rpc_handle = spawn_reverse_rpc_handler(
-            self.approval_bridge.clone(),
-            cwd.clone(),
-            reverse_requests,
-        );
+        let reverse_rpc_handle =
+            spawn_reverse_rpc_handler(self.approval_bridge.clone(), cwd.clone(), reverse_requests);
 
         let session = AcpSession {
             client,
@@ -259,7 +256,9 @@ fn spawn_notification_handler(
                 continue;
             }
 
-            let Some(params) = notification.params else { continue };
+            let Some(params) = notification.params else {
+                continue;
+            };
             let Ok(update) = serde_json::from_value::<SessionUpdate>(params) else {
                 continue;
             };
@@ -268,7 +267,7 @@ fn spawn_notification_handler(
                 continue;
             }
 
-            let chunk = session_update_to_chunk(update.payload);
+            let chunk = session_update_to_chunk(update.update);
             if let Some(tx) = chunk_tx.lock().await.as_ref() {
                 let _ = tx.send(chunk).await;
             }
@@ -276,61 +275,116 @@ fn spawn_notification_handler(
     })
 }
 
-fn session_update_to_chunk(payload: SessionUpdatePayload) -> StreamChunk {
+fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
     match payload {
-        SessionUpdatePayload::AgentMessageChunk { delta } => StreamChunk {
-            text: Some(delta),
+        SessionUpdateDetail::AgentMessageChunk { content } => StreamChunk {
+            text: Some(extract_text(content)),
             error: None,
             done: false,
             tool_calls: None,
             tool_results: None,
         },
-        SessionUpdatePayload::ThinkingDelta { delta } => StreamChunk {
-            text: Some(format!("[thinking: {delta}]")),
+        SessionUpdateDetail::AgentThoughtChunk { content } => StreamChunk {
+            text: Some(format!("[thinking: {}]", extract_text(content))),
             error: None,
             done: false,
             tool_calls: None,
             tool_results: None,
         },
-        SessionUpdatePayload::ToolCallStarted { name, .. } => StreamChunk {
-            text: Some(format!("[tool: {name}]")),
-            error: None,
-            done: false,
-            tool_calls: None,
-            tool_results: None,
-        },
-        SessionUpdatePayload::ToolResult { output, is_error, .. } => {
-            let output_text = match output {
-                Value::String(s) => s,
-                other => other.to_string(),
-            };
+        SessionUpdateDetail::ToolCall {
+            tool_call_id,
+            title,
+            raw_input,
+            content,
+            ..
+        } => {
+            let input_text = raw_input
+                .as_ref()
+                .map(|v| match v {
+                    Value::String(s) => s.clone(),
+                    other => other.to_string(),
+                })
+                .or_else(|| content.as_ref().and_then(|c| extract_first_text(c)))
+                .unwrap_or_default();
             StreamChunk {
-                text: Some(format!("[tool result: {output_text}]")),
+                text: Some(format!("[tool: {title}]")),
                 error: None,
                 done: false,
-                tool_calls: None,
-                tool_results: Some(vec![crate::commands::ai::ToolResult {
-                    tool_call_id: String::new(),
-                    output: output_text,
-                    is_error: is_error.unwrap_or(false),
+                tool_calls: Some(vec![crate::ai::provider::ToolCall {
+                    id: tool_call_id,
+                    r#type: "function".to_string(),
+                    function: crate::ai::provider::FunctionCall {
+                        name: title,
+                        arguments: input_text,
+                    },
                 }]),
+                tool_results: None,
             }
         }
-        SessionUpdatePayload::TurnEnded { .. } => StreamChunk {
+        SessionUpdateDetail::ToolCallUpdate {
+            tool_call_id,
+            status,
+            content,
+            raw_output,
+            ..
+        } => {
+            let is_completed = status.as_deref() == Some("completed");
+            let is_failed = status.as_deref() == Some("failed");
+            if is_completed || is_failed {
+                let output_text = raw_output
+                    .map(|v| match v {
+                        Value::String(s) => s,
+                        other => other.to_string(),
+                    })
+                    .or_else(|| content.as_ref().and_then(|c| extract_first_text(c)))
+                    .unwrap_or_default();
+                StreamChunk {
+                    text: Some(format!("[tool result: {output_text}]")),
+                    error: None,
+                    done: false,
+                    tool_calls: None,
+                    tool_results: Some(vec![crate::commands::ai::ToolResult {
+                        tool_call_id,
+                        output: output_text,
+                        is_error: is_failed,
+                    }]),
+                }
+            } else {
+                let input_text = content
+                    .as_ref()
+                    .and_then(|c| extract_first_text(c))
+                    .unwrap_or_default();
+                StreamChunk {
+                    text: Some(format!("[tool update: {input_text}]")),
+                    error: None,
+                    done: false,
+                    tool_calls: Some(vec![crate::ai::provider::ToolCall {
+                        id: tool_call_id,
+                        r#type: "function".to_string(),
+                        function: crate::ai::provider::FunctionCall {
+                            name: String::new(),
+                            arguments: input_text,
+                        },
+                    }]),
+                    tool_results: None,
+                }
+            }
+        }
+        SessionUpdateDetail::TurnEnded { .. } => StreamChunk {
             text: None,
             error: None,
             done: true,
             tool_calls: None,
             tool_results: None,
         },
-        SessionUpdatePayload::Error { message } => StreamChunk {
+        SessionUpdateDetail::Error { message } => StreamChunk {
             text: None,
             error: Some(message),
             done: true,
             tool_calls: None,
             tool_results: None,
         },
-        _ => StreamChunk {
+        SessionUpdateDetail::Other => StreamChunk {
             text: None,
             error: None,
             done: false,
@@ -338,6 +392,23 @@ fn session_update_to_chunk(payload: SessionUpdatePayload) -> StreamChunk {
             tool_results: None,
         },
     }
+}
+
+fn extract_text(block: ContentBlock) -> String {
+    match block {
+        ContentBlock::Text { text } => text,
+        ContentBlock::Image { .. } => String::new(),
+        ContentBlock::Resource { content, .. } => content,
+        ContentBlock::ResourceLink { .. } => String::new(),
+        ContentBlock::Other => String::new(),
+    }
+}
+
+fn extract_first_text(contents: &[ToolCallContent]) -> Option<String> {
+    contents.iter().find_map(|c| match &c.content {
+        Some(ContentBlock::Text { text }) => Some(text.clone()),
+        _ => None,
+    })
 }
 
 fn spawn_reverse_rpc_handler(

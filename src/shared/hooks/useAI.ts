@@ -338,6 +338,24 @@ function createStreamTransport(
               }
             }
 
+            if (chunk.tool_results && chunk.tool_results.length > 0) {
+              for (const result of chunk.tool_results) {
+                if (result.is_error) {
+                  safeEnqueue({
+                    type: "tool-output-error",
+                    toolCallId: result.tool_call_id,
+                    errorText: result.output,
+                  });
+                } else {
+                  safeEnqueue({
+                    type: "tool-output-available",
+                    toolCallId: result.tool_call_id,
+                    output: result.output,
+                  });
+                }
+              }
+            }
+
             if (chunk.done) {
               finish();
             }

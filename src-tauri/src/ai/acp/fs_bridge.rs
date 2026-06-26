@@ -13,8 +13,7 @@ const LARGE_FILE_THRESHOLD_BYTES: u64 = 1024 * 1024;
 pub fn handle_fs_request(method: &str, params: Option<Value>, cwd: &str) -> Result<Value> {
     match method {
         "fs/read_text_file" => {
-            let req: FsReadTextFileRequest =
-                serde_json::from_value(params.unwrap_or(Value::Null))?;
+            let req: FsReadTextFileRequest = serde_json::from_value(params.unwrap_or(Value::Null))?;
             let path = resolve_path(&req.path, cwd)?;
             read_text_file(&path)
         }
@@ -103,14 +102,20 @@ fn read_text_file(path: &Path) -> Result<Value> {
     }
 
     if file_size > LARGE_FILE_THRESHOLD_BYTES {
-        log::warn!("acp: reading large file: {} ({} bytes)", path.display(), file_size);
+        log::warn!(
+            "acp: reading large file: {} ({} bytes)",
+            path.display(),
+            file_size
+        );
     }
 
     let bytes = std::fs::read(path)
         .map_err(|e| AcpError::InvalidPath(format!("failed to read file: {e}")))?;
 
     if bytes.contains(&0) {
-        return Err(AcpError::InvalidPath("binary files are not supported".to_string()));
+        return Err(AcpError::InvalidPath(
+            "binary files are not supported".to_string(),
+        ));
     }
 
     let content = String::from_utf8(bytes)

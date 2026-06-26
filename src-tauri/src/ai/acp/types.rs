@@ -39,12 +39,14 @@ pub struct JsonRpcErrorObject {
 // ─── Initialize ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InitializeRequest {
     pub protocol_version: String,
     pub client_capabilities: ClientCapabilities,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InitializeResponse {
     pub protocol_version: String,
     pub agent_capabilities: AgentCapabilities,
@@ -54,6 +56,7 @@ pub struct InitializeResponse {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClientCapabilities {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fs: Option<FsCapabilities>,
@@ -66,12 +69,14 @@ pub struct ClientCapabilities {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FsCapabilities {
     pub read_text_file: bool,
     pub write_text_file: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AgentCapabilities {
     pub load_session: bool,
     pub prompt_capabilities: PromptCapabilities,
@@ -80,6 +85,7 @@ pub struct AgentCapabilities {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PromptCapabilities {
     pub image: bool,
     pub audio: bool,
@@ -87,18 +93,21 @@ pub struct PromptCapabilities {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct McpCapabilities {
     pub http: bool,
     pub sse: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionCapabilities {
     pub list: Value,
     pub resume: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthMethod {
     pub id: String,
     #[serde(rename = "type")]
@@ -110,6 +119,7 @@ pub struct AuthMethod {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Implementation {
     pub name: String,
     pub version: String,
@@ -118,6 +128,7 @@ pub struct Implementation {
 // ─── Session lifecycle ───────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewSessionRequest {
     pub cwd: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -125,6 +136,7 @@ pub struct NewSessionRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewSessionResponse {
     pub session_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -132,6 +144,7 @@ pub struct NewSessionResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoadSessionRequest {
     pub cwd: String,
     pub session_id: String,
@@ -140,12 +153,14 @@ pub struct LoadSessionRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoadSessionResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config_options: Option<Vec<Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CancelNotification {
     pub session_id: String,
 }
@@ -153,6 +168,7 @@ pub struct CancelNotification {
 // ─── Prompt ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PromptRequest {
     pub session_id: String,
     pub prompt: Vec<PromptContent>,
@@ -170,6 +186,7 @@ pub enum PromptContent {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PromptResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_reason: Option<String>,
@@ -178,54 +195,90 @@ pub struct PromptResponse {
 // ─── Session update notifications ────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionUpdate {
     pub session_id: String,
-    #[serde(flatten)]
-    pub payload: SessionUpdatePayload,
+    pub update: SessionUpdateDetail,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum SessionUpdatePayload {
+#[serde(tag = "sessionUpdate", rename_all = "camelCase")]
+pub enum SessionUpdateDetail {
     #[serde(rename = "agent_message_chunk")]
-    AgentMessageChunk { delta: String },
-    #[serde(rename = "thinking_delta")]
-    ThinkingDelta { delta: String },
-    #[serde(rename = "tool_call_started")]
-    ToolCallStarted {
+    AgentMessageChunk { content: ContentBlock },
+    #[serde(rename = "agent_thought_chunk")]
+    AgentThoughtChunk { content: ContentBlock },
+    #[serde(rename = "tool_call")]
+    ToolCall {
         tool_call_id: String,
-        name: String,
-        args: Value,
+        title: String,
+        #[serde(default)]
+        kind: Option<String>,
+        #[serde(default)]
+        status: Option<String>,
+        #[serde(default)]
+        raw_input: Option<Value>,
+        #[serde(default)]
+        content: Option<Vec<ToolCallContent>>,
     },
-    #[serde(rename = "tool_call_delta")]
-    ToolCallDelta {
+    #[serde(rename = "tool_call_update")]
+    ToolCallUpdate {
         tool_call_id: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        arguments_part: Option<String>,
-    },
-    #[serde(rename = "tool_progress")]
-    ToolProgress {
-        tool_call_id: String,
-        update: Value,
-    },
-    #[serde(rename = "tool_result")]
-    ToolResult {
-        tool_call_id: String,
-        output: Value,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        is_error: Option<bool>,
+        #[serde(default)]
+        title: Option<String>,
+        #[serde(default)]
+        kind: Option<String>,
+        #[serde(default)]
+        status: Option<String>,
+        #[serde(default)]
+        raw_input: Option<Value>,
+        #[serde(default)]
+        content: Option<Vec<ToolCallContent>>,
+        #[serde(default)]
+        raw_output: Option<Value>,
     },
     #[serde(rename = "turn_ended")]
-    TurnEnded { reason: String },
+    TurnEnded { stop_reason: String },
     #[serde(rename = "error")]
     Error { message: String },
     #[serde(other)]
     Other,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ContentBlock {
+    #[serde(rename = "text")]
+    Text { text: String },
+    #[serde(rename = "image")]
+    Image { data: String, mime_type: String },
+    #[serde(rename = "resource")]
+    Resource { uri: String, content: String },
+    #[serde(rename = "resource_link")]
+    ResourceLink { uri: String, name: String },
+    #[serde(other)]
+    Other,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolCallContent {
+    #[serde(rename = "type")]
+    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<ContentBlock>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "oldText")]
+    pub old_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "newText")]
+    pub new_text: Option<String>,
+}
+
 // ─── MCP forwarding ──────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct McpServer {
     pub name: String,
     pub transport: String,
@@ -242,17 +295,20 @@ pub struct McpServer {
 // ─── Reverse-RPC: fs ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FsReadTextFileRequest {
     pub session_id: String,
     pub path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FsReadTextFileResponse {
     pub content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FsWriteTextFileRequest {
     pub session_id: String,
     pub path: String,
@@ -260,6 +316,7 @@ pub struct FsWriteTextFileRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FsWriteTextFileResponse {
     pub written: bool,
 }
@@ -267,17 +324,38 @@ pub struct FsWriteTextFileResponse {
 // ─── Reverse-RPC: permission ─────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RequestPermissionRequest {
-    pub session_id: String,
+#[serde(rename_all = "camelCase")]
+pub struct ToolCallUpdate {
     pub tool_call_id: String,
-    pub tool_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub args: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    pub title: String,
+    pub content: Vec<ToolCallContent>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestPermissionRequest {
+    pub session_id: String,
+    pub options: Vec<PermissionOption>,
+    pub tool_call: ToolCallUpdate,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionOption {
+    pub option_id: String,
+    pub name: String,
+    pub kind: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RequestPermissionResponse {
-    pub approved: bool,
+    pub outcome: PermissionOutcome,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "outcome", rename_all = "snake_case")]
+pub enum PermissionOutcome {
+    Selected { option_id: String },
+    Cancelled,
 }

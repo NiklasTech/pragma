@@ -91,9 +91,9 @@ export function ChatPanel() {
   const [cursorPosition, setCursorPosition] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState<
     Array<{
-      session_id: string;
-      tool_call_id: string;
-      tool_name: string;
+      sessionId: string;
+      toolCallId: string;
+      toolName: string;
       args?: unknown;
       description?: string;
     }>
@@ -161,9 +161,9 @@ export function ChatPanel() {
     void (async () => {
       unlisten = await listen<
         Array<{
-          session_id: string;
-          tool_call_id: string;
-          tool_name: string;
+          sessionId: string;
+          toolCallId: string;
+          toolName: string;
           args?: unknown;
           description?: string;
         }>[number]
@@ -184,7 +184,7 @@ export function ChatPanel() {
 
   const handleApproval = useCallback(async (toolCallId: string, approved: boolean) => {
     await invoke("cli_acp_approve", { req: { tool_call_id: toolCallId, approved } });
-    setPendingApprovals((prev) => prev.filter((a) => a.tool_call_id !== toolCallId));
+    setPendingApprovals((prev) => prev.filter((a) => a.toolCallId !== toolCallId));
   }, []);
 
   const sendShortcut = useSettingsStore((s) => s.shortcuts["chat.send"]);
@@ -496,11 +496,11 @@ export function ChatPanel() {
           <div className="mb-2 flex flex-col gap-2">
             {pendingApprovals.map((approval) => (
               <div
-                key={approval.tool_call_id}
+                key={approval.toolCallId}
                 className="flex flex-col gap-2 rounded-md border border-border/60 bg-bg-root p-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-ui-sm font-medium">Allow tool: {approval.tool_name}</span>
+                  <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
                 </div>
                 {approval.description && (
                   <p className="text-ui-xs text-fg-muted">{approval.description}</p>
@@ -513,7 +513,7 @@ export function ChatPanel() {
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => handleApproval(approval.tool_call_id, false)}
+                    onClick={() => handleApproval(approval.toolCallId, false)}
                     className="flex items-center gap-1 rounded-md bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-error/90"
                   >
                     <X size={12} weight="bold" />
@@ -521,7 +521,7 @@ export function ChatPanel() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleApproval(approval.tool_call_id, true)}
+                    onClick={() => handleApproval(approval.toolCallId, true)}
                     className="flex items-center gap-1 rounded-md bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-success/90"
                   >
                     <Check size={12} weight="bold" />

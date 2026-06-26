@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 use tauri::ipc::Channel;
 use tauri::State;
 
-use crate::ai::acp::{
-    AcpSessionManager, PromptContent,
-};
+use crate::ai::acp::{AcpSessionManager, PromptContent};
 use crate::ai::cli::{built_in_manifests, CLIChatMessage, CLIChatRequest, CLIManager, CLIStatus};
 use crate::commands::ai::StreamChunk;
 
