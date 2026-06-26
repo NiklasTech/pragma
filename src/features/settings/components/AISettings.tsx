@@ -461,11 +461,16 @@ export function AISettings() {
         </div>
       </SettingSection>
 
-      <SettingSection title="CLI Providers">
+      <SettingSection title="Local CLI Integration">
         <div className="flex flex-col gap-3">
           <p className="text-ui-xs text-fg-muted">
-            Use your existing subscription via official CLI tools. Pragma installs and manages them
-            automatically.
+            Pragma wraps official provider CLI tools that run locally on your machine. It does not
+            provide models, accounts, or credentials — authentication happens independently in the
+            CLI.
+          </p>
+          <p className="text-ui-xs text-fg-muted">
+            Kimi Code CLI is published by Moonshot AI under the MIT License and is installed from
+            its official npm registry. Pragma is not affiliated with Moonshot AI.
           </p>
 
           {aiStore.cliManifests.length === 0 && (
@@ -520,7 +525,7 @@ export function AISettings() {
                       disabled={isInstalling}
                     >
                       <DownloadSimple size={14} className="mr-1" />
-                      {isInstalling ? "Installing..." : "Install"}
+                      {isInstalling ? "Installing..." : "Install Official CLI"}
                     </Button>
                   )}
 
@@ -532,7 +537,7 @@ export function AISettings() {
                       disabled={isLoggingIn}
                     >
                       <SignIn size={14} className="mr-1" />
-                      {isLoggingIn ? "Connecting..." : "Connect Account"}
+                      {isLoggingIn ? "Opening login..." : "Login with CLI"}
                     </Button>
                   )}
 

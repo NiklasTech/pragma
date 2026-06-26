@@ -32,6 +32,7 @@ import {
   GitBranch,
   Layout,
   Keyboard,
+  Info,
   MagnifyingGlass,
   ArrowCounterClockwise,
   DownloadSimple,
@@ -45,9 +46,19 @@ import { McpSettings } from "./McpSettings";
 import { GitSettings } from "./GitSettings";
 import { LayoutSettings } from "./LayoutSettings";
 import { KeyboardSettings } from "./KeyboardSettings";
+import { AboutSettings } from "./AboutSettings";
 import { exportSettings, importSettings } from "./settings-io";
 
-type Category = "editor" | "terminal" | "ai" | "theme" | "mcp" | "git" | "layout" | "keyboard";
+type Category =
+  | "editor"
+  | "terminal"
+  | "ai"
+  | "theme"
+  | "mcp"
+  | "git"
+  | "layout"
+  | "keyboard"
+  | "about";
 
 interface CategoryDef {
   id: Category;
@@ -64,6 +75,7 @@ const CATEGORIES: CategoryDef[] = [
   { id: "git", label: "Git", icon: GitBranch },
   { id: "layout", label: "Layout", icon: Layout },
   { id: "keyboard", label: "Keyboard", icon: Keyboard },
+  { id: "about", label: "About", icon: Info },
 ];
 
 interface SearchItem {
@@ -238,6 +250,18 @@ const SEARCH_ITEMS: SearchItem[] = [
     label: "Keyboard Shortcuts",
     keywords: "keyboard shortcuts keymap hotkey bindings",
     category: "keyboard",
+  },
+  {
+    id: "about-version",
+    label: "Version",
+    keywords: "about version update release pragma",
+    category: "about",
+  },
+  {
+    id: "about-license",
+    label: "License",
+    keywords: "about license legal copyright apache",
+    category: "about",
   },
 ];
 
@@ -418,6 +442,7 @@ export function Settings() {
                   {activeCategory === "git" && <GitSettings />}
                   {activeCategory === "layout" && <LayoutSettings />}
                   {activeCategory === "keyboard" && <KeyboardSettings />}
+                  {activeCategory === "about" && <AboutSettings />}
                 </div>
               </div>
             </ScrollArea>

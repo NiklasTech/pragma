@@ -337,6 +337,17 @@ If you discover a security vulnerability, please report it privately to the addr
 
 ---
 
+## Third-Party CLI Tools
+
+Pragma can optionally integrate with official AI provider CLI tools that are installed and run locally on the user's machine (currently Kimi Code CLI). When this integration is used:
+
+- Pragma does **not** provide models, API access, accounts, login flows, OAuth links, or credentials.
+- The official CLI is downloaded from the provider's public package registry and installed globally on the user's system.
+- Authentication, billing, and data processing happen entirely between the user and the provider's CLI / service.
+- Pragma only invokes the locally installed CLI binary and renders its output in the UI.
+
+Kimi Code CLI is an open-source project published by Moonshot AI under the MIT License. Its use is subject to Moonshot AI's applicable terms and policies. Pragma is not affiliated with Moonshot AI.
+
 ## License
 
 Pragma is licensed under the [Apache License 2.0](LICENSE).

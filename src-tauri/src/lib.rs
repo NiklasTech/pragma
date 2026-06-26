@@ -3,8 +3,10 @@ pub mod commands;
 pub mod modules;
 pub mod window;
 
+use ai::acp::AcpSessionManager;
 use modules::pty::PtyManager;
 use modules::run::RunManager;
+use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -42,6 +44,8 @@ pub fn run() {
             )) {
                 log::warn!("Failed to initialize MCP manager: {e}");
             }
+
+            app.manage(AcpSessionManager::new(app.handle().clone()));
 
             Ok(())
         })
@@ -137,6 +141,9 @@ pub fn run() {
             commands::cli::cli_logout,
             commands::cli::cli_chat,
             commands::cli::cli_chat_stream,
+            commands::cli::cli_acp_chat_stream,
+            commands::cli::cli_acp_cancel,
+            commands::cli::cli_acp_approve,
             commands::docker::docker_list_containers,
             commands::docker::docker_start_container,
             commands::docker::docker_stop_container,

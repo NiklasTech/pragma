@@ -65,11 +65,20 @@ interface CLIChatRequest {
   session_id?: string;
 }
 
+interface AcpChatRequest {
+  provider_id: string;
+  chat_session_id: string;
+  cwd: string;
+  messages: CLIChatMessage[];
+}
+
 interface StreamChunk {
   text?: string;
   error?: string;
   done?: boolean;
+  reasoning?: string;
   tool_calls?: BackendToolCall[];
+  tool_results?: { tool_call_id: string; output: string; is_error: boolean }[];
 }
 
 interface ToolInvocationPart {
@@ -253,7 +262,10 @@ function createStreamTransport(
   isCLIActive: boolean,
   activeCLIProvider: string | null,
   tools: BackendToolDefinition[],
+  rootPath: string,
+  activeChatSessionId: string | null,
 ): ChatTransport<UIMessage> {
+  const isAcpActive = activeCLIProvider === "moonshot-kimi";
   return {
     async sendMessages({ messages, abortSignal }) {
       const chunkId = generateId();
@@ -278,8 +290,12 @@ function createStreamTransport(
           };
 
           let hadToolCalls = false;
+          let reasoningStarted = false;
 
           const finish = () => {
+            if (reasoningStarted) {
+              safeEnqueue({ type: "reasoning-end", id: chunkId });
+            }
             safeEnqueue({ type: "text-end", id: chunkId });
             safeEnqueue({
               type: "finish",
@@ -308,6 +324,18 @@ function createStreamTransport(
               safeEnqueue({ type: "text-delta", id: chunkId, delta: chunk.text });
             }
 
+            if (chunk.reasoning) {
+              if (!reasoningStarted) {
+                reasoningStarted = true;
+                safeEnqueue({ type: "reasoning-start", id: chunkId });
+              }
+              safeEnqueue({
+                type: "reasoning-delta",
+                id: chunkId,
+                delta: chunk.reasoning,
+              });
+            }
+
             if (chunk.tool_calls && chunk.tool_calls.length > 0) {
               hadToolCalls = true;
               for (const call of chunk.tool_calls) {
@@ -327,6 +355,24 @@ function createStreamTransport(
               }
             }
 
+            if (chunk.tool_results && chunk.tool_results.length > 0) {
+              for (const result of chunk.tool_results) {
+                if (result.is_error) {
+                  safeEnqueue({
+                    type: "tool-output-error",
+                    toolCallId: result.tool_call_id,
+                    errorText: result.output,
+                  });
+                } else {
+                  safeEnqueue({
+                    type: "tool-output-available",
+                    toolCallId: result.tool_call_id,
+                    output: result.output,
+                  });
+                }
+              }
+            }
+
             if (chunk.done) {
               finish();
             }
@@ -339,7 +385,9 @@ function createStreamTransport(
             } catch {
               // ignore
             }
-            if (!isCLIActive) {
+            if (isAcpActive && activeChatSessionId) {
+              void invoke("cli_acp_cancel", { req: { chat_session_id: activeChatSessionId } });
+            } else if (!isCLIActive) {
               void invoke("cancel_ai_chat_stream", { req: { stream_id: streamId } });
             }
           };
@@ -348,7 +396,18 @@ function createStreamTransport(
 
           const send = async () => {
             try {
-              if (isCLIActive && activeCLIProvider) {
+              if (isAcpActive && activeChatSessionId) {
+                const req: AcpChatRequest = {
+                  provider_id: activeCLIProvider,
+                  chat_session_id: activeChatSessionId,
+                  cwd: rootPath,
+                  messages: messages.map((m: UIMessage) => ({
+                    role: m.role,
+                    content: getMessageText(m),
+                  })),
+                };
+                await invoke("cli_acp_chat_stream", { req, channel });
+              } else if (isCLIActive && activeCLIProvider) {
                 const req: CLIChatRequest = {
                   provider_id: activeCLIProvider,
                   messages: messages.map((m: UIMessage) => ({
@@ -442,6 +501,7 @@ export function useAI() {
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -452,6 +512,8 @@ export function useAI() {
         isCLIActive,
         activeCLIProvider,
         isCLIActive ? [] : toolDefinitions,
+        rootPath,
+        activeChatSessionId,
       ),
     [
       activeProvider,
@@ -460,6 +522,8 @@ export function useAI() {
       isCLIActive,
       activeCLIProvider,
       toolDefinitions,
+      rootPath,
+      activeChatSessionId,
     ],
   );
 
@@ -482,9 +546,13 @@ export function useAI() {
         input: unknown;
       };
     }) => {
-      console.log("[onToolCall]", toolCall.toolName, toolCall.input);
       const chat = chatRef.current;
       if (!chat) return;
+
+      // Kimi ACP executes tools itself via reverse-RPC; the frontend only displays results.
+      if (activeCLIProvider === "moonshot-kimi") {
+        return;
+      }
 
       const tool = resolveTool(toolCall.toolName);
       if (!tool) {
@@ -535,7 +603,7 @@ export function useAI() {
         });
       }
     },
-    [resolveTool],
+    [resolveTool, activeCLIProvider],
   );
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
@@ -555,7 +623,7 @@ export function useAI() {
   }, []);
 
   const chat = useChat({
-    id: `${sessionId}:${activeProvider}:${activeModel}`,
+    id: `${sessionId}:${activeProvider}:${activeModel}:${activeCLIProvider ?? "api"}`,
     transport,
     messages: initialMessages,
     experimental_throttle: 50,
@@ -566,7 +634,6 @@ export function useAI() {
   chatRef.current = chat;
 
   const [input, setInput] = useState("");
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   // Load sessions whenever the workspace changes.
   useEffect(() => {

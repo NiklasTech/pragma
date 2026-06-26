@@ -1,7 +1,8 @@
 "use client";
 
 import { CheckCircle, XCircle, Spinner } from "@phosphor-icons/react";
-import { cn } from "@/shared/lib/utils";
+
+import { ActivityBlock } from "./ActivityBlock";
 
 interface ToolInvocationBlockProps {
   toolCallId: string;
@@ -34,43 +35,46 @@ export function ToolInvocationBlock({
   const isError = state === "output-error";
   const isDone = state === "output-available" || isError;
 
+  const icon = isRunning ? (
+    <Spinner size={12} className="animate-spin text-primary" />
+  ) : isError ? (
+    <XCircle size={12} className="text-status-error" />
+  ) : (
+    <CheckCircle size={12} className="text-status-success" />
+  );
+
+  const title = (
+    <span className="flex items-center gap-2">
+      <span className="font-medium">{toolName}</span>
+      {isRunning && <span className="text-ui-xs text-fg-muted">Running...</span>}
+    </span>
+  );
+
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-1.5 rounded-lg border px-3 py-2 text-ui-sm",
-        isError ? "border-status-error/30 bg-status-error/10" : "border-border/60 bg-bg-hover/40",
-      )}
-    >
-      <div className="flex items-center gap-2">
-        {isRunning ? (
-          <Spinner size={14} className="animate-spin text-primary" />
-        ) : isError ? (
-          <XCircle size={14} className="text-status-error" />
-        ) : (
-          <CheckCircle size={14} className="text-status-success" />
+    <ActivityBlock icon={icon} title={title} streaming={isRunning} defaultOpen={isRunning}>
+      <div className="flex flex-col gap-2 text-ui-xs">
+        {input !== undefined && (
+          <div>
+            <span className="font-medium text-fg-muted">Input</span>
+            <pre className="mt-1 whitespace-pre-wrap rounded bg-bg-hover px-2 py-1.5 font-mono text-fg-muted">
+              {formatValue(input)}
+            </pre>
+          </div>
         )}
-        <span className="font-medium">{toolName}</span>
-        {isRunning && <span className="text-ui-xs text-fg-muted">Running...</span>}
+
+        {isDone && (
+          <div>
+            <span className="font-medium text-fg-muted">Output</span>
+            {isError ? (
+              <p className="mt-1 text-status-error">{errorText ?? "Tool execution failed"}</p>
+            ) : (
+              <pre className="mt-1 whitespace-pre-wrap rounded bg-bg-hover px-2 py-1.5 font-mono text-fg-muted">
+                {formatValue(output)}
+              </pre>
+            )}
+          </div>
+        )}
       </div>
-
-      {input !== undefined && (
-        <div className="text-ui-xs text-fg-muted">
-          <span className="font-medium">Input:</span>{" "}
-          <code className="rounded bg-bg-hover px-1 py-0.5 font-mono">{formatValue(input)}</code>
-        </div>
-      )}
-
-      {isDone && (
-        <div className="text-ui-xs">
-          {isError ? (
-            <span className="text-status-error">{errorText ?? "Tool execution failed"}</span>
-          ) : (
-            <code className="block max-h-32 overflow-auto rounded bg-bg-hover px-2 py-1 font-mono text-fg-muted">
-              {formatValue(output)}
-            </code>
-          )}
-        </div>
-      )}
-    </div>
+    </ActivityBlock>
   );
 }

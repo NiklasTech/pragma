@@ -30,8 +30,8 @@ const MODE_ICONS: Record<ProviderMode, typeof Lightning> = {
 const MODE_ORDER: ProviderMode[] = ["fast", "smart", "local"];
 
 const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
-  openai: ["openai-codex"],
-  anthropic: ["anthropic-claude"],
+  openai: [],
+  anthropic: [],
   ollama: [],
   deepseek: [],
   kimi: ["moonshot-kimi"],

@@ -51,7 +51,7 @@ pub struct CLIManager;
 /// This ensures CLIs installed via npm global, pipx, uv, cargo, etc.
 /// are discoverable even when the app is launched from a desktop environment
 /// with a restricted PATH.
-fn enriched_path() -> String {
+pub fn enriched_path() -> String {
     let current = env::var("PATH").unwrap_or_default();
     let home = env::var("HOME").unwrap_or_default();
 
