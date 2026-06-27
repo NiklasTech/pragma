@@ -4,6 +4,11 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { useAIStore } from "@/shared/stores/ai";
 import { useEditorStore } from "@/shared/stores/editor";
+import {
+  dispatchTerminalSuggestion,
+  TERMINAL_ACCEPT_SUGGESTION_EVENT,
+  TERMINAL_DISMISS_SUGGESTION_EVENT,
+} from "@/shared/lib/terminal-events";
 
 const DEBOUNCE_MS = 300;
 const MAX_OUTPUT_LEN = 1000;
@@ -104,6 +109,8 @@ export function useTerminalSuggestions({
   const inputRef = useRef("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef(false);
+  const providerHealthyRef = useRef(true);
+  const errorLoggedRef = useRef(false);
 
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
@@ -119,6 +126,11 @@ export function useTerminalSuggestions({
   const baseUrl = providers[provider].baseUrl;
   const language = activeTab?.kind === "file" ? (activeTab.language ?? null) : null;
 
+  useEffect(() => {
+    providerHealthyRef.current = true;
+    errorLoggedRef.current = false;
+  }, [provider, model, baseUrl]);
+
   const dismiss = useCallback(() => {
     setVisible(false);
     setSuggestion("");
@@ -131,9 +143,20 @@ export function useTerminalSuggestions({
     dismiss();
   }, [suggestion, ptyId, dismiss]);
 
+  function isProviderUnreachableError(err: unknown): boolean {
+    const message = String(err).toLowerCase();
+    return (
+      message.includes("not running") ||
+      message.includes("network error") ||
+      message.includes("connection refused") ||
+      message.includes("econnrefused")
+    );
+  }
+
   const fetchSuggestion = useCallback(
     async (currentInput: string) => {
       if (!enabled || !term) return;
+      if (!providerHealthyRef.current) return;
       if (provider === "custom" && !baseUrl) return;
 
       const lastOutput = lastOutputRef.current.slice(-MAX_OUTPUT_LEN);
@@ -157,6 +180,7 @@ export function useTerminalSuggestions({
         if (abortRef.current) return;
         if (inputRef.current !== currentInput) return;
 
+        errorLoggedRef.current = false;
         const text = response.suggestion.trim();
         if (text && text !== currentInput) {
           setSuggestion(text);
@@ -167,7 +191,15 @@ export function useTerminalSuggestions({
       } catch (err) {
         if (abortRef.current) return;
         dismiss();
-        console.error("[Terminal Suggestion Error]", err);
+
+        if (isProviderUnreachableError(err)) {
+          providerHealthyRef.current = false;
+        }
+
+        if (!errorLoggedRef.current) {
+          errorLoggedRef.current = true;
+          console.error("[Terminal Suggestion Error]", err);
+        }
       } finally {
         if (!abortRef.current) {
           setLoading(false);
@@ -197,7 +229,6 @@ export function useTerminalSuggestions({
       const nextInput = appendInput(inputRef.current, data);
       if (nextInput !== inputRef.current) {
         inputRef.current = nextInput;
-        dismiss();
 
         if (debounceRef.current) {
           clearTimeout(debounceRef.current);
@@ -208,6 +239,8 @@ export function useTerminalSuggestions({
             debounceRef.current = null;
             void fetchSuggestion(nextInput);
           }, DEBOUNCE_MS);
+        } else {
+          dismiss();
         }
       }
 
@@ -215,6 +248,23 @@ export function useTerminalSuggestions({
     },
     [enabled, term, visible, accept, dismiss, fetchSuggestion],
   );
+
+  useEffect(() => {
+    dispatchTerminalSuggestion({ suggestion, visible });
+  }, [suggestion, visible]);
+
+  useEffect(() => {
+    const onAccept = () => accept();
+    const onDismiss = () => dismiss();
+
+    window.addEventListener(TERMINAL_ACCEPT_SUGGESTION_EVENT, onAccept);
+    window.addEventListener(TERMINAL_DISMISS_SUGGESTION_EVENT, onDismiss);
+
+    return () => {
+      window.removeEventListener(TERMINAL_ACCEPT_SUGGESTION_EVENT, onAccept);
+      window.removeEventListener(TERMINAL_DISMISS_SUGGESTION_EVENT, onDismiss);
+    };
+  }, [accept, dismiss]);
 
   useEffect(() => {
     return () => {

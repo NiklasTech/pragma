@@ -46,7 +46,7 @@ const initialState: TerminalState = {
   activeSessionId: null,
   defaultShell: "",
   fontSize: 13,
-  fontFamily: "Geist Mono Variable",
+  fontFamily: "JetBrains Mono",
   scrollback: 10000,
   aiSuggestions: true,
 };

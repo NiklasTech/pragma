@@ -43,6 +43,12 @@ export function useAppShortcutActions(): ShortcutActions {
       "view.openSettings": () => {
         useLayoutStore.getState().addFloatingPanel("settings");
       },
+      "search.findInFiles": () => {
+        const layout = useLayoutStore.getState();
+        layout.setSidebarCollapsed(false);
+        layout.setSidebarTab("search");
+        window.dispatchEvent(new CustomEvent("focus-search"));
+      },
       "ai.toggle": () => {
         useLayoutStore.getState().toggleAI();
       },

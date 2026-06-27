@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
 import { Compartment, EditorState, StateEffect, type Extension } from "@codemirror/state";
-import { pragmaDarkTheme, themeCompartment } from "@/shared/lib/theme/editor-theme";
+import {
+  pragmaDarkTheme,
+  themeCompartment,
+  editorBaseTheme,
+} from "@/shared/lib/theme/editor-theme";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { vim, getCM } from "@replit/codemirror-vim";
 import { useAIStore } from "@/shared/stores/ai";
@@ -11,7 +15,6 @@ import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAutoSave } from "@/shared/hooks/useAutoSave";
 import { useTheme } from "@/theme";
-import { useSelectionAskAi } from "@/shared/hooks/useSelectionAskAi";
 import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
@@ -20,34 +23,10 @@ import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-tex
 import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
-import { SelectionAskAi } from "./SelectionAskAi";
 
 const languageCompartment = new Compartment();
 const ghostTextCompartment = new Compartment();
 const externalUpdate = StateEffect.define<void>();
-
-const baseTheme = EditorView.theme({
-  "&": {
-    fontSize: "14px",
-    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
-    height: "100%",
-  },
-  ".cm-scroller": {
-    overflow: "auto",
-    lineHeight: "1.6",
-  },
-  ".cm-content": {
-    padding: "8px 0",
-    caretColor: "var(--editor-cursor)",
-  },
-  ".cm-line": {
-    padding: "0 12px 0 8px",
-  },
-  ".cm-gutters": {
-    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
-    fontSize: "14px",
-  },
-});
 
 function FileEditor({
   content,
@@ -73,6 +52,9 @@ function FileEditor({
   const [hasSelection, setHasSelection] = useState(false);
   const selectedTextRef = useRef("");
   const { handleBlur } = useAutoSave();
+  const tabStates = useEditorStore((s) => s.tabStates);
+  const goToPosition = useEditorStore((s) => s.goToPosition);
+  const pendingScroll = tabStates.find((s) => s.tabId === tabId)?.pendingScroll ?? null;
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
   const providers = useAIStore((state) => state.providers);
@@ -104,7 +86,8 @@ function FileEditor({
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
-        baseTheme,
+        drawSelection(),
+        editorBaseTheme,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const isExternal = update.transactions.some((tr) =>
@@ -131,7 +114,6 @@ function FileEditor({
 
       if (enableVim) {
         extensions.unshift(vim({ status: false }));
-        extensions.push(drawSelection());
       }
 
       return extensions;
@@ -219,14 +201,22 @@ function FileEditor({
     return selectedTextRef.current;
   }, [hasSelection]);
 
-  const askFromSelection = useCallback(() => {
-    handleEditWithAI();
-  }, [handleEditWithAI]);
+  useEffect(() => {
+    if (!viewRef.current || !pendingScroll) return;
 
-  const { askPopup, setAskPopup, onAskFromSelection } = useSelectionAskAi({
-    captureActiveSelection,
-    askFromSelection,
-  });
+    const view = viewRef.current;
+    const doc = view.state.doc;
+    const targetLine = Math.max(1, Math.min(pendingScroll.line, doc.lines));
+    const line = doc.line(targetLine);
+    const targetColumn = Math.max(1, Math.min(pendingScroll.column, line.length + 1));
+    const pos = line.from + targetColumn - 1;
+
+    view.dispatch({
+      selection: { anchor: pos },
+      effects: EditorView.scrollIntoView(pos, { y: "center" }),
+    });
+    goToPosition(tabId, null);
+  }, [pendingScroll, tabId, goToPosition]);
 
   useEffect(() => {
     if (!viewRef.current) return;
@@ -321,15 +311,6 @@ function FileEditor({
             handleBlur();
           }}
         />
-        {askPopup && (
-          <SelectionAskAi
-            state="open"
-            x={askPopup.x}
-            y={askPopup.y}
-            onAsk={onAskFromSelection}
-            onDismiss={() => setAskPopup(null)}
-          />
-        )}
       </div>
       <EditorStatusbar
         vimMode={vimMode}

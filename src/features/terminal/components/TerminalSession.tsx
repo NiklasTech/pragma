@@ -11,6 +11,7 @@ import {
 import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
 import { useTheme } from "@/theme";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
+import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { AISuggestionsOverlay } from "./ai-suggestions";
 
 interface PtyOutputEvent {
@@ -50,7 +51,11 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     async function setup() {
       if (!containerRef.current) return;
 
-      await document.fonts.ready;
+      // Don't block shell spawn on font loading; cap the initial wait at 300ms.
+      const fontsReady = document.fonts?.ready;
+      if (fontsReady) {
+        await Promise.race([fontsReady, new Promise<void>((resolve) => setTimeout(resolve, 300))]);
+      }
       if (disposed) return;
 
       const t = new XTerm({
@@ -78,6 +83,16 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       unlistenFn = unlisten;
 
       fit.fit();
+
+      // Refit once fonts have actually loaded so cell measurements are correct.
+      void fontsReady?.then(() => {
+        if (disposed || !termRef.current || !fitRef.current) return;
+        fitRef.current.fit();
+        const { cols, rows } = termRef.current;
+        if (ptyIdRef.current && cols > 0 && rows > 0) {
+          void invoke("resize_pty", { id: ptyIdRef.current, rows, cols });
+        }
+      });
 
       if (session.ptyId) {
         ptyIdRef.current = session.ptyId;
@@ -194,6 +209,18 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   useEffect(() => {
     if (!termState) return;
 
+    const disposable = termState.onSelectionChange(() => {
+      dispatchTerminalSelection(termState.getSelection());
+    });
+
+    return () => {
+      disposable.dispose();
+    };
+  }, [termState]);
+
+  useEffect(() => {
+    if (!termState) return;
+
     const handleData = suggestions.handleData;
     const disposable = termState.onData((data) => {
       if (data === "\t") return;
@@ -231,6 +258,18 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [suggestions.visible, suggestions.accept]);
+
+  useEffect(() => {
+    const term = termRef.current;
+    if (!term) return;
+
+    const handleClear = () => {
+      if (isActive) term.clear();
+    };
+
+    window.addEventListener("pragma:terminal:clear", handleClear);
+    return () => window.removeEventListener("pragma:terminal:clear", handleClear);
+  }, [isActive]);
 
   return (
     <div

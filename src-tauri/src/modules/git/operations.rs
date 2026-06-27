@@ -654,6 +654,52 @@ pub fn log(repo_root: &str, limit: u32, before_sha: Option<&str>) -> Result<Vec<
         return ensure_success(&output, "git log failed").map(|_| Vec::new());
     }
     let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    Ok(parse_log_stdout(stdout, bounded))
+}
+
+pub fn file_history(repo_root: &str, path: &str, limit: u32) -> Result<Vec<GitLogEntry>> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    let bounded = limit.clamp(1, MAX_LOG_LIMIT);
+    let worktree_path = resolve_within_repo(&repo_root, path)?;
+    let rel_path = pathspec(&repo_root, &worktree_path);
+    let count_arg = format!("--max-count={bounded}");
+    let format_arg = format!("--format={LOG_FORMAT}");
+
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [
+            OsStr::new("log"),
+            OsStr::new("--follow"),
+            OsStr::new("--no-color"),
+            OsStr::new("--shortstat"),
+            OsStr::new(&count_arg),
+            OsStr::new(&format_arg),
+            OsStr::new("--"),
+            OsStr::new(&rel_path),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    if output.timed_out {
+        return Err(GitError::TimedOut("git log"));
+    }
+    if output.exit_code != Some(0) {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
+        if stderr.contains("does not have any commits yet")
+            || stderr.contains("bad default revision")
+            || stderr.contains("unknown revision")
+            || stderr.contains("ambiguous argument 'head'")
+        {
+            return Ok(Vec::new());
+        }
+        return ensure_success(&output, "git log failed").map(|_| Vec::new());
+    }
+
+    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    Ok(parse_log_stdout(stdout, bounded))
+}
+
+fn parse_log_stdout(stdout: &str, bounded: u32) -> Vec<GitLogEntry> {
     let mut entries: Vec<GitLogEntry> = Vec::with_capacity(bounded as usize);
 
     for raw_line in stdout.lines() {
@@ -700,7 +746,7 @@ pub fn log(repo_root: &str, limit: u32, before_sha: Option<&str>) -> Result<Vec<
             }
         }
     }
-    Ok(entries)
+    entries
 }
 
 pub fn show_commit_diff(repo_root: &str, sha: &str) -> Result<GitDiffResult> {

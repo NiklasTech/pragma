@@ -8,6 +8,7 @@ import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { useGitStore } from "@/shared/stores/git";
 import { useDockerStore } from "@/shared/stores/docker";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 
 interface DirEntry {
@@ -40,6 +41,7 @@ export function useFileExplorer() {
   const { setWorkspaceRoot, loadConfigs } = useRunConfigStore();
   const { setRepoPath } = useGitStore();
   const { setWorkspaceRoot: setDockerWorkspaceRoot } = useDockerStore();
+  const { addRecentFolder, addRecentFile } = useSettingsStore();
 
   useEffect(() => {
     if (store.rootPath) {
@@ -60,6 +62,7 @@ export function useFileExplorer() {
     }
     if (typeof path !== "string" || path.length === 0) return false;
     store.setRootPath(path);
+    addRecentFolder(path);
     store.setIsLoading(true);
     try {
       const entries = await invoke<DirEntry[]>("list_directory", { path });
@@ -114,12 +117,14 @@ export function useFileExplorer() {
             path: result.path,
             name: result.name,
             content: result.content,
+            originalContent: result.content,
             isModified: false,
             language: detectLanguage(result.name),
           },
           editorPanelId,
         );
         store.setSelectedPath(path);
+        addRecentFile(path);
       } catch (err) {
         toast.error(String(err));
       }

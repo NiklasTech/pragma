@@ -97,6 +97,7 @@ describe("findConflictingAction", () => {
       "view.newTerminalTab": { ctrl: true, code: "KeyT" },
       "view.openSettings": { ctrl: true, code: "Comma" },
       "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
+      "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
       "chat.send": { key: "Enter" },
     };
 
@@ -115,6 +116,7 @@ describe("findConflictingAction", () => {
       "view.newTerminalTab": { ctrl: true, code: "KeyT" },
       "view.openSettings": { ctrl: true, code: "Comma" },
       "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
+      "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
       "chat.send": { key: "Enter" },
     };
 
@@ -160,7 +162,7 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(10);
+    expect(Object.keys(defaults)).toHaveLength(11);
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
   });
 });

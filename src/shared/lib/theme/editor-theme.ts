@@ -9,6 +9,29 @@ export const themeCompartment = new Compartment();
 
 export type EditorThemeName = "dark-default" | "one-dark";
 
+export const editorBaseTheme = EditorView.theme({
+  "&": {
+    fontSize: "14px",
+    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
+    height: "100%",
+  },
+  ".cm-scroller": {
+    overflow: "auto",
+    lineHeight: "1.6",
+  },
+  ".cm-content": {
+    padding: "8px 0",
+    caretColor: "var(--editor-cursor)",
+  },
+  ".cm-line": {
+    padding: "0 12px 0 8px",
+  },
+  ".cm-gutters": {
+    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
+    fontSize: "14px",
+  },
+});
+
 const pragmaDarkBase = EditorView.theme({
   "&": {
     backgroundColor: "var(--editor-bg)",

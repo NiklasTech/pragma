@@ -4,16 +4,18 @@ import {
   ArrowCounterClockwise,
   Spinner,
   FileText,
+  GitCommit,
+  FloppyDisk,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
-import { useLocalHistoryStore } from "@/shared/stores/localHistory";
+import { useLocalHistoryStore, type HistoryEntry } from "@/shared/stores/localHistory";
 import { InlineDiff } from "@/features/editor/components/InlineDiff";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 
-function formatRelativeTime(timestamp: string): string {
-  const date = new Date(timestamp);
+function formatRelativeTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
@@ -28,9 +30,17 @@ function formatRelativeTime(timestamp: string): string {
   return date.toLocaleDateString();
 }
 
-function formatTime(timestamp: string): string {
-  const date = new Date(timestamp);
+function formatTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function formatDateTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
 }
 
 interface LocalHistoryPanelProps {
@@ -41,21 +51,21 @@ interface LocalHistoryPanelProps {
 
 export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPanelProps) {
   const {
-    snapshots,
-    selectedSnapshotId,
+    entries,
+    selectedEntry,
     diffResult,
     isLoading,
-    loadSnapshots,
-    selectSnapshot,
-    restoreSnapshot,
+    loadEntries,
+    selectEntry,
+    restoreEntry,
     clear,
   } = useLocalHistoryStore();
 
   useEffect(() => {
     if (isOpen && filePath) {
-      void loadSnapshots(filePath);
+      void loadEntries(filePath);
     }
-  }, [isOpen, filePath, loadSnapshots]);
+  }, [isOpen, filePath, loadEntries]);
 
   useEffect(() => {
     return () => {
@@ -64,22 +74,22 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
   }, [clear]);
 
   const handleSelect = useCallback(
-    (snapshotId: string) => {
-      void selectSnapshot(filePath, snapshotId);
+    (entry: HistoryEntry) => {
+      void selectEntry(filePath, entry);
     },
-    [filePath, selectSnapshot],
+    [filePath, selectEntry],
   );
 
   const handleRestore = useCallback(() => {
-    if (!selectedSnapshotId) return;
-    void restoreSnapshot(filePath, selectedSnapshotId);
-  }, [filePath, selectedSnapshotId, restoreSnapshot]);
+    if (!selectedEntry) return;
+    void restoreEntry(filePath, selectedEntry);
+  }, [filePath, selectedEntry, restoreEntry]);
 
   const fileName = filePath.split(/[/\\]/).pop() || filePath;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl w-[90vw] h-[80vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="sm:max-w-6xl w-[95vw] h-[85vh] p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-4 py-3 border-b border-border/60 shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-sm">
@@ -91,34 +101,47 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
         </DialogHeader>
 
         <div className="flex flex-1 min-h-0">
-          <div className="w-56 border-r border-border/60 flex flex-col shrink-0">
+          <div className="w-64 border-r border-border/60 flex flex-col shrink-0">
             <div className="px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted border-b border-border/40">
-              Snapshots
+              History
             </div>
             <ScrollArea className="flex-1">
-              {isLoading && snapshots.length === 0 ? (
+              {isLoading && entries.length === 0 ? (
                 <div className="flex items-center justify-center py-8">
                   <Spinner size={16} className="animate-spin text-fg-muted" />
                 </div>
-              ) : snapshots.length === 0 ? (
+              ) : entries.length === 0 ? (
                 <div className="px-3 py-6 text-ui-xs text-fg-muted text-center">
-                  No snapshots yet
+                  No history available
                 </div>
               ) : (
                 <div className="py-1">
-                  {snapshots.map((snap) => (
+                  {entries.map((entry) => (
                     <button
-                      key={snap.id}
-                      onClick={() => handleSelect(snap.id)}
+                      key={`${entry.kind}-${entry.id}`}
+                      onClick={() => handleSelect(entry)}
                       className={cn(
                         "w-full text-left px-3 py-2 text-ui-xs flex flex-col gap-0.5 transition-colors",
-                        selectedSnapshotId === snap.id
+                        selectedEntry?.id === entry.id && selectedEntry?.kind === entry.kind
                           ? "bg-bg-active text-fg-default"
                           : "text-fg-default hover:bg-bg-hover",
                       )}
                     >
-                      <span className="font-medium">{formatRelativeTime(snap.timestamp)}</span>
-                      <span className="text-fg-muted text-ui-xs">{formatTime(snap.timestamp)}</span>
+                      <span className="flex items-center gap-1.5 font-medium">
+                        {entry.kind === "git" ? (
+                          <GitCommit size={12} className="text-fg-muted" />
+                        ) : (
+                          <FloppyDisk size={12} className="text-fg-muted" />
+                        )}
+                        {formatRelativeTime(entry.timestamp)}
+                      </span>
+                      <span className="text-fg-muted text-ui-xs truncate pl-4">
+                        {entry.kind === "git" ? entry.message : "Auto-saved"}
+                      </span>
+                      <span className="text-fg-subtle text-ui-2xs pl-4">
+                        {entry.kind === "git" ? `${entry.author} • ` : ""}
+                        {formatTime(entry.timestamp)}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -127,19 +150,18 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
           </div>
 
           <div className="flex-1 flex flex-col min-w-0">
-            {selectedSnapshotId && diffResult ? (
+            {selectedEntry && diffResult ? (
               <>
                 <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 shrink-0">
-                  <span className="text-ui-xs text-fg-muted">
-                    Snapshot from{" "}
-                    {formatTime(
-                      snapshots.find((s) => s.id === selectedSnapshotId)?.timestamp || "",
-                    )}
+                  <span className="text-ui-xs text-fg-muted truncate pr-4">
+                    {selectedEntry.kind === "git"
+                      ? `${selectedEntry.message} — ${selectedEntry.author}`
+                      : `Auto-saved — ${formatDateTime(selectedEntry.timestamp)}`}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-6 text-ui-xs gap-1"
+                    className="h-6 text-ui-xs gap-1 shrink-0"
                     onClick={handleRestore}
                     disabled={isLoading}
                   >
@@ -151,6 +173,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
                   <InlineDiff
                     original={diffResult.original}
                     modified={diffResult.modified}
+                    patchText={diffResult.patchText}
                     filePath={filePath}
                   />
                 </div>
@@ -158,7 +181,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-fg-muted">
                 <FileText size={24} className="opacity-40" />
-                <span className="text-ui-xs">Select a snapshot to view diff</span>
+                <span className="text-ui-xs">Select an entry to view diff</span>
               </div>
             )}
           </div>

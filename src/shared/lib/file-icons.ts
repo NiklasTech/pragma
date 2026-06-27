@@ -1,57 +1,28 @@
-import {
-  FileText,
-  FileCode,
-  FileArchive,
-  FileImage,
-  FileVideo,
-  FileAudio,
-} from "@phosphor-icons/react";
-import type { Icon } from "@phosphor-icons/react";
+import iconTheme from "material-icon-theme/dist/material-icons.json";
 
-export function getFileIcon(name: string): Icon {
-  const ext = name.split(".").pop()?.toLowerCase();
-  switch (ext) {
-    case "js":
-    case "jsx":
-    case "ts":
-    case "tsx":
-    case "rs":
-    case "py":
-    case "go":
-    case "java":
-    case "cpp":
-    case "c":
-    case "h":
-    case "rb":
-    case "php":
-    case "swift":
-    case "kt":
-      return FileCode;
-    case "zip":
-    case "tar":
-    case "gz":
-    case "rar":
-    case "7z":
-      return FileArchive;
-    case "png":
-    case "jpg":
-    case "jpeg":
-    case "gif":
-    case "svg":
-    case "webp":
-    case "ico":
-      return FileImage;
-    case "mp4":
-    case "mov":
-    case "avi":
-    case "mkv":
-      return FileVideo;
-    case "mp3":
-    case "wav":
-    case "ogg":
-    case "flac":
-      return FileAudio;
-    default:
-      return FileText;
+const BASE_PATH = "/icons/material-icon-theme";
+
+interface MaterialIconTheme {
+  file?: string;
+  fileNames?: Record<string, string>;
+  fileExtensions?: Record<string, string>;
+}
+
+const theme = iconTheme as MaterialIconTheme;
+
+export function getFileIconPath(name: string): string {
+  const lowerName = name.toLowerCase();
+  const fileNameIcon = theme.fileNames?.[lowerName];
+  if (fileNameIcon) {
+    return `${BASE_PATH}/${fileNameIcon}.svg`;
   }
+
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const extIcon = theme.fileExtensions?.[ext];
+  if (extIcon) {
+    return `${BASE_PATH}/${extIcon}.svg`;
+  }
+
+  const defaultIcon = theme.file ?? "file";
+  return `${BASE_PATH}/${defaultIcon}.svg`;
 }

@@ -90,7 +90,7 @@ pub fn run() {
             modules::git::commands::git_stash_pop,
             modules::git::commands::git_stash_list,
             modules::git::commands::git_smart_checkout,
-            modules::local_history::commands::local_history_snapshots,
+            modules::local_history::commands::local_history_entries,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
             modules::mcp::mcp_list_servers,
@@ -156,6 +156,7 @@ pub fn run() {
             commands::docker::docker_compose_changed_between_branches,
             commands::docker::docker_compose_up_build,
             commands::perf::memory_stats,
+            commands::search::search_workspace,
             window::create_external_window,
             window::close_external_window,
         ])

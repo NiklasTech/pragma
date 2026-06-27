@@ -40,6 +40,7 @@ export function useOpenFile() {
           path: result.path,
           name: result.name,
           content: result.content,
+          originalContent: result.content,
           isModified: false,
           language: detectLanguage(result.name),
         },

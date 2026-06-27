@@ -1,14 +1,17 @@
 import { useCallback, useState } from "react";
 import {
-  Folder,
-  FolderOpen,
   CaretRight,
   CaretDown,
   Spinner,
   ClockCounterClockwise,
+  File,
+  FolderPlus,
+  PencilSimple,
+  Trash,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
-import { getFileIcon } from "@/shared/lib/file-icons";
+import { getFileIconPath } from "@/shared/lib/file-icons";
+import { getFolderIconPath } from "@/shared/lib/folder-icons";
 import { useEditorStore } from "@/shared/stores/editor";
 import {
   ContextMenu,
@@ -129,9 +132,11 @@ export function FileTreeNode({
           {node.isLoading ? (
             <Spinner size={14} className="animate-spin text-fg-muted" />
           ) : (
-            <span className={cn("shrink-0", isExpanded ? "text-primary" : "text-fg-muted")}>
-              {isExpanded ? <FolderOpen size={14} /> : <Folder size={14} />}
-            </span>
+            <img
+              src={getFolderIconPath(node.name, isExpanded)}
+              alt=""
+              className="size-3.5 shrink-0"
+            />
           )}
         </>
       ) : (
@@ -139,12 +144,7 @@ export function FileTreeNode({
       )}
 
       {node.isDirectory ? null : (
-        <span className="shrink-0 text-fg-muted">
-          {(() => {
-            const Icon = getFileIcon(node.name);
-            return <Icon size={14} />;
-          })()}
-        </span>
+        <img src={getFileIconPath(node.name)} alt="" className="size-3.5 shrink-0" />
       )}
 
       <span className={cn("truncate", node.isDirectory && "font-medium")}>{node.name}</span>
@@ -165,29 +165,42 @@ export function FileTreeNode({
           {node.isDirectory ? (
             <>
               <ContextMenuItem onClick={() => setCreateDialog({ open: true, isDirectory: false })}>
-                New File
+                <File size={14} />
+                <span>New File</span>
               </ContextMenuItem>
               <ContextMenuItem onClick={() => setCreateDialog({ open: true, isDirectory: true })}>
-                New Folder
+                <FolderPlus size={14} />
+                <span>New Folder</span>
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => setRenameOpen(true)}>Rename</ContextMenuItem>
+              <ContextMenuItem onClick={() => setRenameOpen(true)}>
+                <PencilSimple size={14} />
+                <span>Rename</span>
+              </ContextMenuItem>
               <ContextMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                Delete
+                <Trash size={14} />
+                <span>Delete</span>
               </ContextMenuItem>
             </>
           ) : (
             <>
-              <ContextMenuItem onClick={handleClick}>Open</ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={handleShowLocalHistory}>
-                <ClockCounterClockwise size={14} className="mr-2" />
-                Local History
+              <ContextMenuItem onClick={handleClick}>
+                <File size={14} />
+                <span>Open</span>
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => setRenameOpen(true)}>Rename</ContextMenuItem>
+              <ContextMenuItem onClick={handleShowLocalHistory}>
+                <ClockCounterClockwise size={14} />
+                <span>Local History</span>
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem onClick={() => setRenameOpen(true)}>
+                <PencilSimple size={14} />
+                <span>Rename</span>
+              </ContextMenuItem>
               <ContextMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                Delete
+                <Trash size={14} />
+                <span>Delete</span>
               </ContextMenuItem>
             </>
           )}

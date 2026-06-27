@@ -1,11 +1,16 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { unifiedMergeView } from "@codemirror/merge";
 import { EditorState, Compartment } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Spinner, Columns, Rows, Check, X } from "@phosphor-icons/react";
-import { pragmaDarkTheme, themeCompartment } from "@/shared/lib/theme/editor-theme";
+import {
+  pragmaDarkTheme,
+  themeCompartment,
+  editorBaseTheme,
+} from "@/shared/lib/theme/editor-theme";
+import { useTheme } from "@/theme";
 import { loadLanguage } from "@/shared/lib/editor/languages";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
@@ -44,11 +49,28 @@ const DIFF_THEME = EditorView.theme({
     paddingLeft: "0 !important",
   },
   ".cm-collapsedLines": {
-    backgroundColor: "transparent",
-    color: "var(--muted-foreground, #9ca3af)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    backgroundColor: "var(--bg-hover) !important",
+    color: "var(--fg-default) !important",
     fontSize: "10.5px",
     padding: "2px 8px",
-    opacity: 0.7,
+    opacity: 1,
+    borderRadius: "3px",
+    border: "1px solid var(--border-default)",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease, color 0.15s ease",
+  },
+  ".cm-collapsedLines::before": {
+    content: "'▾ '",
+    marginRight: "4px",
+    fontSize: "10px",
+  },
+  ".cm-collapsedLines:hover": {
+    backgroundColor: "var(--bg-active) !important",
+    color: "var(--fg-default) !important",
   },
 });
 
@@ -72,14 +94,16 @@ type LoadState =
   | { kind: "loaded" }
   | { kind: "error"; message: string };
 
-function SplitDiffView({
+const SplitDiffView = memo(function SplitDiffView({
   original,
   modified,
   filePath,
+  theme,
 }: {
   original: string;
   modified: string;
   filePath: string;
+  theme: "light" | "dark";
 }) {
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,7 +111,9 @@ function SplitDiffView({
   const extensions = useMemo(
     () => [
       languageCompartment.of([]),
+      EditorView.theme({}, { dark: theme === "dark" }),
       themeCompartment.of(pragmaDarkTheme),
+      editorBaseTheme,
       ...READONLY_EXT,
       unifiedMergeView({
         original,
@@ -99,7 +125,7 @@ function SplitDiffView({
       }),
       DIFF_THEME,
     ],
-    [original],
+    [original, modified, theme],
   );
 
   useEffect(() => {
@@ -124,7 +150,7 @@ function SplitDiffView({
       <CodeMirror
         ref={cmRef}
         value={modified}
-        theme="dark"
+        theme="none"
         extensions={extensions}
         editable={false}
         height="100%"
@@ -138,7 +164,7 @@ function SplitDiffView({
       />
     </div>
   );
-}
+});
 
 type DiffLineType = "added" | "removed" | "hunk" | "context" | "header";
 
@@ -169,7 +195,7 @@ function parseDiffLines(patchText: string): DiffLine[] {
   return result;
 }
 
-function UnifiedDiffView({ patchText }: { patchText: string }) {
+const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lines = useMemo(() => parseDiffLines(patchText), [patchText]);
 
@@ -258,9 +284,9 @@ function UnifiedDiffView({ patchText }: { patchText: string }) {
       </div>
     </div>
   );
-}
+});
 
-export function InlineDiff({
+export const InlineDiff = memo(function InlineDiff({
   original,
   modified,
   patchText,
@@ -274,6 +300,7 @@ export function InlineDiff({
   const [state, setState] = useState<LoadState>({ kind: "idle" });
   const [internalViewMode, setInternalViewMode] = useState<DiffViewMode>(viewMode);
 
+  const { resolvedMode } = useTheme();
   const effectiveViewMode = onViewModeChange ? viewMode : internalViewMode;
 
   useEffect(() => {
@@ -389,13 +416,23 @@ export function InlineDiff({
       </div>
       <div className="min-h-0 flex-1 overflow-hidden" style={{ maxWidth: "100%" }}>
         {effectiveViewMode === "split" ? (
-          <SplitDiffView original={original} modified={modified} filePath={filePath} />
+          <SplitDiffView
+            original={original}
+            modified={modified}
+            filePath={filePath}
+            theme={resolvedMode}
+          />
         ) : canShowUnified ? (
           <UnifiedDiffView patchText={patchText} />
         ) : (
-          <SplitDiffView original={original} modified={modified} filePath={filePath} />
+          <SplitDiffView
+            original={original}
+            modified={modified}
+            filePath={filePath}
+            theme={resolvedMode}
+          />
         )}
       </div>
     </div>
   );
-}
+});

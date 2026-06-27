@@ -14,6 +14,7 @@ import {
   GitGraph,
   GitStatus,
   LocalHistoryPanel,
+  SearchPanel,
 } from "@/features/sidebar/components";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 
@@ -163,11 +164,7 @@ export function SidebarContent() {
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-bg-root">
       <div className="min-h-0 flex-1 overflow-hidden">
         {sidebar.tab === "explorer" && <FileExplorer />}
-        {sidebar.tab === "search" && (
-          <div className="p-3">
-            <p className="text-ui-sm text-fg-muted">Search content</p>
-          </div>
-        )}
+        {sidebar.tab === "search" && <SearchPanel />}
         {sidebar.tab === "git" && <GitGraph />}
         {sidebar.tab === "git-status" && <GitStatus />}
         {sidebar.tab === "docker" && <DockerPanel />}
