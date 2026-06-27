@@ -14,3 +14,8 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+## Design & Icons
+
+- UI icons use `@phosphor-icons/react`.
+- File and folder icons in the explorer tree and tab bar use `material-icon-theme` SVGs for colored file-type recognition. Icons are copied from `node_modules/material-icon-theme/icons` to `public/icons/material-icon-theme` via `scripts/copy-material-icons.js` on `postinstall`.

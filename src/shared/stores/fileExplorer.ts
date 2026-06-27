@@ -1,4 +1,5 @@
-import { create } from "zustand";
+import { create, type StateCreator } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface FileSystemNode {
   path: string;
@@ -40,6 +41,7 @@ interface FileExplorerState {
   selectedPath: string | null;
   tree: FileSystemNode[];
   isLoading: boolean;
+  _hasHydrated: boolean;
 }
 
 interface FileExplorerActions {
@@ -56,14 +58,25 @@ interface FileExplorerActions {
   removeNode: (path: string) => void;
   renameNode: (oldPath: string, newPath: string, newName: string) => void;
   addNode: (parentPath: string, node: FileSystemNode) => void;
+  markHydrated: () => void;
 }
 
-export const useFileExplorerStore = create<FileExplorerState & FileExplorerActions>((set, get) => ({
+const STORAGE_KEY = "pragma.file-explorer.v1";
+
+const initialState: FileExplorerState = {
   rootPath: null,
   expandedDirs: new Set(),
   selectedPath: null,
   tree: [],
   isLoading: false,
+  _hasHydrated: false,
+};
+
+const fileExplorerStoreCreator: StateCreator<FileExplorerState & FileExplorerActions> = (
+  set,
+  get,
+) => ({
+  ...initialState,
 
   setRootPath: (path) => set({ rootPath: path, tree: [], expandedDirs: new Set() }),
   setTree: (tree) => set({ tree }),
@@ -180,4 +193,32 @@ export const useFileExplorerStore = create<FileExplorerState & FileExplorerActio
       });
     set({ tree: insertNode(get().tree) });
   },
-}));
+
+  markHydrated: () => set({ _hasHydrated: true }),
+});
+
+export const useFileExplorerStore = create<FileExplorerState & FileExplorerActions>()(
+  persist(fileExplorerStoreCreator, {
+    name: STORAGE_KEY,
+    partialize: (state) => ({
+      rootPath: state.rootPath,
+      expandedDirs: Array.from(state.expandedDirs),
+      selectedPath: state.selectedPath,
+    }),
+    onRehydrateStorage: () => (state) => {
+      if (!state) return;
+      state.markHydrated();
+    },
+    merge: (persistedState, currentState) => {
+      const persisted = persistedState as Partial<FileExplorerState>;
+      return {
+        ...currentState,
+        ...persisted,
+        expandedDirs: new Set(persisted.expandedDirs ?? []),
+        tree: [],
+        isLoading: false,
+        _hasHydrated: false,
+      };
+    },
+  }),
+);

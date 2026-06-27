@@ -774,7 +774,7 @@ pub async fn ai_terminal_suggestion(
     let config = ProviderConfig {
         base_url: req.base_url.unwrap_or_default(),
         model: req.model,
-        timeout_seconds: 15,
+        timeout_seconds: 5,
         api_key: None,
         extra_headers: None,
     };

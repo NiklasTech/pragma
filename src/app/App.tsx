@@ -8,12 +8,17 @@ import { useMemoryStats } from "@/shared/hooks/useMemoryStats";
 import { useOnboarding } from "@/shared/hooks/useOnboarding";
 import { Onboarding } from "@/components/onboarding/Onboarding";
 import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindowManager";
+import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
+import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
+import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 
 export default function App() {
   useAIInit();
   useMemoryStats();
   useExternalWindowManager();
+  useDisableBrowserBehaviors();
+  useWorkspaceRestore();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useAppShortcutActions();
@@ -22,10 +27,12 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <WindowResizeHandles />
-      <Layout />
-      {!onboardingLoading && !onboardingCompleted && <Onboarding />}
-      <Toaster position="bottom-right" />
+      <GlobalContextMenu>
+        <WindowResizeHandles />
+        <Layout />
+        {!onboardingLoading && !onboardingCompleted && <Onboarding />}
+        <Toaster position="bottom-right" />
+      </GlobalContextMenu>
     </ThemeProvider>
   );
 }

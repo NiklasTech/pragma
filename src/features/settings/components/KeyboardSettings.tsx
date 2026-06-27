@@ -33,6 +33,7 @@ const CATEGORY_TITLES: Record<ShortcutActionCategory, string> = {
   file: "File",
   edit: "Edit",
   view: "View",
+  search: "Search",
   ai: "AI",
   chat: "Chat",
 };

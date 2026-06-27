@@ -9,8 +9,8 @@ pub struct RetentionPolicy {
 impl Default for RetentionPolicy {
     fn default() -> Self {
         Self {
-            max_age_days: 30,
-            max_snapshots: 500,
+            max_age_days: 7,
+            max_snapshots: 50,
         }
     }
 }

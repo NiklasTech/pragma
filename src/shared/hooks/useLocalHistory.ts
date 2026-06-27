@@ -1,17 +1,16 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { useLocalHistoryStore } from "@/shared/stores/localHistory";
 
 export function useLocalHistory() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [activeFilePath, setActiveFilePath] = useState<string | null>(null);
+  const isOpen = useLocalHistoryStore((state) => state.isOpen);
+  const activeFilePath = useLocalHistoryStore((state) => state.activeFilePath);
 
   const openPanel = useCallback((filePath: string) => {
-    setActiveFilePath(filePath);
-    setIsOpen(true);
+    useLocalHistoryStore.getState().openPanel(filePath);
   }, []);
 
   const closePanel = useCallback(() => {
-    setIsOpen(false);
-    setActiveFilePath(null);
+    useLocalHistoryStore.getState().closePanel();
   }, []);
 
   return {

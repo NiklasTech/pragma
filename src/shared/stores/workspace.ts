@@ -151,6 +151,7 @@ export async function loadWorkspace(
           path: tab.path,
           name: tab.name,
           content: "",
+          originalContent: "",
           isModified: false,
           language: tab.language,
         });

@@ -45,6 +45,8 @@ shellwords = "1.1.0"
 tracing = "0.1.44"
 sysinfo = "0.34"
 bollard = "0.20"
+ignore = "0.4"
+regex = "1.0"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

@@ -11,7 +11,9 @@
     "preview": "vp preview",
     "check": "vp check",
     "test": "vp test --run",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "generate:licenses": "node scripts/generate-licenses.mjs",
+    "postinstall": "node scripts/copy-material-icons.js"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.199",
@@ -59,6 +61,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "material-icon-theme": "^5.36.1",
     "next-themes": "^0.4.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -72,6 +75,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/cli": "^2.11.2",
     "@types/node": "^25.9.1",

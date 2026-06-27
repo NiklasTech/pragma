@@ -9,7 +9,7 @@ export interface ShortcutBinding {
   alt?: boolean;
 }
 
-export type ShortcutActionCategory = "file" | "edit" | "view" | "ai" | "chat";
+export type ShortcutActionCategory = "file" | "edit" | "view" | "search" | "ai" | "chat";
 
 export interface ShortcutAction {
   id: string;
@@ -90,6 +90,16 @@ export const SHORTCUT_ACTIONS = [
     default: (isMac: boolean): ShortcutBinding => ({
       [isMac ? "meta" : "ctrl"]: true,
       code: "Comma",
+    }),
+  },
+  {
+    id: "search.findInFiles" as const,
+    label: "Find in Files",
+    category: "search" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyF",
     }),
   },
   {

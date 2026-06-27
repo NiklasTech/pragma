@@ -33,6 +33,7 @@ export default function ProblemsPanel() {
           path: filePath,
           name: filePath.split("/").pop() ?? filePath,
           content: "",
+          originalContent: "",
           isModified: false,
         },
         editorPanelId,

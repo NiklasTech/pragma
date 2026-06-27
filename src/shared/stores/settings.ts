@@ -66,6 +66,11 @@ export interface LayoutSettings {
   chatPanelWidth: number;
 }
 
+export interface WorkspaceSettings {
+  recentFolders: string[];
+  recentFiles: string[];
+}
+
 export type StatusbarItem =
   | "vimMode"
   | "cursor"
@@ -117,6 +122,7 @@ export interface SettingsState {
   themeMode: ThemeMode;
   keymap: string;
   layout: LayoutSettings;
+  workspace: WorkspaceSettings;
   statusbar: StatusbarSettings;
   git: GitSettings;
   mcp: McpSettings;
@@ -133,6 +139,10 @@ interface SettingsActions {
   setThemeMode: (mode: ThemeMode) => void;
   setKeymap: (keymap: string) => void;
   setLayoutSettings: (settings: Partial<LayoutSettings>) => void;
+  addRecentFolder: (path: string) => void;
+  addRecentFile: (path: string) => void;
+  clearRecentFolders: () => void;
+  clearRecentFiles: () => void;
   setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
   setGitSettings: (settings: Partial<GitSettings>) => void;
   setMcpSettings: (settings: Partial<McpSettings>) => void;
@@ -201,6 +211,10 @@ const defaultSettings: SettingsState = {
     terminalHeight: "50%",
     chatPanelWidth: 380,
   },
+  workspace: {
+    recentFolders: [],
+    recentFiles: [],
+  },
   statusbar: {
     visible: true,
     items: [
@@ -251,6 +265,30 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   setKeymap: (keymap) => set({ keymap }),
 
   setLayoutSettings: (settings) => set((state) => ({ layout: { ...state.layout, ...settings } })),
+
+  addRecentFolder: (path) =>
+    set((state) => ({
+      workspace: {
+        ...state.workspace,
+        recentFolders: [path, ...state.workspace.recentFolders.filter((p) => p !== path)].slice(
+          0,
+          20,
+        ),
+      },
+    })),
+
+  addRecentFile: (path) =>
+    set((state) => ({
+      workspace: {
+        ...state.workspace,
+        recentFiles: [path, ...state.workspace.recentFiles.filter((p) => p !== path)].slice(0, 50),
+      },
+    })),
+
+  clearRecentFolders: () =>
+    set((state) => ({ workspace: { ...state.workspace, recentFolders: [] } })),
+
+  clearRecentFiles: () => set((state) => ({ workspace: { ...state.workspace, recentFiles: [] } })),
 
   setStatusbarSettings: (settings) =>
     set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
@@ -326,6 +364,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       themeMode: partial.themeMode ?? state.themeMode,
       keymap: partial.keymap ?? state.keymap,
       layout: { ...state.layout, ...partial.layout },
+      workspace: { ...state.workspace, ...partial.workspace },
       statusbar: { ...state.statusbar, ...partial.statusbar },
       git: { ...state.git, ...partial.git },
       mcp: { ...state.mcp, ...partial.mcp },
