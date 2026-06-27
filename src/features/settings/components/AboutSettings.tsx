@@ -14,6 +14,7 @@ import {
   CheckCircle,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { ScrollArea } from "@/shared/components/ui/scroll-area";
 
 const GITHUB_OWNER = "NiklasTech";
 const GITHUB_REPO = "pragma";
@@ -27,6 +28,20 @@ type UpdateStatus =
   | { state: "up-to-date" }
   | { state: "available"; version: string; url: string }
   | { state: "error"; message: string };
+
+interface LicenseEntry {
+  name: string;
+  version: string;
+  license: string;
+  url: string;
+  source: "npm" | "rust";
+}
+
+interface LicensesData {
+  generatedAt: string;
+  total: number;
+  entries: LicenseEntry[];
+}
 
 function parseVersion(version: string): number[] {
   return version
@@ -53,11 +68,29 @@ export function AboutSettings() {
   const [version, setVersion] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<UpdateStatus>({ state: "idle" });
+  const [licenses, setLicenses] = React.useState<LicenseEntry[]>([]);
+  const [licensesLoading, setLicensesLoading] = React.useState(true);
+  const [licensesError, setLicensesError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     void getVersion()
       .then(setVersion)
       .catch(() => setVersion(null));
+  }, []);
+
+  React.useEffect(() => {
+    fetch("/third-party-licenses.json")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to load licenses");
+        const data = (await res.json()) as LicensesData;
+        setLicenses(data.entries);
+      })
+      .catch((err: unknown) => {
+        setLicensesError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        setLicensesLoading(false);
+      });
   }, []);
 
   const handleOpenUrl = (url: string) => {
@@ -173,6 +206,54 @@ export function AboutSettings() {
             provide models, accounts, credentials, or OAuth flows. Third-party CLI tools are
             published by their respective owners under their own licenses.
           </p>
+        </div>
+      </SettingSection>
+
+      <SettingSection title="Third-Party Licenses">
+        <div className="flex flex-col gap-3 py-2">
+          <p className="text-ui-xs text-fg-muted">
+            Pragma builds on many open-source projects. This list was generated automatically from
+            the npm and Rust dependencies.
+          </p>
+
+          {licensesLoading && (
+            <div className="flex items-center gap-2 text-ui-xs text-fg-muted">
+              <Spinner size={14} className="animate-spin" />
+              <span>Loading licenses...</span>
+            </div>
+          )}
+
+          {licensesError && <div className="text-ui-xs text-status-error">{licensesError}</div>}
+
+          {!licensesLoading && !licensesError && (
+            <div className="rounded-md border border-border/30 bg-bg-root">
+              <ScrollArea className="h-64">
+                <ul className="divide-y divide-border/30">
+                  {licenses.map((entry) => (
+                    <li
+                      key={`${entry.source}:${entry.name}@${entry.version}`}
+                      className="flex items-center justify-between gap-3 px-3 py-1.5 text-ui-xs"
+                    >
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate font-medium text-fg-default">
+                          {entry.name} <span className="text-fg-muted">{entry.version}</span>
+                        </span>
+                        <span className="truncate text-fg-subtle">{entry.license}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenUrl(entry.url)}
+                        className="shrink-0 text-fg-muted hover:text-fg-default"
+                        aria-label={`Open registry page for ${entry.name}`}
+                      >
+                        <ArrowSquareOut size={12} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            </div>
+          )}
         </div>
       </SettingSection>
 

@@ -12,6 +12,7 @@
     "check": "vp check",
     "test": "vp test --run",
     "prepare": "vp config",
+    "generate:licenses": "node scripts/generate-licenses.mjs",
     "postinstall": "node scripts/copy-material-icons.js"
   },
   "dependencies": {
