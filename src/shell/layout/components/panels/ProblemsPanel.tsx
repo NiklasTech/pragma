@@ -15,11 +15,13 @@ const severityConfig: Record<
 
 export default function ProblemsPanel() {
   const { problems, isLoading, refreshProblems } = useProblemsStore();
-  const { tabs, openFile, setActiveTab, setPanelActiveTab } = useEditorStore();
+  const { tabs, openFile, setActiveTab, setPanelActiveTab, goToPosition } = useEditorStore();
   const editorPanelId = useEditorPanelId();
 
   const handleClick = (filePath: string, line: number, column: number) => {
     const existing = tabs.find((t) => t.path === filePath);
+    const targetTabId = existing?.id ?? filePath;
+
     if (existing) {
       if (editorPanelId) {
         setPanelActiveTab(editorPanelId, existing.id);
@@ -39,8 +41,8 @@ export default function ProblemsPanel() {
         editorPanelId,
       );
     }
-    // TODO: move cursor to line/column once editor supports programmatic cursor setting.
-    void { line, column };
+
+    goToPosition(targetTabId, { line, column });
   };
 
   return (

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
 import { Compartment, EditorState, StateEffect, type Extension } from "@codemirror/state";
+import { useLspDiagnostics } from "@/shared/hooks/useLspDiagnostics";
+import { useLspDocumentSync } from "@/shared/hooks/useLspDocumentSync";
+import { useLspStatus } from "@/shared/hooks/useLspStatus";
+import { useProblemsStore } from "@/shared/stores/problems";
+import { createLinter } from "./extensions/diagnostics";
 import {
   pragmaDarkTheme,
   themeCompartment,
@@ -19,13 +24,13 @@ import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-text";
-// vim-setup hooks currently unused — re-enable when vim save/close integration is needed
 import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
 
 const languageCompartment = new Compartment();
 const ghostTextCompartment = new Compartment();
+const diagnosticsCompartment = new Compartment();
 const externalUpdate = StateEffect.define<void>();
 
 function FileEditor({
@@ -33,6 +38,7 @@ function FileEditor({
   fileName,
   filePath,
   tabId,
+  isModified,
   onChange,
   vimEnabled,
 }: {
@@ -40,9 +46,19 @@ function FileEditor({
   fileName: string;
   filePath: string;
   tabId: string;
+  isModified: boolean;
   onChange: (value: string) => void;
   vimEnabled: boolean;
 }) {
+  const language = detectLanguage(fileName);
+  useLspDiagnostics();
+  useLspStatus();
+  useLspDocumentSync(language, filePath, content, isModified);
+
+  const diagnostics = useProblemsStore((state) =>
+    state.problems.filter((p) => p.filePath === filePath),
+  );
+
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
@@ -82,6 +98,7 @@ function FileEditor({
       const extensions: Extension[] = [
         languageCompartment.of([]),
         themeCompartment.of(pragmaDarkTheme),
+        diagnosticsCompartment.of([]),
         lineNumbers(),
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
@@ -255,6 +272,14 @@ function FileEditor({
   useEffect(() => {
     if (!viewRef.current) return;
 
+    viewRef.current.dispatch({
+      effects: diagnosticsCompartment.reconfigure(createLinter(diagnostics)),
+    });
+  }, [diagnostics]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+
     let cancelled = false;
     loadLanguage(fileName)
       .then((ext) => {
@@ -317,6 +342,7 @@ function FileEditor({
         line={cursorPos.line}
         column={cursorPos.column}
         fileType={fileName}
+        filePath={filePath}
       />
     </div>
   );
@@ -380,6 +406,7 @@ export function Editor({ panelId }: EditorProps) {
       fileName={activeTab.name}
       filePath={activeTab.path}
       tabId={activeTab.id}
+      isModified={activeTab.isModified}
       onChange={(value) => updateFileContent(activeTab.id, value)}
       vimEnabled={vimEnabled}
     />

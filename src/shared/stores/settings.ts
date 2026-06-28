@@ -114,6 +114,10 @@ export interface McpSettings {
   servers: McpServerConfig[];
 }
 
+export interface LspSettings {
+  enabled: Record<string, boolean>;
+}
+
 export interface SettingsState {
   editor: EditorSettings;
   terminal: TerminalSettings;
@@ -126,6 +130,7 @@ export interface SettingsState {
   statusbar: StatusbarSettings;
   git: GitSettings;
   mcp: McpSettings;
+  lsp: LspSettings;
   mcpRunningServerIds: string[];
   customThemes: Record<string, Theme>;
   shortcuts: ShortcutMap;
@@ -146,6 +151,7 @@ interface SettingsActions {
   setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
   setGitSettings: (settings: Partial<GitSettings>) => void;
   setMcpSettings: (settings: Partial<McpSettings>) => void;
+  setLspEnabled: (language: string, enabled: boolean) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => void;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;
@@ -243,6 +249,11 @@ const defaultSettings: SettingsState = {
   mcp: {
     servers: [],
   },
+  lsp: {
+    enabled: {
+      typescript: true,
+    },
+  },
   mcpRunningServerIds: [],
   customThemes: {},
   shortcuts: getDefaultShortcuts(getIsMac()),
@@ -296,6 +307,14 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   setGitSettings: (settings) => set((state) => ({ git: { ...state.git, ...settings } })),
 
   setMcpSettings: (settings) => set((state) => ({ mcp: { ...state.mcp, ...settings } })),
+
+  setLspEnabled: (language, enabled) =>
+    set((state) => ({
+      lsp: {
+        ...state.lsp,
+        enabled: { ...state.lsp.enabled, [language]: enabled },
+      },
+    })),
 
   addMcpServer: (server) =>
     set((state) => ({
@@ -368,6 +387,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       statusbar: { ...state.statusbar, ...partial.statusbar },
       git: { ...state.git, ...partial.git },
       mcp: { ...state.mcp, ...partial.mcp },
+      lsp: { ...state.lsp, ...partial.lsp },
       mcpRunningServerIds: partial.mcpRunningServerIds ?? state.mcpRunningServerIds,
       customThemes: { ...state.customThemes, ...partial.customThemes },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },

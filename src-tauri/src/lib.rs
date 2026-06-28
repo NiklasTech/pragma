@@ -4,6 +4,7 @@ pub mod modules;
 pub mod window;
 
 use ai::acp::AcpSessionManager;
+use modules::lsp::LspManager;
 use modules::pty::PtyManager;
 use modules::run::RunManager;
 use tauri::Manager;
@@ -46,6 +47,7 @@ pub fn run() {
             }
 
             app.manage(AcpSessionManager::new(app.handle().clone()));
+            app.manage(LspManager::managed(app.handle().clone()));
 
             Ok(())
         })
@@ -91,6 +93,9 @@ pub fn run() {
             modules::git::commands::git_stash_list,
             modules::git::commands::git_smart_checkout,
             modules::local_history::commands::local_history_entries,
+            modules::lsp::lsp_did_open,
+            modules::lsp::lsp_did_change,
+            modules::lsp::lsp_did_save,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
             modules::mcp::mcp_list_servers,
