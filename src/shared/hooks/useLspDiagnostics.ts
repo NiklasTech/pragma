@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useProblemsStore, type ProblemSeverity } from "@/shared/stores/problems";
+import { useEditorStore } from "@/shared/stores/editor";
 
 interface LspPosition {
   line: number;
@@ -34,6 +35,11 @@ const SEVERITY_MAP: Record<number, ProblemSeverity> = {
 };
 
 export function useLspDiagnostics() {
+  const tabs = useEditorStore((state) => state.tabs);
+  const openPaths = useMemo(
+    () => new Set(tabs.filter((t) => t.kind === "file").map((t) => t.path)),
+    [tabs],
+  );
   const setFileDiagnostics = useProblemsStore((state) => state.setFileDiagnostics);
 
   useEffect(() => {
@@ -42,6 +48,10 @@ export function useLspDiagnostics() {
     const setup = async () => {
       unlisten = await listen<LspDiagnosticsEvent>("lsp_diagnostics", (event) => {
         const { file_path, diagnostics } = event.payload;
+        if (!openPaths.has(file_path)) {
+          return;
+        }
+
         const problems = diagnostics.map((diagnostic) => ({
           id: `${file_path}:${diagnostic.range.start.line}:${diagnostic.range.start.character}:${diagnostic.message}`,
           severity: SEVERITY_MAP[diagnostic.severity ?? 1] ?? "error",
@@ -64,5 +74,5 @@ export function useLspDiagnostics() {
         unlisten();
       }
     };
-  }, [setFileDiagnostics]);
+  }, [openPaths, setFileDiagnostics]);
 }
