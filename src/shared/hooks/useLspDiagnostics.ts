@@ -18,7 +18,19 @@ interface LspDiagnostic {
   severity?: number;
   code?: string | number;
   source?: string;
+  tags?: number[];
   message: string;
+}
+
+const UNNECESSARY_TAG = 1;
+const DEPRECATED_TAG = 2;
+
+function hasUnnecessaryTag(diagnostic: LspDiagnostic): boolean {
+  return (diagnostic.tags ?? []).includes(UNNECESSARY_TAG);
+}
+
+function hasDeprecatedTag(diagnostic: LspDiagnostic): boolean {
+  return (diagnostic.tags ?? []).includes(DEPRECATED_TAG);
 }
 
 interface LspDiagnosticsEvent {
@@ -52,17 +64,36 @@ export function useLspDiagnostics() {
           return;
         }
 
-        const problems = diagnostics.map((diagnostic) => ({
-          id: `${file_path}:${diagnostic.range.start.line}:${diagnostic.range.start.character}:${diagnostic.message}`,
-          severity: SEVERITY_MAP[diagnostic.severity ?? 1] ?? "error",
-          message: diagnostic.message,
-          filePath: file_path,
-          line: diagnostic.range.start.line + 1,
-          column: diagnostic.range.start.character + 1,
-          endLine: diagnostic.range.end.line + 1,
-          endColumn: diagnostic.range.end.character + 1,
-          source: diagnostic.source ?? "LSP",
-        }));
+        const hasRealError = diagnostics.some(
+          (d) => (d.severity ?? 1) === 1 && !hasUnnecessaryTag(d),
+        );
+
+        const problems = diagnostics
+          .filter((diagnostic) => {
+            if (hasDeprecatedTag(diagnostic)) {
+              return false;
+            }
+            if (hasUnnecessaryTag(diagnostic) && hasRealError) {
+              return false;
+            }
+            return true;
+          })
+          .map((diagnostic) => {
+            const baseSeverity = SEVERITY_MAP[diagnostic.severity ?? 1] ?? "error";
+            const severity: ProblemSeverity = hasUnnecessaryTag(diagnostic) ? "info" : baseSeverity;
+
+            return {
+              id: `${file_path}:${diagnostic.range.start.line}:${diagnostic.range.start.character}:${diagnostic.message}`,
+              severity,
+              message: diagnostic.message,
+              filePath: file_path,
+              line: diagnostic.range.start.line + 1,
+              column: diagnostic.range.start.character + 1,
+              endLine: diagnostic.range.end.line + 1,
+              endColumn: diagnostic.range.end.character + 1,
+              source: diagnostic.source ?? "LSP",
+            };
+          });
         setFileDiagnostics(file_path, problems);
       });
     };

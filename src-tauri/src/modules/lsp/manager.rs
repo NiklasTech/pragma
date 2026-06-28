@@ -105,10 +105,18 @@ impl LspManager {
                     );
                     map.insert(
                         "publishDiagnostics".to_string(),
-                        serde_json::json!({ "dynamicRegistration": false }),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "relatedInformation": true,
+                            "tagSupport": { "valueSet": [1, 2] },
+                            "versionSupport": true,
+                            "codeDescriptionSupport": true,
+                            "dataSupport": true,
+                        }),
                     );
                     map
                 }),
+                workspace: None,
             },
         };
 
@@ -201,7 +209,7 @@ impl LspManager {
         let params = DidOpenTextDocumentParams {
             text_document: TextDocumentItem {
                 uri,
-                language_id: language.to_string(),
+                language_id: language_id_for_path(file_path, language),
                 version: 1,
                 text: content.to_string(),
             },
@@ -438,4 +446,32 @@ fn path_to_uri(path: &str) -> String {
 
 fn uri_to_path(uri: &str) -> String {
     uri.strip_prefix("file://").unwrap_or(uri).to_string()
+}
+
+fn language_id_for_path(file_path: &str, language: &str) -> String {
+    if language != "typescript" && language != "javascript" {
+        return language.to_string();
+    }
+
+    let lower = file_path.to_lowercase();
+    if lower.ends_with(".tsx") {
+        return "typescriptreact".to_string();
+    }
+    if lower.ends_with(".jsx") {
+        return "javascriptreact".to_string();
+    }
+    if lower.ends_with(".mts") {
+        return "typescript".to_string();
+    }
+    if lower.ends_with(".cts") {
+        return "typescript".to_string();
+    }
+    if lower.ends_with(".mjs") {
+        return "javascript".to_string();
+    }
+    if lower.ends_with(".cjs") {
+        return "javascript".to_string();
+    }
+
+    language.to_string()
 }
