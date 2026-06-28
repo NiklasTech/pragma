@@ -53,14 +53,18 @@ export function EditorStatusbar({
   fileType,
   filePath,
 }: EditorStatusbarProps) {
-  const counts = useProblemsStore((state) => {
+  const errorCount = useProblemsStore((state) => {
     const problems = filePath
       ? state.problems.filter((p) => p.filePath === filePath)
       : state.problems;
-    return {
-      errors: problems.filter((p) => p.severity === "error").length,
-      warnings: problems.filter((p) => p.severity === "warning").length,
-    };
+    return problems.filter((p) => p.severity === "error").length;
+  });
+
+  const warningCount = useProblemsStore((state) => {
+    const problems = filePath
+      ? state.problems.filter((p) => p.filePath === filePath)
+      : state.problems;
+    return problems.filter((p) => p.severity === "warning").length;
   });
 
   return (
@@ -71,18 +75,18 @@ export function EditorStatusbar({
             {vimMode.toUpperCase()}
           </span>
         )}
-        {(counts.errors > 0 || counts.warnings > 0) && (
+        {(errorCount > 0 || warningCount > 0) && (
           <div className="flex items-center gap-2">
-            {counts.errors > 0 && (
+            {errorCount > 0 && (
               <span className="flex items-center gap-1 text-status-error">
                 <WarningCircle size={14} />
-                {counts.errors}
+                {errorCount}
               </span>
             )}
-            {counts.warnings > 0 && (
+            {warningCount > 0 && (
               <span className="flex items-center gap-1 text-status-warning">
                 <Warning size={14} />
-                {counts.warnings}
+                {warningCount}
               </span>
             )}
           </div>
