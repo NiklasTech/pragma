@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
 import { Compartment, EditorState, StateEffect, type Extension } from "@codemirror/state";
 import { useLspDiagnostics } from "@/shared/hooks/useLspDiagnostics";
@@ -55,8 +55,10 @@ function FileEditor({
   useLspStatus();
   useLspDocumentSync(language, filePath, content, isModified);
 
-  const diagnostics = useProblemsStore((state) =>
-    state.problems.filter((p) => p.filePath === filePath),
+  const problems = useProblemsStore((state) => state.problems);
+  const diagnostics = useMemo(
+    () => problems.filter((p) => p.filePath === filePath),
+    [problems, filePath],
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
