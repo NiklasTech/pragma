@@ -9,6 +9,8 @@ export interface Problem {
   filePath: string;
   line: number;
   column: number;
+  endLine?: number;
+  endColumn?: number;
   source: string;
 }
 

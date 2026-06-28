@@ -64,6 +64,38 @@ const pragmaDarkBase = EditorView.theme({
   ".cm-lineNumbers": {
     color: "var(--editor-gutter-fg)",
   },
+  ".cm-tooltip": {
+    backgroundColor: "var(--bg-surface)",
+    border: "1px solid var(--border-default)",
+    borderRadius: "6px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.25)",
+    color: "var(--fg-default)",
+  },
+  ".cm-tooltip-lint": {
+    backgroundColor: "var(--bg-surface)",
+    color: "var(--fg-default)",
+  },
+  ".cm-diagnostic": {
+    color: "var(--fg-default)",
+  },
+  ".cm-diagnostic-error": {
+    borderLeft: "3px solid var(--status-error)",
+  },
+  ".cm-diagnostic-warning": {
+    borderLeft: "3px solid var(--status-warning)",
+  },
+  ".cm-diagnostic-info": {
+    borderLeft: "3px solid var(--status-info)",
+  },
+  ".cm-lintRange-error": {
+    backgroundColor: "color-mix(in srgb, var(--status-error) 15%, transparent)",
+  },
+  ".cm-lintRange-warning": {
+    backgroundColor: "color-mix(in srgb, var(--status-warning) 15%, transparent)",
+  },
+  ".cm-lintRange-info": {
+    backgroundColor: "color-mix(in srgb, var(--status-info) 15%, transparent)",
+  },
 });
 
 const pragmaDarkHighlight = HighlightStyle.define([

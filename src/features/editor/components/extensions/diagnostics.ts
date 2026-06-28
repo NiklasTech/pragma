@@ -11,14 +11,27 @@ const SEVERITY_MAP: Record<ProblemSeverity, "error" | "warning" | "info"> = {
 export function createLinter(diagnostics: Problem[]) {
   return linter((view: EditorView) => {
     return diagnostics.map((diagnostic): CodeMirrorDiagnostic => {
-      const lineNumber = Math.max(1, Math.min(diagnostic.line, view.state.doc.lines));
-      const line = view.state.doc.line(lineNumber);
-      const column = Math.max(1, Math.min(diagnostic.column, line.length + 1));
-      const from = line.from + column - 1;
+      const startLineNumber = Math.max(1, Math.min(diagnostic.line, view.state.doc.lines));
+      const startLine = view.state.doc.line(startLineNumber);
+      const startColumn = Math.max(1, Math.min(diagnostic.column, startLine.length + 1));
+      const from = startLine.from + startColumn - 1;
+
+      const endLineNumber = Math.max(
+        startLineNumber,
+        Math.min(diagnostic.endLine ?? diagnostic.line, view.state.doc.lines),
+      );
+      const endLine = view.state.doc.line(endLineNumber);
+      const endColumn = diagnostic.endColumn
+        ? Math.max(1, Math.min(diagnostic.endColumn, endLine.length + 1))
+        : Math.min(startColumn + 1, endLine.length + 1);
+      const to =
+        endLineNumber === startLineNumber
+          ? Math.max(from, endLine.from + endColumn - 1)
+          : endLine.from + endColumn - 1;
 
       return {
         from,
-        to: from,
+        to,
         message: diagnostic.message,
         severity: SEVERITY_MAP[diagnostic.severity],
       };

@@ -49,6 +49,8 @@ export function useLspDiagnostics() {
           filePath: file_path,
           line: diagnostic.range.start.line + 1,
           column: diagnostic.range.start.character + 1,
+          endLine: diagnostic.range.end.line + 1,
+          endColumn: diagnostic.range.end.character + 1,
           source: diagnostic.source ?? "LSP",
         }));
         setFileDiagnostics(file_path, problems);
