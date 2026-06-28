@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Warning, WarningCircle, Info, ArrowsClockwise, FileText } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { useProblemsStore, type ProblemSeverity } from "@/shared/stores/problems";
@@ -17,6 +18,12 @@ export default function ProblemsPanel() {
   const { problems, isLoading, refreshProblems } = useProblemsStore();
   const { tabs, openFile, setActiveTab, setPanelActiveTab, goToPosition } = useEditorStore();
   const editorPanelId = useEditorPanelId();
+
+  const openPaths = useMemo(() => new Set(tabs.map((t) => t.path)), [tabs]);
+  const visibleProblems = useMemo(
+    () => problems.filter((p) => openPaths.has(p.filePath)),
+    [problems, openPaths],
+  );
 
   const handleClick = (filePath: string, line: number, column: number) => {
     const existing = tabs.find((t) => t.path === filePath);
@@ -50,9 +57,9 @@ export default function ProblemsPanel() {
       <div className="flex h-tab shrink-0 items-center justify-between border-b border-border bg-bg-surface px-3">
         <span className="text-ui-xs font-medium text-fg-default">
           Problems
-          {problems.length > 0 && (
+          {visibleProblems.length > 0 && (
             <span className="ml-2 rounded-full bg-bg-hover px-1.5 py-0.5 text-ui-2xs text-fg-muted">
-              {problems.length}
+              {visibleProblems.length}
             </span>
           )}
         </span>
@@ -67,14 +74,14 @@ export default function ProblemsPanel() {
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
-        {problems.length === 0 ? (
+        {visibleProblems.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-ui-sm text-fg-muted">
             <Info size={28} className="text-fg-subtle" />
             <span>No problems detected.</span>
           </div>
         ) : (
           <ul className="divide-y divide-border-subtle">
-            {problems.map((problem) => {
+            {visibleProblems.map((problem) => {
               const config = severityConfig[problem.severity];
               const Icon = config.icon;
               return (
