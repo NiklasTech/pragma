@@ -3,6 +3,7 @@ pub mod env_loader;
 pub mod fs;
 pub mod git;
 pub mod local_history;
+pub mod lsp;
 pub mod mcp;
 pub mod pty;
 pub mod run;

@@ -10,6 +10,7 @@ import { Onboarding } from "@/components/onboarding/Onboarding";
 import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindowManager";
 import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
+import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 
@@ -19,6 +20,7 @@ export default function App() {
   useExternalWindowManager();
   useDisableBrowserBehaviors();
   useWorkspaceRestore();
+  useDiagnosticsCleanup();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useAppShortcutActions();
