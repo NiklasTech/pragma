@@ -37,6 +37,7 @@ import {
   ArrowCounterClockwise,
   DownloadSimple,
   UploadSimple,
+  BracketsAngle,
 } from "@phosphor-icons/react";
 import { AISettings } from "./AISettings";
 import { EditorSettings } from "./EditorSettings";
@@ -47,6 +48,7 @@ import { GitSettings } from "./GitSettings";
 import { LayoutSettings } from "./LayoutSettings";
 import { KeyboardSettings } from "./KeyboardSettings";
 import { AboutSettings } from "./AboutSettings";
+import { LspSettings } from "./LspSettings";
 import { exportSettings, importSettings } from "./settings-io";
 
 type Category =
@@ -58,6 +60,7 @@ type Category =
   | "git"
   | "layout"
   | "keyboard"
+  | "languages"
   | "about";
 
 interface CategoryDef {
@@ -73,6 +76,7 @@ const CATEGORIES: CategoryDef[] = [
   { id: "theme", label: "Theme", icon: Palette },
   { id: "mcp", label: "MCP", icon: PlugsConnected },
   { id: "git", label: "Git", icon: GitBranch },
+  { id: "languages", label: "Languages", icon: BracketsAngle },
   { id: "layout", label: "Layout", icon: Layout },
   { id: "keyboard", label: "Keyboard", icon: Keyboard },
   { id: "about", label: "About", icon: Info },
@@ -207,6 +211,12 @@ const SEARCH_ITEMS: SearchItem[] = [
     label: "MCP Servers",
     keywords: "mcp servers model context protocol",
     category: "mcp",
+  },
+  {
+    id: "lsp-servers",
+    label: "Language Servers",
+    keywords: "lsp language server typescript rust python go java c cpp html css",
+    category: "languages",
   },
   {
     id: "git-user-name",
@@ -442,6 +452,7 @@ export function Settings() {
                   {activeCategory === "git" && <GitSettings />}
                   {activeCategory === "layout" && <LayoutSettings />}
                   {activeCategory === "keyboard" && <KeyboardSettings />}
+                  {activeCategory === "languages" && <LspSettings />}
                   {activeCategory === "about" && <AboutSettings />}
                 </div>
               </div>

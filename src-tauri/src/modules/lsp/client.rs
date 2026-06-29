@@ -1,3 +1,4 @@
+use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::types::{
     InitializeParams, InitializeResult, InitializedParams, LspServerConfig,
 };
@@ -156,7 +157,8 @@ impl LspClient {
         cmd.args(&config.args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            .env("PATH", enriched_path());
 
         let mut child = cmd.spawn()?;
         let stdin = child.stdin.take().ok_or(LspError::MissingStdio)?;

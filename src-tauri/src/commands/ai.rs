@@ -121,15 +121,6 @@ pub async fn ai_store_key(req: StoreKeyRequest) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn ai_get_key(req: ProviderRequest) -> Result<Option<String>, String> {
-    if req.provider.is_empty() {
-        return Err("provider is required".to_string());
-    }
-
-    keychain::get_api_key(&req.provider).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
 pub async fn ai_key_status(req: ProviderRequest) -> Result<KeyStatus, String> {
     if req.provider.is_empty() {
         return Err("provider is required".to_string());

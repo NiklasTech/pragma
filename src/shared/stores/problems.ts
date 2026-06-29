@@ -22,6 +22,7 @@ interface ProblemsState {
 
 interface ProblemsActions {
   setProblems: (problems: Problem[]) => void;
+  setPragmaDiagnostics: (diagnostics: Problem[]) => void;
   setFileDiagnostics: (filePath: string, diagnostics: Problem[]) => void;
   clearFileDiagnostics: (filePath: string) => void;
   clearProblems: () => void;
@@ -39,9 +40,15 @@ export const useProblemsStore = create<ProblemsState & ProblemsActions>((set, ge
 
   setProblems: (problems) => set({ problems, error: null }),
 
+  setPragmaDiagnostics: (diagnostics) =>
+    set((state) => {
+      const nonPragma = state.problems.filter((p) => p.source !== "pragma");
+      return { problems: [...nonPragma, ...diagnostics], error: null };
+    }),
+
   setFileDiagnostics: (filePath, diagnostics) =>
     set((state) => {
-      const others = state.problems.filter((p) => p.filePath !== filePath);
+      const others = state.problems.filter((p) => p.filePath !== filePath || p.source === "pragma");
       return { problems: [...others, ...diagnostics], error: null };
     }),
 

@@ -1,8 +1,24 @@
 use serde::Serialize;
 use std::fs;
-use std::path::Path;
+use std::path::{Component, Path};
 
 use super::local_history;
+
+fn validate_path(path: &str) -> Result<&Path, String> {
+    let parsed = Path::new(path);
+
+    if !parsed.is_absolute() {
+        return Err("Path must be absolute".to_string());
+    }
+
+    for component in parsed.components() {
+        if matches!(component, Component::ParentDir) {
+            return Err("Path traversal is not allowed".to_string());
+        }
+    }
+
+    Ok(parsed)
+}
 
 #[derive(Serialize)]
 pub struct FileReadResult {
@@ -24,7 +40,7 @@ const LARGE_FILE_THRESHOLD_BYTES: u64 = 1024 * 1024;
 
 #[tauri::command]
 pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
     if !path_ref.exists() {
         return Err(format!("File not found: {}", path));
@@ -73,13 +89,9 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
 
 #[tauri::command]
 pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> Result<(), String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
-    if !path_ref.exists() {
-        return Err(format!("File not found: {}", path));
-    }
-
-    if !path_ref.is_file() {
+    if path_ref.exists() && !path_ref.is_file() {
         return Err(format!("Not a file: {}", path));
     }
 
@@ -96,7 +108,7 @@ pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> 
 
 #[tauri::command]
 pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
     if !path_ref.exists() {
         return Err(format!("Path not found: {}", path));
@@ -137,7 +149,7 @@ pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
 
 #[tauri::command]
 pub fn list_directory_recursive(path: String) -> Result<Vec<DirEntry>, String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
     if !path_ref.exists() {
         return Err(format!("Path not found: {}", path));
@@ -202,7 +214,7 @@ fn collect_entries_recursive(
 
 #[tauri::command]
 pub fn create_file(path: String) -> Result<(), String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
     if path_ref.exists() {
         return Err(format!("Already exists: {}", path));
@@ -213,7 +225,7 @@ pub fn create_file(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn create_directory(path: String) -> Result<(), String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
     if path_ref.exists() {
         return Err(format!("Already exists: {}", path));
@@ -224,8 +236,8 @@ pub fn create_directory(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
-    let old_ref = Path::new(&old_path);
-    let new_ref = Path::new(&new_path);
+    let old_ref = validate_path(&old_path)?;
+    let new_ref = validate_path(&new_path)?;
 
     if !old_ref.exists() {
         return Err(format!("Source not found: {}", old_path));
@@ -240,7 +252,7 @@ pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn delete_file(path: String) -> Result<(), String> {
-    let path_ref = Path::new(&path);
+    let path_ref = validate_path(&path)?;
 
     if !path_ref.exists() {
         return Err(format!("Not found: {}", path));

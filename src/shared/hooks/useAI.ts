@@ -12,6 +12,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import { useAIStore, type ChatMessage } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useSettingsStore } from "@/shared/stores/settings";
 import {
   buildContextUserMessage,
   parseMentions,
@@ -264,8 +265,9 @@ function createStreamTransport(
   tools: BackendToolDefinition[],
   rootPath: string,
   activeChatSessionId: string | null,
+  experimentalAcp: boolean,
 ): ChatTransport<UIMessage> {
-  const isAcpActive = activeCLIProvider === "moonshot-kimi";
+  const isAcpActive = activeCLIProvider === "moonshot-kimi" && experimentalAcp;
   return {
     async sendMessages({ messages, abortSignal }) {
       const chunkId = generateId();
@@ -498,6 +500,7 @@ export function useAI() {
   const providerConfig = providers[activeProvider];
   const hasAPIKey = apiKeyRefs[activeProvider] !== null;
   const isCLIActive = activeCLIProvider !== null;
+  const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
@@ -514,6 +517,7 @@ export function useAI() {
         isCLIActive ? [] : toolDefinitions,
         rootPath,
         activeChatSessionId,
+        experimentalAcp,
       ),
     [
       activeProvider,
@@ -524,6 +528,7 @@ export function useAI() {
       toolDefinitions,
       rootPath,
       activeChatSessionId,
+      experimentalAcp,
     ],
   );
 
@@ -550,7 +555,7 @@ export function useAI() {
       if (!chat) return;
 
       // Kimi ACP executes tools itself via reverse-RPC; the frontend only displays results.
-      if (activeCLIProvider === "moonshot-kimi") {
+      if (activeCLIProvider === "moonshot-kimi" && experimentalAcp) {
         return;
       }
 
@@ -603,7 +608,7 @@ export function useAI() {
         });
       }
     },
-    [resolveTool, activeCLIProvider],
+    [resolveTool, activeCLIProvider, experimentalAcp],
   );
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {

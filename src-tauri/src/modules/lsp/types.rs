@@ -5,6 +5,8 @@ use std::collections::HashMap;
 pub struct LspServerConfig {
     pub command: String,
     pub args: Vec<String>,
+    pub install_program: Option<String>,
+    pub install_args: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -23,6 +25,12 @@ pub struct LspStatusEvent {
     pub status: LspServerStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ProjectLanguage {
+    pub language: String,
+    pub percentage: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]

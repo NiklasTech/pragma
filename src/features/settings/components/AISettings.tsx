@@ -461,7 +461,32 @@ export function AISettings() {
         </div>
       </SettingSection>
 
-      <SettingSection title="Local CLI Integration">
+      <SettingSection
+        title="Local CLI Integration"
+        badge={{ label: "Experimental", variant: "warning" }}
+      >
+        <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
+          <div className="flex flex-col">
+            <span className="text-ui-sm font-medium text-fg-default">
+              Enable local CLI integration
+            </span>
+            <span className="text-ui-xs text-fg-muted">
+              Turn on experimental support for provider CLIs like Kimi Code.
+            </span>
+          </div>
+          <Switch
+            checked={settingsStore.experimental.acp}
+            onCheckedChange={(v) => settingsStore.setExperimentalEnabled("acp", v)}
+            aria-label="Enable experimental local CLI integration"
+          />
+        </div>
+
+        {!settingsStore.experimental.acp && (
+          <p className="mb-3 text-ui-xs text-status-warning">
+            Local CLI integration is currently disabled. Enable the toggle above to use it.
+          </p>
+        )}
+
         <div className="flex flex-col gap-3">
           <p className="text-ui-xs text-fg-muted">
             Pragma wraps official provider CLI tools that run locally on your machine. It does not

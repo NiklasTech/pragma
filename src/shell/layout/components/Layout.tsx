@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { PanelImperativeHandle } from "react-resizable-panels";
+import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -20,6 +20,11 @@ export function Layout() {
   const { sidebar, ai, root, setSidebarWidth } = useLayoutStore();
 
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
+  const sidebarSizeRef = useRef<number>(sidebar.width);
+
+  const handleSidebarResize = (size: PanelSize) => {
+    sidebarSizeRef.current = size.inPixels;
+  };
 
   const showSidebar = sidebar.position !== "hidden";
   const aiDrawerLeft = ai.mode === "drawer-left";
@@ -40,8 +45,8 @@ export function Layout() {
             orientation="horizontal"
             className="min-h-0 flex-1 overflow-hidden"
             onLayoutChanged={() => {
-              const size = sidebarRef.current?.getSize().inPixels;
-              if (size && size > 0) {
+              const size = sidebarSizeRef.current;
+              if (size > 0) {
                 setSidebarWidth(size);
               }
             }}
@@ -53,6 +58,7 @@ export function Layout() {
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
                   minSize={`${180}px`}
+                  onResize={handleSidebarResize}
                 >
                   <SidebarContent />
                 </ResizablePanel>
@@ -60,7 +66,7 @@ export function Layout() {
               </>
             )}
 
-            <ResizablePanel id="workspace" defaultSize="flex" minSize="20%">
+            <ResizablePanel id="workspace" minSize="20%">
               <LayoutTreeRenderer node={root} />
             </ResizablePanel>
 
@@ -72,6 +78,7 @@ export function Layout() {
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
                   minSize={`${180}px`}
+                  onResize={handleSidebarResize}
                 >
                   <SidebarContent />
                 </ResizablePanel>
