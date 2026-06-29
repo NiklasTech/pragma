@@ -266,87 +266,89 @@ impl LspManager {
     }
 
     pub async fn check_server_installed(language: &str) -> Result<bool, String> {
-    let config = server_config_for_language(language)
-        .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
+        let config = server_config_for_language(language)
+            .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
 
-    let output = tokio::process::Command::new(&config.command)
-        .arg("--version")
-        .env("PATH", enriched_path())
-        .output()
-        .await;
+        let output = tokio::process::Command::new(&config.command)
+            .arg("--version")
+            .env("PATH", enriched_path())
+            .output()
+            .await;
 
-    match output {
-        Ok(out) if out.status.success() => Ok(true),
-        _ => Ok(false),
-    }
-}
-
-pub async fn install_server(language: &str) -> Result<String, String> {
-    let config = server_config_for_language(language)
-        .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
-
-    let program = config
-        .install_program
-        .ok_or_else(|| format!("Automatic installation is not supported for '{language}'"))?;
-
-    if config.install_args.is_empty() {
-        return Err(format!("No install arguments configured for '{language}'"));
+        match output {
+            Ok(out) if out.status.success() => Ok(true),
+            _ => Ok(false),
+        }
     }
 
-    let output = tokio::process::Command::new(&program)
-        .args(&config.install_args)
-        .env("PATH", enriched_path())
-        .output()
-        .await
-        .map_err(|e| format!("Failed to run installer: {e}"))?;
+    pub async fn install_server(language: &str) -> Result<String, String> {
+        let config = server_config_for_language(language)
+            .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        let program = config
+            .install_program
+            .ok_or_else(|| format!("Automatic installation is not supported for '{language}'"))?;
 
-    if output.status.success() {
-        Ok(if stdout.is_empty() { stderr } else { stdout })
-    } else {
-        let message = if stderr.is_empty() { stdout } else { stderr };
-        Err(format!(
-            "Installation failed with exit code {}: {message}",
-            output.status.code().unwrap_or(-1)
-        ))
-    }
-}
+        if config.install_args.is_empty() {
+            return Err(format!("No install arguments configured for '{language}'"));
+        }
 
-pub async fn detect_project_languages(project_root: &str) -> Result<Vec<ProjectLanguage>, String> {
-    let root = Path::new(project_root);
-    if !root.is_dir() {
-        return Err(format!("'{project_root}' is not a directory"));
-    }
+        let output = tokio::process::Command::new(&program)
+            .args(&config.install_args)
+            .env("PATH", enriched_path())
+            .output()
+            .await
+            .map_err(|e| format!("Failed to run installer: {e}"))?;
 
-    let mut counts: HashMap<String, usize> = HashMap::new();
-    let mut total = 0usize;
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
-    visit_project_files(root, &mut counts, &mut total, 0)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if total == 0 {
-        return Ok(Vec::new());
+        if output.status.success() {
+            Ok(if stdout.is_empty() { stderr } else { stdout })
+        } else {
+            let message = if stderr.is_empty() { stdout } else { stderr };
+            Err(format!(
+                "Installation failed with exit code {}: {message}",
+                output.status.code().unwrap_or(-1)
+            ))
+        }
     }
 
-    let mut languages: Vec<ProjectLanguage> = counts
-        .into_iter()
-        .map(|(language, count)| ProjectLanguage {
-            language,
-            percentage: (count as f64 / total as f64) * 100.0,
-        })
-        .collect();
+    pub async fn detect_project_languages(
+        project_root: &str,
+    ) -> Result<Vec<ProjectLanguage>, String> {
+        let root = Path::new(project_root);
+        if !root.is_dir() {
+            return Err(format!("'{project_root}' is not a directory"));
+        }
 
-    languages.sort_by(|a, b| {
-        b.percentage
-            .partial_cmp(&a.percentage)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+        let mut counts: HashMap<String, usize> = HashMap::new();
+        let mut total = 0usize;
 
-    Ok(languages)
-}
+        visit_project_files(root, &mut counts, &mut total, 0)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        if total == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut languages: Vec<ProjectLanguage> = counts
+            .into_iter()
+            .map(|(language, count)| ProjectLanguage {
+                language,
+                percentage: (count as f64 / total as f64) * 100.0,
+            })
+            .collect();
+
+        languages.sort_by(|a, b| {
+            b.percentage
+                .partial_cmp(&a.percentage)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        Ok(languages)
+    }
 
     pub async fn stop_server(
         &self,
@@ -535,7 +537,10 @@ pub async fn detect_project_languages(project_root: &str) -> Result<Vec<ProjectL
         mut rx: tokio::sync::mpsc::UnboundedReceiver<Notification>,
     ) {
         while let Some(notification) = rx.recv().await {
-            log::info!("LSP notification: language={language}, method={}", notification.method);
+            log::info!(
+                "LSP notification: language={language}, method={}",
+                notification.method
+            );
             if notification.method == "textDocument/publishDiagnostics" {
                 if let Some(params) = notification.params {
                     match serde_json::from_value::<PublishDiagnosticsParams>(params) {
@@ -594,12 +599,15 @@ pub async fn detect_project_languages(project_root: &str) -> Result<Vec<ProjectL
 }
 
 fn server_config_for_language(language: &str) -> Option<LspServerConfig> {
-    SERVERS.iter().find(|s| s.language == language).map(|s| LspServerConfig {
-        command: s.command.to_string(),
-        args: s.args.iter().map(|a| a.to_string()).collect(),
-        install_program: s.install_program.map(|p| p.to_string()),
-        install_args: s.install_args.iter().map(|a| a.to_string()).collect(),
-    })
+    SERVERS
+        .iter()
+        .find(|s| s.language == language)
+        .map(|s| LspServerConfig {
+            command: s.command.to_string(),
+            args: s.args.iter().map(|a| a.to_string()).collect(),
+            install_program: s.install_program.map(|p| p.to_string()),
+            install_args: s.install_args.iter().map(|a| a.to_string()).collect(),
+        })
 }
 
 pub fn resolve_project_root(language: &str, file_path: &str) -> Option<String> {
