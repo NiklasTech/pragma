@@ -4,6 +4,7 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 
 export function useTerminalSettingsSync() {
   const terminalSettings = useSettingsStore((s) => s.terminal);
+  const shellResolved = useTerminalStore((s) => s.shellResolved);
   const setDefaultShell = useTerminalStore((s) => s.setDefaultShell);
   const setFontSize = useTerminalStore((s) => s.setFontSize);
   const setFontFamily = useTerminalStore((s) => s.setFontFamily);
@@ -11,7 +12,9 @@ export function useTerminalSettingsSync() {
   const setAiSuggestions = useTerminalStore((s) => s.setAiSuggestions);
 
   useEffect(() => {
-    setDefaultShell(terminalSettings.shell);
+    if (shellResolved) {
+      setDefaultShell(terminalSettings.shell);
+    }
     setFontSize(terminalSettings.fontSize);
     setFontFamily(terminalSettings.fontFamily);
     setScrollback(terminalSettings.scrollback);
@@ -22,6 +25,7 @@ export function useTerminalSettingsSync() {
     terminalSettings.fontFamily,
     terminalSettings.scrollback,
     terminalSettings.aiSuggestions,
+    shellResolved,
     setDefaultShell,
     setFontSize,
     setFontFamily,

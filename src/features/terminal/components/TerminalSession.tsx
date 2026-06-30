@@ -49,6 +49,10 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function setup() {
+      if (session.ptyId) {
+        ptyIdRef.current = session.ptyId;
+      }
+
       if (!containerRef.current) return;
 
       // Don't block shell spawn on font loading; cap the initial wait at 300ms.
@@ -60,7 +64,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
       const t = new XTerm({
         fontSize,
-        fontFamily,
+        fontFamily: `${fontFamily}, Consolas, Courier New, monospace`,
         cursorBlink: true,
         cursorStyle: "block",
         convertEol: true,
@@ -94,9 +98,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         }
       });
 
-      if (session.ptyId) {
-        ptyIdRef.current = session.ptyId;
-      } else {
+      if (!session.ptyId) {
         const { cols, rows } = t;
         try {
           let ptyId: string;

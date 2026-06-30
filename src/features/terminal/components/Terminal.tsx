@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync";
@@ -8,14 +8,10 @@ import { TerminalTabs } from "./TerminalTabs";
 export function Terminal() {
   useTerminalSettingsSync();
   const { sessions, activeSessionId, defaultShell, addSession } = useTerminalStore();
-  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    if (sessions.length === 0) {
-      void addSession({
+    if (sessions.length === 0 && defaultShell.length > 0) {
+      addSession({
         id: crypto.randomUUID(),
         name: "Terminal",
         type: "shell",

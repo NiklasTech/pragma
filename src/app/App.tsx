@@ -11,6 +11,7 @@ import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindow
 import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
+import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 
@@ -21,6 +22,7 @@ export default function App() {
   useDisableBrowserBehaviors();
   useWorkspaceRestore();
   useDiagnosticsCleanup();
+  useTerminalShellResolver();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useAppShortcutActions();

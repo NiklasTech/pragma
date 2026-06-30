@@ -62,6 +62,7 @@ pub fn run() {
             modules::fs::delete_file,
             modules::pty::create_pty,
             modules::pty::create_pty_command,
+            modules::pty::resolve_terminal_shell,
             modules::pty::write_pty,
             modules::pty::resize_pty,
             modules::pty::kill_pty,
