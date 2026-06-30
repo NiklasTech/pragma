@@ -33,7 +33,7 @@ export function useAppShortcutActions(): ShortcutActions {
         if (layout.terminal.mode === "hidden") {
           layout.toggleTerminal();
         }
-        void useTerminalStore.getState().addSession({
+        useTerminalStore.getState().addSession({
           id: crypto.randomUUID(),
           name: "Shell",
           type: "shell",

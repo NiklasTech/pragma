@@ -191,7 +191,7 @@ const defaultSettings: SettingsState = {
     stickyLines: false,
   },
   terminal: {
-    shell: "/bin/zsh",
+    shell: "",
     fontSize: 13,
     fontFamily: "JetBrains Mono",
     aiSuggestions: true,

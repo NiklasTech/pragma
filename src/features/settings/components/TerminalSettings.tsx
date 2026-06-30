@@ -33,7 +33,7 @@ export function TerminalSettings() {
             <Input
               value={terminal.shell}
               onChange={(e) => update({ shell: e.target.value })}
-              placeholder="/bin/zsh"
+              placeholder="System default"
               className="max-w-[180px]"
             />
           }

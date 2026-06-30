@@ -19,6 +19,7 @@ interface TerminalState {
   sessions: TerminalSession[];
   activeSessionId: string | null;
   defaultShell: string;
+  shellResolved: boolean;
   fontSize: number;
   fontFamily: string;
   scrollback: number;
@@ -26,11 +27,12 @@ interface TerminalState {
 }
 
 interface TerminalActions {
-  addSession: (session: Omit<TerminalSession, "ptyId">) => Promise<void>;
+  addSession: (session: Omit<TerminalSession, "ptyId">) => void;
   removeSession: (sessionId: string) => void;
   killSession: (sessionId: string) => Promise<void>;
   killAllSessions: () => Promise<void>;
   attachPty: (sessionId: string, ptyId: string) => void;
+  setShellResolved: (resolved: boolean) => void;
   setActiveSession: (sessionId: string) => void;
   updateSessionCwd: (sessionId: string, cwd: string) => void;
   renameSession: (sessionId: string, name: string) => void;
@@ -45,43 +47,19 @@ const initialState: TerminalState = {
   sessions: [],
   activeSessionId: null,
   defaultShell: "",
+  shellResolved: false,
   fontSize: 13,
   fontFamily: "JetBrains Mono",
   scrollback: 10000,
   aiSuggestions: true,
 };
 
-async function createPtyForSession(
-  session: Omit<TerminalSession, "ptyId">,
-): Promise<string | undefined> {
-  try {
-    if (session.type !== "shell" && session.command) {
-      return await invoke<string>("create_pty_command", {
-        command: session.command,
-        cwd: session.cwd ?? null,
-        cols: 80,
-        rows: 24,
-      });
-    }
-
-    const shell = session.shell?.trim().length ? session.shell : undefined;
-    return await invoke<string>("create_pty", {
-      shell,
-      cols: 80,
-      rows: 24,
-    });
-  } catch {
-    return undefined;
-  }
-}
-
 export const useTerminalStore = create<TerminalState & TerminalActions>(
   crossWindowSync<TerminalState & TerminalActions>("terminal")((set, get) => ({
     ...initialState,
 
-    addSession: async (session) => {
-      const ptyId = await createPtyForSession(session);
-      const nextSession: TerminalSession = { ...session, ptyId };
+    addSession: (session) => {
+      const nextSession: TerminalSession = { ...session };
       set({
         sessions: [...get().sessions, nextSession],
         activeSessionId: nextSession.id,
@@ -143,6 +121,8 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
       });
     },
 
+    setShellResolved: (resolved) => set({ shellResolved: resolved }),
+
     setActiveSession: (sessionId) => {
       set({
         activeSessionId: sessionId,
@@ -167,7 +147,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
       });
     },
 
-    setDefaultShell: (shell) => set({ defaultShell: shell }),
+    setDefaultShell: (shell) => set({ defaultShell: shell, shellResolved: true }),
     setFontSize: (size) => set({ fontSize: size }),
     setFontFamily: (family) => set({ fontFamily: family }),
     setScrollback: (lines) => set({ scrollback: lines }),

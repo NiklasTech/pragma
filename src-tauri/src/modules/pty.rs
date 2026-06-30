@@ -74,12 +74,12 @@ fn windows_shell_path() -> PathBuf {
 }
 
 #[cfg(windows)]
-fn default_shell() -> String {
+pub fn default_shell() -> String {
     windows_shell_path().to_string_lossy().into_owned()
 }
 
 #[cfg(not(windows))]
-fn default_shell() -> String {
+pub fn default_shell() -> String {
     std::env::var("SHELL")
         .ok()
         .filter(|s| !s.is_empty())
@@ -96,8 +96,12 @@ fn resolve_shell(shell: Option<String>) -> String {
 
 fn build_command(shell: &str) -> CommandBuilder {
     let mut cmd = CommandBuilder::new(shell);
-    cmd.env("TERM", "xterm-256color");
-    cmd.env("COLORTERM", "truecolor");
+
+    #[cfg(not(windows))]
+    {
+        cmd.env("TERM", "xterm-256color");
+        cmd.env("COLORTERM", "truecolor");
+    }
 
     if let Ok(cwd) = std::env::current_dir() {
         cmd.cwd(cwd);
@@ -107,9 +111,22 @@ fn build_command(shell: &str) -> CommandBuilder {
     if shell_lower.ends_with("pwsh.exe") || shell_lower.ends_with("powershell.exe") {
         cmd.arg("-NoLogo");
         cmd.arg("-NoExit");
+        cmd.arg("-NoProfile");
     }
 
     cmd
+}
+
+#[tauri::command]
+pub fn resolve_terminal_shell(shell: Option<String>) -> Result<String, String> {
+    let shell = shell.filter(|s| !s.is_empty());
+    let resolved = resolve_shell(shell);
+
+    if std::path::Path::new(&resolved).is_file() {
+        return Ok(resolved);
+    }
+
+    Ok(default_shell())
 }
 
 #[tauri::command]
