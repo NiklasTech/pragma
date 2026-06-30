@@ -10,7 +10,7 @@ function buildId(filePath: string, line: number, code: string): string {
 
 export function useDiagnostics() {
   const { tabs } = useEditorStore();
-  const { setProblems } = useProblemsStore();
+  const { setPragmaDiagnostics } = useProblemsStore();
 
   useEffect(() => {
     const problems: Problem[] = [];
@@ -60,6 +60,6 @@ export function useDiagnostics() {
       });
     }
 
-    setProblems(problems);
-  }, [tabs, setProblems]);
+    setPragmaDiagnostics(problems);
+  }, [tabs, setPragmaDiagnostics]);
 }

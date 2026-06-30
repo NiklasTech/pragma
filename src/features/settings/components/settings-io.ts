@@ -1,6 +1,6 @@
 import { useSettingsStore } from "@/shared/stores/settings";
 import { save, open } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 
 export async function exportSettings(): Promise<void> {
   const state = useSettingsStore.getState();
@@ -29,7 +29,7 @@ export async function exportSettings(): Promise<void> {
 
   if (!path) return;
 
-  await writeTextFile(path, payload);
+  await invoke("write_text_file", { path, content: payload });
 }
 
 export async function importSettings(): Promise<void> {
@@ -40,7 +40,8 @@ export async function importSettings(): Promise<void> {
 
   if (!selected || Array.isArray(selected)) return;
 
-  const content = await readTextFile(selected);
+  const result = await invoke<{ content: string }>("read_text_file", { path: selected });
+  const content = result.content;
   const parsed = JSON.parse(content) as unknown;
 
   if (typeof parsed !== "object" || parsed === null) {

@@ -22,10 +22,7 @@
     "core:event:allow-unlisten",
     "core:event:allow-emit",
     "dialog:default",
-    "fs:allow-read-text-file",
-    "fs:allow-write-text-file",
     "shell:allow-open",
-    "shell:allow-execute",
     "store:default",
     "log:default"
   ]

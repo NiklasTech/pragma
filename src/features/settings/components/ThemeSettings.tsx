@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/shared/components/ui/button";
 import { useTheme, type ThemeMode, builtInThemeList } from "@/theme";
 import { validateTheme } from "@/theme/validateTheme";
@@ -49,7 +49,8 @@ export function ThemeSettings() {
 
     if (!selected || Array.isArray(selected)) return;
 
-    const content = await readTextFile(selected);
+    const fileResult = await invoke<{ content: string }>("read_text_file", { path: selected });
+    const content = fileResult.content;
     const parsed = JSON.parse(content) as unknown;
     const result = validateTheme(parsed as ThemeInput);
     if (!result.valid) {

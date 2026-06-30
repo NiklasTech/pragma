@@ -13,14 +13,21 @@ export function useLspDocumentSync(
   isModified: boolean,
 ) {
   const lspEnabled = useSettingsStore((state) => state.lsp.enabled[language ?? ""] ?? true);
+  const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const lastSentContentRef = useRef<string | null>(null);
   const openedRef = useRef<string | null>(null);
+  const savedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!lspEnabled || !language || !isLspSupported(language) || !filePath) {
+    if (!experimentalLsp || !lspEnabled || !language || !isLspSupported(language) || !filePath) {
       return;
     }
 
+    if (openedRef.current === filePath) {
+      return;
+    }
+
+    openedRef.current = filePath;
     let cancelled = false;
 
     const open = async () => {
@@ -31,7 +38,6 @@ export function useLspDocumentSync(
           content,
         });
         if (!cancelled) {
-          openedRef.current = filePath;
           lastSentContentRef.current = content;
         }
       } catch (err) {
@@ -46,10 +52,10 @@ export function useLspDocumentSync(
     return () => {
       cancelled = true;
     };
-  }, [language, filePath, lspEnabled]);
+  }, [language, filePath, lspEnabled, experimentalLsp]);
 
   useEffect(() => {
-    if (!lspEnabled || !language || !isLspSupported(language) || !filePath) {
+    if (!experimentalLsp || !lspEnabled || !language || !isLspSupported(language) || !filePath) {
       return;
     }
 
@@ -79,21 +85,33 @@ export function useLspDocumentSync(
     return () => {
       clearTimeout(timer);
     };
-  }, [language, filePath, content, lspEnabled]);
+  }, [language, filePath, content, lspEnabled, experimentalLsp]);
 
   useEffect(() => {
-    if (!lspEnabled || !language || !isLspSupported(language) || !filePath) {
+    if (!experimentalLsp || !lspEnabled || !language || !isLspSupported(language) || !filePath) {
       return;
     }
 
-    if (!isModified && openedRef.current === filePath) {
-      void (async () => {
-        try {
-          await invoke("lsp_did_save", { language, filePath });
-        } catch (err) {
-          console.error("LSP didSave failed:", err);
-        }
-      })();
+    if (isModified) {
+      savedRef.current = null;
+      return;
     }
-  }, [language, filePath, isModified, lspEnabled]);
+
+    if (savedRef.current === filePath) {
+      return;
+    }
+
+    if (openedRef.current !== filePath) {
+      return;
+    }
+
+    savedRef.current = filePath;
+    void (async () => {
+      try {
+        await invoke("lsp_did_save", { language, filePath });
+      } catch (err) {
+        console.error("LSP didSave failed:", err);
+      }
+    })();
+  }, [language, filePath, isModified, lspEnabled, experimentalLsp]);
 }

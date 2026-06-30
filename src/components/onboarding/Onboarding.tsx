@@ -8,6 +8,7 @@ import { ThemeStep } from "./steps/ThemeStep";
 import { AISetupStep } from "./steps/AISetupStep";
 import { ShortcutsStep } from "./steps/ShortcutsStep";
 import { ProjectStep } from "./steps/ProjectStep";
+import { LanguagesStep } from "./steps/LanguagesStep";
 
 const STEPS = [
   { id: "welcome", title: "Welcome" },
@@ -15,6 +16,7 @@ const STEPS = [
   { id: "ai", title: "AI" },
   { id: "shortcuts", title: "Shortcuts" },
   { id: "project", title: "Project" },
+  { id: "languages", title: "Languages" },
 ];
 
 export function Onboarding() {
@@ -74,6 +76,7 @@ export function Onboarding() {
           {currentStep === 2 && <AISetupStep onSkipStep={handleNext} />}
           {currentStep === 3 && <ShortcutsStep />}
           {currentStep === 4 && <ProjectStep onOpenFolder={handleOpenFolder} />}
+          {currentStep === 5 && <LanguagesStep />}
         </div>
 
         <div className="flex items-center justify-between border-t border-border/60 px-6 py-4">

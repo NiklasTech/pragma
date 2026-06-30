@@ -1,9 +1,11 @@
+use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::client::{LspClient, Notification};
 use crate::modules::lsp::types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
     DidSaveTextDocumentParams, InitializeParams, LspDiagnosticsEvent, LspServerConfig,
-    LspServerStatus, LspStatusEvent, PublishDiagnosticsParams, TextDocumentContentChangeEvent,
-    TextDocumentIdentifier, TextDocumentItem, VersionedTextDocumentIdentifier,
+    LspServerStatus, LspStatusEvent, ProjectLanguage, PublishDiagnosticsParams,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
+    VersionedTextDocumentIdentifier,
 };
 use std::collections::HashMap;
 use std::path::Path;
@@ -12,8 +14,86 @@ use tauri::{AppHandle, Emitter};
 use tokio::process::Child;
 use tokio::sync::{Mutex, RwLock};
 
-const SERVERS: &[(&str, &str, &[&str])] =
-    &[("typescript", "typescript-language-server", &["--stdio"])];
+struct ServerEntry {
+    language: &'static str,
+    command: &'static str,
+    args: &'static [&'static str],
+    install_program: Option<&'static str>,
+    install_args: &'static [&'static str],
+}
+
+const SERVERS: &[ServerEntry] = &[
+    ServerEntry {
+        language: "typescript",
+        command: "typescript-language-server",
+        args: &["--stdio"],
+        install_program: Some("npm"),
+        install_args: &["install", "-g", "typescript-language-server"],
+    },
+    ServerEntry {
+        language: "javascript",
+        command: "typescript-language-server",
+        args: &["--stdio"],
+        install_program: Some("npm"),
+        install_args: &["install", "-g", "typescript-language-server"],
+    },
+    ServerEntry {
+        language: "rust",
+        command: "rust-analyzer",
+        args: &[],
+        install_program: Some("rustup"),
+        install_args: &["component", "add", "rust-analyzer"],
+    },
+    ServerEntry {
+        language: "python",
+        command: "pylsp",
+        args: &[],
+        install_program: Some("pip"),
+        install_args: &["install", "python-lsp-server"],
+    },
+    ServerEntry {
+        language: "go",
+        command: "gopls",
+        args: &[],
+        install_program: Some("go"),
+        install_args: &["install", "golang.org/x/tools/gopls@latest"],
+    },
+    ServerEntry {
+        language: "java",
+        command: "jdtls",
+        args: &[],
+        install_program: Some("npm"),
+        install_args: &["install", "-g", "jdtls"],
+    },
+    ServerEntry {
+        language: "c",
+        command: "clangd",
+        args: &[],
+        install_program: None,
+        install_args: &[],
+    },
+    ServerEntry {
+        language: "cpp",
+        command: "clangd",
+        args: &[],
+        install_program: None,
+        install_args: &[],
+    },
+    ServerEntry {
+        language: "html",
+        command: "vscode-html-language-server",
+        args: &["--stdio"],
+        install_program: Some("npm"),
+        install_args: &["install", "-g", "@vscode/langserver-html"],
+    },
+    ServerEntry {
+        language: "css",
+        command: "vscode-css-language-server",
+        args: &["--stdio"],
+        install_program: Some("npm"),
+        install_args: &["install", "-g", "@vscode/langserver-css"],
+    },
+];
 
 struct RunningServer {
     #[allow(dead_code)]
@@ -33,6 +113,7 @@ pub struct LspManager {
     app_handle: AppHandle,
     servers: RwLock<HashMap<(String, String), RunningServer>>,
     document_versions: Mutex<HashMap<String, i32>>,
+    start_lock: Mutex<()>,
 }
 
 impl LspManager {
@@ -41,6 +122,7 @@ impl LspManager {
             app_handle,
             servers: RwLock::new(HashMap::new()),
             document_versions: Mutex::new(HashMap::new()),
+            start_lock: Mutex::new(()),
         }
     }
 
@@ -53,7 +135,17 @@ impl LspManager {
         language: &str,
         project_root: &str,
     ) -> std::result::Result<(), String> {
+        log::info!("LSP start_server: language={language}, root={project_root}");
         let key = (language.to_string(), project_root.to_string());
+
+        {
+            let servers = self.servers.read().await;
+            if servers.contains_key(&key) {
+                return Ok(());
+            }
+        }
+
+        let _guard = self.start_lock.lock().await;
 
         {
             let servers = self.servers.read().await;
@@ -101,7 +193,13 @@ impl LspManager {
                     let mut map = HashMap::new();
                     map.insert(
                         "synchronization".to_string(),
-                        serde_json::json!({ "dynamicRegistration": false, "willSave": false, "willSaveWaitUntil": false, "didSave": true }),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "willSave": false,
+                            "willSaveWaitUntil": false,
+                            "didSave": true,
+                            "change": 1,
+                        }),
                     );
                     map.insert(
                         "publishDiagnostics".to_string(),
@@ -167,6 +265,91 @@ impl LspManager {
         Ok(())
     }
 
+    pub async fn check_server_installed(language: &str) -> Result<bool, String> {
+        let config = server_config_for_language(language)
+            .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
+
+        let output = tokio::process::Command::new(&config.command)
+            .arg("--version")
+            .env("PATH", enriched_path())
+            .output()
+            .await;
+
+        match output {
+            Ok(out) if out.status.success() => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    pub async fn install_server(language: &str) -> Result<String, String> {
+        let config = server_config_for_language(language)
+            .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
+
+        let program = config
+            .install_program
+            .ok_or_else(|| format!("Automatic installation is not supported for '{language}'"))?;
+
+        if config.install_args.is_empty() {
+            return Err(format!("No install arguments configured for '{language}'"));
+        }
+
+        let output = tokio::process::Command::new(&program)
+            .args(&config.install_args)
+            .env("PATH", enriched_path())
+            .output()
+            .await
+            .map_err(|e| format!("Failed to run installer: {e}"))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+
+        if output.status.success() {
+            Ok(if stdout.is_empty() { stderr } else { stdout })
+        } else {
+            let message = if stderr.is_empty() { stdout } else { stderr };
+            Err(format!(
+                "Installation failed with exit code {}: {message}",
+                output.status.code().unwrap_or(-1)
+            ))
+        }
+    }
+
+    pub async fn detect_project_languages(
+        project_root: &str,
+    ) -> Result<Vec<ProjectLanguage>, String> {
+        let root = Path::new(project_root);
+        if !root.is_dir() {
+            return Err(format!("'{project_root}' is not a directory"));
+        }
+
+        let mut counts: HashMap<String, usize> = HashMap::new();
+        let mut total = 0usize;
+
+        visit_project_files(root, &mut counts, &mut total, 0)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        if total == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut languages: Vec<ProjectLanguage> = counts
+            .into_iter()
+            .map(|(language, count)| ProjectLanguage {
+                language,
+                percentage: (count as f64 / total as f64) * 100.0,
+            })
+            .collect();
+
+        languages.sort_by(|a, b| {
+            b.percentage
+                .partial_cmp(&a.percentage)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        Ok(languages)
+    }
+
     pub async fn stop_server(
         &self,
         language: &str,
@@ -196,6 +379,7 @@ impl LspManager {
         file_path: &str,
         content: &str,
     ) -> std::result::Result<(), String> {
+        log::info!("LSP did_open: language={language}, file={file_path}, root={project_root}");
         self.start_server(language, project_root).await?;
 
         let client = self.get_client(language, project_root).await?;
@@ -353,6 +537,10 @@ impl LspManager {
         mut rx: tokio::sync::mpsc::UnboundedReceiver<Notification>,
     ) {
         while let Some(notification) = rx.recv().await {
+            log::info!(
+                "LSP notification: language={language}, method={}",
+                notification.method
+            );
             if notification.method == "textDocument/publishDiagnostics" {
                 if let Some(params) = notification.params {
                     match serde_json::from_value::<PublishDiagnosticsParams>(params) {
@@ -380,7 +568,7 @@ impl LspManager {
         mut rx: tokio::sync::mpsc::UnboundedReceiver<String>,
     ) {
         while let Some(line) = rx.recv().await {
-            log::debug!("LSP {language} stderr: {line}");
+            log::info!("LSP {language} stderr: {line}");
             let _ = app_handle.emit(
                 "lsp_log",
                 serde_json::json!({
@@ -413,19 +601,32 @@ impl LspManager {
 fn server_config_for_language(language: &str) -> Option<LspServerConfig> {
     SERVERS
         .iter()
-        .find(|(l, _, _)| *l == language)
-        .map(|(_, cmd, args)| LspServerConfig {
-            command: cmd.to_string(),
-            args: args.iter().map(|a| a.to_string()).collect(),
+        .find(|s| s.language == language)
+        .map(|s| LspServerConfig {
+            command: s.command.to_string(),
+            args: s.args.iter().map(|a| a.to_string()).collect(),
+            install_program: s.install_program.map(|p| p.to_string()),
+            install_args: s.install_args.iter().map(|a| a.to_string()).collect(),
         })
 }
 
-pub fn resolve_project_root(file_path: &str) -> Option<String> {
+pub fn resolve_project_root(language: &str, file_path: &str) -> Option<String> {
     let path = Path::new(file_path);
     let mut current = path.parent()?;
 
+    let markers: &[&str] = match language {
+        "typescript" | "javascript" => &["tsconfig.json", "package.json"],
+        "rust" => &["Cargo.toml"],
+        "python" => &["pyproject.toml", "setup.py", "requirements.txt"],
+        "go" => &["go.mod"],
+        "java" => &["pom.xml", "build.gradle", "build.gradle.kts"],
+        "c" | "cpp" => &["CMakeLists.txt", "Makefile", "meson.build"],
+        "html" | "css" => &["package.json", "index.html"],
+        _ => &["package.json"],
+    };
+
     loop {
-        if current.join("tsconfig.json").exists() || current.join("package.json").exists() {
+        if markers.iter().any(|marker| current.join(marker).exists()) {
             return current.to_str().map(|s| s.to_string());
         }
 
@@ -474,4 +675,76 @@ fn language_id_for_path(file_path: &str, language: &str) -> String {
     }
 
     language.to_string()
+}
+
+const MAX_SCAN_DEPTH: usize = 4;
+const MAX_SCAN_FILES: usize = 1000;
+
+const SCAN_SKIP_DIRS: &[&str] = &[
+    "node_modules",
+    ".git",
+    "target",
+    "dist",
+    "build",
+    ".venv",
+    "venv",
+    "vendor",
+    ".idea",
+    ".vscode",
+    "__pycache__",
+    ".next",
+    ".nuxt",
+    "out",
+];
+
+fn extension_to_language(ext: &str) -> Option<&'static str> {
+    match ext.to_lowercase().as_str() {
+        "ts" | "tsx" => Some("typescript"),
+        "js" | "jsx" | "mjs" | "cjs" => Some("javascript"),
+        "rs" => Some("rust"),
+        "py" | "pyi" => Some("python"),
+        "go" => Some("go"),
+        "java" => Some("java"),
+        "c" | "h" => Some("c"),
+        "cpp" | "cc" | "cxx" | "hpp" | "hh" => Some("cpp"),
+        "html" | "htm" => Some("html"),
+        "css" | "scss" | "sass" | "less" => Some("css"),
+        _ => None,
+    }
+}
+
+async fn visit_project_files(
+    dir: &Path,
+    counts: &mut HashMap<String, usize>,
+    total: &mut usize,
+    depth: usize,
+) -> std::io::Result<()> {
+    if depth > MAX_SCAN_DEPTH || *total >= MAX_SCAN_FILES {
+        return Ok(());
+    }
+
+    let mut entries = tokio::fs::read_dir(dir).await?;
+    while let Some(entry) = entries.next_entry().await? {
+        let path = entry.path();
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+
+        if SCAN_SKIP_DIRS.iter().any(|skip| name_str == *skip) {
+            continue;
+        }
+
+        let file_type = entry.file_type().await?;
+        if file_type.is_dir() {
+            Box::pin(visit_project_files(&path, counts, total, depth + 1)).await?;
+        } else if file_type.is_file() {
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                if let Some(language) = extension_to_language(ext) {
+                    *counts.entry(language.to_string()).or_insert(0) += 1;
+                    *total += 1;
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

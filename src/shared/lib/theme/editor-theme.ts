@@ -88,13 +88,23 @@ const pragmaDarkBase = EditorView.theme({
     borderLeft: "3px solid var(--status-info)",
   },
   ".cm-lintRange-error": {
-    backgroundColor: "color-mix(in srgb, var(--status-error) 15%, transparent)",
+    backgroundColor: "rgba(239, 68, 68, 0.25)",
+    borderBottom: "2px wavy rgba(239, 68, 68, 0.9)",
   },
   ".cm-lintRange-warning": {
-    backgroundColor: "color-mix(in srgb, var(--status-warning) 15%, transparent)",
+    backgroundColor: "rgba(245, 158, 11, 0.25)",
+    borderBottom: "2px wavy rgba(245, 158, 11, 0.9)",
   },
   ".cm-lintRange-info": {
-    backgroundColor: "color-mix(in srgb, var(--status-info) 15%, transparent)",
+    backgroundColor: "rgba(59, 130, 246, 0.25)",
+    borderBottom: "2px wavy rgba(59, 130, 246, 0.9)",
+  },
+  ".cm-lintGutter": {
+    width: "20px",
+  },
+  ".cm-lintGutter .cm-gutterElement svg": {
+    width: "12px",
+    height: "12px",
   },
 });
 

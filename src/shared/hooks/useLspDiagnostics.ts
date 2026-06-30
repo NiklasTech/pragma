@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useProblemsStore, type ProblemSeverity } from "@/shared/stores/problems";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 interface LspPosition {
   line: number;
@@ -47,6 +48,7 @@ const SEVERITY_MAP: Record<number, ProblemSeverity> = {
 };
 
 export function useLspDiagnostics() {
+  const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const tabs = useEditorStore((state) => state.tabs);
   const openPaths = useMemo(
     () => new Set(tabs.filter((t) => t.kind === "file").map((t) => t.path)),
@@ -55,6 +57,10 @@ export function useLspDiagnostics() {
   const setFileDiagnostics = useProblemsStore((state) => state.setFileDiagnostics);
 
   useEffect(() => {
+    if (!experimentalLsp) {
+      return;
+    }
+
     let unlisten: (() => void) | null = null;
 
     const setup = async () => {
@@ -105,5 +111,5 @@ export function useLspDiagnostics() {
         unlisten();
       }
     };
-  }, [openPaths, setFileDiagnostics]);
+  }, [openPaths, setFileDiagnostics, experimentalLsp]);
 }

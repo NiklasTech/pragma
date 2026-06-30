@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
+import { lintGutter } from "@codemirror/lint";
 import { Compartment, EditorState, StateEffect, type Extension } from "@codemirror/state";
 import { useLspDiagnostics } from "@/shared/hooks/useLspDiagnostics";
 import { useLspDocumentSync } from "@/shared/hooks/useLspDocumentSync";
@@ -11,7 +12,8 @@ import {
   themeCompartment,
   editorBaseTheme,
 } from "@/shared/lib/theme/editor-theme";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { indentUnit } from "@codemirror/language";
 import { vim, getCM } from "@replit/codemirror-vim";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
@@ -30,7 +32,6 @@ import { InlineDiff } from "./InlineDiff";
 
 const languageCompartment = new Compartment();
 const ghostTextCompartment = new Compartment();
-const diagnosticsCompartment = new Compartment();
 const externalUpdate = StateEffect.define<void>();
 
 function FileEditor({
@@ -63,6 +64,7 @@ function FileEditor({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const diagnosticsCompartmentRef = useRef(new Compartment());
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
@@ -70,6 +72,7 @@ function FileEditor({
   const [hasSelection, setHasSelection] = useState(false);
   const selectedTextRef = useRef("");
   const { handleBlur } = useAutoSave();
+  const { tabSize, insertSpaces } = useSettingsStore((state) => state.editor);
   const tabStates = useEditorStore((s) => s.tabStates);
   const goToPosition = useEditorStore((s) => s.goToPosition);
   const pendingScroll = tabStates.find((s) => s.tabId === tabId)?.pendingScroll ?? null;
@@ -100,11 +103,12 @@ function FileEditor({
       const extensions: Extension[] = [
         languageCompartment.of([]),
         themeCompartment.of(pragmaDarkTheme),
-        diagnosticsCompartment.of([]),
+        diagnosticsCompartmentRef.current.of([]),
+        lintGutter(),
         lineNumbers(),
         history(),
-        keymap.of([...defaultKeymap, ...historyKeymap]),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
+        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         drawSelection(),
         editorBaseTheme,
         EditorView.updateListener.of((update) => {
@@ -127,8 +131,9 @@ function FileEditor({
             selectedTextRef.current = selected ? update.state.doc.sliceString(from, to) : "";
           }
         }),
-        EditorState.tabSize.of(2),
+        EditorState.tabSize.of(tabSize),
         EditorState.allowMultipleSelections.of(true),
+        indentUnit.of(insertSpaces ? " ".repeat(tabSize) : "\t"),
       ];
 
       if (enableVim) {
@@ -137,7 +142,7 @@ function FileEditor({
 
       return extensions;
     },
-    [],
+    [tabSize, insertSpaces],
   );
 
   useEffect(() => {
@@ -275,7 +280,7 @@ function FileEditor({
     if (!viewRef.current) return;
 
     viewRef.current.dispatch({
-      effects: diagnosticsCompartment.reconfigure(createLinter(diagnostics)),
+      effects: diagnosticsCompartmentRef.current.reconfigure(createLinter(diagnostics)),
     });
   }, [diagnostics]);
 
