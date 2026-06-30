@@ -25,6 +25,12 @@ pub struct PtyManager {
     ptys: Mutex<HashMap<String, PtyInstance>>,
 }
 
+impl Default for PtyManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PtyManager {
     pub fn new() -> Self {
         Self {

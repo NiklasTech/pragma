@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -166,23 +168,31 @@ async fn spawn_mock_anthropic_server() -> SocketAddr {
     addr
 }
 
-async fn start_echo_mcp_server() -> (McpClient, tokio::process::Child) {
-    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("echo_mcp_server.py");
+async fn start_echo_mcp_server() -> (McpClient, tokio::process::Child, Arc<Mutex<Vec<String>>>) {
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_echo-mcp-server"));
 
     let config = McpClientConfig {
-        command: "python3".to_string(),
-        args: vec![fixture.to_string_lossy().to_string()],
+        command: binary.to_string_lossy().to_string(),
+        args: Vec::new(),
         env: HashMap::new(),
         request_timeout_ms: Some(10_000),
     };
 
-    McpClient::start(config)
-        .await
-        .map(|(client, child, _, _)| (client, child))
-        .unwrap()
+    let (client, child, _, stderr) = McpClient::start(config).await.unwrap();
+    let stderr_log = Arc::new(Mutex::new(Vec::new()));
+    let log = Arc::clone(&stderr_log);
+    tokio::spawn(async move {
+        let mut lines = stderr;
+        while let Some(line) = lines.recv().await {
+            log.lock().await.push(line);
+        }
+    });
+
+    (client, child, stderr_log)
+}
+
+async fn stderr_lines(log: &Arc<Mutex<Vec<String>>>) -> Vec<String> {
+    log.lock().await.clone()
 }
 
 #[tokio::test]
@@ -202,13 +212,28 @@ async fn openai_streaming_tool_call_and_mcp_echo() {
     assert_eq!(calls[0].function.name, "echo");
     assert_eq!(calls[0].function.arguments, r#"{"message": "hi"}"#);
 
-    let (client, _child) = start_echo_mcp_server().await;
-    let tools = list_tools(&client).await.unwrap();
+    let (client, _child, stderr_log) = start_echo_mcp_server().await;
+    let tools = match list_tools(&client).await {
+        Ok(tools) => tools,
+        Err(e) => {
+            panic!(
+                "list_tools failed with {e:?}. stderr: {:?}",
+                stderr_lines(&stderr_log).await
+            );
+        }
+    };
     assert!(tools.iter().any(|t| t.name == "echo"));
 
-    let result = call_tool(&client, "echo", Some(serde_json::json!({"message": "hi"})))
-        .await
-        .unwrap();
+    let result = match call_tool(&client, "echo", Some(serde_json::json!({"message": "hi"}))).await
+    {
+        Ok(result) => result,
+        Err(e) => {
+            panic!(
+                "call_tool failed with {e:?}. stderr: {:?}",
+                stderr_lines(&stderr_log).await
+            );
+        }
+    };
     assert_eq!(
         result.content,
         serde_json::json!([{"type": "text", "text": "echo: hi"}])
@@ -232,13 +257,28 @@ async fn anthropic_streaming_tool_call_and_mcp_echo() {
     assert_eq!(calls[0].function.name, "echo");
     assert_eq!(calls[0].function.arguments, r#"{"message": "hi"}"#);
 
-    let (client, _child) = start_echo_mcp_server().await;
-    let tools = list_tools(&client).await.unwrap();
+    let (client, _child, stderr_log) = start_echo_mcp_server().await;
+    let tools = match list_tools(&client).await {
+        Ok(tools) => tools,
+        Err(e) => {
+            panic!(
+                "list_tools failed with {e:?}. stderr: {:?}",
+                stderr_lines(&stderr_log).await
+            );
+        }
+    };
     assert!(tools.iter().any(|t| t.name == "echo"));
 
-    let result = call_tool(&client, "echo", Some(serde_json::json!({"message": "hi"})))
-        .await
-        .unwrap();
+    let result = match call_tool(&client, "echo", Some(serde_json::json!({"message": "hi"}))).await
+    {
+        Ok(result) => result,
+        Err(e) => {
+            panic!(
+                "call_tool failed with {e:?}. stderr: {:?}",
+                stderr_lines(&stderr_log).await
+            );
+        }
+    };
     assert_eq!(
         result.content,
         serde_json::json!([{"type": "text", "text": "echo: hi"}])

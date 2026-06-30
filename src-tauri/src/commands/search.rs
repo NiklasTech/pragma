@@ -56,7 +56,7 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>,
             Err(_) => continue,
         };
 
-        if !entry.file_type().map_or(false, |ft| ft.is_file()) {
+        if !entry.file_type().is_some_and(|ft| ft.is_file()) {
             continue;
         }
 

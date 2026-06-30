@@ -107,7 +107,7 @@ impl McpManager {
             log::warn!("Failed to hydrate MCP tools cache: {e}");
         }
 
-        let path = config_path(&app_handle).map_err(|e| McpError::Config(e))?;
+        let path = config_path(&app_handle).map_err(McpError::Config)?;
         if let Some(parent) = path.parent() {
             let mut watcher = manager.watcher.lock().await;
             watcher
@@ -131,7 +131,7 @@ impl McpManager {
     }
 
     pub async fn reload_config(&self) -> crate::modules::mcp::error::Result<()> {
-        let path = config_path(&self.app_handle).map_err(|e| McpError::Config(e))?;
+        let path = config_path(&self.app_handle).map_err(McpError::Config)?;
         let content = if path.exists() {
             tokio::fs::read_to_string(&path)
                 .await
@@ -319,7 +319,7 @@ impl McpManager {
     async fn hydrate_tools_cache(&self) -> crate::modules::mcp::error::Result<()> {
         let cache = load_tools_cache(&self.app_handle)
             .await
-            .map_err(|e| McpError::Config(e))?;
+            .map_err(McpError::Config)?;
         let mut tools = self.tools.lock().await;
         for (id, server_tools) in cache {
             tools.entry(id).or_insert(server_tools);
@@ -337,10 +337,7 @@ impl McpManager {
     pub async fn refresh_tools(&self, id: &str) {
         let client = {
             let servers = self.servers.lock().await;
-            match servers.get(id) {
-                Some(server) => Some(server.client.clone()),
-                None => None,
-            }
+            servers.get(id).map(|server| server.client.clone())
         };
 
         if let Some(client) = client {
@@ -366,10 +363,7 @@ impl McpManager {
     ) -> crate::modules::mcp::error::Result<McpToolCallResult> {
         let client = {
             let servers = self.servers.lock().await;
-            match servers.get(id) {
-                Some(server) => Some(server.client.clone()),
-                None => None,
-            }
+            servers.get(id).map(|server| server.client.clone())
         };
 
         let client = client.ok_or_else(|| McpError::ServerNotFound(id.to_string()))?;

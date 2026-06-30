@@ -57,6 +57,12 @@ pub struct RunManager {
     processes: Mutex<HashMap<String, RunInstance>>,
 }
 
+impl Default for RunManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RunManager {
     pub fn new() -> Self {
         Self {
@@ -83,13 +89,13 @@ fn parse_command(command: &str) -> (String, Vec<String>) {
         return (String::new(), Vec::new());
     }
 
-    let mut chars = trimmed.chars().peekable();
+    let chars = trimmed.chars().peekable();
     let mut parts: Vec<String> = Vec::new();
     let mut current = String::new();
     let mut in_quotes = false;
     let mut quote_char = '\0';
 
-    while let Some(c) = chars.next() {
+    for c in chars {
         if in_quotes {
             if c == quote_char {
                 in_quotes = false;
@@ -148,13 +154,6 @@ fn set_process_group() -> std::io::Result<()> {
     Ok(())
 }
 
-#[cfg(windows)]
-fn set_process_group() {
-    // On Windows we rely on job objects via the CREATE_BREAKAWAY_FROM_JOB flag
-    // For simplicity, we just spawn without special handling here
-    // A full implementation would use windows::Win32::System::JobObjects
-}
-
 #[cfg(unix)]
 fn kill_process_group(pgid: i32) {
     unsafe {
@@ -165,9 +164,13 @@ fn kill_process_group(pgid: i32) {
 }
 
 #[cfg(windows)]
-fn kill_process_group(_pgid: i32) {
-    // Windows implementation would use JobObject to kill the process tree
-    // For now, this is a no-op fallback
+fn kill_process_group(pgid: i32) {
+    // Use taskkill to terminate the process tree rooted at the given PID.
+    // This is a pragmatic fallback until a JobObject-based implementation
+    // is added for cleaner process-tree management.
+    let _ = std::process::Command::new("taskkill")
+        .args(["/T", "/F", "/PID", &pgid.to_string()])
+        .output();
 }
 
 // -- Commands ------------------------------------------------------------------
@@ -238,10 +241,8 @@ pub fn run_start(
     let app_handle = app.clone();
     std::thread::spawn(move || {
         let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                emit_output(&app_handle, &pid, format!("{line}\n"));
-            }
+        for line in reader.lines().map_while(Result::ok) {
+            emit_output(&app_handle, &pid, format!("{line}\n"));
         }
     });
 
@@ -249,10 +250,8 @@ pub fn run_start(
     let app_handle = app.clone();
     std::thread::spawn(move || {
         let reader = BufReader::new(stderr);
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                emit_output(&app_handle, &pid, format!("{line}\n"));
-            }
+        for line in reader.lines().map_while(Result::ok) {
+            emit_output(&app_handle, &pid, format!("{line}\n"));
         }
     });
 

@@ -92,6 +92,12 @@ pub fn enriched_path() -> String {
     }
 }
 
+impl Default for CLIManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CLIManager {
     pub fn new() -> Self {
         Self

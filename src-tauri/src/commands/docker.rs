@@ -289,7 +289,7 @@ pub async fn docker_list_containers() -> Result<Vec<DockerContainer>, String> {
     Ok(containers
         .into_iter()
         .map(|c| {
-            let (status, state) = container_status(c.status.clone(), c.state.clone());
+            let (status, state) = container_status(c.status.clone(), c.state);
             DockerContainer {
                 id: c.id.unwrap_or_default(),
                 names: container_name(c.names),

@@ -180,6 +180,28 @@ Available weights: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`
 
 ---
 
+## ECC Skill Loading (before every task)
+
+Before starting work, identify the relevant domain and load the matching ECC skill:
+
+1. List available skills: `/skill:list`
+2. Load the best match: `/skill:use &lt;skill-name&gt;`
+
+Pick based on task type — common ones:
+
+- **Rust code** → `rust-patterns` or `rust-testing`
+- **TypeScript/React** → `coding-standards` or `frontend-patterns`
+- **Security work** → `security-review`
+- **New feature** → `tdd-workflow`
+- **Bug fix** → `tdd-workflow` (write failing test first)
+- **Docker/CI** → `docker-patterns` or `deployment-patterns`
+- **API design** → `api-design`
+- **Code review** → `code-reviewer`
+
+Load the skill before Phase 1 (Exploration). Confirm in chat: `Loaded: &lt;skill-name&gt;`.
+
+---
+
 ## Current Issue
 
 ( Insert user issue here )

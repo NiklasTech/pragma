@@ -28,8 +28,7 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
             continue;
         }
 
-        if line.starts_with("# branch.head ") {
-            let name = &line[14..];
+        if let Some(name) = line.strip_prefix("# branch.head ") {
             if name == "(detached)" {
                 is_detached = true;
                 branch = "HEAD".into();
@@ -39,14 +38,13 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
             continue;
         }
 
-        if line.starts_with("# branch.upstream ") {
-            upstream = Some(line[18..].to_string());
+        if let Some(rest) = line.strip_prefix("# branch.upstream ") {
+            upstream = Some(rest.to_string());
             continue;
         }
 
-        if line.starts_with("# branch.ab +") {
+        if let Some(rest) = line.strip_prefix("# branch.ab +") {
             // Format: # branch.ab +<ahead> -<behind>
-            let rest = &line[13..];
             if let Some(space_pos) = rest.find(' ') {
                 let ahead_str = &rest[..space_pos];
                 let behind_str = &rest[space_pos + 1..];

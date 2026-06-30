@@ -1,10 +1,10 @@
 [package]
 name = "app"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+description = "A lightweight, AI-native desktop IDE with an integrated terminal"
+authors = ["NiklasTech <info@nh-webdev.de>"]
+license = "Apache-2.0"
+repository = "https://github.com/NiklasTech/pragma"
 edition = "2021"
 rust-version = "1.77.2"
 
@@ -27,8 +27,8 @@ portable-pty = "0.9"
 uuid = { version = "1.16", features = ["v4"] }
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-store = "2"
-tauri-plugin-shell = "2"
-tauri-plugin-fs = "2"
+tauri-plugin-opener = "2"
+
 libc = "0.2"
 nix = { version = "0.29", features = ["process", "signal"] }
 shared_child = "1"
@@ -50,6 +50,10 @@ regex = "1.0"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bin]]
+name = "echo-mcp-server"
+path = "tests/fixtures/echo_mcp_server.rs"
 
 [[bench]]
 name = "file_explorer"

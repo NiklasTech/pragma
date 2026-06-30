@@ -86,16 +86,27 @@ pub struct ProviderRequest {
 static ACTIVE_STREAM_CANCELLATIONS: Mutex<Option<HashMap<String, CancellationToken>>> =
     Mutex::new(None);
 
+fn lock_cancellations() -> std::sync::MutexGuard<'static, Option<HashMap<String, CancellationToken>>>
+{
+    match ACTIVE_STREAM_CANCELLATIONS.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            log::error!("stream cancellation mutex poisoned; recovering from poison");
+            e.into_inner()
+        }
+    }
+}
+
 fn register_stream_cancellation(stream_id: &str) -> CancellationToken {
     let token = CancellationToken::new();
-    let mut guard = ACTIVE_STREAM_CANCELLATIONS.lock().unwrap();
+    let mut guard = lock_cancellations();
     let map = guard.get_or_insert_with(HashMap::new);
     map.insert(stream_id.to_string(), token.clone());
     token
 }
 
 fn unregister_stream_cancellation(stream_id: &str) {
-    let mut guard = ACTIVE_STREAM_CANCELLATIONS.lock().unwrap();
+    let mut guard = lock_cancellations();
     if let Some(map) = guard.as_mut() {
         map.remove(stream_id);
     }
@@ -667,7 +678,7 @@ pub struct CancelChatStreamRequest {
 
 #[tauri::command]
 pub fn cancel_ai_chat_stream(req: CancelChatStreamRequest) -> Result<(), String> {
-    let mut guard = ACTIVE_STREAM_CANCELLATIONS.lock().unwrap();
+    let mut guard = lock_cancellations();
     if let Some(map) = guard.as_mut() {
         if let Some(token) = map.get(&req.stream_id) {
             token.cancel();
@@ -944,9 +955,9 @@ pub async fn open_external_url(url: String, app_handle: tauri::AppHandle) -> Res
         return Err("only HTTPS URLs are allowed".to_string());
     }
 
-    use tauri_plugin_shell::ShellExt;
+    use tauri_plugin_opener::OpenerExt;
     app_handle
-        .shell()
-        .open(&url, None)
+        .opener()
+        .open_url(&url, None::<&str>)
         .map_err(|e| e.to_string())
 }
