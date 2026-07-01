@@ -477,16 +477,9 @@ function CommitArea({
           onChange={(e) => setCommitMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Commit message"
-          rows={2}
-          className="min-h-[56px] resize-none rounded-lg border-0 bg-transparent px-3 pb-5 pt-2 text-ui-sm leading-snug shadow-none placeholder:text-fg-subtle focus-visible:ring-0"
+          rows={3}
+          className="field-sizing-fixed max-h-[240px] min-h-[120px] resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-3 pb-2 pt-2 text-ui-sm leading-snug shadow-none placeholder:text-fg-subtle focus-visible:ring-0"
         />
-        <div className="pointer-events-none absolute inset-x-3 bottom-1 flex items-center text-ui-xs text-fg-subtle">
-          {commitMessage.length > 0 ? (
-            <span>Ch: {commitMessage.length}</span>
-          ) : (
-            <span>Ctrl+Enter to commit</span>
-          )}
-        </div>
       </div>
 
       <div className="flex items-center justify-between gap-1.5 text-ui-xs text-fg-muted">
@@ -506,6 +499,9 @@ function CommitArea({
               ? "Nothing staged"
               : `${stagedCount} ${stagedCount === 1 ? "file" : "files"} staged`}
           </span>
+          {commitMessage.length > 0 && (
+            <span className="text-fg-subtle">· {commitMessage.length} chars</span>
+          )}
         </div>
         <Button
           size="sm"
