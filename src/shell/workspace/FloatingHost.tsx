@@ -62,16 +62,12 @@ export function FloatingHost() {
       try {
         // Close any stale external window for this node before creating a new one.
         await invoke("close_external_window", { label }).catch(() => {});
-        // eslint-disable-next-line no-console
-        console.log("[FloatingHost] externalizing node", node.id, { title, bounds });
         const newLabel = await invoke<string>("create_external_window", {
           request: { nodeId: node.id, title, bounds },
         });
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        // eslint-disable-next-line no-console
-        console.error("Failed to create external window:", err);
         toast.error(`External window failed: ${message}`);
         // eslint-disable-next-line no-alert
         alert(`External window failed: ${message}`);

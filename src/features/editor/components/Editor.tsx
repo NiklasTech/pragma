@@ -83,10 +83,12 @@ function FileEditor({
     insertSpaces,
     fontSize,
     fontFamily,
+    fontId,
     wordWrap,
     lineNumbers: showLineNumbers,
     stickyLines,
   } = useSettingsStore((state) => state.editor);
+  const editorFontFamily = fontId || fontFamily;
   const tabStates = useEditorStore((s) => s.tabStates);
   const goToPosition = useEditorStore((s) => s.goToPosition);
   const pendingScroll = tabStates.find((s) => s.tabId === tabId)?.pendingScroll ?? null;
@@ -125,7 +127,7 @@ function FileEditor({
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         drawSelection(),
         editorBaseTheme,
-        fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, fontFamily)),
+        fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
         wordWrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -158,7 +160,7 @@ function FileEditor({
 
       return extensions;
     },
-    [tabSize, insertSpaces, fontSize, fontFamily, wordWrap, showLineNumbers],
+    [tabSize, insertSpaces, fontSize, editorFontFamily, wordWrap, showLineNumbers],
   );
 
   useEffect(() => {
@@ -271,10 +273,10 @@ function FileEditor({
 
     viewRef.current.dispatch({
       effects: fontStyleCompartment.reconfigure(
-        createEditorFontStyleExtension(fontSize, fontFamily),
+        createEditorFontStyleExtension(fontSize, editorFontFamily),
       ),
     });
-  }, [fontSize, fontFamily]);
+  }, [fontSize, editorFontFamily]);
 
   useEffect(() => {
     if (!viewRef.current) return;

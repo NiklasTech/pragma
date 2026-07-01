@@ -960,16 +960,38 @@ pub fn push(repo_root: &str) -> Result<GitPushResult> {
         &repo_root.to_string_lossy(),
         ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
     )?;
-    if upstream.is_none() {
-        return Err(GitError::NoUpstream);
-    }
 
-    let output = run_git(
-        Some(&repo_root.to_string_lossy()),
-        ["push"],
-        NETWORK_TIMEOUT_SECS,
-    )?;
-    ensure_success(&output, "git push failed")?;
+    if upstream.is_some() {
+        let output = run_git(
+            Some(&repo_root.to_string_lossy()),
+            ["push"],
+            NETWORK_TIMEOUT_SECS,
+        )?;
+        ensure_success(&output, "git push failed")?;
+    } else {
+        let branch = git_stdout_line_opt(
+            &repo_root.to_string_lossy(),
+            ["rev-parse", "--abbrev-ref", "HEAD"],
+        )?
+        .ok_or(GitError::CommandFailed {
+            context: "failed to resolve current branch",
+            detail: String::new(),
+        })?;
+
+        if branch == "HEAD" {
+            return Err(GitError::CommandFailed {
+                context: "cannot push detached HEAD",
+                detail: String::new(),
+            });
+        }
+
+        let output = run_git(
+            Some(&repo_root.to_string_lossy()),
+            ["push", "-u", "origin", &branch],
+            NETWORK_TIMEOUT_SECS,
+        )?;
+        ensure_success(&output, "git push failed")?;
+    }
 
     Ok(GitPushResult { pushed: true })
 }

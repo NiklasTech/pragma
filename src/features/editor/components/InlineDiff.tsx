@@ -8,6 +8,7 @@ import { Spinner, Columns, Rows, Check, X } from "@phosphor-icons/react";
 import { pragmaDarkTheme, editorBaseTheme } from "@/shared/lib/theme/editor-theme";
 import { useTheme } from "@/theme";
 import { loadLanguage } from "@/shared/lib/editor/languages";
+import { parseDiffLines, type DiffLineType } from "@/shared/lib/diff";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 
@@ -168,35 +169,6 @@ const SplitDiffView = memo(function SplitDiffView({
   return <div ref={containerRef} className="h-full w-full" />;
 });
 
-type DiffLineType = "added" | "removed" | "hunk" | "context" | "header";
-
-interface DiffLine {
-  type: DiffLineType;
-  content: string;
-  raw: string;
-}
-
-function parseDiffLines(patchText: string): DiffLine[] {
-  const lines = patchText.split("\n");
-  const result: DiffLine[] = [];
-
-  for (const raw of lines) {
-    if (raw.startsWith("@@")) {
-      result.push({ type: "hunk", content: raw, raw });
-    } else if (raw.startsWith("+")) {
-      result.push({ type: "added", content: raw.slice(1), raw });
-    } else if (raw.startsWith("-")) {
-      result.push({ type: "removed", content: raw.slice(1), raw });
-    } else if (raw.startsWith("---") || raw.startsWith("+++")) {
-      result.push({ type: "header", content: raw, raw });
-    } else {
-      result.push({ type: "context", content: raw, raw });
-    }
-  }
-
-  return result;
-}
-
 const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lines = useMemo(() => parseDiffLines(patchText), [patchText]);
@@ -216,8 +188,7 @@ const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText
         return "bg-status-error/5 text-status-error/90";
       case "hunk":
         return "bg-status-info/5 text-status-info/70";
-      case "header":
-        return "text-fg-muted/60";
+
       default:
         return "text-fg-default/80";
     }
@@ -244,8 +215,6 @@ const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText
         return "-";
       case "hunk":
         return "@";
-      case "header":
-        return "";
       default:
         return " ";
     }

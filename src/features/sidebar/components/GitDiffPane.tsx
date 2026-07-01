@@ -1,34 +1,13 @@
 import { useEffect, useState } from "react";
 import { Spinner } from "@phosphor-icons/react";
 import { InlineDiff, type DiffViewMode } from "@/features/editor/components/InlineDiff";
+import { parseDiffToSides } from "@/shared/lib/diff";
 
 type LoadState =
   | { kind: "idle" }
   | { kind: "loading" }
   | { kind: "loaded"; original: string; modified: string }
   | { kind: "error"; message: string };
-
-function parseDiff(diffText: string): { original: string; modified: string } {
-  const originalLines: string[] = [];
-  const modifiedLines: string[] = [];
-
-  for (const line of diffText.split("\n")) {
-    if (line.startsWith("+")) {
-      modifiedLines.push(line.slice(1));
-    } else if (line.startsWith("-")) {
-      originalLines.push(line.slice(1));
-    } else if (line.startsWith(" ")) {
-      const content = line.slice(1);
-      originalLines.push(content);
-      modifiedLines.push(content);
-    }
-  }
-
-  return {
-    original: originalLines.join("\n"),
-    modified: modifiedLines.join("\n"),
-  };
-}
 
 export function GitDiffPane({
   diffText,
@@ -48,7 +27,7 @@ export function GitDiffPane({
   useEffect(() => {
     if (!active || !diffText) return;
     setState({ kind: "loading" });
-    const parsed = parseDiff(diffText);
+    const parsed = parseDiffToSides(diffText);
     setState({ kind: "loaded", original: parsed.original, modified: parsed.modified });
   }, [active, diffText]);
 

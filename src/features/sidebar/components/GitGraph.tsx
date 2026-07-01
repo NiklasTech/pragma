@@ -149,6 +149,7 @@ function authorTint(key: string): string {
 export function GitGraph() {
   const {
     repoPath,
+    snapshot,
     checkoutCommit,
     createBranchFromCommit,
     cherryPickCommit,
@@ -166,13 +167,14 @@ export function GitGraph() {
   const [branchDialogSha, setBranchDialogSha] = useState<string | null>(null);
   const [branchNameInput, setBranchNameInput] = useState("");
   const [confirmDialog, setConfirmDialog] = useState<{
-    type: "cherry-pick" | "revert" | "reset-hard";
+    type: "checkout" | "cherry-pick" | "revert" | "reset-soft" | "reset-mixed" | "reset-hard";
     sha: string;
     title: string;
     description: string;
   } | null>(null);
 
   const requestIdRef = useRef(0);
+  const loadMoreRequestIdRef = useRef(0);
   const inflightMoreRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -273,6 +275,7 @@ export function GitGraph() {
     const last = commits[commits.length - 1];
     if (!last) return;
     inflightMoreRef.current = true;
+    const requestId = ++loadMoreRequestIdRef.current;
     setLoadStatus("more");
     try {
       const result = await invoke<{ entries: GitLogEntry[] }>("git_log_entries", {
@@ -280,6 +283,7 @@ export function GitGraph() {
         limit: PAGE_SIZE,
         beforeSha: last.sha,
       });
+      if (requestId !== loadMoreRequestIdRef.current) return;
       setCommits((prev) => {
         const seen = new Set(prev.map((c) => c.sha));
         const merged = [...prev];
@@ -289,18 +293,28 @@ export function GitGraph() {
       if (result.entries.length < PAGE_SIZE) setEndReached(true);
       setLoadStatus("idle");
     } catch (err) {
+      if (requestId !== loadMoreRequestIdRef.current) return;
       setError(normalizeError(err));
       setLoadStatus("error");
     } finally {
-      inflightMoreRef.current = false;
+      if (requestId === loadMoreRequestIdRef.current) {
+        inflightMoreRef.current = false;
+      }
     }
   }, [commits, endReached, loadStatus, repoPath]);
 
   useEffect(() => {
     setCommits([]);
     setActiveSha(null);
+    ++loadMoreRequestIdRef.current;
+    inflightMoreRef.current = false;
     if (repoPath) void loadInitial();
   }, [repoPath, loadInitial]);
+
+  useEffect(() => {
+    if (!repoPath || !snapshot || loadStatus !== "idle" || commits.length === 0) return;
+    void loadInitial();
+  }, [snapshot, repoPath, loadStatus, commits.length, loadInitial]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -335,7 +349,12 @@ export function GitGraph() {
   };
 
   const handleCheckoutCommit = async (sha: string) => {
-    await checkoutCommit(sha);
+    setConfirmDialog({
+      type: "checkout",
+      sha,
+      title: "Checkout commit?",
+      description: `This will detach HEAD and move the working tree to ${sha.slice(0, 7)}. Any uncommitted changes may be lost.`,
+    });
   };
 
   const handleCreateBranch = async () => {
@@ -364,25 +383,32 @@ export function GitGraph() {
   };
 
   const handleReset = async (sha: string, mode: "soft" | "mixed" | "hard") => {
-    if (mode === "hard") {
-      setConfirmDialog({
-        type: "reset-hard",
-        sha,
-        title: "Reset hard?",
-        description: `This will discard all working tree changes and move HEAD to ${sha.slice(0, 7)}. This cannot be undone.`,
-      });
-      return;
-    }
-    await resetToCommit(sha, mode);
+    const modeLabels: Record<typeof mode, string> = {
+      soft: "Soft reset keeps changes staged.",
+      mixed: "Mixed reset keeps changes unstaged.",
+      hard: "This will discard all working tree changes. This cannot be undone.",
+    };
+    setConfirmDialog({
+      type: `reset-${mode}`,
+      sha,
+      title: `Reset ${mode}?`,
+      description: `Move HEAD to ${sha.slice(0, 7)}. ${modeLabels[mode]}`,
+    });
   };
 
   const executeConfirm = async () => {
     if (!confirmDialog) return;
     const { type, sha } = confirmDialog;
-    if (type === "cherry-pick") {
+    if (type === "checkout") {
+      await checkoutCommit(sha);
+    } else if (type === "cherry-pick") {
       await cherryPickCommit(sha);
     } else if (type === "revert") {
       await revertCommit(sha);
+    } else if (type === "reset-soft") {
+      await resetToCommit(sha, "soft");
+    } else if (type === "reset-mixed") {
+      await resetToCommit(sha, "mixed");
     } else if (type === "reset-hard") {
       await resetToCommit(sha, "hard");
     }
@@ -694,7 +720,7 @@ function CommitRow({
         {shaCollapsed ? commit.short_sha.slice(0, 4) : commit.short_sha}
       </span>
 
-      {/* Subject — collapsed: kleinere Schrift */}
+      {/* Subject — collapsed */}
       <span
         className={cn(
           "min-w-0 truncate text-ui-xs leading-tight",

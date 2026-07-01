@@ -11,6 +11,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { cn } from "@/shared/lib/utils";
+import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorStore } from "@/shared/stores/editor";
 import {
   ContextMenu,
@@ -476,16 +477,9 @@ function CommitArea({
           onChange={(e) => setCommitMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Commit message"
-          rows={2}
-          className="min-h-[56px] resize-none rounded-lg border-0 bg-transparent px-3 pb-5 pt-2 text-ui-sm leading-snug shadow-none placeholder:text-fg-subtle focus-visible:ring-0"
+          rows={3}
+          className="field-sizing-fixed max-h-[240px] min-h-[120px] resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-3 pb-2 pt-2 text-ui-sm leading-snug shadow-none placeholder:text-fg-subtle focus-visible:ring-0"
         />
-        <div className="pointer-events-none absolute inset-x-3 bottom-1 flex items-center text-ui-xs text-fg-subtle">
-          {commitMessage.length > 0 ? (
-            <span>Ch: {commitMessage.length}</span>
-          ) : (
-            <span>Ctrl+Enter to commit</span>
-          )}
-        </div>
       </div>
 
       <div className="flex items-center justify-between gap-1.5 text-ui-xs text-fg-muted">
@@ -505,6 +499,9 @@ function CommitArea({
               ? "Nothing staged"
               : `${stagedCount} ${stagedCount === 1 ? "file" : "files"} staged`}
           </span>
+          {commitMessage.length > 0 && (
+            <span className="text-fg-subtle">· {commitMessage.length} chars</span>
+          )}
         </div>
         <Button
           size="sm"
@@ -841,26 +838,13 @@ export function GitStatus() {
       const content = await loadFileDiff(entry.path, staged);
       if (!content || content === "No diff available") return;
 
-      const originalLines: string[] = [];
-      const modifiedLines: string[] = [];
-
-      for (const line of content.split("\n")) {
-        if (line.startsWith("+")) {
-          modifiedLines.push(line.slice(1));
-        } else if (line.startsWith("-")) {
-          originalLines.push(line.slice(1));
-        } else if (line.startsWith(" ")) {
-          const c = line.slice(1);
-          originalLines.push(c);
-          modifiedLines.push(c);
-        }
-      }
+      const { original, modified } = parseDiffToSides(content);
 
       openDiff({
         id: `diff:${entry.path}:${staged ? "staged" : "unstaged"}`,
         path: entry.path,
-        original: originalLines.join("\n"),
-        modified: modifiedLines.join("\n"),
+        original,
+        modified,
         patchText: content,
         staged,
       });
