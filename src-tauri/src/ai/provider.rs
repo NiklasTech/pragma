@@ -139,6 +139,8 @@ pub trait AIProvider: Send + Sync {
 
     fn models(&self) -> Vec<ModelInfo>;
 
+    fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>>;
+
     fn complete(
         &self,
         req: CompletionRequest,

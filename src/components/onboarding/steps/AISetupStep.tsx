@@ -11,7 +11,8 @@ import {
 } from "@/shared/components/ui/select";
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { PROVIDER_LABELS, PROVIDER_MODELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
+import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
+import { PROVIDER_LABELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 const ONBOARDING_PROVIDERS: AIProvider[] = [
@@ -34,6 +35,11 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
 
   const activeProvider = settingsStore.ai.defaultProvider;
   const providerConfig = settingsStore.ai.providers[activeProvider];
+  const {
+    models: availableModels,
+    loading: modelsLoading,
+    needsKey: modelSelectNeedsKey,
+  } = useAvailableModels(activeProvider);
 
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -45,14 +51,14 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
   }, [aiStore]);
 
   const handleProviderChange = (provider: AIProvider) => {
-    settingsStore.setAISettings({ defaultProvider: provider });
-    const models = PROVIDER_MODELS[provider];
-    if (models.length > 0) {
-      settingsStore.updateProvider(provider, { model: models[0] });
-      settingsStore.setAISettings({ defaultModel: models[0] });
+    const nextModel =
+      settingsStore.ai.providers[provider]?.model || aiStore.providers[provider]?.model || "";
+    if (!settingsStore.ai.providers[provider]) {
+      settingsStore.updateProvider(provider, { model: nextModel });
     }
+    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
     aiStore.setActiveProvider(provider);
-    aiStore.setActiveModel(models[0] ?? "");
+    aiStore.setActiveModel(nextModel);
     setKeyInput("");
   };
 
@@ -120,25 +126,31 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
 
         <div className="space-y-1.5">
           <Label>Model</Label>
-          {activeProvider === "custom" ? (
-            <Input
-              value={providerConfig.model}
-              onChange={(e) => handleModelChange(e.target.value)}
-              placeholder="e.g. qwen/qwen3.5-9b"
-            />
-          ) : (
-            <Select value={providerConfig.model} onValueChange={(v) => handleModelChange(v ?? "")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PROVIDER_MODELS[activeProvider].map((model) => (
-                  <SelectItem key={model} value={model}>
-                    {model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select
+            value={providerConfig.model}
+            onValueChange={(v) => handleModelChange(v ?? "")}
+            disabled={modelsLoading || modelSelectNeedsKey}
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={modelSelectNeedsKey ? "Save an API key first" : "Select a model"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableModels.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  {model.name}
+                </SelectItem>
+              ))}
+              {providerConfig.model &&
+                !availableModels.some((m) => m.id === providerConfig.model) && (
+                  <SelectItem value={providerConfig.model}>{providerConfig.model}</SelectItem>
+                )}
+            </SelectContent>
+          </Select>
+          {modelsLoading && <p className="text-ui-xs text-fg-muted">Loading models…</p>}
+          {modelSelectNeedsKey && (
+            <p className="text-ui-xs text-fg-muted">Save an API key to load models</p>
           )}
         </div>
 

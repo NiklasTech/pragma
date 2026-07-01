@@ -112,7 +112,7 @@ export function EditorSettings() {
               onValueChange={(v) => setEditorSettings({ autoSave: v as AutoSave })}
             >
               <SelectTrigger className="max-w-[200px]">
-                <SelectValue />
+                <SelectValue>{AUTO_SAVE_LABELS[editor.autoSave]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {(Object.keys(AUTO_SAVE_LABELS) as AutoSave[]).map((mode) => (

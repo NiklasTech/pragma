@@ -29,7 +29,6 @@ import {
   Robot,
   Palette,
   PlugsConnected,
-  GitBranch,
   Layout,
   Keyboard,
   Info,
@@ -38,13 +37,13 @@ import {
   DownloadSimple,
   UploadSimple,
   BracketsAngle,
+  Check,
 } from "@phosphor-icons/react";
 import { AISettings } from "./AISettings";
 import { EditorSettings } from "./EditorSettings";
 import { TerminalSettings } from "./TerminalSettings";
 import { ThemeSettings } from "./ThemeSettings";
 import { McpSettings } from "./McpSettings";
-import { GitSettings } from "./GitSettings";
 import { LayoutSettings } from "./LayoutSettings";
 import { KeyboardSettings } from "./KeyboardSettings";
 import { AboutSettings } from "./AboutSettings";
@@ -57,7 +56,6 @@ type Category =
   | "ai"
   | "theme"
   | "mcp"
-  | "git"
   | "layout"
   | "keyboard"
   | "languages"
@@ -75,7 +73,6 @@ const CATEGORIES: CategoryDef[] = [
   { id: "ai", label: "AI", icon: Robot },
   { id: "theme", label: "Theme", icon: Palette },
   { id: "mcp", label: "MCP", icon: PlugsConnected },
-  { id: "git", label: "Git", icon: GitBranch },
   { id: "languages", label: "Languages", icon: BracketsAngle },
   { id: "layout", label: "Layout", icon: Layout },
   { id: "keyboard", label: "Keyboard", icon: Keyboard },
@@ -219,31 +216,6 @@ const SEARCH_ITEMS: SearchItem[] = [
     category: "languages",
   },
   {
-    id: "git-user-name",
-    label: "Git User Name",
-    keywords: "git user name author commit",
-    category: "git",
-  },
-  {
-    id: "git-user-email",
-    label: "Git User Email",
-    keywords: "git user email author commit",
-    category: "git",
-  },
-  {
-    id: "git-sign-off",
-    label: "Git Sign-Off",
-    keywords: "git sign off signed-off-by commit",
-    category: "git",
-  },
-  {
-    id: "git-remote",
-    label: "Git Default Remote",
-    keywords: "git remote origin push pull",
-    category: "git",
-  },
-  { id: "git-gpg", label: "Git GPG Key", keywords: "git gpg sign commit", category: "git" },
-  {
     id: "layout-reset",
     label: "Reset Panel Sizes",
     keywords: "layout reset panels size",
@@ -278,6 +250,7 @@ const SEARCH_ITEMS: SearchItem[] = [
 export function Settings() {
   const [activeCategory, setActiveCategory] = React.useState<Category>("editor");
   const [query, setQuery] = React.useState("");
+  const [saveIndicator, setSaveIndicator] = React.useState<"idle" | "saved">("idle");
   const resetToDefaults = useSettingsStore((s) => s.resetToDefaults);
 
   const filteredItems = React.useMemo(() => {
@@ -312,6 +285,32 @@ export function Settings() {
   };
 
   const activeLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label ?? "Settings";
+
+  React.useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const unsub = useSettingsStore.subscribe(() => {
+      setSaveIndicator("saved");
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => setSaveIndicator("idle"), 1500);
+    });
+    return () => {
+      unsub();
+      if (timeout) clearTimeout(timeout);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setSaveIndicator("saved");
+        const timeout = setTimeout(() => setSaveIndicator("idle"), 1500);
+        return () => clearTimeout(timeout);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <TooltipProvider>
@@ -440,16 +439,27 @@ export function Settings() {
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <ScrollArea className="min-h-0 flex-1">
               <div className="p-6">
-                <h2 className="font-heading text-sm font-semibold text-fg-default">
-                  {activeLabel}
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-heading text-sm font-semibold text-fg-default">
+                    {activeLabel}
+                  </h2>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 text-ui-xs text-status-success transition-opacity duration-200",
+                      saveIndicator === "saved" ? "opacity-100" : "opacity-0",
+                    )}
+                    aria-live="polite"
+                  >
+                    <Check size={12} />
+                    Saved
+                  </span>
+                </div>
                 <div className="mt-5">
                   {activeCategory === "editor" && <EditorSettings />}
                   {activeCategory === "terminal" && <TerminalSettings />}
                   {activeCategory === "ai" && <AISettings />}
                   {activeCategory === "theme" && <ThemeSettings />}
                   {activeCategory === "mcp" && <McpSettings />}
-                  {activeCategory === "git" && <GitSettings />}
                   {activeCategory === "layout" && <LayoutSettings />}
                   {activeCategory === "keyboard" && <KeyboardSettings />}
                   {activeCategory === "languages" && <LspSettings />}

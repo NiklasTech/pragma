@@ -9,9 +9,9 @@ use crate::modules::git::process::{
     read_text_file, run_git,
 };
 use crate::modules::git::types::{
-    GitBranch, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
-    GitLogEntry, GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot, SmartCheckoutResult,
-    TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
+    GitBranch, GitCommitDetails, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
+    GitDiffResult, GitLogEntry, GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot,
+    SmartCheckoutResult, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, pathspec, resolve_within_repo, sha_is_safe,
@@ -1163,6 +1163,159 @@ fn status_label_for(c: char) -> String {
 
 fn is_remote_name_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'
+}
+
+// -- Commit context-menu operations --------------------------------------------
+
+pub fn commit_details(repo_root: &str, sha: &str) -> Result<GitCommitDetails> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    if !sha_is_safe(sha) {
+        return Err(GitError::command("git show", "invalid commit sha"));
+    }
+
+    let format = "--format=%H%x1f%h%x1f%an%x1f%ae%x1f%at%x1f%P%x1f%s%x1f%b";
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [
+            OsStr::new("show"),
+            OsStr::new("-s"),
+            OsStr::new(format),
+            OsStr::new(sha),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git show failed")?;
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut parts = text.splitn(8, '\x1f');
+    let sha = parts.next().unwrap_or("").trim().to_string();
+    let short_sha = parts.next().unwrap_or("").trim().to_string();
+    let author = parts.next().unwrap_or("").trim().to_string();
+    let author_email = parts.next().unwrap_or("").trim().to_string();
+    let timestamp_secs = parts
+        .next()
+        .unwrap_or("0")
+        .trim()
+        .parse::<i64>()
+        .unwrap_or(0);
+    let parents = parts
+        .next()
+        .unwrap_or("")
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect();
+    let subject = parts.next().unwrap_or("").trim().to_string();
+    let body = parts.next().unwrap_or("").trim().to_string();
+
+    let files = commit_files(&repo_root.to_string_lossy(), sha.as_str())?;
+
+    Ok(GitCommitDetails {
+        sha,
+        short_sha,
+        subject,
+        body,
+        author,
+        author_email,
+        timestamp_secs,
+        parents,
+        files,
+    })
+}
+
+pub fn checkout_commit(repo_root: &str, sha: &str) -> Result<()> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    if !sha_is_safe(sha) {
+        return Err(GitError::command("git checkout", "invalid commit sha"));
+    }
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [OsStr::new("checkout"), OsStr::new(sha)],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git checkout failed")
+}
+
+pub fn create_branch_from_commit(
+    repo_root: &str,
+    branch_name: &str,
+    sha: &str,
+    checkout: bool,
+) -> Result<()> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    if !sha_is_safe(sha) {
+        return Err(GitError::command("git branch", "invalid commit sha"));
+    }
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [
+            OsStr::new("branch"),
+            OsStr::new(branch_name),
+            OsStr::new(sha),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git branch failed")?;
+
+    if checkout {
+        checkout_branch(&repo_root.to_string_lossy(), branch_name)?;
+    }
+    Ok(())
+}
+
+pub fn cherry_pick_commit(repo_root: &str, sha: &str) -> Result<()> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    if !sha_is_safe(sha) {
+        return Err(GitError::command("git cherry-pick", "invalid commit sha"));
+    }
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [OsStr::new("cherry-pick"), OsStr::new(sha)],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git cherry-pick failed")
+}
+
+pub fn revert_commit(repo_root: &str, sha: &str) -> Result<()> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    if !sha_is_safe(sha) {
+        return Err(GitError::command("git revert", "invalid commit sha"));
+    }
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [
+            OsStr::new("revert"),
+            OsStr::new("--no-edit"),
+            OsStr::new(sha),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git revert failed")
+}
+
+pub fn reset_to_commit(repo_root: &str, sha: &str, mode: &str) -> Result<()> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    if !sha_is_safe(sha) {
+        return Err(GitError::command("git reset", "invalid commit sha"));
+    }
+    if !matches!(mode, "soft" | "mixed" | "hard") {
+        return Err(GitError::command("git reset", "invalid reset mode"));
+    }
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [
+            OsStr::new("reset"),
+            OsStr::new(&format!("--{mode}")),
+            OsStr::new(sha),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git reset failed")
 }
 
 #[cfg(test)]

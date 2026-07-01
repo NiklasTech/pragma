@@ -128,7 +128,10 @@ pub async fn ai_store_key(req: StoreKeyRequest) -> Result<(), String> {
         return Err("key is required".to_string());
     }
 
-    keychain::set_api_key(&req.provider, &req.key).map_err(|e| e.to_string())
+    keychain::set_api_key(&req.provider, &req.key).map_err(|e| {
+        log::error!("[ai_store_key] failed for provider={}: {}", req.provider, e);
+        e.to_string()
+    })
 }
 
 #[tauri::command]
@@ -139,7 +142,11 @@ pub async fn ai_key_status(req: ProviderRequest) -> Result<KeyStatus, String> {
 
     let (has_key, masked) = match keychain::get_api_key(&req.provider) {
         Ok(Some(key)) => (true, mask_key(&key)),
-        _ => (false, String::new()),
+        Ok(None) => (false, String::new()),
+        Err(e) => {
+            log::warn!("[ai_key_status] provider={} error: {}", req.provider, e);
+            (false, String::new())
+        }
     };
 
     Ok(KeyStatus {
@@ -210,7 +217,7 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider
@@ -343,7 +350,7 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
     };
 
     let result = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider.complete(completion_req).await
@@ -386,6 +393,80 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
             error: Some(e.to_string()),
         }),
     }
+}
+
+// ─── List Models ─────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct ListModelsRequest {
+    pub provider: String,
+    pub base_url: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ModelInfoResponse {
+    pub id: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_window: Option<usize>,
+    pub supports_streaming: bool,
+    pub supports_vision: bool,
+}
+
+#[tauri::command]
+pub async fn ai_list_models(req: ListModelsRequest) -> Result<Vec<ModelInfoResponse>, String> {
+    if req.provider.is_empty() {
+        return Err("provider is required".to_string());
+    }
+
+    let config = ProviderConfig {
+        base_url: req.base_url.unwrap_or_default(),
+        model: String::new(),
+        timeout_seconds: 30,
+        api_key: None,
+        extra_headers: None,
+    };
+
+    let models = match req.provider.as_str() {
+        "openai" | "deepseek" | "kimi" | "openrouter" => {
+            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
+                .map_err(|e| e.to_string())?;
+            provider.list_models().await
+        }
+        "custom" => {
+            let provider = CustomProvider::new(config).map_err(|e| e.to_string())?;
+            provider.list_models().await
+        }
+        "gemini" => {
+            let provider = GeminiProvider::new(config).map_err(|e| e.to_string())?;
+            provider.list_models().await
+        }
+        "anthropic" => {
+            let provider = AnthropicProvider::new(config).map_err(|e| e.to_string())?;
+            provider.list_models().await
+        }
+        "ollama" => {
+            let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
+            provider.list_models().await
+        }
+        "copilot" => {
+            let provider = CopilotProvider::new(config).map_err(|e| e.to_string())?;
+            provider.list_models().await
+        }
+        _ => return Err(format!("unsupported provider: {}", req.provider)),
+    }
+    .map_err(|e| e.to_string())?;
+
+    Ok(models
+        .into_iter()
+        .map(|m| ModelInfoResponse {
+            id: m.id,
+            name: m.name,
+            context_window: m.context_window,
+            supports_streaming: m.supports_streaming,
+            supports_vision: m.supports_vision,
+        })
+        .collect())
 }
 
 // ─── Inline Completion ───────────────────────────────────────────────────────
@@ -459,7 +540,7 @@ pub async fn ai_inline_completion(
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider
@@ -591,7 +672,7 @@ When showing file contents, preserve the full code and include the language tag.
     };
 
     let provider: Box<dyn AIProvider> = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" => Box::new(
+        "openai" | "deepseek" | "kimi" | "openrouter" => Box::new(
             OpenAIProvider::new_for_provider(config, &req.provider).map_err(|e| e.to_string())?,
         ),
         "custom" => Box::new(CustomProvider::new(config).map_err(|e| e.to_string())?),
@@ -790,7 +871,7 @@ pub async fn ai_terminal_suggestion(
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider

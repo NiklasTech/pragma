@@ -4,18 +4,12 @@ import * as React from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/shared/components/ui/button";
-import { useTheme, type ThemeMode, builtInThemeList } from "@/theme";
+import { useTheme, builtInThemeList } from "@/theme";
 import { validateTheme } from "@/theme/validateTheme";
 import type { Theme, ThemeInput } from "@/theme/types";
 import { Check, Trash, UploadSimple } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { SettingSection } from "./ui/SettingSection";
-
-const MODES: { value: ThemeMode; label: string }[] = [
-  { value: "dark", label: "Dark" },
-  { value: "light", label: "Light" },
-  { value: "system", label: "System" },
-];
 
 function getThemePreviewColors(theme: Theme): [string, string, string, string] {
   const tokens = theme.tokens;
@@ -27,8 +21,7 @@ function getThemePreviewColors(theme: Theme): [string, string, string, string] {
 }
 
 export function ThemeSettings() {
-  const { themeId, mode, setTheme, setMode, availableThemes, addCustomTheme, deleteCustomTheme } =
-    useTheme();
+  const { themeId, setTheme, availableThemes, addCustomTheme, deleteCustomTheme } = useTheme();
 
   const builtInIds = React.useMemo(() => new Set(builtInThemeList.map((t) => t.metadata.id)), []);
   const builtInThemes = availableThemes.filter((t) => builtInIds.has(t.metadata.id));
@@ -65,26 +58,6 @@ export function ThemeSettings() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SettingSection title="Appearance">
-        <div className="flex rounded-md border border-border/30 p-1">
-          {MODES.map((m) => (
-            <button
-              key={m.value}
-              type="button"
-              onClick={() => setMode(m.value)}
-              className={cn(
-                "flex-1 rounded px-3 py-1.5 text-ui-xs font-medium transition-colors",
-                mode === m.value
-                  ? "bg-bg-surface text-fg-default shadow-sm"
-                  : "text-fg-muted hover:text-fg-default",
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-      </SettingSection>
-
       <SettingSection title="Built-in Themes">
         <div className="mb-2 flex justify-end">
           <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">

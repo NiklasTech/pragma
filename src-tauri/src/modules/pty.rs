@@ -107,6 +107,10 @@ fn build_command(shell: &str) -> CommandBuilder {
     {
         cmd.env("TERM", "xterm-256color");
         cmd.env("COLORTERM", "truecolor");
+        // Tell fish not to probe for color support; otherwise it sends a DA1
+        // query that xterm.js does not answer and prints a compatibility warning.
+        cmd.env("fish_term24bit", "1");
+        cmd.env("fish_term256", "1");
     }
 
     if let Ok(cwd) = std::env::current_dir() {

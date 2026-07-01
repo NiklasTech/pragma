@@ -41,6 +41,7 @@ export type AIProvider =
   | "deepseek"
   | "kimi"
   | "gemini"
+  | "openrouter"
   | "custom"
   | "copilot";
 
@@ -69,6 +70,7 @@ export interface LayoutSettings {
 export interface WorkspaceSettings {
   recentFolders: string[];
   recentFiles: string[];
+  favoriteFolders: string[];
 }
 
 export type StatusbarItem =
@@ -89,17 +91,6 @@ export interface StatusbarSettings {
 }
 
 export type ThemeMode = "dark" | "light" | "system";
-
-export interface GitSettings {
-  userName: string;
-  userEmail: string;
-  defaultRemote: string;
-  pullRebase: boolean;
-  gpgSignKey: string;
-  sshKeyPath: string;
-  signOff: boolean;
-  signOffText: string;
-}
 
 export interface McpServerConfig {
   id: string;
@@ -133,7 +124,6 @@ export interface SettingsState {
   layout: LayoutSettings;
   workspace: WorkspaceSettings;
   statusbar: StatusbarSettings;
-  git: GitSettings;
   mcp: McpSettings;
   lsp: LspSettings;
   experimental: ExperimentalSettings;
@@ -152,10 +142,11 @@ interface SettingsActions {
   setLayoutSettings: (settings: Partial<LayoutSettings>) => void;
   addRecentFolder: (path: string) => void;
   addRecentFile: (path: string) => void;
+  addFavoriteFolder: (path: string) => void;
+  removeFavoriteFolder: (path: string) => void;
   clearRecentFolders: () => void;
   clearRecentFiles: () => void;
   setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
-  setGitSettings: (settings: Partial<GitSettings>) => void;
   setMcpSettings: (settings: Partial<McpSettings>) => void;
   setLspEnabled: (language: string, enabled: boolean) => void;
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
@@ -212,6 +203,7 @@ const defaultSettings: SettingsState = {
       deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
       kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
       gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash" },
+      openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/free" },
       custom: { baseUrl: "", model: "" },
       copilot: { model: "gpt-4o" },
     },
@@ -227,6 +219,7 @@ const defaultSettings: SettingsState = {
   workspace: {
     recentFolders: [],
     recentFiles: [],
+    favoriteFolders: [],
   },
   statusbar: {
     visible: true,
@@ -242,16 +235,6 @@ const defaultSettings: SettingsState = {
       "aiProvider",
       "theme",
     ],
-  },
-  git: {
-    userName: "",
-    userEmail: "",
-    defaultRemote: "origin",
-    pullRebase: false,
-    gpgSignKey: "",
-    sshKeyPath: "",
-    signOff: false,
-    signOffText: "Signed-off-by: {name} <{email}>",
   },
   mcp: {
     servers: [],
@@ -316,6 +299,25 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       },
     })),
 
+  addFavoriteFolder: (path) =>
+    set((state) => ({
+      workspace: {
+        ...state.workspace,
+        favoriteFolders: [path, ...state.workspace.favoriteFolders.filter((p) => p !== path)].slice(
+          0,
+          50,
+        ),
+      },
+    })),
+
+  removeFavoriteFolder: (path) =>
+    set((state) => ({
+      workspace: {
+        ...state.workspace,
+        favoriteFolders: state.workspace.favoriteFolders.filter((p) => p !== path),
+      },
+    })),
+
   clearRecentFolders: () =>
     set((state) => ({ workspace: { ...state.workspace, recentFolders: [] } })),
 
@@ -323,8 +325,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 
   setStatusbarSettings: (settings) =>
     set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
-
-  setGitSettings: (settings) => set((state) => ({ git: { ...state.git, ...settings } })),
 
   setMcpSettings: (settings) => set((state) => ({ mcp: { ...state.mcp, ...settings } })),
 
@@ -410,7 +410,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       layout: { ...state.layout, ...partial.layout },
       workspace: { ...state.workspace, ...partial.workspace },
       statusbar: { ...state.statusbar, ...partial.statusbar },
-      git: { ...state.git, ...partial.git },
       mcp: { ...state.mcp, ...partial.mcp },
       lsp: { ...state.lsp, ...partial.lsp },
       experimental: { ...state.experimental, ...partial.experimental },
@@ -451,9 +450,46 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   resetToDefaults: () => set({ ...defaultSettings }),
 }));
 
+function mergeWithDefaults(
+  persisted: unknown,
+  defaults: SettingsState & SettingsActions,
+): SettingsState & SettingsActions {
+  if (!persisted || typeof persisted !== "object") {
+    return { ...defaults };
+  }
+
+  const partial = persisted as Partial<SettingsState> & Record<string, unknown>;
+
+  // Drop legacy persisted keys that have been removed from the settings schema.
+  const { git: _, ...restPartial } = partial;
+
+  const ai: AISettings = {
+    ...defaults.ai,
+    ...partial.ai,
+    providers: {
+      ...defaults.ai.providers,
+      ...partial.ai?.providers,
+    },
+  };
+
+  const workspace: WorkspaceSettings = {
+    ...defaults.workspace,
+    ...partial.workspace,
+    favoriteFolders: partial.workspace?.favoriteFolders ?? defaults.workspace.favoriteFolders,
+  };
+
+  return {
+    ...defaults,
+    ...restPartial,
+    ai,
+    workspace,
+  };
+}
+
 export const useSettingsStore = create<SettingsState & SettingsActions>()(
   persist(settingsStoreCreator, {
     name: STORAGE_KEY,
+    merge: (persisted, current) => mergeWithDefaults(persisted, current),
     partialize: (state) => ({
       ...state,
       // Running state is session-only and should not survive app restarts.

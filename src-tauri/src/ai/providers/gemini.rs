@@ -149,6 +149,62 @@ impl AIProvider for GeminiProvider {
             .collect()
     }
 
+    fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {
+        Box::pin(async move {
+            let url = format!(
+                "{}/{API_VERSION}/models?key={}",
+                self.base_url(),
+                self.api_key
+            );
+            let response = self
+                .client
+                .get(&url)
+                .send()
+                .await
+                .map_err(map_reqwest_error)?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_gemini_error(status, &text));
+            }
+
+            let body: serde_json::Value = response
+                .json()
+                .await
+                .map_err(|e| AIError::Serialization(e.to_string()))?;
+
+            let models = body
+                .get("models")
+                .and_then(|m| m.as_array())
+                .unwrap_or(&vec![])
+                .iter()
+                .filter_map(|m| {
+                    let name = m.get("name").and_then(|n| n.as_str())?;
+                    // Names are returned as "models/gemini-..."; strip the prefix.
+                    let id = name.strip_prefix("models/").unwrap_or(name);
+                    let supported = m
+                        .get("supportedGenerationMethods")
+                        .and_then(|s| s.as_array())
+                        .map(|arr| arr.iter().any(|v| v.as_str() == Some("generateContent")))
+                        .unwrap_or(false);
+                    if !supported {
+                        return None;
+                    }
+                    Some(ModelInfo {
+                        id: id.to_string(),
+                        name: id.to_string(),
+                        context_window: None,
+                        supports_streaming: true,
+                        supports_vision: true,
+                    })
+                })
+                .collect();
+
+            Ok(models)
+        })
+    }
+
     fn complete(
         &self,
         req: CompletionRequest,

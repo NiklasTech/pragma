@@ -11,6 +11,7 @@ import {
   pragmaDarkTheme,
   themeCompartment,
   editorBaseTheme,
+  createEditorFontStyleExtension,
 } from "@/shared/lib/theme/editor-theme";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { indentUnit } from "@codemirror/language";
@@ -32,6 +33,11 @@ import { InlineDiff } from "./InlineDiff";
 
 const languageCompartment = new Compartment();
 const ghostTextCompartment = new Compartment();
+const fontStyleCompartment = new Compartment();
+const lineNumbersCompartment = new Compartment();
+const wordWrapCompartment = new Compartment();
+const tabSizeCompartment = new Compartment();
+const indentUnitCompartment = new Compartment();
 const externalUpdate = StateEffect.define<void>();
 
 function FileEditor({
@@ -72,7 +78,15 @@ function FileEditor({
   const [hasSelection, setHasSelection] = useState(false);
   const selectedTextRef = useRef("");
   const { handleBlur } = useAutoSave();
-  const { tabSize, insertSpaces } = useSettingsStore((state) => state.editor);
+  const {
+    tabSize,
+    insertSpaces,
+    fontSize,
+    fontFamily,
+    wordWrap,
+    lineNumbers: showLineNumbers,
+    stickyLines,
+  } = useSettingsStore((state) => state.editor);
   const tabStates = useEditorStore((s) => s.tabStates);
   const goToPosition = useEditorStore((s) => s.goToPosition);
   const pendingScroll = tabStates.find((s) => s.tabId === tabId)?.pendingScroll ?? null;
@@ -105,12 +119,14 @@ function FileEditor({
         themeCompartment.of(pragmaDarkTheme),
         diagnosticsCompartmentRef.current.of([]),
         lintGutter(),
-        lineNumbers(),
+        lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         history(),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         drawSelection(),
         editorBaseTheme,
+        fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, fontFamily)),
+        wordWrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const isExternal = update.transactions.some((tr) =>
@@ -131,9 +147,9 @@ function FileEditor({
             selectedTextRef.current = selected ? update.state.doc.sliceString(from, to) : "";
           }
         }),
-        EditorState.tabSize.of(tabSize),
+        tabSizeCompartment.of(EditorState.tabSize.of(tabSize)),
         EditorState.allowMultipleSelections.of(true),
-        indentUnit.of(insertSpaces ? " ".repeat(tabSize) : "\t"),
+        indentUnitCompartment.of(indentUnit.of(insertSpaces ? " ".repeat(tabSize) : "\t")),
       ];
 
       if (enableVim) {
@@ -142,7 +158,7 @@ function FileEditor({
 
       return extensions;
     },
-    [tabSize, insertSpaces],
+    [tabSize, insertSpaces, fontSize, fontFamily, wordWrap, showLineNumbers],
   );
 
   useEffect(() => {
@@ -250,6 +266,43 @@ function FileEditor({
     });
   }, [themeId, resolvedMode]);
 
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    viewRef.current.dispatch({
+      effects: fontStyleCompartment.reconfigure(
+        createEditorFontStyleExtension(fontSize, fontFamily),
+      ),
+    });
+  }, [fontSize, fontFamily]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    viewRef.current.dispatch({
+      effects: lineNumbersCompartment.reconfigure(showLineNumbers ? lineNumbers() : []),
+    });
+  }, [showLineNumbers]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    viewRef.current.dispatch({
+      effects: wordWrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []),
+    });
+  }, [wordWrap]);
+
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    viewRef.current.dispatch({
+      effects: [
+        tabSizeCompartment.reconfigure(EditorState.tabSize.of(tabSize)),
+        indentUnitCompartment.reconfigure(indentUnit.of(insertSpaces ? " ".repeat(tabSize) : "\t")),
+      ],
+    });
+  }, [tabSize, insertSpaces]);
+
   const shortcuts = useSettingsStore((state) => state.shortcuts);
 
   useEffect(() => {
@@ -331,7 +384,7 @@ function FileEditor({
   return (
     <div className="flex h-full w-full flex-col">
       <div className="relative min-h-0 flex-1">
-        <StickyLinesOverlay view={editorView} enabled={false} />
+        <StickyLinesOverlay view={editorView} enabled={stickyLines} />
         <div
           ref={containerRef}
           className="h-full w-full"

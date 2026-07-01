@@ -29,6 +29,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const ptyIdRef = useRef<string | null>(null);
+  const pendingDa1Ref = useRef(false);
   const lastOutputRef = useRef<string>("");
   const [termState, setTermState] = useState<XTerm | null>(null);
   const { fontSize, fontFamily, scrollback, aiSuggestions } = useTerminalStore();
@@ -47,6 +48,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     let unlistenFn: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let da1Handler: { dispose: () => void } | null = null;
 
     async function setup() {
       if (session.ptyId) {
@@ -77,6 +79,19 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       t.open(containerRef.current);
       termRef.current = t;
       setTermState(t);
+
+      da1Handler = t.parser.registerCsiHandler({ final: "c" }, (params) => {
+        // DA1: CSI c or CSI 0 c
+        if (params.length > 0 && params[0] !== 0) return false;
+
+        const ptyId = ptyIdRef.current;
+        if (ptyId) {
+          void invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" });
+        } else {
+          pendingDa1Ref.current = true;
+        }
+        return true;
+      });
 
       const unlisten = await listen<PtyOutputEvent>("pty_output", (event) => {
         if (event.payload.id === ptyIdRef.current) {
@@ -120,6 +135,11 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
           if (disposed) return;
           ptyIdRef.current = ptyId;
           useTerminalStore.getState().attachPty(session.id, ptyId);
+
+          if (pendingDa1Ref.current) {
+            pendingDa1Ref.current = false;
+            void invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" });
+          }
         } catch (err) {
           t.writeln(`\r\nFailed to start shell: ${String(err)}`);
           return;
@@ -175,10 +195,12 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       if (resizeTimer) clearTimeout(resizeTimer);
       unlistenFn?.();
       resizeObserver?.disconnect();
+      da1Handler?.dispose();
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;
       ptyIdRef.current = null;
+      pendingDa1Ref.current = false;
     };
   }, [
     session.command,
@@ -194,7 +216,15 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   useEffect(() => {
     if (!termRef.current) return;
 
-    termRef.current.options.theme = getXtermTheme();
+    // Defer reading CSS variables until the theme provider has updated
+    // the document root styles in the current render frame.
+    const frame = requestAnimationFrame(() => {
+      if (!termRef.current) return;
+      termRef.current.options.theme = getXtermTheme();
+      termRef.current.refresh(0, termRef.current.rows - 1);
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [themeId, resolvedMode]);
 
   useEffect(() => {
@@ -260,6 +290,43 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [suggestions.visible, suggestions.accept]);
+
+  useEffect(() => {
+    if (!termState) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || !event.shiftKey) return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const activeElement = document.activeElement;
+      if (!activeElement || !container.contains(activeElement)) return;
+
+      const key = event.key.toLowerCase();
+      if (key === "c") {
+        const selection = termRef.current?.getSelection();
+        if (selection && navigator.clipboard) {
+          void navigator.clipboard.writeText(selection);
+        }
+        event.preventDefault();
+        event.stopPropagation();
+      } else if (key === "v") {
+        if (navigator.clipboard) {
+          void navigator.clipboard.readText().then((text) => {
+            if (text && ptyIdRef.current) {
+              void invoke("write_pty", { id: ptyIdRef.current, data: text });
+            }
+          });
+        }
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [termState]);
 
   useEffect(() => {
     const term = termRef.current;

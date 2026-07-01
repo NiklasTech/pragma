@@ -7,6 +7,7 @@ license = "Apache-2.0"
 repository = "https://github.com/NiklasTech/pragma"
 edition = "2021"
 rust-version = "1.77.2"
+default-run = "app"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -36,7 +37,6 @@ notify = "7.0"
 chrono = { version = "0.4", features = ["serde"] }
 diffy = "0.4"
 sha2 = "0.10"
-keyring = "3.6.3"
 reqwest = { version = "0.13.3", features = ["json", "stream"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tokio = { version = "1.52.3", features = ["process", "rt-multi-thread", "macros"] }
@@ -48,8 +48,21 @@ bollard = "0.20"
 ignore = "0.4"
 regex = "1.0"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3.6.3", features = ["linux-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6.3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3.6.3", features = ["windows-native"] }
+
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bin]]
+name = "app"
+path = "src/main.rs"
 
 [[bin]]
 name = "echo-mcp-server"

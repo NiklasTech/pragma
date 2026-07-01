@@ -7,6 +7,7 @@ export const PROVIDER_LABELS: Record<AIProvider, string> = {
   deepseek: "DeepSeek",
   kimi: "Kimi",
   gemini: "Gemini",
+  openrouter: "OpenRouter",
   custom: "Custom",
   copilot: "GitHub Copilot",
 };
@@ -18,6 +19,7 @@ export const PROVIDER_MODELS: Record<AIProvider, string[]> = {
   deepseek: ["deepseek-chat", "deepseek-coder"],
   kimi: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"],
   gemini: ["gemini-2.0-flash", "gemini-2.0-pro"],
+  openrouter: ["openrouter/free"],
   custom: [],
   copilot: ["gpt-4o", "claude-3.5-sonnet", "gemini-2.0-flash"],
 };
@@ -50,6 +52,7 @@ export const PROVIDER_MODEL_MODES: Record<AIProvider, { fast?: string; smart?: s
   deepseek: { fast: "deepseek-chat", smart: "deepseek-coder" },
   kimi: { fast: "moonshot-v1-8k", smart: "moonshot-v1-128k" },
   gemini: { fast: "gemini-2.0-flash", smart: "gemini-2.0-pro" },
+  openrouter: { fast: "openrouter/free", smart: "openrouter/free" },
   custom: {},
   copilot: { fast: "gpt-4o", smart: "claude-3.5-sonnet" },
 };

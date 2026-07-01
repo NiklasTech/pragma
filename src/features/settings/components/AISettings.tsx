@@ -13,8 +13,9 @@ import {
 import { Switch } from "@/shared/components/ui/switch";
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
 import { invoke } from "@tauri-apps/api/core";
-import { PROVIDER_LABELS, PROVIDER_MODELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
+import { PROVIDER_LABELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
 import {
   Eye,
   EyeSlash,
@@ -50,6 +51,10 @@ export function AISettings() {
   const [showKey, setShowKey] = React.useState(false);
   const [testStatus, setTestStatus] = React.useState<"idle" | "loading" | "ok" | "error">("idle");
   const [testError, setTestError] = React.useState<string | null>(null);
+  const [keySaveStatus, setKeySaveStatus] = React.useState<{
+    type: "ok" | "error";
+    message: string;
+  } | null>(null);
   const [installing, setInstalling] = React.useState<string | null>(null);
   const [loggingIn, setLoggingIn] = React.useState<string | null>(null);
 
@@ -75,16 +80,17 @@ export function AISettings() {
   }, []);
 
   const handleProviderChange = (provider: AIProvider) => {
-    const models = PROVIDER_MODELS[provider];
-    const nextModel = models[0] ?? settingsStore.ai.providers[provider].model;
-    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
-    if (models.length > 0) {
+    const nextModel =
+      settingsStore.ai.providers[provider]?.model || aiStore.providers[provider]?.model || "";
+    if (!settingsStore.ai.providers[provider]) {
       settingsStore.updateProvider(provider, { model: nextModel });
     }
+    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
     aiStore.setActiveProvider(provider);
     aiStore.setActiveModel(nextModel);
     aiStore.updateProviderConfig(provider, { model: nextModel });
     setKeyInput("");
+    setKeySaveStatus(null);
     setTestStatus("idle");
     setTestError(null);
     setCopilotError(null);
@@ -102,12 +108,25 @@ export function AISettings() {
   const handleBaseUrlChange = (baseUrl: string) => {
     settingsStore.updateProvider(activeProvider, { baseUrl });
     aiStore.updateProviderConfig(activeProvider, { baseUrl });
+    if (baseUrl.trim()) {
+      void aiStore.loadAvailableModels(activeProvider, true);
+    }
   };
 
   const handleSaveKey = async () => {
     if (!keyInput.trim()) return;
-    await aiStore.storeApiKey(activeProvider, keyInput.trim());
-    setKeyInput("");
+    setKeySaveStatus(null);
+    try {
+      await aiStore.storeApiKey(activeProvider, keyInput.trim());
+      setKeyInput("");
+      setKeySaveStatus({ type: "ok", message: "API key saved" });
+      setTimeout(() => setKeySaveStatus(null), 3000);
+    } catch (err) {
+      setKeySaveStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to save API key",
+      });
+    }
   };
 
   const handleDeleteKey = async () => {
@@ -295,37 +314,10 @@ export function AISettings() {
           )}
         </div>
 
-        <SettingRow
-          label="Model"
-          description="Model used for requests"
-          control={
-            activeProvider === "custom" ? (
-              <Input
-                value={providerConfig.model}
-                onChange={(e) => handleModelChange(e.target.value)}
-                placeholder="e.g. gpt-4o"
-                className="max-w-[200px]"
-              />
-            ) : (
-              <Select
-                value={providerConfig.model}
-                onValueChange={(v) => {
-                  if (v) handleModelChange(v);
-                }}
-              >
-                <SelectTrigger className="max-w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDER_MODELS[activeProvider].map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {m}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )
-          }
+        <ModelSelect
+          provider={activeProvider}
+          value={providerConfig.model}
+          onChange={handleModelChange}
         />
 
         {(activeProvider === "ollama" || activeProvider === "custom") && (
@@ -352,29 +344,54 @@ export function AISettings() {
             label="API Key"
             description="Stored securely in the system keychain"
             control={
-              <div className="flex max-w-[260px] gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    type={showKey ? "text" : "password"}
-                    value={keyInput}
-                    onChange={(e) => setKeyInput(e.target.value)}
-                    placeholder={apiKeyRef ? `Key saved (${apiKeyRef})` : "Enter API key"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey((s) => !s)}
-                    className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
-                  >
-                    {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-                <Button size="sm" onClick={handleSaveKey} disabled={!keyInput.trim()}>
-                  <FloppyDisk size={14} />
-                </Button>
-                {apiKeyRef && (
-                  <Button size="sm" variant="destructive" onClick={handleDeleteKey}>
-                    <Trash size={14} />
+              <div className="flex max-w-[280px] flex-col gap-1">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      type={showKey ? "text" : "password"}
+                      value={keyInput}
+                      onChange={(e) => setKeyInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && keyInput.trim()) {
+                          void handleSaveKey();
+                        }
+                      }}
+                      placeholder={apiKeyRef ? `Key saved (${apiKeyRef})` : "Enter API key"}
+                      className="w-full pr-8"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKey((s) => !s)}
+                      className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
+                    >
+                      {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <Button size="sm" onClick={handleSaveKey} disabled={!keyInput.trim()}>
+                    <FloppyDisk size={14} />
                   </Button>
+                  {apiKeyRef && (
+                    <Button size="sm" variant="destructive" onClick={handleDeleteKey}>
+                      <Trash size={14} />
+                    </Button>
+                  )}
+                </div>
+                {keySaveStatus && (
+                  <span
+                    className={
+                      keySaveStatus.type === "ok"
+                        ? "text-ui-xs text-status-success"
+                        : "text-ui-xs text-status-error"
+                    }
+                  >
+                    {keySaveStatus.type === "ok" && (
+                      <CheckCircle size={12} className="mr-1 inline" />
+                    )}
+                    {keySaveStatus.type === "error" && (
+                      <XCircle size={12} className="mr-1 inline" />
+                    )}
+                    {keySaveStatus.message}
+                  </span>
                 )}
               </div>
             }
@@ -635,6 +652,56 @@ export function AISettings() {
           }
         />
       </SettingSection>
+    </div>
+  );
+}
+
+interface ModelSelectProps {
+  provider: AIProvider;
+  value: string;
+  onChange: (model: string) => void;
+}
+
+function ModelSelect({ provider, value, onChange }: ModelSelectProps) {
+  const { models, loading, error, needsKey } = useAvailableModels(provider);
+
+  const options = React.useMemo(() => {
+    const seen = new Set<string>();
+    const list: { id: string; name: string }[] = [];
+    for (const m of models) {
+      if (!seen.has(m.id)) {
+        seen.add(m.id);
+        list.push({ id: m.id, name: m.name });
+      }
+    }
+    if (value && !seen.has(value)) {
+      list.push({ id: value, name: value });
+    }
+    return list;
+  }, [models, value]);
+
+  const disabled = loading || needsKey;
+  const placeholder = needsKey ? "Save an API key first" : "Select a model";
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Select value={value} onValueChange={(v) => onChange(v ?? "")} disabled={disabled}>
+        <SelectTrigger className="max-w-[280px]">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((m) => (
+            <SelectItem key={m.id} value={m.id}>
+              {m.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {loading && <span className="text-ui-xs text-fg-muted">Loading models…</span>}
+      {needsKey && <span className="text-ui-xs text-fg-muted">Save an API key to load models</span>}
+      {error && !loading && (
+        <span className="text-ui-xs text-status-error">Could not load models: {error}</span>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync";
@@ -7,7 +7,8 @@ import { TerminalTabs } from "./TerminalTabs";
 
 export function Terminal() {
   useTerminalSettingsSync();
-  const { sessions, activeSessionId, defaultShell, addSession } = useTerminalStore();
+  const { sessions, activeSessionId, defaultShell, addSession, reloadSession } = useTerminalStore();
+  const prevDefaultShellRef = useRef(defaultShell);
 
   useEffect(() => {
     if (sessions.length === 0 && defaultShell.length > 0) {
@@ -20,6 +21,15 @@ export function Terminal() {
       });
     }
   }, [sessions.length, defaultShell, addSession]);
+
+  useEffect(() => {
+    const previous = prevDefaultShellRef.current;
+    prevDefaultShellRef.current = defaultShell;
+
+    if (previous.length > 0 && previous !== defaultShell && activeSessionId) {
+      void reloadSession(activeSessionId, defaultShell);
+    }
+  }, [defaultShell, activeSessionId, reloadSession]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">

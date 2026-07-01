@@ -52,29 +52,34 @@ export function useFileExplorer() {
     }
   }, [store.rootPath, setWorkspaceRoot, setRepoPath, setDockerWorkspaceRoot, loadConfigs]);
 
-  const selectRoot = useCallback(async () => {
-    let path: string | null = null;
-    try {
-      path = await open({ multiple: false, directory: true });
-    } catch (err) {
-      toast.error(`Failed to open dialog: ${String(err)}`);
-      return false;
-    }
-    if (typeof path !== "string" || path.length === 0) return false;
-    store.setRootPath(path);
-    addRecentFolder(path);
-    store.setIsLoading(true);
-    try {
-      const entries = await invoke<DirEntry[]>("list_directory", { path });
-      store.setTree(entries.map(entryToNode));
-      return true;
-    } catch (err) {
-      toast.error(String(err));
-      return false;
-    } finally {
-      store.setIsLoading(false);
-    }
-  }, [store]);
+  const selectRoot = useCallback(
+    async (targetPath?: string) => {
+      let path: string | null = targetPath ?? null;
+      if (!path) {
+        try {
+          path = await open({ multiple: false, directory: true });
+        } catch (err) {
+          toast.error(`Failed to open dialog: ${String(err)}`);
+          return false;
+        }
+      }
+      if (typeof path !== "string" || path.length === 0) return false;
+      store.setRootPath(path);
+      addRecentFolder(path);
+      store.setIsLoading(true);
+      try {
+        const entries = await invoke<DirEntry[]>("list_directory", { path });
+        store.setTree(entries.map(entryToNode));
+        return true;
+      } catch (err) {
+        toast.error(String(err));
+        return false;
+      } finally {
+        store.setIsLoading(false);
+      }
+    },
+    [store],
+  );
 
   const loadDirectory = useCallback(
     async (path: string) => {

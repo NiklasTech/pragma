@@ -62,6 +62,19 @@ pub struct GitLogEntry {
 }
 
 #[derive(Serialize)]
+pub struct GitCommitDetails {
+    pub sha: String,
+    pub short_sha: String,
+    pub subject: String,
+    pub body: String,
+    pub author: String,
+    pub author_email: String,
+    pub timestamp_secs: i64,
+    pub parents: Vec<String>,
+    pub files: Vec<GitCommitFileChange>,
+}
+
+#[derive(Serialize)]
 pub struct GitCommitFileChange {
     pub path: String,
     pub original_path: Option<String>,

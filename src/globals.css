@@ -549,3 +549,17 @@
 .tok-modifier {
   color: var(--syntax-keyword);
 }
+
+/* Global cursor pointer for interactive elements */
+button,
+[role="button"],
+[role="menuitem"],
+[role="option"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"]:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}

@@ -2,10 +2,54 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
 import { useGitStore } from "@/shared/stores/git";
-import { Spinner, CaretDown, CaretRight } from "@phosphor-icons/react";
+import {
+  Spinner,
+  CaretDown,
+  CaretRight,
+  Info,
+  Copy,
+  ArrowLineDown,
+  GitBranch,
+  Cherries,
+  ArrowUUpLeft,
+  ArrowCounterClockwise,
+} from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/shared/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/shared/components/ui/context-menu";
 import { GraphRail, railWidth, MAX_VISIBLE_LANES } from "./GraphRail";
 import { EMPTY_GRAPH_STATE, layoutGraph, type GraphRow } from "./lib/gitGraphLayout";
+import { GitCommitDetailsDialog } from "./GitCommitDetailsDialog";
 
 const RAIL_RESERVED_PX = railWidth(MAX_VISIBLE_LANES);
 
@@ -14,6 +58,7 @@ const ROW_HEIGHT = 28;
 const TABLE_HEADER_HEIGHT = 24;
 const GRID_COLUMNS = `${RAIL_RESERVED_PX + 4}px 60px minmax(0, 2fr) minmax(0, 1fr) 90px 76px`;
 const NEAR_BOTTOM_PX = 240;
+const MIN_TABLE_WIDTH = 560;
 
 /* ─── Column configuration ─────────────────────────────────────────────── */
 
@@ -102,13 +147,30 @@ function authorTint(key: string): string {
 /* ─── Main component ───────────────────────────────────────────────────── */
 
 export function GitGraph() {
-  const { repoPath } = useGitStore();
+  const {
+    repoPath,
+    checkoutCommit,
+    createBranchFromCommit,
+    cherryPickCommit,
+    revertCommit,
+    resetToCommit,
+  } = useGitStore();
   const [commits, setCommits] = useState<GitLogEntry[]>([]);
   const [loadStatus, setLoadStatus] = useState<"idle" | "initial" | "more" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [endReached, setEndReached] = useState(false);
   const [activeSha, setActiveSha] = useState<string | null>(null);
   const [collapsedCols, setCollapsedCols] = useState<Set<ColumnKey>>(new Set());
+
+  const [detailsSha, setDetailsSha] = useState<string | null>(null);
+  const [branchDialogSha, setBranchDialogSha] = useState<string | null>(null);
+  const [branchNameInput, setBranchNameInput] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: "cherry-pick" | "revert" | "reset-hard";
+    sha: string;
+    title: string;
+    description: string;
+  } | null>(null);
 
   const requestIdRef = useRef(0);
   const inflightMoreRef = useRef(false);
@@ -268,6 +330,65 @@ export function GitGraph() {
     });
   }, []);
 
+  const handleCopySha = async (sha: string) => {
+    await navigator.clipboard.writeText(sha);
+  };
+
+  const handleCheckoutCommit = async (sha: string) => {
+    await checkoutCommit(sha);
+  };
+
+  const handleCreateBranch = async () => {
+    if (!branchDialogSha || !branchNameInput.trim()) return;
+    await createBranchFromCommit(branchNameInput.trim(), branchDialogSha, true);
+    setBranchDialogSha(null);
+    setBranchNameInput("");
+  };
+
+  const handleCherryPick = async (sha: string) => {
+    setConfirmDialog({
+      type: "cherry-pick",
+      sha,
+      title: "Cherry-pick commit?",
+      description: `Apply the changes from ${sha.slice(0, 7)} onto the current branch?`,
+    });
+  };
+
+  const handleRevert = async (sha: string) => {
+    setConfirmDialog({
+      type: "revert",
+      sha,
+      title: "Revert commit?",
+      description: `Create a new commit that undoes ${sha.slice(0, 7)}?`,
+    });
+  };
+
+  const handleReset = async (sha: string, mode: "soft" | "mixed" | "hard") => {
+    if (mode === "hard") {
+      setConfirmDialog({
+        type: "reset-hard",
+        sha,
+        title: "Reset hard?",
+        description: `This will discard all working tree changes and move HEAD to ${sha.slice(0, 7)}. This cannot be undone.`,
+      });
+      return;
+    }
+    await resetToCommit(sha, mode);
+  };
+
+  const executeConfirm = async () => {
+    if (!confirmDialog) return;
+    const { type, sha } = confirmDialog;
+    if (type === "cherry-pick") {
+      await cherryPickCommit(sha);
+    } else if (type === "revert") {
+      await revertCommit(sha);
+    } else if (type === "reset-hard") {
+      await resetToCommit(sha, "hard");
+    }
+    setConfirmDialog(null);
+  };
+
   if (!repoPath) {
     return (
       <div className="flex h-full items-center justify-center p-4">
@@ -304,13 +425,14 @@ export function GitGraph() {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-x-hidden">
+    <div className="flex h-full min-w-0 flex-col overflow-x-auto">
       {/* Header */}
       <div
         className="grid shrink-0 items-center gap-5 border-b border-border/40 bg-bg-surface pr-3 text-ui-2xs font-semibold uppercase tracking-[0.12em] text-fg-muted select-none"
         style={{
           height: TABLE_HEADER_HEIGHT,
           gridTemplateColumns: GRID_COLUMNS,
+          minWidth: MIN_TABLE_WIDTH,
         }}
       >
         <div />
@@ -348,13 +470,14 @@ export function GitGraph() {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto [scrollbar-gutter:stable]"
       >
         <div
           style={{
             height: virtualizer.getTotalSize(),
             position: "relative",
             width: "100%",
+            minWidth: MIN_TABLE_WIDTH,
           }}
         >
           {virtualizer.getVirtualItems().map((virtualRow) => {
@@ -372,14 +495,68 @@ export function GitGraph() {
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                <CommitRow
-                  commit={commit}
-                  active={activeSha === commit.sha}
-                  graphRow={graphByCommit.get(commit.sha) ?? null}
-                  maxLaneCount={maxLaneCount}
-                  collapsedCols={collapsedCols}
-                  onClick={() => setActiveSha(activeSha === commit.sha ? null : commit.sha)}
-                />
+                <ContextMenu>
+                  <ContextMenuTrigger className="h-full w-full">
+                    <CommitRow
+                      commit={commit}
+                      active={activeSha === commit.sha}
+                      graphRow={graphByCommit.get(commit.sha) ?? null}
+                      maxLaneCount={maxLaneCount}
+                      collapsedCols={collapsedCols}
+                      onClick={() => setActiveSha(activeSha === commit.sha ? null : commit.sha)}
+                    />
+                  </ContextMenuTrigger>
+                  <ContextMenuContent align="start" alignOffset={4} side="right" sideOffset={0}>
+                    <ContextMenuGroup>
+                      <ContextMenuLabel>{commit.short_sha}</ContextMenuLabel>
+                      <ContextMenuItem onClick={() => setDetailsSha(commit.sha)}>
+                        <Info weight="regular" />
+                        View commit details
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => handleCopySha(commit.sha)}>
+                        <Copy weight="regular" />
+                        Copy SHA
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => handleCheckoutCommit(commit.sha)}>
+                        <ArrowLineDown weight="regular" />
+                        Checkout commit
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => setBranchDialogSha(commit.sha)}>
+                        <GitBranch weight="regular" />
+                        Create branch from commit
+                      </ContextMenuItem>
+                    </ContextMenuGroup>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onClick={() => handleCherryPick(commit.sha)}>
+                      <Cherries weight="regular" />
+                      Cherry-pick commit
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleRevert(commit.sha)}>
+                      <ArrowUUpLeft weight="regular" />
+                      Revert commit
+                    </ContextMenuItem>
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <ArrowCounterClockwise weight="regular" />
+                        Reset to commit
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent>
+                        <ContextMenuItem onClick={() => handleReset(commit.sha, "soft")}>
+                          Soft
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleReset(commit.sha, "mixed")}>
+                          Mixed
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          variant="destructive"
+                          onClick={() => handleReset(commit.sha, "hard")}
+                        >
+                          Hard
+                        </ContextMenuItem>
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                  </ContextMenuContent>
+                </ContextMenu>
               </div>
             );
           })}
@@ -395,6 +572,62 @@ export function GitGraph() {
           <div className="py-3 text-center text-ui-xs text-fg-subtle">End of history</div>
         ) : null}
       </div>
+
+      <GitCommitDetailsDialog
+        sha={detailsSha}
+        open={!!detailsSha}
+        onOpenChange={(open) => {
+          if (!open) setDetailsSha(null);
+        }}
+      />
+
+      <Dialog open={!!branchDialogSha} onOpenChange={(open) => !open && setBranchDialogSha(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create branch from {branchDialogSha?.slice(0, 7)}</DialogTitle>
+            <DialogDescription>
+              Enter a name for the new branch. It will be created at this commit and checked out.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={branchNameInput}
+            onChange={(e) => setBranchNameInput(e.target.value)}
+            placeholder="branch-name"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleCreateBranch();
+              if (e.key === "Escape") setBranchDialogSha(null);
+            }}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBranchDialogSha(null)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void handleCreateBranch()} disabled={!branchNameInput.trim()}>
+              Create & checkout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!confirmDialog} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialog?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDialog?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmDialog(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void executeConfirm()}
+              className={
+                confirmDialog?.type === "reset-hard" ? "bg-destructive text-white" : undefined
+              }
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
