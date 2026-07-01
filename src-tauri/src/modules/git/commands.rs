@@ -405,7 +405,10 @@ pub async fn git_smart_checkout(
 }
 
 #[tauri::command]
-pub async fn git_commit_details(repo_path: String, sha: String) -> Result<GitCommitDetails, String> {
+pub async fn git_commit_details(
+    repo_path: String,
+    sha: String,
+) -> Result<GitCommitDetails, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
     }
@@ -443,8 +446,13 @@ pub async fn git_create_branch_from_commit(
         return Err("Commit SHA is required".to_string());
     }
     blocking(move || {
-        operations::create_branch_from_commit(&repo_path, &branch_name, &sha, checkout.unwrap_or(false))
-            .map_err(Into::into)
+        operations::create_branch_from_commit(
+            &repo_path,
+            &branch_name,
+            &sha,
+            checkout.unwrap_or(false),
+        )
+        .map_err(Into::into)
     })
     .await
 }

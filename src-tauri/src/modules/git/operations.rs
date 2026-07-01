@@ -10,8 +10,8 @@ use crate::modules::git::process::{
 };
 use crate::modules::git::types::{
     GitBranch, GitCommitDetails, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
-    GitDiffResult, GitLogEntry, GitPushResult, GitRemote, GitRemoteBranch,
-    GitStatusSnapshot, SmartCheckoutResult, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
+    GitDiffResult, GitLogEntry, GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot,
+    SmartCheckoutResult, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, pathspec, resolve_within_repo, sha_is_safe,
@@ -1177,7 +1177,12 @@ pub fn commit_details(repo_root: &str, sha: &str) -> Result<GitCommitDetails> {
     let format = "--format=%H%x1f%h%x1f%an%x1f%ae%x1f%at%x1f%P%x1f%s%x1f%b";
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
-        [OsStr::new("show"), OsStr::new("-s"), OsStr::new(format), OsStr::new(sha)],
+        [
+            OsStr::new("show"),
+            OsStr::new("-s"),
+            OsStr::new(format),
+            OsStr::new(sha),
+        ],
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git show failed")?;
@@ -1245,7 +1250,11 @@ pub fn create_branch_from_commit(
     }
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
-        [OsStr::new("branch"), OsStr::new(branch_name), OsStr::new(sha)],
+        [
+            OsStr::new("branch"),
+            OsStr::new(branch_name),
+            OsStr::new(sha),
+        ],
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git branch failed")?;
@@ -1278,7 +1287,11 @@ pub fn revert_commit(repo_root: &str, sha: &str) -> Result<()> {
     }
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
-        [OsStr::new("revert"), OsStr::new("--no-edit"), OsStr::new(sha)],
+        [
+            OsStr::new("revert"),
+            OsStr::new("--no-edit"),
+            OsStr::new(sha),
+        ],
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git revert failed")
@@ -1295,7 +1308,11 @@ pub fn reset_to_commit(repo_root: &str, sha: &str, mode: &str) -> Result<()> {
     }
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
-        [OsStr::new("reset"), OsStr::new(&format!("--{mode}")), OsStr::new(sha)],
+        [
+            OsStr::new("reset"),
+            OsStr::new(&format!("--{mode}")),
+            OsStr::new(sha),
+        ],
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git reset failed")

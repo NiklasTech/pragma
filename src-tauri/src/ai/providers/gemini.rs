@@ -186,10 +186,7 @@ impl AIProvider for GeminiProvider {
                     let supported = m
                         .get("supportedGenerationMethods")
                         .and_then(|s| s.as_array())
-                        .map(|arr| {
-                            arr.iter()
-                                .any(|v| v.as_str() == Some("generateContent"))
-                        })
+                        .map(|arr| arr.iter().any(|v| v.as_str() == Some("generateContent")))
                         .unwrap_or(false);
                     if !supported {
                         return None;
