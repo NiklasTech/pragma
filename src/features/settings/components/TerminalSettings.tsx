@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
+import { FontSelect } from "./FontSelect";
 
 export function TerminalSettings() {
   const { terminal, setTerminalSettings } = useSettingsStore();
@@ -17,6 +18,7 @@ export function TerminalSettings() {
     if ("fontSize" in partial) terminalStore.setFontSize(partial.fontSize ?? terminal.fontSize);
     if ("fontFamily" in partial)
       terminalStore.setFontFamily(partial.fontFamily ?? terminal.fontFamily);
+    if ("fontId" in partial) terminalStore.setFontId(partial.fontId ?? terminal.fontId);
     if ("scrollback" in partial)
       terminalStore.setScrollback(partial.scrollback ?? terminal.scrollback);
     if ("aiSuggestions" in partial)
@@ -54,10 +56,9 @@ export function TerminalSettings() {
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Font Family</span>
-            <Input
-              value={terminal.fontFamily}
-              onChange={(e) => update({ fontFamily: e.target.value })}
-              placeholder="JetBrains Mono"
+            <FontSelect
+              value={{ fontId: terminal.fontId, fontFamily: terminal.fontFamily }}
+              onChange={(v) => update({ fontId: v.fontId, fontFamily: v.fontFamily })}
             />
           </div>
           <div className="flex flex-col gap-1.5">

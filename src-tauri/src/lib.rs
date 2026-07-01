@@ -51,6 +51,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            modules::fonts::get_app_data_dir,
+            modules::fonts::download_font,
+            modules::fonts::import_font_file,
+            modules::fonts::delete_font,
+            modules::fonts::list_fonts,
             modules::fs::read_text_file,
             modules::fs::write_text_file,
             modules::fs::list_directory,

@@ -11,6 +11,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { cn } from "@/shared/lib/utils";
+import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorStore } from "@/shared/stores/editor";
 import {
   ContextMenu,
@@ -841,26 +842,13 @@ export function GitStatus() {
       const content = await loadFileDiff(entry.path, staged);
       if (!content || content === "No diff available") return;
 
-      const originalLines: string[] = [];
-      const modifiedLines: string[] = [];
-
-      for (const line of content.split("\n")) {
-        if (line.startsWith("+")) {
-          modifiedLines.push(line.slice(1));
-        } else if (line.startsWith("-")) {
-          originalLines.push(line.slice(1));
-        } else if (line.startsWith(" ")) {
-          const c = line.slice(1);
-          originalLines.push(c);
-          modifiedLines.push(c);
-        }
-      }
+      const { original, modified } = parseDiffToSides(content);
 
       openDiff({
         id: `diff:${entry.path}:${staged ? "staged" : "unstaged"}`,
         path: entry.path,
-        original: originalLines.join("\n"),
-        modified: modifiedLines.join("\n"),
+        original,
+        modified,
         patchText: content,
         staged,
       });

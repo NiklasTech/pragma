@@ -6,8 +6,10 @@ import "./globals.css";
 import App from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
+import { useFontStore } from "@/shared/stores/fonts";
 
 initRunConfigListeners();
+void useFontStore.getState().loadFonts();
 
 if (import.meta.env.DEV) {
   void (async () => {

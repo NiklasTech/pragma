@@ -32,7 +32,8 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const pendingDa1Ref = useRef(false);
   const lastOutputRef = useRef<string>("");
   const [termState, setTermState] = useState<XTerm | null>(null);
-  const { fontSize, fontFamily, scrollback, aiSuggestions } = useTerminalStore();
+  const { fontSize, fontFamily, fontId, scrollback, aiSuggestions } = useTerminalStore();
+  const terminalFontFamily = fontId || fontFamily;
   const { themeId, resolvedMode } = useTheme();
 
   const suggestions = useTerminalSuggestions({
@@ -66,7 +67,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
       const t = new XTerm({
         fontSize,
-        fontFamily: `${fontFamily}, Consolas, Courier New, monospace`,
+        fontFamily: `${terminalFontFamily}, Consolas, Courier New, monospace`,
         cursorBlink: true,
         cursorStyle: "block",
         convertEol: true,
@@ -208,7 +209,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     session.cwd,
     session.ptyId,
     fontSize,
-    fontFamily,
+    terminalFontFamily,
     scrollback,
     session.id,
   ]);

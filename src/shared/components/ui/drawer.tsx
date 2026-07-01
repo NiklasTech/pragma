@@ -27,7 +27,7 @@ function DrawerBackdrop({ className, ...props }: DrawerPrimitive.Backdrop.Props)
     <DrawerPrimitive.Backdrop
       data-slot="drawer-backdrop"
       className={cn(
-        "fixed inset-0 isolate z-[70] bg-bg-overlay/60 duration-200 supports-backdrop-filter:backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-[70] bg-bg-overlay/60 opacity-0 transition-opacity duration-200 supports-backdrop-filter:backdrop-blur-sm data-[open]:opacity-100",
         className,
       )}
       {...props}
@@ -46,12 +46,10 @@ function DrawerContent({
   showCloseButton?: boolean;
 }) {
   const sideStyles = {
-    left: "top-14 bottom-0 left-0 w-full max-w-lg rounded-r-lg data-open:slide-in-from-left-full data-closed:slide-out-to-left-full",
-    right:
-      "top-14 bottom-0 right-0 w-full max-w-4xl rounded-l-lg data-open:slide-in-from-right-full data-closed:slide-out-to-right-full",
-    top: "inset-x-0 top-14 w-full max-h-[80vh] rounded-b-lg data-open:slide-in-from-top-full data-closed:slide-out-to-top-full",
-    bottom:
-      "inset-x-0 bottom-0 w-full max-h-[80vh] rounded-t-lg data-open:slide-in-from-bottom-full data-closed:slide-out-to-bottom-full",
+    left: "top-14 bottom-0 left-0 w-full max-w-lg rounded-r-lg",
+    right: "top-14 bottom-0 right-0 w-full max-w-4xl rounded-l-lg",
+    top: "inset-x-0 top-14 w-full max-h-[80vh] rounded-b-lg",
+    bottom: "inset-x-0 bottom-0 w-full max-h-[80vh] rounded-t-lg",
   };
 
   return (
@@ -60,7 +58,7 @@ function DrawerContent({
       <DrawerPrimitive.Popup
         data-slot="drawer-content"
         className={cn(
-          "fixed z-[70] grid gap-3 border border-border/60 bg-bg-elevated p-0 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          "fixed z-[70] grid gap-3 border border-border/60 bg-bg-elevated p-0 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 opacity-0 transition-all duration-200 outline-none data-[open]:opacity-100 data-[open]:translate-x-0",
           sideStyles[side],
           className,
         )}

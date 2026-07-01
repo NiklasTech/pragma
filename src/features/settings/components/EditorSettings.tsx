@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useSettingsStore, type AutoSave } from "@/shared/stores/settings";
+import { FontSelect } from "./FontSelect";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 
@@ -43,11 +44,9 @@ export function EditorSettings() {
           label="Font Family"
           description="Monospace font for the editor"
           control={
-            <Input
-              value={editor.fontFamily}
-              onChange={(e) => setEditorSettings({ fontFamily: e.target.value })}
-              placeholder="JetBrains Mono"
-              className="max-w-[180px]"
+            <FontSelect
+              value={{ fontId: editor.fontId, fontFamily: editor.fontFamily }}
+              onChange={(v) => setEditorSettings({ fontId: v.fontId, fontFamily: v.fontFamily })}
             />
           }
         />
