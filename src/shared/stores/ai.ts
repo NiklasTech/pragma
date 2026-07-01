@@ -16,12 +16,27 @@ export type AIProvider =
   | "deepseek"
   | "kimi"
   | "gemini"
+  | "openrouter"
   | "custom"
   | "copilot";
 
 export interface ProviderConfig {
   model: string;
   baseUrl?: string;
+}
+
+export interface ModelInfo {
+  id: string;
+  name: string;
+  context_window?: number;
+  supports_streaming: boolean;
+  supports_vision: boolean;
+}
+
+export interface ModelListCache {
+  models: ModelInfo[];
+  fetchedAt: number;
+  error?: string | null;
 }
 
 export interface ChatMessage {
@@ -72,6 +87,8 @@ interface AIState {
   chatSessions: ChatSession[];
   activeChatSessionId: string | null;
   apiKeyRefs: Record<AIProvider, string | null>;
+  availableModels: Partial<Record<AIProvider, ModelListCache>>;
+  modelsLoading: Partial<Record<AIProvider, boolean>>;
 
   // CLI
   cliManifests: CLIManifest[];
@@ -116,6 +133,8 @@ interface AIActions {
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
   loadKeyStatus: (provider: AIProvider) => Promise<void>;
   deleteApiKey: (provider: AIProvider) => Promise<void>;
+  loadAvailableModels: (provider: AIProvider, force?: boolean) => Promise<void>;
+  clearAvailableModels: (provider: AIProvider) => void;
 
   // Copilot OAuth
   loadCopilotAuthStatus: () => Promise<void>;
@@ -146,6 +165,7 @@ const defaultProviders: Record<AIProvider, ProviderConfig> = {
   deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
   kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
   gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash" },
+  openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/free" },
   custom: { baseUrl: "", model: "" },
   copilot: { model: "gpt-4o" },
 };
@@ -169,9 +189,12 @@ const initialState: AIState = {
     deepseek: null,
     kimi: null,
     gemini: null,
+    openrouter: null,
     custom: null,
     copilot: null,
   },
+  availableModels: {},
+  modelsLoading: {},
   copilotAuth: {
     authenticated: false,
     clientId: "",
@@ -333,6 +356,7 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   storeApiKey: async (provider, key) => {
     await invoke("ai_store_key", { req: { provider, key } });
     await get().loadKeyStatus(provider);
+    await get().loadAvailableModels(provider, true);
   },
 
   loadKeyStatus: async (provider) => {
@@ -349,6 +373,54 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
     set({
       apiKeyRefs: { ...get().apiKeyRefs, [provider]: null },
     });
+    get().clearAvailableModels(provider);
+  },
+
+  loadAvailableModels: async (provider, force = false) => {
+    const { availableModels, modelsLoading, providers, apiKeyRefs } = get();
+    const cached = availableModels[provider];
+
+    if (modelsLoading[provider]) return;
+
+    const keylessProviders: AIProvider[] = ["ollama", "custom"];
+    const hasKey = Boolean(apiKeyRefs[provider]) || keylessProviders.includes(provider);
+    if (!hasKey) return;
+
+    if (!force && cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) return;
+
+    set({ modelsLoading: { ...modelsLoading, [provider]: true } });
+
+    try {
+      const models = await invoke<ModelInfo[]>("ai_list_models", {
+        req: { provider, base_url: providers[provider]?.baseUrl },
+      });
+      set({
+        availableModels: {
+          ...get().availableModels,
+          [provider]: { models, fetchedAt: Date.now(), error: null },
+        },
+      });
+    } catch (err) {
+      set({
+        availableModels: {
+          ...get().availableModels,
+          [provider]: {
+            models: [],
+            fetchedAt: Date.now(),
+            error: String(err),
+          },
+        },
+      });
+    } finally {
+      set({ modelsLoading: { ...get().modelsLoading, [provider]: false } });
+    }
+  },
+
+  clearAvailableModels: (provider) => {
+    const { availableModels } = get();
+    const next = { ...availableModels };
+    delete next[provider];
+    set({ availableModels: next });
   },
 
   // ─── CLI Actions ──────────────────────────────────────────────────────────

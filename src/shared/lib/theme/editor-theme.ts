@@ -11,8 +11,6 @@ export type EditorThemeName = "dark-default" | "one-dark";
 
 export const editorBaseTheme = EditorView.theme({
   "&": {
-    fontSize: "14px",
-    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
     height: "100%",
   },
   ".cm-scroller": {
@@ -26,11 +24,21 @@ export const editorBaseTheme = EditorView.theme({
   ".cm-line": {
     padding: "0 12px 0 8px",
   },
-  ".cm-gutters": {
-    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
-    fontSize: "14px",
-  },
 });
+
+export function createEditorFontStyleExtension(fontSize: number, fontFamily: string): Extension {
+  const family = fontFamily.trim() || 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)';
+  return EditorView.theme({
+    "&": {
+      fontSize: `${fontSize}px`,
+      fontFamily: `${family}, ui-monospace, monospace`,
+    },
+    ".cm-gutters": {
+      fontFamily: `${family}, ui-monospace, monospace`,
+      fontSize: `${fontSize}px`,
+    },
+  });
+}
 
 const pragmaDarkBase = EditorView.theme({
   "&": {

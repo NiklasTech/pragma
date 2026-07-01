@@ -49,7 +49,7 @@ export function FileExplorer() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
         <p className="text-ui-sm text-fg-muted">No folder open</p>
-        <Button variant="outline" size="sm" onClick={selectRoot} className="gap-2">
+        <Button variant="outline" size="sm" onClick={() => void selectRoot()} className="gap-2">
           <FolderOpen size={16} />
           Open Folder
         </Button>
@@ -107,7 +107,7 @@ export function FileExplorer() {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={selectRoot}>
+        <ContextMenuItem onClick={() => void selectRoot()}>
           <FolderOpen size={14} />
           <span>Open Folder</span>
         </ContextMenuItem>

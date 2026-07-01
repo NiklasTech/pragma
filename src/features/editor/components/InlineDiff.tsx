@@ -1,21 +1,15 @@
 import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
-import { unifiedMergeView } from "@codemirror/merge";
+import { MergeView } from "@codemirror/merge";
 import { EditorState, Compartment } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Spinner, Columns, Rows, Check, X } from "@phosphor-icons/react";
-import {
-  pragmaDarkTheme,
-  themeCompartment,
-  editorBaseTheme,
-} from "@/shared/lib/theme/editor-theme";
+import { pragmaDarkTheme, editorBaseTheme } from "@/shared/lib/theme/editor-theme";
 import { useTheme } from "@/theme";
 import { loadLanguage } from "@/shared/lib/editor/languages";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
-
-const languageCompartment = new Compartment();
 
 const READONLY_EXT = [EditorState.readOnly.of(true), EditorView.editable.of(false)];
 
@@ -94,6 +88,12 @@ type LoadState =
   | { kind: "loaded" }
   | { kind: "error"; message: string };
 
+const MERGE_VIEW_THEME = EditorView.theme({
+  "&.cm-mergeView": {
+    minHeight: "100%",
+  },
+});
+
 const SplitDiffView = memo(function SplitDiffView({
   original,
   modified,
@@ -105,39 +105,59 @@ const SplitDiffView = memo(function SplitDiffView({
   filePath: string;
   theme: "light" | "dark";
 }) {
-  const cmRef = useRef<ReactCodeMirrorRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mergeViewRef = useRef<MergeView | null>(null);
+  const aLangCompartment = useRef(new Compartment());
+  const bLangCompartment = useRef(new Compartment());
 
-  const extensions = useMemo(
-    () => [
-      languageCompartment.of([]),
+  const createExtensions = useCallback(
+    (langCompartment: Compartment) => [
+      langCompartment.of([]),
       EditorView.theme({}, { dark: theme === "dark" }),
-      themeCompartment.of(pragmaDarkTheme),
+      pragmaDarkTheme,
       editorBaseTheme,
       ...READONLY_EXT,
-      unifiedMergeView({
-        original,
-        mergeControls: false,
-        highlightChanges: true,
-        gutter: true,
-        syntaxHighlightDeletions: true,
-        collapseUnchanged: { margin: 3, minSize: 6 },
-      }),
       DIFF_THEME,
+      MERGE_VIEW_THEME,
     ],
-    [original, modified, theme],
+    [theme],
   );
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const mv = new MergeView({
+      a: {
+        doc: original,
+        extensions: createExtensions(aLangCompartment.current),
+      },
+      b: {
+        doc: modified,
+        extensions: createExtensions(bLangCompartment.current),
+      },
+      parent: containerRef.current,
+      orientation: "a-b",
+      highlightChanges: true,
+      gutter: true,
+      collapseUnchanged: { margin: 3, minSize: 6 },
+    });
+    mergeViewRef.current = mv;
+
+    return () => {
+      mv.destroy();
+      mergeViewRef.current = null;
+    };
+  }, [original, modified, createExtensions]);
 
   useEffect(() => {
     let cancelled = false;
     loadLanguage(filePath)
       .then((ext) => {
         if (cancelled) return;
-        const view = cmRef.current?.view;
-        if (!view) return;
-        view.dispatch({
-          effects: languageCompartment.reconfigure(ext),
-        });
+        const mv = mergeViewRef.current;
+        if (!mv) return;
+        mv.a.dispatch({ effects: aLangCompartment.current.reconfigure(ext) });
+        mv.b.dispatch({ effects: bLangCompartment.current.reconfigure(ext) });
       })
       .catch(() => {});
     return () => {
@@ -145,25 +165,7 @@ const SplitDiffView = memo(function SplitDiffView({
     };
   }, [filePath]);
 
-  return (
-    <div ref={containerRef} className="h-full w-full">
-      <CodeMirror
-        ref={cmRef}
-        value={modified}
-        theme="none"
-        extensions={extensions}
-        editable={false}
-        height="100%"
-        className="h-full text-ui-base"
-        basicSetup={{
-          lineNumbers: true,
-          foldGutter: false,
-          highlightActiveLine: false,
-          highlightActiveLineGutter: false,
-        }}
-      />
-    </div>
-  );
+  return <div ref={containerRef} className="h-full w-full" />;
 });
 
 type DiffLineType = "added" | "removed" | "hunk" | "context" | "header";
@@ -339,6 +341,7 @@ export const InlineDiff = memo(function InlineDiff({
   };
 
   const canShowUnified = !!patchText;
+  const canShowSplit = original.length > 0 && modified.length > 0;
 
   if (state.kind === "loading" || state.kind === "idle") {
     return (
@@ -369,9 +372,11 @@ export const InlineDiff = memo(function InlineDiff({
             size="sm"
             className={cn(
               "h-6 px-2 text-ui-xs gap-1",
-              effectiveViewMode === "split" && "bg-bg-active text-fg-default",
+              effectiveViewMode === "split" && canShowSplit && "bg-bg-active text-fg-default",
+              !canShowSplit && "opacity-40 cursor-not-allowed",
             )}
-            onClick={() => handleViewModeChange("split")}
+            onClick={() => canShowSplit && handleViewModeChange("split")}
+            disabled={!canShowSplit}
           >
             <Columns size={12} />
             Split
@@ -414,8 +419,14 @@ export const InlineDiff = memo(function InlineDiff({
           )}
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden" style={{ maxWidth: "100%" }}>
-        {effectiveViewMode === "split" ? (
+      <div
+        className={cn(
+          "min-h-0 flex-1",
+          effectiveViewMode === "split" && canShowSplit ? "overflow-auto" : "overflow-hidden",
+        )}
+        style={{ maxWidth: "100%" }}
+      >
+        {effectiveViewMode === "split" && canShowSplit ? (
           <SplitDiffView
             original={original}
             modified={modified}

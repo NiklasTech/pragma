@@ -36,13 +36,9 @@ export function useAIInit() {
       void loadCLIStatuses();
 
       // Check API key statuses for providers that require a key.
-      const providers: Array<"openai" | "anthropic" | "deepseek" | "kimi" | "gemini"> = [
-        "openai",
-        "anthropic",
-        "deepseek",
-        "kimi",
-        "gemini",
-      ];
+      const providers: Array<
+        "openai" | "anthropic" | "deepseek" | "kimi" | "gemini" | "openrouter"
+      > = ["openai", "anthropic", "deepseek", "kimi", "gemini", "openrouter"];
       providers.forEach((p) => void loadKeyStatus(p));
 
       // Load GitHub Copilot OAuth status

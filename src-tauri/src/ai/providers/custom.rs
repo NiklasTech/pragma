@@ -48,6 +48,10 @@ impl AIProvider for CustomProvider {
             .collect()
     }
 
+    fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {
+        self.inner.list_models()
+    }
+
     fn complete(
         &self,
         req: CompletionRequest,

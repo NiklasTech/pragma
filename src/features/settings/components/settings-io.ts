@@ -15,7 +15,6 @@ export async function exportSettings(): Promise<void> {
       shortcuts: state.shortcuts,
       layout: state.layout,
       statusbar: state.statusbar,
-      git: state.git,
       mcp: state.mcp,
     },
     null,

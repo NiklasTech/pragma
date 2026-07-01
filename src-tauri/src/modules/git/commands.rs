@@ -1,8 +1,8 @@
 use crate::modules::git::operations;
 use crate::modules::git::types::{
-    GitBranch, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
-    GitLogEntry, GitPullResult, GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot,
-    SmartCheckoutResult, StashEntry,
+    GitBranch, GitCommitDetails, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
+    GitDiffResult, GitLogEntry, GitPullResult, GitPushResult, GitRemote, GitRemoteBranch,
+    GitStatusSnapshot, SmartCheckoutResult, StashEntry,
 };
 
 async fn blocking<F, T>(f: F) -> Result<T, String>
@@ -402,4 +402,89 @@ pub async fn git_smart_checkout(
         return Err("Branch name is required".to_string());
     }
     blocking(move || operations::smart_checkout(&repo_path, &branch_name).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_commit_details(repo_path: String, sha: String) -> Result<GitCommitDetails, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if sha.is_empty() {
+        return Err("Commit SHA is required".to_string());
+    }
+    blocking(move || operations::commit_details(&repo_path, &sha).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_checkout_commit(repo_path: String, sha: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if sha.is_empty() {
+        return Err("Commit SHA is required".to_string());
+    }
+    blocking(move || operations::checkout_commit(&repo_path, &sha).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_create_branch_from_commit(
+    repo_path: String,
+    branch_name: String,
+    sha: String,
+    checkout: Option<bool>,
+) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if branch_name.is_empty() {
+        return Err("Branch name is required".to_string());
+    }
+    if sha.is_empty() {
+        return Err("Commit SHA is required".to_string());
+    }
+    blocking(move || {
+        operations::create_branch_from_commit(&repo_path, &branch_name, &sha, checkout.unwrap_or(false))
+            .map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_cherry_pick_commit(repo_path: String, sha: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if sha.is_empty() {
+        return Err("Commit SHA is required".to_string());
+    }
+    blocking(move || operations::cherry_pick_commit(&repo_path, &sha).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_revert_commit(repo_path: String, sha: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if sha.is_empty() {
+        return Err("Commit SHA is required".to_string());
+    }
+    blocking(move || operations::revert_commit(&repo_path, &sha).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_reset_to_commit(
+    repo_path: String,
+    sha: String,
+    mode: String,
+) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if sha.is_empty() {
+        return Err("Commit SHA is required".to_string());
+    }
+    if !matches!(mode.as_str(), "soft" | "mixed" | "hard") {
+        return Err("Reset mode must be soft, mixed, or hard".to_string());
+    }
+    blocking(move || operations::reset_to_commit(&repo_path, &sha, &mode).map_err(Into::into)).await
 }

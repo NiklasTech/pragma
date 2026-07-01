@@ -2,13 +2,13 @@ import { useMemo, useState } from "react";
 
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
 import { cn } from "@/shared/lib/utils";
 import {
   LOCAL_PROVIDER,
   MODE_LABELS,
   PROVIDER_LABELS,
   PROVIDER_MODEL_MODES,
-  PROVIDER_MODELS,
   type ProviderMode,
 } from "@/shared/lib/ai-providers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
@@ -36,6 +36,7 @@ const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
   deepseek: [],
   kimi: ["moonshot-kimi"],
   gemini: [],
+  openrouter: [],
   custom: [],
   copilot: [],
 };
@@ -82,7 +83,11 @@ export function AiModelSelector() {
   } = useAIStore();
   const settingsStore = useSettingsStore();
 
-  const activeConfig = providers[activeProvider];
+  const {
+    models: availableModels,
+    loading: modelsLoading,
+    needsKey: modelSelectNeedsKey,
+  } = useAvailableModels(activeProvider);
 
   const availableMap = useMemo(() => {
     const map: Record<AIProvider, boolean> = {
@@ -92,6 +97,7 @@ export function AiModelSelector() {
       deepseek: false,
       kimi: false,
       gemini: false,
+      openrouter: false,
       custom: false,
       copilot: false,
     };
@@ -113,9 +119,7 @@ export function AiModelSelector() {
   const handleProviderChange = (provider: AIProvider) => {
     setActiveProvider(provider);
     setActiveCLIProvider(null);
-    const models = PROVIDER_MODELS[provider];
-    const fallback = providers[provider].model;
-    const nextModel = models[0] ?? fallback ?? "";
+    const nextModel = providers[provider].model || "";
     setActiveModel(nextModel);
     updateProviderConfig(provider, { model: nextModel });
     settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
@@ -130,9 +134,7 @@ export function AiModelSelector() {
 
   const handleModeChange = (mode: ProviderMode) => {
     if (mode === "local") {
-      const models = PROVIDER_MODELS[LOCAL_PROVIDER];
-      const fallback = providers[LOCAL_PROVIDER].model;
-      const nextModel = models[0] ?? fallback ?? "";
+      const nextModel = providers[LOCAL_PROVIDER].model || "";
       setActiveProvider(LOCAL_PROVIDER);
       setActiveCLIProvider(null);
       setActiveModel(nextModel);
@@ -260,23 +262,33 @@ export function AiModelSelector() {
             <span className="text-ui-xs font-medium uppercase tracking-wider text-fg-muted">
               Model
             </span>
-            <Select value={activeModel} onValueChange={handleModelChange}>
+            <Select
+              value={activeModel}
+              onValueChange={handleModelChange}
+              disabled={modelsLoading || modelSelectNeedsKey}
+            >
               <SelectTrigger className="h-8 text-ui-sm">
-                <SelectValue placeholder="Select model" />
+                <SelectValue
+                  placeholder={modelSelectNeedsKey ? "Save an API key first" : "Select model"}
+                />
               </SelectTrigger>
               <SelectContent>
-                {PROVIDER_MODELS[activeProvider].map((model) => (
-                  <SelectItem key={model} value={model} className="text-ui-sm">
-                    {model}
+                {availableModels.map((model) => (
+                  <SelectItem key={model.id} value={model.id} className="text-ui-sm">
+                    {model.name}
                   </SelectItem>
                 ))}
-                {activeProvider === "custom" && activeConfig.model && (
-                  <SelectItem value={activeConfig.model} className="text-ui-sm">
-                    {activeConfig.model}
+                {activeModel && !availableModels.some((m) => m.id === activeModel) && (
+                  <SelectItem value={activeModel} className="text-ui-sm">
+                    {activeModel}
                   </SelectItem>
                 )}
               </SelectContent>
             </Select>
+            {modelsLoading && <span className="text-ui-xs text-fg-muted">Loading models…</span>}
+            {modelSelectNeedsKey && (
+              <span className="text-ui-xs text-fg-muted">Save an API key to load models</span>
+            )}
           </div>
 
           {/* Configure hint */}

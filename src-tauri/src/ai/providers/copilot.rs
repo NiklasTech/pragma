@@ -123,6 +123,10 @@ impl AIProvider for CopilotProvider {
             .collect()
     }
 
+    fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {
+        Box::pin(async move { Ok(self.models()) })
+    }
+
     fn complete(
         &self,
         req: CompletionRequest,

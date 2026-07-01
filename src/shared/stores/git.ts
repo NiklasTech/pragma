@@ -3,7 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { DiffViewMode } from "@/features/editor/components/InlineDiff";
 import { saveWorkspace, loadWorkspace } from "./workspace";
-import { useSettingsStore } from "./settings";
 
 export interface GitStatusEntry {
   path: string;
@@ -38,6 +37,36 @@ export interface GitCommit {
   message: string;
   author: string;
   time: number;
+}
+
+export interface GitCommitFileChange {
+  path: string;
+  original_path: string | null;
+  status: string;
+  status_label: string;
+  added: number;
+  removed: number;
+  is_binary: boolean;
+}
+
+export interface GitCommitDetails {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  body: string;
+  author: string;
+  author_email: string;
+  timestamp_secs: number;
+  parents: string[];
+  files: GitCommitFileChange[];
+}
+
+export interface GitDiffContentResult {
+  original_content: string;
+  modified_content: string;
+  is_binary: boolean;
+  fallback_patch: string;
+  truncated: boolean;
 }
 
 export interface GitGraphNode {
@@ -137,6 +166,17 @@ interface GitActions {
   pull: (remoteName?: string, branchName?: string, rebase?: boolean) => Promise<void>;
   fetch: (remoteName?: string, branchName?: string) => Promise<void>;
   clearPushPullError: () => void;
+  loadCommitDetails: (sha: string) => Promise<GitCommitDetails | null>;
+  loadCommitFileDiff: (
+    sha: string,
+    path: string,
+    originalPath?: string | null,
+  ) => Promise<GitDiffContentResult | null>;
+  checkoutCommit: (sha: string) => Promise<void>;
+  createBranchFromCommit: (branchName: string, sha: string, checkout?: boolean) => Promise<void>;
+  cherryPickCommit: (sha: string) => Promise<void>;
+  revertCommit: (sha: string) => Promise<void>;
+  resetToCommit: (sha: string, mode: "soft" | "mixed" | "hard") => Promise<void>;
 }
 
 const initialState: GitState = {
@@ -281,20 +321,11 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
     const { repoPath, commitMessage, loadStatus } = get();
     if (!repoPath || !commitMessage.trim()) return;
 
-    const gitSettings = useSettingsStore.getState().git;
-    const signOffText = gitSettings.signOff
-      ? gitSettings.signOffText
-          .replace(/{name}/g, gitSettings.userName || "")
-          .replace(/{email}/g, gitSettings.userEmail || "")
-          .trim()
-      : undefined;
-
     set({ actionBusy: "commit" });
     try {
       await invoke<{ commit_sha: string }>("git_commit", {
         repoPath,
         message: commitMessage.trim(),
-        sign_off_text: signOffText && signOffText.length > 0 ? signOffText : undefined,
       });
       set({ commitMessage: "" });
       await loadStatus();
@@ -579,4 +610,130 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
   },
 
   clearPushPullError: () => set({ pushPullError: null }),
+
+  loadCommitDetails: async (sha: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return null;
+
+    try {
+      const result = await invoke<GitCommitDetails>("git_commit_details", { repoPath, sha });
+      return result;
+    } catch (err) {
+      toast.error(`Failed to load commit details: ${String(err)}`);
+      return null;
+    }
+  },
+
+  loadCommitFileDiff: async (sha: string, path: string, originalPath?: string | null) => {
+    const { repoPath } = get();
+    if (!repoPath) return null;
+
+    try {
+      const result = await invoke<GitDiffContentResult>("git_commit_file_diff", {
+        repoPath,
+        sha,
+        path,
+        originalPath: originalPath ?? null,
+      });
+      return result;
+    } catch (err) {
+      toast.error(`Failed to load diff: ${String(err)}`);
+      return null;
+    }
+  },
+
+  checkoutCommit: async (sha: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "checkout-commit" });
+    try {
+      await invoke("git_checkout_commit", { repoPath, sha });
+      toast.success(`Checked out ${sha.slice(0, 7)}`);
+      await get().refreshAll();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  createBranchFromCommit: async (branchName: string, sha: string, checkout = false) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "create-branch" });
+    try {
+      await invoke("git_create_branch_from_commit", { repoPath, branchName, sha, checkout });
+      toast.success(`Created branch ${branchName}`);
+      await get().refreshAll();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  cherryPickCommit: async (sha: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "cherry-pick" });
+    try {
+      await invoke("git_cherry_pick_commit", { repoPath, sha });
+      toast.success(`Cherry-picked ${sha.slice(0, 7)}`);
+      await get().refreshAll();
+    } catch (err) {
+      const msg = String(err);
+      if (msg.includes("conflict")) {
+        toast.error("Cherry-pick resulted in conflicts. Resolve them manually.");
+      } else {
+        toast.error(msg);
+      }
+      set({ error: msg });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  revertCommit: async (sha: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "revert" });
+    try {
+      await invoke("git_revert_commit", { repoPath, sha });
+      toast.success(`Reverted ${sha.slice(0, 7)}`);
+      await get().refreshAll();
+    } catch (err) {
+      const msg = String(err);
+      if (msg.includes("conflict")) {
+        toast.error("Revert resulted in conflicts. Resolve them manually.");
+      } else {
+        toast.error(msg);
+      }
+      set({ error: msg });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  resetToCommit: async (sha: string, mode: "soft" | "mixed" | "hard") => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "reset" });
+    try {
+      await invoke("git_reset_to_commit", { repoPath, sha, mode });
+      toast.success(`Reset ${mode} to ${sha.slice(0, 7)}`);
+      await get().refreshAll();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
 }));

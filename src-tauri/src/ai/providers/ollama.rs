@@ -45,8 +45,7 @@ impl OllamaProvider {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    async fn fetch_models(&self) -> Result<Vec<ModelInfo>, AIError> {
+    pub async fn fetch_models(&self) -> Result<Vec<ModelInfo>, AIError> {
         let url = format!("{}/api/tags", self.base_url());
 
         let response = self
@@ -103,6 +102,10 @@ impl AIProvider for OllamaProvider {
         } else {
             Vec::new()
         }
+    }
+
+    fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {
+        Box::pin(async move { self.fetch_models().await })
     }
 
     fn complete(

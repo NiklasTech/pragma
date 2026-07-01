@@ -31,6 +31,7 @@ interface TerminalActions {
   removeSession: (sessionId: string) => void;
   killSession: (sessionId: string) => Promise<void>;
   killAllSessions: () => Promise<void>;
+  reloadSession: (sessionId: string, shell: string) => Promise<void>;
   attachPty: (sessionId: string, ptyId: string) => void;
   setShellResolved: (resolved: boolean) => void;
   setActiveSession: (sessionId: string) => void;
@@ -113,6 +114,24 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
         }),
       );
       set({ sessions: [], activeSessionId: null });
+    },
+
+    reloadSession: async (sessionId, shell) => {
+      const { sessions } = get();
+      const session = sessions.find((s) => s.id === sessionId);
+      if (!session || session.command) return;
+
+      if (session.ptyId) {
+        try {
+          await invoke("kill_pty", { id: session.ptyId });
+        } catch {
+          // ignore
+        }
+      }
+
+      set({
+        sessions: sessions.map((s) => (s.id === sessionId ? { ...s, shell, ptyId: undefined } : s)),
+      });
     },
 
     attachPty: (sessionId, ptyId) => {

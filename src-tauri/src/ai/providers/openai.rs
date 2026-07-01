@@ -15,6 +15,7 @@ use crate::ai::{
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const COMPLETIONS_PATH: &str = "/chat/completions";
+const MODELS_PATH: &str = "/models";
 
 const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[
     ("gpt-4o", "GPT-4o", Some(128_000), true, true),
@@ -120,6 +121,46 @@ impl AIProvider for OpenAIProvider {
                 supports_vision: *vision,
             })
             .collect()
+    }
+
+    fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {
+        Box::pin(async move {
+            let url = format!("{}{}", self.base_url(), MODELS_PATH);
+            let response = self
+                .client
+                .get(&url)
+                .send()
+                .await
+                .map_err(map_reqwest_error)?;
+
+            let status = response.status();
+            if !status.is_success() {
+                let text = response.text().await.unwrap_or_default();
+                return Err(map_openai_error(status, &text));
+            }
+
+            let body: serde_json::Value = response
+                .json()
+                .await
+                .map_err(|e| AIError::Serialization(e.to_string()))?;
+
+            let models = body
+                .get("data")
+                .and_then(|d| d.as_array())
+                .unwrap_or(&vec![])
+                .iter()
+                .filter_map(|m| m.get("id").and_then(|id| id.as_str()))
+                .map(|id| ModelInfo {
+                    id: id.to_string(),
+                    name: id.to_string(),
+                    context_window: None,
+                    supports_streaming: true,
+                    supports_vision: false,
+                })
+                .collect();
+
+            Ok(models)
+        })
     }
 
     fn complete(
