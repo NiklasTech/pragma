@@ -171,10 +171,10 @@ fn reconstruct_content_at(
         first_full
     };
 
-    for i in 1..=index {
-        let path = snapshot_path(dir, &metas[i].timestamp);
+    for meta in metas.iter().take(index + 1).skip(1) {
+        let path = snapshot_path(dir, &meta.timestamp);
         let diff = fs::read_to_string(&path)
-            .map_err(|e| format!("Failed to read snapshot {}: {e}", metas[i].id))?;
+            .map_err(|e| format!("Failed to read snapshot {}: {e}", meta.id))?;
         content = super::diff_engine::apply_diff(&content, &diff)?;
     }
 

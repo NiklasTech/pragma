@@ -1,21 +1,32 @@
-<!--VITE PLUS START-->
+# Repository-level Agent Guide
 
-# Using Vite+, the Unified Toolchain for the Web
+## Project: Pragma IDE
 
-This project is using Vite+, a unified toolchain built on top of Vite, Rolldown, Vitest, tsdown, Oxlint, Oxfmt, and Vite Task. Vite+ wraps runtime management, package management, and frontend tooling in a single global CLI called `vp`. Vite+ is distinct from Vite, and it invokes Vite through `vp dev` and `vp build`. Run `vp help` to print a list of commands and `vp <command> --help` for information about a specific command.
+AI-native desktop IDE with Tauri 2, Rust, React 19, TypeScript, CodeMirror 6.
 
-Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.dev/guide/.
+## Tech Stack
 
-## Review Checklist
+- Frontend: React 19, TypeScript, Tailwind CSS v4, CodeMirror 6, xterm.js
+- Backend: Rust (Tauri 2), portable-pty
+- AI: Vercel AI SDK, MCP Protocol
 
-- [ ] Run `vp install` after pulling remote changes and before getting started.
-- [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
-- [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
-- [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
+## Architecture
 
-<!--VITE PLUS END-->
+- src/ — React frontend
+- src-tauri/src/ — Rust backend
+- src-tauri/src/lib.rs — Main Tauri setup
+- src/features/ — Editor, Terminal, AI Chat, Sidebar, Settings
 
-## Design & Icons
+## Coding Rules
 
-- UI icons use `@phosphor-icons/react`.
-- File and folder icons in the explorer tree and tab bar use `material-icon-theme` SVGs for colored file-type recognition. Icons are copied from `node_modules/material-icon-theme/icons` to `public/icons/material-icon-theme` via `scripts/copy-material-icons.js` on `postinstall`.
+- React 19 strict TypeScript, functional components + hooks
+- Zustand for state, Tailwind + shadcn/ui for UI
+- CodeMirror 6 for editor (not Monaco)
+- Rust: Result + ? operator, keyring crate for secrets
+- Conventional commits: feat:, fix:, refactor:, docs:
+
+## Verification
+
+- pnpm run check
+- cd src-tauri && cargo check && cargo clippy
+- pnpm run test && cargo test

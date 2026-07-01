@@ -81,10 +81,9 @@ pub fn layout_graph(commits: &[CommitRef], previous: &GraphState) -> (Vec<GraphR
         let mut top_edges = Vec::new();
 
         for (i, v) in lanes_before.iter().enumerate() {
-            if v.is_none() {
+            let Some(v_sha) = v.as_deref() else {
                 continue;
-            }
-            let v_sha = v.as_deref().unwrap();
+            };
             if v_sha == commit.sha.as_str() && i != lane {
                 top_edges.push(GraphEdge::Merge {
                     from_lane: i,
@@ -111,18 +110,17 @@ pub fn layout_graph(commits: &[CommitRef], previous: &GraphState) -> (Vec<GraphR
             lanes[lane] = Some(commit.parents[0].clone());
 
             for parent_sha in &commit.parents[1..] {
-                let mut parent_lane = lanes
+                let parent_lane = lanes
                     .iter()
-                    .position(|l| l.as_deref() == Some(parent_sha.as_str()));
-                if parent_lane.is_none() {
-                    let slot = first_free_slot(&lanes);
-                    if slot == lanes.len() {
-                        lanes.push(None);
-                    }
-                    lanes[slot] = Some(parent_sha.clone());
-                    parent_lane = Some(slot);
-                }
-                let parent_lane = parent_lane.unwrap();
+                    .position(|l| l.as_deref() == Some(parent_sha.as_str()))
+                    .unwrap_or_else(|| {
+                        let slot = first_free_slot(&lanes);
+                        if slot == lanes.len() {
+                            lanes.push(None);
+                        }
+                        lanes[slot] = Some(parent_sha.clone());
+                        slot
+                    });
                 if parent_lane != lane {
                     bottom_edges.push(GraphEdge::Branch {
                         from_lane: lane,

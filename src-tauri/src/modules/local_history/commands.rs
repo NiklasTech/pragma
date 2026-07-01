@@ -118,12 +118,11 @@ pub async fn local_history_entries(
     }
 
     // Snapshot history
-    match get_all_snapshots(&app_data_dir, &repo_path, &file_path) {
-        Ok(snapshots) => entries.extend(snapshots.iter().map(snapshot_to_entry)),
-        Err(_) => {}
+    if let Ok(snapshots) = get_all_snapshots(&app_data_dir, &repo_path, &file_path) {
+        entries.extend(snapshots.iter().map(snapshot_to_entry))
     }
 
-    entries.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    entries.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
     entries.truncate(bounded as usize);
 
     Ok(LocalHistoryEntriesResponse { entries })

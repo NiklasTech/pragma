@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::process::Command;
 
+#[cfg(unix)]
 const SHELL_ENVS_TO_IMPORT: &[&str] = &[
     "PATH",
     "HOME",
@@ -72,6 +73,7 @@ pub fn default_shell() -> String {
         })
 }
 
+#[cfg(unix)]
 fn append_path_entries(entries: &[&str]) {
     let current = std::env::var("PATH").unwrap_or_default();
     let mut parts: Vec<String> = std::env::split_paths(&current)
@@ -159,5 +161,58 @@ pub fn load_shell_env() -> Result<(), String> {
 
 #[cfg(windows)]
 pub fn load_shell_env() -> Result<(), String> {
+    const ENV_NAMES: &[&str] = &[
+        "PATH",
+        "HOME",
+        "USERPROFILE",
+        "DOCKER_HOST",
+        "DOCKER_CONFIG",
+    ];
+
+    let output = Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "Get-ChildItem Env: | ForEach-Object { \"$($_.Name)=$($_.Value)`0\" }",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to run PowerShell env command: {e}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        log::warn!("PowerShell env command exited with error: {stderr}");
+        return Ok(());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for entry in stdout.split('\0') {
+        let Some((key, value)) = entry.split_once('=') else {
+            continue;
+        };
+        if !ENV_NAMES.contains(&key) {
+            continue;
+        }
+        match key {
+            "PATH" => {
+                if !value.is_empty() {
+                    std::env::set_var(key, value);
+                }
+            }
+            _ => {
+                let current = std::env::var(key).unwrap_or_default();
+                if current.is_empty() && !value.is_empty() {
+                    std::env::set_var(key, value);
+                }
+            }
+        }
+    }
+
+    if let Ok(path) = std::env::var("PATH") {
+        log::info!(
+            "Loaded PATH with {} entries",
+            std::env::split_paths(&path).count()
+        );
+    }
+
     Ok(())
 }

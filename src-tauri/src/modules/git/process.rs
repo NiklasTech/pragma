@@ -40,11 +40,19 @@ fn availability_cell() -> &'static Mutex<AvailabilityCache> {
     })
 }
 
+fn lock_availability() -> std::sync::MutexGuard<'static, AvailabilityCache> {
+    match availability_cell().lock() {
+        Ok(g) => g,
+        Err(e) => {
+            log::error!("git availability mutex poisoned; recovering from poison");
+            e.into_inner()
+        }
+    }
+}
+
 pub fn ensure_git_available() -> Result<()> {
     let cached = {
-        let guard = availability_cell()
-            .lock()
-            .expect("git availability poisoned");
+        let guard = lock_availability();
         if guard.checked_at.elapsed() < AVAILABILITY_TTL {
             Some(guard.value.clone())
         } else {
@@ -55,9 +63,7 @@ pub fn ensure_git_available() -> Result<()> {
         Some(v) => v,
         None => {
             let fresh = check_git_availability();
-            let mut guard = availability_cell()
-                .lock()
-                .expect("git availability poisoned");
+            let mut guard = lock_availability();
             guard.value = fresh.clone();
             guard.checked_at = Instant::now();
             fresh

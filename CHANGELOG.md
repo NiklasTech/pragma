@@ -6,9 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.0]
+
 ### Added
 
-- Initial open-source documentation: README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY and CHANGELOG.
+- Initial open-source release of Pragma IDE.
+- Project foundation with Tauri 2, React 19, TypeScript, Vite+ and pnpm.
+- CodeMirror 6 editor with multi-language support and VIM mode.
+- xterm.js terminal integration via portable-pty.
+- AI chat panel powered by the Vercel AI SDK.
+- Inline ghost text and AI diff/edit prototype.
+- Git graph and status sidebar panels.
+- Docker container and Compose management in the sidebar.
+- MCP server management and tool calling.
+- Theme system with built-in and user-loadable themes.
+- Settings UI for editor, terminal, AI and theme configuration.
+- Open-source documentation: README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY and CHANGELOG.
 - GitHub issue and pull request templates.
 
 ## [0.0.0] - 2026-06-22
@@ -24,5 +37,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Theme system with built-in and user-loadable themes.
 - Settings UI for editor, terminal, AI and theme configuration.
 
-[Unreleased]: https://github.com/NiklasTech/pragma/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/NiklasTech/pragma/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/NiklasTech/pragma/releases/tag/v0.1.0
 [0.0.0]: https://github.com/NiklasTech/pragma/releases/tag/v0.0.0

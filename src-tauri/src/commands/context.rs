@@ -220,5 +220,5 @@ fn relative_path(root: &Path, path: &Path) -> String {
 fn estimate_tokens(text: &str) -> usize {
     // Conservative approximation without an external tokenizer.
     // Empirically 1 token ~ 3-4 characters for code/text.
-    (text.chars().count() + 2) / 3
+    text.chars().count().div_ceil(3)
 }

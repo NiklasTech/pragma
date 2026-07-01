@@ -138,7 +138,7 @@ impl AIProvider for OpenAIProvider {
                 .json(&body)
                 .send()
                 .await
-                .map_err(|e| map_reqwest_error(e))?;
+                .map_err(map_reqwest_error)?;
 
             let status = response.status();
             if !status.is_success() {
@@ -222,7 +222,7 @@ impl AIProvider for OpenAIProvider {
                 .json(&body)
                 .send()
                 .await
-                .map_err(|e| map_reqwest_error(e))?;
+                .map_err(map_reqwest_error)?;
 
             let status = response.status();
             if !status.is_success() {
@@ -328,7 +328,7 @@ impl AIProvider for OpenAIProvider {
                 .json(&body)
                 .send()
                 .await
-                .map_err(|e| map_reqwest_error(e))?;
+                .map_err(map_reqwest_error)?;
 
             let status = response.status();
             if !status.is_success() {

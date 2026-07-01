@@ -167,7 +167,7 @@ impl AIProvider for AnthropicProvider {
                 .json(&body)
                 .send()
                 .await
-                .map_err(|e| map_reqwest_error(e))?;
+                .map_err(map_reqwest_error)?;
 
             let status = response.status();
             if !status.is_success() {
@@ -242,7 +242,7 @@ impl AIProvider for AnthropicProvider {
                 .json(&body)
                 .send()
                 .await
-                .map_err(|e| map_reqwest_error(e))?;
+                .map_err(map_reqwest_error)?;
 
             let status = response.status();
             if !status.is_success() {
@@ -321,11 +321,9 @@ impl AIProvider for AnthropicProvider {
                                 });
                             }
                         }
-                        AnthropicStreamEvent::MessageDelta { usage, .. } => {
-                            if usage.is_some() {
-                                if let Some(last) = chunks.last_mut() {
-                                    last.finish_reason = Some("stop".to_string());
-                                }
+                        AnthropicStreamEvent::MessageDelta { usage, .. } if usage.is_some() => {
+                            if let Some(last) = chunks.last_mut() {
+                                last.finish_reason = Some("stop".to_string());
                             }
                         }
                         _ => {}
@@ -364,7 +362,7 @@ impl AIProvider for AnthropicProvider {
                 .json(&body)
                 .send()
                 .await
-                .map_err(|e| map_reqwest_error(e))?;
+                .map_err(map_reqwest_error)?;
 
             let status = response.status();
             if !status.is_success() {
@@ -447,18 +445,16 @@ impl AIProvider for AnthropicProvider {
                                                     AnthropicStreamEvent::MessageDelta {
                                                         usage,
                                                         ..
-                                                    } => {
-                                                        if usage.is_some() {
-                                                            let _ = tx
-                                                                .send(Ok(CompletionChunk {
-                                                                    content: String::new(),
-                                                                    finish_reason: Some(
-                                                                        "stop".to_string(),
-                                                                    ),
-                                                                    tool_calls: None,
-                                                                }))
-                                                                .await;
-                                                        }
+                                                    } if usage.is_some() => {
+                                                        let _ = tx
+                                                            .send(Ok(CompletionChunk {
+                                                                content: String::new(),
+                                                                finish_reason: Some(
+                                                                    "stop".to_string(),
+                                                                ),
+                                                                tool_calls: None,
+                                                            }))
+                                                            .await;
                                                     }
                                                     _ => {}
                                                 }

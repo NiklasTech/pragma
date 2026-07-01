@@ -13,7 +13,7 @@
     "core:window:allow-start-resize-dragging",
     "core:window:allow-is-maximized",
     "dialog:default",
-    "shell:allow-open",
+    "opener:default",
     "store:default",
     "log:default"
   ]
