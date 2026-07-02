@@ -16,6 +16,7 @@ export interface EditorSettings {
   vimMode: boolean;
   fontSize: number;
   fontFamily: string;
+  fontId: string;
   tabSize: number;
   insertSpaces: boolean;
   wordWrap: boolean;
@@ -30,6 +31,7 @@ export interface TerminalSettings {
   shell: string;
   fontSize: number;
   fontFamily: string;
+  fontId: string;
   aiSuggestions: boolean;
   scrollback: number;
 }
@@ -132,9 +134,16 @@ export interface SettingsState {
   shortcuts: ShortcutMap;
 }
 
+export interface FontSelection {
+  fontId: string;
+  fontFamily: string;
+}
+
 interface SettingsActions {
   setEditorSettings: (settings: Partial<EditorSettings>) => void;
   setTerminalSettings: (settings: Partial<TerminalSettings>) => void;
+  setEditorFont: (selection: FontSelection) => void;
+  setTerminalFont: (selection: FontSelection) => void;
   setAISettings: (settings: Partial<AISettings>) => void;
   setTheme: (theme: string) => void;
   setThemeMode: (mode: ThemeMode) => void;
@@ -172,6 +181,7 @@ const defaultSettings: SettingsState = {
     vimMode: false,
     fontSize: 14,
     fontFamily: "JetBrains Mono",
+    fontId: "",
     tabSize: 2,
     insertSpaces: true,
     wordWrap: false,
@@ -185,6 +195,7 @@ const defaultSettings: SettingsState = {
     shell: "",
     fontSize: 13,
     fontFamily: "JetBrains Mono",
+    fontId: "",
     aiSuggestions: true,
     scrollback: 10000,
   },
@@ -271,6 +282,12 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 
   setTerminalSettings: (settings) =>
     set((state) => ({ terminal: { ...state.terminal, ...settings } })),
+
+  setEditorFont: ({ fontId, fontFamily }) =>
+    set((state) => ({ editor: { ...state.editor, fontId, fontFamily } })),
+
+  setTerminalFont: ({ fontId, fontFamily }) =>
+    set((state) => ({ terminal: { ...state.terminal, fontId, fontFamily } })),
 
   setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
 
@@ -401,18 +418,18 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   importSettings: (partial) =>
     set((state) => ({
       ...state,
-      editor: { ...state.editor, ...partial.editor },
-      terminal: { ...state.terminal, ...partial.terminal },
-      ai: { ...state.ai, ...partial.ai },
+      editor: mergePartial(defaultSettings.editor, partial.editor),
+      terminal: mergePartial(defaultSettings.terminal, partial.terminal),
+      ai: mergePartial(defaultSettings.ai, partial.ai),
       theme: partial.theme ?? state.theme,
       themeMode: partial.themeMode ?? state.themeMode,
       keymap: partial.keymap ?? state.keymap,
-      layout: { ...state.layout, ...partial.layout },
-      workspace: { ...state.workspace, ...partial.workspace },
-      statusbar: { ...state.statusbar, ...partial.statusbar },
-      mcp: { ...state.mcp, ...partial.mcp },
-      lsp: { ...state.lsp, ...partial.lsp },
-      experimental: { ...state.experimental, ...partial.experimental },
+      layout: mergePartial(defaultSettings.layout, partial.layout),
+      workspace: mergePartial(defaultSettings.workspace, partial.workspace),
+      statusbar: mergePartial(defaultSettings.statusbar, partial.statusbar),
+      mcp: mergePartial(defaultSettings.mcp, partial.mcp),
+      lsp: mergePartial(defaultSettings.lsp, partial.lsp),
+      experimental: mergePartial(defaultSettings.experimental, partial.experimental),
       mcpRunningServerIds: partial.mcpRunningServerIds ?? state.mcpRunningServerIds,
       customThemes: { ...state.customThemes, ...partial.customThemes },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },
@@ -450,6 +467,34 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   resetToDefaults: () => set({ ...defaultSettings }),
 }));
 
+function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
+  if (!partial || typeof partial !== "object") {
+    return { ...defaults };
+  }
+
+  const result = { ...defaults };
+  for (const [key, value] of Object.entries(partial)) {
+    const defaultValue = result[key as keyof T];
+    if (Array.isArray(value)) {
+      result[key as keyof T] = value as T[keyof T];
+    } else if (
+      value &&
+      typeof value === "object" &&
+      defaultValue &&
+      typeof defaultValue === "object" &&
+      !Array.isArray(defaultValue)
+    ) {
+      result[key as keyof T] = mergePartial(
+        defaultValue as Record<string, unknown>,
+        value as Record<string, unknown>,
+      ) as T[keyof T];
+    } else {
+      result[key as keyof T] = value as T[keyof T];
+    }
+  }
+  return result;
+}
+
 function mergeWithDefaults(
   persisted: unknown,
   defaults: SettingsState & SettingsActions,
@@ -463,26 +508,20 @@ function mergeWithDefaults(
   // Drop legacy persisted keys that have been removed from the settings schema.
   const { git: _, ...restPartial } = partial;
 
-  const ai: AISettings = {
-    ...defaults.ai,
-    ...partial.ai,
-    providers: {
-      ...defaults.ai.providers,
-      ...partial.ai?.providers,
-    },
-  };
-
-  const workspace: WorkspaceSettings = {
-    ...defaults.workspace,
-    ...partial.workspace,
-    favoriteFolders: partial.workspace?.favoriteFolders ?? defaults.workspace.favoriteFolders,
-  };
-
   return {
     ...defaults,
     ...restPartial,
-    ai,
-    workspace,
+    editor: mergePartial(defaults.editor, partial.editor),
+    terminal: mergePartial(defaults.terminal, partial.terminal),
+    ai: mergePartial(defaults.ai, partial.ai),
+    layout: mergePartial(defaults.layout, partial.layout),
+    workspace: mergePartial(defaults.workspace, partial.workspace),
+    statusbar: mergePartial(defaults.statusbar, partial.statusbar),
+    mcp: mergePartial(defaults.mcp, partial.mcp),
+    lsp: mergePartial(defaults.lsp, partial.lsp),
+    experimental: mergePartial(defaults.experimental, partial.experimental),
+    customThemes: { ...defaults.customThemes, ...partial.customThemes },
+    shortcuts: { ...defaults.shortcuts, ...partial.shortcuts },
   };
 }
 

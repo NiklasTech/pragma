@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Git graph context menu with commit actions: view details, copy SHA, checkout, create branch, cherry-pick, revert, and reset (soft/mixed/hard).
+- Commit details dialog showing SHA, author, date, parents, full message, and changed files.
+- File diff drawer opened from commit details, keeping the commit dialog visible.
+- True side-by-side split diff view in `InlineDiff`, powered by CodeMirror `MergeView`.
+- Global pointer cursor for buttons and interactive elements.
+- Font manager for editor and terminal: download open-source monospace fonts or import local `.ttf`/`.otf`/`.woff` files, stored in the app data directory.
+
+### Changed
+
+- Unified diff view now skips diff metadata headers and only renders hunk contents.
+- Settings export/import now includes workspace, LSP, experimental features, and custom themes.
+- Nested settings objects (editor, terminal, AI providers, LSP, etc.) are deep-merged with defaults on load/import.
+- Select and dropdown menus are positioned under their trigger and stay within the viewport.
+
+### Fixed
+
+- Git graph now refreshes automatically after checkout, cherry-pick, revert, reset, and branch creation.
+- Git graph pagination no longer appends commits from a previously opened repository.
+- Added/deleted files in diff view fall back to unified view when one side is empty.
+- Auto Save setting label now shows readable text instead of the raw value.
+
 ## [0.1.0]
 
 ### Added

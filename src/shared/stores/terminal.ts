@@ -22,6 +22,7 @@ interface TerminalState {
   shellResolved: boolean;
   fontSize: number;
   fontFamily: string;
+  fontId: string;
   scrollback: number;
   aiSuggestions: boolean;
 }
@@ -40,6 +41,7 @@ interface TerminalActions {
   setDefaultShell: (shell: string) => void;
   setFontSize: (size: number) => void;
   setFontFamily: (family: string) => void;
+  setFontId: (id: string) => void;
   setScrollback: (lines: number) => void;
   setAiSuggestions: (enabled: boolean) => void;
 }
@@ -51,6 +53,7 @@ const initialState: TerminalState = {
   shellResolved: false,
   fontSize: 13,
   fontFamily: "JetBrains Mono",
+  fontId: "",
   scrollback: 10000,
   aiSuggestions: true,
 };
@@ -169,6 +172,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
     setDefaultShell: (shell) => set({ defaultShell: shell, shellResolved: true }),
     setFontSize: (size) => set({ fontSize: size }),
     setFontFamily: (family) => set({ fontFamily: family }),
+    setFontId: (id) => set({ fontId: id }),
     setScrollback: (lines) => set({ scrollback: lines }),
     setAiSuggestions: (enabled) => set({ aiSuggestions: enabled }),
   })),

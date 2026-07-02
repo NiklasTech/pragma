@@ -8,6 +8,7 @@ export function useTerminalSettingsSync() {
   const setDefaultShell = useTerminalStore((s) => s.setDefaultShell);
   const setFontSize = useTerminalStore((s) => s.setFontSize);
   const setFontFamily = useTerminalStore((s) => s.setFontFamily);
+  const setFontId = useTerminalStore((s) => s.setFontId);
   const setScrollback = useTerminalStore((s) => s.setScrollback);
   const setAiSuggestions = useTerminalStore((s) => s.setAiSuggestions);
 
@@ -17,18 +18,21 @@ export function useTerminalSettingsSync() {
     }
     setFontSize(terminalSettings.fontSize);
     setFontFamily(terminalSettings.fontFamily);
+    setFontId(terminalSettings.fontId);
     setScrollback(terminalSettings.scrollback);
     setAiSuggestions(terminalSettings.aiSuggestions);
   }, [
     terminalSettings.shell,
     terminalSettings.fontSize,
     terminalSettings.fontFamily,
+    terminalSettings.fontId,
     terminalSettings.scrollback,
     terminalSettings.aiSuggestions,
     shellResolved,
     setDefaultShell,
     setFontSize,
     setFontFamily,
+    setFontId,
     setScrollback,
     setAiSuggestions,
   ]);
