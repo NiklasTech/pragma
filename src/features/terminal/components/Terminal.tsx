@@ -8,13 +8,17 @@ import { TerminalTabs } from "./TerminalTabs";
 
 export function Terminal() {
   useTerminalSettingsSync();
-  const { sessions, activeSessionId, defaultShell, addSession, reloadSession } = useTerminalStore();
+  const { sessions, activeSessionId, defaultShell, ensureInitialSession, reloadSession } =
+    useTerminalStore();
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const prevDefaultShellRef = useRef(defaultShell);
+  const initialSessionGuardRef = useRef(false);
 
   useEffect(() => {
+    if (initialSessionGuardRef.current) return;
     if (sessions.length === 0 && defaultShell.length > 0) {
-      addSession({
+      initialSessionGuardRef.current = true;
+      ensureInitialSession({
         id: crypto.randomUUID(),
         name: "Terminal",
         type: "shell",
@@ -23,7 +27,7 @@ export function Terminal() {
         isActive: true,
       });
     }
-  }, [sessions.length, defaultShell, addSession, rootPath]);
+  }, [sessions.length, defaultShell, ensureInitialSession, rootPath]);
 
   useEffect(() => {
     const previous = prevDefaultShellRef.current;

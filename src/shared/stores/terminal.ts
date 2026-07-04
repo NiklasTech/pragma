@@ -29,6 +29,7 @@ interface TerminalState {
 
 interface TerminalActions {
   addSession: (session: Omit<TerminalSession, "ptyId">) => void;
+  ensureInitialSession: (session: Omit<TerminalSession, "ptyId">) => void;
   removeSession: (sessionId: string) => void;
   killSession: (sessionId: string) => Promise<void>;
   killAllSessions: () => Promise<void>;
@@ -66,6 +67,17 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
       const nextSession: TerminalSession = { ...session };
       set({
         sessions: [...get().sessions, nextSession],
+        activeSessionId: nextSession.id,
+      });
+    },
+
+    ensureInitialSession: (session) => {
+      const { sessions } = get();
+      if (sessions.length > 0) return;
+
+      const nextSession: TerminalSession = { ...session };
+      set({
+        sessions: [nextSession],
         activeSessionId: nextSession.id,
       });
     },

@@ -61,10 +61,6 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     let da1Handler: { dispose: () => void } | null = null;
 
     async function setup() {
-      if (session.ptyId) {
-        ptyIdRef.current = session.ptyId;
-      }
-
       if (!containerRef.current) return;
 
       // Don't block shell spawn on font loading; cap the initial wait at 300ms.
@@ -223,12 +219,17 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     session.command,
     session.shell,
     session.cwd,
-    session.ptyId,
     fontSize,
     terminalFontFamily,
     scrollback,
     session.id,
   ]);
+
+  useEffect(() => {
+    if (session.ptyId) {
+      ptyIdRef.current = session.ptyId;
+    }
+  }, [session.ptyId]);
 
   useEffect(() => {
     if (!termRef.current) return;
