@@ -53,42 +53,70 @@ pub struct CLIManager;
 /// with a restricted PATH.
 pub fn enriched_path() -> String {
     let current = env::var("PATH").unwrap_or_default();
-    let home = env::var("HOME").unwrap_or_default();
+    let home = if cfg!(target_os = "windows") {
+        env::var("USERPROFILE").unwrap_or_default()
+    } else {
+        env::var("HOME").unwrap_or_default()
+    };
 
-    let mut extra: Vec<PathBuf> = Vec::new();
+    let extra = if home.is_empty() {
+        Vec::new()
+    } else {
+        user_bin_directories(&home)
+    };
 
-    if !home.is_empty() {
-        // npm global (default)
-        extra.push(PathBuf::from(&home).join(".local/bin"));
-        // npm global (legacy)
-        extra.push(PathBuf::from(&home).join(".npm-global/bin"));
-        // cargo
-        extra.push(PathBuf::from(&home).join(".cargo/bin"));
-        // pipx / uv tools
-        extra.push(PathBuf::from(&home).join(".local/share/uv/tools"));
-        extra.push(PathBuf::from(&home).join(".local/pipx/venvs"));
-        // pnpm
-        extra.push(PathBuf::from(&home).join(".pnpm-global"));
-        // fnm / nvm
-        extra.push(PathBuf::from(&home).join(".fnm"));
-        extra.push(PathBuf::from(&home).join(".nvm/versions/node"));
-        // Homebrew (macOS + Linux)
-        extra.push(PathBuf::from("/opt/homebrew/bin"));
-        extra.push(PathBuf::from("/usr/local/bin"));
-    }
+    let separator = if cfg!(target_os = "windows") {
+        ';'
+    } else {
+        ':'
+    };
 
-    // Flatten and join extra paths that actually exist
     let extra_str = extra
         .into_iter()
         .filter(|p| p.exists())
         .map(|p| p.to_string_lossy().to_string())
         .collect::<Vec<_>>()
-        .join(":");
+        .join(&separator.to_string());
 
     if extra_str.is_empty() {
         current
     } else {
-        format!("{}:{}", extra_str, current)
+        format!("{}{}{}", extra_str, separator, current)
+    }
+}
+
+fn user_bin_directories(home: &str) -> Vec<PathBuf> {
+    let home = PathBuf::from(home);
+
+    if cfg!(target_os = "windows") {
+        vec![
+            // npm global default on Windows
+            home.join("AppData").join("Roaming").join("npm"),
+            // pnpm global default on Windows
+            home.join("AppData").join("Local").join("pnpm"),
+            // cargo
+            home.join(".cargo").join("bin"),
+        ]
+    } else {
+        vec![
+            // npm global (default)
+            home.join(".local").join("bin"),
+            // npm global (legacy)
+            home.join(".npm-global").join("bin"),
+            // cargo
+            home.join(".cargo").join("bin"),
+            // pipx / uv tools
+            home.join(".local").join("share").join("uv").join("tools"),
+            home.join(".local").join("pipx").join("venvs"),
+            // pnpm
+            home.join(".pnpm-global"),
+            // fnm / nvm
+            home.join(".fnm"),
+            home.join(".nvm").join("versions").join("node"),
+            // Homebrew (macOS + Linux)
+            PathBuf::from("/opt/homebrew/bin"),
+            PathBuf::from("/usr/local/bin"),
+        ]
     }
 }
 
@@ -537,4 +565,38 @@ fn extract_user_from_auth_output(output: &str) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn user_bin_directories_contains_npm_global_bin() {
+        let home = if cfg!(target_os = "windows") {
+            r"C:\Users\test"
+        } else {
+            "/home/test"
+        };
+        let dirs = user_bin_directories(home);
+        let expected = if cfg!(target_os = "windows") {
+            PathBuf::from(r"C:\Users\test\AppData\Roaming\npm")
+        } else {
+            PathBuf::from("/home/test/.local/bin")
+        };
+        assert!(
+            dirs.contains(&expected),
+            "expected {expected:?} in {dirs:?}"
+        );
+    }
+
+    #[test]
+    fn enriched_path_contains_current_path() {
+        let result = enriched_path();
+        let current = env::var("PATH").unwrap_or_default();
+        assert!(
+            result.ends_with(&current),
+            "enriched PATH should end with the current PATH"
+        );
+    }
 }

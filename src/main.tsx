@@ -24,7 +24,17 @@ if (import.meta.env.DEV) {
 }
 
 if (import.meta.hot) {
-  import.meta.hot.on("vite:beforeFullReload", () => {
+  import.meta.hot.on("vite:beforeFullReload", (event) => {
+    // Block full reloads during dev to preserve transient state (open files,
+    // terminal sessions, chat history, etc.). The Vite Plus payload type does
+    // not expose preventDefault(), so we fall back to throwing when a clean
+    // cancellation is not available at runtime.
+    const cancelable = event as Event;
+    if (typeof cancelable.preventDefault === "function") {
+      cancelable.preventDefault();
+      console.warn("[Pragma] full-reload blocked to preserve state");
+      return;
+    }
     throw new Error("Pragma: full-reload blocked to preserve state");
   });
 }
@@ -48,6 +58,11 @@ function formatErrorDetail(error: unknown): string {
 
 window.addEventListener("error", (event) => {
   const detail = formatErrorDetail(event.error);
+  if (detail.includes("Pragma: full-reload blocked")) {
+    // This is an intentional dev-only guard, not a real runtime error.
+    event.preventDefault();
+    return;
+  }
   void logError(`[global error] ${detail}`).catch(() => {});
   toast.error("An unexpected error occurred. Details were logged.");
 });

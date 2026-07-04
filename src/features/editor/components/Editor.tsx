@@ -309,6 +309,21 @@ function FileEditor({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!viewRef.current?.hasFocus) return;
+
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          useSettingsStore.getState().setEditorSettings({ fontSize: fontSize + 1 });
+          return;
+        }
+        if (e.key === "-") {
+          e.preventDefault();
+          useSettingsStore.getState().setEditorSettings({ fontSize: Math.max(8, fontSize - 1) });
+          return;
+        }
+      }
+
       if (matchShortcut(e, shortcuts["edit.editWithAI"])) {
         e.preventDefault();
         const text = captureActiveSelection();
@@ -317,7 +332,7 @@ function FileEditor({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [captureActiveSelection, handleEditWithAI, shortcuts]);
+  }, [captureActiveSelection, handleEditWithAI, fontSize, shortcuts]);
 
   useEffect(() => {
     if (!viewRef.current) return;

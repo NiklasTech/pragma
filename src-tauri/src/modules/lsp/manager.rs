@@ -269,9 +269,11 @@ impl LspManager {
         let config = server_config_for_language(language)
             .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
 
-        let output = tokio::process::Command::new(&config.command)
+        let path = enriched_path();
+        let command = resolve_command(&config.command, &path);
+        let output = tokio::process::Command::new(&command)
             .arg("--version")
-            .env("PATH", enriched_path())
+            .env("PATH", &path)
             .output()
             .await;
 
@@ -293,9 +295,11 @@ impl LspManager {
             return Err(format!("No install arguments configured for '{language}'"));
         }
 
+        let path = enriched_path();
+        let program = resolve_command(&program, &path);
         let output = tokio::process::Command::new(&program)
             .args(&config.install_args)
-            .env("PATH", enriched_path())
+            .env("PATH", &path)
             .output()
             .await
             .map_err(|e| format!("Failed to run installer: {e}"))?;
@@ -303,15 +307,24 @@ impl LspManager {
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
 
-        if output.status.success() {
-            Ok(if stdout.is_empty() { stderr } else { stdout })
-        } else {
+        if !output.status.success() {
             let message = if stderr.is_empty() { stdout } else { stderr };
-            Err(format!(
+            return Err(format!(
                 "Installation failed with exit code {}: {message}",
                 output.status.code().unwrap_or(-1)
-            ))
+            ));
         }
+
+        // Verify the server is actually discoverable after a reported success.
+        if !Self::check_server_installed(language).await? {
+            let output = if stdout.is_empty() { stderr } else { stdout };
+            return Err(format!(
+                "Installation reported success but '{}' is still not in PATH. Output: {output}",
+                config.command
+            ));
+        }
+
+        Ok(if stdout.is_empty() { stderr } else { stdout })
     }
 
     pub async fn detect_project_languages(
@@ -598,6 +611,28 @@ impl LspManager {
     }
 }
 
+/// Resolves a command name to an executable path.
+///
+/// On Windows, Rust's `Command::new` only searches for `.exe` files by default,
+/// but npm global packages install `.cmd` wrappers. This helper searches PATH
+/// (with common Windows extensions) and falls back to the original name.
+pub fn resolve_command(command: &str, path: &str) -> String {
+    if !cfg!(target_os = "windows") || command.contains('.') {
+        return command.to_string();
+    }
+
+    for dir in std::env::split_paths(path) {
+        for ext in ["cmd", "bat", "exe"] {
+            let candidate = dir.join(format!("{command}.{ext}"));
+            if candidate.is_file() {
+                return candidate.to_string_lossy().to_string();
+            }
+        }
+    }
+
+    command.to_string()
+}
+
 fn server_config_for_language(language: &str) -> Option<LspServerConfig> {
     SERVERS
         .iter()
@@ -747,4 +782,42 @@ async fn visit_project_files(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn resolve_command_prefers_cmd_wrapper_on_windows() {
+        if !cfg!(target_os = "windows") {
+            return;
+        }
+
+        let temp = std::env::temp_dir().join("pragma-resolve-command-test");
+        let _ = fs::remove_dir_all(&temp);
+        fs::create_dir_all(&temp).unwrap();
+        fs::write(temp.join("typescript-language-server.cmd"), "").unwrap();
+        fs::write(temp.join("typescript-language-server.exe"), "").unwrap();
+
+        let path = temp.to_string_lossy().to_string();
+        let resolved = resolve_command("typescript-language-server", &path);
+        assert!(
+            resolved.ends_with(".cmd"),
+            "expected .cmd wrapper, got {resolved}"
+        );
+
+        let _ = fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn resolve_command_returns_original_on_unix() {
+        if cfg!(target_os = "windows") {
+            return;
+        }
+
+        let resolved = resolve_command("typescript-language-server", "/usr/bin");
+        assert_eq!(resolved, "typescript-language-server");
+    }
 }

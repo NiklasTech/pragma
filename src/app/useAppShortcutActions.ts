@@ -3,6 +3,7 @@ import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useLayoutStore } from "@/shell/layout";
 import { type ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
 
@@ -33,10 +34,12 @@ export function useAppShortcutActions(): ShortcutActions {
         if (layout.terminal.mode === "hidden") {
           layout.toggleTerminal();
         }
+        const rootPath = useFileExplorerStore.getState().rootPath;
         useTerminalStore.getState().addSession({
           id: crypto.randomUUID(),
           name: "Shell",
           type: "shell",
+          cwd: rootPath ?? undefined,
           isActive: true,
         });
       },

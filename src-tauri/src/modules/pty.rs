@@ -100,7 +100,7 @@ fn resolve_shell(shell: Option<String>) -> String {
     }
 }
 
-fn build_command(shell: &str) -> CommandBuilder {
+fn build_command(shell: &str, cwd: Option<&str>) -> CommandBuilder {
     let mut cmd = CommandBuilder::new(shell);
 
     #[cfg(not(windows))]
@@ -113,7 +113,12 @@ fn build_command(shell: &str) -> CommandBuilder {
         cmd.env("fish_term256", "1");
     }
 
-    if let Ok(cwd) = std::env::current_dir() {
+    if let Some(cwd) = cwd {
+        let path = std::path::PathBuf::from(cwd);
+        if path.is_dir() {
+            cmd.cwd(path);
+        }
+    } else if let Ok(cwd) = std::env::current_dir() {
         cmd.cwd(cwd);
     }
 
@@ -144,6 +149,7 @@ pub fn create_pty(
     app: AppHandle,
     state: State<'_, PtyManager>,
     shell: Option<String>,
+    cwd: Option<String>,
     cols: u16,
     rows: u16,
 ) -> Result<String, String> {
@@ -158,7 +164,7 @@ pub fn create_pty(
         })
         .map_err(|e| e.to_string())?;
 
-    let cmd = build_command(&shell);
+    let cmd = build_command(&shell, cwd.as_deref());
     let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     drop(pair.slave);
 
