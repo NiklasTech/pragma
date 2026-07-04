@@ -1,9 +1,22 @@
 import { GitBranch, Warning, XCircle, CheckCircle, Robot, Palette } from "@phosphor-icons/react";
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
-import { useEditorStore } from "@/shared/stores/editor";
+import { useEditorStore, type EditorTab } from "@/shared/stores/editor";
 import { useGitStore } from "@/shared/stores/git";
 import { useAIStore } from "@/shared/stores/ai";
+import { useProblemsStore } from "@/shared/stores/problems";
 import { cn } from "@/shared/lib/utils";
+
+function isFileTab(tab: EditorTab | undefined): tab is Extract<EditorTab, { kind: "file" }> {
+  return tab?.kind === "file";
+}
+
+function detectEncoding(content: string): string {
+  return content.startsWith("\uFEFF") ? "UTF-8 BOM" : "UTF-8";
+}
+
+function detectEol(content: string): string {
+  return content.includes("\r\n") ? "CRLF" : "LF";
+}
 
 function StatusbarSection({
   children,
@@ -24,16 +37,18 @@ function StatusbarSeparator() {
 }
 
 export function Statusbar() {
-  const { statusbar, theme } = useSettingsStore();
+  const { statusbar, theme, editor } = useSettingsStore();
   const { tabs, activeTabId, cursorPositions } = useEditorStore();
   const { snapshot } = useGitStore();
   const { activeProvider, activeModel } = useAIStore();
+  const { problems } = useProblemsStore();
 
   if (!statusbar.visible) return null;
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const cursor = activeTabId ? cursorPositions[activeTabId] : null;
   const fileName = activeTab?.name ?? "";
+  const activeContent = isFileTab(activeTab) ? activeTab.content : "";
 
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
   const fileType = ext ? ext.toUpperCase() : "TXT";
@@ -42,13 +57,16 @@ export function Statusbar() {
   const ahead = snapshot?.ahead ?? 0;
   const behind = snapshot?.behind ?? 0;
 
+  const errorCount = problems.filter((p) => p.severity === "error").length;
+  const warningCount = problems.filter((p) => p.severity === "warning").length;
+
   const renderItem = (item: StatusbarItem) => {
     switch (item) {
       case "vimMode":
-        // Vim mode is editor-local; global bar shows a placeholder when not active.
+        if (!editor.vimMode) return null;
         return (
           <StatusbarSection key={item}>
-            <span className="font-medium text-status-success">NORMAL</span>
+            <span className="font-medium text-status-success">VIM</span>
           </StatusbarSection>
         );
 
@@ -71,14 +89,14 @@ export function Statusbar() {
       case "encoding":
         return (
           <StatusbarSection key={item}>
-            <span>UTF-8</span>
+            <span>{activeContent ? detectEncoding(activeContent) : "UTF-8"}</span>
           </StatusbarSection>
         );
 
       case "eol":
         return (
           <StatusbarSection key={item}>
-            <span>LF</span>
+            <span>{activeContent ? detectEol(activeContent) : "LF"}</span>
           </StatusbarSection>
         );
 
@@ -103,12 +121,21 @@ export function Statusbar() {
         );
 
       case "problems":
+        if (errorCount === 0 && warningCount === 0) return null;
         return (
           <StatusbarSection key={item}>
-            <XCircle size={12} className="text-status-error" />
-            <span>0</span>
-            <Warning size={12} className="text-status-warning" />
-            <span>0</span>
+            {errorCount > 0 && (
+              <>
+                <XCircle size={12} className="text-status-error" />
+                <span>{errorCount}</span>
+              </>
+            )}
+            {warningCount > 0 && (
+              <>
+                <Warning size={12} className="text-status-warning" />
+                <span>{warningCount}</span>
+              </>
+            )}
           </StatusbarSection>
         );
 
