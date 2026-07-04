@@ -26,6 +26,7 @@ pub struct RuntimeInfo {
     pub binary_path: String,
     pub version: String,
     pub available: bool,
+    pub daemon_error: Option<String>,
     pub compose_available: bool,
     pub compose_file: Option<String>,
     pub compose_project_name: Option<String>,
@@ -351,7 +352,28 @@ pub async fn docker_restart_container(req: ContainerActionRequest) -> Result<(),
 
 async fn runtime_info(workspace_root: Option<String>) -> Result<RuntimeInfo, String> {
     let (runtime, binary_path, version) = detect_runtime_binary();
-    let available = !version.is_empty();
+    let mut available = !version.is_empty();
+    let mut daemon_error: Option<String> = None;
+
+    // A binary alone is not enough; verify the daemon is actually reachable.
+    if available {
+        match docker_client() {
+            Ok(docker) => {
+                if let Err(e) = docker.version().await {
+                    available = false;
+                    daemon_error = Some(format!(
+                        "Docker daemon is not reachable. Is Docker Desktop (or the Docker service) running? ({e})"
+                    ));
+                }
+            }
+            Err(e) => {
+                available = false;
+                daemon_error = Some(format!(
+                    "Could not connect to Docker daemon. Is Docker Desktop (or the Docker service) running? ({e})"
+                ));
+            }
+        }
+    }
 
     let compose_file = workspace_root.as_deref().and_then(find_compose_file);
     let compose_project_name = workspace_root.as_deref().and_then(compose_project_name);
@@ -377,6 +399,7 @@ async fn runtime_info(workspace_root: Option<String>) -> Result<RuntimeInfo, Str
         binary_path,
         version,
         available,
+        daemon_error,
         compose_available,
         compose_file,
         compose_project_name,

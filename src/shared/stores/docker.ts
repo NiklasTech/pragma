@@ -16,6 +16,7 @@ export interface RuntimeInfo {
   binary_path: string;
   version: string;
   available: boolean;
+  daemon_error: string | null;
   compose_available: boolean;
   compose_file: string | null;
   compose_project_name: string | null;
