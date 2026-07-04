@@ -197,25 +197,21 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   openLogsTab: (container) => {
-    const { runtime } = get();
-    const binary = runtime?.available ? runtime.binary_path : "docker";
     useTerminalStore.getState().addSession({
       id: crypto.randomUUID(),
       name: `Logs: ${firstName(container)}`,
       type: "docker-logs",
-      command: `${binary} logs -f --tail 100 ${container.id}`,
+      command: `docker logs -f --tail 100 ${container.id}`,
       isActive: true,
     });
   },
 
   openExecTab: (container, shell = "/bin/sh") => {
-    const { runtime } = get();
-    const binary = runtime?.available ? runtime.binary_path : "docker";
     useTerminalStore.getState().addSession({
       id: crypto.randomUUID(),
       name: `Exec: ${firstName(container)}`,
       type: "docker-exec",
-      command: `${binary} exec -it ${container.id} ${shell}`,
+      command: `docker exec -it ${container.id} ${shell}`,
       isActive: true,
     });
   },
