@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { useTerminalStore } from "@/shared/stores/terminal";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync";
 import { TerminalSession } from "./TerminalSession";
 import { TerminalTabs } from "./TerminalTabs";
@@ -8,6 +9,7 @@ import { TerminalTabs } from "./TerminalTabs";
 export function Terminal() {
   useTerminalSettingsSync();
   const { sessions, activeSessionId, defaultShell, addSession, reloadSession } = useTerminalStore();
+  const rootPath = useFileExplorerStore((s) => s.rootPath);
   const prevDefaultShellRef = useRef(defaultShell);
 
   useEffect(() => {
@@ -17,10 +19,11 @@ export function Terminal() {
         name: "Terminal",
         type: "shell",
         shell: defaultShell,
+        cwd: rootPath ?? undefined,
         isActive: true,
       });
     }
-  }, [sessions.length, defaultShell, addSession]);
+  }, [sessions.length, defaultShell, addSession, rootPath]);
 
   useEffect(() => {
     const previous = prevDefaultShellRef.current;

@@ -84,8 +84,20 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
     },
 
     killSession: async (sessionId) => {
-      const { sessions } = get();
+      const { sessions, activeSessionId } = get();
       const session = sessions.find((s) => s.id === sessionId);
+
+      // Remove the session from React state first so TerminalSession unmounts
+      // and disconnects its ResizeObserver before the PTY is destroyed.
+      const nextSessions = sessions.filter((s) => s.id !== sessionId);
+      const nextActive =
+        activeSessionId === sessionId
+          ? nextSessions.length > 0
+            ? nextSessions[nextSessions.length - 1].id
+            : null
+          : activeSessionId;
+      set({ sessions: nextSessions, activeSessionId: nextActive });
+
       if (session?.ptyId) {
         try {
           await invoke("kill_pty", { id: session.ptyId });
@@ -93,14 +105,6 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
           // ignore
         }
       }
-      const nextSessions = sessions.filter((s) => s.id !== sessionId);
-      const nextActive =
-        get().activeSessionId === sessionId
-          ? nextSessions.length > 0
-            ? nextSessions[nextSessions.length - 1].id
-            : null
-          : get().activeSessionId;
-      set({ sessions: nextSessions, activeSessionId: nextActive });
     },
 
     killAllSessions: async () => {

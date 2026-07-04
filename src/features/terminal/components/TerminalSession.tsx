@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+
+function safePtyInvoke<T>(promise: Promise<T>) {
+  void promise.catch((err) => {
+    // Ignore races where the PTY was destroyed between scheduling and sending.
+    if (String(err).includes("PTY not found")) return;
+    console.error("PTY invoke failed:", err);
+  });
+}
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke } from "@tauri-apps/api/core";
@@ -10,6 +18,7 @@ import {
 } from "@/shared/stores/terminal";
 import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
 import { useTheme } from "@/theme";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { AISuggestionsOverlay } from "./ai-suggestions";
@@ -87,7 +96,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
         const ptyId = ptyIdRef.current;
         if (ptyId) {
-          void invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" });
+          safePtyInvoke(invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" }));
         } else {
           pendingDa1Ref.current = true;
         }
@@ -110,7 +119,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         fitRef.current.fit();
         const { cols, rows } = termRef.current;
         if (ptyIdRef.current && cols > 0 && rows > 0) {
-          void invoke("resize_pty", { id: ptyIdRef.current, rows, cols });
+          safePtyInvoke(invoke("resize_pty", { id: ptyIdRef.current, rows, cols }));
         }
       });
 
@@ -129,6 +138,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
             const shellArg = session.shell?.trim().length ? session.shell : undefined;
             ptyId = await invoke<string>("create_pty", {
               shell: shellArg,
+              cwd: session.cwd ?? null,
               cols: Math.max(cols, 10),
               rows: Math.max(rows, 2),
             });
@@ -139,7 +149,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
           if (pendingDa1Ref.current) {
             pendingDa1Ref.current = false;
-            void invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" });
+            safePtyInvoke(invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" }));
           }
         } catch (err) {
           t.writeln(`\r\nFailed to start shell: ${String(err)}`);
@@ -149,11 +159,13 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
       const { cols: fitCols, rows: fitRows } = t;
       if (fitCols > 0 && fitRows > 0 && ptyIdRef.current) {
-        void invoke("resize_pty", {
-          id: ptyIdRef.current,
-          rows: fitRows,
-          cols: fitCols,
-        });
+        safePtyInvoke(
+          invoke("resize_pty", {
+            id: ptyIdRef.current,
+            rows: fitRows,
+            cols: fitCols,
+          }),
+        );
       }
 
       resizeObserver = new ResizeObserver(() => {
@@ -163,11 +175,13 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
           fit.fit();
           const { cols: newCols, rows: newRows } = t;
           if (newCols > 0 && newRows > 0 && ptyIdRef.current) {
-            void invoke("resize_pty", {
-              id: ptyIdRef.current,
-              rows: newRows,
-              cols: newCols,
-            });
+            safePtyInvoke(
+              invoke("resize_pty", {
+                id: ptyIdRef.current,
+                rows: newRows,
+                cols: newCols,
+              }),
+            );
           }
         }, 120);
       });
@@ -177,14 +191,16 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         fit.fit();
         const { cols: rafCols, rows: rafRows } = t;
         if (rafCols > 0 && rafRows > 0 && ptyIdRef.current) {
-          void invoke("resize_pty", { id: ptyIdRef.current, rows: rafRows, cols: rafCols });
+          safePtyInvoke(
+            invoke("resize_pty", { id: ptyIdRef.current, rows: rafRows, cols: rafCols }),
+          );
         }
       });
       setTimeout(() => {
         fit.fit();
         const { cols: toCols, rows: toRows } = t;
         if (toCols > 0 && toRows > 0 && ptyIdRef.current) {
-          void invoke("resize_pty", { id: ptyIdRef.current, rows: toRows, cols: toCols });
+          safePtyInvoke(invoke("resize_pty", { id: ptyIdRef.current, rows: toRows, cols: toCols }));
         }
       }, 100);
     }
@@ -234,7 +250,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       fitRef.current.fit();
       const { cols, rows } = termRef.current;
       if (ptyIdRef.current && cols > 0 && rows > 0) {
-        void invoke("resize_pty", { id: ptyIdRef.current, rows, cols });
+        safePtyInvoke(invoke("resize_pty", { id: ptyIdRef.current, rows, cols }));
       }
     }
   }, [isActive]);
@@ -259,7 +275,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       if (data === "\t") return;
 
       if (!handleData(data) && ptyIdRef.current) {
-        void invoke("write_pty", { id: ptyIdRef.current, data });
+        safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data }));
       }
     });
 
@@ -284,7 +300,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       if (suggestions.visible) {
         suggestions.accept();
       } else if (ptyIdRef.current) {
-        void invoke("write_pty", { id: ptyIdRef.current, data: "\t" });
+        safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: "\t" }));
       }
     };
 
@@ -296,7 +312,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     if (!termState) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!event.ctrlKey || !event.shiftKey) return;
+      if (!event.ctrlKey) return;
 
       const container = containerRef.current;
       if (!container) return;
@@ -306,17 +322,22 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
       const key = event.key.toLowerCase();
       if (key === "c") {
-        const selection = termRef.current?.getSelection();
-        if (selection && navigator.clipboard) {
-          void navigator.clipboard.writeText(selection);
+        const term = termRef.current;
+        const selection = term?.getSelection();
+        if (selection) {
+          if (navigator.clipboard) {
+            void navigator.clipboard.writeText(selection);
+          }
+          term?.clearSelection();
+          event.preventDefault();
+          event.stopPropagation();
         }
-        event.preventDefault();
-        event.stopPropagation();
+        // If nothing is selected, let xterm send Ctrl+C (SIGINT) to the PTY.
       } else if (key === "v") {
         if (navigator.clipboard) {
           void navigator.clipboard.readText().then((text) => {
             if (text && ptyIdRef.current) {
-              void invoke("write_pty", { id: ptyIdRef.current, data: text });
+              safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: text }));
             }
           });
         }
@@ -328,6 +349,33 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [termState]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const activeElement = document.activeElement;
+      if (!activeElement || !container.contains(activeElement)) return;
+
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        const next = fontSize + 1;
+        useTerminalStore.getState().setFontSize(next);
+        useSettingsStore.getState().setTerminalSettings({ fontSize: next });
+      } else if (event.key === "-") {
+        event.preventDefault();
+        const next = Math.max(8, fontSize - 1);
+        useTerminalStore.getState().setFontSize(next);
+        useSettingsStore.getState().setTerminalSettings({ fontSize: next });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [fontSize]);
 
   useEffect(() => {
     const term = termRef.current;

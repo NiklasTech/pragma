@@ -182,21 +182,44 @@ Available weights: `thin`, `light`, `regular`, `bold`, `fill`, `duotone`
 
 ## ECC Skill Loading (before every task)
 
-Before starting work, identify the relevant domain and load the matching ECC skill:
+Before starting work, identify the best matching skill from the 277 available ECC skills:
 
-1. List available skills: `/skill:list`
-2. Load the best match: `/skill:use &lt;skill-name&gt;`
+1. **List available skills**: Run `/skill:list` to see all options
+2. **Analyze the task**: What domain, language, or workflow is involved?
+3. **Select the best match**: Run `/skill:use &lt;skill-name&gt;` with the most specific skill
+4. **Confirm**: Output `Loaded: &lt;skill-name&gt;` in chat
 
-Pick based on task type — common ones:
+### Selection Guidelines
 
-- **Rust code** → `rust-patterns` or `rust-testing`
-- **TypeScript/React** → `coding-standards` or `frontend-patterns`
-- **Security work** → `security-review`
-- **New feature** → `tdd-workflow`
-- **Bug fix** → `tdd-workflow` (write failing test first)
-- **Docker/CI** → `docker-patterns` or `deployment-patterns`
-- **API design** → `api-design`
-- **Code review** → `code-reviewer`
+Be specific — prefer narrow skills over broad ones:
+
+- Writing a Rust test → `rust-testing` (not just `rust-patterns`)
+- Docker Compose bug → `docker-patterns` (not just `deployment-patterns`)
+- Frontend bug fix → `frontend-patterns` (not just `coding-standards`)
+- Security audit → `security-review` (not just `security-scan`)
+
+### Common Pragma Domains
+
+| Domain            | Likely Skills                                                  |
+| ----------------- | -------------------------------------------------------------- |
+| Rust backend      | `rust-patterns`, `rust-testing`, `rust-reviewer`               |
+| TypeScript/React  | `coding-standards`, `frontend-patterns`, `typescript-reviewer` |
+| Tauri integration | `rust-patterns`, `api-design`                                  |
+| Editor/CodeMirror | `frontend-patterns`, `coding-standards`                        |
+| AI chat/providers | `api-design`, `security-review`, `mcp-server-patterns`         |
+| Docker/Terminal   | `docker-patterns`, `rust-patterns`                             |
+| Git integration   | `tdd-workflow`, `rust-testing`                                 |
+| New feature       | `tdd-workflow` → write failing test first                      |
+| Bug fix           | `tdd-workflow` → reproduce with test first                     |
+| Refactoring       | `refactor-cleaner`, `code-reviewer`                            |
+
+### Fallback
+
+If no skill seems to fit:
+
+- Use `coding-standards` for general code quality
+- Use `tdd-workflow` for any implementation task
+- Or ask: "Which skill should I use for this task?"
 
 Load the skill before Phase 1 (Exploration). Confirm in chat: `Loaded: &lt;skill-name&gt;`.
 

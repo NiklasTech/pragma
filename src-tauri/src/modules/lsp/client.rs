@@ -1,4 +1,5 @@
 use crate::ai::cli::manager::enriched_path;
+use crate::modules::lsp::manager::resolve_command;
 use crate::modules::lsp::types::{
     InitializeParams, InitializeResult, InitializedParams, LspServerConfig,
 };
@@ -153,12 +154,14 @@ impl LspClient {
         }
 
         let timeout = DEFAULT_TIMEOUT_MS;
-        let mut cmd = Command::new(&config.command);
+        let path = enriched_path();
+        let command = resolve_command(&config.command, &path);
+        let mut cmd = Command::new(&command);
         cmd.args(&config.args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .env("PATH", enriched_path());
+            .env("PATH", &path);
 
         let mut child = cmd.spawn()?;
         let stdin = child.stdin.take().ok_or(LspError::MissingStdio)?;

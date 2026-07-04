@@ -35,9 +35,13 @@ pub fn run() {
                 log::error!("Panic at {}: {}", location, info);
             }));
 
-            if let Err(e) = modules::env_loader::load_shell_env() {
-                log::warn!("Failed to load shell environment: {e}");
-            }
+            // Load shell environment in the background so slow shells (e.g. PowerShell
+            // on Windows with Defender/AMSI cold start) do not block Tauri setup.
+            std::thread::spawn(|| {
+                if let Err(e) = modules::env_loader::load_shell_env() {
+                    log::warn!("Failed to load shell environment: {e}");
+                }
+            });
 
             if let Err(e) = tauri::async_runtime::block_on(modules::mcp::McpManager::initialize(
                 app.handle().clone(),
