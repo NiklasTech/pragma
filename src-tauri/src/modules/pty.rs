@@ -273,7 +273,10 @@ pub fn create_pty_command(
     // resolve shell wrappers like Docker Desktop's `docker` symlink.
     #[cfg(target_os = "windows")]
     let (program, args): (String, Vec<String>) = {
-        ("cmd".to_string(), vec!["/c".to_string(), trimmed.to_string()])
+        (
+            "cmd".to_string(),
+            vec!["/c".to_string(), trimmed.to_string()],
+        )
     };
 
     #[cfg(not(target_os = "windows"))]

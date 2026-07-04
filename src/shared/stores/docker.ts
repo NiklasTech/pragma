@@ -68,7 +68,7 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   setWorkspaceRoot: (root) => set({ workspaceRoot: root }),
 
   loadContainers: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true });
     try {
       const containers = await invoke<DockerContainer[]>("docker_list_containers");
       set({ containers, isLoading: false });
@@ -91,9 +91,9 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   startContainer: async (id) => {
-    set({ actionBusy: `start-${id}` });
+    set({ actionBusy: `start-${id}`, error: null });
     try {
-      await invoke("docker_start_container", { id });
+      await invoke("docker_start_container", { req: { id } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
@@ -103,9 +103,9 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   stopContainer: async (id) => {
-    set({ actionBusy: `stop-${id}` });
+    set({ actionBusy: `stop-${id}`, error: null });
     try {
-      await invoke("docker_stop_container", { id });
+      await invoke("docker_stop_container", { req: { id } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
@@ -115,9 +115,9 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   restartContainer: async (id) => {
-    set({ actionBusy: `restart-${id}` });
+    set({ actionBusy: `restart-${id}`, error: null });
     try {
-      await invoke("docker_restart_container", { id });
+      await invoke("docker_restart_container", { req: { id } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
