@@ -198,7 +198,6 @@ export function useTerminalSuggestions({
 
         if (!errorLoggedRef.current) {
           errorLoggedRef.current = true;
-          console.error("[Terminal Suggestion Error]", err);
         }
       } finally {
         if (!abortRef.current) {

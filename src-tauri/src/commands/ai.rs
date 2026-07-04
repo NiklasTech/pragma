@@ -90,10 +90,7 @@ fn lock_cancellations() -> std::sync::MutexGuard<'static, Option<HashMap<String,
 {
     match ACTIVE_STREAM_CANCELLATIONS.lock() {
         Ok(g) => g,
-        Err(e) => {
-            log::error!("stream cancellation mutex poisoned; recovering from poison");
-            e.into_inner()
-        }
+        Err(e) => e.into_inner(),
     }
 }
 
@@ -128,10 +125,7 @@ pub async fn ai_store_key(req: StoreKeyRequest) -> Result<(), String> {
         return Err("key is required".to_string());
     }
 
-    keychain::set_api_key(&req.provider, &req.key).map_err(|e| {
-        log::error!("[ai_store_key] failed for provider={}: {}", req.provider, e);
-        e.to_string()
-    })
+    keychain::set_api_key(&req.provider, &req.key).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -143,10 +137,7 @@ pub async fn ai_key_status(req: ProviderRequest) -> Result<KeyStatus, String> {
     let (has_key, masked) = match keychain::get_api_key(&req.provider) {
         Ok(Some(key)) => (true, mask_key(&key)),
         Ok(None) => (false, String::new()),
-        Err(e) => {
-            log::warn!("[ai_key_status] provider={} error: {}", req.provider, e);
-            (false, String::new())
-        }
+        Err(_e) => (false, String::new()),
     };
 
     Ok(KeyStatus {
@@ -176,13 +167,6 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     if req.messages.is_empty() {
         return Err("messages are required".to_string());
     }
-
-    log::info!(
-        "[ai_chat_stream] provider={} model={} tools={}",
-        req.provider,
-        req.model,
-        req.tools.as_ref().map(|t| t.len()).unwrap_or(0)
-    );
 
     let config = ProviderConfig {
         base_url: req.base_url.unwrap_or_default(),

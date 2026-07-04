@@ -87,7 +87,6 @@ export function LanguagesStep() {
         }
       }
     } catch (err) {
-      console.error("[LanguagesStep] detect failed:", err);
       toast.error(String(err));
     } finally {
       setLoading(false);

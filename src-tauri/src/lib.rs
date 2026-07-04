@@ -29,26 +29,19 @@ pub fn run() {
         )
         .setup(|app| {
             std::panic::set_hook(Box::new(|info| {
-                let location = info
+                let _location = info
                     .location()
                     .map(|loc| format!("{}:{}", loc.file(), loc.line()))
                     .unwrap_or_else(|| "unknown".to_string());
-                log::error!("Panic at {}: {}", location, info);
             }));
 
             // Load shell environment in the background so slow shells (e.g. PowerShell
             // on Windows with Defender/AMSI cold start) do not block Tauri setup.
-            std::thread::spawn(|| {
-                if let Err(e) = modules::env_loader::load_shell_env() {
-                    log::warn!("Failed to load shell environment: {e}");
-                }
-            });
+            std::thread::spawn(|| if let Err(_e) = modules::env_loader::load_shell_env() {});
 
-            if let Err(e) = tauri::async_runtime::block_on(modules::mcp::McpManager::initialize(
+            if let Err(_e) = tauri::async_runtime::block_on(modules::mcp::McpManager::initialize(
                 app.handle().clone(),
-            )) {
-                log::warn!("Failed to initialize MCP manager: {e}");
-            }
+            )) {}
 
             app.manage(AcpSessionManager::new(app.handle().clone()));
             app.manage(LspManager::managed(app.handle().clone()));
@@ -186,7 +179,5 @@ pub fn run() {
         ])
         .run(tauri::generate_context!());
 
-    if let Err(e) = result {
-        log::error!("error while running tauri application: {e}");
-    }
+    if let Err(_e) = result {}
 }

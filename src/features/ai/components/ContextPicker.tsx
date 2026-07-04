@@ -83,9 +83,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
           if (!cancelled) {
             setEntries(result);
           }
-        } catch (err) {
-          console.error("[ContextPicker] Failed to load entries:", err);
-        }
+        } catch {}
       })();
 
       return () => {

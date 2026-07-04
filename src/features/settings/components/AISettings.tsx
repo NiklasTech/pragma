@@ -183,7 +183,6 @@ export function AISettings() {
       // Some CLIs (e.g. Kimi Code) do not expose a logout command.
       // We still want to let the user deactivate the provider locally.
       if (!String(err).includes("logout not supported")) {
-        console.error("[CLI Logout Error]", err);
       }
     } finally {
       aiStore.setActiveCLIProvider(null);

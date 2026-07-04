@@ -103,9 +103,7 @@ impl McpManager {
         };
 
         manager.reload_config().await?;
-        if let Err(e) = manager.hydrate_tools_cache().await {
-            log::warn!("Failed to hydrate MCP tools cache: {e}");
-        }
+        if let Err(_e) = manager.hydrate_tools_cache().await {}
 
         let path = config_path(&app_handle).map_err(McpError::Config)?;
         if let Some(parent) = path.parent() {
@@ -124,9 +122,7 @@ impl McpManager {
             tokio::time::sleep(Duration::from_millis(DEBOUNCE_MS)).await;
             while rx.try_recv().is_ok() {}
 
-            if let Err(e) = self.reload_config().await {
-                log::error!("Failed to reload MCP config: {e}");
-            }
+            if let Err(_e) = self.reload_config().await {}
         }
     }
 
@@ -178,9 +174,7 @@ impl McpManager {
 
         for config in new_config {
             if config.autostart {
-                if let Err(e) = self.start_server_internal(&config).await {
-                    log::error!("Failed to autostart MCP server {}: {e}", config.id);
-                }
+                if let Err(_e) = self.start_server_internal(&config).await {}
             }
         }
     }
@@ -329,9 +323,7 @@ impl McpManager {
 
     async fn persist_tools_cache(&self) {
         let cache = self.tools.lock().await.clone();
-        if let Err(e) = save_tools_cache(&self.app_handle, &cache).await {
-            log::warn!("Failed to save MCP tools cache: {e}");
-        }
+        if let Err(_e) = save_tools_cache(&self.app_handle, &cache).await {}
     }
 
     pub async fn refresh_tools(&self, id: &str) {
@@ -348,9 +340,7 @@ impl McpManager {
                     drop(cache);
                     self.persist_tools_cache().await;
                 }
-                Err(e) => {
-                    log::warn!("Failed to list tools for MCP server {id}: {e}");
-                }
+                Err(_e) => {}
             }
         }
     }
@@ -400,12 +390,10 @@ impl McpManager {
             Ok(code) if code.success() => (McpServerStatus::Stopped, None),
             Ok(code) => {
                 let message = format!("exited with code {}", code.code().unwrap_or(-1));
-                log::error!("MCP server {id} crashed: {message}");
                 (McpServerStatus::Error, Some(message))
             }
             Err(err) => {
                 let message = format!("wait failed: {err}");
-                log::error!("MCP server {id} crashed: {message}");
                 (McpServerStatus::Error, Some(message))
             }
         };

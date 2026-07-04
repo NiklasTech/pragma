@@ -685,9 +685,7 @@ export function useAI() {
             const question = stripMentions(input);
             messageText = buildContextUserMessage(result.content, question);
           }
-        } catch (err) {
-          console.error("[Chat Context Error]", err);
-        }
+        } catch {}
       }
 
       const { edit, submitPrompt } = useAIEditStore.getState();

@@ -13,8 +13,7 @@ interface OnboardingState {
 async function fetchCompletionStatus(): Promise<boolean> {
   try {
     return await invoke<boolean>("get_onboarding_completed");
-  } catch (error) {
-    console.error("[onboarding] failed to read completion status:", error);
+  } catch {
     return false;
   }
 }

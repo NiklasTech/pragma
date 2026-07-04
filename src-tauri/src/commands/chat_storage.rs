@@ -112,15 +112,13 @@ pub async fn ai_load_sessions(
         let content = match tokio::fs::read_to_string(&state_file).await {
             Ok(c) if c.trim().is_empty() => continue,
             Ok(c) => c,
-            Err(e) => {
-                log::warn!("failed to read state file {:?}: {}", state_file, e);
+            Err(_e) => {
                 continue;
             }
         };
         match serde_json::from_str::<ChatSessionMetadata>(&content) {
             Ok(session) => sessions.push(session),
-            Err(e) => {
-                log::warn!("failed to parse state file {:?}: {}", state_file, e);
+            Err(_e) => {
                 continue;
             }
         }

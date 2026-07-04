@@ -91,9 +91,7 @@ impl AcpSessionManager {
 
         let (client, child, notifications, reverse_requests) = AcpClient::start(config).await?;
 
-        log::info!("acp: starting session for chat {chat_session_id}");
-
-        let init_response = client
+        let _init_response = client
             .request(
                 "initialize",
                 Some(serde_json::to_value(InitializeRequest {
@@ -110,15 +108,6 @@ impl AcpSessionManager {
             )
             .await?;
 
-        log::info!(
-            "acp: initialized with agent {}",
-            init_response
-                .get("agentInfo")
-                .and_then(|v| v.get("name"))
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown")
-        );
-
         let mcp_servers = self.load_mcp_servers().await;
         let new_session_req = NewSessionRequest {
             cwd: cwd.to_string(),
@@ -132,8 +121,6 @@ impl AcpSessionManager {
                 Default::default(),
             )
             .await?;
-
-        log::info!("acp: session/new response: {new_session_resp:?}");
 
         let acp_session_id = new_session_resp
             .get("sessionId")
@@ -193,8 +180,7 @@ impl AcpSessionManager {
             prompt: messages,
         };
 
-        let acp_session_id = session.acp_session_id.clone();
-        log::info!("acp: sending session/prompt for {}", acp_session_id);
+        let _acp_session_id = session.acp_session_id.clone();
 
         let client = session.client.clone();
 
@@ -207,15 +193,8 @@ impl AcpSessionManager {
                 )
                 .await;
             match &result {
-                Ok(value) => {
-                    log::info!(
-                        "acp: session/prompt response for {}: {value}",
-                        acp_session_id
-                    );
-                }
-                Err(e) => {
-                    log::warn!("acp: session/prompt failed: {e}");
-                }
+                Ok(_value) => {}
+                Err(_e) => {}
             }
             // Signal stream end once the prompt RPC completes. Turn-ended notifications
             // may arrive earlier; the frontend ignores chunks after the first done.
@@ -274,42 +253,25 @@ fn spawn_notification_handler(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         while let Some(notification) = notifications.recv().await {
-            log::debug!(
-                "acp: notification {} for session {}",
-                notification.method,
-                acp_session_id
-            );
             if notification.method != "session/update" {
                 continue;
             }
 
             let Some(params) = notification.params else {
-                log::warn!("acp: session/update without params");
                 continue;
             };
             let update = match serde_json::from_value::<SessionUpdate>(params.clone()) {
                 Ok(u) => u,
-                Err(e) => {
-                    log::warn!("acp: failed to parse session/update: {e}, params: {params}");
+                Err(_e) => {
                     continue;
                 }
             };
 
-            if matches!(update.update, SessionUpdateDetail::Other) {
-                log::warn!("acp: session/update with unhandled type, params: {params}");
-            }
-
             if update.session_id != acp_session_id {
-                log::warn!(
-                    "acp: session/update for wrong session {} (expected {})",
-                    update.session_id,
-                    acp_session_id
-                );
                 continue;
             }
 
             let chunk = session_update_to_chunk(update.update.clone());
-            log::debug!("acp: emitting chunk {:?}", chunk);
             if let Some(tx) = chunk_tx.lock().await.as_ref() {
                 let _ = tx.send(chunk).await;
             }
@@ -459,7 +421,6 @@ fn spawn_reverse_rpc_handler(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         while let Some(req) = reverse_requests.recv().await {
-            log::info!("acp: reverse-RPC {} received", req.method);
             let result = match req.method.as_str() {
                 "fs/read_text_file" | "fs/write_text_file" => {
                     handle_fs_request(&req.method, req.params, &cwd)
@@ -473,10 +434,6 @@ fn spawn_reverse_rpc_handler(
                     req.method
                 ))),
             };
-            if let Err(ref e) = result {
-                log::warn!("acp: reverse-RPC {} failed: {e}", req.method);
-            }
-
             let _ = req.response_tx.send(result);
         }
     })

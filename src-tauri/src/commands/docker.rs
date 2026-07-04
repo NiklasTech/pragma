@@ -390,10 +390,6 @@ async fn runtime_info(workspace_root: Option<String>) -> Result<RuntimeInfo, Str
         false
     };
 
-    log::info!(
-        "Docker runtime detection: runtime={runtime}, binary={binary_path}, available={available}"
-    );
-
     Ok(RuntimeInfo {
         runtime,
         binary_path,

@@ -44,9 +44,7 @@ export function useMcpChatTools() {
     for (const id of serverIds) {
       try {
         fetched[id] = await invoke<McpTool[]>("mcp_list_tools", { id });
-      } catch (err) {
-        console.error(`[MCP Chat] failed to list tools for ${id}:`, err);
-      }
+      } catch {}
     }
 
     setToolsByServer((prev) => {
@@ -69,9 +67,7 @@ export function useMcpChatTools() {
       setServerCount(result.length);
       await fetchTools(next);
       setLoaded(true);
-    } catch (err) {
-      console.error("[MCP Chat] failed to list servers:", err);
-    }
+    } catch {}
   }, [fetchTools]);
 
   useEffect(() => {

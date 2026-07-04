@@ -22,8 +22,6 @@ async fn execute_bash(arguments: Value, cwd: &str) -> Result<Value> {
         AcpError::Protocol("missing or invalid command argument for Bash".to_string())
     })?;
 
-    log::info!("acp: executing Bash tool in {cwd}: {command}");
-
     let output = Command::new("/bin/sh")
         .arg("-c")
         .arg(&command)
@@ -37,12 +35,6 @@ async fn execute_bash(arguments: Value, cwd: &str) -> Result<Value> {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     let exit_code = output.status.code().unwrap_or(-1);
-
-    log::info!(
-        "acp: Bash tool finished exit_code={exit_code} stdout_len={} stderr_len={}",
-        stdout.len(),
-        stderr.len()
-    );
 
     Ok(serde_json::json!({
         "stdout": stdout,

@@ -66,9 +66,7 @@ export function useMcpServers() {
         next[server.config.id] = server.status;
       }
       setStatuses((prev) => (statusesEqual(prev, next) ? prev : next));
-    } catch (err) {
-      console.error("[MCP] failed to list servers:", err);
-    }
+    } catch {}
   }, []);
 
   const loadTools = useCallback(async () => {
@@ -80,9 +78,7 @@ export function useMcpServers() {
       try {
         const result = await invoke<McpTool[]>("mcp_list_tools", { id });
         next[id] = result;
-      } catch (err) {
-        console.error(`[MCP] failed to list tools for ${id}:`, err);
-      }
+      } catch {}
     }
     setTools((prev) => (toolsEqual(prev, next) ? prev : next));
   }, [statuses]);
@@ -90,25 +86,19 @@ export function useMcpServers() {
   const startServer = useCallback(async (id: string) => {
     try {
       await invoke("mcp_start_server", { id });
-    } catch (err) {
-      console.error(`[MCP] failed to start server ${id}:`, err);
-    }
+    } catch {}
   }, []);
 
   const stopServer = useCallback(async (id: string) => {
     try {
       await invoke("mcp_stop_server", { id });
-    } catch (err) {
-      console.error(`[MCP] failed to stop server ${id}:`, err);
-    }
+    } catch {}
   }, []);
 
   const restartServer = useCallback(async (id: string) => {
     try {
       await invoke("mcp_restart_server", { id });
-    } catch (err) {
-      console.error(`[MCP] failed to restart server ${id}:`, err);
-    }
+    } catch {}
   }, []);
 
   const clearLogs = useCallback((id: string) => {
