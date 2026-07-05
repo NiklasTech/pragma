@@ -33,7 +33,7 @@ tauri-plugin-opener = "2"
 libc = "0.2"
 nix = { version = "0.29", features = ["process", "signal"] }
 shared_child = "1"
-notify = "7.0"
+notify = "8.2"
 chrono = { version = "0.4", features = ["serde"] }
 diffy = "0.4"
 sha2 = "0.10"
