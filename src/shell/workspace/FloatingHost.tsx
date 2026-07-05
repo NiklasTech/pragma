@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { useLayoutStore } from "@/shell/layout";
@@ -28,11 +28,16 @@ function clampFloating(node: FloatingNode): FloatingNode {
   };
 }
 
+function isWindowsPlatform(): boolean {
+  return /Windows/i.test(navigator.userAgent);
+}
+
 export function FloatingHost() {
   const floating = useLayoutStore((s) => s.floating);
   const dockFloatingPanel = useLayoutStore((s) => s.dockFloatingPanel);
   const moveFloatingToExternal = useLayoutStore((s) => s.moveFloatingToExternal);
   const visible = floating.filter((node) => !node.external);
+  const [isWindows] = useState(() => isWindowsPlatform());
 
   // Clamp floating panels to the viewport on mount and resize so a persisted
   // off-screen position cannot trap the panel or block the titlebar.
@@ -103,7 +108,7 @@ export function FloatingHost() {
             useLayoutStore.setState({ floating: next });
           }}
           onClose={() => dockFloatingPanel(node.id)}
-          onExternalize={() => void handleExternalize(node)}
+          onExternalize={isWindows ? undefined : () => void handleExternalize(node)}
         >
           <div className="h-full w-full">
             <LayoutTreeRenderer node={node.child} />
