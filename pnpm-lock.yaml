@@ -6,9 +6,6 @@ settings:
 
 catalogs:
   default:
-    vite:
-      specifier: npm:@voidzero-dev/vite-plus-core@0.2.2
-      version: 0.2.2
     vite-plus:
       specifier: 0.2.2
       version: 0.2.2
@@ -227,7 +224,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vite:
-        specifier: 'catalog:'
+        specifier: npm:@voidzero-dev/vite-plus-core@0.2.2
         version: '@voidzero-dev/vite-plus-core@0.2.2(@types/node@26.1.0)(esbuild@0.28.1)(jiti@2.7.0)(typescript@6.0.3)'
       vite-plus:
         specifier: 'catalog:'
