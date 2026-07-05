@@ -123,9 +123,32 @@ Pragma is currently in early development. The core editor, terminal, AI chat and
 
 ### Download a release
 
-Pre-built binaries for macOS, Windows and Linux will be published on the [Releases](https://github.com/NiklasTech/pragma/releases) page once the release pipeline is complete.
+Pre-built installers for Windows, macOS and Linux are available on the [Releases](https://github.com/NiklasTech/pragma/releases) page.
 
-Until then, build Pragma from source.
+> **Note:** The first release is distributed **without code signing**. Windows may show a SmartScreen warning, and macOS may require you to right-click the app and select **Open** the first time you run it. The macOS build is compiled automatically in CI but has **not been tested on Apple hardware**.
+
+#### Windows
+
+1. Download `pragma_<version>_x64-setup.exe` or `pragma_<version>_x64_en-US.msi` from the latest release.
+2. Run the installer and follow the setup steps.
+3. Launch Pragma from the Start menu or desktop shortcut.
+
+#### macOS
+
+1. Download `pragma_<version>_x64.dmg` (Intel) or `pragma_<version>_aarch64.dmg` (Apple Silicon) from the latest release.
+2. Open the DMG and drag **Pragma** into your Applications folder.
+3. On first launch, right-click the app and choose **Open** if Gatekeeper blocks it.
+
+> The macOS build is produced automatically by CI and has not been verified on physical Apple hardware.
+
+#### Linux
+
+1. Download the package for your distribution:
+   - Debian/Ubuntu: `pragma_<version>_amd64.deb`
+   - Fedora/openSUSE: `pragma-<version>-1.x86_64.rpm`
+   - Distribution-agnostic: `pragma_<version>_amd64.AppImage`
+2. Install the package or make the AppImage executable (`chmod +x pragma_*.AppImage`).
+3. Launch Pragma from your applications menu or by running the AppImage.
 
 ---
 
