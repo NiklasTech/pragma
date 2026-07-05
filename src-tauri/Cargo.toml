@@ -35,7 +35,7 @@ nix = { version = "0.29", features = ["process", "signal"] }
 shared_child = "1"
 notify = "7.0"
 chrono = { version = "0.4", features = ["serde"] }
-diffy = "0.4"
+diffy = "0.5"
 sha2 = "0.10"
 reqwest = { version = "0.13.3", features = ["json", "stream"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
