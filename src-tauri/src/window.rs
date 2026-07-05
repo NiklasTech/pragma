@@ -40,6 +40,11 @@ pub fn create_external_window(
     app: AppHandle,
     request: CreateExternalWindowRequest,
 ) -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    {
+        return Err("External floating windows are temporarily disabled on Windows.".to_string());
+    }
+
     if !is_valid_node_id(&request.node_id) {
         let msg = format!("Invalid node id: {}", request.node_id);
         return Err(msg);
