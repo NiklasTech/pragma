@@ -2,11 +2,16 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
 import { error as logError } from "@tauri-apps/plugin-log";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./globals.css";
 import App from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
 import { useFontStore } from "@/shared/stores/fonts";
+
+function isTauri(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
 
 initRunConfigListeners();
 void useFontStore.getState().loadFonts();
@@ -80,3 +85,18 @@ createRoot(document.getElementById("root")!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+if (isTauri()) {
+  const appWindow = getCurrentWindow();
+  // Wait for the first paint so the revealed window already shows content,
+  // not a blank frame.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      appWindow.show().catch(() => {
+        // If the window cannot be shown from the frontend, the OS/Tauri
+        // window config remains the fallback. Failures are intentionally
+        // swallowed to avoid an unhandled rejection on startup.
+      });
+    });
+  });
+}
