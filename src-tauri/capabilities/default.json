@@ -16,6 +16,8 @@
     "dialog:default",
     "opener:default",
     "store:default",
-    "log:default"
+    "log:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text"
   ]
 }

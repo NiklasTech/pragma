@@ -21,6 +21,7 @@ import { useTheme } from "@/theme";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
+import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
 import { AISuggestionsOverlay } from "./ai-suggestions";
 
 interface PtyOutputEvent {
@@ -326,22 +327,18 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         const term = termRef.current;
         const selection = term?.getSelection();
         if (selection) {
-          if (navigator.clipboard) {
-            void navigator.clipboard.writeText(selection);
-          }
+          void copyToClipboard(selection);
           term?.clearSelection();
           event.preventDefault();
           event.stopPropagation();
         }
         // If nothing is selected, let xterm send Ctrl+C (SIGINT) to the PTY.
       } else if (key === "v") {
-        if (navigator.clipboard) {
-          void navigator.clipboard.readText().then((text) => {
-            if (text && ptyIdRef.current) {
-              safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: text }));
-            }
-          });
-        }
+        void readFromClipboard().then((text) => {
+          if (text && ptyIdRef.current) {
+            safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: text }));
+          }
+        });
         event.preventDefault();
         event.stopPropagation();
       }
