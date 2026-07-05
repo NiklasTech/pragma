@@ -59,6 +59,9 @@ keyring = { version = "3.6.3", features = ["apple-native"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3.6.3", features = ["windows-native"] }
 
+[features]
+test-fixtures = []
+
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 
@@ -69,6 +72,7 @@ path = "src/main.rs"
 [[bin]]
 name = "echo-mcp-server"
 path = "tests/fixtures/echo_mcp_server.rs"
+required-features = ["test-fixtures"]
 
 [[bench]]
 name = "file_explorer"
