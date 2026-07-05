@@ -44,7 +44,7 @@ zip = { version = "4.2", default-features = false, features = ["deflate"] }
 tokio-util = "0.7"
 shellwords = "1.1.0"
 tracing = "0.1.44"
-sysinfo = "0.34"
+sysinfo = "0.39"
 bollard = "0.20"
 ignore = "0.4"
 regex = "1.0"
