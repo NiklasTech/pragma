@@ -41,6 +41,12 @@ jobs:
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.platform }}-${{ matrix.args }}
+
       - name: Install system dependencies (Ubuntu)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -57,18 +63,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Pragma ${{ github.ref_name }}"
-          releaseBody: |
-            Pragma ${{ github.ref_name }} is the first public release of the IDE.
-
-            ## Installation
-
-            - **Windows**: download and run `pragma_*_x64-setup.exe` or `pragma_*_x64_en-US.msi`
-            - **macOS**: download `pragma_*_universal.dmg`, open it and drag Pragma to Applications
-            - **Linux**: download `pragma_*_amd64.deb`, `pragma_*-1.x86_64.rpm` or `pragma_*_amd64.AppImage`
-
-            > **Note:** This release is not code-signed. Windows may show a SmartScreen warning and macOS may require you to right-click the app and choose **Open** on first launch. The macOS build is compiled automatically in CI but has not been tested on Apple hardware.
-
-            See the full changelog in [CHANGELOG.md](https://github.com/NiklasTech/pragma/blob/main/CHANGELOG.md).
           releaseDraft: true
           prerelease: false
+          generateReleaseNotes: true
           args: ${{ matrix.args }}
