@@ -91,7 +91,7 @@ jobs:
 
       - name: Run Rust tests
         working-directory: src-tauri
-        run: cargo test
+        run: cargo test --features test-fixtures
 
       - name: Check Rust formatting
         working-directory: src-tauri
