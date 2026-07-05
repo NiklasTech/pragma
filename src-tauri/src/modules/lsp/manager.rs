@@ -7,6 +7,7 @@ use crate::modules::lsp::types::{
     TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
     VersionedTextDocumentIdentifier,
 };
+use crate::platform::new_tokio_command;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -270,7 +271,7 @@ impl LspManager {
 
         let path = enriched_path();
         let command = resolve_command(&config.command, &path);
-        let output = tokio::process::Command::new(&command)
+        let output = new_tokio_command(&command)
             .arg("--version")
             .env("PATH", &path)
             .output()
@@ -296,7 +297,7 @@ impl LspManager {
 
         let path = enriched_path();
         let program = resolve_command(&program, &path);
-        let output = tokio::process::Command::new(&program)
+        let output = new_tokio_command(&program)
             .args(&config.install_args)
             .env("PATH", &path)
             .output()

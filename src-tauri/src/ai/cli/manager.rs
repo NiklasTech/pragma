@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
 
+use crate::platform::new_tokio_command;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::Command;
 use tokio::time::timeout;
 
 use super::manifest::{get_manifest, CLIManifest, OutputFormat};
@@ -224,7 +224,7 @@ impl CLIManager {
             return Err(AIError::Provider("empty install command".to_string()));
         }
 
-        let mut cmd = Command::new(&parts[0]);
+        let mut cmd = new_tokio_command(&parts[0]);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -259,7 +259,7 @@ impl CLIManager {
             return Err(AIError::Provider("empty login command".to_string()));
         }
 
-        let mut cmd = Command::new(&parts[0]);
+        let mut cmd = new_tokio_command(&parts[0]);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -303,7 +303,7 @@ impl CLIManager {
             return Err(AIError::Provider("empty logout command".to_string()));
         }
 
-        let mut cmd = Command::new(&parts[0]);
+        let mut cmd = new_tokio_command(&parts[0]);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -355,7 +355,7 @@ impl CLIManager {
             return Err(AIError::Provider("empty check command".to_string()));
         }
 
-        let output = Command::new(&parts[0])
+        let output = new_tokio_command(&parts[0])
             .args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -385,7 +385,7 @@ impl CLIManager {
             return Ok((false, None));
         }
 
-        let output = Command::new(&parts[0])
+        let output = new_tokio_command(&parts[0])
             .args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -445,7 +445,7 @@ async fn run_chat_process(
         return Err(AIError::Provider("empty chat command".to_string()));
     }
 
-    let mut child = Command::new(&cmd_parts[0])
+    let mut child = new_tokio_command(&cmd_parts[0])
         .args(&cmd_parts[1..])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

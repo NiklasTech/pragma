@@ -1,4 +1,5 @@
 use crate::modules::mcp::error::{JsonRpcErrorCode, McpError, Result};
+use crate::platform::new_tokio_command;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -7,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
-use tokio::process::{Child, ChildStderr, Command};
+use tokio::process::{Child, ChildStderr};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 const JSONRPC_VERSION: &str = "2.0";
@@ -110,7 +111,7 @@ impl McpClient {
         }
 
         let timeout = config.request_timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS);
-        let mut cmd = Command::new(&config.command);
+        let mut cmd = new_tokio_command(&config.command);
         cmd.args(&config.args)
             .envs(&config.env)
             .stdin(Stdio::piped())

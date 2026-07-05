@@ -1,6 +1,7 @@
 pub mod ai;
 pub mod commands;
 pub mod modules;
+pub mod platform;
 pub mod window;
 
 use ai::acp::AcpSessionManager;

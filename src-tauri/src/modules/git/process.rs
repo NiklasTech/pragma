@@ -2,6 +2,8 @@ use std::ffi::{OsStr, OsString};
 use std::io::Read;
 use std::path::Path;
 use std::process::{Command, Stdio};
+
+use crate::platform::new_std_command;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
@@ -274,7 +276,7 @@ where
 }
 
 fn build_git_command(repo_root: Option<&str>, args: &[OsString]) -> Result<Command> {
-    let mut cmd = Command::new("git");
+    let mut cmd = new_std_command("git");
     if let Some(cwd) = repo_root {
         cmd.current_dir(cwd);
     }

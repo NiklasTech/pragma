@@ -6,7 +6,9 @@ use bollard::Docker;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
+
+use crate::platform::new_std_command;
 
 // ─── Request / Response Types ────────────────────────────────────────────────
 
@@ -98,7 +100,7 @@ fn version_from_output(output: &[u8]) -> String {
 }
 
 fn try_binary(path: &str) -> Option<(String, String)> {
-    let output = Command::new(path).arg("--version").output().ok()?;
+    let output = new_std_command(path).arg("--version").output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -111,7 +113,7 @@ fn try_binary(path: &str) -> Option<(String, String)> {
 
 fn shell_command_v(name: &str) -> Option<String> {
     let shell = crate::modules::env_loader::default_shell();
-    let output = Command::new(&shell)
+    let output = new_std_command(&shell)
         .args(["-ilc", &format!("command -v {name}")])
         .output()
         .ok()?;
@@ -241,7 +243,7 @@ fn run_compose(
         return Err("No compose file found in workspace root".to_string());
     }
 
-    let mut cmd = Command::new(binary_path);
+    let mut cmd = new_std_command(binary_path);
     cmd.arg("compose")
         .arg(action)
         .args(args)
@@ -379,7 +381,7 @@ async fn runtime_info(workspace_root: Option<String>) -> Result<RuntimeInfo, Str
     let compose_project_name = workspace_root.as_deref().and_then(compose_project_name);
 
     let compose_available = if available && workspace_root.is_some() {
-        Command::new(&binary_path)
+        new_std_command(&binary_path)
             .args(["compose", "version"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())

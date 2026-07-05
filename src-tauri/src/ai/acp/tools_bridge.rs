@@ -1,6 +1,6 @@
+use crate::platform::new_tokio_command;
 use serde_json::Value;
 use std::process::Stdio;
-use tokio::process::Command;
 
 use super::error::{AcpError, Result};
 use super::types::ToolCallRequest;
@@ -22,7 +22,7 @@ async fn execute_bash(arguments: Value, cwd: &str) -> Result<Value> {
         AcpError::Protocol("missing or invalid command argument for Bash".to_string())
     })?;
 
-    let output = Command::new("/bin/sh")
+    let output = new_tokio_command("/bin/sh")
         .arg("-c")
         .arg(&command)
         .current_dir(cwd)
