@@ -1,5 +1,7 @@
 use serde::Deserialize;
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager};
+#[cfg(not(target_os = "windows"))]
+use tauri::{WebviewUrl, WebviewWindowBuilder};
 
 const LABEL_PREFIX: &str = "floating-";
 
@@ -19,6 +21,7 @@ pub struct CreateExternalWindowRequest {
     pub bounds: WindowBounds,
 }
 
+#[cfg(not(target_os = "windows"))]
 fn is_valid_node_id(node_id: &str) -> bool {
     !node_id.is_empty()
         && node_id
@@ -26,6 +29,7 @@ fn is_valid_node_id(node_id: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':' || c == '/')
 }
 
+#[cfg(not(target_os = "windows"))]
 fn build_label(node_id: &str) -> String {
     if node_id.starts_with(LABEL_PREFIX) {
         node_id.to_string()
@@ -35,16 +39,22 @@ fn build_label(node_id: &str) -> String {
 }
 
 /// Creates a new external floating window for the given layout node.
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub fn create_external_window(
+    _app: AppHandle,
+    _request: CreateExternalWindowRequest,
+) -> Result<String, String> {
+    Err("External floating windows are temporarily disabled on Windows.".to_string())
+}
+
+/// Creates a new external floating window for the given layout node.
+#[cfg(not(target_os = "windows"))]
 #[tauri::command]
 pub fn create_external_window(
     app: AppHandle,
     request: CreateExternalWindowRequest,
 ) -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    {
-        return Err("External floating windows are temporarily disabled on Windows.".to_string());
-    }
-
     if !is_valid_node_id(&request.node_id) {
         let msg = format!("Invalid node id: {}", request.node_id);
         return Err(msg);

@@ -133,35 +133,37 @@ export function FloatingWindow({
         onMouseDown={handleDragStart}
       >
         {title}
-        {onExternalize && (
-          <button
-            type="button"
-            data-no-drag
-            onClick={onExternalize}
-            className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
-            aria-label="Move to native window"
-          >
-            <ArrowSquareOut size={14} />
-          </button>
-        )}
-        {onClose && (
-          <button
-            type="button"
-            data-no-drag
-            onClick={onClose}
-            className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
-            aria-label="Close"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M1 1L11 11M11 1L1 11"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {onExternalize && (
+            <button
+              type="button"
+              data-no-drag
+              onClick={onExternalize}
+              className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+              aria-label="Move to native window"
+            >
+              <ArrowSquareOut size={14} />
+            </button>
+          )}
+          {onClose && (
+            <button
+              type="button"
+              data-no-drag
+              onClick={onClose}
+              className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+              aria-label="Close"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path
+                  d="M1 1L11 11M11 1L1 11"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
