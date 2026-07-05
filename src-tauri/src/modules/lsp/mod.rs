@@ -38,10 +38,6 @@ pub async fn lsp_did_change(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    log::info!(
-        "lsp_did_change: language={language}, file={file_path}, len={}",
-        content.len()
-    );
     let project_root = resolve_project_root(&language, &file_path)
         .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
     state

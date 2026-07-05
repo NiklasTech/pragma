@@ -43,10 +43,7 @@ fn availability_cell() -> &'static Mutex<AvailabilityCache> {
 fn lock_availability() -> std::sync::MutexGuard<'static, AvailabilityCache> {
     match availability_cell().lock() {
         Ok(g) => g,
-        Err(e) => {
-            log::error!("git availability mutex poisoned; recovering from poison");
-            e.into_inner()
-        }
+        Err(e) => e.into_inner(),
     }
 }
 

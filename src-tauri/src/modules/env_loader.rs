@@ -103,7 +103,6 @@ fn append_path_entries(entries: &[&str]) {
 #[cfg(unix)]
 pub fn load_shell_env() -> Result<(), String> {
     let shell = default_shell();
-    log::info!("Loading shell environment from {shell}");
 
     let result = Command::new(&shell)
         .args(["-ilc", "env -0"])
@@ -138,10 +137,8 @@ pub fn load_shell_env() -> Result<(), String> {
             }
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            log::warn!("Shell env command exited with error: {stderr}");
         }
     } else if let Err(e) = result {
-        log::warn!("{e}");
     }
 
     append_path_entries(&[
@@ -152,9 +149,7 @@ pub fn load_shell_env() -> Result<(), String> {
         "$HOME/.local/bin",
     ]);
 
-    if let Ok(path) = std::env::var("PATH") {
-        log::info!("Loaded PATH with {} entries", path.split(':').count());
-    }
+    if let Ok(path) = std::env::var("PATH") {}
 
     Ok(())
 }
@@ -179,8 +174,7 @@ pub fn load_shell_env() -> Result<(), String> {
         .map_err(|e| format!("Failed to run PowerShell env command: {e}"))?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        log::warn!("PowerShell env command exited with error: {stderr}");
+        let _stderr = String::from_utf8_lossy(&output.stderr);
         return Ok(());
     }
 
@@ -207,12 +201,7 @@ pub fn load_shell_env() -> Result<(), String> {
         }
     }
 
-    if let Ok(path) = std::env::var("PATH") {
-        log::info!(
-            "Loaded PATH with {} entries",
-            std::env::split_paths(&path).count()
-        );
-    }
+    if let Ok(_path) = std::env::var("PATH") {}
 
     Ok(())
 }

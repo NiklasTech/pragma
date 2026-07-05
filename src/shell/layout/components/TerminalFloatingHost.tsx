@@ -47,9 +47,8 @@ export function TerminalFloatingHost() {
         floating: [...s.floating, { ...node, external: label }],
       }));
       setTerminalMode("hidden");
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("Failed to create external terminal window:", err);
+    } catch {
+      // ignored
     }
   }, [terminal.floating, setTerminalMode]);
 

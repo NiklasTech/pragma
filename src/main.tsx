@@ -37,7 +37,6 @@ if (import.meta.hot) {
     const cancelable = event as Event;
     if (typeof cancelable.preventDefault === "function") {
       cancelable.preventDefault();
-      console.warn("[Pragma] full-reload blocked to preserve state");
       return;
     }
     throw new Error("Pragma: full-reload blocked to preserve state");

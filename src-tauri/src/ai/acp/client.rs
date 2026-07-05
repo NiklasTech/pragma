@@ -228,7 +228,6 @@ where
 {
     tokio::spawn(async move {
         while let Some(message) = outgoing_rx.recv().await {
-            log::debug!("acp -> out: {message}");
             if writer
                 .write_all(format!("{message}\n").as_bytes())
                 .await
@@ -260,12 +259,9 @@ where
                 continue;
             }
 
-            log::debug!("acp <- in: {line}");
-
             let value: Value = match serde_json::from_str(&line) {
                 Ok(v) => v,
-                Err(e) => {
-                    log::warn!("acp: failed to parse JSON-RPC line: {e}");
+                Err(_e) => {
                     continue;
                 }
             };
@@ -345,8 +341,7 @@ where
 
                 let message = match serde_json::to_string(&response) {
                     Ok(m) => m,
-                    Err(e) => {
-                        log::warn!("acp: failed to serialize reverse-RPC response: {e}");
+                    Err(_e) => {
                         continue;
                     }
                 };
@@ -361,8 +356,7 @@ where
             {
                 let response: JsonRpcResponse = match serde_json::from_value(value) {
                     Ok(r) => r,
-                    Err(e) => {
-                        log::warn!("acp: failed to parse JSON-RPC response: {e}");
+                    Err(_e) => {
                         continue;
                     }
                 };
@@ -370,7 +364,6 @@ where
                 let id = match response.id.as_ref().and_then(|v| v.as_u64()) {
                     Some(id) => id,
                     None => {
-                        log::warn!("acp: response with non-numeric id");
                         continue;
                     }
                 };
@@ -397,8 +390,7 @@ where
             if value.get("method").is_some() {
                 let notification: JsonRpcRequest = match serde_json::from_value(value) {
                     Ok(n) => n,
-                    Err(e) => {
-                        log::warn!("acp: failed to parse JSON-RPC notification: {e}");
+                    Err(_e) => {
                         continue;
                     }
                 };
@@ -409,8 +401,6 @@ where
                 });
                 continue;
             }
-
-            log::warn!("acp: unrecognized JSON-RPC message: {value}");
         }
     })
 }

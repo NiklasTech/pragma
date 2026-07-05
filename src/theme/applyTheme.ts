@@ -33,7 +33,6 @@ function resolveValue(
 
   const path = match[1];
   if (visited.has(path)) {
-    console.warn(`[pragma.theme] Circular reference detected: ${value}`);
     return value;
   }
 
@@ -41,7 +40,6 @@ function resolveValue(
   const resolved = getPath(tokens, path);
 
   if (typeof resolved !== "string") {
-    console.warn(`[pragma.theme] Could not resolve reference: ${value}`);
     return value;
   }
 

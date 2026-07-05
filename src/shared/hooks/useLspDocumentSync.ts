@@ -42,7 +42,6 @@ export function useLspDocumentSync(
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.error("LSP didOpen failed:", err);
         toast.error(message);
       }
     };
@@ -76,9 +75,7 @@ export function useLspDocumentSync(
             content,
           });
           lastSentContentRef.current = content;
-        } catch (err) {
-          console.error("LSP didChange failed:", err);
-        }
+        } catch {}
       })();
     }, DEBOUNCE_MS);
 
@@ -109,9 +106,7 @@ export function useLspDocumentSync(
     void (async () => {
       try {
         await invoke("lsp_did_save", { language, filePath });
-      } catch (err) {
-        console.error("LSP didSave failed:", err);
-      }
+      } catch {}
     })();
   }, [language, filePath, isModified, lspEnabled, experimentalLsp]);
 }

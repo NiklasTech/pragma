@@ -204,11 +204,10 @@ class GhostTextPlugin {
       } else {
         this.clearGhost();
       }
-    } catch (err) {
+    } catch {
       if (generation !== this.generation) {
         return;
       }
-      console.error("[Ghost Text] completion failed", err);
       this.clearGhost();
     }
   }

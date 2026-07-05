@@ -493,7 +493,6 @@ impl AIProvider for OpenAIProvider {
                                                     }
 
                                                     if let Some(deltas) = choice.delta.tool_calls {
-                                                        log::info!("[OpenAI stream] received tool_calls delta: {:?}", deltas);
                                                         for delta in deltas {
                                                             let partial = partial_tool_calls
                                                                 .entry(delta.index)
@@ -527,7 +526,6 @@ impl AIProvider for OpenAIProvider {
                                                                 .drain()
                                                                 .map(|(_, partial)| partial.into())
                                                                 .collect();
-                                                        log::info!("[OpenAI stream] finish_reason tool_calls, sending {:?}", completed);
                                                         send_tool_call_chunk(completed, &tx).await;
                                                     }
                                                 }
@@ -556,15 +554,10 @@ impl AIProvider for OpenAIProvider {
                                 .drain()
                                 .map(|(_, partial)| partial.into())
                                 .collect();
-                            log::info!("[OpenAI stream] stream ended, partial_tool_calls: {:?}, content_buffer: {:?}", remaining, content_buffer);
                             if remaining.is_empty() {
                                 if let Some(calls) =
                                     extract_tool_calls_from_content(&content_buffer)
                                 {
-                                    log::info!(
-                                        "[OpenAI stream] fallback extracted calls: {:?}",
-                                        calls
-                                    );
                                     send_tool_call_chunk(calls, &tx).await;
                                 }
                             } else {

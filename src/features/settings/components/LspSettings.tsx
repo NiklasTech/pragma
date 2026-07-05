@@ -40,8 +40,7 @@ export function LspSettings() {
     try {
       const installed = await invoke<boolean>("lsp_check_server", { language });
       setStatuses((prev) => ({ ...prev, [language]: installed ? "installed" : "missing" }));
-    } catch (err) {
-      console.error(`[LSP Check ${language}]`, err);
+    } catch {
       setStatuses((prev) => ({ ...prev, [language]: "error" }));
     }
   }, []);

@@ -8,7 +8,6 @@ use super::types::{
 };
 
 const MAX_FILE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
-const LARGE_FILE_THRESHOLD_BYTES: u64 = 1024 * 1024;
 
 pub fn handle_fs_request(method: &str, params: Option<Value>, cwd: &str) -> Result<Value> {
     match method {
@@ -99,14 +98,6 @@ fn read_text_file(path: &Path) -> Result<Value> {
             file_size / (1024 * 1024),
             MAX_FILE_SIZE_BYTES / (1024 * 1024)
         )));
-    }
-
-    if file_size > LARGE_FILE_THRESHOLD_BYTES {
-        log::warn!(
-            "acp: reading large file: {} ({} bytes)",
-            path.display(),
-            file_size
-        );
     }
 
     let bytes = std::fs::read(path)

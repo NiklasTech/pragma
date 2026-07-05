@@ -36,7 +36,6 @@ pub struct DirEntry {
 }
 
 const MAX_FILE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
-const LARGE_FILE_THRESHOLD_BYTES: u64 = 1024 * 1024;
 
 #[tauri::command]
 pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
@@ -59,10 +58,6 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
             file_size / (1024 * 1024),
             MAX_FILE_SIZE_BYTES / (1024 * 1024)
         ));
-    }
-
-    if file_size > LARGE_FILE_THRESHOLD_BYTES {
-        log::warn!("Opening large file: {} ({} bytes)", path, file_size);
     }
 
     let bytes = fs::read(path_ref).map_err(|e| format!("Failed to read file: {}", e))?;

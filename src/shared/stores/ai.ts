@@ -438,9 +438,7 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
         map[s.provider_id] = s;
       }
       set({ cliStatuses: map });
-    } catch (e) {
-      console.error("[CLI Statuses Error]", e);
-    }
+    } catch {}
   },
 
   installCLI: async (providerId) => {
@@ -467,9 +465,7 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
     try {
       const status = await invoke<{ authenticated: boolean }>("copilot_auth_status");
       set({ copilotAuth: { ...get().copilotAuth, authenticated: status.authenticated } });
-    } catch (e) {
-      console.error("[Copilot Auth Status Error]", e);
-    }
+    } catch {}
   },
 
   startCopilotDeviceLogin: async (clientId) => {

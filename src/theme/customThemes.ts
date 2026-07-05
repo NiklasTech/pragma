@@ -12,8 +12,7 @@ function readStorage(): Record<string, Theme> {
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, Theme>;
     return parsed ?? {};
-  } catch (error) {
-    console.error("[pragma.theme] Failed to load custom themes:", error);
+  } catch {
     return {};
   }
 }
@@ -21,9 +20,7 @@ function readStorage(): Record<string, Theme> {
 function writeStorage(themes: Record<string, Theme>): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(themes));
-  } catch (error) {
-    console.error("[pragma.theme] Failed to save custom themes:", error);
-  }
+  } catch {}
 }
 
 export function loadCustomThemes(): Record<string, Theme> {

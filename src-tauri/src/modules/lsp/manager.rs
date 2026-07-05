@@ -135,7 +135,6 @@ impl LspManager {
         language: &str,
         project_root: &str,
     ) -> std::result::Result<(), String> {
-        log::info!("LSP start_server: language={language}, root={project_root}");
         let key = (language.to_string(), project_root.to_string());
 
         {
@@ -392,7 +391,6 @@ impl LspManager {
         file_path: &str,
         content: &str,
     ) -> std::result::Result<(), String> {
-        log::info!("LSP did_open: language={language}, file={file_path}, root={project_root}");
         self.start_server(language, project_root).await?;
 
         let client = self.get_client(language, project_root).await?;
@@ -518,12 +516,10 @@ impl LspManager {
             Ok(code) if code.success() => (LspServerStatus::Stopped, None),
             Ok(code) => {
                 let message = format!("exited with code {}", code.code().unwrap_or(-1));
-                log::error!("LSP server {language} crashed: {message}");
                 (LspServerStatus::Error, Some(message))
             }
             Err(err) => {
                 let message = format!("wait failed: {err}");
-                log::error!("LSP server {language} crashed: {message}");
                 (LspServerStatus::Error, Some(message))
             }
         };
@@ -550,10 +546,6 @@ impl LspManager {
         mut rx: tokio::sync::mpsc::UnboundedReceiver<Notification>,
     ) {
         while let Some(notification) = rx.recv().await {
-            log::info!(
-                "LSP notification: language={language}, method={}",
-                notification.method
-            );
             if notification.method == "textDocument/publishDiagnostics" {
                 if let Some(params) = notification.params {
                     match serde_json::from_value::<PublishDiagnosticsParams>(params) {
@@ -566,9 +558,7 @@ impl LspManager {
                             };
                             let _ = app_handle.emit("lsp_diagnostics", event);
                         }
-                        Err(e) => {
-                            log::warn!("Failed to parse publishDiagnostics notification: {e}");
-                        }
+                        Err(_e) => {}
                     }
                 }
             }
@@ -581,7 +571,6 @@ impl LspManager {
         mut rx: tokio::sync::mpsc::UnboundedReceiver<String>,
     ) {
         while let Some(line) = rx.recv().await {
-            log::info!("LSP {language} stderr: {line}");
             let _ = app_handle.emit(
                 "lsp_log",
                 serde_json::json!({

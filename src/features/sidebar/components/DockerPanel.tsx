@@ -308,9 +308,13 @@ export function DockerPanel() {
               <p className="text-xs text-fg-muted">
                 Docker or Podman is not available on this system.
               </p>
-              <p className="text-ui-xs text-fg-muted">
-                Shell: /bin/fish · PATH entries: check Tauri log
-              </p>
+              {runtime.daemon_error ? (
+                <p className="text-ui-xs text-status-error">{runtime.daemon_error}</p>
+              ) : (
+                <p className="text-ui-xs text-fg-muted">
+                  Shell: /bin/fish · PATH entries: check Tauri log
+                </p>
+              )}
             </div>
           ) : (
             <>

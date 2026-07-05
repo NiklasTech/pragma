@@ -16,6 +16,7 @@ export interface RuntimeInfo {
   binary_path: string;
   version: string;
   available: boolean;
+  daemon_error: string | null;
   compose_available: boolean;
   compose_file: string | null;
   compose_project_name: string | null;
@@ -67,7 +68,7 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   setWorkspaceRoot: (root) => set({ workspaceRoot: root }),
 
   loadContainers: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true });
     try {
       const containers = await invoke<DockerContainer[]>("docker_list_containers");
       set({ containers, isLoading: false });
@@ -90,9 +91,9 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   startContainer: async (id) => {
-    set({ actionBusy: `start-${id}` });
+    set({ actionBusy: `start-${id}`, error: null });
     try {
-      await invoke("docker_start_container", { id });
+      await invoke("docker_start_container", { req: { id } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
@@ -102,9 +103,9 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   stopContainer: async (id) => {
-    set({ actionBusy: `stop-${id}` });
+    set({ actionBusy: `stop-${id}`, error: null });
     try {
-      await invoke("docker_stop_container", { id });
+      await invoke("docker_stop_container", { req: { id } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
@@ -114,9 +115,9 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   restartContainer: async (id) => {
-    set({ actionBusy: `restart-${id}` });
+    set({ actionBusy: `restart-${id}`, error: null });
     try {
-      await invoke("docker_restart_container", { id });
+      await invoke("docker_restart_container", { req: { id } });
       await get().loadContainers();
     } catch (err) {
       set({ error: String(err) });
@@ -196,25 +197,21 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
   },
 
   openLogsTab: (container) => {
-    const { runtime } = get();
-    const binary = runtime?.available ? runtime.binary_path : "docker";
     useTerminalStore.getState().addSession({
       id: crypto.randomUUID(),
       name: `Logs: ${firstName(container)}`,
       type: "docker-logs",
-      command: `${binary} logs -f --tail 100 ${container.id}`,
+      command: `docker logs -f --tail 100 ${container.id}`,
       isActive: true,
     });
   },
 
   openExecTab: (container, shell = "/bin/sh") => {
-    const { runtime } = get();
-    const binary = runtime?.available ? runtime.binary_path : "docker";
     useTerminalStore.getState().addSession({
       id: crypto.randomUUID(),
       name: `Exec: ${firstName(container)}`,
       type: "docker-exec",
-      command: `${binary} exec -it ${container.id} ${shell}`,
+      command: `docker exec -it ${container.id} ${shell}`,
       isActive: true,
     });
   },

@@ -339,9 +339,7 @@ impl CLIManager {
         let prompt = build_prompt(&req);
 
         tokio::spawn(async move {
-            if let Err(e) = run_chat_process(chat_cmd, output_format, prompt, tx).await {
-                tracing::error!("CLI chat error: {e}");
-            }
+            if let Err(_e) = run_chat_process(chat_cmd, output_format, prompt, tx).await {}
         });
 
         Ok(rx)

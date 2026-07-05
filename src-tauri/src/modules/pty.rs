@@ -267,13 +267,28 @@ pub fn create_pty_command(
         return Err("command is required".to_string());
     }
 
-    let parts = shellwords::split(trimmed).map_err(|e| format!("Invalid command: {e}"))?;
-    if parts.is_empty() {
-        return Err("command is required".to_string());
-    }
+    // On Windows, run the command through cmd.exe so that PATH resolution,
+    // .exe extension handling and paths with spaces work the same way as in a
+    // regular terminal. portable-pty's CommandBuilder does not expand .exe or
+    // resolve shell wrappers like Docker Desktop's `docker` symlink.
+    #[cfg(target_os = "windows")]
+    let (program, args): (String, Vec<String>) = {
+        (
+            "cmd".to_string(),
+            vec!["/c".to_string(), trimmed.to_string()],
+        )
+    };
 
-    let program = &parts[0];
-    let args = &parts[1..];
+    #[cfg(not(target_os = "windows"))]
+    let (program, args): (String, Vec<String>) = {
+        let parts = shellwords::split(trimmed).map_err(|e| format!("Invalid command: {e}"))?;
+        if parts.is_empty() {
+            return Err("command is required".to_string());
+        }
+        let program = parts[0].clone();
+        let args = parts[1..].to_vec();
+        (program, args)
+    };
 
     let pty_system = NativePtySystem::default();
     let pair = pty_system

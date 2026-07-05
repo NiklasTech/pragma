@@ -110,9 +110,7 @@ pub async fn local_history_entries(
                         message: entry.subject,
                     }));
                 }
-                Err(err) => {
-                    log::warn!("Failed to load git file history: {err}");
-                }
+                Err(_err) => {}
             }
         }
     }

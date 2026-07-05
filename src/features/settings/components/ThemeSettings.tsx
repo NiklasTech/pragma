@@ -47,7 +47,6 @@ export function ThemeSettings() {
     const parsed = JSON.parse(content) as unknown;
     const result = validateTheme(parsed as ThemeInput);
     if (!result.valid) {
-      console.error("[Theme Import]", result.errors);
       return;
     }
 

@@ -42,13 +42,6 @@ impl ApprovalBridge {
     pub async fn request_permission(&self, params: Option<Value>) -> Result<Value> {
         let req: RequestPermissionRequest = serde_json::from_value(params.unwrap_or(Value::Null))?;
 
-        log::info!(
-            "acp: request_permission for tool_call_id={} tool={} options={:?}",
-            req.tool_call.tool_call_id,
-            req.tool_call.title,
-            req.options
-        );
-
         let tool_call_id = req.tool_call.tool_call_id.clone();
         let tool_name = req.tool_call.title.clone();
         // Best-effort args: prefer the first text content entry, fall back to rawInput.
@@ -78,20 +71,11 @@ impl ApprovalBridge {
             .map_err(|e| AcpError::Protocol(format!("failed to emit approval event: {e}")))?;
 
         let approved = match timeout(Duration::from_secs(APPROVAL_TIMEOUT_SECONDS), rx).await {
-            Ok(Ok(approved)) => {
-                log::info!(
-                    "acp: request_permission resolved approved={approved} for {tool_call_id}"
-                );
-                approved
-            }
-            Ok(Err(_)) => {
-                log::warn!("acp: request_permission receiver dropped for {tool_call_id}");
-                false
-            }
+            Ok(Ok(approved)) => approved,
+            Ok(Err(_)) => false,
             Err(_) => {
                 let mut pending = self.pending.lock().await;
                 pending.remove(&tool_call_id);
-                log::warn!("acp: request_permission timeout for {tool_call_id}");
                 return Err(AcpError::ApprovalTimeout);
             }
         };
@@ -107,12 +91,10 @@ impl ApprovalBridge {
             },
         };
         let value = serde_json::to_value(&response)?;
-        log::info!("acp: request_permission response for {tool_call_id}: {value}");
         Ok(value)
     }
 
     pub async fn respond(&self, tool_call_id: &str, approved: bool) -> Result<()> {
-        log::info!("acp: respond tool_call_id={tool_call_id} approved={approved}");
         let sender = {
             let mut pending = self.pending.lock().await;
             pending.remove(tool_call_id)
@@ -123,12 +105,9 @@ impl ApprovalBridge {
                 let _ = tx.send(approved);
                 Ok(())
             }
-            None => {
-                log::warn!("acp: no pending approval for tool_call_id {tool_call_id}");
-                Err(AcpError::Protocol(format!(
-                    "no pending approval for tool_call_id {tool_call_id}"
-                )))
-            }
+            None => Err(AcpError::Protocol(format!(
+                "no pending approval for tool_call_id {tool_call_id}"
+            ))),
         }
     }
 }

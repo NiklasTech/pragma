@@ -271,17 +271,13 @@ export function Settings() {
   const handleExport = async () => {
     try {
       await exportSettings();
-    } catch (err) {
-      console.error("[Settings Export]", err);
-    }
+    } catch {}
   };
 
   const handleImport = async () => {
     try {
       await importSettings();
-    } catch (err) {
-      console.error("[Settings Import]", err);
-    }
+    } catch {}
   };
 
   const activeLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label ?? "Settings";

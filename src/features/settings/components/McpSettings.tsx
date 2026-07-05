@@ -140,9 +140,7 @@ export function McpSettings() {
       if (!serversEqual(servers, current)) {
         setMcpSettings({ servers });
       }
-    } catch (err) {
-      console.error("[MCP Load]", err);
-    }
+    } catch {}
   }, [editingId, setMcpSettings]);
 
   React.useEffect(() => {
@@ -163,9 +161,7 @@ export function McpSettings() {
     try {
       await invoke("mcp_save_config", { servers });
       await load();
-    } catch (err) {
-      console.error("[MCP Save]", err);
-    }
+    } catch {}
   };
 
   const handleAdd = () => {

@@ -33,9 +33,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  componentDidCatch(error: Error): void {
     this.setState({ error });
-    console.error("[ErrorBoundary]", error, errorInfo);
   }
 
   private handleReload = () => {
@@ -52,9 +51,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
     try {
       await navigator.clipboard.writeText(details);
-    } catch (err) {
-      console.error("[ErrorBoundary] Failed to copy error details", err);
-    }
+    } catch {}
   };
 
   render() {
