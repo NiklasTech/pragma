@@ -18,7 +18,7 @@
     "postinstall": "node scripts/copy-material-icons.js"
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.199",
+    "@ai-sdk/react": "^4.0.16",
     "@base-ui/react": "^1.5.0",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-angular": "^0.1.4",
