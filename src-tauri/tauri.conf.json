@@ -35,6 +35,17 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "icons/installer/nsis-header.bmp",
+        "sidebarImage": "icons/installer/nsis-sidebar.bmp"
+      },
+      "wix": {
+        "bannerPath": "icons/installer/msi-banner.bmp",
+        "dialogImagePath": "icons/installer/msi-dialog.bmp"
+      }
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
