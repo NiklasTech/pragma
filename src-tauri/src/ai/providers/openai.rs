@@ -17,12 +17,6 @@ const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const COMPLETIONS_PATH: &str = "/chat/completions";
 const MODELS_PATH: &str = "/models";
 
-const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[
-    ("gpt-4o", "GPT-4o", Some(128_000), true, true),
-    ("o1", "o1", Some(200_000), true, false),
-    ("o3", "o3", Some(200_000), true, false),
-];
-
 pub struct OpenAIProvider {
     config: ProviderConfig,
     client: reqwest::Client,
@@ -111,16 +105,7 @@ impl AIProvider for OpenAIProvider {
     }
 
     fn models(&self) -> Vec<ModelInfo> {
-        MODELS
-            .iter()
-            .map(|(id, name, ctx, stream, vision)| ModelInfo {
-                id: id.to_string(),
-                name: name.to_string(),
-                context_window: *ctx,
-                supports_streaming: *stream,
-                supports_vision: *vision,
-            })
-            .collect()
+        Vec::new()
     }
 
     fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {

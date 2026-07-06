@@ -106,6 +106,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         }
       });
       unlistenFn = unlisten;
+      if (disposed || !containerRef.current) return;
 
       fit.fit();
 
@@ -181,6 +182,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
           }
         }, 120);
       });
+      if (disposed || !containerRef.current) return;
       resizeObserver.observe(containerRef.current);
 
       requestAnimationFrame(() => {
