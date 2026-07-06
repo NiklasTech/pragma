@@ -201,22 +201,22 @@ const defaultSettings: SettingsState = {
   },
   ai: {
     defaultProvider: "anthropic",
-    defaultModel: "claude-sonnet-4-6",
+    defaultModel: "",
     inlineCompletion: true,
     completionDebounce: 500,
     terminalSuggestions: true,
     terminalSuggestionProvider: null,
     terminalSuggestionModel: null,
     providers: {
-      openai: { model: "gpt-4o" },
-      anthropic: { model: "claude-sonnet-4-6" },
-      ollama: { baseUrl: "http://localhost:11434", model: "llama3.2" },
-      deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
-      kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
-      gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash" },
-      openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/free" },
+      openai: { model: "" },
+      anthropic: { model: "" },
+      ollama: { baseUrl: "http://localhost:11434", model: "" },
+      deepseek: { baseUrl: "https://api.deepseek.com", model: "" },
+      kimi: { baseUrl: "https://api.kimi.com/coding/v1", model: "" },
+      gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "" },
+      openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "" },
       custom: { baseUrl: "", model: "" },
-      copilot: { model: "gpt-4o" },
+      copilot: { model: "" },
     },
   },
   theme: "dark-default",
@@ -495,6 +495,37 @@ function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null
   return result;
 }
 
+const OLD_MOONSHOT_MODELS = new Set(["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"]);
+
+function migrateAISettings(ai: Partial<AISettings> | undefined): Partial<AISettings> | undefined {
+  if (!ai || !ai.providers) return ai;
+
+  const providers = { ...ai.providers };
+  const kimi = providers.kimi;
+  let defaultModel = ai.defaultModel;
+
+  if (
+    kimi &&
+    (OLD_MOONSHOT_MODELS.has(kimi.model ?? "") || kimi.baseUrl === "https://api.moonshot.cn/v1")
+  ) {
+    providers.kimi = {
+      ...kimi,
+      baseUrl: "https://api.kimi.com/coding/v1",
+      model: "",
+    };
+  }
+
+  if (ai.defaultProvider === "kimi" && OLD_MOONSHOT_MODELS.has(defaultModel ?? "")) {
+    defaultModel = "";
+  }
+
+  const updated: Partial<AISettings> = { ...ai, providers };
+  if (defaultModel !== ai.defaultModel) {
+    updated.defaultModel = defaultModel;
+  }
+  return updated;
+}
+
 function mergeWithDefaults(
   persisted: unknown,
   defaults: SettingsState & SettingsActions,
@@ -508,12 +539,14 @@ function mergeWithDefaults(
   // Drop legacy persisted keys that have been removed from the settings schema.
   const { git: _, ...restPartial } = partial;
 
+  const migratedAi = migrateAISettings(partial.ai);
+
   return {
     ...defaults,
     ...restPartial,
     editor: mergePartial(defaults.editor, partial.editor),
     terminal: mergePartial(defaults.terminal, partial.terminal),
-    ai: mergePartial(defaults.ai, partial.ai),
+    ai: mergePartial(defaults.ai, migratedAi),
     layout: mergePartial(defaults.layout, partial.layout),
     workspace: mergePartial(defaults.workspace, partial.workspace),
     statusbar: mergePartial(defaults.statusbar, partial.statusbar),

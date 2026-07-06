@@ -1,16 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
 import { cn } from "@/shared/lib/utils";
-import {
-  LOCAL_PROVIDER,
-  MODE_LABELS,
-  PROVIDER_LABELS,
-  PROVIDER_MODEL_MODES,
-  type ProviderMode,
-} from "@/shared/lib/ai-providers";
+import { CLI_PROVIDER_IDS, PROVIDER_LABELS } from "@/shared/lib/ai-providers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import {
   Select,
@@ -19,27 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { Brain, CaretDown, Check, House, Lightning, Robot } from "@phosphor-icons/react";
-
-const MODE_ICONS: Record<ProviderMode, typeof Lightning> = {
-  fast: Lightning,
-  smart: Brain,
-  local: House,
-};
-
-const MODE_ORDER: ProviderMode[] = ["fast", "smart", "local"];
-
-const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
-  openai: [],
-  anthropic: [],
-  ollama: [],
-  deepseek: [],
-  kimi: ["moonshot-kimi"],
-  gemini: [],
-  openrouter: [],
-  custom: [],
-  copilot: [],
-};
+import { CaretDown, Check, Robot } from "@phosphor-icons/react";
 
 function isCLIAuthenticated(
   ids: string[],
@@ -116,6 +90,31 @@ export function AiModelSelector() {
 
   const isAvailable = availableMap[activeProvider];
 
+  const cliAuthenticated = isCLIAuthenticated(
+    CLI_PROVIDER_IDS[activeProvider],
+    activeCLIProvider,
+    cliStatuses,
+  );
+  const modelLabel = activeModel || (cliAuthenticated ? "CLI" : "No model");
+
+  // Auto-select the first fetched model when none is set.
+  useEffect(() => {
+    if (activeModel) return;
+    if (!availableModels.length) return;
+    const first = availableModels[0].id;
+    if (!first) return;
+    setActiveModel(first);
+    updateProviderConfig(activeProvider, { model: first });
+    settingsStore.setAISettings({ defaultModel: first });
+  }, [
+    activeModel,
+    availableModels,
+    activeProvider,
+    setActiveModel,
+    updateProviderConfig,
+    settingsStore,
+  ]);
+
   const handleProviderChange = (provider: AIProvider) => {
     setActiveProvider(provider);
     setActiveCLIProvider(null);
@@ -132,35 +131,6 @@ export function AiModelSelector() {
     settingsStore.setAISettings({ defaultModel: model });
   };
 
-  const handleModeChange = (mode: ProviderMode) => {
-    if (mode === "local") {
-      const nextModel = providers[LOCAL_PROVIDER].model || "";
-      setActiveProvider(LOCAL_PROVIDER);
-      setActiveCLIProvider(null);
-      setActiveModel(nextModel);
-      updateProviderConfig(LOCAL_PROVIDER, { model: nextModel });
-      settingsStore.setAISettings({
-        defaultProvider: LOCAL_PROVIDER,
-        defaultModel: nextModel,
-      });
-      return;
-    }
-
-    const targetModel = PROVIDER_MODEL_MODES[activeProvider][mode];
-    if (!targetModel) return;
-    setActiveModel(targetModel);
-    updateProviderConfig(activeProvider, { model: targetModel });
-    settingsStore.setAISettings({ defaultModel: targetModel });
-  };
-
-  const currentMode: ProviderMode | null = useMemo(() => {
-    if (activeProvider === LOCAL_PROVIDER) return "local";
-    const modes = PROVIDER_MODEL_MODES[activeProvider];
-    if (activeModel === modes.fast) return "fast";
-    if (activeModel === modes.smart) return "smart";
-    return null;
-  }, [activeProvider, activeModel]);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger>
@@ -173,7 +143,7 @@ export function AiModelSelector() {
           <Robot size={13} className="shrink-0 text-fg-muted" />
           <span className="truncate">{PROVIDER_LABELS[activeProvider]}</span>
           <span className="text-fg-muted">/</span>
-          <span className="truncate">{activeModel || "No model"}</span>
+          <span className="truncate">{modelLabel}</span>
           <span
             className={cn(
               "ml-0.5 h-1.5 w-1.5 shrink-0 rounded-full",
@@ -187,35 +157,6 @@ export function AiModelSelector() {
 
       <PopoverContent align="start" side="bottom" className="w-72 p-3">
         <div className="flex flex-col gap-3">
-          {/* Mode quick switch */}
-          <div className="grid grid-cols-3 gap-1 rounded-lg bg-bg-hover p-1">
-            {MODE_ORDER.map((mode) => {
-              const Icon = MODE_ICONS[mode];
-              const active = currentMode === mode;
-              const disabled =
-                mode === "local" ? false : !PROVIDER_MODEL_MODES[activeProvider][mode];
-
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => handleModeChange(mode)}
-                  className={cn(
-                    "flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-ui-xs font-medium transition-colors",
-                    active
-                      ? "bg-bg-surface text-fg-default shadow-sm"
-                      : "text-fg-muted hover:text-fg-default",
-                    disabled && "cursor-not-allowed opacity-40 hover:text-fg-muted",
-                  )}
-                >
-                  <Icon size={12} />
-                  {MODE_LABELS[mode]}
-                </button>
-              );
-            })}
-          </div>
-
           {/* Provider list */}
           <div className="flex flex-col gap-1">
             <span className="text-ui-xs font-medium uppercase tracking-wider text-fg-muted">

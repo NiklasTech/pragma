@@ -18,18 +18,6 @@ const MESSAGES_PATH: &str = "/messages";
 const MODELS_PATH: &str = "/models";
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
-const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[
-    ("claude-opus-4", "Claude Opus 4", Some(200_000), true, true),
-    (
-        "claude-sonnet-4",
-        "Claude Sonnet 4",
-        Some(200_000),
-        true,
-        true,
-    ),
-    ("claude-haiku", "Claude Haiku", Some(200_000), true, false),
-];
-
 pub struct AnthropicProvider {
     config: ProviderConfig,
     client: reqwest::Client,
@@ -132,16 +120,7 @@ impl AIProvider for AnthropicProvider {
     }
 
     fn models(&self) -> Vec<ModelInfo> {
-        MODELS
-            .iter()
-            .map(|(id, name, ctx, stream, vision)| ModelInfo {
-                id: id.to_string(),
-                name: name.to_string(),
-                context_window: *ctx,
-                supports_streaming: *stream,
-                supports_vision: *vision,
-            })
-            .collect()
+        Vec::new()
     }
 
     fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {

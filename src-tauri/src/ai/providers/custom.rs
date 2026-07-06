@@ -7,8 +7,6 @@ use crate::ai::{
     providers::openai::OpenAIProvider,
 };
 
-const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[];
-
 pub struct CustomProvider {
     inner: OpenAIProvider,
 }
@@ -36,16 +34,7 @@ impl AIProvider for CustomProvider {
     }
 
     fn models(&self) -> Vec<ModelInfo> {
-        MODELS
-            .iter()
-            .map(|(id, name, ctx, stream, vision)| ModelInfo {
-                id: id.to_string(),
-                name: name.to_string(),
-                context_window: *ctx,
-                supports_streaming: *stream,
-                supports_vision: *vision,
-            })
-            .collect()
+        Vec::new()
     }
 
     fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {
