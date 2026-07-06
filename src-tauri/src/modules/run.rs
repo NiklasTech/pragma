@@ -4,7 +4,9 @@ use std::io::{BufRead, BufReader};
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
+
+use crate::platform::new_std_command;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, State};
 
@@ -168,7 +170,7 @@ fn kill_process_group(pgid: i32) {
     // Use taskkill to terminate the process tree rooted at the given PID.
     // This is a pragmatic fallback until a JobObject-based implementation
     // is added for cleaner process-tree management.
-    let _ = std::process::Command::new("taskkill")
+    let _ = new_std_command("taskkill")
         .args(["/T", "/F", "/PID", &pgid.to_string()])
         .output();
 }
@@ -207,7 +209,7 @@ pub fn run_start(
         return Err("Empty command".to_string());
     }
 
-    let mut cmd = Command::new(&program);
+    let mut cmd = new_std_command(&program);
     cmd.args(&args)
         .current_dir(&cwd)
         .stdout(Stdio::piped())

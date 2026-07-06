@@ -3,6 +3,7 @@ use crate::modules::lsp::manager::resolve_command;
 use crate::modules::lsp::types::{
     InitializeParams, InitializeResult, InitializedParams, LspServerConfig,
 };
+use crate::platform::new_tokio_command;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -11,7 +12,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader};
-use tokio::process::{Child, ChildStderr, Command};
+use tokio::process::{Child, ChildStderr};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 const JSONRPC_VERSION: &str = "2.0";
@@ -156,7 +157,7 @@ impl LspClient {
         let timeout = DEFAULT_TIMEOUT_MS;
         let path = enriched_path();
         let command = resolve_command(&config.command, &path);
-        let mut cmd = Command::new(&command);
+        let mut cmd = new_tokio_command(&command);
         cmd.args(&config.args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

@@ -4,9 +4,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::platform::new_tokio_command;
 use serde_json::Value;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
-use tokio::process::{Child, Command};
+use tokio::process::Child;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::time::timeout;
 
@@ -84,7 +85,7 @@ impl AcpClient {
         }
 
         let request_timeout_ms = config.request_timeout_ms;
-        let mut cmd = Command::new(&config.command);
+        let mut cmd = new_tokio_command(&config.command);
         cmd.args(&config.args)
             .envs(&config.env)
             .stdin(Stdio::piped())

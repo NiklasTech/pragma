@@ -1,5 +1,5 @@
+use crate::platform::new_std_command;
 use std::path::Path;
-use std::process::Command;
 
 #[cfg(unix)]
 const SHELL_ENVS_TO_IMPORT: &[&str] = &[
@@ -20,7 +20,7 @@ fn login_shell_from_passwd() -> Option<String> {
     #[cfg(target_os = "macos")]
     {
         let user = std::env::var("USER").ok()?;
-        let output = Command::new("dscl")
+        let output = new_std_command("dscl")
             .args([".", "-read", &format!("/Users/{user}"), "UserShell"])
             .output()
             .ok()?;
@@ -41,7 +41,7 @@ fn login_shell_from_passwd() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
         let user = std::env::var("USER").ok()?;
-        let output = Command::new("getent")
+        let output = new_std_command("getent")
             .args(["passwd", &user])
             .output()
             .ok()?;
@@ -104,7 +104,7 @@ fn append_path_entries(entries: &[&str]) {
 pub fn load_shell_env() -> Result<(), String> {
     let shell = default_shell();
 
-    let result = Command::new(&shell)
+    let result = new_std_command(&shell)
         .args(["-ilc", "env -0"])
         .output()
         .map_err(|e| format!("Failed to run shell env command from {shell}: {e}"));
@@ -164,7 +164,7 @@ pub fn load_shell_env() -> Result<(), String> {
         "DOCKER_CONFIG",
     ];
 
-    let output = Command::new("powershell")
+    let output = new_std_command("powershell")
         .args([
             "-NoProfile",
             "-Command",
