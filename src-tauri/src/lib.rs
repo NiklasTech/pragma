@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod cli;
 pub mod commands;
 pub mod modules;
 pub mod platform;
@@ -9,12 +10,14 @@ use modules::lsp::LspManager;
 use modules::pty::PtyManager;
 use modules::run::RunManager;
 use tauri::Manager;
+use tauri_plugin_cli::CliExt;
 use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_cli::init())
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .plugin(tauri_plugin_dialog::init())
@@ -46,6 +49,13 @@ pub fn run() {
 
             app.manage(AcpSessionManager::new(app.handle().clone()));
             app.manage(LspManager::managed(app.handle().clone()));
+
+            let project_path = app
+                .cli()
+                .matches()
+                .ok()
+                .and_then(|matches| cli::extract_project_path(&matches));
+            app.manage(cli::CliArgs { project_path });
 
             Ok(())
         })
@@ -175,6 +185,7 @@ pub fn run() {
             commands::docker::docker_compose_up_build,
             commands::perf::memory_stats,
             commands::search::search_workspace,
+            cli::get_cli_project_path,
             window::create_external_window,
             window::close_external_window,
         ])

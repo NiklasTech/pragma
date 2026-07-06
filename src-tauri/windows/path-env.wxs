@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="PragmaPathEnv" Guid="*">
+        <Environment
+          Id="PragmaPath"
+          Name="PATH"
+          Value="[INSTALLDIR]"
+          Permanent="no"
+          Part="last"
+          Action="set"
+          System="no"
+        />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>
