@@ -16,23 +16,6 @@ use crate::ai::{
 const DEFAULT_BASE_URL: &str = "https://generativelanguage.googleapis.com";
 const API_VERSION: &str = "v1beta";
 
-const MODELS: &[(&str, &str, Option<usize>, bool, bool)] = &[
-    (
-        "gemini-2.0-flash",
-        "Gemini 2.0 Flash",
-        Some(1_048_576),
-        true,
-        true,
-    ),
-    (
-        "gemini-2.0-pro",
-        "Gemini 2.0 Pro",
-        Some(2_097_152),
-        true,
-        true,
-    ),
-];
-
 pub struct GeminiProvider {
     config: ProviderConfig,
     client: reqwest::Client,
@@ -137,16 +120,7 @@ impl AIProvider for GeminiProvider {
     }
 
     fn models(&self) -> Vec<ModelInfo> {
-        MODELS
-            .iter()
-            .map(|(id, name, ctx, stream, vision)| ModelInfo {
-                id: id.to_string(),
-                name: name.to_string(),
-                context_window: *ctx,
-                supports_streaming: *stream,
-                supports_vision: *vision,
-            })
-            .collect()
+        Vec::new()
     }
 
     fn list_models(&self) -> BoxFuture<'_, Result<Vec<ModelInfo>, AIError>> {

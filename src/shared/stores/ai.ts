@@ -159,20 +159,20 @@ interface AIActions {
 }
 
 const defaultProviders: Record<AIProvider, ProviderConfig> = {
-  openai: { model: "gpt-4o" },
-  anthropic: { model: "claude-sonnet-4-6" },
-  ollama: { baseUrl: "http://localhost:11434", model: "llama3.2" },
-  deepseek: { baseUrl: "https://api.deepseek.com", model: "deepseek-chat" },
-  kimi: { baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
-  gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "gemini-2.0-flash" },
-  openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/free" },
+  openai: { model: "" },
+  anthropic: { model: "" },
+  ollama: { baseUrl: "http://localhost:11434", model: "" },
+  deepseek: { baseUrl: "https://api.deepseek.com", model: "" },
+  kimi: { baseUrl: "https://api.kimi.com/coding/v1", model: "" },
+  gemini: { baseUrl: "https://generativelanguage.googleapis.com", model: "" },
+  openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "" },
   custom: { baseUrl: "", model: "" },
-  copilot: { model: "gpt-4o" },
+  copilot: { model: "" },
 };
 
 const initialState: AIState = {
   activeProvider: "anthropic",
-  activeModel: "claude-sonnet-4-6",
+  activeModel: "",
   inlineCompletion: true,
   completionDebounce: 500,
   completionTriggerCharacters: [],

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
+import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { detectLanguage } from "@/shared/lib/language";
 
 interface DirEntry {
@@ -30,6 +31,7 @@ function entryToNode(entry: DirEntry) {
 export function useWorkspaceRestore(): void {
   const fileExplorer = useFileExplorerStore();
   const editor = useEditorStore();
+  const { selectRoot } = useFileExplorer();
   const didRun = useRef(false);
 
   useEffect(() => {
@@ -38,6 +40,12 @@ export function useWorkspaceRestore(): void {
     didRun.current = true;
 
     async function restore() {
+      const cliPath = await invoke<string | null>("get_cli_project_path");
+      if (cliPath) {
+        await selectRoot(cliPath);
+        return;
+      }
+
       // Restore last opened folder.
       if (fileExplorer.rootPath) {
         try {
@@ -87,5 +95,5 @@ export function useWorkspaceRestore(): void {
     }
 
     void restore();
-  }, [fileExplorer._hasHydrated, editor._hasHydrated]);
+  }, [fileExplorer._hasHydrated, editor._hasHydrated, fileExplorer.rootPath, selectRoot]);
 }

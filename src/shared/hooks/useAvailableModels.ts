@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 
 import { useAIStore, type AIProvider, type ModelInfo } from "@/shared/stores/ai";
+import { CLI_PROVIDER_IDS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
 
 export interface UseAvailableModelsResult {
   models: ModelInfo[];
@@ -9,19 +10,40 @@ export interface UseAvailableModelsResult {
   needsKey: boolean;
 }
 
-const KEYLESS_PROVIDERS: AIProvider[] = ["ollama", "custom"];
+function isCLIAuthenticated(
+  ids: string[],
+  activeCLIProvider: string | null,
+  cliStatuses: Record<string, { authenticated?: boolean }>,
+): boolean {
+  if (!activeCLIProvider) return false;
+  if (!ids.includes(activeCLIProvider)) return false;
+  return cliStatuses[activeCLIProvider]?.authenticated ?? false;
+}
 
 export function useAvailableModels(provider: AIProvider): UseAvailableModelsResult {
-  const { availableModels, modelsLoading, apiKeyRefs, providers, loadAvailableModels } =
-    useAIStore();
+  const {
+    availableModels,
+    modelsLoading,
+    apiKeyRefs,
+    providers,
+    activeCLIProvider,
+    cliStatuses,
+    loadAvailableModels,
+  } = useAIStore();
 
   const cached = availableModels[provider];
   const loading = modelsLoading[provider] ?? false;
 
   const hasKey = Boolean(apiKeyRefs[provider]);
   const hasBaseUrl = Boolean(providers[provider]?.baseUrl?.trim());
-  const needsKey = !KEYLESS_PROVIDERS.includes(provider);
-  const canFetch = !needsKey || hasKey || (provider === "custom" && hasBaseUrl);
+  const cliAuthenticated = isCLIAuthenticated(
+    CLI_PROVIDER_IDS[provider],
+    activeCLIProvider,
+    cliStatuses,
+  );
+  const needsKey = !isKeyOptionalProvider(provider) && !hasKey && !cliAuthenticated;
+  const canFetch =
+    hasKey || isKeyOptionalProvider(provider) || (provider === "custom" && hasBaseUrl);
 
   useEffect(() => {
     if (canFetch) {
@@ -30,7 +52,7 @@ export function useAvailableModels(provider: AIProvider): UseAvailableModelsResu
   }, [provider, canFetch, loadAvailableModels]);
 
   return useMemo(() => {
-    if (!canFetch) {
+    if (needsKey) {
       return {
         models: [],
         loading: false,
@@ -54,5 +76,5 @@ export function useAvailableModels(provider: AIProvider): UseAvailableModelsResu
       error: null,
       needsKey: false,
     };
-  }, [cached, canFetch, loading, needsKey]);
+  }, [cached, needsKey, loading]);
 }

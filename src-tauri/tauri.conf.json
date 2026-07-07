@@ -1,6 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "pragma",
+  "mainBinaryName": "pragma",
   "version": "0.1.0",
   "identifier": "dev.pragma.ide",
   "build": {
@@ -35,15 +36,19 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": ["windows/add-to-path.ps1", "windows/remove-from-path.ps1"],
     "windows": {
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "headerImage": "icons/installer/nsis-header.bmp",
-        "sidebarImage": "icons/installer/nsis-sidebar.bmp"
+        "sidebarImage": "icons/installer/nsis-sidebar.bmp",
+        "installerHooks": "windows/path-hooks.nsh"
       },
       "wix": {
         "bannerPath": "icons/installer/msi-banner.bmp",
-        "dialogImagePath": "icons/installer/msi-dialog.bmp"
+        "dialogImagePath": "icons/installer/msi-dialog.bmp",
+        "fragmentPaths": ["windows/path-env.wxs"],
+        "componentRefs": ["PragmaPathEnv"]
       }
     },
     "android": {
@@ -51,6 +56,16 @@
     }
   },
   "plugins": {
+    "cli": {
+      "description": "Pragma IDE - terminal-focused AI-native editor",
+      "args": [
+        {
+          "name": "path",
+          "index": 1,
+          "takesValue": true
+        }
+      ]
+    },
     "dialog": null
   }
 }
