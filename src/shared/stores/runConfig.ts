@@ -5,11 +5,15 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { crossWindowSync } from "./sync/crossWindowSync";
 
 export interface RunConfig {
+  id?: string;
   name: string;
   command: string;
   cwd?: string;
   env: Record<string, string>;
   autostart: boolean;
+  autoRestart: boolean;
+  icon?: string;
+  detect?: string;
 }
 
 export type RunStatus = "running" | "failed" | "stopped";
@@ -24,15 +28,24 @@ export interface RunProcess {
 
 interface RunConfigState {
   configs: RunConfig[];
+  detectedConfigs: RunConfig[];
   processes: RunProcess[];
   activeProcessId: string | null;
   workspaceRoot: string;
   isLoading: boolean;
+  isDetecting: boolean;
 }
 
 interface RunConfigActions {
   setWorkspaceRoot: (root: string) => void;
   loadConfigs: () => Promise<void>;
+  detectConfigs: () => Promise<void>;
+  saveConfigs: () => Promise<void>;
+  addConfig: (config: RunConfig) => void;
+  updateConfig: (id: string, config: Partial<RunConfig>) => void;
+  removeConfig: (id: string) => void;
+  acceptDetectedConfig: (index: number) => void;
+  rejectDetectedConfig: (index: number) => void;
   startConfig: (config: RunConfig) => Promise<void>;
   stopProcess: (processId: string) => Promise<void>;
   restartProcess: (processId: string) => Promise<void>;
@@ -44,10 +57,12 @@ interface RunConfigActions {
 
 const initialState: RunConfigState = {
   configs: [],
+  detectedConfigs: [],
   processes: [],
   activeProcessId: null,
   workspaceRoot: "",
   isLoading: false,
+  isDetecting: false,
 };
 
 export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
@@ -71,6 +86,75 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
       }
     },
 
+    detectConfigs: async () => {
+      const { workspaceRoot } = get();
+      if (!workspaceRoot) return;
+
+      set({ isDetecting: true });
+      try {
+        const [saved, detected] = await Promise.all([
+          invoke<RunConfig[]>("run_list_configs", { workspaceRoot }),
+          invoke<RunConfig[]>("run_detect_configs", { workspaceRoot }),
+        ]);
+
+        const savedNames = new Set(saved.map((c) => c.name));
+        const newDetected = detected.filter((c) => !savedNames.has(c.name));
+
+        set({ configs: saved, detectedConfigs: newDetected, isDetecting: false });
+      } catch {
+        set({ isDetecting: false });
+      }
+    },
+
+    saveConfigs: async () => {
+      const { workspaceRoot, configs } = get();
+      if (!workspaceRoot) return;
+
+      try {
+        await invoke("run_save_configs", { workspaceRoot, configs });
+      } catch {
+        // ignore
+      }
+    },
+
+    addConfig: (config) => {
+      const { configs, saveConfigs } = get();
+      if (configs.some((c) => c.name === config.name)) return;
+      set({ configs: [...configs, config] });
+      void saveConfigs();
+    },
+
+    updateConfig: (id, updates) => {
+      const { configs, saveConfigs } = get();
+      set({
+        configs: configs.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+      });
+      void saveConfigs();
+    },
+
+    removeConfig: (id) => {
+      const { configs, saveConfigs } = get();
+      set({ configs: configs.filter((c) => c.id !== id) });
+      void saveConfigs();
+    },
+
+    acceptDetectedConfig: (index) => {
+      const { detectedConfigs, configs, saveConfigs } = get();
+      const config = detectedConfigs[index];
+      if (!config) return;
+
+      set({
+        configs: [...configs, { ...config, id: crypto.randomUUID() }],
+        detectedConfigs: detectedConfigs.filter((_, i) => i !== index),
+      });
+      void saveConfigs();
+    },
+
+    rejectDetectedConfig: (index) => {
+      const { detectedConfigs } = get();
+      set({ detectedConfigs: detectedConfigs.filter((_, i) => i !== index) });
+    },
+
     startConfig: async (config) => {
       const { workspaceRoot, processes } = get();
       if (!workspaceRoot) return;
@@ -91,6 +175,7 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
 
         set({
           processes: [...processes, newProcess],
+          activeProcessId: processId,
         });
       } catch (err) {
         const errorProcess: RunProcess = {
@@ -122,11 +207,11 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
     },
 
     restartProcess: async (processId) => {
-      const { processes, workspaceRoot } = get();
+      const { processes, workspaceRoot, configs } = get();
       const process = processes.find((p) => p.id === processId);
       if (!process || !workspaceRoot) return;
 
-      const config = get().configs.find((c) => c.name === process.configName);
+      const config = configs.find((c) => c.name === process.configName);
       if (!config) return;
 
       try {

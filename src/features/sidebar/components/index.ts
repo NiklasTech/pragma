@@ -5,4 +5,5 @@ export { FileTreeNode } from "./FileTreeNode";
 export { GitGraph } from "./GitGraph";
 export { GitStatus } from "./GitStatus";
 export { LocalHistoryPanel } from "./LocalHistoryPanel";
+export { ProcessManagerPanel } from "./ProcessManagerPanel";
 export { SearchPanel } from "./SearchPanel";

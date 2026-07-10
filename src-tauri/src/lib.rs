@@ -136,6 +136,8 @@ pub fn run() {
             modules::app_state::get_onboarding_completed,
             modules::app_state::set_onboarding_completed,
             modules::run::run_list_configs,
+            modules::run::run_detect_configs,
+            modules::run::run_save_configs,
             modules::run::run_start,
             modules::run::run_stop,
             modules::run::run_restart,

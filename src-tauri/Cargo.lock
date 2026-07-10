@@ -163,6 +163,7 @@ dependencies = [
  "tauri-plugin-log",
  "tauri-plugin-opener",
  "tauri-plugin-store",
+ "tempfile",
  "tokio",
  "tokio-util",
  "tracing",

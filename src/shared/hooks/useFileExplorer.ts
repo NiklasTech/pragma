@@ -38,7 +38,7 @@ export function useFileExplorer() {
   const store = useFileExplorerStore();
   const { openFile } = useEditorStore();
   const editorPanelId = useEditorPanelId();
-  const { setWorkspaceRoot, loadConfigs } = useRunConfigStore();
+  const { setWorkspaceRoot, loadConfigs, detectConfigs } = useRunConfigStore();
   const { setRepoPath } = useGitStore();
   const { setWorkspaceRoot: setDockerWorkspaceRoot } = useDockerStore();
   const { addRecentFolder, addRecentFile } = useSettingsStore();
@@ -49,8 +49,16 @@ export function useFileExplorer() {
       setRepoPath(store.rootPath);
       setDockerWorkspaceRoot(store.rootPath);
       void loadConfigs();
+      void detectConfigs();
     }
-  }, [store.rootPath, setWorkspaceRoot, setRepoPath, setDockerWorkspaceRoot, loadConfigs]);
+  }, [
+    store.rootPath,
+    setWorkspaceRoot,
+    setRepoPath,
+    setDockerWorkspaceRoot,
+    loadConfigs,
+    detectConfigs,
+  ]);
 
   const selectRoot = useCallback(
     async (targetPath?: string) => {
