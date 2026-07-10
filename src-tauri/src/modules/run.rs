@@ -8,7 +8,7 @@ use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use crate::platform::new_std_command;
+use crate::platform::{new_std_command, new_std_command_for_program, resolve_program};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -81,6 +81,14 @@ impl RunManager {
     pub fn new() -> Self {
         Self {
             processes: Mutex::new(HashMap::new()),
+        }
+    }
+
+    pub fn stop_all(&self) {
+        let processes = self.processes.lock().unwrap_or_else(|e| e.into_inner());
+        for (_, instance) in processes.iter() {
+            instance.stop_requested.store(true, Ordering::SeqCst);
+            kill_process_group(instance.pgid);
         }
     }
 }
@@ -205,9 +213,11 @@ fn spawn_error_reader(app: AppHandle, process_id: String, output: std::process::
     });
 }
 
-fn build_child_command(config: &RunConfig, cwd: &str) -> std::process::Command {
+fn build_child_command(config: &RunConfig, cwd: &str) -> Result<std::process::Command, String> {
     let (program, args) = parse_command(&config.command);
-    let mut cmd = new_std_command(&program);
+    let resolved_program =
+        resolve_program(&program).map_err(|e| format!("{e}. Command: {}", config.command))?;
+    let mut cmd = new_std_command_for_program(&resolved_program);
     cmd.args(&args)
         .current_dir(cwd)
         .stdout(Stdio::piped())
@@ -223,7 +233,7 @@ fn build_child_command(config: &RunConfig, cwd: &str) -> std::process::Command {
         cmd.env(key, value);
     }
 
-    cmd
+    Ok(cmd)
 }
 
 fn restart_delay_ms(attempt: u32) -> u64 {
@@ -252,6 +262,16 @@ fn wait_loop(
         }
 
         emit_status(&app, &process_id, RunStatus::Failed, exit_code);
+        emit_output(
+            &app,
+            &process_id,
+            format!(
+                "Process exited with code {}\n",
+                exit_code
+                    .map(|c| c.to_string())
+                    .unwrap_or_else(|| "unknown".to_string())
+            ),
+        );
 
         if !config.auto_restart || stop_requested.load(Ordering::SeqCst) || attempt >= 5 {
             break;
@@ -266,7 +286,18 @@ fn wait_loop(
         }
 
         let cwd = resolve_cwd(config.cwd.as_deref(), &workspace_root);
-        let mut cmd = build_child_command(&config, &cwd);
+        let mut cmd = match build_child_command(&config, &cwd) {
+            Ok(cmd) => cmd,
+            Err(e) => {
+                emit_status(&app, &process_id, RunStatus::Failed, None);
+                emit_output(
+                    &app,
+                    &process_id,
+                    format!("Failed to restart process: {e}\n"),
+                );
+                break;
+            }
+        };
 
         match cmd.spawn() {
             Ok(mut new_child) => {
@@ -296,7 +327,15 @@ fn wait_loop(
                 spawn_error_reader(app.clone(), process_id.clone(), stderr);
                 child = new_child;
             }
-            Err(_) => break,
+            Err(e) => {
+                emit_status(&app, &process_id, RunStatus::Failed, None);
+                emit_output(
+                    &app,
+                    &process_id,
+                    format!("Failed to restart process: {e}\n"),
+                );
+                break;
+            }
         }
     }
 }
@@ -520,6 +559,16 @@ pub fn run_save_configs(workspace_root: String, mut configs: Vec<RunConfig>) -> 
 }
 
 #[tauri::command]
+pub fn check_port_in_use(port: u16) -> Result<bool, String> {
+    Ok(crate::platform::check_port_in_use(port))
+}
+
+#[tauri::command]
+pub fn kill_process_by_port(port: u16) -> Result<(), String> {
+    crate::platform::kill_process_by_port(port)
+}
+
+#[tauri::command]
 pub fn run_start(
     app: AppHandle,
     state: State<'_, RunManager>,
@@ -534,7 +583,10 @@ pub fn run_start(
         return Err("Empty command".to_string());
     }
 
-    let mut cmd = new_std_command(&program);
+    let resolved_program =
+        resolve_program(&program).map_err(|e| format!("{e}. Command: {}", config.command))?;
+
+    let mut cmd = new_std_command_for_program(&resolved_program);
     cmd.args(&args)
         .current_dir(&cwd)
         .stdout(Stdio::piped())
@@ -551,9 +603,13 @@ pub fn run_start(
         cmd.env(key, value);
     }
 
-    let mut child = cmd
-        .spawn()
-        .map_err(|e| format!("Failed to start process: {e}"))?;
+    let mut child = cmd.spawn().map_err(|e| {
+        let path = std::env::var("PATH").unwrap_or_else(|_| String::from("<not set>"));
+        format!(
+            "Failed to start process: {e}\nResolved program: {}\nPATH: {path}",
+            resolved_program.display()
+        )
+    })?;
 
     // Get the process group ID (same as child PID on Unix since we called setpgid)
     #[cfg(unix)]
@@ -581,6 +637,11 @@ pub fn run_start(
     spawn_error_reader(app.clone(), process_id.clone(), stderr);
 
     emit_status(&app, &process_id, RunStatus::Running, None);
+    emit_output(
+        &app,
+        &process_id,
+        format!("> {} (in {})\n", resolved_program.display(), cwd),
+    );
 
     let app_handle = app.clone();
     let pid = process_id.clone();

@@ -14,6 +14,8 @@ import {
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Switch } from "@/shared/components/ui/switch";
 import { cn } from "@/shared/lib/utils";
+import { useLayoutStore } from "@/shell/layout/store";
+import { useTerminalStore } from "@/shared/stores/terminal";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
 
 function StatusDot({ status }: { status: RunStatus }) {
@@ -219,6 +221,8 @@ export function ProcessManagerPanel() {
     acceptDetectedConfig,
     rejectDetectedConfig,
   } = useRunConfigStore();
+  const { terminal, setTerminalMode } = useLayoutStore();
+  const { addRunSession } = useTerminalStore();
 
   useEffect(() => {
     if (!workspaceRoot) return;
@@ -309,7 +313,15 @@ export function ProcessManagerPanel() {
                           status={status}
                           activeProcessId={activeProcessId}
                           processId={processId}
-                          onStart={() => startConfig(config)}
+                          onStart={async () => {
+                            const processId = await startConfig(config);
+                            if (processId) {
+                              addRunSession(processId, config.name, config.command);
+                              if (terminal.mode === "hidden") {
+                                setTerminalMode("docked-bottom");
+                              }
+                            }
+                          }}
                           onStop={() => processId && stopProcess(processId)}
                           onRestart={() => processId && restartProcess(processId)}
                           onToggleAutoRestart={() =>
@@ -317,9 +329,17 @@ export function ProcessManagerPanel() {
                             updateConfig(config.id, { autoRestart: !config.autoRestart })
                           }
                           onRemove={() => config.id && removeConfig(config.id)}
-                          onOpenLogs={() =>
-                            processId ? setActiveProcess(processId) : setActiveProcess(null)
-                          }
+                          onOpenLogs={() => {
+                            if (processId) {
+                              setActiveProcess(processId);
+                              addRunSession(processId, config.name, config.command);
+                              if (terminal.mode === "hidden") {
+                                setTerminalMode("docked-bottom");
+                              }
+                            } else {
+                              setActiveProcess(null);
+                            }
+                          }}
                         />
                       );
                     })}

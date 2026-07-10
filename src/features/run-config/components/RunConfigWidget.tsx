@@ -9,6 +9,8 @@ import {
   Terminal,
 } from "@phosphor-icons/react";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
+import { useTerminalStore } from "@/shared/stores/terminal";
+import { useLayoutStore } from "@/shell/layout/store";
 
 function StatusDot({ status }: { status: RunStatus }) {
   const colorClass =
@@ -72,6 +74,8 @@ export function RunConfigWidget() {
     restartProcess,
     removeProcess,
   } = useRunConfigStore();
+  const { addRunSession } = useTerminalStore();
+  const { terminal, setTerminalMode } = useLayoutStore();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -84,10 +88,16 @@ export function RunConfigWidget() {
   }, []);
 
   const handleStart = useCallback(
-    (config: RunConfig) => {
-      void startConfig(config);
+    async (config: RunConfig) => {
+      const processId = await startConfig(config);
+      if (processId) {
+        addRunSession(processId, config.name, config.command);
+        if (terminal.mode === "hidden") {
+          setTerminalMode("docked-bottom");
+        }
+      }
     },
-    [startConfig],
+    [startConfig, addRunSession, terminal.mode, setTerminalMode],
   );
 
   const handleStop = useCallback(
@@ -107,8 +117,16 @@ export function RunConfigWidget() {
   const handleOpenOutput = useCallback(
     (id: string) => {
       setActiveProcess(id);
+      const process = processes.find((p) => p.id === id);
+      const config = configs.find((c) => c.name === process?.configName);
+      if (process && config) {
+        addRunSession(id, config.name, config.command);
+        if (terminal.mode === "hidden") {
+          setTerminalMode("docked-bottom");
+        }
+      }
     },
-    [setActiveProcess],
+    [setActiveProcess, addRunSession, processes, configs, terminal.mode, setTerminalMode],
   );
 
   if (configs.length === 0 && processes.length === 0) {

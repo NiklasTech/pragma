@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "id": "1fc747e2-98e8-4dc6-ac96-366273ad31e2",
+      "name": "tauri dev",
+      "command": "pnpm tauri dev",
+      "cwd": null,
+      "env": {},
+      "autostart": false,
+      "autoRestart": false,
+      "icon": "desktop",
+      "detect": "src-tauri/Cargo.toml"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { crossWindowSync } from "./sync/crossWindowSync";
 
@@ -46,13 +47,44 @@ interface RunConfigActions {
   removeConfig: (id: string) => void;
   acceptDetectedConfig: (index: number) => void;
   rejectDetectedConfig: (index: number) => void;
-  startConfig: (config: RunConfig) => Promise<void>;
+  startConfig: (config: RunConfig) => Promise<string | undefined>;
   stopProcess: (processId: string) => Promise<void>;
   restartProcess: (processId: string) => Promise<void>;
   setActiveProcess: (processId: string | null) => void;
   appendOutput: (processId: string, data: string) => void;
   setProcessStatus: (processId: string, status: RunStatus, exitCode: number | null) => void;
   removeProcess: (processId: string) => void;
+}
+
+function extractPort(command: string): number | null {
+  const explicitPatterns = [
+    /--port\s*[:=]?\s*(\d+)/i,
+    /-p\s*[:=]?\s*(\d+)/i,
+    /PORT\s*[:=]?\s*(\d+)/i,
+  ];
+  for (const pattern of explicitPatterns) {
+    const match = command.match(pattern);
+    if (match) return parseInt(match[1], 10);
+  }
+
+  const lower = command.toLowerCase();
+  if (lower.includes("next") || lower.includes("nuxt") || lower.includes("remix")) {
+    return 3000;
+  }
+  if (lower.includes("vite") || lower.includes("nuxi")) {
+    return 5173;
+  }
+  if (lower.includes("astro")) {
+    return 4321;
+  }
+  if (lower.includes("gatsby")) {
+    return 8000;
+  }
+  if (lower.includes("tauri dev")) {
+    return 1420;
+  }
+
+  return null;
 }
 
 const initialState: RunConfigState = {
@@ -157,7 +189,35 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
 
     startConfig: async (config) => {
       const { workspaceRoot, processes } = get();
-      if (!workspaceRoot) return;
+      if (!workspaceRoot) return undefined;
+
+      const port = extractPort(config.command);
+      if (port) {
+        const inUse = await invoke<boolean>("check_port_in_use", { port });
+        if (inUse) {
+          const shouldKill = await confirm(
+            `Port ${port} is already in use by another process. Kill it and start "${config.name}"?`,
+            { title: "Port already in use", kind: "warning" },
+          );
+          if (!shouldKill) return undefined;
+          try {
+            await invoke("kill_process_by_port", { port });
+          } catch (err) {
+            const errorProcess: RunProcess = {
+              id: `error-${Date.now()}`,
+              configName: config.name,
+              status: "failed",
+              exitCode: null,
+              output: [`Failed to free port ${port}: ${String(err)}`],
+            };
+            set({
+              processes: [...get().processes, errorProcess],
+              activeProcessId: errorProcess.id,
+            });
+            return undefined;
+          }
+        }
+      }
 
       try {
         const processId = await invoke<string>("run_start", {
@@ -177,6 +237,8 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
           processes: [...processes, newProcess],
           activeProcessId: processId,
         });
+
+        return processId;
       } catch (err) {
         const errorProcess: RunProcess = {
           id: `error-${Date.now()}`,
@@ -189,6 +251,7 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
           processes: [...get().processes, errorProcess],
           activeProcessId: errorProcess.id,
         });
+        return undefined;
       }
     },
 

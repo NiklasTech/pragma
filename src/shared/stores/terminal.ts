@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { crossWindowSync } from "./sync/crossWindowSync";
 
-export type TerminalSessionType = "shell" | "docker-logs" | "docker-exec";
+export type TerminalSessionType = "shell" | "docker-logs" | "docker-exec" | "run";
 
 export interface TerminalSession {
   id: string;
@@ -11,6 +11,7 @@ export interface TerminalSession {
   shell?: string;
   command?: string;
   cwd?: string;
+  processId?: string;
   isActive: boolean;
   ptyId?: string;
 }
@@ -29,6 +30,8 @@ interface TerminalState {
 
 interface TerminalActions {
   addSession: (session: Omit<TerminalSession, "ptyId">) => void;
+  addRunSession: (processId: string, name: string, command: string) => void;
+  focusRunSession: (processId: string) => void;
   ensureInitialSession: (session: Omit<TerminalSession, "ptyId">) => void;
   removeSession: (sessionId: string) => void;
   killSession: (sessionId: string) => Promise<void>;
@@ -69,6 +72,36 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
         sessions: [...get().sessions, nextSession],
         activeSessionId: nextSession.id,
       });
+    },
+
+    addRunSession: (processId, name, command) => {
+      const { sessions } = get();
+      const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
+      if (existing) {
+        set({ activeSessionId: existing.id });
+        return;
+      }
+
+      const nextSession: TerminalSession = {
+        id: crypto.randomUUID(),
+        name,
+        type: "run",
+        command,
+        processId,
+        isActive: true,
+      };
+      set({
+        sessions: [...sessions, nextSession],
+        activeSessionId: nextSession.id,
+      });
+    },
+
+    focusRunSession: (processId) => {
+      const { sessions } = get();
+      const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
+      if (existing) {
+        set({ activeSessionId: existing.id });
+      }
     },
 
     ensureInitialSession: (session) => {
