@@ -14,6 +14,9 @@ import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
+import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
+import { CommandPalette } from "./CommandPalette";
+import { GoToFile } from "./GoToFile";
 
 export default function App() {
   useAIInit();
@@ -28,6 +31,7 @@ export default function App() {
   const actions = useAppShortcutActions();
 
   useGlobalShortcuts(actions);
+  useCommandPaletteCommands();
 
   return (
     <ThemeProvider>
@@ -35,6 +39,8 @@ export default function App() {
         <WindowResizeHandles />
         <Layout />
         {!onboardingLoading && !onboardingCompleted && <Onboarding />}
+        <CommandPalette />
+        <GoToFile />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>
     </ThemeProvider>

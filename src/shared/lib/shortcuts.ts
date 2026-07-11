@@ -47,6 +47,15 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "file.goToFile" as const,
+    label: "Go to File",
+    category: "file" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "KeyP",
+    }),
+  },
+  {
     id: "edit.editWithAI" as const,
     label: "Edit Selection with AI",
     category: "edit" as const,
@@ -110,6 +119,16 @@ export const SHORTCUT_ACTIONS = [
       [isMac ? "meta" : "ctrl"]: true,
       shift: true,
       code: "KeyA",
+    }),
+  },
+  {
+    id: "view.commandPalette" as const,
+    label: "Open Command Palette",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyP",
     }),
   },
   {
