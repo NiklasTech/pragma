@@ -7,6 +7,7 @@ import {
   GitDiff,
   MagnifyingGlass,
   SidebarSimple,
+  Terminal,
 } from "@phosphor-icons/react";
 import {
   DockerPanel,
@@ -14,6 +15,7 @@ import {
   GitGraph,
   GitStatus,
   LocalHistoryPanel,
+  ProcessManagerPanel,
   SearchPanel,
 } from "@/features/sidebar/components";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
@@ -24,6 +26,7 @@ const tabs = [
   { id: "git" as const, icon: GitBranch, label: "Git Graph" },
   { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
   { id: "docker" as const, icon: Cube, label: "Docker" },
+  { id: "processes" as const, icon: Terminal, label: "Processes" },
 ];
 
 export const DOCK_WIDTH = 48;
@@ -168,6 +171,7 @@ export function SidebarContent() {
         {sidebar.tab === "git" && <GitGraph />}
         {sidebar.tab === "git-status" && <GitStatus />}
         {sidebar.tab === "docker" && <DockerPanel />}
+        {sidebar.tab === "processes" && <ProcessManagerPanel />}
       </div>
       {activeFilePath && (
         <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />

@@ -8,6 +8,7 @@ function safePtyInvoke<T>(promise: Promise<T>) {
 }
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import "@xterm/xterm/css/xterm.css";
@@ -82,6 +83,12 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       const fit = new FitAddon();
       fitRef.current = fit;
       t.loadAddon(fit);
+      t.loadAddon(
+        new WebLinksAddon((event: MouseEvent, uri: string) => {
+          event.preventDefault();
+          void invoke("open_external_url", { url: uri });
+        }),
+      );
       t.open(containerRef.current);
       termRef.current = t;
       setTermState(t);

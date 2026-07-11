@@ -1,6 +1,6 @@
 export type SidebarPosition = "left" | "right" | "hidden";
 
-export type SidebarTab = "explorer" | "search" | "git" | "git-status" | "docker";
+export type SidebarTab = "explorer" | "search" | "git" | "git-status" | "docker" | "processes";
 
 export type AIMode = "hidden" | "floating" | "drawer-left" | "drawer-right" | "bottom-sheet";
 

@@ -65,6 +65,7 @@ test-fixtures = []
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+tempfile = "3"
 
 [[bin]]
 name = "app"

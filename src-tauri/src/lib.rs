@@ -136,6 +136,10 @@ pub fn run() {
             modules::app_state::get_onboarding_completed,
             modules::app_state::set_onboarding_completed,
             modules::run::run_list_configs,
+            modules::run::run_detect_configs,
+            modules::run::run_save_configs,
+            modules::run::check_port_in_use,
+            modules::run::kill_process_by_port,
             modules::run::run_start,
             modules::run::run_stop,
             modules::run::run_restart,
@@ -189,7 +193,21 @@ pub fn run() {
             window::create_external_window,
             window::close_external_window,
         ])
-        .run(tauri::generate_context!());
+        .build(tauri::generate_context!());
 
-    if let Err(_e) = result {}
+    match result {
+        Ok(app) => {
+            app.run(|app_handle, event| {
+                if let tauri::RunEvent::ExitRequested { .. } = event {
+                    if let Some(run_manager) = app_handle.try_state::<RunManager>() {
+                        run_manager.stop_all();
+                    }
+                    if let Some(pty_manager) = app_handle.try_state::<PtyManager>() {
+                        pty_manager.kill_all();
+                    }
+                }
+            });
+        }
+        Err(_e) => {}
+    }
 }

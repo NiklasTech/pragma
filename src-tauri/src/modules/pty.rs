@@ -37,6 +37,13 @@ impl PtyManager {
             ptys: Mutex::new(HashMap::new()),
         }
     }
+
+    pub fn kill_all(&self) {
+        let mut ptys = self.ptys.lock().unwrap_or_else(|e| e.into_inner());
+        for (_, instance) in ptys.drain() {
+            let _ = instance.killer.lock().map(|mut k| k.kill());
+        }
+    }
 }
 
 #[cfg(windows)]

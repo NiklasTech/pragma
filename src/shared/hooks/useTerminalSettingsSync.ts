@@ -13,7 +13,11 @@ export function useTerminalSettingsSync() {
   const setAiSuggestions = useTerminalStore((s) => s.setAiSuggestions);
 
   useEffect(() => {
-    if (shellResolved) {
+    // Only overwrite the resolved default shell when the user has actually
+    // configured a non-empty shell. Otherwise an empty default setting can
+    // race with shell resolution and leave the terminal with defaultShell="",
+    // which prevents Terminal.tsx from creating any session.
+    if (shellResolved && terminalSettings.shell.length > 0) {
       setDefaultShell(terminalSettings.shell);
     }
     setFontSize(terminalSettings.fontSize);
