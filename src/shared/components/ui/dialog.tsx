@@ -28,7 +28,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-bg-overlay opacity-0 transition-opacity duration-200 supports-backdrop-filter:backdrop-blur-sm data-[open]:opacity-100",
+        "fixed inset-0 isolate z-50 bg-bg-overlay opacity-0 transition-opacity duration-[var(--motion-base)] supports-backdrop-filter:backdrop-blur-sm data-[open]:opacity-100",
         className,
       )}
       {...props}
@@ -50,7 +50,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border border-border/60 bg-bg-elevated p-3 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 opacity-0 transition-all duration-200 outline-none sm:max-w-sm data-[open]:opacity-100 data-[open]:scale-100 scale-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border border-border/60 bg-bg-elevated p-3 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 opacity-0 transition-all duration-[var(--motion-base)] outline-none sm:max-w-sm data-[open]:opacity-100 data-[open]:scale-100 scale-95",
           className,
         )}
         {...props}
@@ -109,7 +109,10 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("font-heading text-sm leading-none font-semibold text-fg-default", className)}
+      className={cn(
+        "font-heading text-ui-md leading-none font-semibold text-fg-default",
+        className,
+      )}
       {...props}
     />
   );
@@ -120,7 +123,7 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-xs text-fg-muted *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-fg-default",
+        "text-ui-sm text-fg-muted *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-fg-default",
         className,
       )}
       {...props}

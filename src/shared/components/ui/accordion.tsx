@@ -29,7 +29,7 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group/accordion-trigger relative flex flex-1 items-start justify-between rounded-md border border-transparent py-2 text-left text-ui-base font-semibold text-fg-default transition-all duration-200 outline-none hover:text-fg-default hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:after:border-primary aria-disabled:pointer-events-none aria-disabled:opacity-40 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-3.5 **:data-[slot=accordion-trigger-icon]:text-fg-subtle",
+          "group/accordion-trigger relative flex flex-1 items-start justify-between rounded-md border border-transparent py-2 text-left text-ui-base font-semibold text-fg-default transition-all duration-[var(--motion-base)] outline-none hover:text-fg-default hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:after:border-primary aria-disabled:pointer-events-none aria-disabled:opacity-40 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-3.5 **:data-[slot=accordion-trigger-icon]:text-fg-subtle",
           className,
         )}
         {...props}
@@ -37,7 +37,7 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
         {children}
         <CaretDown
           data-slot="accordion-trigger-icon"
-          className="pointer-events-none shrink-0 transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-180"
+          className="pointer-events-none shrink-0 transition-transform duration-[var(--motion-base)] group-aria-expanded/accordion-trigger:rotate-180"
         />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>

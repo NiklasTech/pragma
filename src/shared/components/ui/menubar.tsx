@@ -50,7 +50,7 @@ function MenubarTrigger({ className, ...props }: React.ComponentProps<typeof Dro
     <DropdownMenuTrigger
       data-slot="menubar-trigger"
       className={cn(
-        "flex items-center rounded-[3px] px-1.5 py-[1px] text-ui-base font-semibold text-fg-default outline-hidden select-none transition-colors duration-150 hover:bg-bg-hover aria-expanded:bg-bg-active aria-expanded:text-fg-default",
+        "flex items-center rounded-xs px-1.5 py-[1px] text-ui-base font-semibold text-fg-default outline-hidden select-none transition-colors duration-[var(--motion-fast)] hover:bg-bg-hover aria-expanded:bg-bg-active aria-expanded:text-fg-default",
         className,
       )}
       {...props}
@@ -72,7 +72,7 @@ function MenubarContent({
       alignOffset={alignOffset}
       sideOffset={sideOffset}
       className={cn(
-        "min-w-36 rounded-md border border-border/60 bg-bg-elevated p-0.5 text-fg-default shadow-lg shadow-black/10 duration-150 data-[side=bottom]:slide-in-from-top-1 data-[side=inline-end]:slide-in-from-left-1 data-[side=inline-start]:slide-in-from-right-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
+        "min-w-36 rounded-md border border-border/60 bg-bg-elevated p-0.5 text-fg-default shadow-lg shadow-black/10 duration-[var(--motion-fast)] data-[side=bottom]:slide-in-from-top-1 data-[side=inline-end]:slide-in-from-left-1 data-[side=inline-start]:slide-in-from-right-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
         className,
       )}
       {...props}
@@ -92,7 +92,7 @@ function MenubarItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/menubar-item gap-1.5 rounded-[4px] px-1.5 py-1 text-ui-base transition-colors duration-150 focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive data-disabled:opacity-40 [&_svg:not([class*='size-'])]:size-3.5 data-[variant=destructive]:*:[svg]:text-destructive!",
+        "group/menubar-item gap-1.5 rounded-sm px-1.5 py-1 text-ui-base transition-colors duration-[var(--motion-fast)] focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive data-disabled:opacity-40 [&_svg:not([class*='size-'])]:size-3.5 data-[variant=destructive]:*:[svg]:text-destructive!",
         className,
       )}
       {...props}
@@ -114,7 +114,7 @@ function MenubarCheckboxItem({
       data-slot="menubar-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-[4px] py-1 pr-1.5 pl-7 text-ui-base text-fg-default outline-hidden select-none transition-colors duration-150 focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex cursor-default items-center gap-1.5 rounded-sm py-1 pr-1.5 pl-7 text-ui-base text-fg-default outline-hidden select-none transition-colors duration-[var(--motion-fast)] focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
       )}
       checked={checked}
@@ -147,7 +147,7 @@ function MenubarRadioItem({
       data-slot="menubar-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-[4px] py-1 pr-1.5 pl-7 text-ui-base text-fg-default outline-hidden select-none transition-colors duration-150 focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "relative flex cursor-default items-center gap-1.5 rounded-sm py-1 pr-1.5 pl-7 text-ui-base text-fg-default outline-hidden select-none transition-colors duration-[var(--motion-fast)] focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
@@ -227,7 +227,7 @@ function MenubarSubTrigger({
       data-slot="menubar-sub-trigger"
       data-inset={inset}
       className={cn(
-        "gap-1.5 rounded-[4px] px-1.5 py-1 text-ui-base transition-colors duration-150 focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-open:bg-bg-active data-open:text-fg-default [&_svg:not([class*='size-'])]:size-3.5",
+        "gap-1.5 rounded-sm px-1.5 py-1 text-ui-base transition-colors duration-[var(--motion-fast)] focus:bg-bg-active focus:text-fg-default data-inset:pl-7 data-open:bg-bg-active data-open:text-fg-default [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
@@ -243,7 +243,7 @@ function MenubarSubContent({
     <DropdownMenuSubContent
       data-slot="menubar-sub-content"
       className={cn(
-        "min-w-32 rounded-md border border-border/60 bg-bg-elevated p-0.5 text-fg-default shadow-lg shadow-black/10 duration-150 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+        "min-w-32 rounded-md border border-border/60 bg-bg-elevated p-0.5 text-fg-default shadow-lg shadow-black/10 duration-[var(--motion-fast)] data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
         className,
       )}
       {...props}

@@ -27,7 +27,7 @@ function DrawerBackdrop({ className, ...props }: DrawerPrimitive.Backdrop.Props)
     <DrawerPrimitive.Backdrop
       data-slot="drawer-backdrop"
       className={cn(
-        "fixed inset-0 isolate z-[70] bg-bg-overlay/60 opacity-0 transition-opacity duration-200 supports-backdrop-filter:backdrop-blur-sm data-[open]:opacity-100",
+        "fixed inset-0 isolate z-[70] bg-bg-overlay/60 opacity-0 transition-opacity duration-[var(--motion-base)] supports-backdrop-filter:backdrop-blur-sm data-[open]:opacity-100",
         className,
       )}
       {...props}
@@ -58,7 +58,7 @@ function DrawerContent({
       <DrawerPrimitive.Popup
         data-slot="drawer-content"
         className={cn(
-          "fixed z-[70] grid gap-3 border border-border/60 bg-bg-elevated p-0 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 opacity-0 transition-all duration-200 outline-none data-[open]:opacity-100 data-[open]:translate-x-0",
+          "fixed z-[70] grid gap-3 border border-border/60 bg-bg-elevated p-0 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 opacity-0 transition-all duration-[var(--motion-base)] outline-none data-[open]:opacity-100 data-[open]:translate-x-0",
           sideStyles[side],
           className,
         )}
@@ -106,7 +106,10 @@ function DrawerTitle({ className, ...props }: DrawerPrimitive.Title.Props) {
   return (
     <DrawerPrimitive.Title
       data-slot="drawer-title"
-      className={cn("font-heading text-sm leading-none font-semibold text-fg-default", className)}
+      className={cn(
+        "font-heading text-ui-md leading-none font-semibold text-fg-default",
+        className,
+      )}
       {...props}
     />
   );
@@ -116,7 +119,7 @@ function DrawerDescription({ className, ...props }: DrawerPrimitive.Description.
   return (
     <DrawerPrimitive.Description
       data-slot="drawer-description"
-      className={cn("text-xs text-fg-muted", className)}
+      className={cn("text-ui-sm text-fg-muted", className)}
       {...props}
     />
   );

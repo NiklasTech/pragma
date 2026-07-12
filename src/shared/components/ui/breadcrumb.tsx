@@ -54,7 +54,7 @@ function BreadcrumbLink({
     props: mergeProps<"a">(
       {
         className: cn(
-          "rounded-sm px-1 py-0.5 text-fg-subtle transition-colors duration-150 hover:bg-bg-hover hover:text-fg-default",
+          "rounded-sm px-1 py-0.5 text-fg-subtle transition-colors duration-[var(--motion-fast)] hover:bg-bg-hover hover:text-fg-default",
           className,
         ),
       },
