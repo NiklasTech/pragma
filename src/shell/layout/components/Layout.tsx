@@ -5,7 +5,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/shared/components/ui/resizable";
-import { useLayoutStore } from "../store";
+import { useLayoutStore, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "../store";
 import { SidebarDock, SidebarContent } from "@/shell/chrome/Sidebar";
 import { LayoutTreeRenderer } from "./LayoutTreeRenderer";
 import { AIChatHost } from "./AIChatHost";
@@ -57,7 +57,8 @@ export function Layout() {
                   id="sidebar"
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
-                  minSize={`var(--chrome-sidebar-min-w)`}
+                  minSize={`${SIDEBAR_MIN_WIDTH}px`}
+                  maxSize={`${SIDEBAR_MAX_WIDTH}px`}
                   onResize={handleSidebarResize}
                 >
                   <SidebarContent />
@@ -77,7 +78,8 @@ export function Layout() {
                   id="sidebar"
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
-                  minSize={`var(--chrome-sidebar-min-w)`}
+                  minSize={`${SIDEBAR_MIN_WIDTH}px`}
+                  maxSize={`${SIDEBAR_MAX_WIDTH}px`}
                   onResize={handleSidebarResize}
                 >
                   <SidebarContent />

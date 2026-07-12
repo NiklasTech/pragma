@@ -79,9 +79,15 @@ function DockTabButton({
 }
 
 export function SidebarDock() {
-  const { sidebar, setSidebarTab, setSidebarCollapsed } = useLayoutStore();
+  const { sidebar, setSidebarTab, setSidebarCollapsed, setSidebarPosition } = useLayoutStore();
 
   const handleSelectView = (tabId: (typeof tabs)[number]["id"]) => {
+    if (sidebar.position === "hidden") {
+      setSidebarPosition("left");
+      setSidebarCollapsed(false);
+      setSidebarTab(tabId);
+      return;
+    }
     if (sidebar.tab === tabId && !sidebar.collapsed) {
       setSidebarCollapsed(true);
     } else {

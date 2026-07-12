@@ -60,7 +60,7 @@ function flattenTokens(
   }
 
   if (typeof value === "number") {
-    mappings.push({ name: prefix, value: String(value) });
+    mappings.push({ name: prefix, value: `${value}px` });
     return;
   }
 

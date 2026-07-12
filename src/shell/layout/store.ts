@@ -26,6 +26,7 @@ const AI_MIN_WIDTH = 260;
 const AI_MAX_WIDTH = 720;
 
 const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MAX_WIDTH = 480;
 
 const TERMINAL_MIN_HEIGHT = 20;
 const TERMINAL_MAX_HEIGHT = 80;
@@ -62,10 +63,19 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     set((s) => ({ sidebar: { ...s.sidebar, collapsed }, ...markCustomized(s) })),
   setSidebarTab: (tab) => set((s) => ({ sidebar: { ...s.sidebar, tab }, ...markCustomized(s) })),
   toggleSidebar: () =>
-    set((s) => ({
-      sidebar: { ...s.sidebar, collapsed: !s.sidebar.collapsed },
-      ...markCustomized(s),
-    })),
+    set((s) => {
+      const { sidebar } = s;
+      if (sidebar.position === "hidden") {
+        return {
+          sidebar: { ...sidebar, position: "left", collapsed: false },
+          ...markCustomized(s),
+        };
+      }
+      return {
+        sidebar: { ...sidebar, collapsed: !sidebar.collapsed },
+        ...markCustomized(s),
+      };
+    }),
 
   // AI
   setAIMode: (mode) =>
@@ -331,6 +341,8 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
   setActivePreset: (presetId) => set({ activePreset: presetId }),
   markCustomized: () => set({ isCustomized: true }),
 }));
+
+export { SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH };
 
 export const useLayoutStore = create<FullLayoutTreeState>()(
   persist(layoutStoreCreator, { name: STORAGE_KEY }),
