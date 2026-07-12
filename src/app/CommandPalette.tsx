@@ -82,7 +82,7 @@ export function CommandPalette() {
         <CommandEmpty>
           <div className="flex flex-col items-center gap-2">
             <SmileySad className="size-6 text-fg-muted" />
-            <span>No commands found.</span>
+            <span className="text-ui-sm text-fg-muted">No commands found.</span>
           </div>
         </CommandEmpty>
         {Array.from(grouped.entries()).map(([category, items]) => (

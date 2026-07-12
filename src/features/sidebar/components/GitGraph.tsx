@@ -126,14 +126,14 @@ function authorInitials(name: string): string {
 }
 
 const AUTHOR_TINTS = [
-  "#7aa2f7",
-  "#bb9af7",
-  "#9ece6a",
-  "#e0af68",
-  "#f7768e",
-  "#73daca",
-  "#ff9e64",
-  "#b4f9f8",
+  "var(--color-git-author-1)",
+  "var(--color-git-author-2)",
+  "var(--color-git-author-3)",
+  "var(--color-git-author-4)",
+  "var(--color-git-author-5)",
+  "var(--color-git-author-6)",
+  "var(--color-git-author-7)",
+  "var(--color-git-author-8)",
 ];
 
 function authorTint(key: string): string {

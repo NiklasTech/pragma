@@ -86,7 +86,7 @@ export function GoToFile() {
         <CommandEmpty>
           <div className="flex flex-col items-center gap-2">
             <SmileySad className="size-6 text-fg-muted" />
-            <span>{emptyMessage}</span>
+            <span className="text-ui-sm text-fg-muted">{emptyMessage}</span>
           </div>
         </CommandEmpty>
         {sortedFiles.map((file) => {

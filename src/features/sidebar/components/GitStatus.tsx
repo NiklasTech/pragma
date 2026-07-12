@@ -225,7 +225,7 @@ function ToolbarButton({
     >
       {busy ? <Spinner size={14} className="animate-spin" /> : <Icon size={16} />}
       {badge !== undefined && badge !== null && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-fg-inverse">
+        <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-ui-2xs font-bold text-fg-inverse">
           {badge}
         </span>
       )}
@@ -612,7 +612,7 @@ function FileRow({
   const row = (
     <div
       className={cn(
-        "group relative flex h-[30px] items-center gap-2 rounded-md pl-2 pr-2 transition-all duration-100",
+        "group relative flex h-[var(--chrome-row-h-md)] items-center gap-2 rounded-md px-2 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary/40",
         isSelected ? "bg-bg-active text-fg-default" : "hover:bg-bg-hover",
       )}
       onClick={() => onSelect(entry)}

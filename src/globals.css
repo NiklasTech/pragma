@@ -238,6 +238,24 @@
   --color-git-ignored: var(--fg-subtle);
   --color-git-conflict: #c084fc;
 
+  --color-git-author-1: #7aa2f7;
+  --color-git-author-2: #bb9af7;
+  --color-git-author-3: #9ece6a;
+  --color-git-author-4: #e0af68;
+  --color-git-author-5: #f7768e;
+  --color-git-author-6: #73daca;
+  --color-git-author-7: #ff9e64;
+  --color-git-author-8: #b4f9f8;
+
+  --color-git-author-1: #7aa2f7;
+  --color-git-author-2: #bb9af7;
+  --color-git-author-3: #9ece6a;
+  --color-git-author-4: #e0af68;
+  --color-git-author-5: #f7768e;
+  --color-git-author-6: #73daca;
+  --color-git-author-7: #ff9e64;
+  --color-git-author-8: #b4f9f8;
+
   /* --------------------------------------------------------------------------
      Editor
      -------------------------------------------------------------------------- */

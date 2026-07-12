@@ -7,10 +7,10 @@ import type { Theme } from "@/theme/types";
 
 function getThemePreviewColors(theme: Theme): [string, string, string, string] {
   const tokens = theme.tokens;
-  const bg = tokens.colors?.background?.root ?? tokens.editor?.background ?? "#1a1b26";
-  const fg = tokens.colors?.foreground?.default ?? tokens.editor?.foreground ?? "#c0caf5";
-  const primary = tokens.colors?.accent?.default ?? "#7aa2f7";
-  const accent = tokens.colors?.accent?.subtle ?? "#565f89";
+  const bg = tokens.colors?.background?.root ?? tokens.editor?.background ?? "var(--bg-root)";
+  const fg = tokens.colors?.foreground?.default ?? tokens.editor?.foreground ?? "var(--fg-default)";
+  const primary = tokens.colors?.accent?.default ?? "var(--color-accent)";
+  const accent = tokens.colors?.accent?.subtle ?? "var(--color-accent-subtle)";
   return [bg, fg, primary, accent];
 }
 

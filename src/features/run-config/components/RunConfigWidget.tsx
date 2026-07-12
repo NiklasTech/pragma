@@ -8,6 +8,7 @@ import {
   Trash,
   Terminal,
 } from "@phosphor-icons/react";
+import { cn } from "@/shared/lib/utils";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout/store";
@@ -36,23 +37,24 @@ function RunningProcessBadge({
 }) {
   return (
     <div
-      className={`flex items-center gap-1.5 rounded px-2 py-0.5 transition-colors ${
-        isActive ? "bg-bg-active" : "bg-bg-active/40"
-      }`}
+      className={cn(
+        "flex items-center gap-1.5 rounded-sm px-2 py-0.5 transition-colors",
+        isActive ? "bg-bg-active" : "bg-bg-active/40",
+      )}
     >
       <button
         type="button"
         onClick={() => onOpenOutput(process.id)}
-        className="flex items-center gap-1.5"
+        className="flex items-center gap-1.5 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary/40"
         title="Open output"
       >
         <StatusDot status={process.status} />
-        <span className="text-xs text-fg-default">{process.configName}</span>
+        <span className="text-ui-xs text-fg-default">{process.configName}</span>
       </button>
       <button
         type="button"
         onClick={() => onStop(process.id)}
-        className="flex h-5 w-5 items-center justify-center rounded text-fg-muted transition-colors hover:text-status-error"
+        className="flex h-5 w-5 items-center justify-center rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
         title="Stop"
       >
         <Stop size={12} weight="fill" />
@@ -154,7 +156,7 @@ export function RunConfigWidget() {
         <button
           type="button"
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
         >
           <span>Run</span>
           <CaretDown size={12} />
@@ -173,7 +175,7 @@ export function RunConfigWidget() {
                   >
                     <div className="flex items-center gap-2">
                       <StatusDot status={proc?.status ?? "stopped"} />
-                      <span className="text-xs text-fg-default">{config.name}</span>
+                      <span className="text-ui-xs text-fg-default">{config.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {proc?.status === "running" ? (
@@ -184,7 +186,7 @@ export function RunConfigWidget() {
                               handleOpenOutput(proc.id);
                               setDropdownOpen(false);
                             }}
-                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-fg-default"
+                            className="flex h-5 w-5 items-center justify-center rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
                             title="Open output"
                           >
                             <Terminal size={12} />
@@ -229,13 +231,14 @@ export function RunConfigWidget() {
                     setActiveProcess(activeProcessId === proc.id ? null : proc.id);
                     setDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between px-3 py-1.5 hover:bg-bg-hover ${
-                    activeProcessId === proc.id ? "bg-bg-active/60" : ""
-                  }`}
+                  className={cn(
+                    "flex w-full items-center justify-between px-3 py-1.5 outline-none transition-colors duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover active:scale-[0.98]",
+                    activeProcessId === proc.id ? "bg-bg-active/60" : "",
+                  )}
                 >
                   <div className="flex items-center gap-2">
                     <StatusDot status={proc.status} />
-                    <span className="text-xs text-fg-default">{proc.configName}</span>
+                    <span className="text-ui-xs text-fg-default">{proc.configName}</span>
                     {proc.exitCode !== null && (
                       <span className="text-ui-xs text-fg-muted">({proc.exitCode})</span>
                     )}

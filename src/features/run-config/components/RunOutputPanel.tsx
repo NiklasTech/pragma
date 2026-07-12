@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { X, Circle, Terminal } from "@phosphor-icons/react";
+import { cn } from "@/shared/lib/utils";
 import { useRunConfigStore, type RunStatus } from "@/shared/stores/runConfig";
 
 function StatusBadge({ status }: { status: RunStatus }) {
@@ -48,7 +49,7 @@ export function RunOutputPanel() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-fg-default">{activeProcess.configName}</span>
+          <span className="text-ui-xs font-medium text-fg-default">{activeProcess.configName}</span>
           <StatusBadge status={activeProcess.status} />
           {activeProcess.exitCode !== null && (
             <span className="text-ui-xs text-fg-muted">exit {activeProcess.exitCode}</span>
@@ -62,11 +63,12 @@ export function RunOutputPanel() {
                   key={p.id}
                   type="button"
                   onClick={() => setActiveProcess(p.id)}
-                  className={`flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs ${
+                  className={cn(
+                    "flex h-5 items-center gap-1 rounded-sm px-1.5 text-ui-xs outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98]",
                     p.id === activeProcessId
                       ? "bg-bg-active text-fg-default"
-                      : "text-fg-muted hover:bg-bg-hover"
-                  }`}
+                      : "text-fg-muted hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40",
+                  )}
                 >
                   <Circle
                     size={5}
@@ -87,7 +89,7 @@ export function RunOutputPanel() {
           <button
             type="button"
             onClick={() => setActiveProcess(null)}
-            className="flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="flex h-5 items-center gap-1 rounded-sm px-1.5 text-ui-xs text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
             title="Back to Terminal"
           >
             <Terminal size={10} />
@@ -99,7 +101,7 @@ export function RunOutputPanel() {
               setActiveProcess(null);
               removeProcess(activeProcess.id);
             }}
-            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-fg-default"
+            className="flex h-5 w-5 items-center justify-center rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
             title="Close"
           >
             <X size={12} />
@@ -108,7 +110,7 @@ export function RunOutputPanel() {
       </div>
 
       {/* Output */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-3 font-mono text-xs">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-3 font-mono text-ui-sm">
         {activeProcess.output.length === 0 ? (
           <span className="italic text-fg-muted">No output yet...</span>
         ) : (
