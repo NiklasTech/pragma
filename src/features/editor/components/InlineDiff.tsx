@@ -16,28 +16,28 @@ const READONLY_EXT = [EditorState.readOnly.of(true), EditorView.editable.of(fals
 
 const DIFF_THEME = EditorView.theme({
   "&.cm-merge-b .cm-changedText, .cm-changedText": {
-    background: "rgba(110, 200, 120, 0.20) !important",
-    borderRadius: "3px",
+    background: "color-mix(in srgb, var(--color-git-added) 20%, transparent) !important",
+    borderRadius: "var(--radius-xs)",
     padding: "0 1px",
   },
   ".cm-deletedChunk .cm-deletedText, &.cm-merge-b .cm-deletedText": {
-    background: "rgba(220, 90, 90, 0.22) !important",
-    borderRadius: "3px",
+    background: "color-mix(in srgb, var(--color-git-deleted) 22%, transparent) !important",
+    borderRadius: "var(--radius-xs)",
     padding: "0 1px",
   },
   "&.cm-merge-b .cm-changedLine, .cm-changedLine, .cm-inlineChangedLine": {
-    backgroundColor: "rgba(110, 200, 120, 0.05) !important",
+    backgroundColor: "color-mix(in srgb, var(--color-git-added) 5%, transparent) !important",
   },
   ".cm-deletedChunk": {
-    backgroundColor: "rgba(220, 90, 90, 0.05) !important",
+    backgroundColor: "color-mix(in srgb, var(--color-git-deleted) 5%, transparent) !important",
     paddingTop: "1px",
     paddingBottom: "1px",
   },
   "&.cm-merge-b .cm-changedLineGutter, .cm-changedLineGutter": {
-    background: "rgba(110, 200, 120, 0.55) !important",
+    background: "color-mix(in srgb, var(--color-git-added) 55%, transparent) !important",
   },
   ".cm-deletedLineGutter, &.cm-merge-a .cm-changedLineGutter": {
-    background: "rgba(220, 90, 90, 0.5) !important",
+    background: "color-mix(in srgb, var(--color-git-deleted) 50%, transparent) !important",
   },
   ".cm-changeGutter": {
     width: "2px !important",
@@ -50,18 +50,19 @@ const DIFF_THEME = EditorView.theme({
     width: "100%",
     backgroundColor: "var(--bg-hover) !important",
     color: "var(--fg-default) !important",
-    fontSize: "10.5px",
+    fontSize: "var(--text-ui-2xs)",
     padding: "2px 8px",
     opacity: 1,
-    borderRadius: "3px",
+    borderRadius: "var(--radius-xs)",
     border: "1px solid var(--border-default)",
     cursor: "pointer",
-    transition: "background-color 0.15s ease, color 0.15s ease",
+    transition:
+      "background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease)",
   },
   ".cm-collapsedLines::before": {
     content: "'▾ '",
     marginRight: "4px",
-    fontSize: "10px",
+    fontSize: "var(--text-ui-2xs)",
   },
   ".cm-collapsedLines:hover": {
     backgroundColor: "var(--bg-active) !important",
@@ -340,9 +341,9 @@ export const InlineDiff = memo(function InlineDiff({
             variant="ghost"
             size="sm"
             className={cn(
-              "h-6 px-2 text-ui-xs gap-1",
+              "h-6 gap-1 px-2 text-ui-xs transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
               effectiveViewMode === "split" && canShowSplit && "bg-bg-active text-fg-default",
-              !canShowSplit && "opacity-40 cursor-not-allowed",
+              !canShowSplit && "cursor-not-allowed opacity-40",
             )}
             onClick={() => canShowSplit && handleViewModeChange("split")}
             disabled={!canShowSplit}
@@ -354,9 +355,9 @@ export const InlineDiff = memo(function InlineDiff({
             variant="ghost"
             size="sm"
             className={cn(
-              "h-6 px-2 text-ui-xs gap-1",
+              "h-6 gap-1 px-2 text-ui-xs transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
               effectiveViewMode === "unified" && "bg-bg-active text-fg-default",
-              !canShowUnified && "opacity-40 cursor-not-allowed",
+              !canShowUnified && "cursor-not-allowed opacity-40",
             )}
             onClick={() => canShowUnified && handleViewModeChange("unified")}
             disabled={!canShowUnified}
@@ -368,7 +369,7 @@ export const InlineDiff = memo(function InlineDiff({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-ui-xs gap-1 text-status-error hover:text-status-error hover:bg-status-error/10"
+              className="h-6 gap-1 px-2 text-ui-xs text-status-error transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[var(--color-status-error-bg)] hover:text-status-error"
               onClick={onReject}
             >
               <X size={12} weight="bold" />
@@ -379,7 +380,7 @@ export const InlineDiff = memo(function InlineDiff({
             <Button
               variant="default"
               size="sm"
-              className="h-6 px-2 text-ui-xs gap-1"
+              className="h-6 gap-1 px-2 text-ui-xs transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]"
               onClick={() => onAccept(modified)}
             >
               <Check size={12} weight="bold" />

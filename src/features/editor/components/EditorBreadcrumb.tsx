@@ -35,7 +35,11 @@ export function EditorBreadcrumb({ panelId }: EditorBreadcrumbProps) {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <button type="button" aria-label="Project root">
+              <button
+                type="button"
+                aria-label="Project root"
+                className="rounded-sm p-1 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
+              >
                 <House size={12} />
               </button>
             </BreadcrumbLink>
@@ -58,7 +62,12 @@ export function EditorBreadcrumb({ panelId }: EditorBreadcrumbProps) {
                     <BreadcrumbPage>{segment}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <button type="button">{segment}</button>
+                      <button
+                        type="button"
+                        className="rounded-sm px-1 py-0.5 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
+                      >
+                        {segment}
+                      </button>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>

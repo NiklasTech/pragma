@@ -42,7 +42,7 @@ function getFileTypeLabel(name: string): string {
 function getModeColor(mode: string): string {
   if (mode === "insert") return "text-status-info";
   if (mode === "replace") return "text-status-warning";
-  if (mode.startsWith("visual")) return "text-[#c084fc]";
+  if (mode.startsWith("visual")) return "text-syntax-keyword";
   return "text-status-success";
 }
 
@@ -78,14 +78,14 @@ export function EditorStatusbar({
         {(errorCount > 0 || warningCount > 0) && (
           <div className="flex items-center gap-2">
             {errorCount > 0 && (
-              <span className="flex items-center gap-1 text-status-error">
-                <WarningCircle size={14} />
+              <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--color-status-error-bg)] px-1.5 py-0.5 text-status-error">
+                <WarningCircle size={12} />
                 {errorCount}
               </span>
             )}
             {warningCount > 0 && (
-              <span className="flex items-center gap-1 text-status-warning">
-                <Warning size={14} />
+              <span className="inline-flex items-center gap-1 rounded-sm bg-[var(--color-status-warning-bg)] px-1.5 py-0.5 text-status-warning">
+                <Warning size={12} />
                 {warningCount}
               </span>
             )}

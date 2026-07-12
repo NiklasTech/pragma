@@ -113,12 +113,12 @@ export function StickyLinesOverlay({ view, enabled }: StickyLinesOverlayProps) {
       style={{ paddingLeft: gutterWidth }}
     >
       <div
-        className="pointer-events-auto truncate px-3 py-1 text-sm border-b opacity-95"
+        className="pointer-events-auto truncate border-b px-3 py-1 text-ui-sm opacity-95"
         style={{
-          backgroundColor: "var(--editor-background, #1a1b26)",
-          borderColor: "var(--border, #2a2b36)",
-          color: "var(--editor-foreground, #c0caf5)",
-          fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
+          backgroundColor: "var(--editor-bg)",
+          borderColor: "var(--border-default)",
+          color: "var(--editor-fg)",
+          fontFamily: "var(--font-mono)",
           lineHeight: 1.6,
         }}
       >
