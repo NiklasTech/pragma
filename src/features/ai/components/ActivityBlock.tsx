@@ -23,11 +23,11 @@ export function ActivityBlock({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="my-2 overflow-hidden rounded-md border border-border/40 bg-bg-hover/30">
+    <div className="my-2 overflow-hidden rounded-sm border border-border bg-[color-mix(in_srgb,var(--bg-hover)_30%,transparent)]">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--bg-hover)_50%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
       >
         <span className="flex min-w-0 items-center gap-1.5 text-ui-xs text-fg-muted">
           {icon && <span className="shrink-0">{icon}</span>}
@@ -41,7 +41,7 @@ export function ActivityBlock({
       {open && (
         <div
           data-state={streaming ? "streaming" : "done"}
-          className="max-h-48 overflow-y-auto border-t border-border/30 px-3 py-2 data-[state=streaming]:animate-pulse"
+          className="max-h-48 overflow-y-auto border-t border-border px-3 py-2 data-[state=streaming]:animate-pulse"
         >
           {children}
         </div>

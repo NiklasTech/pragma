@@ -56,7 +56,7 @@ export function ToolInvocationBlock({
         {input !== undefined && (
           <div>
             <span className="font-medium text-fg-muted">Input</span>
-            <pre className="mt-1 whitespace-pre-wrap rounded bg-bg-hover px-2 py-1.5 font-mono text-fg-muted">
+            <pre className="mt-1 whitespace-pre-wrap rounded-sm bg-bg-hover px-2 py-1.5 font-mono text-fg-muted">
               {formatValue(input)}
             </pre>
           </div>
@@ -68,7 +68,7 @@ export function ToolInvocationBlock({
             {isError ? (
               <p className="mt-1 text-status-error">{errorText ?? "Tool execution failed"}</p>
             ) : (
-              <pre className="mt-1 whitespace-pre-wrap rounded bg-bg-hover px-2 py-1.5 font-mono text-fg-muted">
+              <pre className="mt-1 whitespace-pre-wrap rounded-sm bg-bg-hover px-2 py-1.5 font-mono text-fg-muted">
                 {formatValue(output)}
               </pre>
             )}

@@ -34,7 +34,7 @@ export function SourceBlock({ type, title, url, filename, streaming = false }: S
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline underline-offset-2"
+            className="rounded-sm text-primary underline underline-offset-2 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:text-[color-mix(in_srgb,var(--color-primary)_80%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {url}
           </a>

@@ -136,7 +136,7 @@ export function AiModelSelector() {
       <PopoverTrigger>
         <span
           className={cn(
-            "inline-flex h-7 max-w-[220px] items-center gap-1.5 rounded-md border border-border/60 bg-bg-root px-2 text-ui-sm font-medium transition-colors hover:bg-bg-hover",
+            "inline-flex h-7 max-w-56 items-center gap-1.5 rounded-sm border border-border bg-bg-root px-2 text-ui-sm font-medium outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]",
             !isAvailable && "text-fg-muted",
           )}
         >
@@ -172,10 +172,10 @@ export function AiModelSelector() {
                     type="button"
                     onClick={() => handleProviderChange(provider)}
                     className={cn(
-                      "flex items-center justify-between rounded-md px-2 py-1.5 text-ui-sm transition-colors",
+                      "flex items-center justify-between rounded-sm px-2 py-1.5 text-ui-sm outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]",
                       isActive
-                        ? "bg-bg-active/50 font-medium text-fg-default"
-                        : "text-fg-default/90 hover:bg-bg-hover",
+                        ? "bg-[color-mix(in_srgb,var(--bg-active)_50%,transparent)] font-medium text-fg-default"
+                        : "text-[color-mix(in_srgb,var(--fg-default)_90%,transparent)] hover:bg-bg-hover",
                     )}
                   >
                     <span className="flex items-center gap-2">

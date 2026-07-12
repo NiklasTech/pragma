@@ -249,7 +249,7 @@ export function ChatPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Session Header */}
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
           <ChatTeardropText size={14} className="shrink-0 text-fg-muted" />
           <span className="truncate text-ui-xs text-fg-muted">
@@ -271,7 +271,7 @@ export function ChatPanel() {
           <ChatSessionList />
           <button
             onClick={handleNewSession}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
             title="New Session"
           >
             <Plus size={14} weight="bold" />
@@ -443,10 +443,10 @@ export function ChatPanel() {
       </div>
 
       {/* Input Area */}
-      <div className="shrink-0 border-t border-border/60 bg-bg-surface p-3">
+      <div className="shrink-0 border-t border-border bg-bg-surface p-3">
         {/* Error Banner */}
         {error && (
-          <div className="mb-2 flex items-start gap-2 rounded-md bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
+          <div className="mb-2 flex items-start gap-2 rounded-sm bg-[color-mix(in_srgb,var(--color-status-error)_10%,transparent)] px-3 py-2 text-ui-sm text-status-error">
             <Warning size={14} className="mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-medium">Something went wrong</p>
@@ -455,7 +455,7 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={handleRetry}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-status-error/15"
+              className="flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-fg-default outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--color-status-error)_15%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
             >
               <ArrowCounterClockwise size={12} weight="bold" />
               <span>Retry</span>
@@ -465,7 +465,7 @@ export function ChatPanel() {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
+          <div className="mb-2 flex items-center gap-2 rounded-sm bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
             <Terminal size={14} />
             <span>
               Using {cliStatus.provider_id} via CLI
@@ -475,7 +475,7 @@ export function ChatPanel() {
         )}
 
         {!canChat && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-status-warning/10 px-3 py-2 text-ui-sm text-status-warning">
+          <div className="mb-2 flex items-center gap-2 rounded-sm bg-[color-mix(in_srgb,var(--color-status-warning)_10%,transparent)] px-3 py-2 text-ui-sm text-status-warning">
             <Warning size={14} />
             <span>
               {isCLIActive
@@ -486,7 +486,7 @@ export function ChatPanel() {
         )}
 
         {!mcpLoaded && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
+          <div className="mb-2 flex items-center gap-2 rounded-sm bg-[color-mix(in_srgb,var(--color-accent-subtle)_50%,transparent)] px-3 py-1.5 text-ui-xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
           </div>
@@ -497,7 +497,7 @@ export function ChatPanel() {
             {pendingApprovals.map((approval) => (
               <div
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-md border border-border/60 bg-bg-root p-3"
+                className="flex flex-col gap-2 rounded-sm border border-border bg-bg-root p-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
@@ -506,7 +506,7 @@ export function ChatPanel() {
                   <p className="text-ui-xs text-fg-muted">{approval.description}</p>
                 )}
                 {approval.args ? (
-                  <pre className="max-h-32 overflow-auto rounded bg-bg-surface p-2 text-ui-xs text-fg-muted">
+                  <pre className="max-h-32 overflow-auto rounded-sm bg-bg-surface p-2 text-ui-xs text-fg-muted">
                     {JSON.stringify(approval.args, null, 2)}
                   </pre>
                 ) : null}
@@ -514,7 +514,7 @@ export function ChatPanel() {
                   <button
                     type="button"
                     onClick={() => handleApproval(approval.toolCallId, false)}
-                    className="flex items-center gap-1 rounded-md bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-error/90"
+                    className="flex items-center gap-1 rounded-sm bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--color-status-error)_90%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
                   >
                     <X size={12} weight="bold" />
                     Deny
@@ -522,7 +522,7 @@ export function ChatPanel() {
                   <button
                     type="button"
                     onClick={() => handleApproval(approval.toolCallId, true)}
-                    className="flex items-center gap-1 rounded-md bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-success/90"
+                    className="flex items-center gap-1 rounded-sm bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--color-status-success)_90%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
                   >
                     <Check size={12} weight="bold" />
                     Allow
@@ -545,7 +545,7 @@ export function ChatPanel() {
               onSelect={updateCursorPosition}
               placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
               rows={1}
-              className="min-h-[36px] resize-none py-2 text-ui-base"
+              className="min-h-9 resize-none py-2 text-ui-base"
               disabled={!canChat || isLoading}
             />
             <ContextPicker
@@ -560,7 +560,7 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={stop}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-status-error text-fg-inverse outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--color-status-error)_90%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
             >
               <Stop size={16} weight="bold" />
             </button>
@@ -568,7 +568,7 @@ export function ChatPanel() {
             <button
               type="submit"
               disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-primary text-primary-foreground outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--color-primary)_90%,transparent)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92] disabled:opacity-40 disabled:hover:bg-primary"
             >
               <PaperPlaneRight size={16} weight="bold" />
             </button>

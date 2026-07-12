@@ -80,21 +80,21 @@ export function ChatSessionList() {
     <>
       <Popover>
         <PopoverTrigger
-          className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-bg-hover text-fg-muted hover:text-fg-default transition-colors shrink-0"
+          className="flex h-6 w-6 items-center justify-center rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92] shrink-0"
           title="Chat History"
         >
           <ClockCounterClockwise size={14} />
         </PopoverTrigger>
         <PopoverContent side="bottom" align="end" className="w-64 p-0">
-          <div className="px-3 py-2 border-b border-border/40">
-            <span className="text-xs font-medium text-fg-default">Chat History</span>
+          <div className="px-3 py-2 border-b border-border">
+            <span className="text-ui-xs font-medium text-fg-default">Chat History</span>
             <span className="text-ui-xs text-fg-muted ml-1.5">
               {chatSessions.length} session{chatSessions.length !== 1 ? "s" : ""}
             </span>
           </div>
 
           {chatSessions.length === 0 ? (
-            <div className="px-3 py-4 text-center text-xs text-fg-muted">
+            <div className="px-3 py-4 text-center text-ui-xs text-fg-muted">
               No sessions yet. Start a new chat to create one.
             </div>
           ) : (
@@ -103,15 +103,16 @@ export function ChatSessionList() {
                 <div
                   key={session.id}
                   className={cn(
-                    "group w-full flex items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover cursor-pointer",
-                    session.id === activeChatSessionId && "bg-bg-active/50",
+                    "group w-full flex items-start gap-2 px-3 py-2 text-left outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98] cursor-pointer",
+                    session.id === activeChatSessionId &&
+                      "bg-[color-mix(in_srgb,var(--bg-active)_50%,transparent)]",
                   )}
                   onClick={() => handleSelect(session.id)}
                 >
                   <ChatCircle size={14} className="mt-0.5 shrink-0 text-fg-muted" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-medium truncate">{session.title}</span>
+                      <span className="text-ui-xs font-medium truncate">{session.title}</span>
                       <span className="text-ui-xs text-fg-muted shrink-0">
                         {formatSessionDate(session.updatedAt)}
                       </span>
@@ -126,7 +127,7 @@ export function ChatSessionList() {
                         e.stopPropagation();
                         setSessionToDelete(session.id);
                       }}
-                      className="mt-0.5 p-1 rounded-sm hover:bg-status-error/10 text-fg-muted hover:text-status-error transition-colors shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      className="mt-0.5 p-1 rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color-mix(in_srgb,var(--color-status-error)_10%,transparent)] hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:opacity-100 active:scale-[0.92] shrink-0 opacity-0 group-hover:opacity-100"
                       title="Delete session"
                     >
                       <Trash size={12} />

@@ -188,7 +188,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
     return (
       <div
         ref={listRef}
-        className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-md border border-border/60 bg-popover p-1 shadow-lg"
+        className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-sm border border-border bg-popover p-1 shadow-lg"
       >
         {filteredEntries.map((entry, index) => {
           const relativePath = rootPath ? getRelativePath(rootPath, entry.path) : entry.path;
@@ -207,7 +207,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
               }}
               onMouseEnter={() => setSelectedIndex(index)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-ui-base outline-hidden select-none",
+                "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-ui-base outline-none select-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]",
                 isSelected && "bg-bg-active text-fg-default",
               )}
             >

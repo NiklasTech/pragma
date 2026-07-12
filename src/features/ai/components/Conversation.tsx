@@ -51,8 +51,8 @@ export const ConversationEmptyState = ({
       <>
         {icon && <div className="text-fg-muted">{icon}</div>}
         <div className="space-y-1">
-          <h3 className="text-sm font-medium">{title}</h3>
-          {description && <p className="text-sm text-fg-muted">{description}</p>}
+          <h3 className="text-ui-sm font-medium">{title}</h3>
+          {description && <p className="text-ui-sm text-fg-muted">{description}</p>}
         </div>
       </>
     )}
@@ -76,7 +76,7 @@ export const ConversationScrollButton = ({
   return (
     <Button
       className={cn(
-        "absolute bottom-3 left-1/2 size-7 -translate-x-1/2 rounded-full border-border/50 bg-bg-root/90 shadow-md backdrop-blur",
+        "absolute bottom-3 left-1/2 size-7 -translate-x-1/2 rounded-full border-border bg-[color-mix(in_srgb,var(--bg-root)_90%,transparent)] shadow-md backdrop-blur outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]",
         className,
       )}
       onClick={handleScrollToBottom}
@@ -101,7 +101,10 @@ export const ConversationDownload = ({
   ...props
 }: ConversationDownloadProps) => (
   <Button
-    className={cn("absolute top-4 right-4 rounded-full bg-bg-root hover:bg-bg-hover", className)}
+    className={cn(
+      "absolute top-4 right-4 rounded-full bg-bg-root outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]",
+      className,
+    )}
     onClick={onDownload}
     size="icon"
     type="button"

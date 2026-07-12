@@ -53,8 +53,8 @@ export function ChatCodeBlock({ code, lang }: ChatCodeBlockProps) {
 
 function GeneratingPlaceholder({ label }: { label: string }) {
   return (
-    <div className="not-prose my-2 flex items-center gap-2 rounded-lg border border-border/50 bg-bg-hover/30 px-3 py-2 text-ui-xs text-fg-muted">
-      <span className="inline-block size-1.5 animate-pulse rounded-full bg-fg-muted/60" />
+    <div className="not-prose my-2 flex items-center gap-2 rounded-sm border border-border bg-[color-mix(in_srgb,var(--bg-hover)_30%,transparent)] px-3 py-2 text-ui-xs text-fg-muted">
+      <span className="inline-block size-1.5 animate-pulse rounded-full bg-[color-mix(in_srgb,var(--fg-muted)_60%,transparent)]" />
       <Shimmer duration={1.2}>
         {label === "text" ? "Generating code…" : `Generating ${label}…`}
       </Shimmer>
@@ -72,8 +72,8 @@ function BlockChrome({
   children: React.ReactNode;
 }) {
   return (
-    <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-bg-hover/30">
-      <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-bg-hover/20 px-3 py-1">
+    <div className="not-prose my-2 overflow-hidden rounded-sm border border-border bg-[color-mix(in_srgb,var(--bg-hover)_30%,transparent)]">
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-[color-mix(in_srgb,var(--bg-hover)_20%,transparent)] px-3 py-1">
         <span className="font-mono text-ui-xs uppercase tracking-wide text-fg-muted">{label}</span>
         <CopyButton text={code} />
       </div>
@@ -158,7 +158,7 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
   const prompt = shellPrompt(lang);
 
   return (
-    <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-bg-hover/40">
+    <div className="not-prose my-2 overflow-hidden rounded-sm border border-border bg-[color-mix(in_srgb,var(--bg-hover)_40%,transparent)]">
       <div className="flex items-center justify-between gap-2 px-3 py-1.5">
         <span className="font-mono text-ui-xs uppercase tracking-wide text-fg-muted">
           {normalizeLangLabel(lang)}
@@ -168,7 +168,7 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
           <CopyButton text={code} />
         </div>
       </div>
-      <div className="border-t border-border/40 bg-bg-root/40">
+      <div className="border-t border-border bg-[color-mix(in_srgb,var(--bg-root)_40%,transparent)]">
         <pre
           className={cn(
             "m-0 overflow-x-auto px-3 py-2 font-mono text-ui-sm leading-relaxed text-fg-default",
@@ -177,7 +177,9 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
         >
           {code.split("\n").map((line, index) => (
             <span key={index} className="flex">
-              <span className="mr-2 select-none text-fg-muted/70">{prompt}</span>
+              <span className="mr-2 select-none text-[color-mix(in_srgb,var(--fg-muted)_70%,transparent)]">
+                {prompt}
+              </span>
               <span>{line}</span>
             </span>
           ))}
@@ -206,7 +208,7 @@ function RunInTerminalButton({ command }: { command: string }) {
       size="sm"
       variant="ghost"
       onClick={onRun}
-      className="h-5 gap-1 px-1.5 text-ui-xs font-medium text-fg-muted hover:text-fg-default"
+      className="h-5 gap-1 rounded-sm px-1.5 text-ui-xs font-medium text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.96]"
       aria-label="Run in active terminal"
       title="Run in active terminal"
     >
@@ -239,7 +241,7 @@ function CopyButton({ text }: { text: string }) {
       size="icon"
       variant="ghost"
       onClick={onCopy}
-      className="size-5 shrink-0 text-fg-muted hover:text-fg-default"
+      className="size-5 shrink-0 rounded-sm text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
       aria-label="Copy code"
       title="Copy code"
     >
