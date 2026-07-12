@@ -17,7 +17,7 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex size-full flex-col overflow-hidden rounded-md border border-border/60 bg-bg-elevated p-0.5 text-fg-default",
+        "flex size-full flex-col overflow-hidden rounded-md bg-bg-elevated text-fg-default",
         className,
       )}
       {...props}
@@ -47,12 +47,12 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-lg border-border/60 p-0",
+          "top-[28%] translate-y-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl shadow-black/30",
           className,
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        <Command className="bg-transparent">{children}</Command>
       </DialogContent>
     </Dialog>
   );
@@ -63,18 +63,18 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-7! rounded-md border-border/60 bg-bg-input shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+    <div data-slot="command-input-wrapper" className="border-b border-border/40 p-3">
+      <InputGroup className="h-9! rounded-lg border-transparent bg-bg-input shadow-none! *:data-[slot=input-group-addon]:pl-3!">
         <CommandPrimitive.Input
           data-slot="command-input"
           className={cn(
-            "w-full bg-transparent text-ui-base text-fg-default outline-hidden placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-40",
+            "w-full bg-transparent px-3 text-ui-base text-fg-default outline-hidden placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-40",
             className,
           )}
           {...props}
         />
         <InputGroupAddon>
-          <MagnifyingGlass className="size-3.5 shrink-0 text-fg-subtle" />
+          <MagnifyingGlass className="size-4 shrink-0 text-fg-subtle" />
         </InputGroupAddon>
       </InputGroup>
     </div>
@@ -86,7 +86,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+        "no-scrollbar max-h-[420px] scroll-py-1 overflow-x-hidden overflow-y-auto px-2 pb-2 outline-none",
         className,
       )}
       {...props}
@@ -101,7 +101,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-6 text-center text-ui-base text-fg-subtle", className)}
+      className={cn("py-8 text-center text-ui-sm text-fg-subtle", className)}
       {...props}
     />
   );
@@ -115,7 +115,7 @@ function CommandGroup({
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden p-0.5 text-fg-default **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1 **:[[cmdk-group-heading]]:text-ui-xs **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:text-fg-subtle",
+        "flex flex-col gap-3 py-2 text-fg-default **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-ui-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-fg-muted",
         className,
       )}
       {...props}
@@ -130,7 +130,7 @@ function CommandSeparator({
   return (
     <CommandPrimitive.Separator
       data-slot="command-separator"
-      className={cn("-mx-0.5 h-px bg-border/60", className)}
+      className={cn("-mx-2 h-px bg-border/40", className)}
       {...props}
     />
   );
@@ -145,7 +145,7 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex cursor-default items-center gap-2 rounded-[4px] px-2 py-1 text-ui-base text-fg-default outline-hidden select-none transition-colors duration-150 in-data-[slot=dialog-content]:rounded-md! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40 data-selected:bg-bg-active data-selected:text-fg-default [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 data-selected:*:[svg]:text-fg-default",
+        "group/command-item relative my-1.5 flex h-8 cursor-pointer items-center gap-3 rounded-md border border-transparent px-3 text-ui-sm text-fg-default outline-hidden select-none transition-colors duration-150 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}

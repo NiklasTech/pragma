@@ -5,6 +5,8 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useLayoutStore } from "@/shell/layout";
+import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
+import { useGoToFileStore } from "@/shared/stores/goToFile";
 import { type ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
 
 export function useAppShortcutActions(): ShortcutActions {
@@ -54,6 +56,12 @@ export function useAppShortcutActions(): ShortcutActions {
       },
       "ai.toggle": () => {
         useLayoutStore.getState().toggleAI();
+      },
+      "view.commandPalette": () => {
+        useCommandPaletteStore.getState().toggle();
+      },
+      "file.goToFile": () => {
+        useGoToFileStore.getState().toggle();
       },
     }),
     [openFile, saveFile],

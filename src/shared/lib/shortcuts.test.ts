@@ -91,6 +91,7 @@ describe("findConflictingAction", () => {
       "file.open": { ctrl: true, code: "KeyO" },
       "file.save": { ctrl: true, code: "KeyS" },
       "file.closeTab": { ctrl: true, code: "KeyW" },
+      "file.goToFile": { ctrl: true, code: "KeyP" },
       "edit.editWithAI": { ctrl: true, code: "KeyL" },
       "view.toggleSidebar": { ctrl: true, code: "KeyB" },
       "view.toggleTerminal": { ctrl: true, shift: true, code: "KeyT" },
@@ -98,6 +99,7 @@ describe("findConflictingAction", () => {
       "view.openSettings": { ctrl: true, code: "Comma" },
       "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
       "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
+      "view.commandPalette": { ctrl: true, shift: true, code: "KeyP" },
       "chat.send": { key: "Enter" },
     };
 
@@ -110,6 +112,7 @@ describe("findConflictingAction", () => {
       "file.open": { ctrl: true, code: "KeyO" },
       "file.save": { ctrl: true, code: "KeyS" },
       "file.closeTab": { ctrl: true, code: "KeyW" },
+      "file.goToFile": { ctrl: true, code: "KeyP" },
       "edit.editWithAI": { ctrl: true, code: "KeyL" },
       "view.toggleSidebar": { ctrl: true, code: "KeyB" },
       "view.toggleTerminal": { ctrl: true, shift: true, code: "KeyT" },
@@ -117,6 +120,7 @@ describe("findConflictingAction", () => {
       "view.openSettings": { ctrl: true, code: "Comma" },
       "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
       "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
+      "view.commandPalette": { ctrl: true, shift: true, code: "KeyP" },
       "chat.send": { key: "Enter" },
     };
 
@@ -162,8 +166,10 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(11);
+    expect(Object.keys(defaults)).toHaveLength(13);
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
+    expect(defaults["view.commandPalette"]).toEqual({ ctrl: true, shift: true, code: "KeyP" });
+    expect(defaults["file.goToFile"]).toEqual({ ctrl: true, code: "KeyP" });
   });
 });
 

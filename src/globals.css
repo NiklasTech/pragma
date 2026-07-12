@@ -563,3 +563,21 @@ button:disabled,
 [role="button"][aria-disabled="true"] {
   cursor: not-allowed;
 }
+
+/* ============================================================================
+   COMMAND PALETTE ITEM — pulsing hover outline
+   ============================================================================ */
+
+@keyframes command-item-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--border-focus);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(43, 127, 255, 0.15);
+  }
+}
+
+.animate-command-item-pulse {
+  animation: command-item-pulse 1.2s ease-in-out infinite;
+}
