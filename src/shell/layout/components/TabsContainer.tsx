@@ -14,7 +14,7 @@ export function TabsContainer({ tabs, activeTabId, onSelect, children }: TabsCon
   return (
     <div className="flex h-full w-full flex-col">
       {showTabs && (
-        <div className="flex h-tab shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-bg-surface px-2">
+        <div className="flex h-tab shrink-0 items-center gap-1 overflow-x-auto border-b border-border/40 bg-bg-surface px-2">
           {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             return (

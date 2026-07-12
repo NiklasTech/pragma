@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
-import { ArrowSquareOut } from "@phosphor-icons/react";
+import { ArrowSquareOut, X } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 
 interface FloatingWindowProps {
@@ -116,7 +116,8 @@ export function FloatingWindow({
     <div
       ref={windowRef}
       className={cn(
-        "fixed z-50 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-bg-elevated shadow-xl",
+        "fixed z-50 flex flex-col overflow-hidden rounded-lg border border-border/40 bg-bg-elevated shadow-xl",
+        "transition-shadow duration-[var(--motion-base)] ease-[var(--motion-ease)]",
         isDragging && "cursor-grabbing select-none",
         isResizing && "select-none",
         className,
@@ -129,7 +130,7 @@ export function FloatingWindow({
       }}
     >
       <div
-        className="flex shrink-0 items-center gap-2 px-3 py-2 border-b border-border/60 cursor-grab active:cursor-grabbing"
+        className="flex h-10 shrink-0 cursor-grab items-center gap-2 border-b border-border/40 bg-bg-surface px-3 active:cursor-grabbing"
         onMouseDown={handleDragStart}
       >
         {title}
@@ -139,7 +140,7 @@ export function FloatingWindow({
               type="button"
               data-no-drag
               onClick={onExternalize}
-              className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+              className="rounded-md p-1 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
               aria-label="Move to native window"
             >
               <ArrowSquareOut size={14} />
@@ -150,17 +151,10 @@ export function FloatingWindow({
               type="button"
               data-no-drag
               onClick={onClose}
-              className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+              className="rounded-md p-1 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
               aria-label="Close"
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path
-                  d="M1 1L11 11M11 1L1 11"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <X size={14} weight="bold" />
             </button>
           )}
         </div>

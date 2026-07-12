@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ArrowLineLeft, CornersIn, CornersOut, Minus, X } from "@phosphor-icons/react";
+import { TitlebarButton } from "@/shell/chrome/TitlebarButton";
 
 interface ExternalWindowTitlebarProps {
   title: string;
@@ -49,26 +50,19 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
       </div>
 
       <div className="flex items-center">
-        <button
-          type="button"
+        <TitlebarButton
           onClick={handleDock}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="h-header w-10"
           title="Dock into main window"
         >
           <ArrowLineLeft size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={handleMinimize}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label="Minimize"
-        >
+        </TitlebarButton>
+        <TitlebarButton onClick={handleMinimize} className="h-header w-10" aria-label="Minimize">
           <Minus size={18} weight="bold" />
-        </button>
-        <button
-          type="button"
+        </TitlebarButton>
+        <TitlebarButton
           onClick={handleToggleMaximize}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="h-header w-10"
           aria-label={isMaximized ? "Restore" : "Maximize"}
         >
           {isMaximized ? (
@@ -76,15 +70,15 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
           ) : (
             <CornersOut size={18} weight="bold" />
           )}
-        </button>
-        <button
-          type="button"
+        </TitlebarButton>
+        <TitlebarButton
           onClick={handleClose}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+          variant="danger"
+          className="h-header w-10"
           aria-label="Close"
         >
           <X size={18} weight="bold" />
-        </button>
+        </TitlebarButton>
       </div>
     </div>
   );

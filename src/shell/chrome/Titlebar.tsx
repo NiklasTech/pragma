@@ -23,6 +23,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { RunConfigWidget } from "@/features/run-config/components";
+import { TitlebarButton } from "./TitlebarButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,14 +106,10 @@ export function Titlebar() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <button
-                type="button"
-                className="flex h-8 items-center justify-center gap-0.5 rounded-md px-2 text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-                title="Open folder or file"
-              >
+              <TitlebarButton className="h-8 gap-0.5 px-2" title="Open folder or file">
                 <FolderOpen size={16} />
                 <CaretDown size={10} className="opacity-60" />
-              </button>
+              </TitlebarButton>
             }
           />
           <DropdownMenuContent align="start" className="min-w-[240px]">
@@ -187,15 +184,14 @@ export function Titlebar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <button
-          type="button"
+        <TitlebarButton
           onClick={saveFile}
           disabled={!canSave}
-          className="flex h-8 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
+          className="size-8"
           title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
         >
           <FloppyDisk size={16} />
-        </button>
+        </TitlebarButton>
 
         <div className="mx-1 h-4 w-px bg-border/60" />
         <RunConfigWidget />
@@ -205,28 +201,21 @@ export function Titlebar() {
 
       <div className="flex items-center">
         <div className="flex items-center border-l border-border/40">
-          <button
-            type="button"
+          <TitlebarButton
             onClick={() => addFloatingPanel("settings")}
-            className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="h-header w-10"
             title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
           >
             <Gear size={16} />
-          </button>
+          </TitlebarButton>
         </div>
 
-        <button
-          type="button"
-          onClick={handleMinimize}
-          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label="Minimize"
-        >
+        <TitlebarButton onClick={handleMinimize} className="h-header w-14" aria-label="Minimize">
           <Minus size={18} weight="bold" />
-        </button>
-        <button
-          type="button"
+        </TitlebarButton>
+        <TitlebarButton
           onClick={handleToggleMaximize}
-          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="h-header w-14"
           aria-label={isMaximized ? "Restore" : "Maximize"}
         >
           {isMaximized ? (
@@ -234,15 +223,15 @@ export function Titlebar() {
           ) : (
             <CornersOut size={18} weight="bold" />
           )}
-        </button>
-        <button
-          type="button"
+        </TitlebarButton>
+        <TitlebarButton
           onClick={handleClose}
-          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+          variant="danger"
+          className="h-header w-14"
           aria-label="Close"
         >
           <X size={18} weight="bold" />
-        </button>
+        </TitlebarButton>
       </div>
     </div>
   );

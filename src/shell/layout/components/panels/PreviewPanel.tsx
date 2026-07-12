@@ -13,7 +13,7 @@ const streamdownComponents: ComponentProps<typeof Streamdown>["components"] = {
   },
   inlineCode({ children }) {
     return (
-      <code className="rounded bg-bg-hover/70 px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
+      <code className="rounded-sm bg-bg-hover/70 px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
         {children}
       </code>
     );
@@ -65,7 +65,7 @@ export default function PreviewPanel() {
           <FileText size={14} />
           <span className="truncate">{fileName}</span>
           {html && (
-            <span className="rounded bg-bg-hover px-1.5 py-0.5 text-ui-2xs text-fg-subtle">
+            <span className="rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-2xs text-fg-subtle">
               Live Preview
             </span>
           )}
@@ -75,7 +75,7 @@ export default function PreviewPanel() {
             <button
               type="button"
               onClick={() => setReloadKey((k) => k + 1)}
-              className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="flex items-center gap-1 rounded-sm px-2 py-1 text-ui-xs text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default"
             >
               <ArrowsClockwise size={14} />
               Reload
@@ -85,7 +85,7 @@ export default function PreviewPanel() {
             <button
               type="button"
               onClick={() => setShowRaw((v) => !v)}
-              className="rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="rounded-sm px-2 py-1 text-ui-xs text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default"
             >
               {showRaw ? "Preview" : "Raw"}
             </button>
@@ -93,7 +93,7 @@ export default function PreviewPanel() {
           <button
             type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="flex items-center gap-1 rounded-sm px-2 py-1 text-ui-xs text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default"
           >
             {copied ? <Check size={14} className="text-status-success" /> : <Copy size={14} />}
             {copied ? "Copied" : "Copy"}
@@ -106,7 +106,7 @@ export default function PreviewPanel() {
             key={reloadKey}
             title={`Preview: ${fileName}`}
             srcDoc={source}
-            className="h-full w-full rounded border border-border bg-white"
+            className="h-full w-full rounded-sm border border-border bg-white"
             sandbox="allow-scripts"
           />
         ) : markdown && !showRaw ? (
@@ -118,7 +118,7 @@ export default function PreviewPanel() {
             {source}
           </Streamdown>
         ) : (
-          <pre className="h-full w-full overflow-auto rounded border border-border bg-bg-surface p-3 font-mono text-ui-sm text-fg-default">
+          <pre className="h-full w-full overflow-auto rounded-sm border border-border bg-bg-surface p-3 font-mono text-ui-sm text-fg-default">
             {source || "(empty file)"}
           </pre>
         )}

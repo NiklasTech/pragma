@@ -57,7 +57,7 @@ export function Layout() {
                   id="sidebar"
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
-                  minSize={`${180}px`}
+                  minSize={`var(--chrome-sidebar-min-w)`}
                   onResize={handleSidebarResize}
                 >
                   <SidebarContent />
@@ -77,7 +77,7 @@ export function Layout() {
                   id="sidebar"
                   ref={sidebarRef}
                   defaultSize={`${sidebar.width}px`}
-                  minSize={`${180}px`}
+                  minSize={`var(--chrome-sidebar-min-w)`}
                   onResize={handleSidebarResize}
                 >
                   <SidebarContent />

@@ -67,7 +67,7 @@ export default function ProblemsPanel() {
           type="button"
           onClick={() => void refreshProblems()}
           disabled={isLoading}
-          className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-50"
+          className="flex items-center gap-1 rounded-sm px-2 py-1 text-ui-xs text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default disabled:opacity-50"
         >
           <ArrowsClockwise size={14} className={cn(isLoading && "animate-spin")} />
           Refresh
@@ -89,7 +89,7 @@ export default function ProblemsPanel() {
                   <button
                     type="button"
                     onClick={() => handleClick(problem.filePath, problem.line, problem.column)}
-                    className="flex w-full items-start gap-3 px-3 py-2 text-left transition-colors hover:bg-bg-hover"
+                    className="flex w-full items-start gap-3 px-3 py-2 text-left transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover"
                   >
                     <Icon size={16} className={cn("mt-0.5 shrink-0", config.color)} />
                     <div className="min-w-0 flex-1">
@@ -99,7 +99,7 @@ export default function ProblemsPanel() {
                         <span className="truncate">
                           {problem.filePath}:{problem.line}:{problem.column}
                         </span>
-                        <span className="rounded bg-bg-hover px-1 text-ui-2xs text-fg-subtle">
+                        <span className="rounded-sm bg-bg-hover px-1 text-ui-2xs text-fg-subtle">
                           {problem.source}
                         </span>
                       </p>

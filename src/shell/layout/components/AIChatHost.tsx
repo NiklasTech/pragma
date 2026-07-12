@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Robot } from "@phosphor-icons/react";
+import { Robot, X } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { useLayoutStore } from "../store";
 import { FloatingWindow } from "./FloatingWindow";
@@ -104,22 +104,15 @@ export function AIChatHost() {
           className={cn("top-0 bottom-0 w-1 cursor-ew-resize", isLeft ? "right-0" : "left-0")}
           onResize={(delta) => setAISize(ai.size + (isLeft ? delta : -delta))}
         />
-        <div className="flex shrink-0 items-center gap-2 px-3 py-2 border-b border-border/60">
+        <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/40 bg-bg-surface px-3">
           <AIHeader />
           <button
             type="button"
             onClick={() => setAIMode("hidden")}
-            className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+            className="ml-auto rounded-md p-1 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
             aria-label="Close"
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M1 1L11 11M11 1L1 11"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
+            <X size={14} weight="bold" />
           </button>
         </div>
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -139,22 +132,15 @@ export function AIChatHost() {
         className="left-0 right-0 top-0 h-1 cursor-ns-resize"
         onResize={(delta) => setAISize(ai.size + delta)}
       />
-      <div className="flex shrink-0 items-center gap-2 px-3 py-2 border-b border-border/60">
+      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/40 bg-bg-surface px-3">
         <AIHeader />
         <button
           type="button"
           onClick={() => setAIMode("hidden")}
-          className="ml-auto rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+          className="ml-auto rounded-md p-1 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
           aria-label="Close"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path
-              d="M1 1L11 11M11 1L1 11"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <X size={14} weight="bold" />
         </button>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">

@@ -51,8 +51,11 @@ function DockTabButton({
       aria-pressed={isActive}
       onClick={() => onSelect(tab.id)}
       className={cn(
-        "relative flex size-9 items-center justify-center rounded-lg outline-none transition-all duration-fast",
-        isActive ? "text-fg-default" : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+        "relative flex size-9 items-center justify-center rounded-lg outline-none",
+        "transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
+        "hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40",
+        "active:scale-[0.92]",
+        isActive ? "text-fg-default" : "text-fg-muted hover:text-fg-default",
       )}
       title={`${tab.label} (Ctrl+Shift+${index + 1})`}
     >
@@ -61,7 +64,7 @@ function DockTabButton({
           className={cn(
             "absolute top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary",
             "shadow-[0_0_6px_var(--color-accent-glow)]",
-            "animate-in fade-in duration-150",
+            "animate-in fade-in duration-[var(--motion-fast)]",
             isRight ? "right-0" : "left-0",
           )}
         />
@@ -69,7 +72,7 @@ function DockTabButton({
       <tab.icon
         size={20}
         weight={isActive ? "duotone" : "regular"}
-        className="shrink-0 transition-all duration-fast"
+        className="shrink-0 transition-all duration-[var(--motion-fast)]"
       />
     </button>
   );
@@ -148,8 +151,10 @@ export function SidebarDock() {
         onClick={() => setSidebarCollapsed(!sidebar.collapsed)}
         className={cn(
           "flex size-9 items-center justify-center rounded-lg outline-none",
-          "text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-muted",
+          "text-fg-subtle transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
+          "hover:bg-bg-hover hover:text-fg-muted",
           "focus-visible:ring-2 focus-visible:ring-primary/40",
+          "active:scale-[0.92]",
         )}
         title={sidebar.collapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
       >
