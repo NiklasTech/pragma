@@ -92,7 +92,7 @@ export function EditorSettings() {
           description="Modal keybindings for the editor"
           control={
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-ui-xs text-primary">
+              <span className="rounded-full border border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-1.5 py-0.5 text-ui-xs text-primary">
                 Experimental
               </span>
               <Switch

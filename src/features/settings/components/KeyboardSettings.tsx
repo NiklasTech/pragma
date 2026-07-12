@@ -121,7 +121,7 @@ function RecorderDialog({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">
-          <div className="flex min-h-[48px] items-center justify-center rounded-md border border-border/60 bg-bg-hover px-4 py-2 font-mono text-ui-base">
+          <div className="flex min-h-[48px] items-center justify-center rounded-md border border-border bg-bg-hover px-4 py-2 font-mono text-ui-base">
             {displayBinding ? formatShortcut(displayBinding, isMac) : "Press a shortcut..."}
           </div>
 
@@ -138,7 +138,12 @@ function RecorderDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             Cancel
           </Button>
           <Button
@@ -148,6 +153,7 @@ function RecorderDialog({
               onSave(null);
               onOpenChange(false);
             }}
+            className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Clear
           </Button>
@@ -160,6 +166,7 @@ function RecorderDialog({
                 onOpenChange(false);
               }
             }}
+            className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Save
           </Button>
@@ -193,7 +200,12 @@ export function KeyboardSettings() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <p className="text-ui-sm text-fg-muted">Shortcuts are active immediately after saving.</p>
-        <Button variant="outline" size="sm" onClick={resetAllShortcuts}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={resetAllShortcuts}
+          className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           Reset all
         </Button>
       </div>
@@ -221,6 +233,7 @@ export function KeyboardSettings() {
                       size="icon-xs"
                       onClick={() => setRecordingId(action.id)}
                       aria-label={`Change shortcut for ${action.label}`}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       <Pencil size={14} />
                     </Button>
@@ -230,6 +243,7 @@ export function KeyboardSettings() {
                         size="icon-xs"
                         onClick={() => resetShortcut(action.id)}
                         aria-label={`Reset shortcut for ${action.label}`}
+                        className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <ArrowCounterClockwise size={14} />
                       </Button>

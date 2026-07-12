@@ -291,7 +291,7 @@ export function AISettings() {
           }
         />
 
-        <div className="flex items-center justify-between rounded-md border border-border/30 bg-bg-root px-3 py-2">
+        <div className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-root px-3 py-2">
           <div className="flex items-center gap-2">
             <span
               className={`size-2 rounded-full ${configured ? "bg-status-success" : "bg-fg-subtle"}`}
@@ -361,16 +361,26 @@ export function AISettings() {
                     <button
                       type="button"
                       onClick={() => setShowKey((s) => !s)}
-                      className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
+                      className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-fg-default"
                     >
                       {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
-                  <Button size="sm" onClick={handleSaveKey} disabled={!keyInput.trim()}>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveKey}
+                    disabled={!keyInput.trim()}
+                    className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
                     <FloppyDisk size={14} />
                   </Button>
                   {apiKeyRef && (
-                    <Button size="sm" variant="destructive" onClick={handleDeleteKey}>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDeleteKey}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
                       <Trash size={14} />
                     </Button>
                   )}
@@ -398,7 +408,7 @@ export function AISettings() {
         )}
 
         {activeProvider === "copilot" && (
-          <div className="flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3">
+          <div className="flex flex-col gap-3 rounded-md border border-border-subtle bg-bg-root p-3">
             <div className="flex flex-col gap-1.5">
               <span className="text-ui-sm text-fg-default">GitHub OAuth Client ID</span>
               <span className="text-ui-xs text-fg-muted">
@@ -425,6 +435,7 @@ export function AISettings() {
                   variant="outline"
                   onClick={handleCopilotDisconnect}
                   disabled={copilotPolling}
+                  className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <SignOut size={14} className="mr-1" />
                   Disconnect
@@ -435,6 +446,7 @@ export function AISettings() {
                 size="sm"
                 onClick={handleCopilotConnect}
                 disabled={!copilotClientIdInput.trim() || copilotPolling}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <SignIn size={14} className="mr-1" />
                 {copilotPolling ? "Waiting for authorization..." : "Connect GitHub Account"}
@@ -446,7 +458,7 @@ export function AISettings() {
                 <span className="text-ui-xs text-fg-muted">
                   Enter this code on GitHub if the browser did not open:
                 </span>
-                <code className="rounded bg-bg-surface px-2 py-1 text-center text-sm font-mono">
+                <code className="rounded bg-bg-surface px-2 py-1 text-center text-ui-sm font-mono">
                   {copilotUserCode}
                 </code>
                 <Button
@@ -454,6 +466,7 @@ export function AISettings() {
                   variant="outline"
                   onClick={handleOpenVerificationUrl}
                   disabled={copilotPolling}
+                  className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   Open GitHub
                 </Button>
@@ -470,6 +483,7 @@ export function AISettings() {
             variant="outline"
             onClick={handleTest}
             disabled={testStatus === "loading" || !configured}
+            className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {testStatus === "loading" ? "Testing..." : "Test Connection"}
           </Button>
@@ -481,7 +495,7 @@ export function AISettings() {
         title="Local CLI Integration"
         badge={{ label: "Experimental", variant: "warning" }}
       >
-        <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
+        <div className="mb-3 flex items-center justify-between rounded-md border border-border-subtle bg-bg-root p-3">
           <div className="flex flex-col">
             <span className="text-ui-sm font-medium text-fg-default">
               Enable local CLI integration
@@ -515,7 +529,7 @@ export function AISettings() {
           </p>
 
           {aiStore.cliManifests.length === 0 && (
-            <p className="text-sm text-fg-muted">Loading providers...</p>
+            <p className="text-ui-sm text-fg-muted">Loading providers...</p>
           )}
 
           {aiStore.cliManifests.map((manifest) => {
@@ -527,22 +541,22 @@ export function AISettings() {
             return (
               <div
                 key={manifest.id}
-                className={`flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3 ${isActive ? "ring-1 ring-primary" : ""}`}
+                className={`flex flex-col gap-3 rounded-md border border-border-subtle bg-bg-root p-3 ${isActive ? "ring-1 ring-primary" : ""}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)]">
                     <Robot size={16} className="text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{manifest.name}</span>
+                      <span className="text-ui-sm font-medium">{manifest.name}</span>
                       {status?.installed && (
-                        <span className="rounded-full bg-status-success/10 px-1.5 py-0.5 text-ui-xs text-status-success">
+                        <span className="rounded-full bg-[var(--color-status-success-bg)] px-1.5 py-0.5 text-ui-xs text-status-success">
                           Installed
                         </span>
                       )}
                       {status?.authenticated && (
-                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-ui-xs text-primary">
+                        <span className="rounded-full bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] px-1.5 py-0.5 text-ui-xs text-primary">
                           Connected
                         </span>
                       )}
@@ -564,6 +578,7 @@ export function AISettings() {
                       variant="outline"
                       onClick={() => handleInstallCLI(manifest.id)}
                       disabled={isInstalling}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       <DownloadSimple size={14} className="mr-1" />
                       {isInstalling ? "Installing..." : "Install Official CLI"}
@@ -576,6 +591,7 @@ export function AISettings() {
                       variant="outline"
                       onClick={() => handleLoginCLI(manifest.id)}
                       disabled={isLoggingIn}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       <SignIn size={14} className="mr-1" />
                       {isLoggingIn ? "Opening login..." : "Login with CLI"}
@@ -588,6 +604,7 @@ export function AISettings() {
                         size="sm"
                         variant={isActive ? "default" : "outline"}
                         onClick={() => handleSelectCLI(manifest.id)}
+                        className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         {isActive ? "Active" : "Use This"}
                       </Button>
@@ -595,6 +612,7 @@ export function AISettings() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleLogoutCLI(manifest.id)}
+                        className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <SignOut size={14} className="mr-1" />
                         Disconnect

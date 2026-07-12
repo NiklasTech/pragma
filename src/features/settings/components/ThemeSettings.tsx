@@ -9,6 +9,7 @@ import { validateTheme } from "@/theme/validateTheme";
 import type { Theme, ThemeInput } from "@/theme/types";
 import { Check, Trash, UploadSimple } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
+import { ColorSwatch } from "@/shared/components/ui/color-swatch";
 import { SettingSection } from "./ui/SettingSection";
 
 function getThemePreviewColors(theme: Theme): [string, string, string, string] {
@@ -59,7 +60,12 @@ export function ThemeSettings() {
     <div className="flex flex-col gap-6">
       <SettingSection title="Built-in Themes">
         <div className="mb-2 flex justify-end">
-          <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={handleImport}
+            className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             <UploadSimple size={14} />
             Import Theme
           </Button>
@@ -110,10 +116,10 @@ function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
       type="button"
       onClick={onSelect}
       className={cn(
-        "flex flex-col gap-2 rounded-md border p-3 text-left transition-colors",
+        "flex flex-col gap-2 rounded-md border p-3 text-left transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         active
           ? "border-transparent ring-2 ring-primary"
-          : "border-border/30 bg-bg-root hover:border-border hover:bg-bg-hover",
+          : "border-border-subtle bg-bg-root hover:border-border hover:bg-bg-hover",
       )}
     >
       <div className="flex items-center justify-between gap-2">
@@ -140,7 +146,7 @@ function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
                 onDelete();
               }
             }}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-muted hover:bg-bg-hover hover:text-status-error"
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:bg-bg-hover hover:text-status-error"
           >
             <Trash size={12} />
           </span>
@@ -153,14 +159,5 @@ function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
         <ColorSwatch color={accent} />
       </div>
     </button>
-  );
-}
-
-function ColorSwatch({ color }: { color: string }) {
-  return (
-    <span
-      className="size-4 rounded-full border border-border/30"
-      style={{ backgroundColor: color }}
-    />
   );
 }

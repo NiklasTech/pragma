@@ -49,9 +49,9 @@ export function Onboarding() {
   const isLastStep = currentStep === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-root/95 p-6 backdrop-blur-sm">
-      <div className="flex w-full max-w-xl flex-col rounded-xl border border-border/60 bg-bg-surface shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--color-bg-root)_95%,transparent)] p-6 backdrop-blur-sm">
+      <div className="flex w-full max-w-xl flex-col rounded-xl border border-border bg-bg-surface shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex gap-2">
             {STEPS.map((step, index) => (
               <div
@@ -59,7 +59,8 @@ export function Onboarding() {
                 className={cn(
                   "h-2 w-2 rounded-full transition-colors",
                   index === currentStep ? "bg-primary" : "bg-border",
-                  index < currentStep && "bg-primary/60",
+                  index < currentStep &&
+                    "bg-[color-mix(in_srgb,var(--color-primary)_60%,transparent)]",
                 )}
                 title={step.title}
               />
@@ -79,19 +80,33 @@ export function Onboarding() {
           {currentStep === 5 && <LanguagesStep />}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border/60 px-6 py-4">
-          <Button variant="ghost" size="sm" onClick={handleSkip}>
+        <div className="flex items-center justify-between border-t border-border px-6 py-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSkip}
+            className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             Skip onboarding
           </Button>
 
           <div className="flex gap-2">
             {currentStep > 0 && (
-              <Button variant="outline" size="sm" onClick={handleBack}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBack}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 Back
               </Button>
             )}
             {currentStep === 0 ? null : (
-              <Button size="sm" onClick={handleNext}>
+              <Button
+                size="sm"
+                onClick={handleNext}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 {isLastStep ? "Finish" : "Next"}
               </Button>
             )}

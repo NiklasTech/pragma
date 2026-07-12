@@ -38,7 +38,7 @@ export function ShortcutsStep() {
   return (
     <div className="flex flex-col gap-5">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold text-fg-default">Keyboard shortcuts</h2>
+        <h2 className="text-ui-lg font-semibold text-fg-default">Keyboard shortcuts</h2>
         <p className="text-ui-sm text-fg-muted">
           You can customize these anytime in Settings → Keyboard.
         </p>
@@ -48,7 +48,7 @@ export function ShortcutsStep() {
         {items.map(({ id, label, shortcut }) => (
           <div
             key={id}
-            className="flex items-center justify-between rounded-md border border-border/30 px-4 py-2.5"
+            className="flex items-center justify-between rounded-md border border-border-subtle px-4 py-2.5"
           >
             <span className="text-ui-sm text-fg-default">{label}</span>
             <KbdGroup>

@@ -312,7 +312,7 @@ export function Settings() {
     <TooltipProvider>
       <div className="flex h-full flex-col">
         <div className="flex min-h-0 flex-1 gap-0">
-          <div className="flex w-[200px] shrink-0 flex-col overflow-hidden border-r border-border/30">
+          <div className="flex w-[200px] shrink-0 flex-col overflow-hidden border-r border-border-subtle">
             <div className="relative shrink-0 p-3 pb-2">
               <MagnifyingGlass
                 size={14}
@@ -326,14 +326,14 @@ export function Settings() {
               />
 
               {(filteredItems.length > 0 || query.trim()) && (
-                <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
+                <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-md border border-border bg-bg-surface p-1 shadow-lg">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectCategory(item.category)}
-                        className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                        className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:bg-bg-hover"
                       >
                         <span className="text-ui-sm text-fg-default">{item.label}</span>
                         <span className="text-ui-xs text-fg-subtle">
@@ -359,7 +359,7 @@ export function Settings() {
                       type="button"
                       onClick={() => handleSelectCategory(category.id)}
                       className={cn(
-                        "flex items-center gap-2 border-l-2 px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
+                        "flex items-center gap-2 border-l-2 px-2.5 py-1.5 text-left text-ui-sm font-medium transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                         active
                           ? "border-primary text-fg-default"
                           : "border-transparent text-fg-muted hover:text-fg-default",
@@ -373,11 +373,16 @@ export function Settings() {
               </div>
             </ScrollArea>
 
-            <div className="flex shrink-0 items-center justify-between border-t border-border/30 p-2">
+            <div className="flex shrink-0 items-center justify-between border-t border-border-subtle p-2">
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <Button variant="ghost" size="icon-xs" onClick={handleExport}>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={handleExport}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
                       <DownloadSimple size={14} />
                     </Button>
                   }
@@ -388,7 +393,12 @@ export function Settings() {
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <Button variant="ghost" size="icon-xs" onClick={handleImport}>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={handleImport}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
                       <UploadSimple size={14} />
                     </Button>
                   }
@@ -405,7 +415,7 @@ export function Settings() {
                           <Button
                             variant="ghost"
                             size="icon-xs"
-                            className="text-fg-muted hover:text-status-error"
+                            className="text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-status-error"
                           >
                             <ArrowCounterClockwise size={14} />
                           </Button>
@@ -436,12 +446,12 @@ export function Settings() {
             <ScrollArea className="min-h-0 flex-1">
               <div className="p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-heading text-sm font-semibold text-fg-default">
+                  <h2 className="font-heading text-ui-sm font-semibold text-fg-default">
                     {activeLabel}
                   </h2>
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1 text-ui-xs text-status-success transition-opacity duration-200",
+                      "inline-flex items-center gap-1 text-ui-xs text-status-success transition-opacity duration-[var(--motion-base)]",
                       saveIndicator === "saved" ? "opacity-100" : "opacity-0",
                     )}
                     aria-live="polite"

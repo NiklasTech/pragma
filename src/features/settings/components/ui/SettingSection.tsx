@@ -14,10 +14,10 @@ interface SettingSectionProps {
 }
 
 const BADGE_COLORS: Record<NonNullable<SettingSectionBadge["variant"]>, string> = {
-  default: "bg-primary/10 text-primary",
-  warning: "bg-status-warning/10 text-status-warning",
-  success: "bg-status-success/10 text-status-success",
-  error: "bg-status-error/10 text-status-error",
+  default: "bg-[color-mix(in_srgb,var(--color-primary)_10%,transparent)] text-primary",
+  warning: "bg-[var(--color-status-warning-bg)] text-status-warning",
+  success: "bg-[var(--color-status-success-bg)] text-status-success",
+  error: "bg-[var(--color-status-error-bg)] text-status-error",
 };
 
 export function SettingSection({ title, children, badge }: SettingSectionProps) {
@@ -33,7 +33,7 @@ export function SettingSection({ title, children, badge }: SettingSectionProps) 
           </span>
         )}
       </div>
-      <Separator className="my-2 bg-border/30" />
+      <Separator className="my-2 bg-border-subtle" />
       <div className="flex flex-col">{children}</div>
     </div>
   );

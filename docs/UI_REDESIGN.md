@@ -114,9 +114,9 @@ Use the radius scale consistently. Avoid arbitrary `rounded-[4px]` values.
 
 Use a consistent elevation hierarchy for borders:
 
-- Primary separators: `border-border` or `border-border/60`
-- Secondary/separators: `border-border/40`
-- Subtle dividers: `border-border/20`
+- Primary separators: `border-border`
+- Secondary/separators: `border-border-subtle`
+- For custom alpha blends, prefer `border-[color-mix(in_srgb,var(--color-*)_X%,transparent)]` instead of one-off opacity utilities.
 
 Avoid one-off opacities like `border-border/37`.
 
@@ -141,6 +141,12 @@ import { Gear } from "@phosphor-icons/react";
 
 <Gear size={16} weight="bold" />;
 ```
+
+## Shared Components
+
+Reusable UI primitives that are shared across settings and onboarding live in `src/shared/components/ui/`:
+
+- `ColorSwatch` — a small, token-styled color preview used by theme pickers in both `ThemeSettings` and the onboarding `ThemeStep`.
 
 ## shadcn/ui Path
 

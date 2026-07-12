@@ -94,7 +94,7 @@ export function LspSettings() {
         title="Language Servers"
         badge={{ label: "Experimental", variant: "warning" }}
       >
-        <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
+        <div className="mb-3 flex items-center justify-between rounded-md border border-border-subtle bg-bg-root p-3">
           <div className="flex flex-col">
             <span className="text-ui-sm font-medium text-fg-default">Enable language servers</span>
             <span className="text-ui-xs text-fg-muted">
@@ -109,7 +109,12 @@ export function LspSettings() {
         </div>
 
         <div className="mb-2 flex justify-end">
-          <Button size="xs" variant="outline" onClick={checkAll} className="gap-1">
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={checkAll}
+            className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             <ArrowClockwise size={14} />
             Refresh status
           </Button>
@@ -136,7 +141,7 @@ export function LspSettings() {
             return (
               <div
                 key={language}
-                className="flex flex-col gap-2 border-b border-border/30 py-3 last:border-b-0"
+                className="flex flex-col gap-2 border-b border-border-subtle py-3 last:border-b-0"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -162,6 +167,7 @@ export function LspSettings() {
                         size="icon-xs"
                         title="Open homepage"
                         onClick={() => handleOpenHomepage(definition.homepage)}
+                        className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <Globe size={14} />
                       </Button>
@@ -175,7 +181,7 @@ export function LspSettings() {
                 </div>
 
                 {!isInstalled && (
-                  <div className="flex flex-col gap-2 rounded-md border border-border/30 bg-bg-root p-2">
+                  <div className="flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-root p-2">
                     <div className="flex items-start gap-2">
                       <code className="flex-1 whitespace-pre-wrap break-all font-mono text-ui-xs text-fg-muted">
                         {definition.installCommand}
@@ -185,6 +191,7 @@ export function LspSettings() {
                         size="icon-xs"
                         title="Copy install command"
                         onClick={() => handleCopy(language, definition.installCommand)}
+                        className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         {copied === language ? <Check size={14} /> : <Copy size={14} />}
                       </Button>
@@ -193,7 +200,7 @@ export function LspSettings() {
                       <Button
                         size="xs"
                         variant="secondary"
-                        className="min-w-[120px] justify-center gap-1 self-start"
+                        className="min-w-[120px] justify-center gap-1 self-start transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                         disabled={installing[language]}
                         onClick={() => handleInstall(language)}
                       >

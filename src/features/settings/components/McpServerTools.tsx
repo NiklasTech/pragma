@@ -18,7 +18,7 @@ export function McpServerTools({ tools }: McpServerToolsProps) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center gap-1 text-ui-xs text-fg-muted transition-colors hover:text-fg-default">
+      <CollapsibleTrigger className="flex items-center gap-1 text-ui-xs text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-fg-default">
         <Wrench size={12} />
         <span>
           {tools.length} tool{tools.length === 1 ? "" : "s"}
@@ -31,7 +31,10 @@ export function McpServerTools({ tools }: McpServerToolsProps) {
             <p className="text-ui-xs text-fg-subtle">No tools available.</p>
           ) : (
             tools.map((tool) => (
-              <div key={tool.name} className="rounded-md border border-border/30 bg-bg-root p-2">
+              <div
+                key={tool.name}
+                className="rounded-md border border-border-subtle bg-bg-root p-2"
+              >
                 <p className="font-medium text-ui-xs text-fg-default">{tool.name}</p>
                 {tool.description && (
                   <p className="mt-0.5 text-ui-xs text-fg-muted">{tool.description}</p>

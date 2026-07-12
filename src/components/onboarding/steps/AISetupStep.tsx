@@ -85,7 +85,7 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
   return (
     <div className="flex flex-col gap-5">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold text-fg-default">Set up AI (optional)</h2>
+        <h2 className="text-ui-lg font-semibold text-fg-default">Set up AI (optional)</h2>
         <p className="text-ui-sm text-fg-muted">
           Choose a provider and enter an API key to enable inline completions and chat.
         </p>
@@ -168,13 +168,18 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
                 <button
                   type="button"
                   onClick={() => setShowKey((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-fg-default"
                   tabIndex={-1}
                 >
                   {showKey ? <EyeSlash size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              <Button variant="outline" onClick={handleSaveKey} disabled={!keyInput.trim()}>
+              <Button
+                variant="outline"
+                onClick={handleSaveKey}
+                disabled={!keyInput.trim()}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 Save
               </Button>
             </div>
@@ -186,7 +191,7 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
       <button
         type="button"
         onClick={onSkipStep}
-        className="self-center text-ui-sm text-fg-muted underline-offset-4 hover:text-fg-default hover:underline"
+        className="self-center text-ui-sm text-fg-muted underline-offset-4 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-fg-default hover:underline"
       >
         Skip AI setup
       </button>

@@ -36,7 +36,11 @@ export function LayoutSettings() {
             <AlertDialog>
               <AlertDialogTrigger
                 render={
-                  <Button variant="destructive" size="sm" className="gap-1">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  >
                     <ArrowCounterClockwise size={14} />
                     Reset to {presetLabels[defaultPresetId]?.name ?? defaultPresetId}
                   </Button>

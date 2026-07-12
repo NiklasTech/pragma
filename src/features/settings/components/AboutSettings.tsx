@@ -151,12 +151,12 @@ export function AboutSettings() {
               className="h-12 w-12 rounded-lg bg-bg-surface p-1.5"
             />
             <div className="flex flex-col">
-              <span className="font-heading text-sm font-semibold text-fg-default">Pragma</span>
+              <span className="font-heading text-ui-sm font-semibold text-fg-default">Pragma</span>
               <span className="text-ui-xs text-fg-muted">Local-first AI coding environment</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-md border border-border/30 bg-bg-root px-3 py-2">
+          <div className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-root px-3 py-2">
             <div className="flex flex-col">
               <span className="text-ui-sm text-fg-default">Version</span>
               <span className="font-mono text-ui-xs text-fg-muted">{version ?? "Loading..."}</span>
@@ -166,7 +166,7 @@ export function AboutSettings() {
               variant="ghost"
               onClick={handleCopyVersion}
               disabled={!version}
-              className="gap-1"
+              className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? "Copied" : "Copy"}
@@ -182,7 +182,7 @@ export function AboutSettings() {
             <button
               type="button"
               onClick={() => handleOpenUrl(`https://github.com/${GITHUB_OWNER}`)}
-              className="inline-flex items-center gap-0.5 text-primary hover:underline"
+              className="inline-flex items-center gap-0.5 text-primary transition-colors duration-[var(--motion-fast)] ease-[var(--motion-ease)] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:underline"
             >
               {GITHUB_OWNER}
               <ArrowSquareOut size={10} />
@@ -194,7 +194,7 @@ export function AboutSettings() {
             <button
               type="button"
               onClick={() => handleOpenUrl(`${REPO_URL}/blob/main/LICENSE`)}
-              className="inline-flex items-center gap-0.5 text-primary hover:underline"
+              className="inline-flex items-center gap-0.5 text-primary transition-colors duration-[var(--motion-fast)] ease-[var(--motion-ease)] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:underline"
             >
               Apache License 2.0
               <ArrowSquareOut size={10} />
@@ -226,9 +226,9 @@ export function AboutSettings() {
           {licensesError && <div className="text-ui-xs text-status-error">{licensesError}</div>}
 
           {!licensesLoading && !licensesError && (
-            <div className="rounded-md border border-border/30 bg-bg-root">
+            <div className="rounded-md border border-border-subtle bg-bg-root">
               <ScrollArea className="h-64">
-                <ul className="divide-y divide-border/30">
+                <ul className="divide-y divide-border-subtle">
                   {licenses.map((entry) => (
                     <li
                       key={`${entry.source}:${entry.name}@${entry.version}`}
@@ -243,7 +243,7 @@ export function AboutSettings() {
                       <button
                         type="button"
                         onClick={() => handleOpenUrl(entry.url)}
-                        className="shrink-0 text-fg-muted hover:text-fg-default"
+                        className="shrink-0 text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-fg-default"
                         aria-label={`Open registry page for ${entry.name}`}
                       >
                         <ArrowSquareOut size={12} />
@@ -267,6 +267,7 @@ export function AboutSettings() {
               size="sm"
               onClick={handleCheckForUpdates}
               disabled={updateStatus.state === "checking" || !version}
+              className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {updateStatus.state === "checking" ? (
                 <Spinner size={14} className="mr-1 animate-spin" />
@@ -275,7 +276,12 @@ export function AboutSettings() {
               )}
               {updateStatus.state === "checking" ? "Checking..." : "Check for Updates"}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handleOpenUrl(REPO_URL)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleOpenUrl(REPO_URL)}
+              className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
               <GithubLogo size={14} className="mr-1" />
               View on GitHub
             </Button>
@@ -289,7 +295,7 @@ export function AboutSettings() {
           )}
 
           {updateStatus.state === "available" && (
-            <div className="flex flex-col gap-2 rounded-md border border-status-warning/30 bg-status-warning/10 p-3">
+            <div className="flex flex-col gap-2 rounded-md border border-[color-mix(in_srgb,var(--color-status-warning)_30%,transparent)] bg-[var(--color-status-warning-bg)] p-3">
               <div className="flex items-center gap-1.5 text-ui-xs text-status-warning">
                 <WarningCircle size={14} />
                 Version {updateStatus.version} is available.
@@ -298,7 +304,7 @@ export function AboutSettings() {
                 size="sm"
                 variant="outline"
                 onClick={() => handleOpenUrl(updateStatus.url)}
-                className="w-fit"
+                className="w-fit transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <ArrowSquareOut size={14} className="mr-1" />
                 Download {updateStatus.version}

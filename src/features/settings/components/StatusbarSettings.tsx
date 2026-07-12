@@ -76,7 +76,7 @@ export function StatusbarSettings() {
           {statusbar.items.map((item, index) => (
             <div
               key={item}
-              className="flex items-center justify-between gap-2 border-b border-border/30 py-1.5 last:border-b-0"
+              className="flex items-center justify-between gap-2 border-b border-border-subtle py-1.5 last:border-b-0"
             >
               <span className="text-ui-sm text-fg-default">{ITEM_LABELS[item]}</span>
               <div className="flex items-center gap-0.5">
@@ -85,7 +85,7 @@ export function StatusbarSettings() {
                   onClick={() => moveItem(index, -1)}
                   disabled={index === 0}
                   className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default",
+                    "flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:bg-bg-hover hover:text-fg-default",
                     index === 0 && "opacity-40",
                   )}
                   aria-label={`Move ${ITEM_LABELS[item]} up`}
@@ -97,7 +97,7 @@ export function StatusbarSettings() {
                   onClick={() => moveItem(index, 1)}
                   disabled={index === statusbar.items.length - 1}
                   className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default",
+                    "flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:bg-bg-hover hover:text-fg-default",
                     index === statusbar.items.length - 1 && "opacity-40",
                   )}
                   aria-label={`Move ${ITEM_LABELS[item]} down`}
@@ -124,10 +124,10 @@ export function StatusbarSettings() {
                 type="button"
                 onClick={() => toggleItem(item)}
                 className={cn(
-                  "rounded-md border px-2.5 py-1 text-ui-xs transition-colors",
+                  "rounded-md border px-2.5 py-1 text-ui-xs transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   active
-                    ? "border-primary/50 bg-accent-subtle text-primary"
-                    : "border-border/30 bg-bg-root text-fg-muted hover:border-border hover:text-fg-default",
+                    ? "border-[color-mix(in_srgb,var(--color-primary)_50%,transparent)] bg-accent-subtle text-primary"
+                    : "border-border-subtle bg-bg-root text-fg-muted hover:border-border hover:text-fg-default",
                 )}
               >
                 {ITEM_LABELS[item]}
@@ -138,7 +138,12 @@ export function StatusbarSettings() {
       </div>
 
       <div className="flex justify-start py-2.5">
-        <Button variant="outline" size="sm" onClick={reset} className="gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={reset}
+          className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           <ArrowCounterClockwise size={12} />
           Reset to Default
         </Button>

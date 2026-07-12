@@ -142,7 +142,7 @@ export function LanguagesStep() {
     return (
       <div className="flex flex-col gap-6">
         <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-semibold text-fg-default">Language servers</h2>
+          <h2 className="text-ui-lg font-semibold text-fg-default">Language servers</h2>
           <p className="text-ui-sm text-fg-muted">
             Language server support is currently experimental and disabled. You can enable it below
             or later in Settings → Languages.
@@ -172,7 +172,7 @@ export function LanguagesStep() {
     return (
       <div className="flex flex-col gap-6">
         <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-semibold text-fg-default">Language servers</h2>
+          <h2 className="text-ui-lg font-semibold text-fg-default">Language servers</h2>
           <p className="text-ui-sm text-fg-muted">
             No supported languages were detected in this project. You can still enable language
             servers later in Settings → Languages.
@@ -185,7 +185,7 @@ export function LanguagesStep() {
   return (
     <div className="flex flex-col gap-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold text-fg-default">Set up language servers</h2>
+        <h2 className="text-ui-lg font-semibold text-fg-default">Set up language servers</h2>
         <p className="text-ui-sm text-fg-muted">
           We detected the following languages in your project. Enable the ones you want Pragma to
           analyze and install any missing servers.
@@ -202,7 +202,7 @@ export function LanguagesStep() {
           return (
             <div
               key={language}
-              className="flex flex-col gap-2 rounded-md border border-border/30 bg-bg-root p-3"
+              className="flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-root p-3"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -227,6 +227,7 @@ export function LanguagesStep() {
                       size="icon-xs"
                       title="Recheck"
                       onClick={() => handleRecheck(language)}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       <ArrowClockwise size={14} />
                     </Button>
@@ -240,7 +241,7 @@ export function LanguagesStep() {
               </div>
 
               {!isInstalled && (
-                <div className="flex flex-col gap-2 rounded-md border border-border/30 bg-bg-surface p-2">
+                <div className="flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-surface p-2">
                   <div className="flex items-start gap-2">
                     <code className="flex-1 whitespace-pre-wrap break-all font-mono text-ui-xs text-fg-muted">
                       {definition.installCommand}
@@ -250,6 +251,7 @@ export function LanguagesStep() {
                       size="icon-xs"
                       title="Copy install command"
                       onClick={() => handleCopy(language, definition.installCommand)}
+                      className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
                       {copied === language ? <Check size={14} /> : <Copy size={14} />}
                     </Button>
@@ -258,7 +260,7 @@ export function LanguagesStep() {
                     <Button
                       size="xs"
                       variant="secondary"
-                      className="min-w-[120px] justify-center gap-1 self-start"
+                      className="min-w-[120px] justify-center gap-1 self-start transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       disabled={installing[language]}
                       onClick={() => handleInstall(language)}
                     >

@@ -56,7 +56,7 @@ export function ProjectStep({ onOpenFolder }: ProjectStepProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-semibold text-fg-default">Open a project</h2>
+        <h2 className="text-ui-lg font-semibold text-fg-default">Open a project</h2>
         <p className="text-ui-sm text-fg-muted">
           Open an existing folder or create a new project to start coding.
         </p>
@@ -66,7 +66,7 @@ export function ProjectStep({ onOpenFolder }: ProjectStepProps) {
         <Button
           variant="outline"
           size="lg"
-          className="h-auto justify-start gap-3 p-4"
+          className="h-auto justify-start gap-3 p-4 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           onClick={onOpenFolder}
         >
           <FolderOpen size={24} className="text-primary" />
@@ -79,7 +79,7 @@ export function ProjectStep({ onOpenFolder }: ProjectStepProps) {
         <Button
           variant="outline"
           size="lg"
-          className="h-auto justify-start gap-3 p-4"
+          className="h-auto justify-start gap-3 p-4 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           onClick={() => setCreateDialogOpen(true)}
         >
           <Plus size={24} className="text-primary" />

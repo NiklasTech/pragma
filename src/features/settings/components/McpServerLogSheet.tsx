@@ -69,6 +69,7 @@ export function McpServerLogSheet({
                 size="icon-xs"
                 title="Clear logs"
                 onClick={() => onClear(serverId)}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <Trash size={14} />
               </Button>
@@ -77,6 +78,7 @@ export function McpServerLogSheet({
                 size="icon-xs"
                 title="Close"
                 onClick={() => onOpenChange(false)}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <X size={14} />
               </Button>
@@ -84,7 +86,7 @@ export function McpServerLogSheet({
           </div>
         </SheetHeader>
 
-        <ScrollArea className="mt-4 min-h-0 flex-1 rounded-md border border-border/30 bg-bg-root">
+        <ScrollArea className="mt-4 min-h-0 flex-1 rounded-md border border-border-subtle bg-bg-root">
           <div ref={viewportRef} className="p-3 font-mono text-ui-xs">
             {logs.length === 0 ? (
               <p className="text-fg-muted">No logs yet.</p>
@@ -107,10 +109,16 @@ export function McpServerLogSheet({
 
 export function LogButton({ onClick, logCount }: { onClick: () => void; logCount: number }) {
   return (
-    <Button variant="ghost" size="icon-xs" title="View logs" onClick={onClick} className="relative">
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      title="View logs"
+      onClick={onClick}
+      className="relative transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
       <Scroll size={14} />
       {logCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-medium text-fg-inverse">
+        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-1 text-ui-2xs font-medium text-fg-inverse">
           {logCount > 99 ? "99+" : logCount}
         </span>
       )}

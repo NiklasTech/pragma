@@ -50,7 +50,7 @@ export function FontManagerDialog({ open, onOpenChange }: FontManagerDialogProps
                 variant="outline"
                 size="xs"
                 onClick={() => void importFontFile()}
-                className="gap-1"
+                className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <UploadSimple size={14} />
                 Import file
@@ -64,7 +64,7 @@ export function FontManagerDialog({ open, onOpenChange }: FontManagerDialogProps
                 return (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between gap-3 rounded-md border border-border/40 bg-bg-root px-3 py-2"
+                    className="flex items-center justify-between gap-3 rounded-md border border-border-subtle bg-bg-root px-3 py-2"
                   >
                     <div className="min-w-0">
                       <div className="text-ui-sm font-medium text-fg-default">{entry.name}</div>
@@ -81,7 +81,7 @@ export function FontManagerDialog({ open, onOpenChange }: FontManagerDialogProps
                         size="xs"
                         disabled={isDownloading}
                         onClick={() => void downloadFont(entry)}
-                        className="gap-1 shrink-0"
+                        className="gap-1 shrink-0 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         {isDownloading ? (
                           <>
@@ -115,7 +115,7 @@ export function FontManagerDialog({ open, onOpenChange }: FontManagerDialogProps
               {fonts.map((font) => (
                 <div
                   key={font.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border/40 bg-bg-root px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-border-subtle bg-bg-root px-3 py-2"
                 >
                   <div className="min-w-0">
                     <div className="text-ui-sm font-medium text-fg-default">{font.name}</div>
@@ -128,7 +128,7 @@ export function FontManagerDialog({ open, onOpenChange }: FontManagerDialogProps
                     size="icon-xs"
                     onClick={() => void deleteFont(font.id)}
                     title="Delete font"
-                    className="text-status-error hover:text-status-error"
+                    className="text-status-error transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-status-error"
                   >
                     <Trash size={14} />
                   </Button>

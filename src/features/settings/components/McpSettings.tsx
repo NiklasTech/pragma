@@ -216,7 +216,12 @@ export function McpSettings() {
     <div className="flex flex-col gap-6">
       <SettingSection title="Model Context Protocol Servers">
         <div className="mb-2 flex justify-end">
-          <Button size="xs" onClick={handleAdd} disabled={editingId !== null} className="gap-1">
+          <Button
+            size="xs"
+            onClick={handleAdd}
+            disabled={editingId !== null}
+            className="gap-1 transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
             <Plus size={14} />
             Add Server
           </Button>
@@ -225,7 +230,7 @@ export function McpSettings() {
         {(loading || statusLoading) && <p className="text-ui-xs text-fg-muted">Loading...</p>}
 
         {editingId !== null && (
-          <div className="flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3">
+          <div className="flex flex-col gap-3 rounded-md border border-border-subtle bg-bg-root p-3">
             <div className="flex flex-col gap-1.5">
               <Label>Name</Label>
               <Input
@@ -276,11 +281,20 @@ export function McpSettings() {
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="xs" onClick={handleCancel}>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={handleCancel}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 <X size={14} className="mr-1" />
                 Cancel
               </Button>
-              <Button size="xs" onClick={handleSave}>
+              <Button
+                size="xs"
+                onClick={handleSave}
+                className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 <FloppyDisk size={14} className="mr-1" />
                 Save
               </Button>
@@ -289,7 +303,7 @@ export function McpSettings() {
         )}
 
         {mcp.servers.length === 0 && !editingId && (
-          <div className="rounded-md border border-dashed border-border/60 p-4 text-center">
+          <div className="rounded-md border border-dashed border-border p-4 text-center">
             <p className="text-ui-sm text-fg-muted">No MCP servers configured.</p>
             <p className="text-ui-xs text-fg-subtle">
               Add a server to make MCP tools available to the AI chat.
@@ -304,7 +318,7 @@ export function McpSettings() {
             return (
               <div
                 key={server.id}
-                className="flex items-center justify-between gap-3 border-b border-border/30 py-2.5 last:border-b-0"
+                className="flex items-center justify-between gap-3 border-b border-border-subtle py-2.5 last:border-b-0"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
@@ -316,7 +330,7 @@ export function McpSettings() {
                       <span className="text-ui-sm font-medium text-fg-default">{server.name}</span>
                       <span className="text-ui-xs text-fg-subtle">{statusLabel(status)}</span>
                       {server.autostart && (
-                        <span className="rounded-full border border-border/30 px-1.5 py-0.5 text-ui-xs text-fg-muted">
+                        <span className="rounded-full border border-border-subtle px-1.5 py-0.5 text-ui-xs text-fg-muted">
                           autostart
                         </span>
                       )}
@@ -335,6 +349,7 @@ export function McpSettings() {
                     onClick={() => (isRunning ? stopServer(server.id) : startServer(server.id))}
                     title={isRunning ? "Stop server" : "Start server"}
                     disabled={status === "starting"}
+                    className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
                     {isRunning ? <Stop size={14} /> : <Play size={14} />}
                   </Button>
@@ -344,6 +359,7 @@ export function McpSettings() {
                     onClick={() => restartServer(server.id)}
                     title="Restart server"
                     disabled={status === "starting"}
+                    className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
                     <ArrowClockwise size={14} />
                   </Button>
@@ -356,6 +372,7 @@ export function McpSettings() {
                     size="icon-xs"
                     onClick={() => handleEdit(server)}
                     title="Edit server"
+                    className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
                     <PencilSimple size={14} />
                   </Button>
@@ -364,7 +381,7 @@ export function McpSettings() {
                     size="icon-xs"
                     onClick={() => handleDelete(server.id)}
                     title="Delete server"
-                    className="text-fg-muted hover:text-status-error"
+                    className="text-fg-muted transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:text-status-error"
                   >
                     <Trash size={14} />
                   </Button>

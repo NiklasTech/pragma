@@ -69,6 +69,7 @@ export function FontSelect({ value, onChange }: FontSelectProps) {
         size="icon-xs"
         onClick={() => setManagerOpen(true)}
         title="Manage fonts"
+        className="transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <DownloadSimple size={14} />
       </Button>
