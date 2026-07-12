@@ -117,9 +117,9 @@ function validateForegroundTokens(errors: string[], fg: unknown, path: string): 
 }
 
 function validateAccentTokens(errors: string[], accent: unknown, path: string): void {
-  validateTokenObject(errors, accent, path, ["default", "hover", "dim", "glow"]);
+  validateTokenObject(errors, accent, path, ["default", "subtle", "glow"]);
   if (!validateObject(errors, accent, path)) return;
-  for (const key of ["default", "hover", "dim", "glow"]) {
+  for (const key of ["default", "subtle", "glow"]) {
     validateColor(errors, accent, key, path);
   }
 }
