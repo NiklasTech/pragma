@@ -38,7 +38,7 @@ function FileChangeRow({ file, onClick }: { file: GitCommitFileChange; onClick: 
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-ui-xs transition-colors hover:bg-bg-hover"
+      className="group flex w-full items-center justify-between gap-3 rounded-sm px-2 py-1.5 text-left text-ui-xs outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
     >
       <div className="flex min-w-0 items-center gap-2">
         <span
@@ -156,7 +156,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
               {/* SHA */}
               <div className="flex items-center gap-2">
                 <span className="text-ui-xs font-medium text-fg-subtle">SHA</span>
-                <code className="rounded bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
+                <code className="rounded-sm bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
                   {details.sha}
                 </code>
                 <Button variant="ghost" size="icon-xs" onClick={handleCopySha} title="Copy SHA">
@@ -190,7 +190,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
                     {details.parents.map((parent) => (
                       <code
                         key={parent}
-                        className="rounded bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default"
+                        className="rounded-sm bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default"
                       >
                         {parent.slice(0, 7)}
                       </code>
@@ -202,7 +202,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
               {/* Message */}
               <div className="flex min-h-0 shrink-0 flex-col">
                 <span className="block text-ui-xs text-fg-subtle">Message</span>
-                <div className="max-h-[140px] overflow-y-auto rounded bg-bg-hover p-2 text-ui-sm text-fg-default">
+                <div className="max-h-[140px] overflow-y-auto rounded-sm bg-bg-hover p-2 text-ui-sm text-fg-default">
                   <p className="font-medium">{details.subject}</p>
                   {details.body && (
                     <pre className="mt-1 whitespace-pre-wrap font-sans text-ui-xs text-fg-muted">
@@ -217,7 +217,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
                 <span className="mb-1 block text-ui-xs text-fg-subtle">
                   Changed files ({details.files.length})
                 </span>
-                <ScrollArea className="h-full min-h-[180px] rounded border border-border/40 bg-bg-root">
+                <ScrollArea className="h-full min-h-[180px] rounded-sm border border-border/40 bg-bg-root">
                   <div className="p-1">
                     {details.files.length === 0 && (
                       <div className="px-2 py-3 text-ui-xs text-fg-muted">No files changed.</div>

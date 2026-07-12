@@ -145,7 +145,7 @@ function DockerActionButton({
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92] disabled:opacity-40"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
     </button>
@@ -271,7 +271,7 @@ export function DockerPanel() {
       <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
         <div className="flex items-center gap-2">
           <Cube size={16} className="text-fg-muted" />
-          <span className="text-xs font-semibold text-fg-default">Docker</span>
+          <span className="text-ui-xs font-semibold text-fg-default">Docker</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -279,7 +279,7 @@ export function DockerPanel() {
             onClick={() => void loadContainers()}
             disabled={isLoading}
             title="Refresh"
-            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92] disabled:opacity-40"
           >
             {isLoading ? (
               <Spinner size={12} className="animate-spin" />
@@ -299,13 +299,13 @@ export function DockerPanel() {
           ) : runtime === null ? (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-fg-muted">Failed to detect Docker runtime.</p>
+              <p className="text-ui-xs text-fg-muted">Failed to detect Docker runtime.</p>
               {error && <p className="text-ui-xs text-status-error">{error}</p>}
             </div>
           ) : !runtime.available ? (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-fg-muted">
+              <p className="text-ui-xs text-fg-muted">
                 Docker or Podman is not available on this system.
               </p>
               {runtime.daemon_error ? (
@@ -318,11 +318,11 @@ export function DockerPanel() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between rounded-md bg-bg-hover px-2 py-1.5">
+              <div className="flex items-center justify-between rounded-md bg-[var(--color-status-success-bg)] px-2 py-1.5">
                 <span className="text-ui-xs text-fg-muted">
                   {runtime.runtime} {runtime.version}
                 </span>
-                <span className="text-ui-xs text-status-success">connected</span>
+                <span className="text-ui-xs font-medium text-status-success">connected</span>
               </div>
 
               {error && <p className="text-ui-xs text-status-error px-1">{error}</p>}
@@ -373,7 +373,7 @@ export function DockerPanel() {
                   </button>
                 </div>
                 {containers.length === 0 ? (
-                  <p className="px-1 py-3 text-ui-xs text-fg-muted text-center">
+                  <p className="px-1 py-3 text-center text-ui-xs text-fg-muted">
                     No containers found.
                   </p>
                 ) : (

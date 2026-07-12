@@ -105,20 +105,29 @@ export function FileTreeNode({
     }
   }, [node.path, onShowLocalHistory]);
 
-  const paddingLeft = depth * 12 + 4;
+  const paddingLeft = `calc(var(--layout-indent) * ${depth} + 4px)`;
 
   const content = (
     <div
       className={cn(
-        "group flex items-center gap-1 rounded-sm py-[3px] pr-2 text-ui-base cursor-pointer select-none transition-colors",
+        "group flex h-[var(--chrome-row-h)] items-center gap-[var(--layout-gap-xs)] rounded-sm pr-2 text-ui-base outline-none select-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
         isActiveFile
           ? "bg-bg-active text-primary"
           : isSelected
             ? "bg-bg-hover text-fg-default"
             : "text-fg-default hover:bg-bg-hover",
+        "focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]",
       )}
       style={{ paddingLeft }}
       onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       {node.isDirectory ? (
         <>

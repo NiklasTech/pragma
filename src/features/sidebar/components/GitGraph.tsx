@@ -418,7 +418,7 @@ export function GitGraph() {
   if (!repoPath) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-sm text-fg-muted">Open a folder to view Git history</p>
+        <p className="text-ui-sm text-fg-muted">Open a folder to view Git history</p>
       </div>
     );
   }
@@ -470,7 +470,7 @@ export function GitGraph() {
               type="button"
               onClick={() => toggleCol(col.key)}
               className={cn(
-                "flex items-center gap-1 transition-colors hover:text-fg-default",
+                "flex items-center gap-1 rounded-md outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.96]",
                 col.align === "right" && "justify-end",
                 col.key === "sha" && "pl-px",
                 col.key === "author" && "justify-end",
@@ -610,7 +610,9 @@ export function GitGraph() {
       <Dialog open={!!branchDialogSha} onOpenChange={(open) => !open && setBranchDialogSha(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create branch from {branchDialogSha?.slice(0, 7)}</DialogTitle>
+            <DialogTitle className="text-ui-md">
+              Create branch from {branchDialogSha?.slice(0, 7)}
+            </DialogTitle>
             <DialogDescription>
               Enter a name for the new branch. It will be created at this commit and checked out.
             </DialogDescription>
@@ -690,7 +692,7 @@ function CommitRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative grid h-full w-full cursor-pointer items-center gap-5 border-l-2 border-transparent pr-3 text-left transition-colors",
+        "group relative grid h-full w-full cursor-pointer items-center gap-5 border-l-2 border-transparent pr-3 text-left outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary/40",
         active ? "border-l-primary/70 bg-bg-active" : "hover:bg-bg-hover",
       )}
       style={{
@@ -741,7 +743,7 @@ function CommitRow({
         title={commit.author_email || commit.author}
       >
         <span
-          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] font-mono text-ui-2xs font-bold uppercase text-fg-inverse"
+          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-xs font-mono text-ui-2xs font-bold uppercase text-fg-inverse"
           style={{ backgroundColor: authorTint(commit.author_email || commit.author) }}
         >
           {initials}

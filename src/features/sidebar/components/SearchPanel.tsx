@@ -173,10 +173,10 @@ export function SearchPanel() {
               setQuery("");
               inputRef.current?.focus();
             }}
-            className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-subtle hover:text-fg-default"
+            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-0.5 text-fg-subtle outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
             aria-label="Clear search"
           >
-            <X size={14} />
+            <X size={14} weight="bold" />
           </button>
         )}
       </div>
@@ -267,7 +267,10 @@ function OptionButton({
       size="icon-xs"
       onClick={onClick}
       title={title}
-      className={cn(active && "bg-bg-active text-primary")}
+      className={cn(
+        "transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92]",
+        active && "bg-bg-active text-primary",
+      )}
     >
       <Icon size={14} weight={active ? "bold" : "regular"} />
     </Button>
@@ -297,7 +300,7 @@ function ResultGroupView({
           key={`${match.line}:${match.column}:${index}`}
           type="button"
           onClick={() => onOpenResult(match)}
-          className="flex flex-col gap-0.5 rounded-sm px-1 py-1 text-left text-ui-xs hover:bg-bg-hover"
+          className="flex flex-col gap-0.5 rounded-sm px-1 py-1 text-left text-ui-xs outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
         >
           <div className="flex items-center gap-2 text-fg-subtle">
             <span className="w-8 shrink-0 text-right tabular-nums">{match.line}</span>

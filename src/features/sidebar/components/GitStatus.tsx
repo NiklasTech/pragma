@@ -217,8 +217,10 @@ function ToolbarButton({
       disabled={disabled || busy}
       title={label}
       className={cn(
-        "relative flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-fg-muted transition-colors",
-        disabled ? "opacity-40" : "hover:bg-bg-hover hover:text-fg-default",
+        "relative flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92]",
+        disabled
+          ? "opacity-40"
+          : "hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40",
       )}
     >
       {busy ? <Spinner size={14} className="animate-spin" /> : <Icon size={16} />}
@@ -339,11 +341,12 @@ function BranchHeader({
                 <div
                   key={branch.name}
                   className={cn(
-                    "group flex items-center gap-2 px-3 py-1.5 text-ui-sm",
+                    "group flex items-center gap-2 px-3 py-1.5 text-ui-sm outline-none transition-colors duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
                     isCurrent
                       ? "bg-bg-active font-medium text-fg-default"
                       : "text-fg-default hover:bg-bg-hover",
                   )}
+                  tabIndex={0}
                 >
                   <ContextMenu>
                     <ContextMenuTrigger className="flex min-w-0 flex-1">
@@ -551,7 +554,7 @@ function SectionHeader({
             type="button"
             onClick={onStageAll}
             disabled={actionBusy !== null}
-            className="text-ui-2xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
+            className="rounded-md px-1 py-0.5 text-ui-2xs font-medium text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
           >
             Stage all
           </button>
@@ -561,7 +564,7 @@ function SectionHeader({
             type="button"
             onClick={onUnstageAll}
             disabled={actionBusy !== null}
-            className="text-ui-2xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
+            className="rounded-md px-1 py-0.5 text-ui-2xs font-medium text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
           >
             Unstage all
           </button>
@@ -640,7 +643,7 @@ function FileRow({
           e.stopPropagation();
           onOpenDiff(entry);
         }}
-        className="shrink-0 rounded p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
+        className="shrink-0 rounded-md p-0.5 text-fg-muted opacity-0 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 group-hover:opacity-100"
         title="Open diff in editor"
       >
         <GitDiff size={13} />
@@ -697,7 +700,7 @@ function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onToggle: ()
     <button
       type="button"
       onClick={onToggle}
-      className="flex h-7 w-full items-center gap-1.5 px-3 text-left transition-colors hover:bg-bg-hover"
+      className="flex h-7 w-full items-center gap-1.5 px-3 text-left outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]"
     >
       {expanded ? (
         <CaretDown size={11} className="text-fg-muted" />
@@ -715,7 +718,7 @@ function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onToggle: ()
 function HistoryEntry({ commit }: { commit: GitCommit }) {
   return (
     <div
-      className="group mx-1 flex flex-col gap-0.5 rounded-md px-3 py-1.5 hover:bg-bg-hover"
+      className="group mx-1 flex flex-col gap-0.5 rounded-md px-3 py-1.5 outline-none transition-colors duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover"
       title={commit.message}
     >
       <div className="flex min-w-0 items-center gap-1.5">

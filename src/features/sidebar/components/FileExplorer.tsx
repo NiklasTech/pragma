@@ -13,7 +13,7 @@ import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { getVisibleNodes } from "@/shared/stores/fileExplorer";
 import { FileTreeNode } from "./FileTreeNode";
 
-const ROW_HEIGHT = 24;
+const ROW_HEIGHT = 26;
 const OVERSCAN = 12;
 
 export function FileExplorer() {
@@ -62,7 +62,11 @@ export function FileExplorer() {
       <ContextMenuTrigger className="h-full">
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-            <span className="truncate text-ui-xs font-semibold text-fg-default" title={rootPath}>
+            <span
+              className="flex items-center gap-1.5 truncate text-ui-xs font-semibold text-fg-default"
+              title={rootPath}
+            >
+              <FolderOpen size={12} className="text-fg-muted" />
               {rootName}
             </span>
           </div>
@@ -72,7 +76,7 @@ export function FileExplorer() {
                 <Spinner size={20} className="animate-spin text-fg-muted" />
               </div>
             ) : visibleNodes.length === 0 ? (
-              <div className="px-3 py-2 text-ui-sm text-fg-muted">Empty folder</div>
+              <div className="px-3 py-6 text-center text-ui-sm text-fg-muted">Empty folder</div>
             ) : (
               <div
                 className="relative w-full"

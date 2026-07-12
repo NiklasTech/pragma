@@ -305,11 +305,17 @@
   --chrome-panel-min-h: 160px;
   --chrome-panel-default-h: 240px;
   --chrome-row-h: 26px;
+  --chrome-row-h-md: 30px;
 
   --layout-padding-xs: 4px;
   --layout-padding-sm: 6px;
   --layout-padding-md: 8px;
   --layout-padding-lg: 12px;
+  --layout-indent: 12px;
+  --layout-gap-xs: 4px;
+  --layout-gap-sm: 6px;
+  --layout-gap-md: 8px;
+  --layout-gap-lg: 12px;
 
   /* --------------------------------------------------------------------------
      Typography values

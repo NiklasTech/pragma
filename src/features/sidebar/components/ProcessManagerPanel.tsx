@@ -55,7 +55,7 @@ function ProcessActionButton({
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92] disabled:opacity-40"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
     </button>
@@ -87,7 +87,7 @@ function DetectedConfigRow({
           type="button"
           onClick={onAccept}
           title="Add process"
-          className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-success"
+          className="flex h-6 w-6 items-center justify-center rounded text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-status-success focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
         >
           <Plus size={12} weight="bold" />
         </button>
@@ -95,7 +95,7 @@ function DetectedConfigRow({
           type="button"
           onClick={onReject}
           title="Ignore suggestion"
-          className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+          className="flex h-6 w-6 items-center justify-center rounded text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92]"
         >
           <Trash size={12} />
         </button>
@@ -133,7 +133,7 @@ function SavedConfigRow({
   return (
     <div
       className={cn(
-        "group flex flex-col gap-1 rounded-md px-2 py-1.5",
+        "group flex flex-col gap-1 rounded-md px-2 py-1.5 transition-colors duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
         isActive ? "bg-bg-active" : "hover:bg-bg-hover",
       )}
     >
@@ -238,7 +238,7 @@ export function ProcessManagerPanel() {
       <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
         <div className="flex items-center gap-2">
           <Terminal size={16} className="text-fg-muted" />
-          <span className="text-xs font-semibold text-fg-default">Processes</span>
+          <span className="text-ui-xs font-semibold text-fg-default">Processes</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -246,7 +246,7 @@ export function ProcessManagerPanel() {
             onClick={refresh}
             disabled={isDetecting}
             title="Refresh"
-            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.92] disabled:opacity-40"
           >
             {isDetecting ? (
               <Spinner size={12} className="animate-spin" />
@@ -266,7 +266,7 @@ export function ProcessManagerPanel() {
           ) : !workspaceRoot ? (
             <div className="flex flex-col items-center gap-2 py-6 text-center">
               <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-fg-muted">Open a workspace to manage processes.</p>
+              <p className="text-ui-xs text-fg-muted">Open a workspace to manage processes.</p>
             </div>
           ) : (
             <>

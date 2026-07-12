@@ -265,9 +265,9 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
           ) : (
             <GitBranch size={11} className="text-fg-muted" />
           )}
-          <span className="truncate max-w-[120px]">{currentBranch}</span>
+          <span className="max-w-[120px] truncate">{currentBranch}</span>
           {isDetached && (
-            <span className="rounded bg-bg-hover px-1 py-px text-ui-xs font-medium uppercase tracking-wider text-fg-muted">
+            <span className="rounded bg-bg-hover px-1 py-px text-ui-2xs font-medium uppercase tracking-wider text-fg-muted">
               detached
             </span>
           )}
@@ -311,10 +311,10 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             disabled={!canPushPull || isPushBusy || ahead === 0}
             title={!hasRemote ? "No remote configured" : ahead === 0 ? "Nothing to push" : "Push"}
             className={cn(
-              "rounded p-1 transition-colors",
+              "rounded-md p-1 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92]",
               canPushPull && ahead > 0
-                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default"
-                : "text-fg-muted/30 cursor-not-allowed",
+                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40"
+                : "cursor-not-allowed text-fg-muted/30",
             )}
           >
             {isPushBusy ? <Spinner size={12} className="animate-spin" /> : <ArrowUp size={12} />}
@@ -328,10 +328,10 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               !hasRemote ? "No remote configured" : behind === 0 ? "Already up to date" : "Pull"
             }
             className={cn(
-              "rounded p-1 transition-colors",
+              "rounded-md p-1 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92]",
               canPushPull && behind > 0
-                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default"
-                : "text-fg-muted/30 cursor-not-allowed",
+                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40"
+                : "cursor-not-allowed text-fg-muted/30",
             )}
           >
             {isPullBusy ? <Spinner size={12} className="animate-spin" /> : <ArrowDown size={12} />}
@@ -343,10 +343,10 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
             disabled={!canPushPull || isFetchBusy}
             title={!hasRemote ? "No remote configured" : "Fetch"}
             className={cn(
-              "rounded p-1 transition-colors",
+              "rounded-md p-1 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] active:scale-[0.92]",
               canPushPull
-                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default"
-                : "text-fg-muted/30 cursor-not-allowed",
+                ? "text-fg-default/70 hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40"
+                : "cursor-not-allowed text-fg-muted/30",
             )}
           >
             {isFetchBusy ? (

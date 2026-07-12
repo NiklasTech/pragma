@@ -92,17 +92,17 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
       <DialogContent className="sm:max-w-6xl w-[95vw] h-[85vh] p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-4 py-3 border-b border-border/60 shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-sm">
+            <DialogTitle className="flex items-center gap-2 text-ui-sm">
               <ClockCounterClockwise size={16} />
               Local History
-              <span className="text-fg-muted font-normal">— {fileName}</span>
+              <span className="font-normal text-fg-muted">— {fileName}</span>
             </DialogTitle>
           </div>
         </DialogHeader>
 
         <div className="flex flex-1 min-h-0">
           <div className="w-64 border-r border-border/60 flex flex-col shrink-0">
-            <div className="px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted border-b border-border/40">
+            <div className="border-b border-border/40 px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted">
               History
             </div>
             <ScrollArea className="flex-1">
@@ -121,10 +121,11 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
                       key={`${entry.kind}-${entry.id}`}
                       onClick={() => handleSelect(entry)}
                       className={cn(
-                        "w-full text-left px-3 py-2 text-ui-xs flex flex-col gap-0.5 transition-colors",
+                        "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-ui-xs outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
                         selectedEntry?.id === entry.id && selectedEntry?.kind === entry.kind
                           ? "bg-bg-active text-fg-default"
                           : "text-fg-default hover:bg-bg-hover",
+                        "focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.98]",
                       )}
                     >
                       <span className="flex items-center gap-1.5 font-medium">
