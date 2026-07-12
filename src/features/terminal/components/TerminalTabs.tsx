@@ -32,7 +32,7 @@ export function TerminalTabs({ sessions, activeSessionId }: TerminalTabsProps) {
                 e.stopPropagation();
                 void killSession(session.id);
               }}
-              className="ml-0.5 rounded-sm p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
+              className="ml-0.5 rounded-sm p-0.5 text-fg-muted opacity-0 outline-none transition-all duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40 group-hover:opacity-100"
               aria-label={`Close ${session.name}`}
             >
               <X size={10} />
