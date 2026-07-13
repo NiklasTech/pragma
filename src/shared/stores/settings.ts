@@ -62,6 +62,7 @@ export interface AISettings {
   terminalSuggestionModel: string | null;
   yoloMode: boolean;
   showThinking: boolean;
+  showUnavailableProviders: boolean;
   providers: Record<AIProvider, ProviderSettings>;
 }
 
@@ -149,6 +150,7 @@ interface SettingsActions {
   setAISettings: (settings: Partial<AISettings>) => void;
   setYoloMode: (enabled: boolean) => void;
   setShowThinking: (enabled: boolean) => void;
+  setShowUnavailableProviders: (enabled: boolean) => void;
   setTheme: (theme: string) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setKeymap: (keymap: string) => void;
@@ -213,6 +215,7 @@ const defaultSettings: SettingsState = {
     terminalSuggestionModel: null,
     yoloMode: false,
     showThinking: true,
+    showUnavailableProviders: true,
     providers: {
       openai: { model: "" },
       anthropic: { model: "" },
@@ -305,6 +308,11 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   setShowThinking: (enabled) =>
     set((state) => ({
       ai: { ...state.ai, showThinking: enabled },
+    })),
+
+  setShowUnavailableProviders: (enabled) =>
+    set((state) => ({
+      ai: { ...state.ai, showUnavailableProviders: enabled },
     })),
 
   setTheme: (theme) => set({ theme }),

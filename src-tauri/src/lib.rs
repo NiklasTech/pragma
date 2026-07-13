@@ -159,6 +159,7 @@ pub fn run() {
             commands::chat_storage::ai_migrate_chat_storage,
             commands::ai::ai_inline_completion,
             commands::ai::ai_terminal_suggestion,
+            commands::ai::ai_generate_chat_title,
             commands::ai::copilot_start_device_login,
             commands::ai::copilot_poll_device_login,
             commands::ai::copilot_auth_status,

@@ -39,6 +39,7 @@
   --font-mono:
     "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+  --text-ui-2xs: var(--text-ui-2xs);
   --text-ui-xs: var(--text-ui-xs);
   --text-ui-sm: var(--text-ui-sm);
   --text-ui-base: var(--text-ui-base);
@@ -46,6 +47,7 @@
   --text-ui-lg: var(--text-ui-lg);
   --text-editor: var(--text-editor);
 
+  --leading-ui-2xs: var(--leading-ui-2xs);
   --leading-ui-xs: var(--leading-ui-xs);
   --leading-ui-sm: var(--leading-ui-sm);
   --leading-ui-base: var(--leading-ui-base);
@@ -289,6 +291,7 @@
   /* --------------------------------------------------------------------------
      Typography values
      -------------------------------------------------------------------------- */
+  --text-ui-2xs: 10px;
   --text-ui-xs: 11px;
   --text-ui-sm: 12px;
   --text-ui-base: 13px;
@@ -296,6 +299,7 @@
   --text-ui-lg: 16px;
   --text-editor: 14px;
 
+  --leading-ui-2xs: 12px;
   --leading-ui-xs: 14px;
   --leading-ui-sm: 16px;
   --leading-ui-base: 20px;

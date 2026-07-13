@@ -15,8 +15,8 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      "group flex w-full flex-col gap-2",
-      from === "user" ? "is-user ml-auto max-w-[85%] items-end justify-end" : "is-assistant",
+      "group flex w-full",
+      from === "user" ? "is-user justify-end" : "is-assistant justify-start",
       className,
     )}
     {...props}
@@ -28,9 +28,9 @@ export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
 export const MessageContent = ({ children, className, ...props }: MessageContentProps) => (
   <div
     className={cn(
-      "select-text flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-ui-sm leading-relaxed",
-      "group-[.is-user]:rounded-2xl group-[.is-user]:rounded-br-sm group-[.is-user]:bg-bg-hover/70 group-[.is-user]:px-3 group-[.is-user]:py-2 group-[.is-user]:text-fg-default",
-      "group-[.is-assistant]:w-full group-[.is-assistant]:max-w-full group-[.is-assistant]:text-fg-default",
+      "flex w-fit min-w-0 max-w-[92%] flex-col gap-2 overflow-hidden rounded-2xl px-4 py-3 text-ui-sm leading-relaxed",
+      "group-[.is-user]:rounded-br-md group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground",
+      "group-[.is-assistant]:rounded-tl-md group-[.is-assistant]:border group-[.is-assistant]:border-border/60 group-[.is-assistant]:bg-bg-elevated group-[.is-assistant]:text-fg-default",
       className,
     )}
     {...props}
@@ -45,7 +45,13 @@ const streamdownComponents: ComponentProps<typeof Streamdown>["components"] = {
   },
   inlineCode({ children }) {
     return (
-      <code className="rounded bg-bg-hover/70 px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
+      <code
+        className={cn(
+          "rounded px-1.5 py-0.5 font-mono text-ui-xs",
+          "group-[.is-user]:bg-primary-foreground/15 group-[.is-user]:text-primary-foreground",
+          "group-[.is-assistant]:bg-bg-hover/70 group-[.is-assistant]:text-fg-default",
+        )}
+      >
         {children}
       </code>
     );

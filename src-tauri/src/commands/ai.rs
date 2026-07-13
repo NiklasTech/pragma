@@ -919,6 +919,166 @@ pub async fn ai_terminal_suggestion(
     Ok(TerminalSuggestionResponse { suggestion })
 }
 
+// ─── Chat Title Generation ───────────────────────────────────────────────────
+
+fn strip_reasoning_tags(text: &str) -> String {
+    let tags = [
+        ("<thinking>", "</thinking>"),
+        ("<reasoning>", "</reasoning>"),
+        ("<think>", "</think>"),
+    ];
+    let mut result = text.to_string();
+    for (open, close) in tags {
+        let mut cleaned = String::with_capacity(result.len());
+        let mut rest = result.as_str();
+        while let Some(start) = rest.find(open) {
+            cleaned.push_str(&rest[..start]);
+            if let Some(end) = rest[start..].find(close) {
+                rest = &rest[start + end + close.len()..];
+            } else {
+                rest = &rest[start + open.len()..];
+                break;
+            }
+        }
+        cleaned.push_str(rest);
+        result = cleaned;
+    }
+    result.trim().to_string()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GenerateChatTitleRequest {
+    pub provider: String,
+    pub model: String,
+    pub base_url: Option<String>,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GenerateChatTitleResponse {
+    pub title: String,
+}
+
+const MAX_TITLE_INPUT_LEN: usize = 800;
+const MAX_TITLE_OUTPUT_LEN: usize = 60;
+
+#[tauri::command]
+pub async fn ai_generate_chat_title(
+    req: GenerateChatTitleRequest,
+) -> Result<GenerateChatTitleResponse, String> {
+    if req.provider.is_empty() {
+        return Err("provider is required".to_string());
+    }
+    if req.model.is_empty() {
+        return Err("model is required".to_string());
+    }
+
+    let message = req.message.trim();
+    if message.is_empty() {
+        return Ok(GenerateChatTitleResponse {
+            title: "New Chat".to_string(),
+        });
+    }
+
+    let truncated_message = if message.len() > MAX_TITLE_INPUT_LEN {
+        format!("{}…", &message[..MAX_TITLE_INPUT_LEN])
+    } else {
+        message.to_string()
+    };
+
+    let system_message = "You are a helpful assistant that creates concise chat titles. Given the user's first message, produce a very short title (3-6 words) that summarizes the topic. Output ONLY the title. No quotes, no markdown, no explanations, no reasoning tags, no thinking blocks.".to_string();
+
+    let user_message = format!(
+        "Create a short title for this chat:\n\n{}",
+        truncated_message
+    );
+
+    let messages = vec![
+        Message {
+            role: Role::System,
+            content: system_message,
+            tool_calls: None,
+            tool_call_id: None,
+        },
+        Message {
+            role: Role::User,
+            content: user_message,
+            tool_calls: None,
+            tool_call_id: None,
+        },
+    ];
+
+    let config = ProviderConfig {
+        base_url: req.base_url.unwrap_or_default(),
+        model: req.model,
+        timeout_seconds: 15,
+        api_key: None,
+        extra_headers: None,
+    };
+
+    let completion_req = CompletionRequest {
+        messages,
+        temperature: Some(0.3),
+        max_tokens: Some(32),
+        stream: false,
+        tools: None,
+    };
+
+    let response = match req.provider.as_str() {
+        "openai" | "deepseek" | "kimi" | "openrouter" => {
+            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
+                .map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "custom" => {
+            let provider = CustomProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "gemini" => {
+            let provider = GeminiProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "anthropic" => {
+            let provider = AnthropicProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "ollama" => {
+            let provider = OllamaProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        "copilot" => {
+            let provider = CopilotProvider::new(config).map_err(|e| e.to_string())?;
+            provider.complete(completion_req).await
+        }
+        _ => return Err(format!("unsupported provider: {}", req.provider)),
+    }
+    .map_err(|e| e.to_string())?;
+
+    let cleaned_content = strip_reasoning_tags(&response.content);
+
+    let title = cleaned_content
+        .lines()
+        .find(|line| !line.trim().is_empty())
+        .unwrap_or("")
+        .trim()
+        .trim_matches(|c| c == '"' || c == '\'' || c == '`' || c == '*' || c == '#' || c == '-')
+        .to_string();
+
+    let title = if title.len() > MAX_TITLE_OUTPUT_LEN {
+        format!("{}…", &title[..MAX_TITLE_OUTPUT_LEN])
+    } else {
+        title
+    };
+
+    let title = if title.is_empty() {
+        "New Chat".to_string()
+    } else {
+        title
+    };
+
+    Ok(GenerateChatTitleResponse { title })
+}
+
 // ─── Copilot OAuth ───────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]

@@ -34,6 +34,7 @@ export function ChatToolbar({ className }: ChatToolbarProps) {
                 pressed={yoloMode}
                 onPressedChange={setYoloMode}
                 aria-label="Yolo mode"
+                type="button"
               >
                 <Flame size={13} weight={yoloMode ? "fill" : "bold"} />
                 <span>Yolo</span>
@@ -54,6 +55,7 @@ export function ChatToolbar({ className }: ChatToolbarProps) {
                 pressed={showThinking}
                 onPressedChange={setShowThinking}
                 aria-label="Show thinking"
+                type="button"
               >
                 <Brain size={13} weight={showThinking ? "fill" : "bold"} />
                 <span>Thinking</span>

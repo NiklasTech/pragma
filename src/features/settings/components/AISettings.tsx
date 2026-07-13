@@ -319,21 +319,41 @@ export function AISettings() {
           onChange={handleModelChange}
         />
 
+        <SettingRow
+          label="Show unavailable providers"
+          description="Display providers without a configured key in the chat model selector"
+          control={
+            <Switch
+              checked={settingsStore.ai.showUnavailableProviders}
+              onCheckedChange={(v) => settingsStore.setShowUnavailableProviders(v)}
+            />
+          }
+        />
+
         {(activeProvider === "ollama" || activeProvider === "custom") && (
           <SettingRow
             label="Base URL"
             description="Endpoint for OpenAI-compatible requests"
             control={
-              <Input
-                value={providerConfig.baseUrl ?? ""}
-                onChange={(e) => handleBaseUrlChange(e.target.value)}
-                placeholder={
-                  activeProvider === "ollama"
-                    ? "http://localhost:11434"
-                    : "https://api.example.com/v1"
-                }
-                className="max-w-[200px]"
-              />
+              <div className="flex max-w-[280px] flex-col gap-1">
+                <Input
+                  value={providerConfig.baseUrl ?? ""}
+                  onChange={(e) => handleBaseUrlChange(e.target.value)}
+                  placeholder={
+                    activeProvider === "ollama"
+                      ? "http://localhost:11434"
+                      : "http://127.0.0.1:1234/v1"
+                  }
+                  className="max-w-[200px]"
+                />
+                {activeProvider === "custom" && (
+                  <span className="text-ui-2xs text-fg-muted">
+                    Include the API version path, e.g. <code className="text-fg-subtle">/v1</code>.
+                    LM Studio and Ollama usually need{" "}
+                    <code className="text-fg-subtle">http://localhost:PORT/v1</code>.
+                  </span>
+                )}
+              </div>
             }
           />
         )}
