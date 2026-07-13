@@ -49,24 +49,43 @@ export function Onboarding() {
   const isLastStep = currentStep === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-root/95 p-6 backdrop-blur-sm">
-      <div className="flex w-full max-w-xl flex-col rounded-xl border border-border/60 bg-bg-surface shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-          <div className="flex gap-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-overlay/80 p-6 backdrop-blur-lg">
+      <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border/40 bg-bg-surface/95 shadow-2xl shadow-black/20 glass-strong overflow-hidden">
+        {/* Progress Header */}
+        <div className="flex items-center justify-between border-b border-border/30 px-6 py-3">
+          <div className="flex items-center gap-2">
             {STEPS.map((step, index) => (
-              <div
+              <button
                 key={step.id}
+                type="button"
+                onClick={() => setCurrentStep(index)}
                 className={cn(
-                  "h-2 w-2 rounded-full transition-colors",
-                  index === currentStep ? "bg-primary" : "bg-border",
-                  index < currentStep && "bg-primary/60",
+                  "flex items-center gap-1.5 rounded-lg px-2 py-1 text-ui-xs font-medium transition-all duration-base",
+                  index === currentStep
+                    ? "bg-primary/12 text-primary"
+                    : "text-fg-subtle hover:text-fg-muted",
+                  index < currentStep && "text-primary/70",
                 )}
                 title={step.title}
-              />
+              >
+                <span
+                  className={cn(
+                    "flex size-4 items-center justify-center rounded-full text-[9px] font-bold transition-all",
+                    index === currentStep
+                      ? "bg-primary text-primary-foreground"
+                      : index < currentStep
+                        ? "bg-primary/20 text-primary"
+                        : "bg-bg-elevated text-fg-subtle",
+                  )}
+                >
+                  {index < currentStep ? "✓" : index + 1}
+                </span>
+                <span className="hidden sm:inline">{step.title}</span>
+              </button>
             ))}
           </div>
-          <span className="text-ui-xs text-fg-muted">
-            Step {currentStep + 1} of {STEPS.length}
+          <span className="text-ui-xs text-fg-subtle">
+            {currentStep + 1} / {STEPS.length}
           </span>
         </div>
 
@@ -79,8 +98,8 @@ export function Onboarding() {
           {currentStep === 5 && <LanguagesStep />}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border/60 px-6 py-4">
-          <Button variant="ghost" size="sm" onClick={handleSkip}>
+        <div className="flex items-center justify-between border-t border-border/30 px-6 py-4 bg-bg-hover/30">
+          <Button variant="ghost" size="sm" onClick={handleSkip} className="text-fg-subtle">
             Skip onboarding
           </Button>
 

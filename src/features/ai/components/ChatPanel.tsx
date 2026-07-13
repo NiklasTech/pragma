@@ -249,10 +249,12 @@ export function ChatPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Session Header */}
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/40 bg-bg-surface/50 px-3 py-2 backdrop-blur-sm">
         <div className="flex items-center gap-2 min-w-0">
-          <ChatTeardropText size={14} className="shrink-0 text-fg-muted" />
-          <span className="truncate text-ui-xs text-fg-muted">
+          <div className="flex size-6 items-center justify-center rounded-lg bg-accent-subtle">
+            <ChatTeardropText size={14} className="text-primary" />
+          </div>
+          <span className="truncate text-ui-xs text-fg-muted font-medium">
             {activeSession?.title ?? "Chat"}
           </span>
           {activeSession && (
@@ -271,7 +273,7 @@ export function ChatPanel() {
           <ChatSessionList />
           <button
             onClick={handleNewSession}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="flex size-7 shrink-0 items-center justify-center rounded-lg text-fg-muted transition-all duration-fast hover:bg-bg-hover hover:text-fg-default hover:shadow-sm"
             title="New Session"
           >
             <Plus size={14} weight="bold" />
@@ -285,10 +287,10 @@ export function ChatPanel() {
           <ConversationContent className="gap-4 p-4">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-accent-subtle">
-                  <PaperPlaneRight size={20} weight="bold" className="text-primary" />
+                <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-subtle to-transparent shadow-lg shadow-accent/5">
+                  <PaperPlaneRight size={24} weight="duotone" className="text-primary" />
                 </div>
-                <p className="text-ui-sm font-semibold">Pragma AI</p>
+                <p className="text-ui-md font-semibold tracking-wide">Pragma AI</p>
                 <p className="mt-1 text-ui-sm text-fg-muted">How can I help you today?</p>
 
                 {!canChat && (
@@ -361,7 +363,6 @@ export function ChatPanel() {
                 .filter((inv): inv is NonNullable<typeof inv> => inv !== null);
               const isStreaming = msg.id === streamingMessageId;
 
-              // Some providers/models emit reasoning as inline <thinking> tags inside the text.
               const { text, reasoning: inlineReasoning } = extractInlineReasoning(
                 rawText,
                 isStreaming,
@@ -382,8 +383,8 @@ export function ChatPanel() {
 
               return (
                 <Message key={msg.id} from="assistant">
-                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-hover">
-                    <Robot size={14} className="text-fg-muted" />
+                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-subtle to-transparent">
+                    <Robot size={14} className="text-primary" />
                   </div>
                   <MessageContent>
                     {sourceDocuments.map((source, index) => (
@@ -419,7 +420,7 @@ export function ChatPanel() {
                     <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
                     {isStreaming && (
                       <span className="mt-2 inline-flex h-4 items-center">
-                        <span className="size-1.5 animate-pulse rounded-full bg-fg-muted" />
+                        <span className="size-1.5 animate-pulse rounded-full bg-primary shadow-[0_0_6px_var(--color-accent-glow)]" />
                       </span>
                     )}
                   </MessageContent>
@@ -429,8 +430,8 @@ export function ChatPanel() {
 
             {status === "submitted" && (
               <Message from="assistant">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-hover">
-                  <Robot size={14} className="text-fg-muted" />
+                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-subtle to-transparent">
+                  <Robot size={14} className="text-primary" />
                 </div>
                 <MessageContent>
                   <ChatTypingIndicator />
@@ -443,10 +444,10 @@ export function ChatPanel() {
       </div>
 
       {/* Input Area */}
-      <div className="shrink-0 border-t border-border/60 bg-bg-surface p-3">
+      <div className="shrink-0 border-t border-border/40 bg-bg-surface/80 p-3 backdrop-blur-sm">
         {/* Error Banner */}
         {error && (
-          <div className="mb-2 flex items-start gap-2 rounded-md bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
+          <div className="mb-2 flex items-start gap-2 rounded-xl bg-status-error/8 px-3 py-2 text-ui-sm text-status-error border border-status-error/15">
             <Warning size={14} className="mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-medium">Something went wrong</p>
@@ -455,7 +456,7 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={handleRetry}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-status-error/15"
+              className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 hover:bg-status-error/15 transition-colors"
             >
               <ArrowCounterClockwise size={12} weight="bold" />
               <span>Retry</span>
@@ -465,7 +466,7 @@ export function ChatPanel() {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-accent-subtle/50 px-3 py-2 text-ui-sm text-primary border border-primary/10">
             <Terminal size={14} />
             <span>
               Using {cliStatus.provider_id} via CLI
@@ -475,7 +476,7 @@ export function ChatPanel() {
         )}
 
         {!canChat && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-status-warning/10 px-3 py-2 text-ui-sm text-status-warning">
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-status-warning/8 px-3 py-2 text-ui-sm text-status-warning border border-status-warning/15">
             <Warning size={14} />
             <span>
               {isCLIActive
@@ -486,7 +487,7 @@ export function ChatPanel() {
         )}
 
         {!mcpLoaded && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-accent-subtle/30 px-3 py-1.5 text-ui-xs text-fg-subtle border border-primary/5">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
           </div>
@@ -497,7 +498,7 @@ export function ChatPanel() {
             {pendingApprovals.map((approval) => (
               <div
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-md border border-border/60 bg-bg-root p-3"
+                className="flex flex-col gap-2 rounded-xl border border-border/40 bg-bg-surface/80 p-3 glass-subtle"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
@@ -506,7 +507,7 @@ export function ChatPanel() {
                   <p className="text-ui-xs text-fg-muted">{approval.description}</p>
                 )}
                 {approval.args ? (
-                  <pre className="max-h-32 overflow-auto rounded bg-bg-surface p-2 text-ui-xs text-fg-muted">
+                  <pre className="max-h-32 overflow-auto rounded-lg bg-bg-root/80 p-2 text-ui-xs text-fg-muted">
                     {JSON.stringify(approval.args, null, 2)}
                   </pre>
                 ) : null}
@@ -514,7 +515,7 @@ export function ChatPanel() {
                   <button
                     type="button"
                     onClick={() => handleApproval(approval.toolCallId, false)}
-                    className="flex items-center gap-1 rounded-md bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-error/90"
+                    className="flex items-center gap-1 rounded-lg bg-status-error/15 px-3 py-1.5 text-ui-xs text-status-error hover:bg-status-error/25 transition-colors"
                   >
                     <X size={12} weight="bold" />
                     Deny
@@ -522,7 +523,7 @@ export function ChatPanel() {
                   <button
                     type="button"
                     onClick={() => handleApproval(approval.toolCallId, true)}
-                    className="flex items-center gap-1 rounded-md bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-success/90"
+                    className="flex items-center gap-1 rounded-lg bg-status-success/15 px-3 py-1.5 text-ui-xs text-status-success hover:bg-status-success/25 transition-colors"
                   >
                     <Check size={12} weight="bold" />
                     Allow
@@ -545,7 +546,7 @@ export function ChatPanel() {
               onSelect={updateCursorPosition}
               placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
               rows={1}
-              className="min-h-[36px] resize-none py-2 text-ui-base"
+              className="min-h-[36px] resize-none py-2 text-ui-base rounded-xl"
               disabled={!canChat || isLoading}
             />
             <ContextPicker
@@ -560,7 +561,7 @@ export function ChatPanel() {
             <button
               type="button"
               onClick={stop}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-status-error text-fg-inverse transition-all hover:bg-status-error/90 hover:shadow-lg hover:shadow-status-error/20"
             >
               <Stop size={16} weight="bold" />
             </button>
@@ -568,7 +569,7 @@ export function ChatPanel() {
             <button
               type="submit"
               disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-accent/30 disabled:opacity-35 disabled:hover:bg-primary disabled:hover:shadow-none"
             >
               <PaperPlaneRight size={16} weight="bold" />
             </button>

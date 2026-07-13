@@ -312,7 +312,7 @@ export function Settings() {
     <TooltipProvider>
       <div className="flex h-full flex-col">
         <div className="flex min-h-0 flex-1 gap-0">
-          <div className="flex w-[200px] shrink-0 flex-col overflow-hidden border-r border-border/30">
+          <div className="flex w-[210px] shrink-0 flex-col overflow-hidden border-r border-border/30 bg-bg-surface/30">
             <div className="relative shrink-0 p-3 pb-2">
               <MagnifyingGlass
                 size={14}
@@ -322,18 +322,18 @@ export function Settings() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search settings..."
-                className="h-7 pl-8 text-ui-sm"
+                className="h-7 pl-8 text-ui-sm rounded-lg"
               />
 
               {(filteredItems.length > 0 || query.trim()) && (
-                <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
+                <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-xl border border-border/50 bg-bg-elevated p-1 shadow-xl shadow-black/10 glass-strong">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectCategory(item.category)}
-                        className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                        className="flex w-full flex-col gap-0.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
                       >
                         <span className="text-ui-sm text-fg-default">{item.label}</span>
                         <span className="text-ui-xs text-fg-subtle">
@@ -349,7 +349,7 @@ export function Settings() {
             </div>
 
             <ScrollArea className="min-h-0 flex-1 px-2">
-              <div className="flex flex-col py-1">
+              <div className="flex flex-col py-1 gap-0.5">
                 {CATEGORIES.map((category) => {
                   const Icon = category.icon;
                   const active = activeCategory === category.id;
@@ -359,13 +359,17 @@ export function Settings() {
                       type="button"
                       onClick={() => handleSelectCategory(category.id)}
                       className={cn(
-                        "flex items-center gap-2 border-l-2 px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
+                        "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-ui-sm font-medium transition-all duration-base",
                         active
-                          ? "border-primary text-fg-default"
-                          : "border-transparent text-fg-muted hover:text-fg-default",
+                          ? "bg-primary/10 text-fg-default shadow-sm"
+                          : "text-fg-muted hover:text-fg-default hover:bg-bg-hover/60",
                       )}
                     >
-                      <Icon size={16} />
+                      <Icon
+                        size={16}
+                        weight={active ? "duotone" : "regular"}
+                        className={cn(active && "text-primary")}
+                      />
                       {category.label}
                     </button>
                   );
@@ -415,7 +419,7 @@ export function Settings() {
                   />
                   <TooltipContent>Reset defaults</TooltipContent>
                 </Tooltip>
-                <AlertDialogContent>
+                <AlertDialogContent className="rounded-2xl">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -436,7 +440,7 @@ export function Settings() {
             <ScrollArea className="min-h-0 flex-1">
               <div className="p-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-heading text-sm font-semibold text-fg-default">
+                  <h2 className="font-heading text-sm font-bold text-fg-default tracking-wide">
                     {activeLabel}
                   </h2>
                   <span

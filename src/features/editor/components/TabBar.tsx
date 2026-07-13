@@ -66,7 +66,7 @@ export function TabBar({ panelId }: TabBarProps) {
   }
 
   return (
-    <div className="my-1 flex h-tab min-w-0 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-bg-surface px-3">
+    <div className="my-1 flex h-tab min-w-0 shrink-0 items-center gap-1 overflow-x-auto border-b border-border/40 bg-bg-surface/80 px-3 backdrop-blur-sm">
       {tabs.map((tab, index) => {
         const isActive = activeTabId === tab.id;
         const isDropTarget = dragOverIndex === index;
@@ -120,7 +120,7 @@ export function TabBar({ panelId }: TabBarProps) {
                   className={cn(
                     props.className,
                     "pragma-pill-tab group relative max-w-[180px] cursor-pointer",
-                    isDropTarget && draggedIndex !== index && "bg-accent-subtle",
+                    isDropTarget && draggedIndex !== index && "bg-accent-subtle ring-1 ring-accent/30",
                   )}
                 >
                   {tab.kind === "diff" ? (
@@ -130,12 +130,12 @@ export function TabBar({ panelId }: TabBarProps) {
                   )}
                   <span className="min-w-0 flex-1 truncate text-ui-sm">{tab.name}</span>
                   {tab.kind === "file" && tab.isModified && (
-                    <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="size-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_4px_var(--color-accent-glow)]" />
                   )}
                   <button
                     onClick={handleCloseTab(tab.id)}
                     className={cn(
-                      "ml-0.5 shrink-0 rounded-sm p-0.5 text-fg-muted transition-opacity hover:text-fg-default",
+                      "ml-0.5 shrink-0 rounded-md p-0.5 text-fg-muted transition-all hover:text-fg-default hover:bg-bg-hover",
                       isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
                     )}
                     aria-label={`Close ${tab.name}`}
@@ -145,19 +145,19 @@ export function TabBar({ panelId }: TabBarProps) {
                 </div>
               )}
             />
-            <ContextMenuContent className="w-48">
-              <ContextMenuItem onClick={() => closeTab(tab.id)}>
+            <ContextMenuContent className="w-48 rounded-xl glass-strong">
+              <ContextMenuItem onClick={() => closeTab(tab.id)} className="rounded-lg">
                 <X size={14} />
                 <span>Close</span>
               </ContextMenuItem>
-              <ContextMenuItem onClick={handleCloseOthers}>
+              <ContextMenuItem onClick={handleCloseOthers} className="rounded-lg">
                 <span>Close Others</span>
               </ContextMenuItem>
-              <ContextMenuItem onClick={handleCloseToRight}>
+              <ContextMenuItem onClick={handleCloseToRight} className="rounded-lg">
                 <span>Close to the Right</span>
               </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={handleCloseAll}>
+              <ContextMenuSeparator className="bg-border/30" />
+              <ContextMenuItem onClick={handleCloseAll} className="rounded-lg">
                 <span>Close All</span>
               </ContextMenuItem>
             </ContextMenuContent>
