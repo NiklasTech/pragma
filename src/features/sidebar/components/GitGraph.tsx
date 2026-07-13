@@ -47,6 +47,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/shared/components/ui/context-menu";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { GraphRail, railWidth, MAX_VISIBLE_LANES } from "./GraphRail";
 import { EMPTY_GRAPH_STATE, layoutGraph, type GraphRow } from "./lib/gitGraphLayout";
 import { GitCommitDetailsDialog } from "./GitCommitDetailsDialog";
@@ -417,9 +418,11 @@ export function GitGraph() {
 
   if (!repoPath) {
     return (
-      <div className="flex h-full items-center justify-center p-4">
-        <p className="text-sm text-fg-muted">Open a folder to view Git history</p>
-      </div>
+      <PanelEmptyState
+        icon={GitBranch}
+        title="Open a folder"
+        description="Open a folder with a Git repository to view commit history."
+      />
     );
   }
 
@@ -434,19 +437,21 @@ export function GitGraph() {
 
   if (loadStatus === "error" && commits.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-        <div className="text-ui-base font-medium text-fg-default">Could not load history</div>
-        <div className="max-w-md text-ui-xs text-fg-muted">{error ?? "Unknown error"}</div>
-      </div>
+      <PanelEmptyState
+        icon={Info}
+        title="Could not load history"
+        description={error ?? "Unknown error"}
+      />
     );
   }
 
   if (commits.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-        <div className="text-ui-base font-medium text-fg-default">No commits yet</div>
-        <div className="max-w-md text-ui-xs text-fg-muted">This branch has no commits.</div>
-      </div>
+      <PanelEmptyState
+        icon={GitBranch}
+        title="No commits yet"
+        description="This branch has no commits."
+      />
     );
   }
 

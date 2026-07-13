@@ -13,6 +13,8 @@ import {
 } from "@phosphor-icons/react";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Switch } from "@/shared/components/ui/switch";
+import { PanelHeader } from "@/shared/components/PanelHeader";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { cn } from "@/shared/lib/utils";
 import { useLayoutStore } from "@/shell/layout/store";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -55,7 +57,7 @@ function ProcessActionButton({
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
     </button>
@@ -87,7 +89,7 @@ function DetectedConfigRow({
           type="button"
           onClick={onAccept}
           title="Add process"
-          className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-success"
+          className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-success"
         >
           <Plus size={12} weight="bold" />
         </button>
@@ -95,7 +97,7 @@ function DetectedConfigRow({
           type="button"
           onClick={onReject}
           title="Ignore suggestion"
-          className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+          className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
         >
           <Trash size={12} />
         </button>
@@ -235,18 +237,21 @@ export function ProcessManagerPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Terminal size={16} className="text-fg-muted" />
-          <span className="text-xs font-semibold text-fg-default">Processes</span>
-        </div>
-        <div className="flex items-center gap-1">
+      <PanelHeader
+        icon={Terminal}
+        title="Processes"
+        subtitle={
+          configs.length > 0
+            ? `${configs.length} configuration${configs.length === 1 ? "" : "s"}`
+            : undefined
+        }
+        actions={
           <button
             type="button"
             onClick={refresh}
             disabled={isDetecting}
             title="Refresh"
-            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
           >
             {isDetecting ? (
               <Spinner size={12} className="animate-spin" />
@@ -254,8 +259,8 @@ export function ProcessManagerPanel() {
               <ArrowClockwise size={12} />
             )}
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-3 p-2">
@@ -264,10 +269,11 @@ export function ProcessManagerPanel() {
               <Spinner size={18} className="animate-spin text-fg-muted" />
             </div>
           ) : !workspaceRoot ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-fg-muted">Open a workspace to manage processes.</p>
-            </div>
+            <PanelEmptyState
+              icon={Warning}
+              title="Open a workspace"
+              description="Open a workspace to detect and manage processes."
+            />
           ) : (
             <>
               {detectedConfigs.length > 0 && (
@@ -299,9 +305,12 @@ export function ProcessManagerPanel() {
                   <span className="text-ui-xs text-fg-muted">{configs.length}</span>
                 </div>
                 {configs.length === 0 && detectedConfigs.length === 0 ? (
-                  <p className="px-1 py-3 text-center text-ui-xs text-fg-muted">
-                    No processes configured.
-                  </p>
+                  <PanelEmptyState
+                    icon={Terminal}
+                    title="No processes configured"
+                    description="Detected configs will appear above, or add a run configuration manually."
+                    className="py-4"
+                  />
                 ) : (
                   <div className="space-y-0.5">
                     {configs.map((config) => {
