@@ -60,6 +60,8 @@ export interface AISettings {
   terminalSuggestions: boolean;
   terminalSuggestionProvider: AIProvider | null;
   terminalSuggestionModel: string | null;
+  yoloMode: boolean;
+  showThinking: boolean;
   providers: Record<AIProvider, ProviderSettings>;
 }
 
@@ -145,6 +147,8 @@ interface SettingsActions {
   setEditorFont: (selection: FontSelection) => void;
   setTerminalFont: (selection: FontSelection) => void;
   setAISettings: (settings: Partial<AISettings>) => void;
+  setYoloMode: (enabled: boolean) => void;
+  setShowThinking: (enabled: boolean) => void;
   setTheme: (theme: string) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setKeymap: (keymap: string) => void;
@@ -207,6 +211,8 @@ const defaultSettings: SettingsState = {
     terminalSuggestions: true,
     terminalSuggestionProvider: null,
     terminalSuggestionModel: null,
+    yoloMode: false,
+    showThinking: true,
     providers: {
       openai: { model: "" },
       anthropic: { model: "" },
@@ -290,6 +296,16 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
     set((state) => ({ terminal: { ...state.terminal, fontId, fontFamily } })),
 
   setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
+
+  setYoloMode: (enabled) =>
+    set((state) => ({
+      ai: { ...state.ai, yoloMode: enabled },
+    })),
+
+  setShowThinking: (enabled) =>
+    set((state) => ({
+      ai: { ...state.ai, showThinking: enabled },
+    })),
 
   setTheme: (theme) => set({ theme }),
   setThemeMode: (themeMode) => set({ themeMode }),

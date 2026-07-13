@@ -27,6 +27,7 @@ import type { UIMessage } from "@ai-sdk/react";
 
 import { AiModelSelector } from "./AiModelSelector";
 import { ChatSessionList } from "./ChatSessionList";
+import { ChatToolbar } from "./ChatToolbar";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
@@ -86,6 +87,8 @@ export function ChatPanel() {
   const { edit, prefillPrompt, consumePrefill, receiveProposal, cancelEdit } = useAIEditStore();
   const openDiff = useEditorStore((state) => state.openDiff);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
+  const showThinking = useSettingsStore((state) => state.ai.showThinking);
   const contextPickerRef = useRef<ContextPickerRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -186,6 +189,15 @@ export function ChatPanel() {
     await invoke("cli_acp_approve", { req: { tool_call_id: toolCallId, approved } });
     setPendingApprovals((prev) => prev.filter((a) => a.toolCallId !== toolCallId));
   }, []);
+
+  // Auto-approve pending tool requests when Yolo mode is enabled.
+  useEffect(() => {
+    if (!yoloMode || pendingApprovals.length === 0) return;
+
+    for (const approval of pendingApprovals) {
+      void handleApproval(approval.toolCallId, true);
+    }
+  }, [yoloMode, pendingApprovals, handleApproval]);
 
   const sendShortcut = useSettingsStore((s) => s.shortcuts["chat.send"]);
 
@@ -404,7 +416,9 @@ export function ChatPanel() {
                         streaming={isStreaming}
                       />
                     ))}
-                    {reasoning && <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />}
+                    {reasoning && showThinking && (
+                      <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />
+                    )}
                     {toolInvocations.map((inv) => (
                       <ToolInvocationBlock
                         key={inv.toolCallId}
@@ -533,47 +547,52 @@ export function ChatPanel() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChangeWithCursor}
-              onKeyDown={onKeyDown}
-              onKeyUp={updateCursorPosition}
-              onClick={updateCursorPosition}
-              onSelect={updateCursorPosition}
-              placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
-              rows={1}
-              className="min-h-[36px] resize-none py-2 text-ui-base"
-              disabled={!canChat || isLoading}
-            />
-            <ContextPicker
-              ref={contextPickerRef}
-              input={input}
-              cursorPosition={cursorPosition}
-              rootPath={rootPath}
-              onSelect={handleContextSelect}
-            />
+        <div className="rounded-lg border border-border/60 bg-bg-root p-2 transition-all focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/25 focus-within:bg-bg-elevated">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <div className="relative flex-1">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleInputChangeWithCursor}
+                onKeyDown={onKeyDown}
+                onKeyUp={updateCursorPosition}
+                onClick={updateCursorPosition}
+                onSelect={updateCursorPosition}
+                placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
+                rows={1}
+                className="min-h-[36px] resize-none border-0 bg-transparent px-1 py-1 text-ui-base shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
+                disabled={!canChat || isLoading}
+              />
+              <ContextPicker
+                ref={contextPickerRef}
+                input={input}
+                cursorPosition={cursorPosition}
+                rootPath={rootPath}
+                onSelect={handleContextSelect}
+              />
+            </div>
+            {status === "streaming" ? (
+              <button
+                type="button"
+                onClick={stop}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
+              >
+                <Stop size={15} weight="bold" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
+              >
+                <PaperPlaneRight size={15} weight="bold" />
+              </button>
+            )}
+          </form>
+          <div className="mt-1 flex items-center justify-between">
+            <ChatToolbar />
           </div>
-          {status === "streaming" ? (
-            <button
-              type="button"
-              onClick={stop}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
-            >
-              <Stop size={16} weight="bold" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
-            >
-              <PaperPlaneRight size={16} weight="bold" />
-            </button>
-          )}
-        </form>
+        </div>
       </div>
     </div>
   );
