@@ -96,43 +96,50 @@ export function Titlebar() {
   return (
     <div
       data-tauri-drag-region
-      className="relative z-[60] flex h-header shrink-0 items-center select-none border-b border-border/60 bg-bg-surface"
+      className="relative z-[60] flex h-header shrink-0 items-center select-none border-b border-border/40"
+      style={{
+        background: "linear-gradient(180deg, var(--bg-surface) 0%, rgba(18,18,26,0.95) 100%)",
+      }}
     >
-      <div className="flex items-center gap-2 px-3">
-        <img src="/pragma_logo.svg" alt="" className="h-5 w-5" />
-        <span className="text-ui-xs font-semibold text-fg-default">Pragma</span>
+      <div className="flex items-center gap-2.5 px-3">
+        <div className="flex items-center justify-center rounded-lg bg-bg-elevated p-1 shadow-sm">
+          <img src="/pragma_logo.svg" alt="" className="h-4 w-4" />
+        </div>
+        <span className="text-ui-xs font-semibold tracking-wide text-fg-default">Pragma</span>
+
+        <div className="mx-1 h-4 w-px bg-border/30" />
 
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <button
                 type="button"
-                className="flex h-8 items-center justify-center gap-0.5 rounded-md px-2 text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                className="flex h-8 items-center justify-center gap-1 rounded-lg px-2.5 text-fg-muted transition-all duration-fast hover:bg-bg-hover hover:text-fg-default hover:shadow-sm"
                 title="Open folder or file"
               >
-                <FolderOpen size={16} />
-                <CaretDown size={10} className="opacity-60" />
+                <FolderOpen size={16} weight="regular" />
+                <CaretDown size={10} className="opacity-50" />
               </button>
             }
           />
-          <DropdownMenuContent align="start" className="min-w-[240px]">
-            <DropdownMenuItem onClick={handleOpenFolder}>
+          <DropdownMenuContent align="start" className="min-w-[240px] rounded-xl border-border/50 glass-strong">
+            <DropdownMenuItem onClick={handleOpenFolder} className="rounded-lg">
               <FolderOpen size={14} />
               Open Folder
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={openFile}>
+            <DropdownMenuItem onClick={openFile} className="rounded-lg">
               <FileText size={14} />
               Open File
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-border/30" />
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger className="rounded-lg">
                 <Star size={14} />
                 Favorites
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="min-w-[240px]">
+              <DropdownMenuSubContent className="min-w-[240px] rounded-xl border-border/50 glass-strong">
                 {favoriteFolders.length === 0 && (
-                  <DropdownMenuItem disabled>
+                  <DropdownMenuItem disabled className="rounded-lg">
                     <span className="text-fg-subtle">No favorites yet</span>
                   </DropdownMenuItem>
                 )}
@@ -140,7 +147,7 @@ export function Titlebar() {
                   <DropdownMenuItem
                     key={path}
                     onClick={() => selectRoot(path)}
-                    className="group justify-between"
+                    className="group justify-between rounded-lg"
                   >
                     <span className="truncate">{path}</span>
                     <button
@@ -149,20 +156,20 @@ export function Titlebar() {
                         e.stopPropagation();
                         removeFavoriteFolder(path);
                       }}
-                      className="ml-2 rounded p-0.5 text-fg-subtle opacity-0 transition-opacity hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
+                      className="ml-2 rounded-md p-0.5 text-fg-subtle opacity-0 transition-all hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
                       title="Remove favorite"
                     >
                       <X size={12} />
                     </button>
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleAddFavorite}>
+                <DropdownMenuSeparator className="bg-border/30" />
+                <DropdownMenuItem onClick={handleAddFavorite} className="rounded-lg">
                   <Plus size={14} />
                   Add Favorite…
                 </DropdownMenuItem>
                 {rootPath && (
-                  <DropdownMenuItem onClick={handleAddCurrentFolder}>
+                  <DropdownMenuItem onClick={handleAddCurrentFolder} className="rounded-lg">
                     <Star size={14} />
                     Add Current Folder
                   </DropdownMenuItem>
@@ -171,13 +178,13 @@ export function Titlebar() {
             </DropdownMenuSub>
             {recentFolders.length > 0 && (
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
+                <DropdownMenuSubTrigger className="rounded-lg">
                   <FolderOpen size={14} />
                   Open Recent
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="min-w-[240px]">
+                <DropdownMenuSubContent className="min-w-[240px] rounded-xl border-border/50 glass-strong">
                   {recentFolders.slice(0, 5).map((path) => (
-                    <DropdownMenuItem key={path} onClick={() => selectRoot(path)}>
+                    <DropdownMenuItem key={path} onClick={() => selectRoot(path)} className="rounded-lg">
                       <span className="truncate">{path}</span>
                     </DropdownMenuItem>
                   ))}
@@ -191,58 +198,60 @@ export function Titlebar() {
           type="button"
           onClick={saveFile}
           disabled={!canSave}
-          className="flex h-8 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 w-9 items-center justify-center rounded-lg text-fg-muted transition-all duration-fast hover:bg-bg-hover hover:text-fg-default hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-30"
           title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
         >
-          <FloppyDisk size={16} />
+          <FloppyDisk size={16} weight={canSave ? "fill" : "regular"} />
         </button>
 
-        <div className="mx-1 h-4 w-px bg-border/60" />
+        <div className="mx-1 h-4 w-px bg-border/30" />
         <RunConfigWidget />
       </div>
 
       <div className="flex-1" data-tauri-drag-region />
 
       <div className="flex items-center">
-        <div className="flex items-center border-l border-border/40">
+        <div className="flex items-center border-l border-border/30">
           <button
             type="button"
             onClick={() => addFloatingPanel("settings")}
-            className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="flex h-header w-10 items-center justify-center rounded-lg text-fg-muted transition-all duration-fast hover:bg-bg-hover hover:text-fg-default m-0.5"
             title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
           >
             <Gear size={16} />
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleMinimize}
-          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label="Minimize"
-        >
-          <Minus size={18} weight="bold" />
-        </button>
-        <button
-          type="button"
-          onClick={handleToggleMaximize}
-          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label={isMaximized ? "Restore" : "Maximize"}
-        >
-          {isMaximized ? (
-            <CornersIn size={18} weight="bold" />
-          ) : (
-            <CornersOut size={18} weight="bold" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="flex h-header w-14 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
-          aria-label="Close"
-        >
-          <X size={18} weight="bold" />
-        </button>
+        <div className="flex items-center border-l border-border/30">
+          <button
+            type="button"
+            onClick={handleMinimize}
+            className="flex h-8 w-12 items-center justify-center rounded-lg text-fg-muted transition-all duration-fast hover:bg-bg-hover hover:text-fg-default m-0.5"
+            aria-label="Minimize"
+          >
+            <Minus size={16} weight="bold" />
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleMaximize}
+            className="flex h-8 w-12 items-center justify-center rounded-lg text-fg-muted transition-all duration-fast hover:bg-bg-hover hover:text-fg-default m-0.5"
+            aria-label={isMaximized ? "Restore" : "Maximize"}
+          >
+            {isMaximized ? (
+              <CornersIn size={16} weight="bold" />
+            ) : (
+              <CornersOut size={16} weight="bold" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex h-8 w-12 items-center justify-center rounded-lg text-fg-muted transition-all duration-fast hover:bg-status-error/90 hover:text-fg-inverse m-0.5"
+            aria-label="Close"
+          >
+            <X size={16} weight="bold" />
+          </button>
+        </div>
       </div>
     </div>
   );

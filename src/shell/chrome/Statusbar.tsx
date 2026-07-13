@@ -26,14 +26,14 @@ function StatusbarSection({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-2 px-2 text-ui-xs text-fg-muted", className)}>
+    <div className={cn("flex items-center gap-1.5 px-2 text-ui-xs text-fg-muted", className)}>
       {children}
     </div>
   );
 }
 
 function StatusbarSeparator() {
-  return <div className="h-3 w-px bg-border/60" />;
+  return <div className="h-3 w-px bg-border/40 rounded-full" />;
 }
 
 export function Statusbar() {
@@ -66,14 +66,14 @@ export function Statusbar() {
         if (!editor.vimMode) return null;
         return (
           <StatusbarSection key={item}>
-            <span className="font-medium text-status-success">VIM</span>
+            <span className="rounded-md bg-status-success/15 px-1.5 py-0.5 font-semibold text-status-success text-[10px] tracking-wider">VIM</span>
           </StatusbarSection>
         );
 
       case "cursor":
         return (
           <StatusbarSection key={item}>
-            <span>
+            <span className="tabular-nums">
               Ln {cursor?.line ?? 1}, Col {cursor?.column ?? 1}
             </span>
           </StatusbarSection>
@@ -82,7 +82,7 @@ export function Statusbar() {
       case "fileType":
         return (
           <StatusbarSection key={item}>
-            <span>{fileType}</span>
+            <span className="rounded-md bg-bg-hover px-1.5 py-0.5 font-medium text-[10px]">{fileType}</span>
           </StatusbarSection>
         );
 
@@ -104,7 +104,7 @@ export function Statusbar() {
         if (!branch) return null;
         return (
           <StatusbarSection key={item}>
-            <GitBranch size={12} />
+            <GitBranch size={11} className="text-accent" />
             <span className="font-medium text-fg-default">{branch}</span>
           </StatusbarSection>
         );
@@ -113,9 +113,13 @@ export function Statusbar() {
         if (!branch || (ahead === 0 && behind === 0)) return null;
         return (
           <StatusbarSection key={item}>
-            <span>
-              {ahead > 0 && `↑${ahead}`}
-              {behind > 0 && `↓${behind}`}
+            <span className="tabular-nums text-fg-muted">
+              {ahead > 0 && (
+                <span className="text-status-success">↑{ahead}</span>
+              )}
+              {behind > 0 && (
+                <span className="text-status-warning ml-1">↓{behind}</span>
+              )}
             </span>
           </StatusbarSection>
         );
@@ -123,18 +127,18 @@ export function Statusbar() {
       case "problems":
         if (errorCount === 0 && warningCount === 0) return null;
         return (
-          <StatusbarSection key={item}>
+          <StatusbarSection key={item} className="gap-2">
             {errorCount > 0 && (
-              <>
-                <XCircle size={12} className="text-status-error" />
-                <span>{errorCount}</span>
-              </>
+              <span className="flex items-center gap-1">
+                <XCircle size={11} className="text-status-error" />
+                <span className="font-medium text-status-error">{errorCount}</span>
+              </span>
             )}
             {warningCount > 0 && (
-              <>
-                <Warning size={12} className="text-status-warning" />
-                <span>{warningCount}</span>
-              </>
+              <span className="flex items-center gap-1">
+                <Warning size={11} className="text-status-warning" />
+                <span className="font-medium text-status-warning">{warningCount}</span>
+              </span>
             )}
           </StatusbarSection>
         );
@@ -142,8 +146,8 @@ export function Statusbar() {
       case "aiProvider":
         return (
           <StatusbarSection key={item}>
-            <Robot size={12} />
-            <span className="truncate max-w-[120px]">
+            <Robot size={11} className="text-fg-subtle" />
+            <span className="truncate max-w-[120px] text-fg-subtle">
               {activeProvider ? `${activeProvider} · ${activeModel}` : "No AI"}
             </span>
           </StatusbarSection>
@@ -152,8 +156,8 @@ export function Statusbar() {
       case "theme":
         return (
           <StatusbarSection key={item}>
-            <Palette size={12} />
-            <span className="capitalize">{theme}</span>
+            <Palette size={11} className="text-fg-subtle" />
+            <span className="capitalize text-fg-subtle">{theme}</span>
           </StatusbarSection>
         );
 
@@ -167,8 +171,12 @@ export function Statusbar() {
   if (items.length === 0) return null;
 
   return (
-    <div className="flex h-statusbar shrink-0 items-center justify-between border-t border-border/60 bg-bg-surface px-1 select-none">
-      <div className="flex items-center">
+    <div className="flex h-statusbar shrink-0 items-center justify-between border-t border-border/40 px-1 select-none"
+      style={{
+        background: "linear-gradient(0deg, var(--bg-surface) 0%, rgba(18,18,26,0.9) 100%)",
+      }}
+    >
+      <div className="flex items-center gap-0.5">
         {items.map((item, index) => (
           <span key={index} className="contents">
             {item}
@@ -178,8 +186,8 @@ export function Statusbar() {
       </div>
       <div className="flex items-center">
         <StatusbarSection>
-          <CheckCircle size={12} className="text-status-success" />
-          <span>Ready</span>
+          <span className="flex h-1.5 w-1.5 rounded-full bg-status-success shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+          <span className="text-fg-subtle">Ready</span>
         </StatusbarSection>
       </div>
     </div>

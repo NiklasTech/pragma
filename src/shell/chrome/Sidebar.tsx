@@ -29,7 +29,7 @@ const tabs = [
   { id: "processes" as const, icon: Terminal, label: "Processes" },
 ];
 
-export const DOCK_WIDTH = 48;
+export const DOCK_WIDTH = 44;
 
 function DockTabButton({
   tab,
@@ -51,23 +51,26 @@ function DockTabButton({
       aria-pressed={isActive}
       onClick={() => onSelect(tab.id)}
       className={cn(
-        "relative flex size-9 items-center justify-center rounded-lg outline-none transition-all duration-fast",
-        isActive ? "text-fg-default" : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+        "relative flex size-8 items-center justify-center rounded-xl outline-none transition-all duration-base",
+        isActive
+          ? "text-fg-default bg-bg-hover shadow-sm"
+          : "text-fg-muted hover:bg-bg-hover/60 hover:text-fg-default",
       )}
       title={`${tab.label} (Ctrl+Shift+${index + 1})`}
     >
       {isActive && (
         <span
           className={cn(
-            "absolute top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary",
-            "shadow-[0_0_6px_var(--color-accent-glow)]",
-            "animate-in fade-in duration-150",
+            "absolute top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full",
+            "bg-gradient-to-b from-[var(--color-accent)] to-[var(--color-accent-secondary)]",
+            "shadow-[0_0_8px_var(--color-accent-glow)]",
+            "animate-in fade-in duration-200",
             isRight ? "right-0" : "left-0",
           )}
         />
       )}
       <tab.icon
-        size={20}
+        size={18}
         weight={isActive ? "duotone" : "regular"}
         className="shrink-0 transition-all duration-fast"
       />
@@ -92,12 +95,13 @@ export function SidebarDock() {
   return (
     <div
       className={cn(
-        "flex h-full w-[--width-sidebar-collapsed] shrink-0 flex-col items-center border-border/60 bg-bg-surface py-2",
+        "flex h-full shrink-0 flex-col items-center border-border/40 bg-bg-surface/80 py-2 backdrop-blur-sm",
         isRight ? "border-l" : "border-r",
       )}
+      style={{ width: "var(--width-sidebar-collapsed)" }}
     >
-      <div className="flex w-full flex-col gap-1 px-1.5">
-        <div className="flex w-full flex-col gap-1">
+      <div className="flex w-full flex-col gap-1 px-1">
+        <div className="flex w-full flex-col gap-0.5">
           {tabs.slice(0, 2).map((tab, index) => (
             <DockTabButton
               key={tab.id}
@@ -110,9 +114,9 @@ export function SidebarDock() {
           ))}
         </div>
 
-        <div className="my-1 mx-2 h-px bg-border/30" />
+        <div className="divider my-1.5 mx-2" />
 
-        <div className="flex w-full flex-col gap-1">
+        <div className="flex w-full flex-col gap-0.5">
           {tabs.slice(2, 4).map((tab, index) => (
             <DockTabButton
               key={tab.id}
@@ -125,9 +129,9 @@ export function SidebarDock() {
           ))}
         </div>
 
-        <div className="my-1 mx-2 h-px bg-border/30" />
+        <div className="divider my-1.5 mx-2" />
 
-        <div className="flex w-full flex-col gap-1">
+        <div className="flex w-full flex-col gap-0.5">
           {tabs.slice(4).map((tab, index) => (
             <DockTabButton
               key={tab.id}
@@ -147,13 +151,12 @@ export function SidebarDock() {
         type="button"
         onClick={() => setSidebarCollapsed(!sidebar.collapsed)}
         className={cn(
-          "flex size-9 items-center justify-center rounded-lg outline-none",
-          "text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-muted",
-          "focus-visible:ring-2 focus-visible:ring-primary/40",
+          "flex size-8 items-center justify-center rounded-xl outline-none",
+          "text-fg-subtle transition-all duration-fast hover:bg-bg-hover hover:text-fg-muted",
         )}
         title={sidebar.collapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
       >
-        <SidebarSimple size={18} />
+        <SidebarSimple size={16} />
       </button>
     </div>
   );
