@@ -11,22 +11,19 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================================
-   PRAGMA DESIGN SYSTEM
+   PRAGMA DESIGN SYSTEM v2 — Nova
    ----------------------------------------------------------------------------
-   Single source of truth for all visual values. Every component resolves to
-   one of these tokens. No hardcoded values allowed in components.
+   Complete visual refresh. Every component resolves to one of these tokens.
+   No hardcoded values allowed in components.
 
-   Namespaces:
-     --chrome-*  : layout constants
-     --text-*    : font sizes / line heights
-     --bg-*      : background surfaces
-     --fg-*      : foreground colors
-     --border-*  : border colors
-     --color-*   : semantic colors (accent, status, git)
-     --editor-*  : editor-specific tokens
-     --syntax-*  : syntax highlighting tokens
-     --terminal-*: terminal-specific tokens
-     --motion-*  : durations and easings
+   What's new in v2:
+   - Warmer, more sophisticated color palette
+   - Indigo/Violet accent family replacing cold electric blue
+   - Larger, more modern border radii
+   - Smoother motion curves
+   - Glass morphism utilities
+   - Improved spacing and type scale
+   - Refined syntax highlighting colors
    ============================================================================ */
 
 @theme inline {
@@ -54,7 +51,7 @@
   --leading-editor: var(--leading-editor);
 
   /* --------------------------------------------------------------------------
-     Radius
+     Radius — larger, more modern
      -------------------------------------------------------------------------- */
   --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
@@ -96,9 +93,9 @@
   --color-fg-subtle: var(--fg-subtle);
   --color-fg-inverse: var(--fg-inverse);
 
-  --color-accent: #2b7fff;
-  --color-accent-subtle: rgba(43, 127, 255, 0.12);
-  --color-accent-glow: rgba(43, 127, 255, 0.35);
+  --color-accent: var(--color-accent);
+  --color-accent-subtle: var(--color-accent-subtle);
+  --color-accent-glow: var(--color-accent-glow);
 
   --color-border: var(--border-default);
   --color-border-subtle: var(--border-subtle);
@@ -132,15 +129,15 @@
   /* --------------------------------------------------------------------------
      Colors — semantic status & git
      -------------------------------------------------------------------------- */
-  --color-status-success: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-error: #ef4444;
-  --color-status-info: #3b82f6;
+  --color-status-success: var(--color-status-success);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-error: var(--color-status-error);
+  --color-status-info: var(--color-status-info);
 
-  --color-git-added: #22c55e;
-  --color-git-modified: #f59e0b;
-  --color-git-deleted: #ef4444;
-  --color-git-untracked: #3b82f6;
+  --color-git-added: var(--color-git-added);
+  --color-git-modified: var(--color-git-modified);
+  --color-git-deleted: var(--color-git-deleted);
+  --color-git-untracked: var(--color-git-untracked);
 
   /* --------------------------------------------------------------------------
      Colors — editor
@@ -170,130 +167,137 @@
 }
 
 /* ============================================================================
-   DEFAULT THEME: Pragma Dark
+   DEFAULT THEME: Pragma Nova
    ============================================================================ */
 
 :root {
   /* --------------------------------------------------------------------------
-     Accent — Electric Blue
+     Accent — Warm Indigo Violet
+     Was: #2b7fff (cold electric blue)
+     Now: #7c6cf5 (warm indigo violet) — more unique, sophisticated
      -------------------------------------------------------------------------- */
-  --color-accent: #2b7fff;
-  --color-accent-subtle: rgba(43, 127, 255, 0.12);
-  --color-accent-glow: rgba(43, 127, 255, 0.35);
+  --color-accent: #7c6cf5;
+  --color-accent-subtle: rgba(124, 108, 245, 0.12);
+  --color-accent-glow: rgba(124, 108, 245, 0.4);
+  --color-accent-secondary: #a78bfa;
 
   /* --------------------------------------------------------------------------
-     Backgrounds
+     Backgrounds — warmer, more sophisticated
+     Subtle warm tint instead of cold neutral
      -------------------------------------------------------------------------- */
-  --bg-root: #09090b;
-  --bg-surface: #0f0f11;
-  --bg-elevated: #151519;
-  --bg-input: #1a1a1f;
-  --bg-hover: rgba(255, 255, 255, 0.05);
-  --bg-active: rgba(43, 127, 255, 0.1);
-  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --bg-root: #0b0b0f;
+  --bg-surface: #12121a;
+  --bg-elevated: #1a1a25;
+  --bg-input: #222230;
+  --bg-hover: rgba(255, 255, 255, 0.055);
+  --bg-active: rgba(124, 108, 245, 0.12);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-glass: rgba(18, 18, 26, 0.75);
 
   /* --------------------------------------------------------------------------
-     Foregrounds
+     Foregrounds — improved hierarchy
      -------------------------------------------------------------------------- */
-  --fg-default: #f4f4f5;
-  --fg-muted: #a1a1aa;
-  --fg-subtle: #71717a;
-  --fg-inverse: #09090b;
+  --fg-default: #f0f0f5;
+  --fg-muted: #9ca3af;
+  --fg-subtle: #6b7280;
+  --fg-inverse: #0b0b0f;
 
   /* --------------------------------------------------------------------------
-     Borders
+     Borders — softer, more refined
      -------------------------------------------------------------------------- */
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-focus: rgba(43, 127, 255, 0.5);
+  --border-default: rgba(255, 255, 255, 0.07);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-focus: rgba(124, 108, 245, 0.55);
+  --border-glow: rgba(124, 108, 245, 0.2);
 
   /* --------------------------------------------------------------------------
-     Status
+     Status — refined semantic colors
      -------------------------------------------------------------------------- */
-  --color-status-success: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-error: #ef4444;
-  --color-status-info: #3b82f6;
+  --color-status-success: #34d399;
+  --color-status-warning: #fbbf24;
+  --color-status-error: #f87171;
+  --color-status-info: #60a5fa;
 
   /* --------------------------------------------------------------------------
-     Git
+     Git — harmonized with new palette
      -------------------------------------------------------------------------- */
-  --color-git-added: #22c55e;
-  --color-git-modified: #f59e0b;
-  --color-git-deleted: #ef4444;
-  --color-git-untracked: #3b82f6;
+  --color-git-added: #34d399;
+  --color-git-modified: #fbbf24;
+  --color-git-deleted: #f87171;
+  --color-git-untracked: #7c6cf5;
 
   /* --------------------------------------------------------------------------
-     Editor
+     Editor — tuned for new accent
      -------------------------------------------------------------------------- */
   --editor-bg: var(--bg-root);
   --editor-fg: var(--fg-default);
-  --editor-selection: rgba(43, 127, 255, 0.25);
+  --editor-selection: rgba(124, 108, 245, 0.22);
   --editor-cursor: var(--color-accent);
   --editor-gutter-bg: var(--bg-root);
   --editor-gutter-fg: var(--fg-subtle);
-  --editor-line-active: rgba(255, 255, 255, 0.03);
+  --editor-line-active: rgba(255, 255, 255, 0.025);
 
   /* --------------------------------------------------------------------------
-     Syntax Highlighting
+     Syntax Highlighting — refined for warmth
      -------------------------------------------------------------------------- */
-  --syntax-keyword: #c084fc;
-  --syntax-string: #86efac;
-  --syntax-comment: #71717a;
-  --syntax-function: #60a5fa;
+  --syntax-keyword: #c4a8f5;
+  --syntax-string: #6ee7b7;
+  --syntax-comment: #6b7280;
+  --syntax-function: #93c5fd;
   --syntax-variable: var(--fg-default);
   --syntax-number: #fdba74;
-  --syntax-property: var(--fg-default);
-  --syntax-type: #f472b6;
+  --syntax-property: #a5b4fc;
+  --syntax-type: #f9a8d4;
   --syntax-operator: var(--fg-muted);
-  --syntax-tag: #f87171;
-  --syntax-attribute: #facc15;
+  --syntax-tag: #fca5a5;
+  --syntax-attribute: #fde047;
 
   /* --------------------------------------------------------------------------
-     Terminal
+     Terminal — ANSI palette refreshed
      -------------------------------------------------------------------------- */
   --terminal-bg: var(--bg-root);
   --terminal-fg: var(--fg-default);
   --terminal-cursor: var(--color-accent);
-  --terminal-selection: rgba(43, 127, 255, 0.25);
+  --terminal-selection: rgba(124, 108, 245, 0.22);
 
-  --terminal-ansi-black: #09090b;
-  --terminal-ansi-red: #ef4444;
-  --terminal-ansi-green: #22c55e;
-  --terminal-ansi-yellow: #f59e0b;
-  --terminal-ansi-blue: #2b7fff;
-  --terminal-ansi-magenta: #c084fc;
-  --terminal-ansi-cyan: #22d3ee;
-  --terminal-ansi-white: #a1a1aa;
+  --terminal-ansi-black: #0b0b0f;
+  --terminal-ansi-red: #f87171;
+  --terminal-ansi-green: #34d399;
+  --terminal-ansi-yellow: #fbbf24;
+  --terminal-ansi-blue: #7c6cf5;
+  --terminal-ansi-magenta: #c4a8f5;
+  --terminal-ansi-cyan: #67e8f9;
+  --terminal-ansi-white: #9ca3af;
 
-  --terminal-ansi-bright-black: #27272a;
-  --terminal-ansi-bright-red: #f87171;
-  --terminal-ansi-bright-green: #4ade80;
-  --terminal-ansi-bright-yellow: #fbbf24;
-  --terminal-ansi-bright-blue: #60a5fa;
-  --terminal-ansi-bright-magenta: #d8b4fe;
-  --terminal-ansi-bright-cyan: #67e8f9;
-  --terminal-ansi-bright-white: #f4f4f5;
+  --terminal-ansi-bright-black: #374151;
+  --terminal-ansi-bright-red: #fca5a5;
+  --terminal-ansi-bright-green: #6ee7b7;
+  --terminal-ansi-bright-yellow: #fde68a;
+  --terminal-ansi-bright-blue: #a5b4fc;
+  --terminal-ansi-bright-magenta: #ddd6fe;
+  --terminal-ansi-bright-cyan: #a5f3fc;
+  --terminal-ansi-bright-white: #f0f0f5;
 
   /* --------------------------------------------------------------------------
-     Layout
+     Layout — refined chrome dimensions
      -------------------------------------------------------------------------- */
-  --chrome-header-h: 56px;
-  --chrome-tab-h: 68px;
-  --chrome-statusbar-h: 26px;
-  --chrome-breadcrumb-h: 28px;
-  --chrome-sidebar-collapsed-w: 48px;
-  --chrome-sidebar-expanded-w: 260px;
-  --chrome-panel-min-h: 160px;
+  --chrome-header-h: 48px;
+  --chrome-tab-h: 52px;
+  --chrome-statusbar-h: 28px;
+  --chrome-breadcrumb-h: 30px;
+  --chrome-sidebar-collapsed-w: 44px;
+  --chrome-sidebar-expanded-w: 248px;
+  --chrome-panel-min-h: 140px;
 
   /* --------------------------------------------------------------------------
-     Typography values
+     Typography values — slightly refined scale
      -------------------------------------------------------------------------- */
   --text-ui-xs: 11px;
   --text-ui-sm: 12px;
   --text-ui-base: 13px;
   --text-ui-md: 14px;
-  --text-ui-lg: 16px;
+  --text-ui-lg: 15px;
+  --text-ui-xl: 18px;
   --text-editor: 14px;
 
   --leading-ui-xs: 14px;
@@ -301,32 +305,37 @@
   --leading-ui-base: 20px;
   --leading-ui-md: 22px;
   --leading-ui-lg: 24px;
+  --leading-ui-xl: 28px;
   --leading-editor: 22px;
 
   /* --------------------------------------------------------------------------
-     Radius
+     Radius — larger, more modern feel
      -------------------------------------------------------------------------- */
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
 
   /* --------------------------------------------------------------------------
-     Motion
+     Motion — smoother, more polished
      -------------------------------------------------------------------------- */
-  --motion-fast: 150ms;
-  --motion-base: 200ms;
-  --motion-slow: 250ms;
-  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 280ms;
+  --motion-ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* --------------------------------------------------------------------------
-     Scrollbar
+     Scrollbar — thinner, more refined
      -------------------------------------------------------------------------- */
   --scrollbar-track: transparent;
-  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.22);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  --scrollbar-width: 6px;
 }
 
 /* ============================================================================
@@ -341,10 +350,13 @@
   html {
     @apply font-sans antialiased;
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-bg-root text-fg-default;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   html,
@@ -357,16 +369,17 @@
 
   ::selection {
     background-color: var(--editor-selection);
+    color: var(--fg-default);
   }
 }
 
 /* ============================================================================
-   SCROLLBAR
+   SCROLLBAR — thinner, more refined
    ============================================================================ */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
 }
 
 ::-webkit-scrollbar-track {
@@ -376,7 +389,7 @@
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: var(--radius-pill);
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
   background-clip: padding-box;
   transition: background-color var(--motion-base) var(--motion-ease);
 }
@@ -385,32 +398,40 @@
   background: var(--scrollbar-thumb-hover);
 }
 
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* ============================================================================
-   PILL TABS — shared utility classes
+   PILL TABS — refined, more modern
    ============================================================================ */
 
 .pragma-pill-tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: var(--chrome-tab-h);
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
+  height: calc(var(--chrome-tab-h) - 8px);
+  padding: 0 14px;
+  border-radius: var(--radius-md);
   font-size: var(--text-ui-sm);
   line-height: var(--leading-ui-sm);
   font-weight: 500;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   user-select: none;
   transition:
     color var(--motion-base) var(--motion-ease),
     background-color var(--motion-base) var(--motion-ease),
-    box-shadow var(--motion-base) var(--motion-ease);
+    box-shadow var(--motion-base) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease-out);
 }
 
 .pragma-pill-tab[data-active="true"] {
   background-color: var(--bg-elevated);
   color: var(--fg-default);
-  box-shadow: inset 0 0 0 1px var(--border-default);
+  box-shadow:
+    inset 0 0 0 1px var(--border-default),
+    0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .pragma-pill-tab[data-active="false"] {
@@ -421,6 +442,11 @@
 .pragma-pill-tab[data-active="false"]:hover {
   background-color: var(--bg-hover);
   color: var(--fg-default);
+  transform: translateY(-0.5px);
+}
+
+.pragma-pill-tab[data-active="false"]:active {
+  transform: translateY(0);
 }
 
 /* ============================================================================
@@ -491,7 +517,7 @@
 }
 
 .tok-propertyName {
-  color: var(--syntax-variable);
+  color: var(--syntax-property);
 }
 
 .tok-typeName,
@@ -517,7 +543,7 @@
 }
 
 .tok-tagName {
-  color: var(--syntax-keyword);
+  color: var(--syntax-tag);
 }
 
 .tok-attributeName {
@@ -550,7 +576,10 @@
   color: var(--syntax-keyword);
 }
 
-/* Global cursor pointer for interactive elements */
+/* ============================================================================
+   GLOBAL INTERACTION
+   ============================================================================ */
+
 button,
 [role="button"],
 [role="menuitem"],
@@ -562,10 +591,11 @@ button:disabled,
 [role="button"]:disabled,
 [role="button"][aria-disabled="true"] {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* ============================================================================
-   COMMAND PALETTE ITEM — pulsing hover outline
+   COMMAND PALETTE ITEM — refined pulse
    ============================================================================ */
 
 @keyframes command-item-pulse {
@@ -574,10 +604,91 @@ button:disabled,
     box-shadow: 0 0 0 1px var(--border-focus);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(43, 127, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(124, 108, 245, 0.2);
   }
 }
 
 .animate-command-item-pulse {
-  animation: command-item-pulse 1.2s ease-in-out infinite;
+  animation: command-item-pulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================================================
+   GLASS MORPHISM UTILITIES
+   ============================================================================ */
+
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+}
+
+.glass-strong {
+  background: rgba(18, 18, 26, 0.9);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ============================================================================
+   GLOW EFFECTS
+   ============================================================================ */
+
+.glow-accent {
+  box-shadow: 0 0 20px var(--color-accent-glow), 0 0 60px rgba(124, 108, 245, 0.1);
+}
+
+.glow-subtle {
+  box-shadow: 0 0 12px rgba(124, 108, 245, 0.15);
+}
+
+/* ============================================================================
+   SMOOTH TRANSITIONS
+   ============================================================================ */
+
+.transition-smooth {
+  transition: all var(--motion-base) var(--motion-ease-smooth);
+}
+
+.transition-spring {
+  transition: all var(--motion-base) var(--motion-ease-spring);
+}
+
+/* ============================================================================
+   FOCUS STYLES — refined ring
+   ============================================================================ */
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-root), 0 0 0 4px var(--color-accent);
+}
+
+/* ============================================================================
+   DIVIDER — refined
+   ============================================================================ */
+
+.divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border-default) 20%,
+    var(--border-default) 80%,
+    transparent 100%
+  );
+}
+
+.divider-v {
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--border-default) 20%,
+    var(--border-default) 80%,
+    transparent 100%
+  );
 }
