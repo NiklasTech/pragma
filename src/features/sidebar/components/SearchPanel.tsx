@@ -13,6 +13,8 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { PanelHeader } from "@/shared/components/PanelHeader";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
@@ -145,106 +147,118 @@ export function SearchPanel() {
 
   if (!rootPath) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-ui-sm text-fg-muted">
-        <MagnifyingGlass size={24} />
-        <span>Open a folder to search</span>
-      </div>
+      <PanelEmptyState
+        icon={MagnifyingGlass}
+        title="Open a folder to search"
+        description="Select a workspace to search across all files."
+      />
     );
   }
 
+  const emptyTitle = query.trim().length > 0 ? "No results" : "Type to search";
+  const emptyDescription =
+    query.trim().length > 0
+      ? "Try a different query or adjust filters."
+      : "Start typing to search across files.";
+
   return (
-    <div className="flex h-full flex-col gap-2 p-3">
-      <div className="relative">
-        <MagnifyingGlass
-          size={14}
-          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
-        />
-        <Input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search in workspace"
-          className="h-8 pl-8 pr-7"
-        />
-        {query.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              inputRef.current?.focus();
-            }}
-            className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-subtle hover:text-fg-default"
-            aria-label="Clear search"
-          >
-            <X size={14} />
-          </button>
-        )}
-      </div>
+    <div className="flex h-full flex-col">
+      <PanelHeader icon={MagnifyingGlass} title="Search" />
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+        <div className="relative">
+          <MagnifyingGlass
+            size={14}
+            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
+          />
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search in workspace"
+            className="h-8 pl-8 pr-7"
+          />
+          {query.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                inputRef.current?.focus();
+              }}
+              className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-subtle hover:text-fg-default"
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
 
-      <div className="flex items-center gap-1">
-        <OptionButton
-          active={caseSensitive}
-          onClick={() => setCaseSensitive((v) => !v)}
-          title="Match case"
-          icon={TextAa}
-        />
-        <OptionButton
-          active={wholeWord}
-          onClick={() => setWholeWord((v) => !v)}
-          title="Match whole word"
-          icon={Quotes}
-        />
-        <OptionButton
-          active={useRegex}
-          onClick={() => setUseRegex((v) => !v)}
-          title="Use regular expressions"
-          icon={BracketsAngle}
-        />
-      </div>
+        <div className="flex items-center gap-1">
+          <OptionButton
+            active={caseSensitive}
+            onClick={() => setCaseSensitive((v) => !v)}
+            title="Match case"
+            icon={TextAa}
+          />
+          <OptionButton
+            active={wholeWord}
+            onClick={() => setWholeWord((v) => !v)}
+            title="Match whole word"
+            icon={Quotes}
+          />
+          <OptionButton
+            active={useRegex}
+            onClick={() => setUseRegex((v) => !v)}
+            title="Use regular expressions"
+            icon={BracketsAngle}
+          />
+        </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Input
-          value={includePatterns}
-          onChange={(e) => setIncludePatterns(e.target.value)}
-          placeholder="Include (e.g. *.ts)"
-          className="h-7 text-ui-xs"
-        />
-        <Input
-          value={excludePatterns}
-          onChange={(e) => setExcludePatterns(e.target.value)}
-          placeholder="Exclude (e.g. *.test.ts)"
-          className="h-7 text-ui-xs"
-        />
-      </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            value={includePatterns}
+            onChange={(e) => setIncludePatterns(e.target.value)}
+            placeholder="Include (e.g. *.ts)"
+            className="h-7 text-ui-xs"
+          />
+          <Input
+            value={excludePatterns}
+            onChange={(e) => setExcludePatterns(e.target.value)}
+            placeholder="Exclude (e.g. *.test.ts)"
+            className="h-7 text-ui-xs"
+          />
+        </div>
 
-      {error && <p className="text-ui-xs text-status-error">{error}</p>}
+        {error && <p className="text-ui-xs text-status-error">{error}</p>}
 
-      <div className="min-h-0 flex-1">
-        {loading && results.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <Spinner size={20} className="animate-spin text-fg-muted" />
-          </div>
-        ) : grouped.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-ui-sm text-fg-muted">
-            <MagnifyingGlass size={24} />
-            <span>{query.trim().length > 0 ? "No results" : "Type to search"}</span>
-          </div>
-        ) : (
-          <ScrollArea className="h-full">
-            <div className="flex flex-col gap-3 pb-2">
-              {grouped.map((group) => (
-                <ResultGroupView key={group.path} group={group} onOpenResult={handleOpenResult} />
-              ))}
+        <div className="min-h-0 flex-1">
+          {loading && results.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <Spinner size={20} className="animate-spin text-fg-muted" />
             </div>
-          </ScrollArea>
+          ) : grouped.length === 0 ? (
+            <PanelEmptyState
+              icon={MagnifyingGlass}
+              title={emptyTitle}
+              description={emptyDescription}
+              className="py-4"
+            />
+          ) : (
+            <ScrollArea className="h-full">
+              <div className="flex flex-col gap-3 pb-2">
+                {grouped.map((group) => (
+                  <ResultGroupView key={group.path} group={group} onOpenResult={handleOpenResult} />
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+
+        {results.length > 0 && (
+          <p className="text-ui-xs text-fg-subtle">
+            {results.length} result{results.length === 1 ? "" : "s"}
+          </p>
         )}
       </div>
-
-      {results.length > 0 && (
-        <p className="text-ui-xs text-fg-subtle">
-          {results.length} result{results.length === 1 ? "" : "s"}
-        </p>
-      )}
     </div>
   );
 }

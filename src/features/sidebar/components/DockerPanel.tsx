@@ -21,6 +21,8 @@ import {
   CollapsibleTrigger,
 } from "@/shared/components/ui/collapsible";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { PanelHeader } from "@/shared/components/PanelHeader";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { cn } from "@/shared/lib/utils";
 import { useDockerStore, type DockerContainer } from "@/shared/stores/docker";
 
@@ -145,7 +147,7 @@ function DockerActionButton({
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
     </button>
@@ -268,18 +270,21 @@ export function DockerPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Cube size={16} className="text-fg-muted" />
-          <span className="text-xs font-semibold text-fg-default">Docker</span>
-        </div>
-        <div className="flex items-center gap-1">
+      <PanelHeader
+        icon={Cube}
+        title="Docker"
+        subtitle={
+          containers.length > 0
+            ? `${containers.length} container${containers.length === 1 ? "" : "s"}`
+            : undefined
+        }
+        actions={
           <button
             type="button"
             onClick={() => void loadContainers()}
             disabled={isLoading}
             title="Refresh"
-            className="flex h-6 w-6 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
           >
             {isLoading ? (
               <Spinner size={12} className="animate-spin" />
@@ -287,8 +292,8 @@ export function DockerPanel() {
               <ArrowClockwise size={12} />
             )}
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-3 p-2">
@@ -297,25 +302,27 @@ export function DockerPanel() {
               <Spinner size={18} className="animate-spin text-fg-muted" />
             </div>
           ) : runtime === null ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-fg-muted">Failed to detect Docker runtime.</p>
+            <PanelEmptyState
+              icon={Warning}
+              title="Docker detection failed"
+              description="Failed to detect Docker or Podman runtime. Make sure it is installed and running."
+            >
               {error && <p className="text-ui-xs text-status-error">{error}</p>}
-            </div>
+            </PanelEmptyState>
           ) : !runtime.available ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <Warning size={20} className="text-status-warning" />
-              <p className="text-xs text-fg-muted">
-                Docker or Podman is not available on this system.
-              </p>
+            <PanelEmptyState
+              icon={Warning}
+              title="Docker not available"
+              description="Docker or Podman is not available on this system."
+            >
               {runtime.daemon_error ? (
                 <p className="text-ui-xs text-status-error">{runtime.daemon_error}</p>
               ) : (
-                <p className="text-ui-xs text-fg-muted">
+                <p className="text-ui-xs text-fg-subtle">
                   Shell: /bin/fish · PATH entries: check Tauri log
                 </p>
               )}
-            </div>
+            </PanelEmptyState>
           ) : (
             <>
               <div className="flex items-center justify-between rounded-md bg-bg-hover px-2 py-1.5">
@@ -373,9 +380,12 @@ export function DockerPanel() {
                   </button>
                 </div>
                 {containers.length === 0 ? (
-                  <p className="px-1 py-3 text-ui-xs text-fg-muted text-center">
-                    No containers found.
-                  </p>
+                  <PanelEmptyState
+                    icon={Cube}
+                    title="No containers found"
+                    description="Start a container or check your Docker connection."
+                    className="py-4"
+                  />
                 ) : (
                   <>
                     <ContainerGroup

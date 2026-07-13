@@ -39,6 +39,7 @@ import {
   GitBranch as GitBranchIcon,
   Check,
   X,
+  Warning,
 } from "@phosphor-icons/react";
 import {
   Dialog,
@@ -49,6 +50,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 
 function StatusIcon({ status }: { status: string }) {
   const props = { size: 13, className: "shrink-0" };
@@ -164,7 +166,7 @@ function GitToolbar({
   isRefreshBusy: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-1 border-b border-border/40 bg-bg-surface px-2 py-1.5">
+    <div className="flex items-center justify-between gap-1 border-b border-border/60 px-3 py-2">
       <div className="flex items-center gap-0.5">
         <ToolbarButton
           icon={ArrowsClockwise}
@@ -217,7 +219,7 @@ function ToolbarButton({
       disabled={disabled || busy}
       title={label}
       className={cn(
-        "relative flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-fg-muted transition-colors",
+        "relative flex size-7 items-center justify-center rounded-md text-fg-muted transition-colors",
         disabled ? "opacity-40" : "hover:bg-bg-hover hover:text-fg-default",
       )}
     >
@@ -678,13 +680,15 @@ function FileRow({
 
 function CleanTreeHint({ repoLabel }: { repoLabel: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 px-4 py-8 text-center">
-      <div className="flex size-8 items-center justify-center rounded-full border border-border/60 text-fg-muted">
-        <CheckCircle size={16} />
+    <div className="flex flex-col items-center justify-center gap-2 px-4 py-6 text-center">
+      <div className="flex size-10 items-center justify-center rounded-full border border-status-success/20 bg-status-success/10 shadow-[0_0_24px_-6px_rgba(34,197,94,0.25)]">
+        <CheckCircle size={18} weight="fill" className="text-status-success" />
       </div>
-      <div className="text-ui-sm font-medium text-fg-default">Working tree clean</div>
-      <div className="text-ui-xs text-fg-muted">
-        on <span className="font-mono text-fg-default/80">{repoLabel}</span>
+      <div>
+        <div className="text-ui-sm font-medium text-fg-default">Working tree clean</div>
+        <div className="text-ui-xs text-fg-muted">
+          on <span className="font-mono text-fg-default/80">{repoLabel}</span>
+        </div>
       </div>
     </div>
   );
@@ -928,9 +932,11 @@ export function GitStatus() {
 
   if (!repoPath) {
     return (
-      <div className="flex h-full items-center justify-center p-4">
-        <p className="text-ui-sm text-fg-muted">Open a folder to view Git status</p>
-      </div>
+      <PanelEmptyState
+        icon={GitBranchIcon}
+        title="Open a folder"
+        description="Open a folder with a Git repository to view status and commit changes."
+      />
     );
   }
 
@@ -943,11 +949,7 @@ export function GitStatus() {
   }
 
   if (error && !snapshot) {
-    return (
-      <div className="flex h-full items-center justify-center p-4">
-        <p className="text-ui-sm text-status-error">{error}</p>
-      </div>
-    );
+    return <PanelEmptyState icon={Warning} title="Git status unavailable" description={error} />;
   }
 
   return (

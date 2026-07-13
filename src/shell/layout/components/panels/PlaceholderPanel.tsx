@@ -1,3 +1,5 @@
+import { Question } from "@phosphor-icons/react";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import type { PanelKind } from "../../tree/types";
 
 interface PlaceholderPanelProps {
@@ -6,9 +8,10 @@ interface PlaceholderPanelProps {
 
 export default function PlaceholderPanel({ kind }: PlaceholderPanelProps) {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-ui-sm text-fg-muted">
-      <span className="capitalize">{kind.replace(/-/g, " ")}</span>
-      <span className="text-ui-xs">Panel not yet implemented.</span>
-    </div>
+    <PanelEmptyState
+      icon={Question}
+      title={kind.replace(/-/g, " ")}
+      description="Panel not yet implemented."
+    />
   );
 }

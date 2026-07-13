@@ -4,7 +4,6 @@ import {
   Warning,
   Terminal,
   Plus,
-  ChatTeardropText,
   Stop,
   Robot,
   ArrowCounterClockwise,
@@ -26,7 +25,9 @@ import { matchShortcut } from "@/shared/lib/shortcuts";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AiModelSelector } from "./AiModelSelector";
+import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatSessionList } from "./ChatSessionList";
+import { ChatToolbar } from "./ChatToolbar";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
@@ -86,6 +87,8 @@ export function ChatPanel() {
   const { edit, prefillPrompt, consumePrefill, receiveProposal, cancelEdit } = useAIEditStore();
   const openDiff = useEditorStore((state) => state.openDiff);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
+  const showThinking = useSettingsStore((state) => state.ai.showThinking);
   const contextPickerRef = useRef<ContextPickerRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -187,6 +190,15 @@ export function ChatPanel() {
     setPendingApprovals((prev) => prev.filter((a) => a.toolCallId !== toolCallId));
   }, []);
 
+  // Auto-approve pending tool requests when Yolo mode is enabled.
+  useEffect(() => {
+    if (!yoloMode || pendingApprovals.length === 0) return;
+
+    for (const approval of pendingApprovals) {
+      void handleApproval(approval.toolCallId, true);
+    }
+  }, [yoloMode, pendingApprovals, handleApproval]);
+
   const sendShortcut = useSettingsStore((s) => s.shortcuts["chat.send"]);
 
   const onKeyDown = useCallback(
@@ -241,6 +253,16 @@ export function ChatPanel() {
     void regenerate();
   }, [regenerate]);
 
+  const handlePromptSelect = useCallback(
+    (prompt: string) => {
+      setInput(prompt);
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+      });
+    },
+    [setInput],
+  );
+
   const streamingMessageId =
     status === "streaming" && messages[messages.length - 1]?.role === "assistant"
       ? messages[messages.length - 1]?.id
@@ -248,33 +270,28 @@ export function ChatPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Session Header */}
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <ChatTeardropText size={14} className="shrink-0 text-fg-muted" />
-          <span className="truncate text-ui-xs text-fg-muted">
-            {activeSession?.title ?? "Chat"}
-          </span>
-          {activeSession && (
-            <span className="shrink-0 text-ui-xs text-fg-subtle">
-              {new Date(activeSession.createdAt).toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent-subtle sm:size-7 sm:rounded-lg">
+            <Robot size={14} weight="bold" className="text-primary" />
+          </div>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-ui-xs font-semibold sm:text-ui-sm">AI Assistant</span>
+            {activeSession && (
+              <span className="truncate text-ui-xs text-fg-subtle">{activeSession.title}</span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <AiModelSelector />
           <ChatSessionList />
           <button
             onClick={handleNewSession}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default sm:size-7 sm:rounded-lg"
             title="New Session"
+            type="button"
           >
-            <Plus size={14} weight="bold" />
+            <Plus size={13} weight="bold" />
           </button>
         </div>
       </div>
@@ -282,22 +299,8 @@ export function ChatPanel() {
       {/* Messages */}
       <div className="relative flex-1 min-h-0">
         <Conversation className="h-full">
-          <ConversationContent className="gap-4 p-4">
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-accent-subtle">
-                  <PaperPlaneRight size={20} weight="bold" className="text-primary" />
-                </div>
-                <p className="text-ui-sm font-semibold">Pragma AI</p>
-                <p className="mt-1 text-ui-sm text-fg-muted">How can I help you today?</p>
-
-                {!canChat && (
-                  <p className="mt-4 text-ui-xs text-fg-subtle">
-                    Open Settings to configure an AI provider.
-                  </p>
-                )}
-              </div>
-            )}
+          <ConversationContent className="gap-5 px-4 py-5">
+            {messages.length === 0 && <ChatEmptyState onPromptSelect={handlePromptSelect} />}
 
             {messages.map((msg: UIMessage) => {
               const reasoningParts = msg.parts
@@ -361,7 +364,6 @@ export function ChatPanel() {
                 .filter((inv): inv is NonNullable<typeof inv> => inv !== null);
               const isStreaming = msg.id === streamingMessageId;
 
-              // Some providers/models emit reasoning as inline <thinking> tags inside the text.
               const { text, reasoning: inlineReasoning } = extractInlineReasoning(
                 rawText,
                 isStreaming,
@@ -382,9 +384,6 @@ export function ChatPanel() {
 
               return (
                 <Message key={msg.id} from="assistant">
-                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-hover">
-                    <Robot size={14} className="text-fg-muted" />
-                  </div>
                   <MessageContent>
                     {sourceDocuments.map((source, index) => (
                       <SourceBlock
@@ -404,7 +403,9 @@ export function ChatPanel() {
                         streaming={isStreaming}
                       />
                     ))}
-                    {reasoning && <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />}
+                    {reasoning && showThinking && (
+                      <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />
+                    )}
                     {toolInvocations.map((inv) => (
                       <ToolInvocationBlock
                         key={inv.toolCallId}
@@ -429,9 +430,6 @@ export function ChatPanel() {
 
             {status === "submitted" && (
               <Message from="assistant">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-hover">
-                  <Robot size={14} className="text-fg-muted" />
-                </div>
                 <MessageContent>
                   <ChatTypingIndicator />
                 </MessageContent>
@@ -442,11 +440,11 @@ export function ChatPanel() {
         </Conversation>
       </div>
 
-      {/* Input Area */}
-      <div className="shrink-0 border-t border-border/60 bg-bg-surface p-3">
+      {/* Footer */}
+      <div className="shrink-0 border-t border-border/60 bg-bg-surface p-4">
         {/* Error Banner */}
         {error && (
-          <div className="mb-2 flex items-start gap-2 rounded-md bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
+          <div className="mb-3 flex items-start gap-2 rounded-lg bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
             <Warning size={14} className="mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-medium">Something went wrong</p>
@@ -465,7 +463,7 @@ export function ChatPanel() {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
             <Terminal size={14} />
             <span>
               Using {cliStatus.provider_id} via CLI
@@ -475,7 +473,7 @@ export function ChatPanel() {
         )}
 
         {!canChat && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-status-warning/10 px-3 py-2 text-ui-sm text-status-warning">
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-status-warning/10 px-3 py-2 text-ui-sm text-status-warning">
             <Warning size={14} />
             <span>
               {isCLIActive
@@ -486,18 +484,18 @@ export function ChatPanel() {
         )}
 
         {!mcpLoaded && (
-          <div className="mb-2 flex items-center gap-2 rounded-md bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
           </div>
         )}
 
         {pendingApprovals.length > 0 && (
-          <div className="mb-2 flex flex-col gap-2">
+          <div className="mb-3 flex flex-col gap-2">
             {pendingApprovals.map((approval) => (
               <div
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-md border border-border/60 bg-bg-root p-3"
+                className="flex flex-col gap-2 rounded-lg border border-border/60 bg-bg-root p-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
@@ -506,7 +504,7 @@ export function ChatPanel() {
                   <p className="text-ui-xs text-fg-muted">{approval.description}</p>
                 )}
                 {approval.args ? (
-                  <pre className="max-h-32 overflow-auto rounded bg-bg-surface p-2 text-ui-xs text-fg-muted">
+                  <pre className="max-h-32 overflow-auto rounded-md bg-bg-surface p-2 text-ui-xs text-fg-muted">
                     {JSON.stringify(approval.args, null, 2)}
                   </pre>
                 ) : null}
@@ -533,8 +531,12 @@ export function ChatPanel() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <div className="relative flex-1">
+        {/* Compose Box */}
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-xl border border-border/60 bg-bg-input p-2.5 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20 sm:p-3"
+        >
+          <div className="relative">
             <Textarea
               ref={textareaRef}
               value={input}
@@ -545,7 +547,7 @@ export function ChatPanel() {
               onSelect={updateCursorPosition}
               placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
               rows={1}
-              className="min-h-[36px] resize-none py-2 text-ui-base"
+              className="min-h-[40px] resize-none border-0 bg-transparent px-0 py-0 text-ui-sm shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent sm:min-h-[44px] sm:text-ui-base"
               disabled={!canChat || isLoading}
             />
             <ContextPicker
@@ -556,23 +558,29 @@ export function ChatPanel() {
               onSelect={handleContextSelect}
             />
           </div>
-          {status === "streaming" ? (
-            <button
-              type="button"
-              onClick={stop}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
-            >
-              <Stop size={16} weight="bold" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
-            >
-              <PaperPlaneRight size={16} weight="bold" />
-            </button>
-          )}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+              <AiModelSelector variant="icon" />
+              <ChatToolbar />
+            </div>
+            {status === "streaming" ? (
+              <button
+                type="button"
+                onClick={stop}
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90 sm:size-8 sm:rounded-lg"
+              >
+                <Stop size={14} weight="bold" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary sm:size-8 sm:rounded-lg"
+              >
+                <PaperPlaneRight size={14} weight="bold" />
+              </button>
+            )}
+          </div>
         </form>
       </div>
     </div>

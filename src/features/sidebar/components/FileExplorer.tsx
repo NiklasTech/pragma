@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FolderOpen, Spinner } from "@phosphor-icons/react";
+import { FolderOpen, Files, Spinner } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import {
   ContextMenu,
@@ -8,6 +8,8 @@ import {
   ContextMenuContent,
   ContextMenuItem,
 } from "@/shared/components/ui/context-menu";
+import { PanelHeader } from "@/shared/components/PanelHeader";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { getVisibleNodes } from "@/shared/stores/fileExplorer";
@@ -47,13 +49,16 @@ export function FileExplorer() {
 
   if (!rootPath) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 p-4">
-        <p className="text-ui-sm text-fg-muted">No folder open</p>
+      <PanelEmptyState
+        icon={Files}
+        title="No folder open"
+        description="Open a workspace folder to browse files and start coding."
+      >
         <Button variant="outline" size="sm" onClick={() => void selectRoot()} className="gap-2">
           <FolderOpen size={16} />
           Open Folder
         </Button>
-      </div>
+      </PanelEmptyState>
     );
   }
 
@@ -61,11 +66,7 @@ export function FileExplorer() {
     <ContextMenu>
       <ContextMenuTrigger className="h-full">
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-            <span className="truncate text-ui-xs font-semibold text-fg-default" title={rootPath}>
-              {rootName}
-            </span>
-          </div>
+          <PanelHeader icon={Files} title="Explorer" subtitle={rootName ?? undefined} />
           <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">

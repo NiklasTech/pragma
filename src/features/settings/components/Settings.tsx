@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { PanelHeader } from "@/shared/components/PanelHeader";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/shared/components/ui/alert-dialog";
+import type { Icon } from "@phosphor-icons/react";
 import {
   Code,
   Terminal,
@@ -64,7 +66,7 @@ type Category =
 interface CategoryDef {
   id: Category;
   label: string;
-  icon: React.ElementType;
+  icon: Icon;
 }
 
 const CATEGORIES: CategoryDef[] = [
@@ -280,7 +282,9 @@ export function Settings() {
     } catch {}
   };
 
-  const activeLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label ?? "Settings";
+  const activeCategoryDef = CATEGORIES.find((c) => c.id === activeCategory);
+  const activeLabel = activeCategoryDef?.label ?? "Settings";
+  const ActiveIcon = activeCategoryDef?.icon ?? Info;
 
   React.useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -333,7 +337,7 @@ export function Settings() {
                         key={item.id}
                         type="button"
                         onClick={() => handleSelectCategory(item.category)}
-                        className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                        className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
                       >
                         <span className="text-ui-sm text-fg-default">{item.label}</span>
                         <span className="text-ui-xs text-fg-subtle">
@@ -359,13 +363,13 @@ export function Settings() {
                       type="button"
                       onClick={() => handleSelectCategory(category.id)}
                       className={cn(
-                        "flex items-center gap-2 border-l-2 px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
+                        "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
                         active
-                          ? "border-primary text-fg-default"
-                          : "border-transparent text-fg-muted hover:text-fg-default",
+                          ? "bg-bg-active/50 text-fg-default"
+                          : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
                       )}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} className={cn(active && "text-primary")} />
                       {category.label}
                     </button>
                   );
@@ -433,34 +437,33 @@ export function Settings() {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <PanelHeader
+              icon={ActiveIcon}
+              title={activeLabel}
+              actions={
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 text-ui-xs text-status-success transition-opacity duration-200",
+                    saveIndicator === "saved" ? "opacity-100" : "opacity-0",
+                  )}
+                  aria-live="polite"
+                >
+                  <Check size={12} />
+                  Saved
+                </span>
+              }
+            />
             <ScrollArea className="min-h-0 flex-1">
               <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-heading text-sm font-semibold text-fg-default">
-                    {activeLabel}
-                  </h2>
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 text-ui-xs text-status-success transition-opacity duration-200",
-                      saveIndicator === "saved" ? "opacity-100" : "opacity-0",
-                    )}
-                    aria-live="polite"
-                  >
-                    <Check size={12} />
-                    Saved
-                  </span>
-                </div>
-                <div className="mt-5">
-                  {activeCategory === "editor" && <EditorSettings />}
-                  {activeCategory === "terminal" && <TerminalSettings />}
-                  {activeCategory === "ai" && <AISettings />}
-                  {activeCategory === "theme" && <ThemeSettings />}
-                  {activeCategory === "mcp" && <McpSettings />}
-                  {activeCategory === "layout" && <LayoutSettings />}
-                  {activeCategory === "keyboard" && <KeyboardSettings />}
-                  {activeCategory === "languages" && <LspSettings />}
-                  {activeCategory === "about" && <AboutSettings />}
-                </div>
+                {activeCategory === "editor" && <EditorSettings />}
+                {activeCategory === "terminal" && <TerminalSettings />}
+                {activeCategory === "ai" && <AISettings />}
+                {activeCategory === "theme" && <ThemeSettings />}
+                {activeCategory === "mcp" && <McpSettings />}
+                {activeCategory === "layout" && <LayoutSettings />}
+                {activeCategory === "keyboard" && <KeyboardSettings />}
+                {activeCategory === "languages" && <LspSettings />}
+                {activeCategory === "about" && <AboutSettings />}
               </div>
             </ScrollArea>
           </div>

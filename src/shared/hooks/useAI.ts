@@ -634,6 +634,28 @@ export function useAI() {
     experimental_throttle: 50,
     onToolCall,
     sendAutomaticallyWhen,
+    onFinish: (message) => {
+      if (!activeChatSessionId) return;
+      if (isCLIActive || !activeModel) return;
+
+      const { chatSessions, generateChatTitle: generateTitle } = useAIStore.getState();
+      const session = chatSessions.find((s) => s.id === activeChatSessionId);
+      if (!session || session.title !== "New Chat") return;
+
+      const firstUserMsg = session.messages.find((m) => m.role === "user");
+      if (!firstUserMsg) return;
+
+      // Only generate a title after the first assistant response finishes.
+      if (message.message.role !== "assistant") return;
+
+      void generateTitle(
+        activeChatSessionId,
+        activeProvider,
+        activeModel,
+        providerConfig.baseUrl,
+        firstUserMsg.content,
+      );
+    },
   });
 
   chatRef.current = chat;
