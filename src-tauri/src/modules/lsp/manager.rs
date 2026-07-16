@@ -102,10 +102,9 @@ const SERVERS: &[ServerEntry] = &[
     },
 ];
 
-struct RunningServer {
-    client: LspClient,
-    #[allow(dead_code)]
-    capabilities: ServerCapabilities,
+pub(crate) struct RunningServer {
+    pub(crate) client: LspClient,
+    pub(crate) capabilities: ServerCapabilities,
     child: Arc<Mutex<Child>>,
     #[allow(dead_code)]
     status: Arc<Mutex<LspServerStatus>>,
@@ -116,8 +115,8 @@ struct RunningServer {
 
 pub struct LspManager {
     app_handle: AppHandle,
-    servers: RwLock<HashMap<(String, String), RunningServer>>,
-    document_versions: Mutex<HashMap<String, i32>>,
+    pub(crate) servers: RwLock<HashMap<(String, String), RunningServer>>,
+    pub(crate) document_versions: Mutex<HashMap<String, i32>>,
     start_lock: Mutex<()>,
 }
 
@@ -504,7 +503,7 @@ impl LspManager {
             .map_err(|e| e.to_string())
     }
 
-    async fn get_client(
+    pub(crate) async fn get_client(
         &self,
         language: &str,
         project_root: &str,
