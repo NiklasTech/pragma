@@ -367,8 +367,9 @@ function FileEditor({
     const view = viewRef.current;
     if (!view) return;
 
+    view.dispatch({ effects: lspCompletionCompartmentRef.current.reconfigure([]) });
+
     if (!experimentalLsp || !lspEnabledForLanguage || !language || !isLspSupported(language)) {
-      view.dispatch({ effects: lspCompletionCompartmentRef.current.reconfigure([]) });
       return;
     }
 
