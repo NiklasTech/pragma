@@ -1,6 +1,7 @@
 pub mod client;
 pub mod manager;
 pub mod types;
+pub mod uris;
 
 pub use manager::{resolve_project_root, LspManager};
 pub use types::{

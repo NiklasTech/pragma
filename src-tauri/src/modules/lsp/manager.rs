@@ -7,6 +7,7 @@ use crate::modules::lsp::types::{
     TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
     VersionedTextDocumentIdentifier,
 };
+use crate::modules::lsp::uris::{path_to_uri, uri_to_path};
 use crate::platform::new_tokio_command;
 use std::collections::HashMap;
 use std::path::Path;
@@ -664,14 +665,6 @@ pub fn resolve_project_root(language: &str, file_path: &str) -> Option<String> {
     path.parent()
         .and_then(|p| p.to_str())
         .map(|s| s.to_string())
-}
-
-fn path_to_uri(path: &str) -> String {
-    format!("file://{path}")
-}
-
-fn uri_to_path(uri: &str) -> String {
-    uri.strip_prefix("file://").unwrap_or(uri).to_string()
 }
 
 fn language_id_for_path(file_path: &str, language: &str) -> String {
