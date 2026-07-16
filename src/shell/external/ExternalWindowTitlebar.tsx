@@ -52,7 +52,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
         <button
           type="button"
           onClick={handleDock}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           title="Dock into main window"
         >
           <ArrowLineLeft size={16} />
@@ -60,7 +60,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
         <button
           type="button"
           onClick={handleMinimize}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label="Minimize"
         >
           <Minus size={18} weight="bold" />
@@ -68,7 +68,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
         <button
           type="button"
           onClick={handleToggleMaximize}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label={isMaximized ? "Restore" : "Maximize"}
         >
           {isMaximized ? (
@@ -80,7 +80,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
         <button
           type="button"
           onClick={handleClose}
-          className="flex h-header w-10 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
           aria-label="Close"
         >
           <X size={18} weight="bold" />
