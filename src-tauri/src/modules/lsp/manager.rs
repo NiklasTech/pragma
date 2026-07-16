@@ -12,9 +12,14 @@ use crate::platform::new_tokio_command;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tokio::process::Child;
 use tokio::sync::{Mutex, RwLock};
+
+const SUPERVISE_POLL_INTERVAL: Duration = Duration::from_millis(500);
+const EXIT_WAIT_TIMEOUT: Duration = Duration::from_secs(1);
+const SHUTDOWN_ALL_TIMEOUT: Duration = Duration::from_secs(3);
 
 struct ServerEntry {
     language: &'static str,
@@ -513,13 +518,52 @@ impl LspManager {
     }
 
     async fn stop_running_server(server: RunningServer) {
-        {
+        let _ = server.client.shutdown().await;
+        let _ = server.client.exit().await;
+
+        let exited = tokio::time::timeout(EXIT_WAIT_TIMEOUT, async {
+            loop {
+                {
+                    let mut child = server.child.lock().await;
+                    match child.try_wait() {
+                        Ok(Some(_)) | Err(_) => return,
+                        Ok(None) => {}
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+        })
+        .await;
+
+        if exited.is_err() {
             let mut child = server.child.lock().await;
             let _ = child.kill().await;
         }
+
         server.notification_handle.abort();
         server.supervisor_handle.abort();
         server.log_handle.abort();
+    }
+
+    pub async fn shutdown_all(&self) {
+        let servers: Vec<RunningServer> = {
+            let mut map = self.servers.write().await;
+            map.drain().map(|(_, server)| server).collect()
+        };
+
+        let mut handles = Vec::with_capacity(servers.len());
+        for server in servers {
+            handles.push(tokio::spawn(Self::stop_running_server(server)));
+        }
+
+        let _ = tokio::time::timeout(SHUTDOWN_ALL_TIMEOUT, async {
+            for handle in handles {
+                let _ = handle.await;
+            }
+        })
+        .await;
+
+        self.document_versions.lock().await.clear();
     }
 
     async fn supervise(
@@ -529,9 +573,16 @@ impl LspManager {
         child: Arc<Mutex<Child>>,
         status: Arc<Mutex<LspServerStatus>>,
     ) {
-        let exit = {
-            let mut child = child.lock().await;
-            child.wait().await
+        let exit = loop {
+            {
+                let mut guard = child.lock().await;
+                match guard.try_wait() {
+                    Ok(Some(exit_status)) => break Ok(exit_status),
+                    Ok(None) => {}
+                    Err(err) => break Err(err),
+                }
+            }
+            tokio::time::sleep(SUPERVISE_POLL_INTERVAL).await;
         };
 
         let (new_status, error) = match exit {

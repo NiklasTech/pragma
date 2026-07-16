@@ -206,6 +206,9 @@ pub fn run() {
                     if let Some(pty_manager) = app_handle.try_state::<PtyManager>() {
                         pty_manager.kill_all();
                     }
+                    if let Some(lsp_manager) = app_handle.try_state::<LspManager>() {
+                        tauri::async_runtime::block_on(lsp_manager.shutdown_all());
+                    }
                 }
             });
         }
