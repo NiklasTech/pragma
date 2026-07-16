@@ -3,7 +3,7 @@ use crate::modules::lsp::client::{LspClient, Notification};
 use crate::modules::lsp::types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
     DidSaveTextDocumentParams, InitializeParams, LspDiagnosticsEvent, LspServerConfig,
-    LspServerStatus, LspStatusEvent, ProjectLanguage, PublishDiagnosticsParams,
+    LspServerStatus, LspStatusEvent, ProjectLanguage, PublishDiagnosticsParams, ServerCapabilities,
     TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
     VersionedTextDocumentIdentifier,
 };
@@ -98,16 +98,14 @@ const SERVERS: &[ServerEntry] = &[
 ];
 
 struct RunningServer {
-    #[allow(dead_code)]
     client: LspClient,
+    #[allow(dead_code)]
+    capabilities: ServerCapabilities,
     child: Arc<Mutex<Child>>,
     #[allow(dead_code)]
     status: Arc<Mutex<LspServerStatus>>,
-    #[allow(dead_code)]
     notification_handle: tokio::task::JoinHandle<()>,
-    #[allow(dead_code)]
     supervisor_handle: tokio::task::JoinHandle<()>,
-    #[allow(dead_code)]
     log_handle: tokio::task::JoinHandle<()>,
 }
 
@@ -213,25 +211,46 @@ impl LspManager {
                             "dataSupport": true,
                         }),
                     );
+                    map.insert(
+                        "completion".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "completionItem": {
+                                "snippetSupport": false,
+                                "resolveSupport": { "properties": ["documentation", "detail"] },
+                                "documentationFormat": ["markdown", "plaintext"]
+                            }
+                        }),
+                    );
+                    map.insert(
+                        "definition".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "linkSupport": true
+                        }),
+                    );
                     map
                 }),
                 workspace: None,
             },
         };
 
-        if let Err(e) = client.initialize(params).await {
-            let _ = child.lock().await.kill().await;
-            notification_handle.abort();
-            supervisor_handle.abort();
-            log_handle.abort();
-            self.emit_status(
-                language,
-                project_root,
-                LspServerStatus::Error,
-                Some(e.to_string()),
-            );
-            return Err(e.to_string());
-        }
+        let initialize_result = match client.initialize(params).await {
+            Ok(result) => result,
+            Err(e) => {
+                let _ = child.lock().await.kill().await;
+                notification_handle.abort();
+                supervisor_handle.abort();
+                log_handle.abort();
+                self.emit_status(
+                    language,
+                    project_root,
+                    LspServerStatus::Error,
+                    Some(e.to_string()),
+                );
+                return Err(e.to_string());
+            }
+        };
 
         if let Err(e) = client.initialized().await {
             let _ = child.lock().await.kill().await;
@@ -253,6 +272,7 @@ impl LspManager {
                 key,
                 RunningServer {
                     client,
+                    capabilities: initialize_result.capabilities,
                     child,
                     status,
                     notification_handle,
