@@ -30,6 +30,7 @@ import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-tex
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { lspServerCapabilities } from "@/features/editor/lsp/client";
 import { lspCompletionExtension } from "@/features/editor/lsp/completion";
+import { lspDefinitionExtension } from "@/features/editor/lsp/definition";
 import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
@@ -75,6 +76,7 @@ function FileEditor({
   const viewRef = useRef<EditorView | null>(null);
   const diagnosticsCompartmentRef = useRef(new Compartment());
   const lspCompletionCompartmentRef = useRef(new Compartment());
+  const lspDefinitionCompartmentRef = useRef(new Compartment());
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
@@ -129,6 +131,7 @@ function FileEditor({
         themeCompartment.of(pragmaDarkTheme),
         diagnosticsCompartmentRef.current.of([]),
         lspCompletionCompartmentRef.current.of([]),
+        lspDefinitionCompartmentRef.current.of([]),
         lintGutter(),
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         history(),
@@ -391,6 +394,17 @@ function FileEditor({
     return () => {
       cancelled = true;
     };
+  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const extension =
+      experimentalLsp && lspEnabledForLanguage && language && isLspSupported(language)
+        ? lspDefinitionExtension(language, filePath)
+        : [];
+    view.dispatch({ effects: lspDefinitionCompartmentRef.current.reconfigure(extension) });
   }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
 
   useEffect(() => {
