@@ -17,7 +17,10 @@ fn percent_decode(input: &str) -> String {
     let mut index = 0;
     while index < bytes.len() {
         if bytes[index] == b'%' && index + 2 < bytes.len() {
-            if let Ok(value) = u8::from_str_radix(&input[index + 1..index + 3], 16) {
+            if let Some(value) = std::str::from_utf8(&bytes[index + 1..index + 3])
+                .ok()
+                .and_then(|digits| u8::from_str_radix(digits, 16).ok())
+            {
                 out.push(value);
                 index += 3;
                 continue;
@@ -109,5 +112,23 @@ mod tests {
     #[test]
     fn passes_through_non_file_uris() {
         assert_eq!(uri_to_path("untitled:Untitled-1"), "untitled:Untitled-1");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn percent_before_multibyte_char_passes_through() {
+        assert_eq!(uri_to_path("file:///x%aä"), "\\x%aä");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn truncated_percent_sequence_passes_through() {
+        assert_eq!(uri_to_path("file:///trailing%"), "\\trailing%");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn invalid_hex_digits_pass_through_literally() {
+        assert_eq!(uri_to_path("file:///bad%ZZhex"), "\\bad%ZZhex");
     }
 }
