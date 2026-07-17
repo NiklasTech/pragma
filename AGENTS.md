@@ -63,8 +63,11 @@ Skills drive the process; the rules below define the project constraints.
 
 ## Workflow
 
+> [!IMPORTANT]
+> **Fast-Track**: For trivial tasks (typos, single-line styles, obvious fixes), skip the planning phase and apply surgical changes directly.
+
 1. **Explore first**: `mempalace_status` / `mempalace_search` for context, `mempalace_kg_query` for entity relationships. Read the full target file (`Read` or `mempalace_get_drawer`) before changing it. No exceptions.
-2. **Plan briefly**: 2–3 sentences on architecture impact, then a bullet list of affected files and changes.
+2. **Plan when complex**: For architectural or multi-file changes, draft 2-3 sentences before coding. Otherwise, execute directly.
 3. **Write directly**: Use `Write` / `Edit` — do not flood the chat with code. Confirm in chat with the full file path only.
 4. **Verify**: Run the verification commands below and show the output.
 5. **On failure**: No apologies. Root cause via `systematic-debugging`, fix directly, report only the delta.
