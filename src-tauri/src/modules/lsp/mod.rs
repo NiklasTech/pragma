@@ -1,11 +1,13 @@
 pub mod client;
 pub mod manager;
+pub mod requests;
 pub mod types;
+pub mod uris;
 
 pub use manager::{resolve_project_root, LspManager};
 pub use types::{
-    LspDiagnostic, LspDiagnosticsEvent, LspPosition, LspRange, LspServerStatus, LspStatusEvent,
-    ProjectLanguage,
+    DefinitionTarget, LspCompletionItem, LspDiagnostic, LspDiagnosticsEvent, LspFeatureFlags,
+    LspPosition, LspRange, LspServerStatus, LspStatusEvent, ProjectLanguage,
 };
 
 #[tauri::command]
@@ -80,4 +82,100 @@ pub async fn lsp_detect_project_languages(
         return Err("project_root is required".to_string());
     }
     LspManager::detect_project_languages(&project_root).await
+}
+
+#[tauri::command]
+pub async fn lsp_completion(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    line: u32,
+    character: u32,
+) -> Result<Vec<LspCompletionItem>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .completion(&language, &project_root, &file_path, line, character)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_completion_resolve(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    item: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .resolve_completion(&language, &project_root, item)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_definition(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    line: u32,
+    character: u32,
+) -> Result<Option<DefinitionTarget>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .definition(&language, &project_root, &file_path, line, character)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_did_close(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+) -> Result<(), String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state.did_close(&language, &project_root, &file_path).await
+}
+
+#[tauri::command]
+pub async fn lsp_server_capabilities(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+) -> Result<LspFeatureFlags, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state.feature_flags(&language, &project_root).await
 }

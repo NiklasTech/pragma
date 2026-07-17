@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { markLspDocumentSynced } from "@/features/editor/lsp/lspDocuments";
 
 const DEBOUNCE_MS = 500;
 
@@ -39,6 +40,7 @@ export function useLspDocumentSync(
         });
         if (!cancelled) {
           lastSentContentRef.current = content;
+          markLspDocumentSynced(filePath);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

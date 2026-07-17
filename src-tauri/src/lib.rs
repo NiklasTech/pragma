@@ -119,6 +119,11 @@ pub fn run() {
             modules::lsp::lsp_check_server,
             modules::lsp::lsp_install_server,
             modules::lsp::lsp_detect_project_languages,
+            modules::lsp::lsp_completion,
+            modules::lsp::lsp_completion_resolve,
+            modules::lsp::lsp_definition,
+            modules::lsp::lsp_did_close,
+            modules::lsp::lsp_server_capabilities,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
             modules::mcp::mcp_list_servers,
@@ -205,6 +210,9 @@ pub fn run() {
                     }
                     if let Some(pty_manager) = app_handle.try_state::<PtyManager>() {
                         pty_manager.kill_all();
+                    }
+                    if let Some(lsp_manager) = app_handle.try_state::<LspManager>() {
+                        tauri::async_runtime::block_on(lsp_manager.shutdown_all());
                     }
                 }
             });

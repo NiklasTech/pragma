@@ -3,17 +3,23 @@ use crate::modules::lsp::client::{LspClient, Notification};
 use crate::modules::lsp::types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
     DidSaveTextDocumentParams, InitializeParams, LspDiagnosticsEvent, LspServerConfig,
-    LspServerStatus, LspStatusEvent, ProjectLanguage, PublishDiagnosticsParams,
+    LspServerStatus, LspStatusEvent, ProjectLanguage, PublishDiagnosticsParams, ServerCapabilities,
     TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
     VersionedTextDocumentIdentifier,
 };
+use crate::modules::lsp::uris::{path_to_uri, uri_to_path};
 use crate::platform::new_tokio_command;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tokio::process::Child;
 use tokio::sync::{Mutex, RwLock};
+
+const SUPERVISE_POLL_INTERVAL: Duration = Duration::from_millis(500);
+const EXIT_WAIT_TIMEOUT: Duration = Duration::from_secs(1);
+const SHUTDOWN_ALL_TIMEOUT: Duration = Duration::from_secs(3);
 
 struct ServerEntry {
     language: &'static str,
@@ -96,24 +102,21 @@ const SERVERS: &[ServerEntry] = &[
     },
 ];
 
-struct RunningServer {
-    #[allow(dead_code)]
-    client: LspClient,
+pub(crate) struct RunningServer {
+    pub(crate) client: LspClient,
+    pub(crate) capabilities: ServerCapabilities,
     child: Arc<Mutex<Child>>,
     #[allow(dead_code)]
     status: Arc<Mutex<LspServerStatus>>,
-    #[allow(dead_code)]
     notification_handle: tokio::task::JoinHandle<()>,
-    #[allow(dead_code)]
     supervisor_handle: tokio::task::JoinHandle<()>,
-    #[allow(dead_code)]
     log_handle: tokio::task::JoinHandle<()>,
 }
 
 pub struct LspManager {
     app_handle: AppHandle,
-    servers: RwLock<HashMap<(String, String), RunningServer>>,
-    document_versions: Mutex<HashMap<String, i32>>,
+    pub(crate) servers: RwLock<HashMap<(String, String), RunningServer>>,
+    pub(crate) document_versions: Mutex<HashMap<String, i32>>,
     start_lock: Mutex<()>,
 }
 
@@ -212,25 +215,46 @@ impl LspManager {
                             "dataSupport": true,
                         }),
                     );
+                    map.insert(
+                        "completion".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "completionItem": {
+                                "snippetSupport": false,
+                                "resolveSupport": { "properties": ["documentation", "detail"] },
+                                "documentationFormat": ["markdown", "plaintext"]
+                            }
+                        }),
+                    );
+                    map.insert(
+                        "definition".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "linkSupport": true
+                        }),
+                    );
                     map
                 }),
                 workspace: None,
             },
         };
 
-        if let Err(e) = client.initialize(params).await {
-            let _ = child.lock().await.kill().await;
-            notification_handle.abort();
-            supervisor_handle.abort();
-            log_handle.abort();
-            self.emit_status(
-                language,
-                project_root,
-                LspServerStatus::Error,
-                Some(e.to_string()),
-            );
-            return Err(e.to_string());
-        }
+        let initialize_result = match client.initialize(params).await {
+            Ok(result) => result,
+            Err(e) => {
+                let _ = child.lock().await.kill().await;
+                notification_handle.abort();
+                supervisor_handle.abort();
+                log_handle.abort();
+                self.emit_status(
+                    language,
+                    project_root,
+                    LspServerStatus::Error,
+                    Some(e.to_string()),
+                );
+                return Err(e.to_string());
+            }
+        };
 
         if let Err(e) = client.initialized().await {
             let _ = child.lock().await.kill().await;
@@ -252,6 +276,7 @@ impl LspManager {
                 key,
                 RunningServer {
                     client,
+                    capabilities: initialize_result.capabilities,
                     child,
                     status,
                     notification_handle,
@@ -478,7 +503,7 @@ impl LspManager {
             .map_err(|e| e.to_string())
     }
 
-    async fn get_client(
+    pub(crate) async fn get_client(
         &self,
         language: &str,
         project_root: &str,
@@ -492,13 +517,52 @@ impl LspManager {
     }
 
     async fn stop_running_server(server: RunningServer) {
-        {
+        let _ = server.client.shutdown().await;
+        let _ = server.client.exit().await;
+
+        let exited = tokio::time::timeout(EXIT_WAIT_TIMEOUT, async {
+            loop {
+                {
+                    let mut child = server.child.lock().await;
+                    match child.try_wait() {
+                        Ok(Some(_)) | Err(_) => return,
+                        Ok(None) => {}
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+        })
+        .await;
+
+        if exited.is_err() {
             let mut child = server.child.lock().await;
             let _ = child.kill().await;
         }
+
         server.notification_handle.abort();
         server.supervisor_handle.abort();
         server.log_handle.abort();
+    }
+
+    pub async fn shutdown_all(&self) {
+        let servers: Vec<RunningServer> = {
+            let mut map = self.servers.write().await;
+            map.drain().map(|(_, server)| server).collect()
+        };
+
+        let mut handles = Vec::with_capacity(servers.len());
+        for server in servers {
+            handles.push(tokio::spawn(Self::stop_running_server(server)));
+        }
+
+        let _ = tokio::time::timeout(SHUTDOWN_ALL_TIMEOUT, async {
+            for handle in handles {
+                let _ = handle.await;
+            }
+        })
+        .await;
+
+        self.document_versions.lock().await.clear();
     }
 
     async fn supervise(
@@ -508,9 +572,16 @@ impl LspManager {
         child: Arc<Mutex<Child>>,
         status: Arc<Mutex<LspServerStatus>>,
     ) {
-        let exit = {
-            let mut child = child.lock().await;
-            child.wait().await
+        let exit = loop {
+            {
+                let mut guard = child.lock().await;
+                match guard.try_wait() {
+                    Ok(Some(exit_status)) => break Ok(exit_status),
+                    Ok(None) => {}
+                    Err(err) => break Err(err),
+                }
+            }
+            tokio::time::sleep(SUPERVISE_POLL_INTERVAL).await;
         };
 
         let (new_status, error) = match exit {
@@ -664,14 +735,6 @@ pub fn resolve_project_root(language: &str, file_path: &str) -> Option<String> {
     path.parent()
         .and_then(|p| p.to_str())
         .map(|s| s.to_string())
-}
-
-fn path_to_uri(path: &str) -> String {
-    format!("file://{path}")
-}
-
-fn uri_to_path(uri: &str) -> String {
-    uri.strip_prefix("file://").unwrap_or(uri).to_string()
 }
 
 fn language_id_for_path(file_path: &str, language: &str) -> String {
