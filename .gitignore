@@ -33,3 +33,6 @@ entities.json
 # Agent-specific skills and local configuration
 .agents/
 .kimi
+
+# Local superpowers plans/specs (not for the repo)
+docs/superpowers/
