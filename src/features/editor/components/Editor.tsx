@@ -27,6 +27,10 @@ import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-text";
+import { isLspSupported } from "@/shared/lib/lsp-servers";
+import { lspServerCapabilities } from "@/features/editor/lsp/client";
+import { lspCompletionExtension } from "@/features/editor/lsp/completion";
+import { lspDefinitionExtension } from "@/features/editor/lsp/definition";
 import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
@@ -71,6 +75,8 @@ function FileEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const diagnosticsCompartmentRef = useRef(new Compartment());
+  const lspCompletionCompartmentRef = useRef(new Compartment());
+  const lspDefinitionCompartmentRef = useRef(new Compartment());
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
@@ -88,6 +94,10 @@ function FileEditor({
     lineNumbers: showLineNumbers,
     stickyLines,
   } = useSettingsStore((state) => state.editor);
+  const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
+  const lspEnabledForLanguage = useSettingsStore(
+    (state) => state.lsp.enabled[language ?? ""] ?? true,
+  );
   const editorFontFamily = fontId || fontFamily;
   const tabStates = useEditorStore((s) => s.tabStates);
   const goToPosition = useEditorStore((s) => s.goToPosition);
@@ -120,6 +130,8 @@ function FileEditor({
         languageCompartment.of([]),
         themeCompartment.of(pragmaDarkTheme),
         diagnosticsCompartmentRef.current.of([]),
+        lspCompletionCompartmentRef.current.of([]),
+        lspDefinitionCompartmentRef.current.of([]),
         lintGutter(),
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         history(),
@@ -353,6 +365,47 @@ function FileEditor({
       effects: diagnosticsCompartmentRef.current.reconfigure(createLinter(diagnostics)),
     });
   }, [diagnostics]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    view.dispatch({ effects: lspCompletionCompartmentRef.current.reconfigure([]) });
+
+    if (!experimentalLsp || !lspEnabledForLanguage || !language || !isLspSupported(language)) {
+      return;
+    }
+
+    const resolvedLanguage = language;
+    let cancelled = false;
+
+    void lspServerCapabilities(resolvedLanguage, filePath)
+      .then((flags) => {
+        if (cancelled || !viewRef.current) return;
+        const extension = flags.completion
+          ? lspCompletionExtension(resolvedLanguage, filePath, flags)
+          : [];
+        viewRef.current.dispatch({
+          effects: lspCompletionCompartmentRef.current.reconfigure(extension),
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const extension =
+      experimentalLsp && lspEnabledForLanguage && language && isLspSupported(language)
+        ? lspDefinitionExtension(language, filePath)
+        : [];
+    view.dispatch({ effects: lspDefinitionCompartmentRef.current.reconfigure(extension) });
+  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
 
   useEffect(() => {
     if (!viewRef.current) return;

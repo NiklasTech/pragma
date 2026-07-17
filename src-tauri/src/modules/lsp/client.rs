@@ -17,6 +17,7 @@ use tokio::sync::{mpsc, oneshot, Mutex};
 
 const JSONRPC_VERSION: &str = "2.0";
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;
+const SHUTDOWN_TIMEOUT_MS: u64 = 2_000;
 const MAX_CONCURRENT_REQUESTS: usize = 64;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -220,6 +221,15 @@ impl LspClient {
             Some(serde_json::to_value(InitializedParams {})?),
         )
         .await
+    }
+
+    pub async fn shutdown(&self) -> Result<Value> {
+        self.request("shutdown", None, Some(SHUTDOWN_TIMEOUT_MS))
+            .await
+    }
+
+    pub async fn exit(&self) -> Result<()> {
+        self.notify("exit", None).await
     }
 
     pub async fn request(
@@ -427,5 +437,72 @@ async fn process_incoming_message(
             method: notification.method,
             params: notification.params,
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use tokio::io::{duplex, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+
+    async fn read_frame<R>(reader: &mut BufReader<R>) -> serde_json::Value
+    where
+        R: AsyncRead + Unpin,
+    {
+        let mut content_length = 0usize;
+        let mut line = String::new();
+        loop {
+            line.clear();
+            reader.read_line(&mut line).await.unwrap();
+            if line.trim().is_empty() {
+                break;
+            }
+            if let Some(value) = line.trim().strip_prefix("Content-Length: ") {
+                content_length = value.parse().unwrap();
+            }
+        }
+        let mut body = vec![0u8; content_length];
+        reader.read_exact(&mut body).await.unwrap();
+        serde_json::from_slice(&body).unwrap()
+    }
+
+    async fn write_frame<W>(writer: &mut W, value: serde_json::Value)
+    where
+        W: AsyncWrite + Unpin,
+    {
+        let body = serde_json::to_string(&value).unwrap();
+        let message = format!("Content-Length: {}\r\n\r\n{}", body.len(), body);
+        writer.write_all(message.as_bytes()).await.unwrap();
+        writer.flush().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn shutdown_sends_request_then_exit_sends_notification() {
+        let (client_end, server_end) = duplex(8192);
+        let (client_reader, client_writer) = tokio::io::split(client_end);
+        let (client, _notifications) = LspClient::with_io(client_reader, client_writer, 5_000)
+            .await
+            .unwrap();
+
+        let server = tokio::spawn(async move {
+            let (server_reader, mut server_writer) = tokio::io::split(server_end);
+            let mut server_reader = BufReader::new(server_reader);
+
+            let request = read_frame(&mut server_reader).await;
+            assert_eq!(request["method"], json!("shutdown"));
+            write_frame(
+                &mut server_writer,
+                json!({ "jsonrpc": "2.0", "id": request["id"], "result": null }),
+            )
+            .await;
+
+            let notification = read_frame(&mut server_reader).await;
+            assert_eq!(notification["method"], json!("exit"));
+        });
+
+        client.shutdown().await.unwrap();
+        client.exit().await.unwrap();
+        server.await.unwrap();
     }
 }

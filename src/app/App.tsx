@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { startLspDidCloseWatcher } from "@/features/editor/lsp/didClose";
 import { Layout } from "@/shell/layout";
 import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
 import { Toaster } from "@/shared/components/ui/sonner";
@@ -32,6 +34,7 @@ export default function App() {
 
   useGlobalShortcuts(actions);
   useCommandPaletteCommands();
+  useEffect(() => startLspDidCloseWatcher(), []);
 
   return (
     <ThemeProvider>
