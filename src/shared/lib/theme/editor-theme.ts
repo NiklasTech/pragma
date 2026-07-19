@@ -24,6 +24,24 @@ export const editorBaseTheme = EditorView.theme({
   ".cm-line": {
     padding: "0 12px 0 8px",
   },
+  ".cm-tooltip-autocomplete ul": {
+    maxWidth: "min(560px, 70vw)",
+  },
+  ".cm-tooltip.cm-completionInfo": {
+    maxWidth: "min(420px, 70vw)",
+    maxHeight: "260px",
+    overflowY: "auto",
+  },
+  ".cm-lsp-completion-doc": {
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    fontSize: "12px",
+    lineHeight: "1.5",
+  },
+  ".cm-lsp-definition-link": {
+    textDecoration: "underline",
+    cursor: "pointer",
+  },
 });
 
 export function createEditorFontStyleExtension(fontSize: number, fontFamily: string): Extension {

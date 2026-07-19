@@ -13,7 +13,7 @@ import {
   editorBaseTheme,
   createEditorFontStyleExtension,
 } from "@/shared/lib/theme/editor-theme";
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { indentUnit } from "@codemirror/language";
 import { vim, getCM } from "@replit/codemirror-vim";
 import { useAIStore } from "@/shared/stores/ai";
@@ -27,10 +27,22 @@ import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-text";
+import { insertTabBinding } from "./extensions/tab-keymap";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { lspServerCapabilities } from "@/features/editor/lsp/client";
 import { lspCompletionExtension } from "@/features/editor/lsp/completion";
-import { lspDefinitionExtension } from "@/features/editor/lsp/definition";
+import {
+  goToDefinitionAtCoords,
+  hasDefinitionAtCoords,
+  lspDefinitionExtension,
+} from "@/features/editor/lsp/definition";
+import {
+  EDITOR_CHECK_DEFINITION_EVENT,
+  EDITOR_GO_TO_DEFINITION_EVENT,
+  dispatchEditorDefinitionAvailability,
+  type EditorCheckDefinitionEventDetail,
+  type EditorGoToDefinitionEventDetail,
+} from "@/shared/lib/editor-events";
 import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
@@ -136,7 +148,7 @@ function FileEditor({
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         history(),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
-        keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+        keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding]),
         drawSelection(),
         editorBaseTheme,
         fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
@@ -405,6 +417,39 @@ function FileEditor({
         ? lspDefinitionExtension(language, filePath)
         : [];
     view.dispatch({ effects: lspDefinitionCompartmentRef.current.reconfigure(extension) });
+  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
+
+  useEffect(() => {
+    if (!language) return;
+
+    const lspActive = () => experimentalLsp && lspEnabledForLanguage && isLspSupported(language);
+
+    const onGoToDefinition = (event: Event) => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      const { clientX, clientY } = (event as CustomEvent<EditorGoToDefinitionEventDetail>).detail;
+      goToDefinitionAtCoords(view, language, filePath, clientX, clientY);
+    };
+
+    const onCheckDefinition = (event: Event) => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      const { clientX, clientY, requestId } = (
+        event as CustomEvent<EditorCheckDefinitionEventDetail>
+      ).detail;
+      void hasDefinitionAtCoords(view, language, filePath, clientX, clientY).then((available) => {
+        if (available !== null) {
+          dispatchEditorDefinitionAvailability({ requestId, available });
+        }
+      });
+    };
+
+    window.addEventListener(EDITOR_GO_TO_DEFINITION_EVENT, onGoToDefinition);
+    window.addEventListener(EDITOR_CHECK_DEFINITION_EVENT, onCheckDefinition);
+    return () => {
+      window.removeEventListener(EDITOR_GO_TO_DEFINITION_EVENT, onGoToDefinition);
+      window.removeEventListener(EDITOR_CHECK_DEFINITION_EVENT, onCheckDefinition);
+    };
   }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
 
   useEffect(() => {

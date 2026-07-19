@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { markLspDocumentSynced } from "@/features/editor/lsp/lspDocuments";
+import { markLspDocumentSynced, flushLspDocumentSync } from "@/features/editor/lsp/lspDocuments";
 
 const DEBOUNCE_MS = 500;
 
@@ -15,7 +15,6 @@ export function useLspDocumentSync(
 ) {
   const lspEnabled = useSettingsStore((state) => state.lsp.enabled[language ?? ""] ?? true);
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
-  const lastSentContentRef = useRef<string | null>(null);
   const openedRef = useRef<string | null>(null);
   const savedRef = useRef<string | null>(null);
 
@@ -39,8 +38,7 @@ export function useLspDocumentSync(
           content,
         });
         if (!cancelled) {
-          lastSentContentRef.current = content;
-          markLspDocumentSynced(filePath);
+          markLspDocumentSynced(filePath, content);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -64,21 +62,8 @@ export function useLspDocumentSync(
       return;
     }
 
-    if (lastSentContentRef.current === content) {
-      return;
-    }
-
     const timer = setTimeout(() => {
-      void (async () => {
-        try {
-          await invoke("lsp_did_change", {
-            language,
-            filePath,
-            content,
-          });
-          lastSentContentRef.current = content;
-        } catch {}
-      })();
+      void flushLspDocumentSync(language, filePath, content).catch(() => {});
     }, DEBOUNCE_MS);
 
     return () => {

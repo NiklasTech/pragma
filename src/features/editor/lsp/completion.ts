@@ -13,6 +13,7 @@ import {
   type LspCompletionItem,
   type LspFeatureFlags,
 } from "./client";
+import { flushLspDocumentSync } from "./lspDocuments";
 import "./completion-icons.css";
 
 const WORD_BEFORE_CURSOR = /[\w$-]*$/;
@@ -109,6 +110,10 @@ export function createLspCompletionSource(
     }
 
     const line = context.state.doc.lineAt(context.pos);
+    await flushLspDocumentSync(language, filePath, context.state.doc.toString()).catch(() => {});
+    if (context.aborted) {
+      return null;
+    }
     const items = await lspCompletion(language, filePath, line.number - 1, context.pos - line.from);
     if (context.aborted || items.length === 0) {
       return null;

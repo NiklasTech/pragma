@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vite-plus";
+import { defineConfig, defaultExclude } from "vite-plus";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 
@@ -43,6 +43,9 @@ export default defineConfig({
   },
   staged: {
     "*": "vp check --fix",
+  },
+  test: {
+    exclude: [...defaultExclude, "**/.kimi/**"],
   },
   fmt: {},
   lint: {
