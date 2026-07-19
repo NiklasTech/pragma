@@ -19,7 +19,7 @@ export function positionToLsp(doc: Text, pos: number): { line: number; character
   return { line: line.number - 1, character: pos - line.from };
 }
 
-export async function navigateToDefinitionTarget(target: LspDefinitionTarget): Promise<void> {
+export async function navigateToLocation(target: LspDefinitionTarget): Promise<void> {
   const store = useEditorStore.getState();
   const existing = store.tabs.find((tab) => tab.kind === "file" && tab.path === target.filePath);
 
@@ -75,10 +75,10 @@ export async function jumpToDefinition(
   if (!target) {
     return;
   }
-  await navigateToDefinitionTarget(target);
+  await navigateToLocation(target);
 }
 
-function coordsToPos(view: EditorView, clientX: number, clientY: number): number | null {
+export function coordsToPos(view: EditorView, clientX: number, clientY: number): number | null {
   const rect = view.contentDOM.getBoundingClientRect();
   if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
     return null;
@@ -200,7 +200,7 @@ class DefinitionLinkView {
     event.preventDefault();
 
     if (pos === this.hoverPos && this.hoverTarget) {
-      void navigateToDefinitionTarget(this.hoverTarget);
+      void navigateToLocation(this.hoverTarget);
       return true;
     }
 

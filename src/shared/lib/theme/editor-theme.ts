@@ -33,14 +33,75 @@ export const editorBaseTheme = EditorView.theme({
     overflowY: "auto",
   },
   ".cm-lsp-completion-doc": {
-    whiteSpace: "pre-wrap",
+    whiteSpace: "normal",
     wordBreak: "break-word",
     fontSize: "12px",
     lineHeight: "1.5",
   },
+  ".cm-lsp-markdown-text": {
+    margin: "2px 0",
+  },
+  ".cm-lsp-code-block": {
+    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
+    fontSize: "11.5px",
+    lineHeight: "1.5",
+    backgroundColor: "var(--bg-hover)",
+    border: "1px solid var(--border-default)",
+    borderRadius: "6px",
+    padding: "6px 8px",
+    margin: "6px 0",
+    overflowX: "auto",
+    whiteSpace: "pre",
+  },
+  ".cm-lsp-inline-code": {
+    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
+    fontSize: "11px",
+    backgroundColor: "var(--bg-hover)",
+    borderRadius: "4px",
+    padding: "1px 4px",
+  },
+  ".cm-lsp-signature-help": {
+    padding: "6px 10px",
+    maxWidth: "min(480px, 70vw)",
+    fontSize: "12px",
+    lineHeight: "1.5",
+  },
+  ".cm-lsp-signature-label": {
+    fontFamily: 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)',
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+  },
+  ".cm-lsp-signature-active": {
+    fontWeight: "bold",
+    textDecoration: "underline",
+  },
+  ".cm-lsp-signature-counter": {
+    marginLeft: "8px",
+    fontSize: "10px",
+    opacity: "0.6",
+  },
+  ".cm-lsp-signature-doc": {
+    marginTop: "4px",
+    maxHeight: "200px",
+    overflowY: "auto",
+    whiteSpace: "normal",
+    wordBreak: "break-word",
+  },
   ".cm-lsp-definition-link": {
     textDecoration: "underline",
     cursor: "pointer",
+  },
+  ".cm-tooltip.cm-hover": {
+    maxWidth: "min(480px, 70vw)",
+    maxHeight: "300px",
+    overflowY: "auto",
+    padding: "6px 10px",
+  },
+  ".cm-lsp-hover-doc": {
+    whiteSpace: "normal",
+    wordBreak: "break-word",
+    fontSize: "12px",
+    lineHeight: "1.5",
   },
 });
 

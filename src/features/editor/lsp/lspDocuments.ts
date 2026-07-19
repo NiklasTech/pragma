@@ -26,16 +26,82 @@ export function getLspDocumentSentContent(filePath: string): string | undefined 
   return sentContent.get(filePath);
 }
 
+export interface LspPosition {
+  line: number;
+  character: number;
+}
+
+export interface LspChangeRange {
+  start: LspPosition;
+  end: LspPosition;
+}
+
+export interface SingleChange {
+  range: LspChangeRange;
+  text: string;
+}
+
+function offsetToLspPosition(text: string, offset: number): LspPosition {
+  let line = 0;
+  let lineStart = 0;
+  for (let index = 0; index < offset; index += 1) {
+    if (text.charCodeAt(index) === 10) {
+      line += 1;
+      lineStart = index + 1;
+    }
+  }
+  return { line, character: offset - lineStart };
+}
+
+// Minimal single-edit diff (common prefix/suffix) for incremental didChange.
+export function computeSingleChange(oldText: string, newText: string): SingleChange | null {
+  if (oldText === newText) {
+    return null;
+  }
+
+  let start = 0;
+  const minLength = Math.min(oldText.length, newText.length);
+  while (start < minLength && oldText[start] === newText[start]) {
+    start += 1;
+  }
+
+  let oldEnd = oldText.length;
+  let newEnd = newText.length;
+  while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
+    oldEnd -= 1;
+    newEnd -= 1;
+  }
+
+  return {
+    range: {
+      start: offsetToLspPosition(oldText, start),
+      end: offsetToLspPosition(oldText, oldEnd),
+    },
+    text: newText.slice(start, newEnd),
+  };
+}
+
 async function sendPendingChange(
   language: string,
   filePath: string,
   content: string,
   invokeFn: LspInvokeFn,
 ): Promise<void> {
-  if (!isLspDocumentSynced(filePath) || sentContent.get(filePath) === content) {
+  if (!isLspDocumentSynced(filePath)) {
     return;
   }
-  await invokeFn("lsp_did_change", { language, filePath, content });
+  const previous = sentContent.get(filePath);
+  if (previous === content) {
+    return;
+  }
+  const change = previous === undefined ? null : computeSingleChange(previous, content);
+  await invokeFn("lsp_did_change", {
+    language,
+    filePath,
+    content,
+    range: change?.range ?? null,
+    changeText: change?.text ?? null,
+  });
   sentContent.set(filePath, content);
 }
 

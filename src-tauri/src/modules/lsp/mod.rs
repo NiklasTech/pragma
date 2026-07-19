@@ -6,8 +6,10 @@ pub mod uris;
 
 pub use manager::{resolve_project_root, LspManager};
 pub use types::{
-    DefinitionTarget, LspCompletionItem, LspDiagnostic, LspDiagnosticsEvent, LspFeatureFlags,
-    LspPosition, LspRange, LspServerStatus, LspStatusEvent, ProjectLanguage,
+    DefinitionTarget, LspCodeAction, LspCompletionItem, LspDiagnostic, LspDiagnosticsEvent,
+    LspDocumentSymbolItem, LspFeatureFlags, LspFileEdit, LspHover, LspLocation, LspPosition,
+    LspRange, LspServerStatus, LspSignatureHelp, LspStatusEvent, LspTextEdit,
+    LspWorkspaceSymbolItem, ProjectLanguage,
 };
 
 #[tauri::command]
@@ -36,14 +38,20 @@ pub async fn lsp_did_change(
     language: String,
     file_path: String,
     content: String,
+    range: Option<LspRange>,
+    change_text: Option<String>,
 ) -> Result<(), String> {
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
     let project_root = resolve_project_root(&language, &file_path)
         .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let incremental = match (range, change_text) {
+        (Some(range), Some(text)) => Some((range, text)),
+        _ => None,
+    };
     state
-        .did_change(&language, &project_root, &file_path, &content)
+        .did_change(&language, &project_root, &file_path, &content, incremental)
         .await
 }
 
@@ -143,6 +151,185 @@ pub async fn lsp_definition(
         .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
     state
         .definition(&language, &project_root, &file_path, line, character)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_hover(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    line: u32,
+    character: u32,
+) -> Result<Option<LspHover>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .hover(&language, &project_root, &file_path, line, character)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_references(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    line: u32,
+    character: u32,
+) -> Result<Vec<LspLocation>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .references(&language, &project_root, &file_path, line, character)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_format_document(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    tab_size: u32,
+    insert_spaces: bool,
+) -> Result<Vec<LspTextEdit>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .format_document(
+            &language,
+            &project_root,
+            &file_path,
+            tab_size,
+            insert_spaces,
+        )
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_rename(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    line: u32,
+    character: u32,
+    new_name: String,
+) -> Result<Vec<LspFileEdit>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    if new_name.is_empty() {
+        return Err("new_name is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .rename(
+            &language,
+            &project_root,
+            &file_path,
+            line,
+            character,
+            &new_name,
+        )
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_signature_help(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    line: u32,
+    character: u32,
+) -> Result<Option<LspSignatureHelp>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .signature_help(&language, &project_root, &file_path, line, character)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_code_action(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    range: LspRange,
+    diagnostics: Vec<LspDiagnostic>,
+) -> Result<Vec<LspCodeAction>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .code_action(&language, &project_root, &file_path, range, diagnostics)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_document_symbol(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+) -> Result<Vec<LspDocumentSymbolItem>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .document_symbol(&language, &project_root, &file_path)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_workspace_symbol(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    query: String,
+) -> Result<Vec<LspWorkspaceSymbolItem>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    let project_root = resolve_project_root(&language, &file_path)
+        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    state
+        .workspace_symbol(&language, &project_root, &query)
         .await
 }
 

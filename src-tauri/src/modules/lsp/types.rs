@@ -120,6 +120,10 @@ pub struct VersionedTextDocumentIdentifier {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentContentChangeEvent {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<LspRange>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range_length: Option<u32>,
     pub text: String,
 }
 
@@ -158,8 +162,34 @@ pub struct ServerCapabilities {
     pub completion_provider: Option<serde_json::Value>,
     #[serde(default)]
     pub definition_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub hover_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub references_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub document_formatting_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub rename_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub signature_help_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub code_action_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub document_symbol_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub workspace_symbol_provider: Option<serde_json::Value>,
+    #[serde(default)]
+    pub text_document_sync: Option<serde_json::Value>,
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
+}
+
+fn provider_enabled(value: &Option<serde_json::Value>) -> bool {
+    match value {
+        Some(serde_json::Value::Bool(enabled)) => *enabled,
+        Some(serde_json::Value::Object(_)) => true,
+        _ => false,
+    }
 }
 
 impl ServerCapabilities {
@@ -174,12 +204,37 @@ impl ServerCapabilities {
             completion_trigger_characters: completion_options
                 .and_then(|options| options.trigger_characters)
                 .unwrap_or_default(),
-            definition: match &self.definition_provider {
-                Some(serde_json::Value::Bool(enabled)) => *enabled,
-                Some(serde_json::Value::Object(_)) => true,
-                _ => false,
-            },
+            definition: provider_enabled(&self.definition_provider),
+            hover: provider_enabled(&self.hover_provider),
+            references: provider_enabled(&self.references_provider),
+            formatting: provider_enabled(&self.document_formatting_provider),
+            rename: provider_enabled(&self.rename_provider),
+            signature_help: provider_enabled(&self.signature_help_provider),
+            signature_help_trigger_characters: self.signature_trigger_characters(),
+            code_action: provider_enabled(&self.code_action_provider),
+            document_symbol: provider_enabled(&self.document_symbol_provider),
+            workspace_symbol: provider_enabled(&self.workspace_symbol_provider),
+            incremental_sync: self.sync_kind() == 2,
         }
+    }
+
+    pub fn sync_kind(&self) -> u32 {
+        match &self.text_document_sync {
+            Some(serde_json::Value::Number(kind)) => kind.as_u64().unwrap_or(1) as u32,
+            Some(serde_json::Value::Object(options)) => options
+                .get("change")
+                .and_then(|change| change.as_u64())
+                .unwrap_or(1) as u32,
+            _ => 1,
+        }
+    }
+
+    fn signature_trigger_characters(&self) -> Vec<String> {
+        self.signature_help_provider
+            .as_ref()
+            .and_then(|provider| provider.get("triggerCharacters"))
+            .and_then(|chars| serde_json::from_value(chars.clone()).ok())
+            .unwrap_or_default()
     }
 
     fn completion_options(&self) -> Option<CompletionOptions> {
@@ -230,11 +285,108 @@ pub struct DefinitionTarget {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct LspHover {
+    pub contents: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub range: Option<LspRange>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspLocation {
+    pub file_path: String,
+    pub range: LspRange,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspTextEdit {
+    pub range: LspRange,
+    pub new_text: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspFileEdit {
+    pub file_path: String,
+    pub edits: Vec<LspTextEdit>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspParameterInformation {
+    pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub documentation: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspSignatureInformation {
+    pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub documentation: Option<String>,
+    pub parameters: Vec<LspParameterInformation>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspSignatureHelp {
+    pub signatures: Vec<LspSignatureInformation>,
+    pub active_signature: u32,
+    pub active_parameter: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspCodeAction {
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    pub is_preferred: bool,
+    pub edits: Vec<LspFileEdit>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspDocumentSymbolItem {
+    pub name: String,
+    pub kind: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+    pub range: LspRange,
+    pub depth: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LspWorkspaceSymbolItem {
+    pub name: String,
+    pub kind: u32,
+    pub location: LspLocation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub container_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LspFeatureFlags {
     pub completion: bool,
     pub completion_resolve: bool,
     pub completion_trigger_characters: Vec<String>,
     pub definition: bool,
+    pub hover: bool,
+    pub references: bool,
+    pub formatting: bool,
+    pub rename: bool,
+    pub signature_help: bool,
+    pub signature_help_trigger_characters: Vec<String>,
+    pub code_action: bool,
+    pub document_symbol: bool,
+    pub workspace_symbol: bool,
+    pub incremental_sync: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -284,6 +436,21 @@ mod tests {
         let flags = capabilities.feature_flags();
         assert!(flags.completion);
         assert!(!flags.completion_resolve);
+    }
+
+    #[test]
+    fn parses_hover_provider() {
+        let capabilities: ServerCapabilities =
+            serde_json::from_value(serde_json::json!({ "hoverProvider": true })).unwrap();
+        assert!(capabilities.feature_flags().hover);
+
+        let capabilities: ServerCapabilities =
+            serde_json::from_value(serde_json::json!({ "hoverProvider": {} })).unwrap();
+        assert!(capabilities.feature_flags().hover);
+
+        let capabilities: ServerCapabilities =
+            serde_json::from_value(serde_json::json!({ "hoverProvider": false })).unwrap();
+        assert!(!capabilities.feature_flags().hover);
     }
 
     #[test]

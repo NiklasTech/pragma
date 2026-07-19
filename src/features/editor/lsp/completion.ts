@@ -14,6 +14,7 @@ import {
   type LspFeatureFlags,
 } from "./client";
 import { flushLspDocumentSync } from "./lspDocuments";
+import { renderMarkdownToDom } from "./markdown-lite";
 import "./completion-icons.css";
 
 const WORD_BEFORE_CURSOR = /[\w$-]*$/;
@@ -89,9 +90,8 @@ async function buildInfoDom(
   if (!text) {
     return null;
   }
-  const dom = document.createElement("div");
-  dom.className = "cm-lsp-completion-doc";
-  dom.textContent = text;
+  const dom = renderMarkdownToDom(text);
+  dom.classList.add("cm-lsp-completion-doc");
   return dom;
 }
 

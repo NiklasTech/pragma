@@ -12,10 +12,15 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
+import { getLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
 import {
   EDITOR_DEFINITION_AVAILABILITY_EVENT,
   dispatchEditorCheckDefinition,
+  dispatchEditorCodeAction,
+  dispatchEditorFindReferences,
+  dispatchEditorFormatDocument,
   dispatchEditorGoToDefinition,
+  dispatchEditorRename,
   type EditorDefinitionAvailabilityEventDetail,
 } from "@/shared/lib/editor-events";
 import { useLayoutStore } from "@/shell/layout";
@@ -33,6 +38,9 @@ import {
   ClipboardText,
   Copy,
   Lightning,
+  MagicWand,
+  MagnifyingGlass,
+  PencilLine,
   Scissors,
   SelectionAll,
   Sparkle,
@@ -151,6 +159,32 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
     closeMenu();
   }, [menu, closeMenu]);
 
+  const handleFormatDocument = useCallback(() => {
+    dispatchEditorFormatDocument();
+    closeMenu();
+  }, [closeMenu]);
+
+  const handleFindReferences = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorFindReferences(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
+
+  const handleRename = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorRename(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
+
+  const handleQuickFix = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorCodeAction(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
+
   const handleCopy = useCallback(async () => {
     if (!hasSelection || !menu) return;
     try {
@@ -210,6 +244,18 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   const contextType = menu?.contextType ?? "generic";
   const showTextActions = contextType === "editor" || contextType === "input";
   const canGoToDefinition = contextType === "editor" && lspReady && definitionAvailable;
+  const activeFilePath = activeTab?.kind === "file" ? activeTab.path : undefined;
+  const activeFlags = activeFilePath ? getLspFeatureFlags(activeFilePath) : undefined;
+  const canFormatDocument = Boolean(
+    contextType === "editor" && lspReady && activeFilePath && (activeFlags?.formatting ?? true),
+  );
+  const canFindReferences = Boolean(
+    contextType === "editor" && lspReady && (activeFlags?.references ?? true),
+  );
+  const canRename = Boolean(contextType === "editor" && lspReady && (activeFlags?.rename ?? true));
+  const canQuickFix = Boolean(
+    contextType === "editor" && lspReady && (activeFlags?.codeAction ?? true),
+  );
   const showTerminalActions = contextType === "terminal";
   const showAskAI = contextType === "editor" && hasSelection;
   const showTerminalSuggestion = contextType === "terminal" && terminalSuggestion.visible;
@@ -237,6 +283,25 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
               <ArrowSquareOut size={14} />
               <span>Go to Definition</span>
               <ContextMenuShortcut>F12</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canFindReferences} onClick={handleFindReferences}>
+              <MagnifyingGlass size={14} />
+              <span>Find All References</span>
+              <ContextMenuShortcut>Shift+F12</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canRename} onClick={handleRename}>
+              <PencilLine size={14} />
+              <span>Rename Symbol</span>
+              <ContextMenuShortcut>F2</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canQuickFix} onClick={handleQuickFix}>
+              <Lightning size={14} />
+              <span>Quick Fix...</span>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canFormatDocument} onClick={handleFormatDocument}>
+              <MagicWand size={14} />
+              <span>Format Document</span>
+              <ContextMenuShortcut>Shift+Alt+F</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
           </>

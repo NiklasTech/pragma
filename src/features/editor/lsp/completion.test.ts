@@ -62,6 +62,16 @@ describe("createLspCompletionSource", () => {
     completionResolve: false,
     completionTriggerCharacters: ["."],
     definition: true,
+    hover: true,
+    references: true,
+    formatting: true,
+    rename: true,
+    signatureHelp: true,
+    signatureHelpTriggerCharacters: ["(", ","],
+    codeAction: true,
+    documentSymbol: true,
+    workspaceSymbol: true,
+    incrementalSync: true,
   };
 
   beforeEach(() => {

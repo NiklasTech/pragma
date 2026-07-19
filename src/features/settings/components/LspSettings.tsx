@@ -90,21 +90,18 @@ export function LspSettings() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SettingSection
-        title="Language Servers"
-        badge={{ label: "Experimental", variant: "warning" }}
-      >
+      <SettingSection title="Language Servers">
         <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
           <div className="flex flex-col">
             <span className="text-ui-sm font-medium text-fg-default">Enable language servers</span>
             <span className="text-ui-xs text-fg-muted">
-              Turn on experimental LSP support for diagnostics.
+              Turn on language server support for completion, navigation and diagnostics.
             </span>
           </div>
           <Switch
             checked={experimental.lsp}
             onCheckedChange={(v) => setExperimentalEnabled("lsp", v)}
-            aria-label="Enable experimental language servers"
+            aria-label="Enable language servers"
           />
         </div>
 

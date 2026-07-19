@@ -36,14 +36,32 @@ import {
   hasDefinitionAtCoords,
   lspDefinitionExtension,
 } from "@/features/editor/lsp/definition";
+import { lspHoverExtension } from "@/features/editor/lsp/hover";
+import { lspFormattingExtension, formatDocumentInView } from "@/features/editor/lsp/formatting";
+import { lspReferencesExtension, findReferencesAtCoords } from "@/features/editor/lsp/references";
+import { lspRenameExtension, requestRenameAtCoords } from "@/features/editor/lsp/rename";
+import { requestCodeActionsAtCoords } from "@/features/editor/lsp/codeActions";
+import {
+  lspDocumentSymbolsExtension,
+  openDocumentSymbolsForView,
+} from "@/features/editor/lsp/symbols";
+import { signatureHelpExtension } from "@/features/editor/lsp/signatureHelp";
+import { setLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
 import {
   EDITOR_CHECK_DEFINITION_EVENT,
+  EDITOR_CODE_ACTION_EVENT,
+  EDITOR_DOCUMENT_SYMBOLS_EVENT,
+  EDITOR_FIND_REFERENCES_EVENT,
+  EDITOR_FORMAT_DOCUMENT_EVENT,
   EDITOR_GO_TO_DEFINITION_EVENT,
+  EDITOR_RENAME_EVENT,
   dispatchEditorDefinitionAvailability,
   type EditorCheckDefinitionEventDetail,
+  type EditorFindReferencesEventDetail,
   type EditorGoToDefinitionEventDetail,
 } from "@/shared/lib/editor-events";
 import { EditorStatusbar } from "./EditorStatusbar";
+import { ReferencesView } from "./ReferencesView";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
 
@@ -89,6 +107,12 @@ function FileEditor({
   const diagnosticsCompartmentRef = useRef(new Compartment());
   const lspCompletionCompartmentRef = useRef(new Compartment());
   const lspDefinitionCompartmentRef = useRef(new Compartment());
+  const lspHoverCompartmentRef = useRef(new Compartment());
+  const lspFormattingCompartmentRef = useRef(new Compartment());
+  const lspReferencesCompartmentRef = useRef(new Compartment());
+  const lspRenameCompartmentRef = useRef(new Compartment());
+  const lspSignatureHelpCompartmentRef = useRef(new Compartment());
+  const lspDocumentSymbolsCompartmentRef = useRef(new Compartment());
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
@@ -144,6 +168,12 @@ function FileEditor({
         diagnosticsCompartmentRef.current.of([]),
         lspCompletionCompartmentRef.current.of([]),
         lspDefinitionCompartmentRef.current.of([]),
+        lspHoverCompartmentRef.current.of([]),
+        lspFormattingCompartmentRef.current.of([]),
+        lspReferencesCompartmentRef.current.of([]),
+        lspRenameCompartmentRef.current.of([]),
+        lspSignatureHelpCompartmentRef.current.of([]),
+        lspDocumentSymbolsCompartmentRef.current.of([]),
         lintGutter(),
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         history(),
@@ -382,7 +412,14 @@ function FileEditor({
     const view = viewRef.current;
     if (!view) return;
 
-    view.dispatch({ effects: lspCompletionCompartmentRef.current.reconfigure([]) });
+    view.dispatch({
+      effects: [
+        lspCompletionCompartmentRef.current.reconfigure([]),
+        lspHoverCompartmentRef.current.reconfigure([]),
+        lspFormattingCompartmentRef.current.reconfigure([]),
+        lspSignatureHelpCompartmentRef.current.reconfigure([]),
+      ],
+    });
 
     if (!experimentalLsp || !lspEnabledForLanguage || !language || !isLspSupported(language)) {
       return;
@@ -394,11 +431,24 @@ function FileEditor({
     void lspServerCapabilities(resolvedLanguage, filePath)
       .then((flags) => {
         if (cancelled || !viewRef.current) return;
+        setLspFeatureFlags(filePath, flags);
         const extension = flags.completion
           ? lspCompletionExtension(resolvedLanguage, filePath, flags)
           : [];
+        const hoverExtension = flags.hover ? lspHoverExtension(resolvedLanguage, filePath) : [];
+        const formattingExtension = flags.formatting
+          ? lspFormattingExtension(resolvedLanguage, filePath)
+          : [];
+        const signatureHelp = flags.signatureHelp
+          ? signatureHelpExtension(resolvedLanguage, filePath, flags.signatureHelpTriggerCharacters)
+          : [];
         viewRef.current.dispatch({
-          effects: lspCompletionCompartmentRef.current.reconfigure(extension),
+          effects: [
+            lspCompletionCompartmentRef.current.reconfigure(extension),
+            lspHoverCompartmentRef.current.reconfigure(hoverExtension),
+            lspFormattingCompartmentRef.current.reconfigure(formattingExtension),
+            lspSignatureHelpCompartmentRef.current.reconfigure(signatureHelp),
+          ],
         });
       })
       .catch(() => {});
@@ -412,11 +462,24 @@ function FileEditor({
     const view = viewRef.current;
     if (!view) return;
 
-    const extension =
-      experimentalLsp && lspEnabledForLanguage && language && isLspSupported(language)
-        ? lspDefinitionExtension(language, filePath)
-        : [];
-    view.dispatch({ effects: lspDefinitionCompartmentRef.current.reconfigure(extension) });
+    const enabled =
+      experimentalLsp && lspEnabledForLanguage && language && isLspSupported(language);
+    view.dispatch({
+      effects: [
+        lspDefinitionCompartmentRef.current.reconfigure(
+          enabled ? lspDefinitionExtension(language, filePath) : [],
+        ),
+        lspReferencesCompartmentRef.current.reconfigure(
+          enabled ? lspReferencesExtension(language, filePath) : [],
+        ),
+        lspRenameCompartmentRef.current.reconfigure(
+          enabled ? lspRenameExtension(language, filePath) : [],
+        ),
+        lspDocumentSymbolsCompartmentRef.current.reconfigure(
+          enabled ? lspDocumentSymbolsExtension(language, filePath) : [],
+        ),
+      ],
+    });
   }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
 
   useEffect(() => {
@@ -429,6 +492,41 @@ function FileEditor({
       if (!view || !lspActive()) return;
       const { clientX, clientY } = (event as CustomEvent<EditorGoToDefinitionEventDetail>).detail;
       goToDefinitionAtCoords(view, language, filePath, clientX, clientY);
+    };
+
+    const onFindReferences = (event: Event) => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      const { clientX, clientY } = (event as CustomEvent<EditorFindReferencesEventDetail>).detail;
+      findReferencesAtCoords(view, language, filePath, clientX, clientY);
+    };
+
+    const onRename = (event: Event) => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      const { clientX, clientY } = (event as CustomEvent<EditorFindReferencesEventDetail>).detail;
+      requestRenameAtCoords(view, language, filePath, clientX, clientY);
+    };
+
+    const onCodeAction = (event: Event) => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      const { clientX, clientY } = (event as CustomEvent<EditorFindReferencesEventDetail>).detail;
+      requestCodeActionsAtCoords(view, language, filePath, clientX, clientY);
+    };
+
+    const onDocumentSymbols = () => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      if (useEditorStore.getState().activeTabId !== tabId) return;
+      void openDocumentSymbolsForView(view, language, filePath);
+    };
+
+    const onFormatDocument = () => {
+      const view = viewRef.current;
+      if (!view || !lspActive()) return;
+      if (useEditorStore.getState().activeTabId !== tabId) return;
+      void formatDocumentInView(view, language, filePath);
     };
 
     const onCheckDefinition = (event: Event) => {
@@ -446,9 +544,19 @@ function FileEditor({
 
     window.addEventListener(EDITOR_GO_TO_DEFINITION_EVENT, onGoToDefinition);
     window.addEventListener(EDITOR_CHECK_DEFINITION_EVENT, onCheckDefinition);
+    window.addEventListener(EDITOR_FORMAT_DOCUMENT_EVENT, onFormatDocument);
+    window.addEventListener(EDITOR_FIND_REFERENCES_EVENT, onFindReferences);
+    window.addEventListener(EDITOR_RENAME_EVENT, onRename);
+    window.addEventListener(EDITOR_CODE_ACTION_EVENT, onCodeAction);
+    window.addEventListener(EDITOR_DOCUMENT_SYMBOLS_EVENT, onDocumentSymbols);
     return () => {
       window.removeEventListener(EDITOR_GO_TO_DEFINITION_EVENT, onGoToDefinition);
       window.removeEventListener(EDITOR_CHECK_DEFINITION_EVENT, onCheckDefinition);
+      window.removeEventListener(EDITOR_FORMAT_DOCUMENT_EVENT, onFormatDocument);
+      window.removeEventListener(EDITOR_FIND_REFERENCES_EVENT, onFindReferences);
+      window.removeEventListener(EDITOR_RENAME_EVENT, onRename);
+      window.removeEventListener(EDITOR_CODE_ACTION_EVENT, onCodeAction);
+      window.removeEventListener(EDITOR_DOCUMENT_SYMBOLS_EVENT, onDocumentSymbols);
     };
   }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
 
@@ -573,6 +681,10 @@ export function Editor({ panelId }: EditorProps) {
         <EditorStatusbar vimMode={null} line={0} column={0} fileType={activeTab.path} />
       </div>
     );
+  }
+
+  if (activeTab.kind === "references") {
+    return <ReferencesView tab={activeTab} />;
   }
 
   return (

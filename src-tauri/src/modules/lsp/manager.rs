@@ -2,7 +2,7 @@ use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::client::{LspClient, Notification};
 use crate::modules::lsp::types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    DidSaveTextDocumentParams, InitializeParams, LspDiagnosticsEvent, LspServerConfig,
+    DidSaveTextDocumentParams, InitializeParams, LspDiagnosticsEvent, LspRange, LspServerConfig,
     LspServerStatus, LspStatusEvent, ProjectLanguage, PublishDiagnosticsParams, ServerCapabilities,
     TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
     VersionedTextDocumentIdentifier,
@@ -233,9 +233,61 @@ impl LspManager {
                             "linkSupport": true
                         }),
                     );
+                    map.insert(
+                        "hover".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "contentFormat": ["markdown", "plaintext"]
+                        }),
+                    );
+                    map.insert(
+                        "references".to_string(),
+                        serde_json::json!({ "dynamicRegistration": false }),
+                    );
+                    map.insert(
+                        "formatting".to_string(),
+                        serde_json::json!({ "dynamicRegistration": false }),
+                    );
+                    map.insert(
+                        "rename".to_string(),
+                        serde_json::json!({ "dynamicRegistration": false }),
+                    );
+                    map.insert(
+                        "signatureHelp".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "signatureInformation": {
+                                "documentationFormat": ["markdown", "plaintext"],
+                                "parameterInformation": { "labelOffsetSupport": true }
+                            }
+                        }),
+                    );
+                    map.insert(
+                        "codeAction".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "codeActionLiteralSupport": {
+                                "codeActionKind": { "valueSet": ["quickfix", "refactor", "source"] }
+                            }
+                        }),
+                    );
+                    map.insert(
+                        "documentSymbol".to_string(),
+                        serde_json::json!({
+                            "dynamicRegistration": false,
+                            "hierarchicalDocumentSymbolSupport": true
+                        }),
+                    );
                     map
                 }),
-                workspace: None,
+                workspace: Some({
+                    let mut map = HashMap::new();
+                    map.insert(
+                        "symbol".to_string(),
+                        serde_json::json!({ "dynamicRegistration": false }),
+                    );
+                    map
+                }),
             },
         };
 
@@ -451,6 +503,7 @@ impl LspManager {
         project_root: &str,
         file_path: &str,
         content: &str,
+        incremental: Option<(LspRange, String)>,
     ) -> std::result::Result<(), String> {
         let client = self.get_client(language, project_root).await?;
         let uri = path_to_uri(file_path);
@@ -462,14 +515,31 @@ impl LspManager {
             version
         };
 
+        let sync_kind = {
+            let servers = self.servers.read().await;
+            let key = (language.to_string(), project_root.to_string());
+            servers.get(&key).map(|s| s.capabilities.sync_kind())
+        };
+
+        let change_event = match (sync_kind, incremental) {
+            (Some(2), Some((range, text))) => TextDocumentContentChangeEvent {
+                range: Some(range),
+                range_length: None,
+                text,
+            },
+            _ => TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: content.to_string(),
+            },
+        };
+
         let params = DidChangeTextDocumentParams {
             text_document: VersionedTextDocumentIdentifier {
                 uri,
                 version: next_version,
             },
-            content_changes: vec![TextDocumentContentChangeEvent {
-                text: content.to_string(),
-            }],
+            content_changes: vec![change_event],
         };
 
         client

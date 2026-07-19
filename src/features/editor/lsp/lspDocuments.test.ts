@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
+  computeSingleChange,
   flushLspDocumentSync,
   getLspDocumentSentContent,
   isLspDocumentSynced,
@@ -38,6 +39,54 @@ describe("lspDocuments sync tracking", () => {
   });
 });
 
+describe("computeSingleChange", () => {
+  it("returns null for identical text", () => {
+    expect(computeSingleChange("same", "same")).toBeNull();
+  });
+
+  it("detects an append at the end", () => {
+    expect(computeSingleChange("ab", "abc")).toEqual({
+      range: { start: { line: 0, character: 2 }, end: { line: 0, character: 2 } },
+      text: "c",
+    });
+  });
+
+  it("detects an insertion in the middle", () => {
+    expect(computeSingleChange("ac", "abc")).toEqual({
+      range: { start: { line: 0, character: 1 }, end: { line: 0, character: 1 } },
+      text: "b",
+    });
+  });
+
+  it("detects a deletion", () => {
+    expect(computeSingleChange("abc", "ac")).toEqual({
+      range: { start: { line: 0, character: 1 }, end: { line: 0, character: 2 } },
+      text: "",
+    });
+  });
+
+  it("detects a full replacement", () => {
+    expect(computeSingleChange("aaa", "bbb")).toEqual({
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
+      text: "bbb",
+    });
+  });
+
+  it("computes line-aware positions across newlines", () => {
+    expect(computeSingleChange("a\nb", "a\nxb")).toEqual({
+      range: { start: { line: 1, character: 0 }, end: { line: 1, character: 0 } },
+      text: "x",
+    });
+  });
+
+  it("does not let prefix and suffix overlap", () => {
+    expect(computeSingleChange("aa", "aaa")).toEqual({
+      range: { start: { line: 0, character: 2 }, end: { line: 0, character: 2 } },
+      text: "a",
+    });
+  });
+});
+
 describe("flushLspDocumentSync", () => {
   beforeEach(() => {
     unmarkLspDocument(FILE);
@@ -56,7 +105,16 @@ describe("flushLspDocumentSync", () => {
     await flushLspDocumentSync("typescript", FILE, "new", invokeFn);
 
     expect(calls).toEqual([
-      { cmd: "lsp_did_change", args: { language: "typescript", filePath: FILE, content: "new" } },
+      {
+        cmd: "lsp_did_change",
+        args: {
+          language: "typescript",
+          filePath: FILE,
+          content: "new",
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } },
+          changeText: "new",
+        },
+      },
     ]);
     expect(getLspDocumentSentContent(FILE)).toBe("new");
   });
