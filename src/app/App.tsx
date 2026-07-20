@@ -17,8 +17,12 @@ import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolve
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
+import { useLspSymbolCommands } from "./useLspSymbolCommands";
 import { CommandPalette } from "./CommandPalette";
 import { GoToFile } from "./GoToFile";
+import { RenameDialog } from "@/features/editor/components/RenameDialog";
+import { CodeActionsDialog } from "@/features/editor/components/CodeActionsDialog";
+import { SymbolDialog } from "@/features/editor/components/SymbolDialog";
 
 export default function App() {
   useAIInit();
@@ -34,6 +38,7 @@ export default function App() {
 
   useGlobalShortcuts(actions);
   useCommandPaletteCommands();
+  useLspSymbolCommands();
   useEffect(() => startLspDidCloseWatcher(), []);
 
   return (
@@ -44,6 +49,9 @@ export default function App() {
         {!onboardingLoading && !onboardingCompleted && <Onboarding />}
         <CommandPalette />
         <GoToFile />
+        <RenameDialog />
+        <CodeActionsDialog />
+        <SymbolDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>
     </ThemeProvider>

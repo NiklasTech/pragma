@@ -13,6 +13,8 @@ import {
   type LspCompletionItem,
   type LspFeatureFlags,
 } from "./client";
+import { flushLspDocumentSync } from "./lspDocuments";
+import { renderMarkdownToDom } from "./markdown-lite";
 import "./completion-icons.css";
 
 const WORD_BEFORE_CURSOR = /[\w$-]*$/;
@@ -88,9 +90,8 @@ async function buildInfoDom(
   if (!text) {
     return null;
   }
-  const dom = document.createElement("div");
-  dom.className = "cm-lsp-completion-doc";
-  dom.textContent = text;
+  const dom = renderMarkdownToDom(text);
+  dom.classList.add("cm-lsp-completion-doc");
   return dom;
 }
 
@@ -109,6 +110,10 @@ export function createLspCompletionSource(
     }
 
     const line = context.state.doc.lineAt(context.pos);
+    await flushLspDocumentSync(language, filePath, context.state.doc.toString()).catch(() => {});
+    if (context.aborted) {
+      return null;
+    }
     const items = await lspCompletion(language, filePath, line.number - 1, context.pos - line.from);
     if (context.aborted || items.length === 0) {
       return null;

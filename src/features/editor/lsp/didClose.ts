@@ -4,9 +4,9 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
-import { isLspDocumentSynced, unmarkLspDocument } from "./lspDocuments";
+import { isLspDocumentSynced, unmarkLspDocument, type LspInvokeFn } from "./lspDocuments";
 
-export type LspInvokeFn = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+export type { LspInvokeFn } from "./lspDocuments";
 
 export function fileTabPaths(): string[] {
   return useEditorStore

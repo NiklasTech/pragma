@@ -30,7 +30,24 @@ export interface DiffTab {
   sourceTabId?: string;
 }
 
-export type EditorTab = FileTab | DiffTab;
+export interface ReferenceLocation {
+  filePath: string;
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
+}
+
+export interface ReferencesTab {
+  id: string;
+  kind: "references";
+  path: string;
+  name: string;
+  symbol: string;
+  locations: ReferenceLocation[];
+}
+
+export type EditorTab = FileTab | DiffTab | ReferencesTab;
 
 export interface TabState {
   tabId: string;
@@ -52,6 +69,7 @@ interface EditorState {
 interface EditorActions {
   openFile: (file: Omit<FileTab, "kind">, panelId?: string | null) => void;
   openDiff: (diff: Omit<DiffTab, "kind" | "name" | "id"> & { id?: string; name?: string }) => void;
+  openReferences: (refs: { path: string; symbol: string; locations: ReferenceLocation[] }) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   setPanelActiveTab: (panelId: string, tabId: string | null) => void;
@@ -144,6 +162,39 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
       tabs: [...tabs, diffTab],
       tabStates: [...tabStates, createTabState(diffId)],
       activeTabId: diffId,
+    });
+  },
+
+  openReferences: (refs) => {
+    const { tabs, tabStates } = get();
+    const id = `references:${refs.symbol}`;
+    const existing = tabs.find((t) => t.id === id);
+
+    if (existing) {
+      set({
+        tabs: tabs.map((t) =>
+          t.id === id && t.kind === "references"
+            ? { ...t, path: refs.path, locations: refs.locations }
+            : t,
+        ),
+        activeTabId: id,
+      });
+      return;
+    }
+
+    const referencesTab: ReferencesTab = {
+      id,
+      kind: "references",
+      path: refs.path,
+      name: `References: ${refs.symbol}`,
+      symbol: refs.symbol,
+      locations: refs.locations,
+    };
+
+    set({
+      tabs: [...tabs, referencesTab],
+      tabStates: [...tabStates, createTabState(id)],
+      activeTabId: id,
     });
   },
 

@@ -74,23 +74,30 @@ export async function saveWorkspace(
 
   const activeSession = terminal.sessions.find((s) => s.id === terminal.activeSessionId);
 
-  const tabs: WorkspaceTab[] = editor.tabs.map((t) => {
+  const tabs: WorkspaceTab[] = editor.tabs.flatMap((t): WorkspaceTab[] => {
     if (t.kind === "file") {
-      return {
-        kind: "file",
-        id: t.id,
-        path: t.path,
-        name: t.name,
-        language: t.language,
-      };
+      return [
+        {
+          kind: "file" as const,
+          id: t.id,
+          path: t.path,
+          name: t.name,
+          language: t.language,
+        },
+      ];
     }
-    return {
-      kind: "diff",
-      id: t.id,
-      path: t.path,
-      name: t.name,
-      staged: t.staged,
-    };
+    if (t.kind === "diff") {
+      return [
+        {
+          kind: "diff" as const,
+          id: t.id,
+          path: t.path,
+          name: t.name,
+          staged: t.staged,
+        },
+      ];
+    }
+    return [];
   });
 
   const data: WorkspaceData = {

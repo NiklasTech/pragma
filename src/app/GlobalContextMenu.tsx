@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import {
   ContextMenu,
@@ -9,7 +9,20 @@ import {
 } from "@/shared/components/ui/context-menu";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
+import { isLspSupported } from "@/shared/lib/lsp-servers";
+import { getLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
+import {
+  EDITOR_DEFINITION_AVAILABILITY_EVENT,
+  dispatchEditorCheckDefinition,
+  dispatchEditorCodeAction,
+  dispatchEditorFindReferences,
+  dispatchEditorFormatDocument,
+  dispatchEditorGoToDefinition,
+  dispatchEditorRename,
+  type EditorDefinitionAvailabilityEventDetail,
+} from "@/shared/lib/editor-events";
 import { useLayoutStore } from "@/shell/layout";
 import {
   acceptTerminalSuggestion,
@@ -20,10 +33,14 @@ import {
   type TerminalSuggestionEventDetail,
 } from "@/shared/lib/terminal-events";
 import {
+  ArrowSquareOut,
   Broom,
   ClipboardText,
   Copy,
   Lightning,
+  MagicWand,
+  MagnifyingGlass,
+  PencilLine,
   Scissors,
   SelectionAll,
   Sparkle,
@@ -35,6 +52,7 @@ type ContextType = "editor" | "terminal" | "input" | "generic";
 interface MenuState {
   contextType: ContextType;
   selection: string;
+  position: { clientX: number; clientY: number } | null;
 }
 
 const MOD_KEY = navigator.platform.toLowerCase().includes("mac") ? "Cmd" : "Ctrl";
@@ -64,6 +82,28 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   const activeTabId = useEditorStore((state) => state.activeTabId);
   const tabs = useEditorStore((state) => state.tabs);
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? null;
+  const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
+  const activeLanguage = activeTab?.kind === "file" ? detectLanguage(activeTab.name) : undefined;
+  const lspEnabledForLanguage = useSettingsStore(
+    (state) => state.lsp.enabled[activeLanguage ?? ""] ?? true,
+  );
+  const [definitionAvailable, setDefinitionAvailable] = useState(true);
+  const checkSeqRef = useRef(0);
+
+  const lspReady = Boolean(
+    experimentalLsp && lspEnabledForLanguage && activeLanguage && isLspSupported(activeLanguage),
+  );
+
+  useEffect(() => {
+    const onAvailability = (event: Event) => {
+      const detail = (event as CustomEvent<EditorDefinitionAvailabilityEventDetail>).detail;
+      if (detail.requestId === checkSeqRef.current) {
+        setDefinitionAvailable(detail.available);
+      }
+    };
+    window.addEventListener(EDITOR_DEFINITION_AVAILABILITY_EVENT, onAvailability);
+    return () => window.removeEventListener(EDITOR_DEFINITION_AVAILABILITY_EVENT, onAvailability);
+  }, []);
 
   useEffect(() => {
     const onSelection = (event: Event) => {
@@ -93,14 +133,57 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
       setMenu({
         contextType,
         selection: contextType === "terminal" ? terminalSelection : getActiveSelection(),
+        position:
+          contextType === "editor" ? { clientX: event.clientX, clientY: event.clientY } : null,
       });
+      if (contextType === "editor" && lspReady) {
+        setDefinitionAvailable(true);
+        dispatchEditorCheckDefinition({
+          clientX: event.clientX,
+          clientY: event.clientY,
+          requestId: ++checkSeqRef.current,
+        });
+      }
     },
-    [terminalSelection],
+    [terminalSelection, lspReady],
   );
 
   const closeMenu = useCallback(() => {
     setMenu(null);
   }, []);
+
+  const handleGoToDefinition = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorGoToDefinition(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
+
+  const handleFormatDocument = useCallback(() => {
+    dispatchEditorFormatDocument();
+    closeMenu();
+  }, [closeMenu]);
+
+  const handleFindReferences = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorFindReferences(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
+
+  const handleRename = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorRename(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
+
+  const handleQuickFix = useCallback(() => {
+    if (menu?.position) {
+      dispatchEditorCodeAction(menu.position);
+    }
+    closeMenu();
+  }, [menu, closeMenu]);
 
   const handleCopy = useCallback(async () => {
     if (!hasSelection || !menu) return;
@@ -160,6 +243,19 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
 
   const contextType = menu?.contextType ?? "generic";
   const showTextActions = contextType === "editor" || contextType === "input";
+  const canGoToDefinition = contextType === "editor" && lspReady && definitionAvailable;
+  const activeFilePath = activeTab?.kind === "file" ? activeTab.path : undefined;
+  const activeFlags = activeFilePath ? getLspFeatureFlags(activeFilePath) : undefined;
+  const canFormatDocument = Boolean(
+    contextType === "editor" && lspReady && activeFilePath && (activeFlags?.formatting ?? true),
+  );
+  const canFindReferences = Boolean(
+    contextType === "editor" && lspReady && (activeFlags?.references ?? true),
+  );
+  const canRename = Boolean(contextType === "editor" && lspReady && (activeFlags?.rename ?? true));
+  const canQuickFix = Boolean(
+    contextType === "editor" && lspReady && (activeFlags?.codeAction ?? true),
+  );
   const showTerminalActions = contextType === "terminal";
   const showAskAI = contextType === "editor" && hasSelection;
   const showTerminalSuggestion = contextType === "terminal" && terminalSuggestion.visible;
@@ -181,6 +277,35 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
         )}
       />
       <ContextMenuContent className="w-52">
+        {contextType === "editor" && (
+          <>
+            <ContextMenuItem disabled={!canGoToDefinition} onClick={handleGoToDefinition}>
+              <ArrowSquareOut size={14} />
+              <span>Go to Definition</span>
+              <ContextMenuShortcut>F12</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canFindReferences} onClick={handleFindReferences}>
+              <MagnifyingGlass size={14} />
+              <span>Find All References</span>
+              <ContextMenuShortcut>Shift+F12</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canRename} onClick={handleRename}>
+              <PencilLine size={14} />
+              <span>Rename Symbol</span>
+              <ContextMenuShortcut>F2</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canQuickFix} onClick={handleQuickFix}>
+              <Lightning size={14} />
+              <span>Quick Fix...</span>
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!canFormatDocument} onClick={handleFormatDocument}>
+              <MagicWand size={14} />
+              <span>Format Document</span>
+              <ContextMenuShortcut>Shift+Alt+F</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
         {showTextActions && (
           <>
             <ContextMenuItem disabled={!hasSelection} onClick={handleCut}>
