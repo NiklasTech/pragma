@@ -135,10 +135,7 @@ pub fn load_shell_env() -> Result<(), String> {
                     }
                 }
             }
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
         }
-    } else if let Err(e) = result {
     }
 
     append_path_entries(&[
@@ -148,8 +145,6 @@ pub fn load_shell_env() -> Result<(), String> {
         "$HOME/.docker/bin",
         "$HOME/.local/bin",
     ]);
-
-    if let Ok(path) = std::env::var("PATH") {}
 
     Ok(())
 }

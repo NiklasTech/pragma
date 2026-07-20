@@ -8,6 +8,7 @@
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 /// Create a hidden `std::process::Command` on Windows.
+#[cfg_attr(not(target_os = "windows"), allow(unused_mut))]
 pub fn new_std_command<S: AsRef<std::ffi::OsStr>>(program: S) -> std::process::Command {
     let mut cmd = std::process::Command::new(program);
     #[cfg(target_os = "windows")]
@@ -37,6 +38,7 @@ pub fn new_std_command_for_program<S: AsRef<std::ffi::OsStr>>(program: S) -> std
 }
 
 /// Create a hidden `tokio::process::Command` on Windows.
+#[cfg_attr(not(target_os = "windows"), allow(unused_mut))]
 pub fn new_tokio_command<S: AsRef<std::ffi::OsStr>>(program: S) -> tokio::process::Command {
     let mut cmd = tokio::process::Command::new(program);
     #[cfg(target_os = "windows")]
