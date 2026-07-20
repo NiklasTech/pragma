@@ -42,7 +42,9 @@ impl LocalHistoryWatcher {
                         for path in event.paths {
                             if let Some(path_str) = path.to_str() {
                                 let file_path = path_str.to_string();
-                                let mut map = last_event_clone.lock().unwrap();
+                                let Ok(mut map) = last_event_clone.lock() else {
+                                    continue;
+                                };
                                 let now = Instant::now();
 
                                 if let Some(last) = map.get(&file_path) {

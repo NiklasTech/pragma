@@ -12,7 +12,6 @@ const PreviewPanel = lazy(() => import("./panels/PreviewPanel"));
 const ProblemsPanel = lazy(() => import("./panels/ProblemsPanel"));
 const SettingsPanel = lazy(() => import("./panels/SettingsPanel"));
 const WelcomePanel = lazy(() => import("./panels/WelcomePanel"));
-const PlaceholderPanel = lazy(() => import("./panels/PlaceholderPanel"));
 
 interface PanelHostProps {
   panelId: string;
@@ -57,7 +56,7 @@ function PanelContent({ kind, panelId }: { kind: PanelKind; panelId: string }) {
     case "settings":
       return <SettingsPanel />;
     default:
-      return <PlaceholderPanel kind={kind} />;
+      return null;
   }
 }
 

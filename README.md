@@ -36,7 +36,7 @@ Most existing tools add AI through plugins that feel bolted on or treat the term
 - **Private by default.** API keys are stored in the operating system's keychain, not in plain text.
 - **Hackable.** VIM mode, custom themes, configurable AI provider profiles and MCP server support.
 
-Pragma is currently in early development. The core editor, terminal, AI chat and Git panels are functional. LSP support is experimental and MCP server management is available through the sidebar.
+Pragma is currently in early development. The core editor, terminal, AI chat and Git panels are functional. LSP support (completion, hover, go-to-definition, references, formatting, rename, signature help, code actions, symbols) is built in, and MCP server management is available through the sidebar.
 
 ---
 

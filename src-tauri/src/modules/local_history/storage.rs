@@ -104,10 +104,8 @@ pub fn save_snapshot(
     let now = Utc::now();
     let snapshot_id = format!("{}", now.timestamp_millis());
 
-    let (diff, _full_content) = if metas.is_empty() {
-        (String::new(), Some(new_content.to_string()))
-    } else {
-        let prev_snapshot_path = snapshot_path(&dir, &metas.last().unwrap().timestamp);
+    let (diff, _full_content) = if let Some(last_meta) = metas.last() {
+        let prev_snapshot_path = snapshot_path(&dir, &last_meta.timestamp);
         let prev_content = if prev_snapshot_path.exists() {
             let prev_diff = fs::read_to_string(&prev_snapshot_path)
                 .map_err(|e| format!("Failed to read previous snapshot: {e}"))?;
@@ -129,6 +127,8 @@ pub fn save_snapshot(
             String::new()
         };
         (compute_diff(&prev_content, new_content), None)
+    } else {
+        (String::new(), Some(new_content.to_string()))
     };
 
     let meta = SnapshotMeta {
