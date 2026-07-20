@@ -35,7 +35,7 @@
 - [ ] `cargo check` passes locally (run from `src-tauri/`).
 - [ ] `cargo fmt -- --check` passes locally (run from `src-tauri/`).
 - [ ] I have added or updated tests where appropriate.
-- [ ] I have updated documentation where appropriate (README, AGENTS.md, CHANGELOG, etc.).
+- [ ] I have updated documentation where appropriate (README, AGENTS.md, etc.). Release notes are drafted automatically via release-drafter.
 
 ## Notes for the reviewer
 
