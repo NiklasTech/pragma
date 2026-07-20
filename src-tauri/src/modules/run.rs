@@ -8,7 +8,9 @@ use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use crate::platform::{new_std_command, new_std_command_for_program, resolve_program};
+#[cfg(windows)]
+use crate::platform::new_std_command;
+use crate::platform::{new_std_command_for_program, resolve_program};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -86,7 +88,7 @@ impl RunManager {
 
     pub fn stop_all(&self) {
         let processes = self.processes.lock().unwrap_or_else(|e| e.into_inner());
-        for (_, instance) in processes.iter() {
+        for instance in processes.values() {
             instance.stop_requested.store(true, Ordering::SeqCst);
             kill_process_group(instance.pgid);
         }
