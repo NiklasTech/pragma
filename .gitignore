@@ -36,3 +36,4 @@ entities.json
 
 # Local superpowers plans/specs (not for the repo)
 docs/superpowers/
+.superpowers/

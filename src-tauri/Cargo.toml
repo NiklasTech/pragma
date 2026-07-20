@@ -32,7 +32,6 @@ tauri-plugin-store = "2"
 tauri-plugin-opener = "2"
 
 libc = "0.2"
-nix = { version = "0.29", features = ["process", "signal"] }
 shared_child = "1"
 notify = "7.0"
 chrono = { version = "0.4", features = ["serde"] }
@@ -44,7 +43,6 @@ tokio = { version = "1.52.3", features = ["process", "rt-multi-thread", "macros"
 zip = { version = "4.2", default-features = false, features = ["deflate"] }
 tokio-util = "0.7"
 shellwords = "1.1.0"
-tracing = "0.1.44"
 sysinfo = "0.39"
 bollard = "0.20"
 ignore = "0.4"
