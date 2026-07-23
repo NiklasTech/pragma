@@ -13,6 +13,7 @@ import { cn } from "@/shared/lib/utils";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { getFolderIconPath } from "@/shared/lib/folder-icons";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -62,6 +63,7 @@ export function FileTreeNode({
   const isExpanded = expandedDirs.has(node.path);
   const isSelected = selectedPath === node.path;
   const isActiveFile = activeTabId === node.path;
+  const showDirLoading = useDelayedLoading(node.isLoading === true);
 
   const handleClick = useCallback(() => {
     if (node.isDirectory) {
@@ -129,7 +131,7 @@ export function FileTreeNode({
               <CaretRight size={12} weight="bold" />
             )}
           </span>
-          {node.isLoading ? (
+          {showDirLoading ? (
             <Spinner size={14} className="animate-spin text-fg-muted" />
           ) : (
             <img

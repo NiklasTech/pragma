@@ -11,6 +11,7 @@ import {
 import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { getVisibleNodes } from "@/shared/stores/fileExplorer";
 import { FileTreeNode } from "./FileTreeNode";
@@ -32,6 +33,8 @@ export function FileExplorer() {
     renameNode,
     deleteNode,
   } = useFileExplorer();
+
+  const showTreeLoading = useDelayedLoading(isLoading);
 
   const { openPanel } = useLocalHistory();
 
@@ -68,7 +71,7 @@ export function FileExplorer() {
         <div className="flex h-full flex-col">
           <PanelHeader icon={Files} title="Explorer" subtitle={rootName ?? undefined} />
           <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
-            {isLoading ? (
+            {showTreeLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Spinner size={20} className="animate-spin text-fg-muted" />
               </div>
