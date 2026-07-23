@@ -118,7 +118,7 @@ export const GraphRail = memo(function GraphRail({
         cy={midY}
         r={active ? 4.6 : 3.6}
         fill={row.nodeColor}
-        stroke="var(--background)"
+        stroke="var(--bg-surface)"
         strokeWidth={1.5}
       />
       {active ? (
@@ -137,8 +137,7 @@ export const GraphRail = memo(function GraphRail({
           x={width - 4}
           y={midY + 3}
           textAnchor="end"
-          className="fill-muted-foreground"
-          style={{ fontSize: 8 }}
+          style={{ fontSize: 8, fill: "var(--fg-subtle)" }}
         >
           +{row.laneCount - visible}
         </text>

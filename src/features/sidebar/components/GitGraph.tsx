@@ -127,14 +127,14 @@ function authorInitials(name: string): string {
 }
 
 const AUTHOR_TINTS = [
-  "#7aa2f7",
-  "#bb9af7",
-  "#9ece6a",
-  "#e0af68",
-  "#f7768e",
-  "#73daca",
-  "#ff9e64",
-  "#b4f9f8",
+  "#8b96f6",
+  "#bba5f9",
+  "#5fcfa5",
+  "#edbf72",
+  "#ed7f8b",
+  "#7adbe7",
+  "#e8b87d",
+  "#a78bfa",
 ];
 
 function authorTint(key: string): string {
@@ -245,6 +245,7 @@ export function GitGraph() {
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 8,
+    scrollMargin: TABLE_HEADER_HEIGHT,
     getItemKey: (index) => commits[index]?.sha ?? index,
   });
 
@@ -253,7 +254,6 @@ export function GitGraph() {
     const requestId = ++requestIdRef.current;
     setLoadStatus("initial");
     setError(null);
-    setEndReached(false);
     try {
       const result = await invoke<{ entries: GitLogEntry[] }>("git_log_entries", {
         repoPath,
@@ -262,7 +262,7 @@ export function GitGraph() {
       if (requestId !== requestIdRef.current) return;
       setCommits(result.entries);
       setLoadStatus("idle");
-      if (result.entries.length < PAGE_SIZE) setEndReached(true);
+      setEndReached(result.entries.length < PAGE_SIZE);
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       setError(normalizeError(err));
@@ -307,6 +307,7 @@ export function GitGraph() {
   useEffect(() => {
     setCommits([]);
     setActiveSha(null);
+    setEndReached(false);
     ++loadMoreRequestIdRef.current;
     inflightMoreRef.current = false;
     if (repoPath) void loadInitial();
@@ -456,152 +457,152 @@ export function GitGraph() {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-x-auto">
-      {/* Header */}
-      <div
-        className="grid shrink-0 items-center gap-5 border-b border-border/40 bg-bg-surface pr-3 text-ui-2xs font-semibold uppercase tracking-[0.12em] text-fg-muted select-none"
-        style={{
-          height: TABLE_HEADER_HEIGHT,
-          gridTemplateColumns: GRID_COLUMNS,
-          minWidth: MIN_TABLE_WIDTH,
-        }}
-      >
-        <div />
-        {ALL_COLUMNS.map((col) => {
-          const isCollapsed = collapsedCols.has(col.key);
-          return (
-            <button
-              key={col.key}
-              type="button"
-              onClick={() => toggleCol(col.key)}
-              className={cn(
-                "flex items-center gap-1 transition-colors hover:text-fg-default",
-                col.align === "right" && "justify-end",
-                col.key === "sha" && "pl-px",
-                col.key === "author" && "justify-end",
-                col.key === "date" && "pr-6",
-                col.key === "changes" && "pl-6",
-              )}
-              title={isCollapsed ? `Expand ${col.label}` : `Collapse ${col.label}`}
-            >
-              <span className="inline-block w-2.5">
-                {isCollapsed ? (
-                  <CaretRight size={9} weight="bold" />
-                ) : (
-                  <CaretDown size={9} weight="bold" />
-                )}
-              </span>
-              <span className={cn(isCollapsed && "sr-only")}>{col.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Rows */}
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto [scrollbar-gutter:stable]"
+        className="min-h-0 min-w-0 flex-1 overflow-auto [scrollbar-gutter:stable]"
       >
-        <div
-          style={{
-            height: virtualizer.getTotalSize(),
-            position: "relative",
-            width: "100%",
-            minWidth: MIN_TABLE_WIDTH,
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const commit = commits[virtualRow.index];
-            if (!commit) return null;
-            return (
-              <div
-                key={virtualRow.key}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: virtualRow.size,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                <ContextMenu>
-                  <ContextMenuTrigger className="h-full w-full">
-                    <CommitRow
-                      commit={commit}
-                      active={activeSha === commit.sha}
-                      graphRow={graphByCommit.get(commit.sha) ?? null}
-                      maxLaneCount={maxLaneCount}
-                      collapsedCols={collapsedCols}
-                      onClick={() => setActiveSha(activeSha === commit.sha ? null : commit.sha)}
-                    />
-                  </ContextMenuTrigger>
-                  <ContextMenuContent align="start" alignOffset={4} side="right" sideOffset={0}>
-                    <ContextMenuGroup>
-                      <ContextMenuLabel>{commit.short_sha}</ContextMenuLabel>
-                      <ContextMenuItem onClick={() => setDetailsSha(commit.sha)}>
-                        <Info weight="regular" />
-                        View commit details
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => handleCopySha(commit.sha)}>
-                        <Copy weight="regular" />
-                        Copy SHA
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => handleCheckoutCommit(commit.sha)}>
-                        <ArrowLineDown weight="regular" />
-                        Checkout commit
-                      </ContextMenuItem>
-                      <ContextMenuItem onClick={() => setBranchDialogSha(commit.sha)}>
-                        <GitBranch weight="regular" />
-                        Create branch from commit
-                      </ContextMenuItem>
-                    </ContextMenuGroup>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem onClick={() => handleCherryPick(commit.sha)}>
-                      <Cherries weight="regular" />
-                      Cherry-pick commit
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={() => handleRevert(commit.sha)}>
-                      <ArrowUUpLeft weight="regular" />
-                      Revert commit
-                    </ContextMenuItem>
-                    <ContextMenuSub>
-                      <ContextMenuSubTrigger>
-                        <ArrowCounterClockwise weight="regular" />
-                        Reset to commit
-                      </ContextMenuSubTrigger>
-                      <ContextMenuSubContent>
-                        <ContextMenuItem onClick={() => handleReset(commit.sha, "soft")}>
-                          Soft
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => handleReset(commit.sha, "mixed")}>
-                          Mixed
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                          variant="destructive"
-                          onClick={() => handleReset(commit.sha, "hard")}
-                        >
-                          Hard
-                        </ContextMenuItem>
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
-                  </ContextMenuContent>
-                </ContextMenu>
-              </div>
-            );
-          })}
-        </div>
-
-        {loadStatus === "more" ? (
-          <div className="flex items-center justify-center gap-2 py-3 text-ui-xs text-fg-muted">
-            <Spinner size={12} className="animate-spin" />
-            Loading more…
+        <div className="px-1.5" style={{ minWidth: MIN_TABLE_WIDTH }}>
+          {/* Header */}
+          <div
+            className="sticky top-0 z-10 grid items-center gap-5 bg-bg-surface pr-3 text-ui-2xs font-semibold uppercase tracking-[0.12em] text-fg-muted select-none"
+            style={{
+              height: TABLE_HEADER_HEIGHT,
+              gridTemplateColumns: GRID_COLUMNS,
+            }}
+          >
+            <div />
+            {ALL_COLUMNS.map((col) => {
+              const isCollapsed = collapsedCols.has(col.key);
+              return (
+                <button
+                  key={col.key}
+                  type="button"
+                  onClick={() => toggleCol(col.key)}
+                  className={cn(
+                    "flex items-center gap-1 transition-colors hover:text-fg-default",
+                    col.align === "right" && "justify-end",
+                    col.key === "sha" && "pl-px",
+                    col.key === "author" && "justify-end",
+                    col.key === "date" && "pr-6",
+                    col.key === "changes" && "pl-6",
+                  )}
+                  title={isCollapsed ? `Expand ${col.label}` : `Collapse ${col.label}`}
+                >
+                  <span className="inline-block w-2.5">
+                    {isCollapsed ? (
+                      <CaretRight size={9} weight="bold" />
+                    ) : (
+                      <CaretDown size={9} weight="bold" />
+                    )}
+                  </span>
+                  <span className={cn(isCollapsed && "sr-only")}>{col.label}</span>
+                </button>
+              );
+            })}
           </div>
-        ) : null}
-        {endReached ? (
-          <div className="py-3 text-center text-ui-xs text-fg-subtle">End of history</div>
-        ) : null}
+
+          {/* Rows */}
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              position: "relative",
+              width: "100%",
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const commit = commits[virtualRow.index];
+              if (!commit) return null;
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: virtualRow.size,
+                    transform: `translateY(${virtualRow.start - TABLE_HEADER_HEIGHT}px)`,
+                  }}
+                >
+                  <ContextMenu>
+                    <ContextMenuTrigger className="h-full w-full">
+                      <CommitRow
+                        commit={commit}
+                        active={activeSha === commit.sha}
+                        graphRow={graphByCommit.get(commit.sha) ?? null}
+                        maxLaneCount={maxLaneCount}
+                        collapsedCols={collapsedCols}
+                        onClick={() => setActiveSha(activeSha === commit.sha ? null : commit.sha)}
+                      />
+                    </ContextMenuTrigger>
+                    <ContextMenuContent align="start" alignOffset={4} side="right" sideOffset={0}>
+                      <ContextMenuGroup>
+                        <ContextMenuLabel>{commit.short_sha}</ContextMenuLabel>
+                        <ContextMenuItem onClick={() => setDetailsSha(commit.sha)}>
+                          <Info weight="regular" />
+                          View commit details
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleCopySha(commit.sha)}>
+                          <Copy weight="regular" />
+                          Copy SHA
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => handleCheckoutCommit(commit.sha)}>
+                          <ArrowLineDown weight="regular" />
+                          Checkout commit
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={() => setBranchDialogSha(commit.sha)}>
+                          <GitBranch weight="regular" />
+                          Create branch from commit
+                        </ContextMenuItem>
+                      </ContextMenuGroup>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem onClick={() => handleCherryPick(commit.sha)}>
+                        <Cherries weight="regular" />
+                        Cherry-pick commit
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => handleRevert(commit.sha)}>
+                        <ArrowUUpLeft weight="regular" />
+                        Revert commit
+                      </ContextMenuItem>
+                      <ContextMenuSub>
+                        <ContextMenuSubTrigger>
+                          <ArrowCounterClockwise weight="regular" />
+                          Reset to commit
+                        </ContextMenuSubTrigger>
+                        <ContextMenuSubContent>
+                          <ContextMenuItem onClick={() => handleReset(commit.sha, "soft")}>
+                            Soft
+                          </ContextMenuItem>
+                          <ContextMenuItem onClick={() => handleReset(commit.sha, "mixed")}>
+                            Mixed
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            variant="destructive"
+                            onClick={() => handleReset(commit.sha, "hard")}
+                          >
+                            Hard
+                          </ContextMenuItem>
+                        </ContextMenuSubContent>
+                      </ContextMenuSub>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                </div>
+              );
+            })}
+          </div>
+
+          {loadStatus === "more" ? (
+            <div className="flex items-center justify-center gap-2 py-3 text-ui-xs text-fg-muted">
+              <Spinner size={12} className="animate-spin" />
+              Loading more…
+            </div>
+          ) : null}
+          {endReached ? (
+            <div className="py-3 text-center text-ui-xs text-fg-subtle">End of history</div>
+          ) : null}
+        </div>
       </div>
 
       <GitCommitDetailsDialog
@@ -695,8 +696,8 @@ function CommitRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative grid h-full w-full cursor-pointer items-center gap-5 border-l-2 border-transparent pr-3 text-left transition-colors",
-        active ? "border-l-primary/70 bg-bg-active" : "hover:bg-bg-hover",
+        "group relative grid h-full w-full cursor-pointer items-center gap-5 rounded-md pr-3 text-left transition-colors",
+        active ? "bg-bg-active" : "hover:bg-bg-hover",
       )}
       style={{
         gridTemplateColumns: GRID_COLUMNS,

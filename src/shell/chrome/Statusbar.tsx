@@ -26,14 +26,10 @@ function StatusbarSection({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-2 px-2 text-ui-xs text-fg-muted", className)}>
+    <div className={cn("flex items-center gap-1.5 px-2 text-ui-xs text-fg-muted", className)}>
       {children}
     </div>
   );
-}
-
-function StatusbarSeparator() {
-  return <div className="h-3 w-px bg-border/60" />;
 }
 
 export function Statusbar() {
@@ -66,7 +62,9 @@ export function Statusbar() {
         if (!editor.vimMode) return null;
         return (
           <StatusbarSection key={item}>
-            <span className="font-medium text-status-success">VIM</span>
+            <span className="rounded-sm bg-accent-subtle px-1.5 py-px text-ui-2xs font-semibold text-primary">
+              VIM
+            </span>
           </StatusbarSection>
         );
 
@@ -167,12 +165,11 @@ export function Statusbar() {
   if (items.length === 0) return null;
 
   return (
-    <div className="flex h-statusbar shrink-0 items-center justify-between border-t border-border/60 bg-bg-surface px-1 select-none">
+    <div className="flex h-statusbar shrink-0 items-center justify-between bg-bg-root px-1 select-none">
       <div className="flex items-center">
         {items.map((item, index) => (
           <span key={index} className="contents">
             {item}
-            {index < items.length - 1 && <StatusbarSeparator />}
           </span>
         ))}
       </div>

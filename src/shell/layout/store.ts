@@ -9,9 +9,11 @@ import {
   ensureDockedPanel,
   findPanelByKind,
   findNode,
+  insertAdjacent,
   moveNode,
   removeNode,
   removePanelByKind,
+  replaceNode,
   setActiveTabInTabs,
   updateSplitSizes,
 } from "./tree/operations";
@@ -196,10 +198,12 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
       const panel = findNode(s.root, panelId);
       if (!panel || panel.type !== "panel") return s;
       const newPanel = createPanel(kind ?? panel.kind);
-      const next = moveNode(s.root, newPanel.id, {
-        nodeId: panelId,
-        zone: direction === "horizontal" ? "right" : "bottom",
-      });
+      const next = insertAdjacent(
+        s.root,
+        panelId,
+        direction === "horizontal" ? "right" : "bottom",
+        newPanel,
+      );
       if ((kind ?? panel.kind) === "editor") {
         const editor = useEditorStore.getState();
         const sourceActive = editor.getPanelActiveTabId(panelId);
@@ -217,6 +221,12 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
       const ids = s.root.type === "panel" ? [s.root.id] : [];
       if (ids.length === 1 && ids[0] === panelId) {
         return { root: createPanel("welcome"), ...markCustomized(s) };
+      }
+      if (panel.kind === "terminal") {
+        const terminal = useTerminalStore.getState();
+        for (const session of terminal.sessions.filter((s) => s.panelId === panelId)) {
+          void terminal.killSession(session.id);
+        }
       }
       const next = removeNode(s.root, panelId) ?? createPanel("welcome");
       const editor = useEditorStore.getState();
@@ -317,7 +327,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     set((s) => {
       const split = findNode(s.root, splitId);
       if (!split || split.type !== "split") return s;
-      return { root: updateSplitSizes(split, sizes) };
+      return { root: replaceNode(s.root, splitId, updateSplitSizes(split, sizes)) };
     }),
 
   // Presets

@@ -136,13 +136,13 @@
     },
 
     "layout": {
-      "headerHeight": 48,
-      "tabHeight": 34,
-      "statusbarHeight": 26,
+      "headerHeight": 40,
+      "tabHeight": 36,
+      "statusbarHeight": 24,
       "breadcrumbHeight": 28,
       "inputbarHeight": 42,
       "sidebarWidth": 260,
-      "sidebarCollapsedWidth": 48,
+      "sidebarCollapsedWidth": 40,
       "sidebarMinWidth": 180,
       "sidebarMaxWidth": 480,
       "panelMinHeight": 160,

@@ -6,8 +6,8 @@
     "id": "dark-default",
     "name": "Dark Default",
     "author": "Pragma Team",
-    "description": "A deep, high-contrast dark theme with electric blue accents. Built for focus.",
-    "version": "2.0.0",
+    "description": "A calm, technical dark theme with cool slate surfaces and an indigo accent. Built for focus.",
+    "version": "2.1.0",
     "license": "MIT"
   },
 
@@ -20,39 +20,39 @@
   "tokens": {
     "colors": {
       "background": {
-        "root": "#09090b",
-        "surface": "#0f0f11",
-        "elevated": "#151519",
-        "input": "#1a1a1f",
-        "hover": "rgba(255, 255, 255, 0.05)",
-        "active": "rgba(43, 127, 255, 0.10)",
-        "overlay": "rgba(0, 0, 0, 0.65)"
+        "root": "#0b0d10",
+        "surface": "#101318",
+        "elevated": "#161a21",
+        "input": "#1a1f28",
+        "hover": "rgba(255, 255, 255, 0.04)",
+        "active": "rgba(110, 123, 242, 0.12)",
+        "overlay": "rgba(0, 0, 0, 0.60)"
       },
       "foreground": {
-        "default": "#f4f4f5",
-        "muted": "#a1a1aa",
-        "subtle": "#71717a",
-        "inverse": "#09090b"
+        "default": "#e8eaee",
+        "muted": "#9ba3af",
+        "subtle": "#646c7a",
+        "inverse": "#0b0d10"
       },
       "accent": {
-        "default": "#2b7fff",
-        "subtle": "rgba(43, 127, 255, 0.12)",
-        "glow": "rgba(43, 127, 255, 0.35)"
+        "default": "#6e7bf2",
+        "subtle": "rgba(110, 123, 242, 0.14)",
+        "glow": "rgba(110, 123, 242, 0.30)"
       },
       "border": {
-        "default": "rgba(255, 255, 255, 0.08)",
-        "subtle": "rgba(255, 255, 255, 0.05)",
-        "focus": "rgba(43, 127, 255, 0.50)"
+        "default": "rgba(255, 255, 255, 0.06)",
+        "subtle": "rgba(255, 255, 255, 0.04)",
+        "focus": "rgba(110, 123, 242, 0.50)"
       },
       "status": {
-        "success": "#22c55e",
-        "successBg": "rgba(34, 197, 94, 0.12)",
-        "warning": "#f59e0b",
-        "warningBg": "rgba(245, 158, 11, 0.12)",
-        "error": "#ef4444",
-        "errorBg": "rgba(239, 68, 68, 0.12)",
-        "info": "#3b82f6",
-        "infoBg": "rgba(59, 130, 246, 0.12)"
+        "success": "#3fb68b",
+        "successBg": "rgba(63, 182, 139, 0.12)",
+        "warning": "#e0a94e",
+        "warningBg": "rgba(224, 169, 78, 0.12)",
+        "error": "#e35d6a",
+        "errorBg": "rgba(227, 93, 106, 0.12)",
+        "info": "#5b9cf5",
+        "infoBg": "rgba(91, 156, 245, 0.12)"
       },
       "git": {
         "added": "{colors.status.success}",
@@ -64,17 +64,17 @@
         "untracked": "{colors.status.info}",
         "untrackedBg": "{colors.status.infoBg}",
         "ignored": "{colors.foreground.subtle}",
-        "conflict": "#c084fc"
+        "conflict": "#a78bfa"
       },
       "thread": {
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(43, 127, 255, 0.25)",
+      "selection": "rgba(110, 123, 242, 0.25)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "rgba(255, 255, 255, 0.12)",
-        "thumbHover": "rgba(255, 255, 255, 0.22)"
+        "thumb": "rgba(255, 255, 255, 0.10)",
+        "thumbHover": "rgba(255, 255, 255, 0.18)"
       }
     },
 
@@ -89,17 +89,17 @@
         "activeBackground": "{colors.background.surface}"
       },
       "line": {
-        "active": "rgba(255, 255, 255, 0.03)",
-        "highlight": "rgba(43, 127, 255, 0.06)"
+        "active": "rgba(255, 255, 255, 0.025)",
+        "highlight": "rgba(110, 123, 242, 0.06)"
       },
       "syntax": {
-        "keyword": "#c084fc",
-        "string": "#86efac",
+        "keyword": "#a78bfa",
+        "string": "#7fc8a9",
         "comment": "{colors.foreground.subtle}",
-        "function": "#60a5fa",
+        "function": "#7ab8f5",
         "variable": "{colors.foreground.default}",
-        "number": "#fdba74",
-        "type": "#93c5fd",
+        "number": "#e8b87d",
+        "type": "#8ab4f5",
         "tag": "{colors.status.error}",
         "attribute": "{colors.accent.default}",
         "property": "{colors.foreground.default}",
@@ -108,41 +108,41 @@
     },
 
     "terminal": {
-      "background": "{colors.background.root}",
+      "background": "#090b0e",
       "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
       "cursorAccent": "{colors.accent.default}",
       "selection": "{colors.selection}",
       "ansi": {
-        "black": "#09090b",
-        "red": "#ef4444",
-        "green": "#22c55e",
-        "yellow": "#f59e0b",
-        "blue": "#2b7fff",
-        "magenta": "#c084fc",
-        "cyan": "#22d3ee",
-        "white": "#a1a1aa"
+        "black": "#0b0d10",
+        "red": "#e35d6a",
+        "green": "#3fb68b",
+        "yellow": "#e0a94e",
+        "blue": "#6e7bf2",
+        "magenta": "#a78bfa",
+        "cyan": "#4ec9d8",
+        "white": "#9ba3af"
       },
       "ansiBright": {
-        "black": "#27272a",
-        "red": "#f87171",
-        "green": "#4ade80",
-        "yellow": "#fbbf24",
-        "blue": "#60a5fa",
-        "magenta": "#d8b4fe",
-        "cyan": "#67e8f9",
-        "white": "#f4f4f5"
+        "black": "#2a2f3a",
+        "red": "#ed7f8b",
+        "green": "#5fcfa5",
+        "yellow": "#edbf72",
+        "blue": "#8b96f6",
+        "magenta": "#bba5f9",
+        "cyan": "#7adbe7",
+        "white": "#e8eaee"
       }
     },
 
     "layout": {
-      "headerHeight": 48,
-      "tabHeight": 34,
-      "statusbarHeight": 26,
+      "headerHeight": 40,
+      "tabHeight": 36,
+      "statusbarHeight": 24,
       "breadcrumbHeight": 28,
       "inputbarHeight": 42,
       "sidebarWidth": 260,
-      "sidebarCollapsedWidth": 48,
+      "sidebarCollapsedWidth": 40,
       "sidebarMinWidth": 180,
       "sidebarMaxWidth": 480,
       "panelMinHeight": 160,

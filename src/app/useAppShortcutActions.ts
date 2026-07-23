@@ -4,6 +4,7 @@ import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { useLayoutStore } from "@/shell/layout";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
@@ -42,6 +43,7 @@ export function useAppShortcutActions(): ShortcutActions {
           name: "Shell",
           type: "shell",
           cwd: rootPath ?? undefined,
+          panelId: resolveDefaultTerminalPanelId(),
           isActive: true,
         });
       },

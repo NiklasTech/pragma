@@ -20,9 +20,13 @@ import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
 import { useTheme } from "@/theme";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
-import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
+import {
+  dispatchTerminalSelection,
+  TERMINAL_COPY_OUTPUT_EVENT,
+} from "@/shared/lib/terminal-events";
 import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
 import { AISuggestionsOverlay } from "./ai-suggestions";
+import { ArrowDown } from "@phosphor-icons/react";
 
 interface PtyOutputEvent {
   id: string;
@@ -42,6 +46,8 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const pendingDa1Ref = useRef(false);
   const lastOutputRef = useRef<string>("");
   const [termState, setTermState] = useState<XTerm | null>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const lastActivityMarkRef = useRef(0);
   const { fontSize, fontFamily, fontId, scrollback, aiSuggestions } = useTerminalStore();
   const terminalFontFamily = fontId || fontFamily;
   const { themeId, resolvedMode } = useTheme();
@@ -60,6 +66,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let da1Handler: { dispose: () => void } | null = null;
+    let scrollHandler: { dispose: () => void } | null = null;
 
     async function setup() {
       if (!containerRef.current) return;
@@ -106,10 +113,19 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         return true;
       });
 
+      scrollHandler = t.onScroll(() => {
+        setShowScrollDown(t.buffer.active.viewportY < t.buffer.active.baseY);
+      });
+
       const unlisten = await listen<PtyOutputEvent>("pty_output", (event) => {
         if (event.payload.id === ptyIdRef.current) {
           t.write(event.payload.data);
           lastOutputRef.current = (lastOutputRef.current + event.payload.data).slice(-1000);
+          const now = Date.now();
+          if (now - lastActivityMarkRef.current > 500) {
+            lastActivityMarkRef.current = now;
+            useTerminalStore.getState().markActivity(session.id);
+          }
         }
       });
       unlistenFn = unlisten;
@@ -218,6 +234,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       unlistenFn?.();
       resizeObserver?.disconnect();
       da1Handler?.dispose();
+      scrollHandler?.dispose();
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;
@@ -395,17 +412,45 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     return () => window.removeEventListener("pragma:terminal:clear", handleClear);
   }, [isActive]);
 
+  useEffect(() => {
+    const handleCopyOutput = () => {
+      const term = termRef.current;
+      if (!term || !isActive) return;
+      const buffer = term.buffer.active;
+      const lines: string[] = [];
+      for (let i = 0; i < buffer.length; i++) {
+        lines.push(buffer.getLine(i)?.translateToString(true) ?? "");
+      }
+      const text = lines.join("\n").trimEnd();
+      if (text) void copyToClipboard(text);
+    };
+
+    window.addEventListener(TERMINAL_COPY_OUTPUT_EVENT, handleCopyOutput);
+    return () => window.removeEventListener(TERMINAL_COPY_OUTPUT_EVENT, handleCopyOutput);
+  }, [isActive]);
+
   return (
     <div
-      ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
+      className="relative h-full w-full bg-terminal-bg p-2"
       style={{ display: isActive ? "block" : "none" }}
     >
-      <AISuggestionsOverlay
-        suggestion={suggestions.suggestion}
-        loading={suggestions.loading}
-        visible={suggestions.visible}
-      />
+      <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+        <AISuggestionsOverlay
+          suggestion={suggestions.suggestion}
+          loading={suggestions.loading}
+          visible={suggestions.visible}
+        />
+      </div>
+      {showScrollDown && (
+        <button
+          type="button"
+          onClick={() => termRef.current?.scrollToBottom()}
+          className="absolute bottom-4 right-4 z-10 flex size-7 items-center justify-center rounded-full border border-border bg-bg-elevated text-fg-muted shadow-md transition-colors hover:text-fg-default"
+          title="Scroll to Bottom"
+        >
+          <ArrowDown size={13} />
+        </button>
+      )}
     </div>
   );
 }

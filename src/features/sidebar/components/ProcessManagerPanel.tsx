@@ -18,6 +18,7 @@ import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { cn } from "@/shared/lib/utils";
 import { useLayoutStore } from "@/shell/layout/store";
 import { useTerminalStore } from "@/shared/stores/terminal";
+import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
 
 function StatusDot({ status }: { status: RunStatus }) {
@@ -325,10 +326,15 @@ export function ProcessManagerPanel() {
                           onStart={async () => {
                             const processId = await startConfig(config);
                             if (processId) {
-                              addRunSession(processId, config.name, config.command);
                               if (terminal.mode === "hidden") {
                                 setTerminalMode("docked-bottom");
                               }
+                              addRunSession(
+                                processId,
+                                config.name,
+                                config.command,
+                                resolveDefaultTerminalPanelId(),
+                              );
                             }
                           }}
                           onStop={() => processId && stopProcess(processId)}
@@ -341,10 +347,15 @@ export function ProcessManagerPanel() {
                           onOpenLogs={() => {
                             if (processId) {
                               setActiveProcess(processId);
-                              addRunSession(processId, config.name, config.command);
                               if (terminal.mode === "hidden") {
                                 setTerminalMode("docked-bottom");
                               }
+                              addRunSession(
+                                processId,
+                                config.name,
+                                config.command,
+                                resolveDefaultTerminalPanelId(),
+                              );
                             } else {
                               setActiveProcess(null);
                             }

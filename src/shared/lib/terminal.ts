@@ -3,9 +3,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { useTerminalStore } from "@/shared/stores/terminal";
 
 export function injectIntoActivePty(command: string): boolean {
-  const { activeSessionId } = useTerminalStore.getState();
-  if (!activeSessionId) return false;
+  const { lastActiveSessionId } = useTerminalStore.getState();
+  if (!lastActiveSessionId) return false;
 
-  void invoke("write_pty", { id: activeSessionId, data: `${command}\n` });
+  void invoke("write_pty", { id: lastActiveSessionId, data: `${command}\n` });
   return true;
 }

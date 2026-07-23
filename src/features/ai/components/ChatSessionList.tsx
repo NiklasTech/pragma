@@ -86,7 +86,7 @@ export function ChatSessionList() {
           <ClockCounterClockwise size={14} />
         </PopoverTrigger>
         <PopoverContent side="bottom" align="end" className="w-64 p-0">
-          <div className="px-3 py-2 border-b border-border/40">
+          <div className="px-3 py-2 border-b border-border">
             <span className="text-xs font-medium text-fg-default">Chat History</span>
             <span className="text-ui-xs text-fg-muted ml-1.5">
               {chatSessions.length} session{chatSessions.length !== 1 ? "s" : ""}

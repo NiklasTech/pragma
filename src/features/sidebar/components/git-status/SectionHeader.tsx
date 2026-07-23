@@ -25,7 +25,7 @@ export function SectionHeader({
       <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-fg-muted">
         {title}
       </span>
-      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border/60 px-1 text-ui-xs font-semibold text-fg-muted">
+      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border px-1 text-ui-xs font-semibold text-fg-muted">
         {count}
       </span>
       <div className="ml-auto flex items-center gap-1">

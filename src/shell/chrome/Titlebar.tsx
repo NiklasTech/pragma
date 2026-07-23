@@ -96,21 +96,20 @@ export function Titlebar() {
   return (
     <div
       data-tauri-drag-region
-      className="relative z-[60] flex h-header shrink-0 items-center select-none border-b border-border/60 bg-bg-surface"
+      className="relative z-[60] flex h-header shrink-0 items-center select-none"
     >
-      <div className="flex items-center gap-2 px-3">
-        <img src="/pragma_logo.svg" alt="" className="h-5 w-5" />
-        <span className="text-ui-xs font-semibold text-fg-default">Pragma</span>
+      <div className="flex items-center gap-1.5 px-2">
+        <img src="/pragma_logo.svg" alt="" className="h-4.5 w-4.5" />
 
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
               <button
                 type="button"
-                className="flex h-8 items-center justify-center gap-0.5 rounded-md px-2 text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                className="flex h-7 items-center justify-center gap-0.5 rounded-md px-2 text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
                 title="Open folder or file"
               >
-                <FolderOpen size={16} />
+                <FolderOpen size={15} />
                 <CaretDown size={10} className="opacity-60" />
               </button>
             }
@@ -191,10 +190,10 @@ export function Titlebar() {
           type="button"
           onClick={saveFile}
           disabled={!canSave}
-          className="flex h-8 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
           title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
         >
-          <FloppyDisk size={16} />
+          <FloppyDisk size={15} />
         </button>
 
         <div className="mx-1 h-4 w-px bg-border/60" />
@@ -203,45 +202,43 @@ export function Titlebar() {
 
       <div className="flex-1" data-tauri-drag-region />
 
-      <div className="flex items-center">
-        <div className="flex items-center border-l border-border/40">
-          <button
-            type="button"
-            onClick={() => addFloatingPanel("settings")}
-            className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
-          >
-            <Gear size={16} />
-          </button>
-        </div>
+      <div className="flex items-center gap-1 px-2">
+        <button
+          type="button"
+          onClick={() => addFloatingPanel("settings")}
+          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
+        >
+          <Gear size={15} />
+        </button>
 
         <button
           type="button"
           onClick={handleMinimize}
-          className="flex self-stretch w-16 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label="Minimize"
         >
-          <Minus size={18} weight="bold" />
+          <Minus size={15} weight="bold" />
         </button>
         <button
           type="button"
           onClick={handleToggleMaximize}
-          className="flex self-stretch w-16 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           aria-label={isMaximized ? "Restore" : "Maximize"}
         >
           {isMaximized ? (
-            <CornersIn size={18} weight="bold" />
+            <CornersIn size={15} weight="bold" />
           ) : (
-            <CornersOut size={18} weight="bold" />
+            <CornersOut size={15} weight="bold" />
           )}
         </button>
         <button
           type="button"
           onClick={handleClose}
-          className="flex self-stretch w-16 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
           aria-label="Close"
         >
-          <X size={18} weight="bold" />
+          <X size={15} weight="bold" />
         </button>
       </div>
     </div>

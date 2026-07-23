@@ -74,7 +74,7 @@ export function AIChatHost() {
         onMove={handleMove}
         onResize={handleResize}
         onClose={() => setAIMode("hidden")}
-        className="rounded-2xl border-border/60 bg-bg-surface shadow-2xl"
+        className="rounded-2xl border-border bg-bg-surface shadow-2xl"
       >
         <ChatPanel />
       </FloatingWindow>
@@ -86,7 +86,7 @@ export function AIChatHost() {
     return (
       <div
         className={cn(
-          "relative flex h-full shrink-0 flex-col border-border/60 bg-bg-surface",
+          "relative flex h-full shrink-0 flex-col border-border bg-bg-surface",
           isLeft ? "border-r" : "border-l",
         )}
         style={{ width: ai.size }}
@@ -105,7 +105,7 @@ export function AIChatHost() {
   // bottom-sheet
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 z-40 flex flex-col border-t border-border/60 bg-bg-surface"
+      className="absolute bottom-0 left-0 right-0 z-40 flex flex-col border-t border-border bg-bg-surface"
       style={{ height: ai.size }}
     >
       <ResizeHandle

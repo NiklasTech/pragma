@@ -110,7 +110,7 @@ export function FileTreeNode({
   const content = (
     <div
       className={cn(
-        "group flex items-center gap-1 rounded-sm py-[3px] pr-2 text-ui-base cursor-pointer select-none transition-colors",
+        "group mx-1.5 flex h-6 items-center gap-1 rounded-md py-0.5 pr-2 text-ui-base cursor-pointer select-none transition-colors",
         isActiveFile
           ? "bg-bg-active text-primary"
           : isSelected
@@ -122,7 +122,7 @@ export function FileTreeNode({
     >
       {node.isDirectory ? (
         <>
-          <span className="text-fg-subtle">
+          <span className="flex size-3 shrink-0 items-center justify-center text-fg-subtle">
             {isExpanded ? (
               <CaretDown size={12} weight="bold" />
             ) : (
@@ -147,7 +147,7 @@ export function FileTreeNode({
         <img src={getFileIconPath(node.name)} alt="" className="size-3.5 shrink-0" />
       )}
 
-      <span className={cn("truncate", node.isDirectory && "font-medium")}>{node.name}</span>
+      <span className={cn("min-w-0 truncate", node.isDirectory && "font-medium")}>{node.name}</span>
 
       {node.error && (
         <span className="ml-auto shrink-0 text-ui-xs text-status-error" title={node.error}>

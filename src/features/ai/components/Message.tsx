@@ -30,7 +30,7 @@ export const MessageContent = ({ children, className, ...props }: MessageContent
     className={cn(
       "flex w-fit min-w-0 max-w-[92%] flex-col gap-2 overflow-hidden rounded-2xl px-4 py-3 text-ui-sm leading-relaxed",
       "group-[.is-user]:rounded-br-md group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground",
-      "group-[.is-assistant]:rounded-tl-md group-[.is-assistant]:border group-[.is-assistant]:border-border/60 group-[.is-assistant]:bg-bg-elevated group-[.is-assistant]:text-fg-default",
+      "group-[.is-assistant]:rounded-tl-md group-[.is-assistant]:border group-[.is-assistant]:border-border group-[.is-assistant]:bg-bg-elevated group-[.is-assistant]:text-fg-default",
       className,
     )}
     {...props}

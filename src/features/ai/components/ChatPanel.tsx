@@ -271,7 +271,7 @@ export function ChatPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-3 py-2.5 sm:px-4 sm:py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
           <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent-subtle sm:size-7 sm:rounded-lg">
             <Robot size={14} weight="bold" className="text-primary" />
@@ -441,7 +441,7 @@ export function ChatPanel() {
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 border-t border-border/60 bg-bg-surface p-4">
+      <div className="shrink-0 p-4">
         {/* Error Banner */}
         {error && (
           <div className="mb-3 flex items-start gap-2 rounded-lg bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
@@ -495,7 +495,7 @@ export function ChatPanel() {
             {pendingApprovals.map((approval) => (
               <div
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-lg border border-border/60 bg-bg-root p-3"
+                className="flex flex-col gap-2 rounded-lg border border-border bg-bg-root p-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
@@ -534,7 +534,7 @@ export function ChatPanel() {
         {/* Compose Box */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-border/60 bg-bg-input p-2.5 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20 sm:p-3"
+          className="rounded-xl border border-border bg-bg-input p-2.5 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20 sm:p-3"
         >
           <div className="relative">
             <Textarea

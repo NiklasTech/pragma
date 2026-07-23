@@ -188,7 +188,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
     return (
       <div
         ref={listRef}
-        className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-md border border-border/60 bg-popover p-1 shadow-lg"
+        className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 shadow-lg"
       >
         {filteredEntries.map((entry, index) => {
           const relativePath = rootPath ? getRelativePath(rootPath, entry.path) : entry.path;

@@ -14,7 +14,6 @@ export function SettingRow({ label, description, control, disabled }: SettingRow
     <div
       className={cn(
         "flex w-full flex-row items-center justify-between py-2.5",
-        "border-b border-border/30 last:border-b-0",
         disabled && "opacity-50",
       )}
     >

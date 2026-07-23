@@ -66,7 +66,7 @@ export function TabBar({ panelId }: TabBarProps) {
   }
 
   return (
-    <div className="my-1 flex h-tab min-w-0 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-bg-surface px-3">
+    <div className="my-1 flex h-tab min-w-0 shrink-0 items-center gap-1.5 overflow-x-auto px-2">
       {tabs.map((tab, index) => {
         const isActive = activeTabId === tab.id;
         const isDropTarget = dragOverIndex === index;
@@ -124,11 +124,11 @@ export function TabBar({ panelId }: TabBarProps) {
                   )}
                 >
                   {tab.kind === "diff" ? (
-                    <GitDiff size={14} className="shrink-0 text-status-success" />
+                    <GitDiff size={16} className="shrink-0 text-status-success" />
                   ) : (
-                    <img src={fileIconPath ?? undefined} alt="" className="size-3.5 shrink-0" />
+                    <img src={fileIconPath ?? undefined} alt="" className="size-4 shrink-0" />
                   )}
-                  <span className="min-w-0 flex-1 truncate text-ui-sm">{tab.name}</span>
+                  <span className="min-w-0 flex-1 truncate">{tab.name}</span>
                   {tab.kind === "file" && tab.isModified && (
                     <span className="size-1.5 shrink-0 rounded-full bg-primary" />
                   )}
@@ -140,7 +140,7 @@ export function TabBar({ panelId }: TabBarProps) {
                     )}
                     aria-label={`Close ${tab.name}`}
                   >
-                    <X size={12} />
+                    <X size={14} />
                   </button>
                 </div>
               )}

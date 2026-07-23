@@ -90,7 +90,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-6xl w-[95vw] h-[85vh] p-0 gap-0 flex flex-col overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b border-border/60 shrink-0">
+        <DialogHeader className="px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-sm">
               <ClockCounterClockwise size={16} />
@@ -101,8 +101,8 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
         </DialogHeader>
 
         <div className="flex flex-1 min-h-0">
-          <div className="w-64 border-r border-border/60 flex flex-col shrink-0">
-            <div className="px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted border-b border-border/40">
+          <div className="w-64 border-r border-border flex flex-col shrink-0">
+            <div className="px-3 py-2 text-ui-xs font-semibold uppercase tracking-wider text-fg-muted border-b border-border">
               History
             </div>
             <ScrollArea className="flex-1">
@@ -152,7 +152,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
           <div className="flex-1 flex flex-col min-w-0">
             {selectedEntry && diffResult ? (
               <>
-                <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 shrink-0">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
                   <span className="text-ui-xs text-fg-muted truncate pr-4">
                     {selectedEntry.kind === "git"
                       ? `${selectedEntry.message} — ${selectedEntry.author}`

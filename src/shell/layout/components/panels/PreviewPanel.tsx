@@ -60,7 +60,7 @@ export default function PreviewPanel() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex h-tab shrink-0 items-center justify-between border-b border-border bg-bg-surface px-3">
+      <div className="flex h-tab shrink-0 items-center justify-between px-3">
         <div className="flex min-w-0 flex-1 items-center gap-2 text-ui-xs text-fg-muted">
           <FileText size={14} />
           <span className="truncate">{fileName}</span>

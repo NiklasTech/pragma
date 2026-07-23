@@ -173,11 +173,11 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
       className={cn(
         "inline-flex items-center transition-colors",
         variant === "icon" &&
-          "size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border/60 bg-bg-root text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+          "size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-bg-root text-fg-muted hover:bg-bg-hover hover:text-fg-default",
         variant === "pill" &&
-          "h-6 max-w-[140px] cursor-pointer gap-1.5 rounded-full border border-border/60 bg-bg-root px-2 text-ui-xs font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+          "h-6 max-w-[140px] cursor-pointer gap-1.5 rounded-full border border-border bg-bg-root px-2 text-ui-xs font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-default",
         variant === "default" &&
-          "h-7 max-w-[220px] cursor-pointer gap-1.5 rounded-md border border-border/60 bg-bg-root px-2 text-ui-sm font-medium hover:bg-bg-hover",
+          "h-7 max-w-[220px] cursor-pointer gap-1.5 rounded-md border border-border bg-bg-root px-2 text-ui-sm font-medium hover:bg-bg-hover",
         !isAvailable && "text-fg-muted",
       )}
     >
@@ -222,7 +222,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         className="flex w-60 flex-col overflow-hidden p-0"
       >
         {/* Active summary */}
-        <div className="flex items-center gap-2 border-b border-border/60 bg-bg-root px-3 py-2">
+        <div className="flex items-center gap-2 border-b border-border bg-bg-root px-3 py-2">
           <Robot size={14} className="text-fg-muted" />
           <div className="flex min-w-0 flex-col">
             <span className="truncate text-ui-xs font-medium text-fg-default">
@@ -281,7 +281,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         </div>
 
         {/* Models */}
-        <div className="flex max-h-[200px] flex-col overflow-y-auto border-t border-border/60 p-1.5">
+        <div className="flex max-h-[200px] flex-col overflow-y-auto border-t border-border p-1.5">
           <span className="px-2 py-1 text-ui-2xs font-semibold uppercase tracking-wider text-fg-muted">
             Model
           </span>
@@ -370,7 +370,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         </div>
 
         {!isAvailable && (
-          <div className="border-t border-border/60 px-3 py-2">
+          <div className="border-t border-border px-3 py-2">
             <p className="text-ui-2xs text-status-error">
               Provider not available. Add an API key in Settings or connect a CLI subscription.
             </p>

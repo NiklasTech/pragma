@@ -70,10 +70,7 @@ export function BranchHeader({
   };
 
   return (
-    <div
-      className="relative flex items-center justify-between gap-2 border-b border-border/40 px-3 py-2"
-      ref={menuRef}
-    >
+    <div className="relative flex items-center justify-between gap-2 px-3 py-2" ref={menuRef}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -99,26 +96,26 @@ export function BranchHeader({
 
       <div className="flex items-center gap-1 text-ui-xs font-semibold text-fg-muted">
         {behind > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1.5 py-px text-status-success">
+          <span className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-px text-status-success">
             <ArrowDown size={9} />
             {behind}
           </span>
         )}
         {ahead > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1.5 py-px text-status-info">
+          <span className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-px text-status-info">
             <ArrowUp size={9} />
             {ahead}
           </span>
         )}
         {ahead === 0 && behind === 0 && (
-          <span className="rounded border border-border/60 px-1.5 py-px text-fg-subtle">
+          <span className="rounded border border-border px-1.5 py-px text-fg-subtle">
             up to date
           </span>
         )}
       </div>
 
       {open && (
-        <div className="absolute left-3 top-full z-50 mt-1 w-64 rounded-md border border-border/60 bg-bg-elevated shadow-lg shadow-black/10">
+        <div className="absolute left-3 top-full z-50 mt-1 w-64 rounded-md border border-border bg-bg-elevated shadow-lg shadow-black/10">
           <div className="max-h-72 overflow-y-auto py-1">
             {branches.map((branch) => {
               const isCurrent = branch.name === currentBranch;
@@ -172,7 +169,7 @@ export function BranchHeader({
             })}
           </div>
 
-          <div className="border-t border-border/60 px-2 py-1.5">
+          <div className="border-t border-border px-2 py-1.5">
             {creating ? (
               <div className="flex items-center gap-1.5">
                 <Input

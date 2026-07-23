@@ -6,8 +6,8 @@
     "id": "light-default",
     "name": "Light Default",
     "author": "Pragma Team",
-    "description": "A clean, high-contrast light theme for bright environments.",
-    "version": "1.0.0",
+    "description": "A clean, calm light theme with cool neutral surfaces and an indigo accent.",
+    "version": "1.1.0",
     "license": "MIT"
   },
 
@@ -21,38 +21,38 @@
     "colors": {
       "background": {
         "root": "#ffffff",
-        "surface": "#fafafa",
-        "elevated": "#f4f4f5",
+        "surface": "#f6f7f9",
+        "elevated": "#edeef2",
         "input": "#ffffff",
-        "hover": "rgba(0, 0, 0, 0.04)",
-        "active": "rgba(37, 99, 235, 0.10)",
-        "overlay": "rgba(0, 0, 0, 0.35)"
+        "hover": "rgba(15, 23, 42, 0.04)",
+        "active": "rgba(79, 94, 208, 0.10)",
+        "overlay": "rgba(15, 23, 42, 0.35)"
       },
       "foreground": {
-        "default": "#18181b",
-        "muted": "#52525b",
-        "subtle": "#a1a1aa",
+        "default": "#1c1f26",
+        "muted": "#5a6270",
+        "subtle": "#98a1af",
         "inverse": "#ffffff"
       },
       "accent": {
-        "default": "#2563eb",
-        "subtle": "rgba(37, 99, 235, 0.10)",
-        "glow": "rgba(37, 99, 235, 0.25)"
+        "default": "#4f5ed0",
+        "subtle": "rgba(79, 94, 208, 0.10)",
+        "glow": "rgba(79, 94, 208, 0.25)"
       },
       "border": {
-        "default": "rgba(0, 0, 0, 0.10)",
-        "subtle": "rgba(0, 0, 0, 0.06)",
-        "focus": "rgba(37, 99, 235, 0.50)"
+        "default": "rgba(15, 23, 42, 0.09)",
+        "subtle": "rgba(15, 23, 42, 0.05)",
+        "focus": "rgba(79, 94, 208, 0.45)"
       },
       "status": {
-        "success": "#16a34a",
-        "successBg": "rgba(22, 163, 74, 0.10)",
-        "warning": "#d97706",
-        "warningBg": "rgba(217, 119, 6, 0.10)",
-        "error": "#dc2626",
-        "errorBg": "rgba(220, 38, 38, 0.10)",
-        "info": "#2563eb",
-        "infoBg": "rgba(37, 99, 235, 0.10)"
+        "success": "#1f9d6e",
+        "successBg": "rgba(31, 157, 110, 0.10)",
+        "warning": "#c28a1f",
+        "warningBg": "rgba(194, 138, 31, 0.10)",
+        "error": "#d6455a",
+        "errorBg": "rgba(214, 69, 90, 0.10)",
+        "info": "#3b7fe0",
+        "infoBg": "rgba(59, 127, 224, 0.10)"
       },
       "git": {
         "added": "{colors.status.success}",
@@ -64,17 +64,17 @@
         "untracked": "{colors.status.info}",
         "untrackedBg": "{colors.status.infoBg}",
         "ignored": "{colors.foreground.subtle}",
-        "conflict": "#9333ea"
+        "conflict": "#7c5cd6"
       },
       "thread": {
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(37, 99, 235, 0.20)",
+      "selection": "rgba(79, 94, 208, 0.18)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "rgba(0, 0, 0, 0.16)",
-        "thumbHover": "rgba(0, 0, 0, 0.26)"
+        "thumb": "rgba(15, 23, 42, 0.14)",
+        "thumbHover": "rgba(15, 23, 42, 0.24)"
       }
     },
 
@@ -89,17 +89,17 @@
         "activeBackground": "{colors.background.surface}"
       },
       "line": {
-        "active": "rgba(0, 0, 0, 0.02)",
-        "highlight": "rgba(37, 99, 235, 0.05)"
+        "active": "rgba(15, 23, 42, 0.025)",
+        "highlight": "rgba(79, 94, 208, 0.05)"
       },
       "syntax": {
-        "keyword": "#9333ea",
-        "string": "#15803d",
+        "keyword": "#7c5cd6",
+        "string": "#1f8a55",
         "comment": "{colors.foreground.subtle}",
-        "function": "#2563eb",
+        "function": "#3b6fd4",
         "variable": "{colors.foreground.default}",
-        "number": "#c2410c",
-        "type": "#0369a1",
+        "number": "#c2600c",
+        "type": "#2b6cb0",
         "tag": "{colors.status.error}",
         "attribute": "{colors.accent.default}",
         "property": "{colors.foreground.default}",
@@ -108,41 +108,41 @@
     },
 
     "terminal": {
-      "background": "{colors.background.root}",
+      "background": "#fbfbfc",
       "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
       "cursorAccent": "{colors.accent.default}",
       "selection": "{colors.selection}",
       "ansi": {
-        "black": "#18181b",
-        "red": "#dc2626",
-        "green": "#16a34a",
-        "yellow": "#d97706",
-        "blue": "#2563eb",
-        "magenta": "#9333ea",
-        "cyan": "#0891b2",
-        "white": "#71717a"
+        "black": "#1c1f26",
+        "red": "#d6455a",
+        "green": "#1f9d6e",
+        "yellow": "#c28a1f",
+        "blue": "#4f5ed0",
+        "magenta": "#7c5cd6",
+        "cyan": "#0e8fa3",
+        "white": "#5a6270"
       },
       "ansiBright": {
-        "black": "#3f3f46",
-        "red": "#ef4444",
-        "green": "#22c55e",
-        "yellow": "#f59e0b",
-        "blue": "#3b82f6",
-        "magenta": "#a855f7",
-        "cyan": "#06b6d4",
-        "white": "#f4f4f5"
+        "black": "#4a5160",
+        "red": "#e35d6a",
+        "green": "#3fb68b",
+        "yellow": "#e0a94e",
+        "blue": "#6e7bf2",
+        "magenta": "#a78bfa",
+        "cyan": "#22b8cf",
+        "white": "#1c1f26"
       }
     },
 
     "layout": {
-      "headerHeight": 48,
-      "tabHeight": 34,
-      "statusbarHeight": 26,
+      "headerHeight": 40,
+      "tabHeight": 36,
+      "statusbarHeight": 24,
       "breadcrumbHeight": 28,
       "inputbarHeight": 42,
       "sidebarWidth": 260,
-      "sidebarCollapsedWidth": 48,
+      "sidebarCollapsedWidth": 40,
       "sidebarMinWidth": 180,
       "sidebarMaxWidth": 480,
       "panelMinHeight": 160,

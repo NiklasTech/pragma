@@ -126,7 +126,6 @@ const pragmaDarkBase = EditorView.theme({
   },
   ".cm-gutters": {
     backgroundColor: "var(--editor-gutter-bg)",
-    borderRight: "1px solid var(--border-default)",
     color: "var(--editor-gutter-fg)",
   },
   ".cm-activeLineGutter": {
@@ -166,25 +165,25 @@ const pragmaDarkBase = EditorView.theme({
     color: "var(--fg-default)",
   },
   ".cm-diagnostic-error": {
-    borderLeft: "3px solid var(--status-error)",
+    borderLeft: "3px solid var(--color-status-error)",
   },
   ".cm-diagnostic-warning": {
-    borderLeft: "3px solid var(--status-warning)",
+    borderLeft: "3px solid var(--color-status-warning)",
   },
   ".cm-diagnostic-info": {
-    borderLeft: "3px solid var(--status-info)",
+    borderLeft: "3px solid var(--color-status-info)",
   },
   ".cm-lintRange-error": {
-    backgroundColor: "rgba(239, 68, 68, 0.25)",
-    borderBottom: "2px wavy rgba(239, 68, 68, 0.9)",
+    backgroundColor: "color-mix(in srgb, var(--color-status-error) 22%, transparent)",
+    borderBottom: "2px wavy var(--color-status-error)",
   },
   ".cm-lintRange-warning": {
-    backgroundColor: "rgba(245, 158, 11, 0.25)",
-    borderBottom: "2px wavy rgba(245, 158, 11, 0.9)",
+    backgroundColor: "color-mix(in srgb, var(--color-status-warning) 22%, transparent)",
+    borderBottom: "2px wavy var(--color-status-warning)",
   },
   ".cm-lintRange-info": {
-    backgroundColor: "rgba(59, 130, 246, 0.25)",
-    borderBottom: "2px wavy rgba(59, 130, 246, 0.9)",
+    backgroundColor: "color-mix(in srgb, var(--color-status-info) 22%, transparent)",
+    borderBottom: "2px wavy var(--color-status-info)",
   },
   ".cm-lintGutter": {
     width: "20px",

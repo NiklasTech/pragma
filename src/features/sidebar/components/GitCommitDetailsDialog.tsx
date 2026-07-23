@@ -217,7 +217,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
                 <span className="mb-1 block text-ui-xs text-fg-subtle">
                   Changed files ({details.files.length})
                 </span>
-                <ScrollArea className="h-full min-h-[180px] rounded border border-border/40 bg-bg-root">
+                <ScrollArea className="h-full min-h-[180px] rounded border border-border bg-bg-root">
                   <div className="p-1">
                     {details.files.length === 0 && (
                       <div className="px-2 py-3 text-ui-xs text-fg-muted">No files changed.</div>
