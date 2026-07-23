@@ -36,7 +36,7 @@ export function ChatEmptyState({ onPromptSelect }: ChatEmptyStateProps) {
             key={chip.label}
             type="button"
             onClick={() => onPromptSelect?.(chip.prompt)}
-            className="rounded-full border border-border/60 bg-bg-elevated px-3.5 py-2 text-ui-xs text-fg-muted transition-colors hover:border-border hover:bg-bg-hover hover:text-fg-default"
+            className="rounded-full border border-border bg-bg-elevated px-3.5 py-2 text-ui-xs text-fg-muted transition-colors hover:border-border hover:bg-bg-hover hover:text-fg-default"
           >
             {chip.label}
           </button>

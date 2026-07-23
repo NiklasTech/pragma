@@ -276,13 +276,13 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         {ahead > 0 || behind > 0 ? (
           <div className="flex items-center gap-0.5 text-ui-xs font-semibold text-fg-muted">
             {ahead > 0 && (
-              <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
+              <span className="inline-flex items-center gap-0.5 rounded border border-border px-1 py-px">
                 <ArrowUp size={8} />
                 {ahead}
               </span>
             )}
             {behind > 0 && (
-              <span className="inline-flex items-center gap-0.5 rounded border border-border/60 px-1 py-px">
+              <span className="inline-flex items-center gap-0.5 rounded border border-border px-1 py-px">
                 <ArrowDown size={8} />
                 {behind}
               </span>
@@ -359,7 +359,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
 
         {/* Pull options dropdown */}
         {showPullOptions && (
-          <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-border/60 bg-bg-elevated shadow-lg shadow-black/10">
+          <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border border-border bg-bg-elevated shadow-lg shadow-black/10">
             <button
               type="button"
               onClick={() => void handlePull(false)}
@@ -380,7 +380,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
         )}
 
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border/60 bg-bg-elevated shadow-lg shadow-black/10">
+          <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border bg-bg-elevated shadow-lg shadow-black/10">
             <div className="max-h-72 overflow-y-auto py-1">
               {branches.map((branch) => {
                 const isCurrent = branch.name === currentBranch;
@@ -427,7 +427,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               })}
             </div>
 
-            <div className="border-t border-border/60 px-2 py-1.5">
+            <div className="border-t border-border px-2 py-1.5">
               {creating ? (
                 <div className="flex items-center gap-1.5">
                   <Input
@@ -502,7 +502,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               onClick={() => void handleSmartSwitch()}
               disabled={pendingBranch !== null}
               className={cn(
-                "flex w-full items-center gap-3 rounded-md border border-border/60 bg-bg-hover px-3 py-2.5 text-left transition-colors hover:bg-bg-active",
+                "flex w-full items-center gap-3 rounded-md border border-border bg-bg-hover px-3 py-2.5 text-left transition-colors hover:bg-bg-active",
                 pendingBranch !== null && "opacity-60 cursor-not-allowed",
               )}
             >
@@ -519,7 +519,7 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
               onClick={() => void handleNormalSwitch()}
               disabled={pendingBranch !== null}
               className={cn(
-                "flex w-full items-center gap-3 rounded-md border border-border/60 px-3 py-2.5 text-left transition-colors hover:bg-bg-hover",
+                "flex w-full items-center gap-3 rounded-md border border-border px-3 py-2.5 text-left transition-colors hover:bg-bg-hover",
                 pendingBranch !== null && "opacity-60 cursor-not-allowed",
               )}
             >

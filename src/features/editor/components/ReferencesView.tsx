@@ -25,7 +25,7 @@ export function ReferencesView({ tab }: { tab: ReferencesTab }) {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex h-tab shrink-0 items-center border-b border-border bg-bg-surface px-3">
+      <div className="flex h-tab shrink-0 items-center px-3">
         <span className="text-ui-xs font-medium text-fg-default">
           References
           <span className="ml-2 rounded-full bg-bg-hover px-1.5 py-0.5 text-ui-2xs text-fg-muted">

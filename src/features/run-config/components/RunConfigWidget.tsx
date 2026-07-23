@@ -11,6 +11,7 @@ import {
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout/store";
+import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 
 function StatusDot({ status }: { status: RunStatus }) {
   const colorClass =
@@ -91,10 +92,10 @@ export function RunConfigWidget() {
     async (config: RunConfig) => {
       const processId = await startConfig(config);
       if (processId) {
-        addRunSession(processId, config.name, config.command);
         if (terminal.mode === "hidden") {
           setTerminalMode("docked-bottom");
         }
+        addRunSession(processId, config.name, config.command, resolveDefaultTerminalPanelId());
       }
     },
     [startConfig, addRunSession, terminal.mode, setTerminalMode],
@@ -120,10 +121,10 @@ export function RunConfigWidget() {
       const process = processes.find((p) => p.id === id);
       const config = configs.find((c) => c.name === process?.configName);
       if (process && config) {
-        addRunSession(id, config.name, config.command);
         if (terminal.mode === "hidden") {
           setTerminalMode("docked-bottom");
         }
+        addRunSession(id, config.name, config.command, resolveDefaultTerminalPanelId());
       }
     },
     [setActiveProcess, addRunSession, processes, configs, terminal.mode, setTerminalMode],

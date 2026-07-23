@@ -1,7 +1,5 @@
 "use client";
 
-import { Separator } from "@/shared/components/ui/separator";
-
 interface SettingSectionBadge {
   label: string;
   variant?: "default" | "warning" | "success" | "error";
@@ -22,9 +20,9 @@ const BADGE_COLORS: Record<NonNullable<SettingSectionBadge["variant"]>, string> 
 
 export function SettingSection({ title, children, badge }: SettingSectionProps) {
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-2">
-        <h3 className="text-ui-xs font-medium text-fg-muted uppercase tracking-wider">{title}</h3>
+    <section className="flex flex-col rounded-xl border border-border bg-bg-surface px-4 py-3">
+      <div className="flex items-center gap-2 pb-1">
+        <h3 className="text-ui-sm font-semibold text-fg-default">{title}</h3>
         {badge && (
           <span
             className={`rounded-full px-1.5 py-0.5 text-ui-xs ${BADGE_COLORS[badge.variant ?? "default"]}`}
@@ -33,8 +31,7 @@ export function SettingSection({ title, children, badge }: SettingSectionProps) 
           </span>
         )}
       </div>
-      <Separator className="my-2 bg-border/30" />
-      <div className="flex flex-col">{children}</div>
-    </div>
+      <div className="flex flex-col divide-y divide-border/40">{children}</div>
+    </section>
   );
 }

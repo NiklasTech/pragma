@@ -54,7 +54,7 @@ export default function ProblemsPanel() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex h-tab shrink-0 items-center justify-between border-b border-border bg-bg-surface px-3">
+      <div className="flex h-tab shrink-0 items-center justify-between px-3">
         <span className="text-ui-xs font-medium text-fg-default">
           Problems
           {visibleProblems.length > 0 && (

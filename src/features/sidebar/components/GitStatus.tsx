@@ -293,7 +293,7 @@ export function GitStatus() {
       />
 
       {actionStatus && (
-        <div className="flex animate-pulse items-center gap-1 border-b border-border/40 px-3 py-1 text-ui-xs text-fg-muted">
+        <div className="flex animate-pulse items-center gap-1 px-3 py-1 text-ui-xs text-fg-muted">
           <Spinner size={10} className="animate-spin" />
           <span className="max-w-[180px] truncate">{actionStatus}</span>
         </div>

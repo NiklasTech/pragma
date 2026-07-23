@@ -311,7 +311,7 @@ function ResultGroupView({
           key={`${match.line}:${match.column}:${index}`}
           type="button"
           onClick={() => onOpenResult(match)}
-          className="flex flex-col gap-0.5 rounded-sm px-1 py-1 text-left text-ui-xs hover:bg-bg-hover"
+          className="flex flex-col gap-0.5 rounded-md px-1 py-1 text-left text-ui-xs hover:bg-bg-hover"
         >
           <div className="flex items-center gap-2 text-fg-subtle">
             <span className="w-8 shrink-0 text-right tabular-nums">{match.line}</span>

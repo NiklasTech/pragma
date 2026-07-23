@@ -20,11 +20,11 @@ export function CommitArea({
   onCommit: () => void;
 }) {
   return (
-    <div className="space-y-2 border-b border-border/60 px-2.5 pb-2.5 pt-2.5">
+    <div className="space-y-2 px-2.5 pb-2.5 pt-2.5">
       <div
         className={cn(
-          "relative rounded-lg border bg-bg-surface shadow-sm transition-colors",
-          commitMessage.length > 0 ? "border-border/70" : "border-border/45",
+          "relative rounded-lg border bg-bg-input shadow-sm transition-colors",
+          "border-border",
           "focus-within:border-primary/45 focus-within:shadow-[0_0_12px_-4px_var(--color-accent-glow)]",
         )}
       >

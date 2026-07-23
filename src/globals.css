@@ -98,10 +98,6 @@
   --color-fg-subtle: var(--fg-subtle);
   --color-fg-inverse: var(--fg-inverse);
 
-  --color-accent: #2b7fff;
-  --color-accent-subtle: rgba(43, 127, 255, 0.12);
-  --color-accent-glow: rgba(43, 127, 255, 0.35);
-
   --color-border: var(--border-default);
   --color-border-subtle: var(--border-subtle);
   --color-border-focus: var(--border-focus);
@@ -132,19 +128,6 @@
   --color-sidebar-ring: var(--color-accent);
 
   /* --------------------------------------------------------------------------
-     Colors — semantic status & git
-     -------------------------------------------------------------------------- */
-  --color-status-success: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-error: #ef4444;
-  --color-status-info: #3b82f6;
-
-  --color-git-added: #22c55e;
-  --color-git-modified: #f59e0b;
-  --color-git-deleted: #ef4444;
-  --color-git-untracked: #3b82f6;
-
-  /* --------------------------------------------------------------------------
      Colors — editor
      -------------------------------------------------------------------------- */
   --color-editor-bg: var(--editor-bg);
@@ -171,66 +154,61 @@
   --color-terminal-selection: var(--terminal-selection);
 }
 
+/* Theme-switchable colors. Kept out of `@theme inline` so utilities compile to
+   var() references and follow `applyTheme()`'s inline overrides at runtime. */
+@theme {
+  --color-accent: #6e7bf2;
+  --color-accent-subtle: rgba(110, 123, 242, 0.14);
+  --color-accent-glow: rgba(110, 123, 242, 0.3);
+
+  --color-status-success: #3fb68b;
+  --color-status-warning: #e0a94e;
+  --color-status-error: #e35d6a;
+  --color-status-info: #5b9cf5;
+
+  --color-git-added: #3fb68b;
+  --color-git-modified: #e0a94e;
+  --color-git-deleted: #e35d6a;
+  --color-git-untracked: #5b9cf5;
+}
+
 /* ============================================================================
    DEFAULT THEME: Pragma Dark
    ============================================================================ */
 
 :root {
   /* --------------------------------------------------------------------------
-     Accent — Electric Blue
-     -------------------------------------------------------------------------- */
-  --color-accent: #2b7fff;
-  --color-accent-subtle: rgba(43, 127, 255, 0.12);
-  --color-accent-glow: rgba(43, 127, 255, 0.35);
-
-  /* --------------------------------------------------------------------------
      Backgrounds
      -------------------------------------------------------------------------- */
-  --bg-root: #09090b;
-  --bg-surface: #0f0f11;
-  --bg-elevated: #151519;
-  --bg-input: #1a1a1f;
-  --bg-hover: rgba(255, 255, 255, 0.05);
-  --bg-active: rgba(43, 127, 255, 0.1);
-  --bg-overlay: rgba(0, 0, 0, 0.65);
+  --bg-root: #0b0d10;
+  --bg-surface: #101318;
+  --bg-elevated: #161a21;
+  --bg-input: #1a1f28;
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --bg-active: rgba(110, 123, 242, 0.12);
+  --bg-overlay: rgba(0, 0, 0, 0.6);
 
   /* --------------------------------------------------------------------------
      Foregrounds
      -------------------------------------------------------------------------- */
-  --fg-default: #f4f4f5;
-  --fg-muted: #a1a1aa;
-  --fg-subtle: #71717a;
-  --fg-inverse: #09090b;
+  --fg-default: #e8eaee;
+  --fg-muted: #9ba3af;
+  --fg-subtle: #646c7a;
+  --fg-inverse: #0b0d10;
 
   /* --------------------------------------------------------------------------
      Borders
      -------------------------------------------------------------------------- */
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-focus: rgba(43, 127, 255, 0.5);
-
-  /* --------------------------------------------------------------------------
-     Status
-     -------------------------------------------------------------------------- */
-  --color-status-success: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-error: #ef4444;
-  --color-status-info: #3b82f6;
-
-  /* --------------------------------------------------------------------------
-     Git
-     -------------------------------------------------------------------------- */
-  --color-git-added: #22c55e;
-  --color-git-modified: #f59e0b;
-  --color-git-deleted: #ef4444;
-  --color-git-untracked: #3b82f6;
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-focus: rgba(110, 123, 242, 0.5);
 
   /* --------------------------------------------------------------------------
      Editor
      -------------------------------------------------------------------------- */
   --editor-bg: var(--bg-root);
   --editor-fg: var(--fg-default);
-  --editor-selection: rgba(43, 127, 255, 0.25);
+  --editor-selection: rgba(110, 123, 242, 0.25);
   --editor-cursor: var(--color-accent);
   --editor-gutter-bg: var(--bg-root);
   --editor-gutter-fg: var(--fg-subtle);
@@ -239,17 +217,17 @@
   /* --------------------------------------------------------------------------
      Syntax Highlighting
      -------------------------------------------------------------------------- */
-  --syntax-keyword: #c084fc;
-  --syntax-string: #86efac;
-  --syntax-comment: #71717a;
-  --syntax-function: #60a5fa;
+  --syntax-keyword: #a78bfa;
+  --syntax-string: #7fc8a9;
+  --syntax-comment: #646c7a;
+  --syntax-function: #7ab8f5;
   --syntax-variable: var(--fg-default);
-  --syntax-number: #fdba74;
+  --syntax-number: #e8b87d;
   --syntax-property: var(--fg-default);
-  --syntax-type: #f472b6;
+  --syntax-type: #8ab4f5;
   --syntax-operator: var(--fg-muted);
-  --syntax-tag: #f87171;
-  --syntax-attribute: #facc15;
+  --syntax-tag: #e35d6a;
+  --syntax-attribute: var(--color-accent);
 
   /* --------------------------------------------------------------------------
      Terminal
@@ -257,34 +235,34 @@
   --terminal-bg: var(--bg-root);
   --terminal-fg: var(--fg-default);
   --terminal-cursor: var(--color-accent);
-  --terminal-selection: rgba(43, 127, 255, 0.25);
+  --terminal-selection: rgba(110, 123, 242, 0.25);
 
-  --terminal-ansi-black: #09090b;
-  --terminal-ansi-red: #ef4444;
-  --terminal-ansi-green: #22c55e;
-  --terminal-ansi-yellow: #f59e0b;
-  --terminal-ansi-blue: #2b7fff;
-  --terminal-ansi-magenta: #c084fc;
-  --terminal-ansi-cyan: #22d3ee;
-  --terminal-ansi-white: #a1a1aa;
+  --terminal-ansi-black: #0b0d10;
+  --terminal-ansi-red: #e35d6a;
+  --terminal-ansi-green: #3fb68b;
+  --terminal-ansi-yellow: #e0a94e;
+  --terminal-ansi-blue: #6e7bf2;
+  --terminal-ansi-magenta: #a78bfa;
+  --terminal-ansi-cyan: #4ec9d8;
+  --terminal-ansi-white: #9ba3af;
 
-  --terminal-ansi-bright-black: #27272a;
-  --terminal-ansi-bright-red: #f87171;
-  --terminal-ansi-bright-green: #4ade80;
-  --terminal-ansi-bright-yellow: #fbbf24;
-  --terminal-ansi-bright-blue: #60a5fa;
-  --terminal-ansi-bright-magenta: #d8b4fe;
-  --terminal-ansi-bright-cyan: #67e8f9;
-  --terminal-ansi-bright-white: #f4f4f5;
+  --terminal-ansi-bright-black: #2a2f3a;
+  --terminal-ansi-bright-red: #ed7f8b;
+  --terminal-ansi-bright-green: #5fcfa5;
+  --terminal-ansi-bright-yellow: #edbf72;
+  --terminal-ansi-bright-blue: #8b96f6;
+  --terminal-ansi-bright-magenta: #bba5f9;
+  --terminal-ansi-bright-cyan: #7adbe7;
+  --terminal-ansi-bright-white: #e8eaee;
 
   /* --------------------------------------------------------------------------
      Layout
      -------------------------------------------------------------------------- */
-  --chrome-header-h: 56px;
-  --chrome-tab-h: 68px;
-  --chrome-statusbar-h: 26px;
+  --chrome-header-h: 40px;
+  --chrome-tab-h: 36px;
+  --chrome-statusbar-h: 24px;
   --chrome-breadcrumb-h: 28px;
-  --chrome-sidebar-collapsed-w: 48px;
+  --chrome-sidebar-collapsed-w: 40px;
   --chrome-sidebar-expanded-w: 260px;
   --chrome-panel-min-h: 160px;
 
@@ -310,8 +288,8 @@
   /* --------------------------------------------------------------------------
      Radius
      -------------------------------------------------------------------------- */
-  --radius-xs: 3px;
-  --radius-sm: 5px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
@@ -329,8 +307,8 @@
      Scrollbar
      -------------------------------------------------------------------------- */
   --scrollbar-track: transparent;
-  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.22);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.18);
 }
 
 /* ============================================================================
@@ -398,10 +376,10 @@
   align-items: center;
   gap: 6px;
   height: var(--chrome-tab-h);
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-ui-sm);
-  line-height: var(--leading-ui-sm);
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-ui-base);
+  line-height: var(--leading-ui-base);
   font-weight: 500;
   white-space: nowrap;
   user-select: none;
@@ -412,9 +390,8 @@
 }
 
 .pragma-pill-tab[data-active="true"] {
-  background-color: var(--bg-elevated);
+  background-color: var(--bg-surface);
   color: var(--fg-default);
-  box-shadow: inset 0 0 0 1px var(--border-default);
 }
 
 .pragma-pill-tab[data-active="false"] {
@@ -442,7 +419,6 @@
 
 .cm-gutters {
   background-color: var(--editor-gutter-bg) !important;
-  border-right: 1px solid var(--border-subtle) !important;
   color: var(--editor-gutter-fg);
 }
 
@@ -578,7 +554,7 @@ button:disabled,
     box-shadow: 0 0 0 1px var(--border-focus);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(43, 127, 255, 0.15);
+    box-shadow: 0 0 0 4px var(--color-accent-subtle);
   }
 }
 

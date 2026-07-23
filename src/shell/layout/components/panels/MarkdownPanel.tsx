@@ -26,7 +26,7 @@ export default function MarkdownPanel() {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex h-tab shrink-0 items-center border-b border-border bg-bg-surface px-3 text-ui-xs text-fg-muted">
+      <div className="flex h-tab shrink-0 items-center px-3 text-ui-xs text-fg-muted">
         <span className="truncate">{fileName}</span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-4">

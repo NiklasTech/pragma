@@ -8,6 +8,8 @@ export interface TerminalSession {
   id: string;
   name: string;
   type: TerminalSessionType;
+  /** Owning terminal panel. Undefined only for sessions created before panel scoping. */
+  panelId?: string;
   shell?: string;
   command?: string;
   cwd?: string;
@@ -18,7 +20,10 @@ export interface TerminalSession {
 
 interface TerminalState {
   sessions: TerminalSession[];
-  activeSessionId: string | null;
+  /** panelId -> active sessionId for that panel */
+  activeByPanel: Record<string, string>;
+  /** Most recently activated session, for panel-agnostic consumers. */
+  lastActiveSessionId: string | null;
   defaultShell: string;
   shellResolved: boolean;
   fontSize: number;
@@ -26,12 +31,14 @@ interface TerminalState {
   fontId: string;
   scrollback: number;
   aiSuggestions: boolean;
+  /** sessionId -> timestamp of last PTY output, for the tab activity dot */
+  activity: Record<string, number>;
 }
 
 interface TerminalActions {
   addSession: (session: Omit<TerminalSession, "ptyId">) => void;
-  addRunSession: (processId: string, name: string, command: string) => void;
-  focusRunSession: (processId: string) => void;
+  addRunSession: (processId: string, name: string, command: string, panelId?: string) => void;
+  focusRunSession: (processId: string, panelId?: string) => void;
   ensureInitialSession: (session: Omit<TerminalSession, "ptyId">) => void;
   removeSession: (sessionId: string) => void;
   killSession: (sessionId: string) => Promise<void>;
@@ -39,7 +46,7 @@ interface TerminalActions {
   reloadSession: (sessionId: string, shell: string) => Promise<void>;
   attachPty: (sessionId: string, ptyId: string) => void;
   setShellResolved: (resolved: boolean) => void;
-  setActiveSession: (sessionId: string) => void;
+  setActiveSession: (panelId: string, sessionId: string) => void;
   updateSessionCwd: (sessionId: string, cwd: string) => void;
   renameSession: (sessionId: string, name: string) => void;
   setDefaultShell: (shell: string) => void;
@@ -48,11 +55,13 @@ interface TerminalActions {
   setFontId: (id: string) => void;
   setScrollback: (lines: number) => void;
   setAiSuggestions: (enabled: boolean) => void;
+  markActivity: (sessionId: string) => void;
 }
 
 const initialState: TerminalState = {
   sessions: [],
-  activeSessionId: null,
+  activeByPanel: {},
+  lastActiveSessionId: null,
   defaultShell: "",
   shellResolved: false,
   fontSize: 13,
@@ -60,7 +69,47 @@ const initialState: TerminalState = {
   fontId: "",
   scrollback: 10000,
   aiSuggestions: true,
+  activity: {},
 };
+
+function activate(
+  state: Pick<TerminalState, "activeByPanel">,
+  panelId: string | undefined,
+  sessionId: string,
+): Pick<TerminalState, "activeByPanel" | "lastActiveSessionId"> {
+  return {
+    activeByPanel: panelId ? { ...state.activeByPanel, [panelId]: sessionId } : state.activeByPanel,
+    lastActiveSessionId: sessionId,
+  };
+}
+
+function withoutSession(state: TerminalState, sessionId: string): Partial<TerminalState> {
+  const session = state.sessions.find((s) => s.id === sessionId);
+  const sessions = state.sessions.filter((s) => s.id !== sessionId);
+
+  const activeByPanel = { ...state.activeByPanel };
+  if (session?.panelId && activeByPanel[session.panelId] === sessionId) {
+    const remaining = sessions.filter((s) => s.panelId === session.panelId);
+    if (remaining.length > 0) {
+      activeByPanel[session.panelId] = remaining[remaining.length - 1].id;
+    } else {
+      delete activeByPanel[session.panelId];
+    }
+  }
+
+  const activity = { ...state.activity };
+  delete activity[sessionId];
+
+  return {
+    sessions,
+    activeByPanel,
+    activity,
+    lastActiveSessionId:
+      state.lastActiveSessionId === sessionId
+        ? (sessions[sessions.length - 1]?.id ?? null)
+        : state.lastActiveSessionId,
+  };
+}
 
 export const useTerminalStore = create<TerminalState & TerminalActions>(
   crossWindowSync<TerminalState & TerminalActions>("terminal")((set, get) => ({
@@ -70,15 +119,15 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
       const nextSession: TerminalSession = { ...session };
       set({
         sessions: [...get().sessions, nextSession],
-        activeSessionId: nextSession.id,
+        ...activate(get(), nextSession.panelId, nextSession.id),
       });
     },
 
-    addRunSession: (processId, name, command) => {
+    addRunSession: (processId, name, command, panelId) => {
       const { sessions } = get();
       const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
       if (existing) {
-        set({ activeSessionId: existing.id });
+        set(activate(get(), existing.panelId ?? panelId, existing.id));
         return;
       }
 
@@ -88,60 +137,44 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
         type: "run",
         command,
         processId,
+        panelId,
         isActive: true,
       };
       set({
         sessions: [...sessions, nextSession],
-        activeSessionId: nextSession.id,
+        ...activate(get(), panelId, nextSession.id),
       });
     },
 
-    focusRunSession: (processId) => {
+    focusRunSession: (processId, panelId) => {
       const { sessions } = get();
       const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
       if (existing) {
-        set({ activeSessionId: existing.id });
+        set(activate(get(), existing.panelId ?? panelId, existing.id));
       }
     },
 
     ensureInitialSession: (session) => {
       const { sessions } = get();
-      if (sessions.length > 0) return;
+      if (sessions.some((s) => s.panelId === session.panelId)) return;
 
       const nextSession: TerminalSession = { ...session };
       set({
-        sessions: [nextSession],
-        activeSessionId: nextSession.id,
+        sessions: [...sessions, nextSession],
+        ...activate(get(), nextSession.panelId, nextSession.id),
       });
     },
 
     removeSession: (sessionId) => {
-      const { sessions, activeSessionId } = get();
-      const nextSessions = sessions.filter((s) => s.id !== sessionId);
-      let nextActive = activeSessionId;
-      if (activeSessionId === sessionId) {
-        nextActive = nextSessions.length > 0 ? nextSessions[nextSessions.length - 1].id : null;
-      }
-      set({
-        sessions: nextSessions,
-        activeSessionId: nextActive,
-      });
+      set((s) => withoutSession(s, sessionId));
     },
 
     killSession: async (sessionId) => {
-      const { sessions, activeSessionId } = get();
-      const session = sessions.find((s) => s.id === sessionId);
+      const session = get().sessions.find((s) => s.id === sessionId);
 
       // Remove the session from React state first so TerminalSession unmounts
       // and disconnects its ResizeObserver before the PTY is destroyed.
-      const nextSessions = sessions.filter((s) => s.id !== sessionId);
-      const nextActive =
-        activeSessionId === sessionId
-          ? nextSessions.length > 0
-            ? nextSessions[nextSessions.length - 1].id
-            : null
-          : activeSessionId;
-      set({ sessions: nextSessions, activeSessionId: nextActive });
+      set((s) => withoutSession(s, sessionId));
 
       if (session?.ptyId) {
         try {
@@ -165,7 +198,7 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
           }
         }),
       );
-      set({ sessions: [], activeSessionId: null });
+      set({ sessions: [], activeByPanel: {}, lastActiveSessionId: null, activity: {} });
     },
 
     reloadSession: async (sessionId, shell) => {
@@ -194,14 +227,8 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
 
     setShellResolved: (resolved) => set({ shellResolved: resolved }),
 
-    setActiveSession: (sessionId) => {
-      set({
-        activeSessionId: sessionId,
-        sessions: get().sessions.map((s) => ({
-          ...s,
-          isActive: s.id === sessionId,
-        })),
-      });
+    setActiveSession: (panelId, sessionId) => {
+      set(activate(get(), panelId, sessionId));
     },
 
     updateSessionCwd: (sessionId, cwd) => {
@@ -224,5 +251,6 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
     setFontId: (id) => set({ fontId: id }),
     setScrollback: (lines) => set({ scrollback: lines }),
     setAiSuggestions: (enabled) => set({ aiSuggestions: enabled }),
+    markActivity: (sessionId) => set({ activity: { ...get().activity, [sessionId]: Date.now() } }),
   })),
 );

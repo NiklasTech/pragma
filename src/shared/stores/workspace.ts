@@ -72,7 +72,7 @@ export async function saveWorkspace(
   const runConfig = useRunConfigStore.getState();
   const layout = useLayoutStore.getState();
 
-  const activeSession = terminal.sessions.find((s) => s.id === terminal.activeSessionId);
+  const activeSession = terminal.sessions.find((s) => s.id === terminal.lastActiveSessionId);
 
   const tabs: WorkspaceTab[] = editor.tabs.flatMap((t): WorkspaceTab[] => {
     if (t.kind === "file") {
@@ -197,8 +197,8 @@ export async function loadWorkspace(
       useLayoutStore.setState({ floating: data.layout.floating });
     }
 
-    if (data.terminalCwd && terminal.activeSessionId) {
-      terminal.updateSessionCwd(terminal.activeSessionId, data.terminalCwd);
+    if (data.terminalCwd && terminal.lastActiveSessionId) {
+      terminal.updateSessionCwd(terminal.lastActiveSessionId, data.terminalCwd);
     }
 
     if (data.activeRunConfig) {

@@ -4,15 +4,7 @@ import * as React from "react";
 import { cn } from "@/shared/lib/utils";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { Input } from "@/shared/components/ui/input";
-import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { PanelHeader } from "@/shared/components/PanelHeader";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/shared/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -313,162 +305,149 @@ export function Settings() {
   }, []);
 
   return (
-    <TooltipProvider>
-      <div className="flex h-full flex-col">
-        <div className="flex min-h-0 flex-1 gap-0">
-          <div className="flex w-[200px] shrink-0 flex-col overflow-hidden border-r border-border/30">
-            <div className="relative shrink-0 p-3 pb-2">
-              <MagnifyingGlass
-                size={14}
-                className="absolute top-1/2 left-5 -translate-y-1/2 text-fg-subtle"
-              />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search settings..."
-                className="h-7 pl-8 text-ui-sm"
-              />
+    <div className="flex h-full flex-col">
+      <div className="flex min-h-0 flex-1 gap-0">
+        <div className="flex w-[210px] shrink-0 flex-col overflow-hidden">
+          <div className="relative shrink-0 p-3 pb-2">
+            <MagnifyingGlass
+              size={14}
+              className="absolute top-1/2 left-5 -translate-y-1/2 text-fg-subtle"
+            />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search settings..."
+              className="h-7 pl-8 text-ui-sm"
+            />
 
-              {(filteredItems.length > 0 || query.trim()) && (
-                <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
-                  {filteredItems.length > 0 ? (
-                    filteredItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleSelectCategory(item.category)}
-                        className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
-                      >
-                        <span className="text-ui-sm text-fg-default">{item.label}</span>
-                        <span className="text-ui-xs text-fg-subtle">
-                          {CATEGORIES.find((c) => c.id === item.category)?.label}
-                        </span>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1.5 text-ui-xs text-fg-subtle">No settings found.</div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <ScrollArea className="min-h-0 flex-1 px-2">
-              <div className="flex flex-col py-1">
-                {CATEGORIES.map((category) => {
-                  const Icon = category.icon;
-                  const active = activeCategory === category.id;
-                  return (
+            {(filteredItems.length > 0 || query.trim()) && (
+              <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
                     <button
-                      key={category.id}
+                      key={item.id}
                       type="button"
-                      onClick={() => handleSelectCategory(category.id)}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
-                        active
-                          ? "bg-bg-active/50 text-fg-default"
-                          : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-                      )}
+                      onClick={() => handleSelectCategory(item.category)}
+                      className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
                     >
-                      <Icon size={16} className={cn(active && "text-primary")} />
-                      {category.label}
+                      <span className="text-ui-sm text-fg-default">{item.label}</span>
+                      <span className="text-ui-xs text-fg-subtle">
+                        {CATEGORIES.find((c) => c.id === item.category)?.label}
+                      </span>
                     </button>
-                  );
-                })}
+                  ))
+                ) : (
+                  <div className="px-2 py-1.5 text-ui-xs text-fg-subtle">No settings found.</div>
+                )}
               </div>
-            </ScrollArea>
-
-            <div className="flex shrink-0 items-center justify-between border-t border-border/30 p-2">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button variant="ghost" size="icon-xs" onClick={handleExport}>
-                      <DownloadSimple size={14} />
-                    </Button>
-                  }
-                />
-                <TooltipContent>Export settings</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button variant="ghost" size="icon-xs" onClick={handleImport}>
-                      <UploadSimple size={14} />
-                    </Button>
-                  }
-                />
-                <TooltipContent>Import settings</TooltipContent>
-              </Tooltip>
-
-              <AlertDialog>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <AlertDialogTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            className="text-fg-muted hover:text-status-error"
-                          >
-                            <ArrowCounterClockwise size={14} />
-                          </Button>
-                        }
-                      />
-                    }
-                  />
-                  <TooltipContent>Reset defaults</TooltipContent>
-                </Tooltip>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will restore all settings to their default values. Your custom themes and
-                      API keys will not be affected.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={resetToDefaults}>Reset</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+            )}
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <PanelHeader
-              icon={ActiveIcon}
-              title={activeLabel}
-              actions={
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 text-ui-xs text-status-success transition-opacity duration-200",
-                    saveIndicator === "saved" ? "opacity-100" : "opacity-0",
-                  )}
-                  aria-live="polite"
-                >
-                  <Check size={12} />
-                  Saved
-                </span>
-              }
-            />
-            <ScrollArea className="min-h-0 flex-1">
-              <div className="p-6">
-                {activeCategory === "editor" && <EditorSettings />}
-                {activeCategory === "terminal" && <TerminalSettings />}
-                {activeCategory === "ai" && <AISettings />}
-                {activeCategory === "theme" && <ThemeSettings />}
-                {activeCategory === "mcp" && <McpSettings />}
-                {activeCategory === "layout" && <LayoutSettings />}
-                {activeCategory === "keyboard" && <KeyboardSettings />}
-                {activeCategory === "languages" && <LspSettings />}
-                {activeCategory === "about" && <AboutSettings />}
-              </div>
-            </ScrollArea>
+          <ScrollArea className="min-h-0 flex-1 px-2">
+            <div className="flex flex-col gap-0.5 py-1">
+              {CATEGORIES.map((category) => {
+                const Icon = category.icon;
+                const active = activeCategory === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => handleSelectCategory(category.id)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
+                      active
+                        ? "bg-accent-subtle text-fg-default"
+                        : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+                    )}
+                  >
+                    <Icon size={16} className={cn(active && "text-primary")} />
+                    {category.label}
+                  </button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+
+          <div className="flex shrink-0 flex-col gap-0.5 p-2">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            >
+              <DownloadSimple size={15} />
+              Export
+            </button>
+            <button
+              type="button"
+              onClick={handleImport}
+              className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            >
+              <UploadSimple size={15} />
+              Import
+            </button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+                  >
+                    <ArrowCounterClockwise size={15} />
+                    Reset Defaults
+                  </button>
+                }
+              />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will restore all settings to their default values. Your custom themes and
+                    API keys will not be affected.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={resetToDefaults}>Reset</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
+
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 items-center justify-between px-5 pt-4 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-7 items-center justify-center rounded-md bg-accent-subtle">
+                <ActiveIcon size={15} weight="bold" className="text-primary" />
+              </div>
+              <h2 className="text-ui-md font-semibold text-fg-default">{activeLabel}</h2>
+            </div>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-ui-xs text-status-success transition-opacity duration-200",
+                saveIndicator === "saved" ? "opacity-100" : "opacity-0",
+              )}
+              aria-live="polite"
+            >
+              <Check size={12} />
+              Saved
+            </span>
+          </div>
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="px-5 pb-5">
+              {activeCategory === "editor" && <EditorSettings />}
+              {activeCategory === "terminal" && <TerminalSettings />}
+              {activeCategory === "ai" && <AISettings />}
+              {activeCategory === "theme" && <ThemeSettings />}
+              {activeCategory === "mcp" && <McpSettings />}
+              {activeCategory === "layout" && <LayoutSettings />}
+              {activeCategory === "keyboard" && <KeyboardSettings />}
+              {activeCategory === "languages" && <LspSettings />}
+              {activeCategory === "about" && <AboutSettings />}
+            </div>
+          </ScrollArea>
+        </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }

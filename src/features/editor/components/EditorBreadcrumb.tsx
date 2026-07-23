@@ -20,7 +20,7 @@ export function EditorBreadcrumb({ panelId }: EditorBreadcrumbProps) {
 
   if (!activeTab) {
     return (
-      <div className="flex h-breadcrumb shrink-0 items-center border-b border-border/60 bg-bg-surface px-3">
+      <div className="flex h-breadcrumb shrink-0 items-center px-3">
         <span className="text-ui-xs text-fg-subtle">No file open</span>
       </div>
     );
@@ -30,7 +30,7 @@ export function EditorBreadcrumb({ panelId }: EditorBreadcrumbProps) {
   const isDiff = activeTab.kind === "diff";
 
   return (
-    <div className="flex h-breadcrumb shrink-0 items-center border-b border-border/60 bg-bg-surface px-3">
+    <div className="flex h-breadcrumb shrink-0 items-center px-3">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

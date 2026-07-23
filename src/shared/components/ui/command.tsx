@@ -47,9 +47,10 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-[28%] translate-y-0 overflow-hidden rounded-xl border-border/60 p-0 shadow-2xl shadow-black/30",
+          "top-[28%] translate-y-0 overflow-hidden rounded-xl border-border p-0 shadow-2xl shadow-black/30",
           className,
         )}
+        overlayClassName="supports-backdrop-filter:backdrop-blur-none"
         showCloseButton={showCloseButton}
       >
         <Command className="bg-transparent">{children}</Command>
@@ -63,7 +64,7 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div data-slot="command-input-wrapper" className="border-b border-border/40 p-3">
+    <div data-slot="command-input-wrapper" className="p-3">
       <InputGroup className="h-9! rounded-lg border-transparent bg-bg-input shadow-none! *:data-[slot=input-group-addon]:pl-3!">
         <CommandPrimitive.Input
           data-slot="command-input"
@@ -145,7 +146,7 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative my-1.5 flex h-8 cursor-pointer items-center gap-3 rounded-md border border-transparent px-3 text-ui-sm text-fg-default outline-hidden select-none transition-colors duration-150 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group/command-item relative my-1.5 flex h-8 cursor-pointer items-center gap-3 rounded-md border border-transparent px-3 text-ui-sm text-fg-default outline-hidden select-none transition-colors duration-150 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40 data-[selected]:bg-bg-hover [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}

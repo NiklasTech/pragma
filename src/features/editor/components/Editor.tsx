@@ -6,6 +6,7 @@ import { useLspDiagnostics } from "@/shared/hooks/useLspDiagnostics";
 import { useLspDocumentSync } from "@/shared/hooks/useLspDocumentSync";
 import { useLspStatus } from "@/shared/hooks/useLspStatus";
 import { useProblemsStore } from "@/shared/stores/problems";
+import { EditorEmptyState } from "./EditorEmptyState";
 import { createLinter } from "./extensions/diagnostics";
 import {
   pragmaDarkTheme,
@@ -643,11 +644,7 @@ export function Editor({ panelId }: EditorProps) {
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
 
   if (!activeTab) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-ui-sm text-fg-subtle">
-        <span>No file open</span>
-      </div>
-    );
+    return <EditorEmptyState />;
   }
 
   if (activeTab.kind === "diff") {

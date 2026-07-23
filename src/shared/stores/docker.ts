@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { useTerminalStore } from "./terminal";
+import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 
 export interface DockerContainer {
   id: string;
@@ -202,6 +203,7 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
       name: `Logs: ${firstName(container)}`,
       type: "docker-logs",
       command: `docker logs -f --tail 100 ${container.id}`,
+      panelId: resolveDefaultTerminalPanelId(),
       isActive: true,
     });
   },
@@ -212,6 +214,7 @@ export const useDockerStore = create<DockerState & DockerActions>((set, get) => 
       name: `Exec: ${firstName(container)}`,
       type: "docker-exec",
       command: `docker exec -it ${container.id} ${shell}`,
+      panelId: resolveDefaultTerminalPanelId(),
       isActive: true,
     });
   },

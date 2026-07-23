@@ -68,15 +68,22 @@ export function EditorStatusbar({
   });
 
   return (
-    <div className="flex h-statusbar items-center justify-between border-t border-border/60 bg-bg-surface px-3 text-ui-xs select-none">
-      <div className="flex items-center gap-3">
+    <div className="flex h-statusbar shrink-0 items-center justify-between bg-bg-root px-1 text-ui-xs select-none">
+      <div className="flex items-center">
         {vimMode && (
-          <span className={cn("font-semibold", getModeColor(vimMode))}>
-            {vimMode.toUpperCase()}
-          </span>
+          <div className="flex items-center gap-1.5 px-2">
+            <span
+              className={cn(
+                "rounded-sm bg-accent-subtle px-1.5 py-px text-ui-2xs font-semibold",
+                getModeColor(vimMode),
+              )}
+            >
+              {vimMode.toUpperCase()}
+            </span>
+          </div>
         )}
         {(errorCount > 0 || warningCount > 0) && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2">
             {errorCount > 0 && (
               <span className="flex items-center gap-1 text-status-error">
                 <WarningCircle size={14} />
@@ -92,10 +99,10 @@ export function EditorStatusbar({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-4 text-fg-muted">
-        <span>{getFileTypeLabel(fileType)}</span>
-        <span>UTF-8</span>
-        <span>
+      <div className="flex items-center text-fg-muted">
+        <span className="px-2">{getFileTypeLabel(fileType)}</span>
+        <span className="px-2">UTF-8</span>
+        <span className="px-2">
           Ln {line}, Col {column}
         </span>
       </div>
