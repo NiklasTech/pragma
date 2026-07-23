@@ -1,0 +1,197 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+
+  "metadata": {
+    "id": "arctic-light",
+    "name": "Arctic Light",
+    "author": "Pragma Team",
+    "description": "A crisp, cool light theme with blue-tinted white surfaces and a clear blue accent.",
+    "version": "1.0.0",
+    "license": "MIT"
+  },
+
+  "appearance": {
+    "defaultMode": "light",
+    "supportedModes": ["light"],
+    "preferredEditorTheme": "dark-default"
+  },
+
+  "tokens": {
+    "colors": {
+      "background": {
+        "root": "#f7fafd",
+        "surface": "#eef3f9",
+        "elevated": "#e3ebf5",
+        "input": "#ffffff",
+        "hover": "rgba(15, 40, 80, 0.04)",
+        "active": "rgba(37, 99, 235, 0.10)",
+        "overlay": "rgba(15, 40, 80, 0.35)"
+      },
+      "foreground": {
+        "default": "#1a2433",
+        "muted": "#51607a",
+        "subtle": "#8e9db3",
+        "inverse": "#ffffff"
+      },
+      "accent": {
+        "default": "#2563eb",
+        "subtle": "rgba(37, 99, 235, 0.10)",
+        "glow": "rgba(37, 99, 235, 0.25)"
+      },
+      "border": {
+        "default": "rgba(15, 40, 80, 0.10)",
+        "subtle": "rgba(15, 40, 80, 0.05)",
+        "focus": "rgba(37, 99, 235, 0.45)"
+      },
+      "status": {
+        "success": "#15803d",
+        "successBg": "rgba(21, 128, 61, 0.10)",
+        "warning": "#b45309",
+        "warningBg": "rgba(180, 83, 9, 0.10)",
+        "error": "#dc2626",
+        "errorBg": "rgba(220, 38, 38, 0.10)",
+        "info": "#0284c7",
+        "infoBg": "rgba(2, 132, 199, 0.10)"
+      },
+      "git": {
+        "added": "{colors.status.success}",
+        "addedBg": "{colors.status.successBg}",
+        "modified": "{colors.status.warning}",
+        "modifiedBg": "{colors.status.warningBg}",
+        "deleted": "{colors.status.error}",
+        "deletedBg": "{colors.status.errorBg}",
+        "untracked": "{colors.status.info}",
+        "untrackedBg": "{colors.status.infoBg}",
+        "ignored": "{colors.foreground.subtle}",
+        "conflict": "#7c3aed"
+      },
+      "thread": {
+        "default": "{colors.accent.subtle}",
+        "active": "{colors.accent.default}"
+      },
+      "selection": "rgba(37, 99, 235, 0.16)",
+      "scrollbar": {
+        "track": "transparent",
+        "thumb": "rgba(15, 40, 80, 0.14)",
+        "thumbHover": "rgba(15, 40, 80, 0.24)"
+      }
+    },
+
+    "editor": {
+      "background": "{colors.background.root}",
+      "foreground": "{colors.foreground.default}",
+      "selection": "{colors.selection}",
+      "cursor": "{colors.accent.default}",
+      "gutter": {
+        "background": "{colors.background.root}",
+        "foreground": "{colors.foreground.subtle}",
+        "activeBackground": "{colors.background.surface}"
+      },
+      "line": {
+        "active": "rgba(15, 40, 80, 0.03)",
+        "highlight": "rgba(37, 99, 235, 0.05)"
+      },
+      "syntax": {
+        "keyword": "#7c3aed",
+        "string": "#15803d",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#1d4ed8",
+        "variable": "{colors.foreground.default}",
+        "number": "#b45309",
+        "type": "#0e7490",
+        "tag": "{colors.status.error}",
+        "attribute": "{colors.accent.default}",
+        "property": "{colors.foreground.default}",
+        "operator": "{colors.foreground.muted}"
+      }
+    },
+
+    "terminal": {
+      "background": "#fbfdff",
+      "foreground": "{colors.foreground.default}",
+      "cursor": "{colors.accent.default}",
+      "cursorAccent": "{colors.accent.default}",
+      "selection": "{colors.selection}",
+      "ansi": {
+        "black": "#1a2433",
+        "red": "#dc2626",
+        "green": "#15803d",
+        "yellow": "#b45309",
+        "blue": "#2563eb",
+        "magenta": "#7c3aed",
+        "cyan": "#0284c7",
+        "white": "#51607a"
+      },
+      "ansiBright": {
+        "black": "#43536b",
+        "red": "#ef4444",
+        "green": "#22a258",
+        "yellow": "#d97706",
+        "blue": "#4b83f0",
+        "magenta": "#9661f0",
+        "cyan": "#0ea5e9",
+        "white": "#1a2433"
+      }
+    },
+
+    "layout": {
+      "headerHeight": 40,
+      "tabHeight": 36,
+      "statusbarHeight": 24,
+      "breadcrumbHeight": 28,
+      "inputbarHeight": 42,
+      "sidebarWidth": 260,
+      "sidebarCollapsedWidth": 40,
+      "sidebarMinWidth": 180,
+      "sidebarMaxWidth": 480,
+      "panelMinHeight": 160,
+      "panelDefaultHeight": 240,
+      "rowHeight": 26,
+      "padding": {
+        "xs": 4,
+        "sm": 6,
+        "md": 8,
+        "lg": 12
+      }
+    },
+
+    "typography": {
+      "ui": {
+        "2xs": "9px",
+        "xs": "11px",
+        "sm": "12px",
+        "base": "13px",
+        "md": "14px",
+        "lg": "16px"
+      },
+      "editor": "14px",
+      "lineHeight": {
+        "ui": {
+          "2xs": "12px",
+          "xs": "14px",
+          "sm": "16px",
+          "base": "20px",
+          "md": "22px",
+          "lg": "24px"
+        },
+        "editor": "22px"
+      }
+    },
+
+    "motion": {
+      "duration": {
+        "fast": "150ms",
+        "base": "200ms",
+        "slow": "250ms",
+        "layout": "300ms"
+      },
+      "ease": {
+        "default": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "out": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "inOut": "cubic-bezier(0.2, 0, 0, 1)",
+        "spring": "cubic-bezier(0.34, 1.56, 0.64, 1)"
+      }
+    }
+  }
+}

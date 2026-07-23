@@ -96,7 +96,7 @@ export function Titlebar() {
   return (
     <div
       data-tauri-drag-region
-      className="relative z-[60] flex h-header shrink-0 items-center select-none"
+      className="relative z-[60] flex h-header shrink-0 items-center select-none border-b border-border bg-bg-surface"
     >
       <div className="flex items-center gap-1.5 px-2">
         <img src="/pragma_logo.svg" alt="" className="h-4.5 w-4.5" />
