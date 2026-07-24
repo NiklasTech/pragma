@@ -1,5 +1,7 @@
 use std::path::{Component, Path, PathBuf};
 
+use tauri::{Emitter, Manager};
+
 #[derive(Default)]
 pub struct CliArgs {
     pub project_path: Option<String>,
@@ -62,6 +64,39 @@ fn normalize_path(path: &Path) -> PathBuf {
         }
     }
     result
+}
+
+/// Handles args forwarded by the single-instance plugin: opens the given
+/// folder in a new workspace window, or focuses the main window.
+pub fn handle_second_instance(app: &tauri::AppHandle, argv: &[String], cwd: &str) {
+    let Some(path) = resolve_second_instance_path(argv, cwd) else {
+        focus_main_window(app);
+        return;
+    };
+
+    if !std::path::Path::new(&path).is_dir() {
+        log::warn!("ignoring non-directory path from second instance: {path}");
+        if let Err(err) = app.emit(
+            "pragma:cli:invalid-path",
+            serde_json::json!({ "path": path }),
+        ) {
+            log::warn!("failed to emit invalid-path event: {err}");
+        }
+        focus_main_window(app);
+        return;
+    }
+
+    if let Err(err) = crate::window::create_workspace_window(app, &path) {
+        log::error!("failed to create workspace window: {err}");
+        focus_main_window(app);
+    }
+}
+
+fn focus_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
 }
 
 #[cfg(test)]
