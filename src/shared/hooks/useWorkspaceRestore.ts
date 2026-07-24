@@ -40,6 +40,12 @@ export function useWorkspaceRestore(): void {
     didRun.current = true;
 
     async function restore() {
+      const folderParam = new URLSearchParams(window.location.search).get("folder");
+      if (folderParam) {
+        await selectRoot(folderParam);
+        return;
+      }
+
       const cliPath = await invoke<string | null>("get_cli_project_path");
       if (cliPath) {
         await selectRoot(cliPath);
