@@ -76,7 +76,8 @@ pub fn handle_second_instance(app: &tauri::AppHandle, argv: &[String], cwd: &str
 
     if !std::path::Path::new(&path).is_dir() {
         log::warn!("ignoring non-directory path from second instance: {path}");
-        if let Err(err) = app.emit(
+        if let Err(err) = app.emit_to(
+            "main",
             "pragma:cli:invalid-path",
             serde_json::json!({ "path": path }),
         ) {

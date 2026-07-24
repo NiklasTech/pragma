@@ -2,9 +2,8 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { confirm } from "@tauri-apps/plugin-dialog";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { crossWindowSync } from "./sync/crossWindowSync";
-import { getWindowScope } from "@/shared/lib/windowScope";
+import { getWindowScope, isWorkspaceWindow } from "@/shared/lib/windowScope";
 
 export interface RunConfig {
   id?: string;
@@ -330,10 +329,10 @@ export function initRunConfigListeners() {
   if (listenersInitialized) return;
   listenersInitialized = true;
 
-  // Run output events are already broadcast to all windows from the backend.
-  // Only the main window needs to append them; external windows receive the
-  // resulting state via cross-window store sync.
-  if (getCurrentWindow().label !== "main") return;
+  // Run output events are broadcast to all windows from the backend; each
+  // workspace window appends its own run's events. Floating windows receive
+  // the resulting state via cross-window store sync.
+  if (!isWorkspaceWindow()) return;
 
   void listen<{ process_id: string; data: string }>("run_output", (event) => {
     useRunConfigStore.getState().appendOutput(event.payload.process_id, event.payload.data);
