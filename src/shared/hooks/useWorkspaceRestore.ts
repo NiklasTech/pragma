@@ -40,6 +40,16 @@ export function useWorkspaceRestore(): void {
     didRun.current = true;
 
     async function restore() {
+      const folderParam = new URLSearchParams(window.location.search).get("folder");
+      if (folderParam) {
+        // Window labels are reused; drop editor state persisted for a previous folder.
+        if (fileExplorer.rootPath && fileExplorer.rootPath !== folderParam) {
+          useEditorStore.setState({ tabs: [], tabStates: [], activeTabId: null, activeTabIds: {} });
+        }
+        await selectRoot(folderParam);
+        return;
+      }
+
       const cliPath = await invoke<string | null>("get_cli_project_path");
       if (cliPath) {
         await selectRoot(cliPath);

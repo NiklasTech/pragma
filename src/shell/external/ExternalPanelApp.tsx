@@ -32,7 +32,8 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
 
   useEffect(() => {
     const win = getCurrentWindow();
-    void emit("pragma:external:ready", { label: win.label, nodeId });
+    const parent = new URLSearchParams(window.location.search).get("parent") ?? "main";
+    void emit("pragma:external:ready", { label: win.label, nodeId, parent });
 
     const setupCloseListener = async () => {
       return win.onCloseRequested(async () => {

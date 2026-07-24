@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { toast } from "sonner";
 import { startLspDidCloseWatcher } from "@/features/editor/lsp/didClose";
 import { Layout } from "@/shell/layout";
 import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
@@ -40,6 +42,14 @@ export default function App() {
   useCommandPaletteCommands();
   useLspSymbolCommands();
   useEffect(() => startLspDidCloseWatcher(), []);
+  useEffect(() => {
+    const unlisten = listen<{ path: string }>("pragma:cli:invalid-path", (event) => {
+      toast.error(`Cannot open folder: ${event.payload.path}`);
+    });
+    return () => {
+      unlisten.then((fn) => fn()).catch(() => {});
+    };
+  }, []);
 
   return (
     <ThemeProvider>

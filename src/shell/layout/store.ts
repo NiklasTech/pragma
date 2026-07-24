@@ -19,9 +19,10 @@ import {
 } from "./tree/operations";
 import { layoutPresets } from "./presets";
 import { useEditorStore } from "@/shared/stores/editor";
+import { getWindowScope } from "@/shared/lib/windowScope";
 import { useTerminalStore } from "@/shared/stores/terminal";
 
-const STORAGE_KEY = "pragma.layout.v3";
+const STORAGE_KEY = `pragma.layout.v3.${getWindowScope()}`;
 
 const AI_DEFAULT_WIDTH = 360;
 const AI_MIN_WIDTH = 260;
@@ -49,6 +50,7 @@ function markCustomized(_state: FullLayoutTreeState): Partial<FullLayoutTreeStat
 
 const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<FullLayoutTreeState>(
   "layout",
+  getWindowScope(),
 )((set) => ({
   ...layoutPresets.classic,
 
