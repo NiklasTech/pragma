@@ -1,6 +1,7 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import { crossWindowSync } from "./sync/crossWindowSync";
+import { getWindowScope } from "@/shared/lib/windowScope";
 
 export interface CursorPosition {
   line: number;
@@ -83,7 +84,7 @@ interface EditorActions {
   markHydrated: () => void;
 }
 
-const STORAGE_KEY = "pragma.editor.v1";
+const STORAGE_KEY = `pragma.editor.v1.${getWindowScope()}`;
 
 const initialState: EditorState = {
   tabs: [],

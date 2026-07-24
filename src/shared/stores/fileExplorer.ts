@@ -1,5 +1,6 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
+import { getWindowScope } from "@/shared/lib/windowScope";
 
 export interface FileSystemNode {
   path: string;
@@ -61,7 +62,7 @@ interface FileExplorerActions {
   markHydrated: () => void;
 }
 
-const STORAGE_KEY = "pragma.file-explorer.v1";
+const STORAGE_KEY = `pragma.file-explorer.v1.${getWindowScope()}`;
 
 const initialState: FileExplorerState = {
   rootPath: null,
