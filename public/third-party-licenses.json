@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-20T22:43:24.279Z",
-  "total": 63,
+  "generatedAt": "2026-07-24T22:01:45.567Z",
+  "total": 64,
   "entries": [
     {
       "name": "@types/node",
@@ -39,9 +39,9 @@
     },
     {
       "name": "ai",
-      "version": "7.0.30",
+      "version": "7.0.32",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.30",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.32",
       "source": "npm"
     },
     {
@@ -165,9 +165,9 @@
     },
     {
       "name": "material-icon-theme",
-      "version": "5.36.1",
+      "version": "5.37.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.36.1",
+      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.37.0",
       "source": "npm"
     },
     {
@@ -364,6 +364,13 @@
       "version": "2.5.4",
       "license": "Apache-2.0 OR MIT",
       "url": "https://crates.io/crates/tauri-plugin-opener/2.5.4",
+      "source": "rust"
+    },
+    {
+      "name": "tauri-plugin-single-instance",
+      "version": "2.4.3",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/tauri-plugin-single-instance/2.4.3",
       "source": "rust"
     },
     {
