@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { crossWindowSync } from "./sync/crossWindowSync";
+import { getWindowScope } from "@/shared/lib/windowScope";
 
 export type TerminalSessionType = "shell" | "docker-logs" | "docker-exec" | "run";
 
@@ -112,7 +113,10 @@ function withoutSession(state: TerminalState, sessionId: string): Partial<Termin
 }
 
 export const useTerminalStore = create<TerminalState & TerminalActions>(
-  crossWindowSync<TerminalState & TerminalActions>("terminal")((set, get) => ({
+  crossWindowSync<TerminalState & TerminalActions>(
+    "terminal",
+    getWindowScope(),
+  )((set, get) => ({
     ...initialState,
 
     addSession: (session) => {

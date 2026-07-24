@@ -50,6 +50,7 @@ function markCustomized(_state: FullLayoutTreeState): Partial<FullLayoutTreeStat
 
 const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<FullLayoutTreeState>(
   "layout",
+  getWindowScope(),
 )((set) => ({
   ...layoutPresets.classic,
 

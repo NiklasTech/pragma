@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { crossWindowSync } from "./sync/crossWindowSync";
+import { getWindowScope } from "@/shared/lib/windowScope";
 
 export interface RunConfig {
   id?: string;
@@ -98,7 +99,10 @@ const initialState: RunConfigState = {
 };
 
 export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
-  crossWindowSync<RunConfigState & RunConfigActions>("runConfig")((set, get) => ({
+  crossWindowSync<RunConfigState & RunConfigActions>(
+    "runConfig",
+    getWindowScope(),
+  )((set, get) => ({
     ...initialState,
 
     setWorkspaceRoot: (root) => set({ workspaceRoot: root }),

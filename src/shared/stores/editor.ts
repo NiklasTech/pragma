@@ -311,27 +311,30 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 });
 
 export const useEditorStore = create<EditorState & EditorActions>()(
-  persist(crossWindowSync<EditorState & EditorActions>("editor")(editorStoreCreator), {
-    name: STORAGE_KEY,
-    partialize: (state) => ({
-      tabs: stripFileContent(state.tabs),
-      tabStates: state.tabStates,
-      activeTabId: state.activeTabId,
-      activeTabIds: state.activeTabIds,
-      lastFocusedPanelId: state.lastFocusedPanelId,
-      cursorPositions: state.cursorPositions,
-    }),
-    onRehydrateStorage: () => (state) => {
-      if (!state) return;
-      state.markHydrated();
+  persist(
+    crossWindowSync<EditorState & EditorActions>("editor", getWindowScope())(editorStoreCreator),
+    {
+      name: STORAGE_KEY,
+      partialize: (state) => ({
+        tabs: stripFileContent(state.tabs),
+        tabStates: state.tabStates,
+        activeTabId: state.activeTabId,
+        activeTabIds: state.activeTabIds,
+        lastFocusedPanelId: state.lastFocusedPanelId,
+        cursorPositions: state.cursorPositions,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        state.markHydrated();
+      },
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<EditorState>;
+        return {
+          ...currentState,
+          ...persisted,
+          _hasHydrated: false,
+        };
+      },
     },
-    merge: (persistedState, currentState) => {
-      const persisted = persistedState as Partial<EditorState>;
-      return {
-        ...currentState,
-        ...persisted,
-        _hasHydrated: false,
-      };
-    },
-  }),
+  ),
 );

@@ -2,6 +2,8 @@ import { type StateCreator } from "zustand";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
+import { isWorkspaceWindow } from "@/shared/lib/windowScope";
+
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
@@ -12,6 +14,10 @@ function getWindowLabel(): string | null {
   } catch {
     return null;
   }
+}
+
+export function storeChannel(storeName: string, scope: string | null): string {
+  return scope === null ? `pragma:store:${storeName}` : `pragma:store:${storeName}:${scope}`;
 }
 
 function shallowDiff<T extends object>(prev: T, next: T): Partial<T> | null {
@@ -26,7 +32,10 @@ function shallowDiff<T extends object>(prev: T, next: T): Partial<T> | null {
   return changed ? diff : null;
 }
 
-export function crossWindowSync<T extends object>(storeName: string) {
+export function crossWindowSync<T extends object>(storeName: string, scope?: string) {
+  const resolvedScope = scope ?? null;
+  const channel = storeChannel(storeName, resolvedScope);
+
   return (config: StateCreator<T>): StateCreator<T> => {
     return (set, get, api) => {
       const state = config(set, get, api);
@@ -39,7 +48,7 @@ export function crossWindowSync<T extends object>(storeName: string) {
       let isReady = false;
       let lastState = get();
 
-      void listen(`pragma:store:${storeName}`, (event) => {
+      void listen(channel, (event) => {
         const currentLabel = getWindowLabel();
         const payload = event.payload as { source: string; partial: Partial<T> };
         if (!currentLabel || payload.source === currentLabel) return;
@@ -48,7 +57,7 @@ export function crossWindowSync<T extends object>(storeName: string) {
         isRemote = false;
       });
 
-      void listen(`pragma:store:${storeName}:snapshot`, (event) => {
+      void listen(`${channel}:snapshot`, (event) => {
         const currentLabel = getWindowLabel();
         const payload = event.payload as { source: string; state: T };
         if (!currentLabel || payload.source === currentLabel) return;
@@ -71,7 +80,7 @@ export function crossWindowSync<T extends object>(storeName: string) {
         const currentLabel = getWindowLabel();
         if (!currentLabel || lastState === undefined || isRemote || !isReady) {
           lastState = newState;
-          if (currentLabel === "main") {
+          if (isWorkspaceWindow()) {
             isReady = true;
           }
           return;
@@ -79,7 +88,7 @@ export function crossWindowSync<T extends object>(storeName: string) {
         const diff = shallowDiff(lastState, newState);
         lastState = newState;
         if (diff) {
-          void emit(`pragma:store:${storeName}`, { source: currentLabel, partial: diff });
+          void emit(channel, { source: currentLabel, partial: diff });
         }
       });
 
