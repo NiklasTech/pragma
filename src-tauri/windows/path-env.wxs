@@ -3,6 +3,18 @@
   <Fragment>
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="PragmaPathEnv" Guid="*">
+        <RegistryKey
+          Root="HKCU"
+          Key="Software\pragma\pragma"
+          Action="createAndRemoveOnUninstall"
+        >
+          <RegistryValue
+            Type="string"
+            Name="PathEnv"
+            Value="[INSTALLDIR]"
+            KeyPath="yes"
+          />
+        </RegistryKey>
         <Environment
           Id="PragmaPath"
           Name="PATH"
