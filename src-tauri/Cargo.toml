@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.0"
+version = "0.2.0"
 description = "A lightweight, AI-native desktop IDE with an integrated terminal"
 authors = ["NiklasTech <info@nh-webdev.de>"]
 license = "Apache-2.0"

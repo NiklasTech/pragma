@@ -83,3 +83,20 @@ Every new Tauri command must automatically:
 - Push the branch, open a PR against `main`, required checks must pass, then merge (squash or rebase)
 - After every push: `gh pr view <branch> --json statusCheckRollup,mergeStateStatus`
 - On `FAILURE`: `gh run view <run-id> --log-failed` → fix → push → recheck until `mergeStateStatus = CLEAN`, then report the PR as ready to merge
+
+## Releases & Versioning
+
+Semantic Versioning (`MAJOR.MINOR.PATCH`), currently 0.x — breaking changes are acceptable until 1.0.0:
+
+- **Versions bump per release, not per PR.** Features accumulate on `main`; a release bundles whatever is merged by then. Do not cut a release after every single feature.
+- Release contains any new feature → bump **minor** (0.2.0 → 0.3.0, patch resets to 0)
+- Only fixes/chores/dependencies → bump **patch** (0.2.0 → 0.2.1)
+- Release cadence is a judgment call: ship a minor release when a meaningful bundle of features is ready, ship patch releases anytime a fix should go out. Ten merged features must not mean ten releases.
+- Label PRs so Release Drafter resolves the next version automatically: `feat`/`feature`/`enhancement` → minor, `fix`/`bug` → patch (see `version-resolver` in `.github/release-drafter.yml`). Without labels it always falls back to patch.
+
+Release process:
+
+1. Bump the version in all three places — `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` — on a `chore/release-vX.Y.Z` branch with PR (run `cd src-tauri && cargo check` to sync `Cargo.lock`). Also run `pnpm run generate:licenses` so `public/third-party-licenses.json` covers all current dependencies.
+2. Rename the Release Drafter draft to the target version (tag `vX.Y.Z`, title `Pragma X.Y.Z`).
+3. After the PR is merged, tag the merge commit on `main`: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+4. The tag push triggers `.github/workflows/release.yml` (Windows/Linux/macOS matrix), which builds the app and attaches the artifacts to the draft release. Publish the draft once all three platform builds are green.
