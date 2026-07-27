@@ -6,28 +6,23 @@ import { SettingSection } from "./ui/SettingSection";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import {
-  GithubLogo,
+  ArrowClockwise,
   ArrowSquareOut,
-  Copy,
   Check,
-  Spinner,
   CheckCircle,
+  Copy,
+  DownloadSimple,
+  GithubLogo,
+  Spinner,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { Progress } from "@/shared/components/ui/progress";
+import { useUpdaterStore } from "@/features/settings/updater/updaterStore";
 
 const GITHUB_OWNER = "NiklasTech";
 const GITHUB_REPO = "pragma";
-const RELEASES_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases`;
 const REPO_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
-const LATEST_RELEASE_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
-
-type UpdateStatus =
-  | { state: "idle" }
-  | { state: "checking" }
-  | { state: "up-to-date" }
-  | { state: "available"; version: string; url: string }
-  | { state: "error"; message: string };
 
 interface LicenseEntry {
   name: string;
@@ -43,34 +38,17 @@ interface LicensesData {
   entries: LicenseEntry[];
 }
 
-function parseVersion(version: string): number[] {
-  return version
-    .replace(/^v/, "")
-    .split(".")
-    .map((part) => Number.parseInt(part, 10))
-    .filter((n) => !Number.isNaN(n));
-}
-
-function compareVersions(a: string, b: string): number {
-  const partsA = parseVersion(a);
-  const partsB = parseVersion(b);
-  const maxLength = Math.max(partsA.length, partsB.length);
-  for (let i = 0; i < maxLength; i++) {
-    const va = partsA[i] ?? 0;
-    const vb = partsB[i] ?? 0;
-    if (va > vb) return 1;
-    if (va < vb) return -1;
-  }
-  return 0;
-}
-
 export function AboutSettings() {
   const [version, setVersion] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
-  const [updateStatus, setUpdateStatus] = React.useState<UpdateStatus>({ state: "idle" });
   const [licenses, setLicenses] = React.useState<LicenseEntry[]>([]);
   const [licensesLoading, setLicensesLoading] = React.useState(true);
   const [licensesError, setLicensesError] = React.useState<string | null>(null);
+
+  const updaterState = useUpdaterStore((s) => s.state);
+  const checkForUpdates = useUpdaterStore((s) => s.checkForUpdates);
+  const downloadAndInstall = useUpdaterStore((s) => s.downloadAndInstall);
+  const restartApp = useUpdaterStore((s) => s.restartApp);
 
   React.useEffect(() => {
     void getVersion()
@@ -105,38 +83,6 @@ export function AboutSettings() {
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // ignore
-    }
-  };
-
-  const handleCheckForUpdates = async () => {
-    if (!version) return;
-    setUpdateStatus({ state: "checking" });
-    try {
-      const response = await fetch(LATEST_RELEASE_API, {
-        headers: { Accept: "application/vnd.github+json" },
-      });
-      if (response.status === 404) {
-        setUpdateStatus({ state: "error", message: "No releases found yet." });
-        return;
-      }
-      if (!response.ok) {
-        setUpdateStatus({ state: "error", message: "Unable to check for updates." });
-        return;
-      }
-      const data = (await response.json()) as { tag_name?: string; html_url?: string };
-      const latest = data.tag_name ?? "";
-      const url = data.html_url ?? RELEASES_URL;
-      if (!latest) {
-        setUpdateStatus({ state: "error", message: "No release version found." });
-        return;
-      }
-      if (compareVersions(latest, version) > 0) {
-        setUpdateStatus({ state: "available", version: latest, url });
-      } else {
-        setUpdateStatus({ state: "up-to-date" });
-      }
-    } catch {
-      setUpdateStatus({ state: "error", message: "Network error while checking for updates." });
     }
   };
 
@@ -260,20 +206,24 @@ export function AboutSettings() {
       <SettingSection title="Updates">
         <div className="flex flex-col gap-3 py-2">
           <p className="text-ui-xs text-fg-muted">
-            Check GitHub for the latest release notes and downloads.
+            Check for updates and install them directly from here.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
-              onClick={handleCheckForUpdates}
-              disabled={updateStatus.state === "checking" || !version}
+              onClick={() => void checkForUpdates()}
+              disabled={
+                updaterState.status === "checking" ||
+                updaterState.status === "downloading" ||
+                updaterState.status === "ready-to-restart"
+              }
             >
-              {updateStatus.state === "checking" ? (
+              {updaterState.status === "checking" ? (
                 <Spinner size={14} className="mr-1 animate-spin" />
               ) : (
-                <ArrowSquareOut size={14} className="mr-1" />
+                <ArrowClockwise size={14} className="mr-1" />
               )}
-              {updateStatus.state === "checking" ? "Checking..." : "Check for Updates"}
+              {updaterState.status === "checking" ? "Checking..." : "Check for Updates"}
             </Button>
             <Button size="sm" variant="outline" onClick={() => handleOpenUrl(REPO_URL)}>
               <GithubLogo size={14} className="mr-1" />
@@ -281,35 +231,65 @@ export function AboutSettings() {
             </Button>
           </div>
 
-          {updateStatus.state === "up-to-date" && (
+          {updaterState.status === "up-to-date" && (
             <div className="flex items-center gap-1.5 text-ui-xs text-status-success">
               <CheckCircle size={14} />
               You are running the latest version.
             </div>
           )}
 
-          {updateStatus.state === "available" && (
+          {updaterState.status === "available" && (
             <div className="flex flex-col gap-2 rounded-md border border-status-warning/30 bg-status-warning/10 p-3">
               <div className="flex items-center gap-1.5 text-ui-xs text-status-warning">
                 <WarningCircle size={14} />
-                Version {updateStatus.version} is available.
+                Version {updaterState.version} is available.
               </div>
+              {updaterState.notes && (
+                <p className="text-ui-xs whitespace-pre-wrap text-fg-muted">{updaterState.notes}</p>
+              )}
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleOpenUrl(updateStatus.url)}
+                onClick={() => void downloadAndInstall()}
                 className="w-fit"
               >
-                <ArrowSquareOut size={14} className="mr-1" />
-                Download {updateStatus.version}
+                <DownloadSimple size={14} className="mr-1" />
+                Install Update
               </Button>
             </div>
           )}
 
-          {updateStatus.state === "error" && (
+          {updaterState.status === "downloading" && (
+            <div className="flex flex-col gap-2 rounded-md border border-border/30 bg-bg-root p-3">
+              <span className="text-ui-xs text-fg-muted">
+                Downloading update... {updaterState.progress}%
+              </span>
+              <Progress value={updaterState.progress} />
+            </div>
+          )}
+
+          {updaterState.status === "ready-to-restart" && (
+            <div className="flex flex-col gap-2 rounded-md border border-status-success/30 bg-status-success/10 p-3">
+              <div className="flex items-center gap-1.5 text-ui-xs text-status-success">
+                <CheckCircle size={14} />
+                Version {updaterState.version} was installed. Restart to finish.
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void restartApp()}
+                className="w-fit"
+              >
+                <ArrowClockwise size={14} className="mr-1" />
+                Restart
+              </Button>
+            </div>
+          )}
+
+          {updaterState.status === "error" && (
             <div className="flex items-center gap-1.5 text-ui-xs text-status-error">
               <WarningCircle size={14} />
-              {updateStatus.message}
+              {updaterState.message}
             </div>
           )}
         </div>
