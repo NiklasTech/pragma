@@ -212,7 +212,11 @@ export function AboutSettings() {
             <Button
               size="sm"
               onClick={() => void checkForUpdates()}
-              disabled={updaterState.status === "checking" || updaterState.status === "downloading"}
+              disabled={
+                updaterState.status === "checking" ||
+                updaterState.status === "downloading" ||
+                updaterState.status === "ready-to-restart"
+              }
             >
               {updaterState.status === "checking" ? (
                 <Spinner size={14} className="mr-1 animate-spin" />

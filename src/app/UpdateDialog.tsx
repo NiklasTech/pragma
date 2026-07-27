@@ -20,6 +20,7 @@ export function UpdateDialog() {
   const [dismissedVersion, setDismissedVersion] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    if (import.meta.env.DEV) return;
     void checkForUpdates({ silent: true });
   }, [checkForUpdates]);
 
@@ -30,14 +31,21 @@ export function UpdateDialog() {
       ? state.version
       : null;
 
-  const open = version !== null && version !== dismissedVersion;
+  const open = version !== null && (state.status !== "available" || version !== dismissedVersion);
+
+  const description =
+    state.status === "downloading"
+      ? `Version ${version} of Pragma is being installed.`
+      : state.status === "ready-to-restart"
+        ? `Version ${version} of Pragma was installed.`
+        : `Version ${version} of Pragma is ready to install.`;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && setDismissedVersion(version)}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Update available</DialogTitle>
-          <DialogDescription>Version {version} of Pragma is ready to install.</DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         {state.status === "available" && state.notes && (
@@ -61,20 +69,22 @@ export function UpdateDialog() {
           </p>
         )}
 
-        <DialogFooter>
-          {state.status === "available" && (
-            <Button size="sm" onClick={() => void downloadAndInstall()}>
-              <DownloadSimple size={14} className="mr-1" />
-              Install Update
-            </Button>
-          )}
-          {state.status === "ready-to-restart" && (
-            <Button size="sm" onClick={() => void restartApp()}>
-              <ArrowClockwise size={14} className="mr-1" />
-              Restart
-            </Button>
-          )}
-        </DialogFooter>
+        {state.status !== "downloading" && (
+          <DialogFooter>
+            {state.status === "available" && (
+              <Button size="sm" onClick={() => void downloadAndInstall()}>
+                <DownloadSimple size={14} className="mr-1" />
+                Install Update
+              </Button>
+            )}
+            {state.status === "ready-to-restart" && (
+              <Button size="sm" onClick={() => void restartApp()}>
+                <ArrowClockwise size={14} className="mr-1" />
+                Restart
+              </Button>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
