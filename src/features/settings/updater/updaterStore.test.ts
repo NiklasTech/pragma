@@ -85,6 +85,23 @@ describe("useUpdaterStore", () => {
     });
   });
 
+  it("ends ready to restart when the download emits no progress events", async () => {
+    const downloadMock = vi.fn(async (onEvent?: (event: unknown) => void) => {
+      onEvent?.({ event: "Started", data: { contentLength: 200 } });
+      onEvent?.({ event: "Finished" });
+    });
+    checkMock.mockResolvedValue(mockUpdate({ downloadAndInstall: downloadMock }));
+    await useUpdaterStore.getState().checkForUpdates();
+
+    await useUpdaterStore.getState().downloadAndInstall();
+
+    expect(downloadMock).toHaveBeenCalledOnce();
+    expect(useUpdaterStore.getState().state).toEqual({
+      status: "ready-to-restart",
+      version: "0.3.0",
+    });
+  });
+
   it("does nothing when downloading without a pending update", async () => {
     await useUpdaterStore.getState().downloadAndInstall();
 
@@ -113,5 +130,16 @@ describe("useUpdaterStore", () => {
     await useUpdaterStore.getState().restartApp();
 
     expect(relaunchMock).toHaveBeenCalledOnce();
+  });
+
+  it("maps relaunch failures to the error state", async () => {
+    relaunchMock.mockRejectedValue(new Error("relaunch failed"));
+
+    await useUpdaterStore.getState().restartApp();
+
+    expect(useUpdaterStore.getState().state).toEqual({
+      status: "error",
+      message: "relaunch failed",
+    });
   });
 });
