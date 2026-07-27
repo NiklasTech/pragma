@@ -287,9 +287,20 @@ export function AboutSettings() {
           )}
 
           {updaterState.status === "error" && (
-            <div className="flex items-center gap-1.5 text-ui-xs text-status-error">
-              <WarningCircle size={14} />
-              {updaterState.message}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 text-ui-xs text-status-error">
+                <WarningCircle size={14} />
+                {updaterState.message}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void checkForUpdates()}
+                className="w-fit"
+              >
+                <ArrowClockwise size={14} className="mr-1" />
+                Try again
+              </Button>
             </div>
           )}
         </div>
