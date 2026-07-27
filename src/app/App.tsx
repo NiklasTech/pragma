@@ -25,6 +25,7 @@ import { GoToFile } from "./GoToFile";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
 import { CodeActionsDialog } from "@/features/editor/components/CodeActionsDialog";
 import { SymbolDialog } from "@/features/editor/components/SymbolDialog";
+import { UpdateDialog } from "./UpdateDialog";
 
 export default function App() {
   useAIInit();
@@ -62,6 +63,7 @@ export default function App() {
         <RenameDialog />
         <CodeActionsDialog />
         <SymbolDialog />
+        <UpdateDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>
     </ThemeProvider>
