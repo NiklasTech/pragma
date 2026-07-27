@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useEditorStore } from "@/shared/stores/editor";
 import { detectLanguage } from "@/shared/lib/language";
 import { lspDefinition, type LspDefinitionTarget } from "./client";
+import { getLspFeatureFlags } from "./lspFlags";
 import { flushLspDocumentSync } from "./lspDocuments";
 
 interface FileReadResult {
@@ -51,6 +52,9 @@ async function resolveDefinitionTarget(
   character: number,
   content?: string,
 ): Promise<LspDefinitionTarget | null> {
+  if (getLspFeatureFlags(filePath)?.definition === false) {
+    return null;
+  }
   if (content !== undefined) {
     await flushLspDocumentSync(language, filePath, content).catch(() => {});
   }
