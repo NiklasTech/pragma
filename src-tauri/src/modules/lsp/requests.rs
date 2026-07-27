@@ -714,6 +714,60 @@ mod tests {
         assert!(definition_target_from_response(Value::Null).is_none());
     }
 
+    #[cfg(not(windows))]
+    #[test]
+    fn definition_target_from_bare_location() {
+        let value = json!({
+            "uri": "file:///home/x/main.rs",
+            "range": { "start": { "line": 1, "character": 2 }, "end": { "line": 1, "character": 6 } }
+        });
+        let target = definition_target_from_response(value).unwrap();
+        assert_eq!(target.file_path, "/home/x/main.rs");
+        assert_eq!((target.line, target.character), (1, 2));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn definition_target_from_bare_location() {
+        let value = json!({
+            "uri": "file:///C:/project/main.rs",
+            "range": { "start": { "line": 1, "character": 2 }, "end": { "line": 1, "character": 6 } }
+        });
+        let target = definition_target_from_response(value).unwrap();
+        assert_eq!(target.file_path, "C:\\project\\main.rs");
+        assert_eq!((target.line, target.character), (1, 2));
+    }
+
+    #[test]
+    fn definition_target_rejects_malformed_locations() {
+        assert!(
+            definition_target_from_response(json!({ "uri": "file:///C:/project/main.rs" }))
+                .is_none()
+        );
+        assert!(definition_target_from_response(
+            json!({ "range": { "start": { "line": 0, "character": 0 } } })
+        )
+        .is_none());
+        assert!(definition_target_from_response(
+            json!([{ "uri": "file:///C:/project/main.rs", "range": { "start": {} } }])
+        )
+        .is_none());
+        assert!(definition_target_from_response(json!(42)).is_none());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn definition_target_ignores_entries_after_a_malformed_first_entry() {
+        let value = json!([
+            { "broken": true },
+            {
+                "uri": "file:///C:/project/main.rs",
+                "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }
+            }
+        ]);
+        assert!(definition_target_from_response(value).is_none());
+    }
+
     #[cfg(windows)]
     #[test]
     fn references_normalize_locations_and_links() {
