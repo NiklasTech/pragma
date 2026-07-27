@@ -491,6 +491,10 @@ mod tests {
 
             let request = read_frame(&mut server_reader).await;
             assert_eq!(request["method"], json!("shutdown"));
+            assert!(
+                request.get("id").is_some(),
+                "shutdown must be a request with an id"
+            );
             write_frame(
                 &mut server_writer,
                 json!({ "jsonrpc": "2.0", "id": request["id"], "result": null }),
@@ -499,6 +503,10 @@ mod tests {
 
             let notification = read_frame(&mut server_reader).await;
             assert_eq!(notification["method"], json!("exit"));
+            assert!(
+                notification.get("id").is_none(),
+                "exit must be a notification without an id"
+            );
         });
 
         client.shutdown().await.unwrap();
