@@ -92,7 +92,8 @@ Semantic Versioning (`MAJOR.MINOR.PATCH`), currently 0.x — breaking changes ar
 - Release contains any new feature → bump **minor** (0.2.0 → 0.3.0, patch resets to 0)
 - Only fixes/chores/dependencies → bump **patch** (0.2.0 → 0.2.1)
 - Release cadence is a judgment call: ship a minor release when a meaningful bundle of features is ready, ship patch releases anytime a fix should go out. Ten merged features must not mean ten releases.
-- Label PRs so Release Drafter resolves the next version automatically: `feat`/`feature`/`enhancement` → minor, `fix`/`bug` → patch (see `version-resolver` in `.github/release-drafter.yml`). Without labels it always falls back to patch.
+- **No release without an explicit user request.** Merging to `main` never triggers a version bump or release on its own. When the user asks for a feature or fix, implement it, label the PR, merge — done. Do not propose or start the release process unless the user explicitly asks for a release.
+- **Label every PR immediately at creation** so Release Drafter accumulates changes correctly and resolves the next version from the draft: `feat`/`feature`/`enhancement` → minor, `fix`/`bug` → patch, `chore`/`refactor`/`dependencies` → patch (see `version-resolver` in `.github/release-drafter.yml`). Without labels it always falls back to patch. The release decision is made later from the accumulated draft — what is bundled, not what a single PR contains.
 
 Release process:
 
