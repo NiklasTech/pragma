@@ -10,6 +10,7 @@ import { useGitStore } from "@/shared/stores/git";
 import { useDockerStore } from "@/shared/stores/docker";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
+import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 
 interface DirEntry {
   path: string;
@@ -44,6 +45,11 @@ export function useFileExplorer() {
   const { addRecentFolder, addRecentFile } = useSettingsStore();
 
   useEffect(() => {
+    // Keep the Rust folder-dedup registry in sync so a second instance
+    // opening the same folder focuses this window instead of duplicating it.
+    if (isWorkspaceWindow()) {
+      void invoke("update_window_folder", { folder: store.rootPath });
+    }
     if (store.rootPath) {
       setWorkspaceRoot(store.rootPath);
       setRepoPath(store.rootPath);

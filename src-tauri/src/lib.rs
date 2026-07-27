@@ -23,6 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_cli::init())
         .manage(PtyManager::new())
         .manage(RunManager::new())
+        .manage(window::OpenFolders::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -218,6 +219,7 @@ pub fn run() {
             cli::get_cli_project_path,
             window::create_external_window,
             window::close_external_window,
+            window::update_window_folder,
         ])
         .build(tauri::generate_context!());
 
