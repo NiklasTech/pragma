@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { isLspDocumentSynced, markLspDocumentSynced } from "./lspDocuments";
+import { isLspDocumentSynced, markLspDocumentSynced, unmarkLspDocument } from "./lspDocuments";
 import { findClosedFilePaths, startLspDidCloseWatcher } from "./didClose";
 
 const TEST_PATH = "C:/project/src/a.ts";
@@ -30,19 +30,30 @@ describe("findClosedFilePaths", () => {
 });
 
 describe("startLspDidCloseWatcher", () => {
+  const stops: Array<() => void> = [];
+
   beforeEach(() => {
     useEditorStore.setState({ tabs: [], tabStates: [], activeTabId: null, activeTabIds: {} });
     useSettingsStore.setState((state) => ({
       experimental: { ...state.experimental, lsp: true },
     }));
+    unmarkLspDocument(TEST_PATH);
+  });
+
+  afterEach(() => {
+    for (const stop of stops.splice(0)) {
+      stop();
+    }
   });
 
   it("invokes lsp_did_close for a synced file tab that is closed", () => {
     const calls: Array<{ cmd: string; args?: Record<string, unknown> }> = [];
-    const stop = startLspDidCloseWatcher((cmd, args) => {
-      calls.push({ cmd, args });
-      return Promise.resolve();
-    });
+    stops.push(
+      startLspDidCloseWatcher((cmd, args) => {
+        calls.push({ cmd, args });
+        return Promise.resolve();
+      }),
+    );
 
     openTestFile();
     markLspDocumentSynced(TEST_PATH);
@@ -52,20 +63,20 @@ describe("startLspDidCloseWatcher", () => {
       { cmd: "lsp_did_close", args: { language: "typescript", filePath: TEST_PATH } },
     ]);
     expect(isLspDocumentSynced(TEST_PATH)).toBe(false);
-    stop();
   });
 
   it("ignores closed tabs that were never synced", () => {
     const calls: unknown[] = [];
-    const stop = startLspDidCloseWatcher(() => {
-      calls.push(1);
-      return Promise.resolve();
-    });
+    stops.push(
+      startLspDidCloseWatcher(() => {
+        calls.push(1);
+        return Promise.resolve();
+      }),
+    );
 
     openTestFile();
     useEditorStore.getState().closeTab(TEST_PATH);
 
     expect(calls).toEqual([]);
-    stop();
   });
 });
