@@ -20,6 +20,15 @@ export function storeChannel(storeName: string, scope: string | null): string {
   return scope === null ? `pragma:store:${storeName}` : `pragma:store:${storeName}:${scope}`;
 }
 
+const registrationPromises: Promise<unknown>[] = [];
+
+/// Resolves once all store event listeners registered so far are active.
+/// Floating windows must await this before announcing readiness, otherwise
+/// the parent's snapshot can be emitted before their listeners exist.
+export function whenCrossWindowSyncReady(): Promise<unknown[]> {
+  return Promise.all(registrationPromises);
+}
+
 function shallowDiff<T extends object>(prev: T, next: T): Partial<T> | null {
   const diff: Partial<T> = {};
   let changed = false;
@@ -48,33 +57,37 @@ export function crossWindowSync<T extends object>(storeName: string, scope?: str
       let isReady = false;
       let lastState = get();
 
-      void listen(channel, (event) => {
-        const currentLabel = getWindowLabel();
-        const payload = event.payload as { source: string; partial: Partial<T> };
-        if (!currentLabel || payload.source === currentLabel) return;
-        isRemote = true;
-        set(payload.partial);
-        isRemote = false;
-      });
+      registrationPromises.push(
+        listen(channel, (event) => {
+          const currentLabel = getWindowLabel();
+          const payload = event.payload as { source: string; partial: Partial<T> };
+          if (!currentLabel || payload.source === currentLabel) return;
+          isRemote = true;
+          set(payload.partial);
+          isRemote = false;
+        }),
+      );
 
-      void listen(`${channel}:snapshot`, (event) => {
-        const currentLabel = getWindowLabel();
-        const payload = event.payload as { source: string; state: T };
-        if (!currentLabel || payload.source === currentLabel) return;
-        isRemote = true;
-        // Keep the local actions (functions) because the serialized snapshot
-        // cannot transport functions and would otherwise wipe them out.
-        const current = get();
-        const actions: Partial<T> = {};
-        for (const key of Object.keys(current) as Array<keyof T>) {
-          if (typeof current[key] === "function") {
-            actions[key] = current[key];
+      registrationPromises.push(
+        listen(`${channel}:snapshot`, (event) => {
+          const currentLabel = getWindowLabel();
+          const payload = event.payload as { source: string; state: T };
+          if (!currentLabel || payload.source === currentLabel) return;
+          isRemote = true;
+          // Keep the local actions (functions) because the serialized snapshot
+          // cannot transport functions and would otherwise wipe them out.
+          const current = get();
+          const actions: Partial<T> = {};
+          for (const key of Object.keys(current) as Array<keyof T>) {
+            if (typeof current[key] === "function") {
+              actions[key] = current[key];
+            }
           }
-        }
-        set({ ...payload.state, ...actions } as T, true);
-        isRemote = false;
-        isReady = true;
-      });
+          set({ ...payload.state, ...actions } as T, true);
+          isRemote = false;
+          isReady = true;
+        }),
+      );
 
       api.subscribe((newState) => {
         const currentLabel = getWindowLabel();

@@ -5,7 +5,6 @@ export interface LspCompletionItem {
   kind?: number;
   detail?: string;
   sortText?: string;
-  filterText?: string;
   insertText?: string;
   documentation?: unknown;
   [key: string]: unknown;

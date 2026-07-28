@@ -294,7 +294,7 @@ impl LspManager {
         let initialize_result = match client.initialize(params).await {
             Ok(result) => result,
             Err(e) => {
-                let _ = child.lock().await.kill().await;
+                let _ = child.lock().await.start_kill();
                 notification_handle.abort();
                 supervisor_handle.abort();
                 log_handle.abort();
@@ -309,7 +309,7 @@ impl LspManager {
         };
 
         if let Err(e) = client.initialized().await {
-            let _ = child.lock().await.kill().await;
+            let _ = child.lock().await.start_kill();
             notification_handle.abort();
             supervisor_handle.abort();
             log_handle.abort();
@@ -606,7 +606,7 @@ impl LspManager {
 
         if exited.is_err() {
             let mut child = server.child.lock().await;
-            let _ = child.kill().await;
+            let _ = child.start_kill();
         }
 
         server.notification_handle.abort();

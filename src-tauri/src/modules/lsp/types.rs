@@ -439,6 +439,28 @@ mod tests {
     }
 
     #[test]
+    fn definition_provider_accepts_object_form() {
+        let capabilities: ServerCapabilities = serde_json::from_value(
+            serde_json::json!({ "definitionProvider": { "workDoneProgress": true } }),
+        )
+        .unwrap();
+        assert!(capabilities.feature_flags().definition);
+    }
+
+    #[test]
+    fn false_providers_disable_features() {
+        let capabilities: ServerCapabilities = serde_json::from_value(
+            serde_json::json!({ "definitionProvider": false, "completionProvider": false }),
+        )
+        .unwrap();
+        let flags = capabilities.feature_flags();
+        assert!(!flags.definition);
+        assert!(!flags.completion);
+        assert!(!flags.completion_resolve);
+        assert!(flags.completion_trigger_characters.is_empty());
+    }
+
+    #[test]
     fn parses_hover_provider() {
         let capabilities: ServerCapabilities =
             serde_json::from_value(serde_json::json!({ "hoverProvider": true })).unwrap();
