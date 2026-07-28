@@ -274,17 +274,14 @@ pub fn normalize_completion_response(value: Value) -> Vec<LspCompletionItem> {
 }
 
 pub fn definition_target_from_response(value: Value) -> Option<DefinitionTarget> {
-    let first = match value {
-        Value::Array(mut items) => {
-            if items.is_empty() {
-                return None;
-            }
-            items.remove(0)
-        }
-        Value::Null => return None,
-        single => single,
-    };
+    match value {
+        Value::Array(items) => items.iter().find_map(definition_target_from_location),
+        Value::Null => None,
+        single => definition_target_from_location(&single),
+    }
+}
 
+fn definition_target_from_location(first: &Value) -> Option<DefinitionTarget> {
     let (uri, range) = if let Some(target_uri) = first.get("targetUri") {
         (
             target_uri.as_str()?.to_string(),
@@ -757,7 +754,7 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn definition_target_ignores_entries_after_a_malformed_first_entry() {
+    fn definition_target_skips_malformed_entries() {
         let value = json!([
             { "broken": true },
             {
@@ -765,7 +762,11 @@ mod tests {
                 "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }
             }
         ]);
-        assert!(definition_target_from_response(value).is_none());
+        let target = definition_target_from_response(value).unwrap();
+        assert_eq!(target.file_path, "C:\\project\\main.rs");
+        assert_eq!((target.line, target.character), (0, 0));
+
+        assert!(definition_target_from_response(json!([{ "broken": true }])).is_none());
     }
 
     #[cfg(windows)]
