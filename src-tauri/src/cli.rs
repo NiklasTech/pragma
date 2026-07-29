@@ -105,6 +105,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn extract_project_path_reads_positional_alongside_flags() {
+        let absolute = if cfg!(target_os = "windows") {
+            "C:\\projects\\pragma"
+        } else {
+            "/home/user/projects/pragma"
+        };
+        let mut path_arg = tauri_plugin_cli::ArgData::default();
+        path_arg.value = serde_json::Value::String(absolute.to_string());
+        path_arg.occurrences = 1;
+        let mut flag_arg = tauri_plugin_cli::ArgData::default();
+        flag_arg.value = serde_json::Value::Bool(true);
+        let mut matches = tauri_plugin_cli::Matches::default();
+        matches.args.insert("path".to_string(), path_arg);
+        matches.args.insert("some-flag".to_string(), flag_arg);
+        assert_eq!(extract_project_path(&matches), Some(absolute.to_string()));
+    }
+
+    #[test]
+    fn extract_project_path_returns_none_without_positional() {
+        let matches = tauri_plugin_cli::Matches::default();
+        assert_eq!(extract_project_path(&matches), None);
+    }
+
+    #[test]
     fn normalize_project_path_keeps_absolute_path() {
         let path = if cfg!(target_os = "windows") {
             "C:\\projects\\pragma"
@@ -184,6 +208,31 @@ mod tests {
             resolve_second_instance_path(&argv, cwd),
             Some(expected.to_string())
         );
+    }
+
+    #[test]
+    fn resolve_second_instance_path_finds_positional_after_flags() {
+        let absolute = if cfg!(target_os = "windows") {
+            "C:\\projects\\pragma"
+        } else {
+            "/home/user/projects/pragma"
+        };
+        let argv = vec![
+            "pragma".to_string(),
+            "--some-flag".to_string(),
+            absolute.to_string(),
+        ];
+        assert_eq!(
+            resolve_second_instance_path(&argv, "/ignored"),
+            Some(absolute.to_string())
+        );
+    }
+
+    // Intentional: a positional starting with '-' is treated as a flag and skipped.
+    #[test]
+    fn resolve_second_instance_path_skips_positional_starting_with_dash() {
+        let argv = vec!["pragma".to_string(), "-path-like-arg".to_string()];
+        assert_eq!(resolve_second_instance_path(&argv, "/tmp"), None);
     }
 
     #[test]

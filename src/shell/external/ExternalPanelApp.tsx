@@ -5,6 +5,7 @@ import { useGlobalShortcuts } from "@/shared/hooks/useGlobalShortcuts";
 import { useAppShortcutActions } from "@/app/useAppShortcutActions";
 import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
 import { useLayoutStore } from "@/shell/layout";
+import { whenCrossWindowSyncReady } from "@/shared/stores/sync/crossWindowSync";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { LayoutNode } from "@/shell/layout/tree/types";
@@ -33,7 +34,11 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
   useEffect(() => {
     const win = getCurrentWindow();
     const parent = new URLSearchParams(window.location.search).get("parent") ?? "main";
-    void emit("pragma:external:ready", { label: win.label, nodeId, parent });
+    // Announce readiness only after the store sync listeners are registered,
+    // otherwise the parent's snapshot can be emitted before we listen for it.
+    void whenCrossWindowSyncReady().then(() =>
+      emit("pragma:external:ready", { label: win.label, nodeId, parent }),
+    );
 
     const setupCloseListener = async () => {
       return win.onCloseRequested(async () => {

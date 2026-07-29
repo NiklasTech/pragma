@@ -274,17 +274,14 @@ pub fn normalize_completion_response(value: Value) -> Vec<LspCompletionItem> {
 }
 
 pub fn definition_target_from_response(value: Value) -> Option<DefinitionTarget> {
-    let first = match value {
-        Value::Array(mut items) => {
-            if items.is_empty() {
-                return None;
-            }
-            items.remove(0)
-        }
-        Value::Null => return None,
-        single => single,
-    };
+    match value {
+        Value::Array(items) => items.iter().find_map(definition_target_from_location),
+        Value::Null => None,
+        single => definition_target_from_location(&single),
+    }
+}
 
+fn definition_target_from_location(first: &Value) -> Option<DefinitionTarget> {
     let (uri, range) = if let Some(target_uri) = first.get("targetUri") {
         (
             target_uri.as_str()?.to_string(),
@@ -712,6 +709,64 @@ mod tests {
     fn definition_target_from_empty_response() {
         assert!(definition_target_from_response(json!([])).is_none());
         assert!(definition_target_from_response(Value::Null).is_none());
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn definition_target_from_bare_location() {
+        let value = json!({
+            "uri": "file:///home/x/main.rs",
+            "range": { "start": { "line": 1, "character": 2 }, "end": { "line": 1, "character": 6 } }
+        });
+        let target = definition_target_from_response(value).unwrap();
+        assert_eq!(target.file_path, "/home/x/main.rs");
+        assert_eq!((target.line, target.character), (1, 2));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn definition_target_from_bare_location() {
+        let value = json!({
+            "uri": "file:///C:/project/main.rs",
+            "range": { "start": { "line": 1, "character": 2 }, "end": { "line": 1, "character": 6 } }
+        });
+        let target = definition_target_from_response(value).unwrap();
+        assert_eq!(target.file_path, "C:\\project\\main.rs");
+        assert_eq!((target.line, target.character), (1, 2));
+    }
+
+    #[test]
+    fn definition_target_rejects_malformed_locations() {
+        assert!(
+            definition_target_from_response(json!({ "uri": "file:///C:/project/main.rs" }))
+                .is_none()
+        );
+        assert!(definition_target_from_response(
+            json!({ "range": { "start": { "line": 0, "character": 0 } } })
+        )
+        .is_none());
+        assert!(definition_target_from_response(
+            json!([{ "uri": "file:///C:/project/main.rs", "range": { "start": {} } }])
+        )
+        .is_none());
+        assert!(definition_target_from_response(json!(42)).is_none());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn definition_target_skips_malformed_entries() {
+        let value = json!([
+            { "broken": true },
+            {
+                "uri": "file:///C:/project/main.rs",
+                "range": { "start": { "line": 0, "character": 0 }, "end": { "line": 0, "character": 1 } }
+            }
+        ]);
+        let target = definition_target_from_response(value).unwrap();
+        assert_eq!(target.file_path, "C:\\project\\main.rs");
+        assert_eq!((target.line, target.character), (0, 0));
+
+        assert!(definition_target_from_response(json!([{ "broken": true }])).is_none());
     }
 
     #[cfg(windows)]

@@ -15,6 +15,8 @@ import {
   positionToLsp,
   setDefinitionLink,
 } from "./definition";
+import { clearLspFeatureFlags, setLspFeatureFlags } from "./lspFlags";
+import type { LspFeatureFlags } from "./client";
 import {
   getLspDocumentSentContent,
   markLspDocumentSynced,
@@ -69,6 +71,7 @@ describe("jumpToDefinition", () => {
     toastErrorMock.mockReset();
     unmarkLspDocument(FILE);
     unmarkLspDocument(OTHER);
+    clearLspFeatureFlags(FILE);
     invokeMock.mockResolvedValue(null);
     useEditorStore.setState({
       tabs: [
@@ -157,4 +160,39 @@ describe("jumpToDefinition", () => {
 
     expect(toastErrorMock).toHaveBeenCalledWith("server exploded");
   });
+
+  it("does not request a definition when the capability is disabled", async () => {
+    setLspFeatureFlags(FILE, { ...allFlags, definition: false });
+
+    await jumpToDefinition("typescript", FILE, 0, 5);
+
+    expect(lspDefinitionMock).not.toHaveBeenCalled();
+    expect(toastErrorMock).not.toHaveBeenCalled();
+    expect(useEditorStore.getState().tabStates.every((s) => !s.pendingScroll)).toBe(true);
+  });
+
+  it("still requests a definition while capabilities are not loaded yet", async () => {
+    lspDefinitionMock.mockResolvedValue({ filePath: FILE, line: 4, character: 9 });
+
+    await jumpToDefinition("typescript", FILE, 0, 5);
+
+    expect(lspDefinitionMock).toHaveBeenCalledWith("typescript", FILE, 0, 5);
+  });
 });
+
+const allFlags: LspFeatureFlags = {
+  completion: true,
+  completionResolve: false,
+  completionTriggerCharacters: [],
+  definition: true,
+  hover: true,
+  references: true,
+  formatting: true,
+  rename: true,
+  signatureHelp: true,
+  signatureHelpTriggerCharacters: [],
+  codeAction: true,
+  documentSymbol: true,
+  workspaceSymbol: true,
+  incrementalSync: true,
+};

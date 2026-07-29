@@ -74,6 +74,10 @@ export const useUpdaterStore = create<UpdaterStore>((set) => ({
   },
 
   restartApp: async () => {
-    await relaunch();
+    try {
+      await relaunch();
+    } catch (error) {
+      set({ state: { status: "error", message: errorMessage(error) } });
+    }
   },
 }));

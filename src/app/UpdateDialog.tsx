@@ -33,6 +33,8 @@ export function UpdateDialog() {
 
   const open = version !== null && (state.status !== "available" || version !== dismissedVersion);
 
+  const title = state.status === "ready-to-restart" ? "Update installed" : "Update available";
+
   const description =
     state.status === "downloading"
       ? `Version ${version} of Pragma is being installed.`
@@ -44,7 +46,7 @@ export function UpdateDialog() {
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && setDismissedVersion(version)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Update available</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
