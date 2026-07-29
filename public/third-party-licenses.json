@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-07-27T17:36:26.666Z",
-  "total": 64,
+  "generatedAt": "2026-07-29T21:51:00.929Z",
+  "total": 66,
   "entries": [
     {
       "name": "@types/node",
-      "version": "26.1.1",
+      "version": "26.1.2",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/node/v/26.1.1",
+      "url": "https://www.npmjs.com/package/@types/node/v/26.1.2",
       "source": "npm"
     },
     {
@@ -25,9 +25,9 @@
     },
     {
       "name": "@vitejs/plugin-react",
-      "version": "6.0.3",
+      "version": "6.0.4",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@vitejs/plugin-react/v/6.0.3",
+      "url": "https://www.npmjs.com/package/@vitejs/plugin-react/v/6.0.4",
       "source": "npm"
     },
     {
@@ -39,9 +39,9 @@
     },
     {
       "name": "ai",
-      "version": "7.0.32",
+      "version": "7.0.37",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.32",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.37",
       "source": "npm"
     },
     {
@@ -151,9 +151,9 @@
     },
     {
       "name": "libc",
-      "version": "0.2.186",
+      "version": "0.2.189",
       "license": "MIT OR Apache-2.0",
-      "url": "https://crates.io/crates/libc/0.2.186",
+      "url": "https://crates.io/crates/libc/0.2.189",
       "source": "rust"
     },
     {
@@ -193,16 +193,16 @@
     },
     {
       "name": "react",
-      "version": "19.2.7",
+      "version": "19.2.8",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react/v/19.2.7",
+      "url": "https://www.npmjs.com/package/react/v/19.2.8",
       "source": "npm"
     },
     {
       "name": "react-dom",
-      "version": "19.2.7",
+      "version": "19.2.8",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-dom/v/19.2.7",
+      "url": "https://www.npmjs.com/package/react-dom/v/19.2.8",
       "source": "npm"
     },
     {
@@ -367,6 +367,13 @@
       "source": "rust"
     },
     {
+      "name": "tauri-plugin-process",
+      "version": "2.3.1",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/tauri-plugin-process/2.3.1",
+      "source": "rust"
+    },
+    {
       "name": "tauri-plugin-single-instance",
       "version": "2.4.3",
       "license": "Apache-2.0 OR MIT",
@@ -381,6 +388,13 @@
       "source": "rust"
     },
     {
+      "name": "tauri-plugin-updater",
+      "version": "2.10.1",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/tauri-plugin-updater/2.10.1",
+      "source": "rust"
+    },
+    {
       "name": "tokio",
       "version": "1.53.1",
       "license": "MIT",
@@ -389,9 +403,9 @@
     },
     {
       "name": "tokio-util",
-      "version": "0.7.18",
+      "version": "0.7.19",
       "license": "MIT",
-      "url": "https://crates.io/crates/tokio-util/0.7.18",
+      "url": "https://crates.io/crates/tokio-util/0.7.19",
       "source": "rust"
     },
     {
