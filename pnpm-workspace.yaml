@@ -1,7 +1,7 @@
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@0.2.2
-  vitest: 4.1.9
-  vite-plus: 0.2.2
+  vitest: 4.1.10
+  vite-plus: 0.2.7
 overrides:
   vite: "catalog:"
   vitest: "catalog:"
