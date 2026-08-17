@@ -1,5 +1,5 @@
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.2
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.8
   vitest: 4.1.10
   vite-plus: 0.2.8
 overrides:
