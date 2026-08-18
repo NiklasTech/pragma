@@ -21,6 +21,7 @@ import {
   type DebugStackFrame,
   type DebugVariable,
 } from "./client";
+import { ensureAdapterForLanguage } from "./ensureAdapter";
 import {
   loadPersistedBreakpoints,
   mapDapEvent,
@@ -204,6 +205,12 @@ export const useDebugStore = create<DebugState & DebugActions>(
           sessionAdapter: config.debug.adapter,
           output: [],
         });
+
+        const adapter = await ensureAdapterForLanguage(config.debug.adapter);
+        if (!adapter) {
+          set({ status: "error", statusError: "Debug adapter is not available" });
+          return;
+        }
 
         try {
           await dapStart({

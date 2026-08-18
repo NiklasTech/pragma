@@ -1,5 +1,5 @@
 use crate::ai::cli::manager::enriched_path;
-use crate::modules::dap::types::DapAdapterConfig;
+use crate::modules::dap::types::{DapAdapterConfig, DapTransport};
 use crate::modules::lsp::manager::resolve_command;
 use crate::platform::new_tokio_command;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,8 @@ use tokio::sync::{mpsc, oneshot, Mutex};
 
 const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 const MAX_CONCURRENT_REQUESTS: usize = 64;
+const TCP_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+const TCP_CONNECT_RETRY: Duration = Duration::from_millis(100);
 
 #[derive(Debug, Clone, Serialize)]
 struct DapRequest {
@@ -146,6 +148,20 @@ impl DapClient {
         mpsc::UnboundedReceiver<DapEventMessage>,
         mpsc::UnboundedReceiver<String>,
     )> {
+        match config.transport {
+            DapTransport::Stdio => Self::start_stdio(config).await,
+            DapTransport::Tcp => Self::start_tcp(config).await,
+        }
+    }
+
+    async fn start_stdio(
+        config: DapAdapterConfig,
+    ) -> Result<(
+        Self,
+        Child,
+        mpsc::UnboundedReceiver<DapEventMessage>,
+        mpsc::UnboundedReceiver<String>,
+    )> {
         if config.command.is_empty() {
             return Err(DapError::Serialization("command is required".to_string()));
         }
@@ -165,6 +181,53 @@ impl DapClient {
         let stderr = child.stderr.take().ok_or(DapError::MissingStdio)?;
 
         let (client, events) = Self::with_io(stdout, stdin, DEFAULT_TIMEOUT_MS).await?;
+        let stderr_lines = spawn_stderr_reader(stderr);
+
+        Ok((client, child, events, stderr_lines))
+    }
+
+    /// Spawn a TCP adapter (e.g. CodeLLDB): pick a free local port, substitute
+    /// the `{port}` placeholder in the args, then connect once the adapter
+    /// listens. The DAP framing is identical to stdio.
+    async fn start_tcp(
+        config: DapAdapterConfig,
+    ) -> Result<(
+        Self,
+        Child,
+        mpsc::UnboundedReceiver<DapEventMessage>,
+        mpsc::UnboundedReceiver<String>,
+    )> {
+        if config.command.is_empty() {
+            return Err(DapError::Serialization("command is required".to_string()));
+        }
+
+        let port = std::net::TcpListener::bind(("127.0.0.1", 0))
+            .and_then(|listener| listener.local_addr())
+            .map_err(DapError::Spawn)?
+            .port();
+        let args: Vec<String> = config
+            .args
+            .iter()
+            .map(|arg| arg.replace("{port}", &port.to_string()))
+            .collect();
+
+        let path = enriched_path();
+        let command = resolve_command(&config.command, &path);
+        let mut cmd = new_tokio_command(&command);
+        cmd.args(&args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .env("PATH", &path);
+
+        let mut child = cmd.spawn()?;
+        let stderr = child.stderr.take().ok_or(DapError::MissingStdio)?;
+
+        let stream = connect_with_retry(port).await.inspect_err(|_| {
+            let _ = child.start_kill();
+        })?;
+        let (reader, writer) = stream.into_split();
+        let (client, events) = Self::with_io(reader, writer, DEFAULT_TIMEOUT_MS).await?;
         let stderr_lines = spawn_stderr_reader(stderr);
 
         Ok((client, child, events, stderr_lines))
@@ -244,6 +307,21 @@ impl DapClient {
                 let mut pending = self.inner.pending.lock().await;
                 pending.remove(&seq);
                 Err(DapError::Timeout)
+            }
+        }
+    }
+}
+
+async fn connect_with_retry(port: u16) -> std::result::Result<tokio::net::TcpStream, DapError> {
+    let deadline = std::time::Instant::now() + TCP_CONNECT_TIMEOUT;
+    loop {
+        match tokio::net::TcpStream::connect(("127.0.0.1", port)).await {
+            Ok(stream) => return Ok(stream),
+            Err(err) => {
+                if std::time::Instant::now() >= deadline {
+                    return Err(DapError::Spawn(err));
+                }
+                tokio::time::sleep(TCP_CONNECT_RETRY).await;
             }
         }
     }

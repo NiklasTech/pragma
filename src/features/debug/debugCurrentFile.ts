@@ -2,7 +2,6 @@ import { toast } from "sonner";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { detectLanguage } from "@/shared/lib/language";
-import { dapListAdapters } from "./client";
 import { useDebugStore } from "./store";
 
 export interface DebugFileTarget {
@@ -17,6 +16,8 @@ export function debugTargetForLanguage(language: string | undefined): DebugFileT
     case "javascript":
     case "typescript":
       return { adapter: "node", runtime: "node" };
+    case "rust":
+      return { adapter: "lldb", runtime: "" };
     default:
       return null;
   }
@@ -37,18 +38,16 @@ export async function debugCurrentFile(): Promise<void> {
     return;
   }
 
-  const workspaceRoot = useRunConfigStore.getState().workspaceRoot;
-  if (!workspaceRoot) {
-    toast.error("No workspace folder open");
+  if (language === "rust") {
+    toast.info(
+      "Rust requires a compiled binary — use a run config with debug adapter 'lldb' and the binary as command (e.g. target/debug/myapp.exe)",
+    );
     return;
   }
 
-  const adapters = await dapListAdapters().catch(() => []);
-  const adapter = adapters.find((a) => a.id === target.adapter);
-  if (adapter && !adapter.available) {
-    toast.error(
-      `Debug adapter '${adapter.label}' is not installed. Use the Install button in the Debug panel.`,
-    );
+  const workspaceRoot = useRunConfigStore.getState().workspaceRoot;
+  if (!workspaceRoot) {
+    toast.error("No workspace folder open");
     return;
   }
 

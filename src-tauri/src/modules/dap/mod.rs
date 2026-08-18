@@ -1,24 +1,39 @@
 pub mod client;
+pub mod install;
 pub mod manager;
 pub mod types;
 
 pub use manager::DapManager;
 pub use types::{
-    DapAdapterInfo, DapBreakpoint, DapEvaluateResult, DapFileBreakpoints, DapInstallResult,
-    DapScope, DapStackFrame, DapStartRequest, DapVariable,
+    DapAdapterInfo, DapBreakpoint, DapEnsureResult, DapEvaluateResult, DapFileBreakpoints,
+    DapInstallResult, DapScope, DapStackFrame, DapStartRequest, DapVariable,
 };
 
 #[tauri::command]
-pub async fn dap_list_adapters() -> Result<Vec<DapAdapterInfo>, String> {
-    Ok(DapManager::list_adapters().await)
+pub async fn dap_list_adapters(app: tauri::AppHandle) -> Result<Vec<DapAdapterInfo>, String> {
+    Ok(DapManager::list_adapters(&app).await)
 }
 
 #[tauri::command]
-pub async fn dap_install_adapter(adapter_id: String) -> Result<DapInstallResult, String> {
+pub async fn dap_install_adapter(
+    app: tauri::AppHandle,
+    adapter_id: String,
+) -> Result<DapInstallResult, String> {
     if adapter_id.is_empty() {
         return Err("adapter_id is required".to_string());
     }
-    DapManager::install_adapter(&adapter_id).await
+    DapManager::install_adapter(&app, &adapter_id).await
+}
+
+#[tauri::command]
+pub async fn dap_ensure_adapter(
+    app: tauri::AppHandle,
+    language: String,
+) -> Result<DapEnsureResult, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    DapManager::ensure_adapter(&app, &language).await
 }
 
 #[tauri::command]
