@@ -18,6 +18,14 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DebugConfig {
+    pub adapter: String,
+    #[serde(default)]
+    pub request: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RunConfig {
     #[serde(default)]
     pub id: Option<String>,
@@ -34,6 +42,8 @@ pub struct RunConfig {
     pub icon: Option<String>,
     #[serde(default)]
     pub detect: Option<String>,
+    #[serde(default)]
+    pub debug: Option<DebugConfig>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -97,7 +107,7 @@ impl RunManager {
 
 // -- Helpers -------------------------------------------------------------------
 
-fn resolve_cwd(cwd: Option<&str>, workspace_root: &str) -> String {
+pub(crate) fn resolve_cwd(cwd: Option<&str>, workspace_root: &str) -> String {
     match cwd {
         Some(path) if path.contains("${workspaceRoot}") => {
             path.replace("${workspaceRoot}", workspace_root)
@@ -107,7 +117,7 @@ fn resolve_cwd(cwd: Option<&str>, workspace_root: &str) -> String {
     }
 }
 
-fn parse_command(command: &str) -> (String, Vec<String>) {
+pub(crate) fn parse_command(command: &str) -> (String, Vec<String>) {
     let trimmed = command.trim();
     if trimmed.is_empty() {
         return (String::new(), Vec::new());
@@ -394,6 +404,7 @@ fn detect_package_json_suggestions(workspace_root: &str) -> Vec<RunConfig> {
                 auto_restart: false,
                 icon: Some("terminal".to_string()),
                 detect: Some("package.json".to_string()),
+                debug: None,
             });
         }
     }
@@ -427,6 +438,7 @@ fn detect_vite_suggestion(workspace_root: &str) -> Option<RunConfig> {
         auto_restart: false,
         icon: Some("lightning".to_string()),
         detect: Some("vite.config.*".to_string()),
+        debug: None,
     })
 }
 
@@ -447,6 +459,7 @@ fn detect_tauri_suggestion(workspace_root: &str) -> Option<RunConfig> {
         auto_restart: false,
         icon: Some("desktop".to_string()),
         detect: Some("src-tauri/Cargo.toml".to_string()),
+        debug: None,
     })
 }
 
@@ -470,6 +483,7 @@ fn detect_python_suggestion(workspace_root: &str) -> Option<RunConfig> {
             auto_restart: false,
             icon: Some("snake".to_string()),
             detect: Some("manage.py".to_string()),
+            debug: None,
         });
     }
 

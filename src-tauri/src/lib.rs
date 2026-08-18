@@ -6,6 +6,7 @@ pub mod platform;
 pub mod window;
 
 use ai::acp::AcpSessionManager;
+use modules::dap::DapManager;
 use modules::lsp::LspManager;
 use modules::pty::PtyManager;
 use modules::run::RunManager;
@@ -62,6 +63,7 @@ pub fn run() {
 
             app.manage(AcpSessionManager::new(app.handle().clone()));
             app.manage(LspManager::managed(app.handle().clone()));
+            app.manage(DapManager::managed(app.handle().clone()));
 
             let project_path = app
                 .cli()
@@ -145,6 +147,19 @@ pub fn run() {
             modules::lsp::lsp_workspace_symbol,
             modules::lsp::lsp_did_close,
             modules::lsp::lsp_server_capabilities,
+            modules::dap::dap_list_adapters,
+            modules::dap::dap_start,
+            modules::dap::dap_stop,
+            modules::dap::dap_set_breakpoints,
+            modules::dap::dap_continue,
+            modules::dap::dap_pause,
+            modules::dap::dap_next,
+            modules::dap::dap_step_in,
+            modules::dap::dap_step_out,
+            modules::dap::dap_stack_trace,
+            modules::dap::dap_scopes,
+            modules::dap::dap_variables,
+            modules::dap::dap_evaluate,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
             modules::mcp::mcp_list_servers,
@@ -241,6 +256,9 @@ pub fn run() {
                     }
                     if let Some(lsp_manager) = app_handle.try_state::<LspManager>() {
                         tauri::async_runtime::block_on(lsp_manager.shutdown_all());
+                    }
+                    if let Some(dap_manager) = app_handle.try_state::<DapManager>() {
+                        tauri::async_runtime::block_on(dap_manager.shutdown_all());
                     }
                 }
             });

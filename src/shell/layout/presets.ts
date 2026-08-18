@@ -105,7 +105,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       position: "right",
       width: 280,
       collapsed: false,
-      tab: "git-status",
+      tab: "debug",
     },
     ai: { mode: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
