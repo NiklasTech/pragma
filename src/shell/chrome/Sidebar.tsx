@@ -1,6 +1,7 @@
 import { useLayoutStore } from "@/shell/layout/store";
 import { cn } from "@/shared/lib/utils";
 import {
+  Bug,
   Cube,
   Files,
   GitBranch,
@@ -20,6 +21,7 @@ import {
   SearchPanel,
 } from "@/features/sidebar/components";
 import { AgentPanel } from "@/features/agent/components/AgentPanel";
+import { DebugPanel } from "@/features/debug/components/DebugPanel";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 
 const tabs = [
@@ -29,6 +31,7 @@ const tabs = [
   { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
   { id: "docker" as const, icon: Cube, label: "Docker" },
   { id: "processes" as const, icon: Terminal, label: "Processes" },
+  { id: "debug" as const, icon: Bug, label: "Debug" },
   { id: "agent" as const, icon: MagicWand, label: "Agent" },
 ];
 
@@ -165,6 +168,7 @@ export function SidebarContent() {
           {sidebar.tab === "git-status" && <GitStatus />}
           {sidebar.tab === "docker" && <DockerPanel />}
           {sidebar.tab === "processes" && <ProcessManagerPanel />}
+          {sidebar.tab === "debug" && <DebugPanel />}
           {sidebar.tab === "agent" && <AgentPanel />}
         </div>
         {activeFilePath && (

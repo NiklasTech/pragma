@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
+  Bug,
   Play,
   Stop,
   ArrowCounterClockwise,
@@ -9,6 +10,7 @@ import {
   Terminal,
 } from "@phosphor-icons/react";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
+import { useDebugStore } from "@/features/debug/store";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout/store";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
@@ -115,6 +117,11 @@ export function RunConfigWidget() {
     [restartProcess],
   );
 
+  const handleDebug = useCallback((config: RunConfig) => {
+    void useDebugStore.getState().startSession(config);
+    setDropdownOpen(false);
+  }, []);
+
   const handleOpenOutput = useCallback(
     (id: string) => {
       setActiveProcess(id);
@@ -200,18 +207,30 @@ export function RunConfigWidget() {
                           </button>
                         </>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => (proc ? handleRestart(proc.id) : handleStart(config))}
-                          className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-success"
-                          title={proc ? "Restart" : "Start"}
-                        >
-                          {proc ? (
-                            <ArrowCounterClockwise size={12} />
-                          ) : (
-                            <Play size={12} weight="fill" />
+                        <>
+                          {config.debug && (
+                            <button
+                              type="button"
+                              onClick={() => handleDebug(config)}
+                              className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-primary"
+                              title={`Debug with ${config.debug.adapter}`}
+                            >
+                              <Bug size={12} />
+                            </button>
                           )}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => (proc ? handleRestart(proc.id) : handleStart(config))}
+                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-success"
+                            title={proc ? "Restart" : "Start"}
+                          >
+                            {proc ? (
+                              <ArrowCounterClockwise size={12} />
+                            ) : (
+                              <Play size={12} weight="fill" />
+                            )}
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>

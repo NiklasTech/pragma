@@ -7,6 +7,7 @@ export type SidebarTab =
   | "git-status"
   | "docker"
   | "processes"
+  | "debug"
   | "agent";
 
 export type AIMode = "hidden" | "floating" | "drawer-left" | "drawer-right" | "bottom-sheet";
