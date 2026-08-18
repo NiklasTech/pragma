@@ -1,15 +1,18 @@
 use crate::modules::dap::client::{DapClient, DapEventMessage};
+use crate::modules::dap::install::{self, InstallSpec, InstallStage};
 use crate::modules::dap::types::{
-    build_launch_arguments, DapAdapterConfig, DapAdapterInfo, DapBreakpoint, DapEvaluateResult,
-    DapEvent, DapFileBreakpoints, DapInitializeArguments, DapInstallResult, DapScope,
-    DapSessionStatus, DapStackFrame, DapStartRequest, DapStatusEvent, DapVariable,
+    build_launch_arguments, DapAdapterConfig, DapAdapterInfo, DapBreakpoint, DapEnsureResult,
+    DapEvaluateResult, DapEvent, DapFileBreakpoints, DapInitializeArguments, DapInstallResult,
+    DapScope, DapSessionStatus, DapStackFrame, DapStartRequest, DapStatusEvent, DapTransport,
+    DapVariable,
 };
 use crate::modules::run::{parse_command, resolve_cwd};
 use crate::platform::resolve_program;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::process::Child;
 use tokio::sync::{Mutex, RwLock};
 
@@ -18,35 +21,16 @@ const DISCONNECT_TIMEOUT_MS: u64 = 2_000;
 const EXIT_WAIT_TIMEOUT: Duration = Duration::from_secs(1);
 const INSTALL_TIMEOUT: Duration = Duration::from_secs(180);
 
-struct InstallCommand {
-    program: &'static str,
-    args: &'static [&'static str],
-}
-
-// Windows resolves `python` reliably via resolve_program, while a bare `pip`
-// is often missing from PATH; elsewhere `pip` is the conventional entrypoint.
-#[cfg(target_os = "windows")]
-const PYTHON_INSTALL: InstallCommand = InstallCommand {
-    program: "python",
-    args: &["-m", "pip", "install", "debugpy"],
-};
-#[cfg(not(target_os = "windows"))]
-const PYTHON_INSTALL: InstallCommand = InstallCommand {
-    program: "pip",
-    args: &["install", "debugpy"],
-};
-
-const NODE_INSTALL: InstallCommand = InstallCommand {
-    program: "npm",
-    args: &["install", "-g", "vscode-js-debug"],
-};
+// Pinned CodeLLDB release; bump deliberately, never "latest".
+const CODELLDB_TAG: &str = "v1.11.5";
 
 struct AdapterEntry {
     id: &'static str,
     label: &'static str,
     dap_id: &'static str,
+    languages: &'static [&'static str],
     install_hint: Option<&'static str>,
-    install: Option<&'static InstallCommand>,
+    install: Option<InstallSpec>,
 }
 
 const ADAPTERS: &[AdapterEntry] = &[
@@ -54,17 +38,58 @@ const ADAPTERS: &[AdapterEntry] = &[
         id: "node",
         label: "Node.js (vscode-js-debug)",
         dap_id: "pwa-node",
+        languages: &["javascript", "typescript"],
         install_hint: Some("npm install -g vscode-js-debug"),
-        install: Some(&NODE_INSTALL),
+        install: Some(InstallSpec::Npm {
+            package: "vscode-js-debug",
+        }),
     },
     AdapterEntry {
         id: "python",
         label: "Python (debugpy)",
         dap_id: "python",
+        languages: &["python"],
         install_hint: Some("pip install debugpy"),
-        install: Some(&PYTHON_INSTALL),
+        install: Some(InstallSpec::Pip { package: "debugpy" }),
+    },
+    AdapterEntry {
+        id: "lldb",
+        label: "CodeLLDB",
+        dap_id: "lldb",
+        languages: &["rust", "c", "cpp"],
+        install_hint: Some("Downloaded automatically from GitHub releases"),
+        install: Some(InstallSpec::GitHubRelease {
+            repo: "vadimcn/codelldb",
+            tag: CODELLDB_TAG,
+            asset_prefix: "codelldb",
+        }),
     },
 ];
+
+/// Resolve a language id (or an adapter id directly) to its adapter.
+fn adapter_for_language(language: &str) -> Option<&'static AdapterEntry> {
+    let normalized = language.to_ascii_lowercase();
+    ADAPTERS.iter().find(|a| a.id == normalized).or_else(|| {
+        ADAPTERS
+            .iter()
+            .find(|a| a.languages.contains(&normalized.as_str()))
+    })
+}
+
+/// Managed adapters live outside the workspace: `<app_local_data>/adapters/`.
+fn adapters_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| format!("Cannot resolve app data dir: {e}"))?
+        .join("adapters"))
+}
+
+fn managed_lldb_binary(adapters_dir: &Path) -> PathBuf {
+    adapters_dir
+        .join("lldb")
+        .join(install::codelldb_binary_relative())
+}
 
 /// Resolves an adapter id to a spawnable command.
 ///
@@ -72,7 +97,9 @@ const ADAPTERS: &[AdapterEntry] = &[
 /// `dapDebugServer.js` entry (run through `node`); otherwise the
 /// `js-debug-dap` binary from the `vscode-js-debug` npm package is used.
 /// Python: `python -m debugpy.adapter` from the `debugpy` package.
-fn resolve_adapter(id: &str) -> Option<DapAdapterConfig> {
+/// CodeLLDB: `PRAGMA_CODELLDB_PATH` or a `codelldb` on PATH win over the
+/// managed copy under the adapters dir; it speaks DAP over TCP (`--port`).
+fn resolve_adapter(id: &str, adapters_dir: Option<&Path>) -> Option<DapAdapterConfig> {
     match id {
         "node" => {
             if let Ok(path) = std::env::var("PRAGMA_JS_DEBUG_PATH") {
@@ -80,23 +107,61 @@ fn resolve_adapter(id: &str) -> Option<DapAdapterConfig> {
                     return Some(DapAdapterConfig {
                         command: "node".to_string(),
                         args: vec![path],
+                        transport: DapTransport::Stdio,
                     });
                 }
             }
             Some(DapAdapterConfig {
                 command: "js-debug-dap".to_string(),
                 args: Vec::new(),
+                transport: DapTransport::Stdio,
             })
         }
         "python" => Some(DapAdapterConfig {
             command: "python".to_string(),
             args: vec!["-m".to_string(), "debugpy.adapter".to_string()],
+            transport: DapTransport::Stdio,
         }),
+        "lldb" => {
+            let args = vec!["--port".to_string(), "{port}".to_string()];
+            if let Ok(path) = std::env::var("PRAGMA_CODELLDB_PATH") {
+                if !path.is_empty() {
+                    return Some(DapAdapterConfig {
+                        command: path,
+                        args,
+                        transport: DapTransport::Tcp,
+                    });
+                }
+            }
+            if resolve_program("codelldb").is_ok() {
+                return Some(DapAdapterConfig {
+                    command: "codelldb".to_string(),
+                    args,
+                    transport: DapTransport::Tcp,
+                });
+            }
+            if let Some(dir) = adapters_dir {
+                let managed = managed_lldb_binary(dir);
+                if managed.is_file() {
+                    return Some(DapAdapterConfig {
+                        command: managed.to_string_lossy().to_string(),
+                        args,
+                        transport: DapTransport::Tcp,
+                    });
+                }
+            }
+            // Fall back to a bare name so the spawn error names the binary.
+            Some(DapAdapterConfig {
+                command: "codelldb".to_string(),
+                args,
+                transport: DapTransport::Tcp,
+            })
+        }
         _ => None,
     }
 }
 
-async fn check_adapter_available(id: &str) -> bool {
+async fn check_adapter_available(id: &str, adapters_dir: Option<&Path>) -> bool {
     match id {
         "node" => {
             if let Ok(path) = std::env::var("PRAGMA_JS_DEBUG_PATH") {
@@ -118,8 +183,32 @@ async fn check_adapter_available(id: &str) -> bool {
                 .await;
             matches!(output, Ok(out) if out.status.success())
         }
+        "lldb" => {
+            if let Ok(path) = std::env::var("PRAGMA_CODELLDB_PATH") {
+                if !path.is_empty() {
+                    return std::path::Path::new(&path).is_file();
+                }
+            }
+            resolve_program("codelldb").is_ok()
+                || adapters_dir
+                    .map(|dir| managed_lldb_binary(dir).is_file())
+                    .unwrap_or(false)
+        }
         _ => false,
     }
+}
+
+/// Last non-empty stderr lines, for compact error reporting.
+fn stderr_tail(stderr: &str) -> String {
+    let lines: Vec<&str> = stderr.lines().filter(|l| !l.trim().is_empty()).collect();
+    lines
+        .iter()
+        .rev()
+        .take(3)
+        .rev()
+        .copied()
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 struct LaunchParams<'a> {
@@ -161,52 +250,155 @@ impl DapManager {
         Self::new(app_handle)
     }
 
-    pub async fn list_adapters() -> Vec<DapAdapterInfo> {
+    pub async fn list_adapters(app: &AppHandle) -> Vec<DapAdapterInfo> {
+        let dir = adapters_dir(app).ok();
         let mut infos = Vec::with_capacity(ADAPTERS.len());
         for entry in ADAPTERS {
             infos.push(DapAdapterInfo {
                 id: entry.id.to_string(),
                 label: entry.label.to_string(),
-                available: check_adapter_available(entry.id).await,
+                available: check_adapter_available(entry.id, dir.as_deref()).await,
                 install_hint: entry.install_hint.map(|h| h.to_string()),
             });
         }
         infos
     }
 
+    /// Run the adapter's install spec, emitting `dap_install_progress` events.
+    /// Returns the captured stdout/stderr/exit code for command-based specs.
     pub async fn install_adapter(
+        app: &AppHandle,
         adapter_id: &str,
     ) -> std::result::Result<DapInstallResult, String> {
         let entry = ADAPTERS
             .iter()
             .find(|a| a.id == adapter_id)
             .ok_or_else(|| format!("No debug adapter registered for '{adapter_id}'"))?;
-        let install = entry
+        let spec = entry
             .install
             .ok_or_else(|| format!("No install command for adapter '{adapter_id}'"))?;
 
-        let program = resolve_program(install.program)
-            .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?;
-        let output = tokio::time::timeout(
-            INSTALL_TIMEOUT,
-            crate::platform::new_tokio_command(&program)
-                .args(install.args)
-                .output(),
-        )
-        .await
-        .map_err(|_| {
-            format!(
-                "Install of '{}' timed out after {}s",
-                entry.label,
-                INSTALL_TIMEOUT.as_secs()
-            )
-        })?
-        .map_err(|e| format!("Failed to run '{}': {e}", install.program))?;
+        match spec {
+            InstallSpec::GitHubRelease {
+                repo,
+                tag,
+                asset_prefix,
+            } => {
+                let dir = adapters_dir(app)?;
+                let result = install::install_from_github(
+                    app,
+                    entry.id,
+                    repo,
+                    tag,
+                    asset_prefix,
+                    &dir,
+                    &install::codelldb_binary_relative(),
+                )
+                .await;
+                match result {
+                    Ok(()) => {
+                        install::emit_progress(
+                            app,
+                            entry.id,
+                            InstallStage::Done,
+                            None,
+                            "Installed",
+                        );
+                        Ok(DapInstallResult {
+                            stdout: format!("Installed '{}' to {}", entry.label, dir.display()),
+                            stderr: String::new(),
+                            exit_code: 0,
+                        })
+                    }
+                    Err(e) => {
+                        install::emit_progress(app, entry.id, InstallStage::Error, None, &e);
+                        Ok(DapInstallResult {
+                            stdout: String::new(),
+                            stderr: e,
+                            exit_code: -1,
+                        })
+                    }
+                }
+            }
+            spec => {
+                let (program, args) = install::spec_command(&spec)
+                    .ok_or_else(|| format!("No install command for adapter '{adapter_id}'"))?;
 
-        Ok(DapInstallResult {
-            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
-            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-            exit_code: output.status.code().unwrap_or(-1),
+                install::emit_progress(
+                    app,
+                    entry.id,
+                    InstallStage::Installing,
+                    None,
+                    format!("Running {} {}", program, args.join(" ")),
+                );
+                let program_path = resolve_program(program)
+                    .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?;
+                let output = tokio::time::timeout(
+                    INSTALL_TIMEOUT,
+                    crate::platform::new_tokio_command(&program_path)
+                        .args(&args)
+                        .output(),
+                )
+                .await
+                .map_err(|_| {
+                    format!(
+                        "Install of '{}' timed out after {}s",
+                        entry.label,
+                        INSTALL_TIMEOUT.as_secs()
+                    )
+                })?
+                .map_err(|e| format!("Failed to run '{program}': {e}"))?;
+
+                let result = DapInstallResult {
+                    stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+                    stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+                    exit_code: output.status.code().unwrap_or(-1),
+                };
+                let stage = if result.exit_code == 0 {
+                    InstallStage::Done
+                } else {
+                    InstallStage::Error
+                };
+                install::emit_progress(
+                    app,
+                    entry.id,
+                    stage,
+                    None,
+                    if result.exit_code == 0 {
+                        "Installed".to_string()
+                    } else {
+                        stderr_tail(&result.stderr)
+                    },
+                );
+                Ok(result)
+            }
+        }
+    }
+
+    /// Resolve the adapter for a language, install it when missing, and report
+    /// whether it is usable afterwards.
+    pub async fn ensure_adapter(
+        app: &AppHandle,
+        language: &str,
+    ) -> std::result::Result<DapEnsureResult, String> {
+        let entry = adapter_for_language(language)
+            .ok_or_else(|| format!("No debug adapter for language '{language}'"))?;
+        let dir = adapters_dir(app).ok();
+
+        if check_adapter_available(entry.id, dir.as_deref()).await {
+            return Ok(DapEnsureResult {
+                adapter_id: entry.id.to_string(),
+                installed: false,
+                available: true,
+            });
+        }
+
+        Self::install_adapter(app, entry.id).await?;
+        let available = check_adapter_available(entry.id, dir.as_deref()).await;
+        Ok(DapEnsureResult {
+            adapter_id: entry.id.to_string(),
+            installed: true,
+            available,
         })
     }
 
@@ -226,10 +418,11 @@ impl DapManager {
             .find(|a| a.id == adapter)
             .ok_or_else(|| format!("No debug adapter registered for '{adapter}'"))?;
 
-        let config = resolve_adapter(adapter)
+        let adapters_dir = adapters_dir(&self.app_handle).ok();
+        let config = resolve_adapter(adapter, adapters_dir.as_deref())
             .ok_or_else(|| format!("No debug adapter registered for '{adapter}'"))?;
 
-        if !check_adapter_available(adapter).await {
+        if !check_adapter_available(adapter, adapters_dir.as_deref()).await {
             let hint = entry
                 .install_hint
                 .map(|h| format!(" Install it with: {h}"))
@@ -681,43 +874,80 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_adapter_has_an_install_command() {
+    fn every_adapter_has_an_install_spec() {
         for entry in ADAPTERS {
-            let install = entry
-                .install
-                .unwrap_or_else(|| panic!("adapter '{}' has no install command", entry.id));
-            assert!(!install.program.is_empty());
-            assert!(!install.args.is_empty());
+            assert!(
+                entry.install.is_some(),
+                "adapter '{}' has no install spec",
+                entry.id
+            );
         }
     }
 
     #[test]
-    fn python_install_matches_platform() {
+    fn language_resolution_maps_registry_languages() {
+        assert_eq!(adapter_for_language("python").unwrap().id, "python");
+        assert_eq!(adapter_for_language("javascript").unwrap().id, "node");
+        assert_eq!(adapter_for_language("typescript").unwrap().id, "node");
+        assert_eq!(adapter_for_language("rust").unwrap().id, "lldb");
+        assert_eq!(adapter_for_language("c").unwrap().id, "lldb");
+        assert_eq!(adapter_for_language("cpp").unwrap().id, "lldb");
+    }
+
+    #[test]
+    fn language_resolution_accepts_adapter_ids() {
+        assert_eq!(adapter_for_language("lldb").unwrap().id, "lldb");
+        assert_eq!(adapter_for_language("node").unwrap().id, "node");
+        assert!(adapter_for_language("ruby").is_none());
+    }
+
+    #[test]
+    fn python_install_is_pip() {
         let entry = ADAPTERS.iter().find(|a| a.id == "python").unwrap();
-        let install = entry.install.unwrap();
-        #[cfg(target_os = "windows")]
-        {
-            assert_eq!(install.program, "python");
-            assert_eq!(install.args, &["-m", "pip", "install", "debugpy"]);
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            assert_eq!(install.program, "pip");
-            assert_eq!(install.args, &["install", "debugpy"]);
+        assert!(matches!(
+            entry.install,
+            Some(InstallSpec::Pip { package: "debugpy" })
+        ));
+    }
+
+    #[test]
+    fn node_install_is_npm() {
+        let entry = ADAPTERS.iter().find(|a| a.id == "node").unwrap();
+        assert!(matches!(
+            entry.install,
+            Some(InstallSpec::Npm {
+                package: "vscode-js-debug"
+            })
+        ));
+    }
+
+    #[test]
+    fn lldb_install_is_a_pinned_github_release() {
+        let entry = ADAPTERS.iter().find(|a| a.id == "lldb").unwrap();
+        match entry.install {
+            Some(InstallSpec::GitHubRelease {
+                repo,
+                tag,
+                asset_prefix,
+            }) => {
+                assert_eq!(repo, "vadimcn/codelldb");
+                assert!(tag.starts_with('v'), "tag must be pinned, got '{tag}'");
+                assert_eq!(asset_prefix, "codelldb");
+            }
+            other => panic!("lldb install spec must be a GitHub release, got {other:?}"),
         }
     }
 
     #[test]
-    fn node_install_uses_npm_global() {
-        let entry = ADAPTERS.iter().find(|a| a.id == "node").unwrap();
-        let install = entry.install.unwrap();
-        assert_eq!(install.program, "npm");
-        assert_eq!(install.args, &["install", "-g", "vscode-js-debug"]);
+    fn lldb_resolves_to_tcp_transport_with_port_placeholder() {
+        let config = resolve_adapter("lldb", None).unwrap();
+        assert_eq!(config.transport, DapTransport::Tcp);
+        assert!(config.args.iter().any(|a| a == "{port}"));
     }
 
-    #[tokio::test]
-    async fn install_unknown_adapter_is_error() {
-        let result = DapManager::install_adapter("ruby").await;
-        assert!(result.is_err());
+    #[test]
+    fn stderr_tail_keeps_last_lines() {
+        assert_eq!(stderr_tail("a\n\nb\nc\nd\ne\n"), "c\nd\ne");
+        assert_eq!(stderr_tail(""), "");
     }
 }

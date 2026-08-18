@@ -1,10 +1,19 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum DapTransport {
+    #[default]
+    Stdio,
+    /// DAP over TCP; the adapter is spawned with `--port` (see client.rs).
+    Tcp,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct DapAdapterConfig {
     pub command: String,
     pub args: Vec<String>,
+    pub transport: DapTransport,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -13,6 +22,14 @@ pub struct DapAdapterInfo {
     pub label: String,
     pub available: bool,
     pub install_hint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DapEnsureResult {
+    pub adapter_id: String,
+    pub installed: bool,
+    pub available: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -181,8 +198,40 @@ pub fn build_launch_arguments(
     match adapter_id {
         "node" => Ok(build_node_arguments(request, name, program, args, cwd, env)),
         "python" => build_python_arguments(request, name, args, cwd, env),
+        "lldb" => build_lldb_arguments(request, name, program, args, cwd, env),
         _ => Err(format!("No debug adapter registered for '{adapter_id}'")),
     }
+}
+
+/// CodeLLDB launches a compiled binary: the run config command is the binary
+/// path, its remaining tokens are the program arguments.
+fn build_lldb_arguments(
+    request: &str,
+    name: &str,
+    program: &str,
+    args: &[String],
+    cwd: &str,
+    env: &HashMap<String, String>,
+) -> Result<serde_json::Value, String> {
+    if request != "launch" {
+        return Err("The lldb adapter supports launch only".to_string());
+    }
+    if program.is_empty() {
+        return Err(
+            "lldb debug requires a compiled binary (e.g. 'target/debug/myapp')".to_string(),
+        );
+    }
+
+    Ok(serde_json::json!({
+        "type": "lldb",
+        "request": "launch",
+        "name": name,
+        "program": program,
+        "args": args,
+        "cwd": cwd,
+        "env": env,
+        "stopOnEntry": false,
+    }))
 }
 
 fn build_node_arguments(
@@ -333,6 +382,37 @@ mod tests {
             "/ws",
             &HashMap::new(),
         );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn lldb_launch_uses_program_and_args() {
+        let value = build_launch_arguments(
+            "lldb",
+            "launch",
+            "myapp",
+            "target/debug/myapp.exe",
+            &["--verbose".to_string()],
+            "C:/ws",
+            &HashMap::new(),
+        )
+        .unwrap();
+        assert_eq!(value["type"], "lldb");
+        assert_eq!(value["program"], "target/debug/myapp.exe");
+        assert_eq!(value["args"][0], "--verbose");
+        assert_eq!(value["cwd"], "C:/ws");
+    }
+
+    #[test]
+    fn lldb_attach_is_not_supported() {
+        let result =
+            build_launch_arguments("lldb", "attach", "x", "app", &[], "/ws", &HashMap::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn lldb_launch_without_program_is_error() {
+        let result = build_launch_arguments("lldb", "launch", "x", "", &[], "/ws", &HashMap::new());
         assert!(result.is_err());
     }
 

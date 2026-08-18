@@ -22,8 +22,12 @@ describe("debugTargetForLanguage", () => {
     expect(debugTargetForLanguage("typescript")).toEqual({ adapter: "node", runtime: "node" });
   });
 
+  it("maps rust to the lldb adapter without a runtime", () => {
+    expect(debugTargetForLanguage("rust")).toEqual({ adapter: "lldb", runtime: "" });
+  });
+
   it("returns null for unsupported languages", () => {
-    expect(debugTargetForLanguage("rust")).toBeNull();
+    expect(debugTargetForLanguage("go")).toBeNull();
     expect(debugTargetForLanguage(undefined)).toBeNull();
   });
 });

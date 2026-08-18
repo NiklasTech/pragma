@@ -17,6 +17,21 @@ export interface DapInstallResult {
   exitCode: number;
 }
 
+export interface DapEnsureResult {
+  adapterId: string;
+  installed: boolean;
+  available: boolean;
+}
+
+export type DapInstallStage = "downloading" | "extracting" | "installing" | "done" | "error";
+
+export interface DapInstallProgressEvent {
+  adapterId: string;
+  stage: DapInstallStage;
+  percent?: number | null;
+  message: string;
+}
+
 export interface DapStatusEventPayload {
   status: "starting" | "running" | "stopped" | "error";
   adapter?: string | null;
@@ -73,6 +88,16 @@ export function dapListAdapters(): Promise<DapAdapterInfo[]> {
 
 export function dapInstallAdapter(adapterId: string): Promise<DapInstallResult> {
   return invoke("dap_install_adapter", { adapterId });
+}
+
+export function dapEnsureAdapter(language: string): Promise<DapEnsureResult> {
+  return invoke("dap_ensure_adapter", { language });
+}
+
+export function listenDapInstallProgress(
+  handler: (event: DapInstallProgressEvent) => void,
+): Promise<() => void> {
+  return listen<DapInstallProgressEvent>("dap_install_progress", (event) => handler(event.payload));
 }
 
 export function dapStart(params: DapStartParams): Promise<void> {
