@@ -1,6 +1,7 @@
 pub mod app_state;
 pub mod dap;
 pub mod env_loader;
+pub mod extensions;
 pub mod fonts;
 pub mod fs;
 pub mod git;
