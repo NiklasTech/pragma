@@ -260,7 +260,7 @@ pub fn kill_process_by_port(port: u16) -> Result<(), String> {
 }
 
 /// Kill a process and its children.
-fn kill_process_tree(pid: u32) -> Result<(), String> {
+pub(crate) fn kill_process_tree(pid: u32) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let output = std::process::Command::new("taskkill")

@@ -26,6 +26,7 @@ import {
   Layout,
   Keyboard,
   Info,
+  MagicWand,
   MagnifyingGlass,
   ArrowCounterClockwise,
   DownloadSimple,
@@ -34,6 +35,7 @@ import {
   Check,
 } from "@phosphor-icons/react";
 import { AISettings } from "./AISettings";
+import { AgentSettings } from "./AgentSettings";
 import { EditorSettings } from "./EditorSettings";
 import { TerminalSettings } from "./TerminalSettings";
 import { ThemeSettings } from "./ThemeSettings";
@@ -48,6 +50,7 @@ type Category =
   | "editor"
   | "terminal"
   | "ai"
+  | "agent"
   | "theme"
   | "mcp"
   | "layout"
@@ -65,6 +68,7 @@ const CATEGORIES: CategoryDef[] = [
   { id: "editor", label: "Editor", icon: Code },
   { id: "terminal", label: "Terminal", icon: Terminal },
   { id: "ai", label: "AI", icon: Robot },
+  { id: "agent", label: "Agent", icon: MagicWand },
   { id: "theme", label: "Theme", icon: Palette },
   { id: "mcp", label: "MCP", icon: PlugsConnected },
   { id: "languages", label: "Languages", icon: BracketsAngle },
@@ -184,6 +188,12 @@ const SEARCH_ITEMS: SearchItem[] = [
     label: "Completion Debounce",
     keywords: "debounce ai completion delay",
     category: "ai",
+  },
+  {
+    id: "agent-mode",
+    label: "Agent Mode",
+    keywords: "agent mode autonomous task tools auto approve allowed commands",
+    category: "agent",
   },
   {
     id: "theme-mode",
@@ -438,6 +448,7 @@ export function Settings() {
               {activeCategory === "editor" && <EditorSettings />}
               {activeCategory === "terminal" && <TerminalSettings />}
               {activeCategory === "ai" && <AISettings />}
+              {activeCategory === "agent" && <AgentSettings />}
               {activeCategory === "theme" && <ThemeSettings />}
               {activeCategory === "mcp" && <McpSettings />}
               {activeCategory === "layout" && <LayoutSettings />}

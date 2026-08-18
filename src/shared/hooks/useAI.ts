@@ -21,6 +21,16 @@ import {
   uiMessageToStored,
 } from "@/shared/lib/ai/protocol";
 import { useMcpChatTools } from "./useMcpChatTools";
+import { useAgent } from "@/features/agent/useAgent";
+import { executeAgentToolCall } from "@/features/agent/executor";
+import { shouldAgentContinue } from "@/features/agent/loop";
+import { useAgentStore } from "@/features/agent/store";
+import {
+  AGENT_TOOL_DEFINITIONS,
+  MAX_AGENT_STEPS,
+  buildAgentSystemPrompt,
+  isAgentTool,
+} from "@/features/agent/tools";
 
 export { getMessageText };
 
@@ -70,6 +80,21 @@ export function useAI() {
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
+  const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
+
+  const agentEnabled = useSettingsStore((state) => state.agent.enabled);
+  const agentModeActive = useAgentStore((state) => state.modeActive);
+  const agentActive = agentEnabled && agentModeActive;
+
+  const agentToolDefinitions = useMemo(
+    () => (agentActive ? AGENT_TOOL_DEFINITIONS : []),
+    [agentActive],
+  );
+  const agentSystemPrompt = useMemo(
+    () => (agentActive ? buildAgentSystemPrompt(rootPath) : undefined),
+    [agentActive, rootPath],
+  );
+
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
       createStreamTransport(
@@ -78,10 +103,11 @@ export function useAI() {
         providerConfig.baseUrl,
         isCLIActive,
         activeCLIProvider,
-        isCLIActive ? [] : toolDefinitions,
+        isCLIActive ? [] : [...toolDefinitions, ...agentToolDefinitions],
         rootPath,
         activeChatSessionId,
         experimentalAcp,
+        agentSystemPrompt,
       ),
     [
       activeProvider,
@@ -90,9 +116,11 @@ export function useAI() {
       isCLIActive,
       activeCLIProvider,
       toolDefinitions,
+      agentToolDefinitions,
       rootPath,
       activeChatSessionId,
       experimentalAcp,
+      agentSystemPrompt,
     ],
   );
 
@@ -102,8 +130,6 @@ export function useAI() {
     }
     return [];
   }, [activeSession?.id]);
-
-  const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
 
   const onToolCall = useCallback(
     async ({
@@ -120,6 +146,11 @@ export function useAI() {
 
       // Kimi ACP executes tools itself via reverse-RPC; the frontend only displays results.
       if (activeCLIProvider === "moonshot-kimi" && experimentalAcp) {
+        return;
+      }
+
+      if (isAgentTool(toolCall.toolName)) {
+        await executeAgentToolCall(chat, rootPath, toolCall);
         return;
       }
 
@@ -172,10 +203,20 @@ export function useAI() {
         });
       }
     },
-    [resolveTool, activeCLIProvider, experimentalAcp],
+    [resolveTool, activeCLIProvider, experimentalAcp, rootPath],
   );
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
+    // Agent Mode keeps iterating on tool outputs until the model calls
+    // agent_task_complete or the step cap is reached.
+    const agentState = useAgentStore.getState();
+    if (agentState.modeActive && useSettingsStore.getState().agent.enabled) {
+      if (agentState.status !== "running" && agentState.status !== "waiting-approval") {
+        return false;
+      }
+      return shouldAgentContinue(messages, agentState.maxSteps);
+    }
+
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage || lastMessage.role !== "assistant") return false;
 
@@ -223,6 +264,8 @@ export function useAI() {
   });
 
   chatRef.current = chat;
+
+  useAgent({ chatRef, chatStatus: chat.status });
 
   const [input, setInput] = useState("");
 
@@ -294,10 +337,14 @@ export function useAI() {
         }
       }
 
+      if (agentActive) {
+        useAgentStore.getState().startTask(messageText, MAX_AGENT_STEPS);
+      }
+
       void chat.sendMessage({ text: messageText });
       setInput("");
     },
-    [input, chat, rootPath, mcpServerCount, mcpLoaded],
+    [input, chat, rootPath, mcpServerCount, mcpLoaded, agentActive],
   );
 
   // Sync chat messages into the active store session.

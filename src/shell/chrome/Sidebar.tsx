@@ -5,6 +5,7 @@ import {
   Files,
   GitBranch,
   GitDiff,
+  MagicWand,
   MagnifyingGlass,
   SidebarSimple,
   Terminal,
@@ -18,6 +19,7 @@ import {
   ProcessManagerPanel,
   SearchPanel,
 } from "@/features/sidebar/components";
+import { AgentPanel } from "@/features/agent/components/AgentPanel";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 
 const tabs = [
@@ -27,6 +29,7 @@ const tabs = [
   { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
   { id: "docker" as const, icon: Cube, label: "Docker" },
   { id: "processes" as const, icon: Terminal, label: "Processes" },
+  { id: "agent" as const, icon: MagicWand, label: "Agent" },
 ];
 
 export const DOCK_WIDTH = 40;
@@ -162,6 +165,7 @@ export function SidebarContent() {
           {sidebar.tab === "git-status" && <GitStatus />}
           {sidebar.tab === "docker" && <DockerPanel />}
           {sidebar.tab === "processes" && <ProcessManagerPanel />}
+          {sidebar.tab === "agent" && <AgentPanel />}
         </div>
         {activeFilePath && (
           <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />

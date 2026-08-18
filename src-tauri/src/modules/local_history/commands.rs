@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tauri::Manager;
 
+use super::config::RetentionPolicy;
 use super::diff_engine::compute_diff;
-use super::storage::{get_all_snapshots, get_content_at_snapshot, SnapshotMeta};
+use super::storage::{get_all_snapshots, get_content_at_snapshot, save_snapshot, SnapshotMeta};
 use crate::modules::git::operations::{commit_file_diff, diff, file_history, resolve_repo};
 use crate::modules::git::utils::authorized_repo_root;
 
@@ -244,6 +245,36 @@ pub async fn local_history_delete_older_than(
     std::fs::write(&meta_file, meta_json).map_err(|e| format!("Failed to write meta file: {e}"))?;
 
     Ok(())
+}
+
+/// Snapshot the current on-disk content of a file into Local History.
+/// Used by Agent Mode to create a checkpoint before the first agent write.
+#[tauri::command]
+pub async fn local_history_snapshot(
+    app: tauri::AppHandle,
+    file_path: String,
+) -> Result<(), String> {
+    if file_path.is_empty() {
+        return Err("File path is required".to_string());
+    }
+
+    let path = Path::new(&file_path);
+    if !path.is_file() {
+        // Nothing to checkpoint yet (e.g. the agent is creating a new file).
+        return Ok(());
+    }
+
+    let content = std::fs::read_to_string(path).map_err(|e| format!("Failed to read file: {e}"))?;
+    let app_data_dir = resolve_app_data_dir(&app)?;
+    let repo_path = resolve_repo_path(&file_path)?;
+
+    save_snapshot(
+        &app_data_dir,
+        &repo_path,
+        &file_path,
+        &content,
+        RetentionPolicy::default(),
+    )
 }
 
 /// Returns true if the file has uncommitted changes relative to git HEAD.
