@@ -6,6 +6,7 @@ import {
   Files,
   GitBranch,
   GitDiff,
+  MagicWand,
   MagnifyingGlass,
   PuzzlePiece,
   SidebarSimple,
@@ -20,6 +21,7 @@ import {
   ProcessManagerPanel,
   SearchPanel,
 } from "@/features/sidebar/components";
+import { AgentPanel } from "@/features/agent/components/AgentPanel";
 import { DebugPanel } from "@/features/debug/components/DebugPanel";
 import { ExtensionSidebarPanel } from "@/features/extensions/components/ExtensionSidebarPanel";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
@@ -32,6 +34,7 @@ const tabs = [
   { id: "docker" as const, icon: Cube, label: "Docker" },
   { id: "processes" as const, icon: Terminal, label: "Processes" },
   { id: "debug" as const, icon: Bug, label: "Debug" },
+  { id: "agent" as const, icon: MagicWand, label: "Agent" },
   { id: "extensions" as const, icon: PuzzlePiece, label: "Extensions" },
 ];
 
@@ -169,6 +172,7 @@ export function SidebarContent() {
           {sidebar.tab === "docker" && <DockerPanel />}
           {sidebar.tab === "processes" && <ProcessManagerPanel />}
           {sidebar.tab === "debug" && <DebugPanel />}
+          {sidebar.tab === "agent" && <AgentPanel />}
           {sidebar.tab === "extensions" && <ExtensionSidebarPanel />}
         </div>
         {activeFilePath && (

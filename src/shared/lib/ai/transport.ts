@@ -22,6 +22,7 @@ export function createStreamTransport(
   rootPath: string,
   activeChatSessionId: string | null,
   experimentalAcp: boolean,
+  systemPrompt?: string,
 ): ChatTransport<UIMessage> {
   const isAcpActive = activeCLIProvider === "moonshot-kimi" && experimentalAcp;
   return {
@@ -180,7 +181,10 @@ export function createStreamTransport(
                   provider: activeProvider,
                   model: activeModel,
                   base_url: baseUrl,
-                  messages: messages.flatMap(uiMessageToBackendMessages),
+                  messages: [
+                    ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+                    ...messages.flatMap(uiMessageToBackendMessages),
+                  ],
                   stream_id: streamId,
                   tools: tools.length > 0 ? tools : undefined,
                 };

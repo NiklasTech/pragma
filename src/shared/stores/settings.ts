@@ -119,6 +119,14 @@ export interface ExperimentalSettings {
   acp: boolean;
 }
 
+export type AgentAutoApprove = "never" | "edits" | "all";
+
+export interface AgentSettings {
+  enabled: boolean;
+  autoApprove: AgentAutoApprove;
+  allowedCommands: string[];
+}
+
 export interface ExtensionSettings {
   enabled: boolean;
   settings: unknown;
@@ -137,6 +145,7 @@ export interface SettingsState {
   mcp: McpSettings;
   lsp: LspSettings;
   experimental: ExperimentalSettings;
+  agent: AgentSettings;
   mcpRunningServerIds: string[];
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
@@ -171,6 +180,7 @@ interface SettingsActions {
   setMcpSettings: (settings: Partial<McpSettings>) => void;
   setLspEnabled: (language: string, enabled: boolean) => void;
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
+  setAgentSettings: (settings: Partial<AgentSettings>) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => void;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;
@@ -285,6 +295,11 @@ const defaultSettings: SettingsState = {
     lsp: true,
     acp: true,
   },
+  agent: {
+    enabled: false,
+    autoApprove: "never",
+    allowedCommands: [],
+  },
   mcpRunningServerIds: [],
   customThemes: {},
   extensions: {},
@@ -391,6 +406,8 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       experimental: { ...state.experimental, [feature]: enabled },
     })),
 
+  setAgentSettings: (settings) => set((state) => ({ agent: { ...state.agent, ...settings } })),
+
   addMcpServer: (server) =>
     set((state) => ({
       mcp: {
@@ -479,6 +496,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       mcp: mergePartial(defaultSettings.mcp, partial.mcp),
       lsp: mergePartial(defaultSettings.lsp, partial.lsp),
       experimental: mergePartial(defaultSettings.experimental, partial.experimental),
+      agent: mergePartial(defaultSettings.agent, partial.agent),
       mcpRunningServerIds: partial.mcpRunningServerIds ?? state.mcpRunningServerIds,
       customThemes: { ...state.customThemes, ...partial.customThemes },
       extensions: { ...state.extensions, ...partial.extensions },
@@ -603,6 +621,7 @@ function mergeWithDefaults(
     mcp: mergePartial(defaults.mcp, partial.mcp),
     lsp: mergePartial(defaults.lsp, partial.lsp),
     experimental: mergePartial(defaults.experimental, partial.experimental),
+    agent: mergePartial(defaults.agent, partial.agent),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
     extensions: { ...defaults.extensions, ...partial.extensions },
     shortcuts: { ...defaults.shortcuts, ...partial.shortcuts },

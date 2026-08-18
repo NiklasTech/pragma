@@ -25,6 +25,7 @@ import { matchShortcut } from "@/shared/lib/shortcuts";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AiModelSelector } from "./AiModelSelector";
+import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatSessionList } from "./ChatSessionList";
 import { ChatToolbar } from "./ChatToolbar";
@@ -530,6 +531,8 @@ export function ChatPanel() {
             ))}
           </div>
         )}
+
+        <AgentApprovals />
 
         {/* Compose Box */}
         <form
