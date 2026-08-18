@@ -7,6 +7,7 @@ import "./globals.css";
 import App from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
+import { initDebugListeners } from "@/features/debug/client";
 import { useFontStore } from "@/shared/stores/fonts";
 
 function isTauri(): boolean {
@@ -14,6 +15,7 @@ function isTauri(): boolean {
 }
 
 initRunConfigListeners();
+initDebugListeners();
 void useFontStore.getState().loadFonts();
 
 if (import.meta.env.DEV) {

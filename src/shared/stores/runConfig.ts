@@ -15,6 +15,10 @@ export interface RunConfig {
   autoRestart: boolean;
   icon?: string;
   detect?: string;
+  debug?: {
+    adapter: string;
+    request?: "launch" | "attach";
+  };
 }
 
 export type RunStatus = "running" | "failed" | "stopped";
