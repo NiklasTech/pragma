@@ -11,6 +11,12 @@ export interface DapAdapterInfo {
   install_hint?: string | null;
 }
 
+export interface DapInstallResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
 export interface DapStatusEventPayload {
   status: "starting" | "running" | "stopped" | "error";
   adapter?: string | null;
@@ -63,6 +69,10 @@ export type DapStartParams = {
 
 export function dapListAdapters(): Promise<DapAdapterInfo[]> {
   return invoke("dap_list_adapters");
+}
+
+export function dapInstallAdapter(adapterId: string): Promise<DapInstallResult> {
+  return invoke("dap_install_adapter", { adapterId });
 }
 
 export function dapStart(params: DapStartParams): Promise<void> {

@@ -8,9 +8,11 @@ import {
   Bug,
   CaretDown,
   CaretRight,
+  DownloadSimple,
   Pause,
   Play,
   Plus,
+  Spinner,
   Stop,
   X,
 } from "@phosphor-icons/react";
@@ -21,7 +23,9 @@ import { cn } from "@/shared/lib/utils";
 import { detectLanguage } from "@/shared/lib/language";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useDebugStore } from "../store";
-import type { DebugVariable } from "../client";
+import { dapListAdapters, type DapAdapterInfo, type DebugVariable } from "../client";
+import { installAdapter } from "../adapterSetup";
+import { debugCurrentFile } from "../debugCurrentFile";
 
 function ToolbarButton({
   icon: Icon,
@@ -103,6 +107,73 @@ function VariableNode({
             onToggle={onToggle}
           />
         ))}
+    </div>
+  );
+}
+
+function AdapterSetupSection() {
+  const [adapters, setAdapters] = useState<DapAdapterInfo[] | null>(null);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+
+  const refresh = () => {
+    dapListAdapters()
+      .then(setAdapters)
+      .catch(() => setAdapters([]));
+  };
+
+  useEffect(refresh, []);
+
+  const handleInstall = async (adapter: DapAdapterInfo) => {
+    setInstallingId(adapter.id);
+    await installAdapter(adapter);
+    setInstallingId(null);
+    refresh();
+  };
+
+  if (!adapters) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <SectionLabel title="Setup" />
+      <div className="space-y-0.5">
+        {adapters.map((adapter) => (
+          <div
+            key={adapter.id}
+            className="flex items-center justify-between gap-2 rounded px-2 py-0.5"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className={cn(
+                  "size-2 shrink-0 rounded-full",
+                  adapter.available ? "bg-status-success" : "bg-status-error",
+                )}
+              />
+              <span
+                className="truncate text-ui-xs text-fg-default"
+                title={adapter.install_hint ?? undefined}
+              >
+                {adapter.label}
+              </span>
+            </div>
+            {!adapter.available && (
+              <button
+                type="button"
+                disabled={installingId !== null}
+                onClick={() => void handleInstall(adapter)}
+                title={adapter.install_hint ?? "Install adapter"}
+                className="flex h-5 shrink-0 items-center gap-1 rounded-md border border-border px-1.5 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+              >
+                {installingId === adapter.id ? (
+                  <Spinner size={10} className="animate-spin" />
+                ) : (
+                  <DownloadSimple size={10} />
+                )}
+                Install
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -208,6 +279,12 @@ export function DebugPanel() {
         actions={
           <>
             <ToolbarButton
+              icon={Bug}
+              title="Debug Current File"
+              disabled={status === "running" || status === "starting"}
+              onClick={() => void debugCurrentFile()}
+            />
+            <ToolbarButton
               icon={Play}
               title="Continue"
               disabled={!isRunning || !isStopped}
@@ -249,6 +326,7 @@ export function DebugPanel() {
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-3 p-2">
+          {status === "inactive" && <AdapterSetupSection />}
           {status === "inactive" && breakpointCount === 0 ? (
             <PanelEmptyState
               icon={Bug}

@@ -1,8 +1,8 @@
 use crate::modules::dap::client::{DapClient, DapEventMessage};
 use crate::modules::dap::types::{
     build_launch_arguments, DapAdapterConfig, DapAdapterInfo, DapBreakpoint, DapEvaluateResult,
-    DapEvent, DapFileBreakpoints, DapInitializeArguments, DapScope, DapSessionStatus,
-    DapStackFrame, DapStartRequest, DapStatusEvent, DapVariable,
+    DapEvent, DapFileBreakpoints, DapInitializeArguments, DapInstallResult, DapScope,
+    DapSessionStatus, DapStackFrame, DapStartRequest, DapStatusEvent, DapVariable,
 };
 use crate::modules::run::{parse_command, resolve_cwd};
 use crate::platform::resolve_program;
@@ -16,12 +16,37 @@ use tokio::sync::{Mutex, RwLock};
 const INITIALIZED_WAIT_TIMEOUT: Duration = Duration::from_secs(3);
 const DISCONNECT_TIMEOUT_MS: u64 = 2_000;
 const EXIT_WAIT_TIMEOUT: Duration = Duration::from_secs(1);
+const INSTALL_TIMEOUT: Duration = Duration::from_secs(180);
+
+struct InstallCommand {
+    program: &'static str,
+    args: &'static [&'static str],
+}
+
+// Windows resolves `python` reliably via resolve_program, while a bare `pip`
+// is often missing from PATH; elsewhere `pip` is the conventional entrypoint.
+#[cfg(target_os = "windows")]
+const PYTHON_INSTALL: InstallCommand = InstallCommand {
+    program: "python",
+    args: &["-m", "pip", "install", "debugpy"],
+};
+#[cfg(not(target_os = "windows"))]
+const PYTHON_INSTALL: InstallCommand = InstallCommand {
+    program: "pip",
+    args: &["install", "debugpy"],
+};
+
+const NODE_INSTALL: InstallCommand = InstallCommand {
+    program: "npm",
+    args: &["install", "-g", "vscode-js-debug"],
+};
 
 struct AdapterEntry {
     id: &'static str,
     label: &'static str,
     dap_id: &'static str,
     install_hint: Option<&'static str>,
+    install: Option<&'static InstallCommand>,
 }
 
 const ADAPTERS: &[AdapterEntry] = &[
@@ -30,12 +55,14 @@ const ADAPTERS: &[AdapterEntry] = &[
         label: "Node.js (vscode-js-debug)",
         dap_id: "pwa-node",
         install_hint: Some("npm install -g vscode-js-debug"),
+        install: Some(&NODE_INSTALL),
     },
     AdapterEntry {
         id: "python",
         label: "Python (debugpy)",
         dap_id: "python",
         install_hint: Some("pip install debugpy"),
+        install: Some(&PYTHON_INSTALL),
     },
 ];
 
@@ -145,6 +172,42 @@ impl DapManager {
             });
         }
         infos
+    }
+
+    pub async fn install_adapter(
+        adapter_id: &str,
+    ) -> std::result::Result<DapInstallResult, String> {
+        let entry = ADAPTERS
+            .iter()
+            .find(|a| a.id == adapter_id)
+            .ok_or_else(|| format!("No debug adapter registered for '{adapter_id}'"))?;
+        let install = entry
+            .install
+            .ok_or_else(|| format!("No install command for adapter '{adapter_id}'"))?;
+
+        let program = resolve_program(install.program)
+            .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?;
+        let output = tokio::time::timeout(
+            INSTALL_TIMEOUT,
+            crate::platform::new_tokio_command(&program)
+                .args(install.args)
+                .output(),
+        )
+        .await
+        .map_err(|_| {
+            format!(
+                "Install of '{}' timed out after {}s",
+                entry.label,
+                INSTALL_TIMEOUT.as_secs()
+            )
+        })?
+        .map_err(|e| format!("Failed to run '{}': {e}", install.program))?;
+
+        Ok(DapInstallResult {
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            exit_code: output.status.code().unwrap_or(-1),
+        })
     }
 
     pub async fn start_session(&self, params: DapStartRequest) -> std::result::Result<(), String> {
@@ -610,5 +673,51 @@ impl DapManager {
                 error,
             },
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_adapter_has_an_install_command() {
+        for entry in ADAPTERS {
+            let install = entry
+                .install
+                .unwrap_or_else(|| panic!("adapter '{}' has no install command", entry.id));
+            assert!(!install.program.is_empty());
+            assert!(!install.args.is_empty());
+        }
+    }
+
+    #[test]
+    fn python_install_matches_platform() {
+        let entry = ADAPTERS.iter().find(|a| a.id == "python").unwrap();
+        let install = entry.install.unwrap();
+        #[cfg(target_os = "windows")]
+        {
+            assert_eq!(install.program, "python");
+            assert_eq!(install.args, &["-m", "pip", "install", "debugpy"]);
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            assert_eq!(install.program, "pip");
+            assert_eq!(install.args, &["install", "debugpy"]);
+        }
+    }
+
+    #[test]
+    fn node_install_uses_npm_global() {
+        let entry = ADAPTERS.iter().find(|a| a.id == "node").unwrap();
+        let install = entry.install.unwrap();
+        assert_eq!(install.program, "npm");
+        assert_eq!(install.args, &["install", "-g", "vscode-js-debug"]);
+    }
+
+    #[tokio::test]
+    async fn install_unknown_adapter_is_error() {
+        let result = DapManager::install_adapter("ruby").await;
+        assert!(result.is_err());
     }
 }

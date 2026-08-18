@@ -21,6 +21,7 @@ import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
 import { useLspSymbolCommands } from "./useLspSymbolCommands";
+import { useDebugCommands } from "./useDebugCommands";
 import { CommandPalette } from "./CommandPalette";
 import { GoToFile } from "./GoToFile";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
@@ -44,6 +45,7 @@ export default function App() {
   useGlobalShortcuts(actions);
   useCommandPaletteCommands();
   useLspSymbolCommands();
+  useDebugCommands();
   useEffect(() => startLspDidCloseWatcher(), []);
   useEffect(() => {
     const unlisten = listen<{ path: string }>("pragma:cli:invalid-path", (event) => {
