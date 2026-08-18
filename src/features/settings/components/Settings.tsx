@@ -32,6 +32,7 @@ import {
   UploadSimple,
   BracketsAngle,
   Check,
+  PuzzlePiece,
 } from "@phosphor-icons/react";
 import { AISettings } from "./AISettings";
 import { EditorSettings } from "./EditorSettings";
@@ -41,6 +42,7 @@ import { McpSettings } from "./McpSettings";
 import { LayoutSettings } from "./LayoutSettings";
 import { KeyboardSettings } from "./KeyboardSettings";
 import { AboutSettings } from "./AboutSettings";
+import { ExtensionSettings } from "./ExtensionSettings";
 import { LspSettings } from "./LspSettings";
 import { exportSettings, importSettings } from "./settings-io";
 
@@ -53,6 +55,7 @@ type Category =
   | "layout"
   | "keyboard"
   | "languages"
+  | "extensions"
   | "about";
 
 interface CategoryDef {
@@ -68,6 +71,7 @@ const CATEGORIES: CategoryDef[] = [
   { id: "theme", label: "Theme", icon: Palette },
   { id: "mcp", label: "MCP", icon: PlugsConnected },
   { id: "languages", label: "Languages", icon: BracketsAngle },
+  { id: "extensions", label: "Extensions", icon: PuzzlePiece },
   { id: "layout", label: "Layout", icon: Layout },
   { id: "keyboard", label: "Keyboard", icon: Keyboard },
   { id: "about", label: "About", icon: Info },
@@ -443,6 +447,7 @@ export function Settings() {
               {activeCategory === "layout" && <LayoutSettings />}
               {activeCategory === "keyboard" && <KeyboardSettings />}
               {activeCategory === "languages" && <LspSettings />}
+              {activeCategory === "extensions" && <ExtensionSettings />}
               {activeCategory === "about" && <AboutSettings />}
             </div>
           </ScrollArea>
