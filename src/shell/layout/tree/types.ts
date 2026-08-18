@@ -8,7 +8,8 @@ export type SidebarTab =
   | "docker"
   | "processes"
   | "debug"
-  | "agent";
+  | "agent"
+  | "extensions";
 
 export type AIMode = "hidden" | "floating" | "drawer-left" | "drawer-right" | "bottom-sheet";
 

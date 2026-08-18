@@ -127,6 +127,11 @@ export interface AgentSettings {
   allowedCommands: string[];
 }
 
+export interface ExtensionSettings {
+  enabled: boolean;
+  settings: unknown;
+}
+
 export interface SettingsState {
   editor: EditorSettings;
   terminal: TerminalSettings;
@@ -143,6 +148,7 @@ export interface SettingsState {
   agent: AgentSettings;
   mcpRunningServerIds: string[];
   customThemes: Record<string, Theme>;
+  extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
 }
 
@@ -182,6 +188,8 @@ interface SettingsActions {
   toggleMcpServerRunning: (id: string) => void;
   addCustomTheme: (theme: Theme) => void;
   deleteCustomTheme: (id: string) => void;
+  setExtensionEnabled: (id: string, enabled: boolean) => void;
+  setExtensionSettings: (id: string, settings: unknown) => void;
   importSettings: (partial: Partial<SettingsState>) => void;
   updateProvider: (provider: AIProvider, config: Partial<ProviderSettings>) => void;
   setShortcut: (actionId: ShortcutActionId, binding: ShortcutBinding | null) => void;
@@ -294,6 +302,7 @@ const defaultSettings: SettingsState = {
   },
   mcpRunningServerIds: [],
   customThemes: {},
+  extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),
 };
 
@@ -456,6 +465,22 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       return { customThemes: next };
     }),
 
+  setExtensionEnabled: (id, enabled) =>
+    set((state) => ({
+      extensions: {
+        ...state.extensions,
+        [id]: { enabled, settings: state.extensions[id]?.settings },
+      },
+    })),
+
+  setExtensionSettings: (id, settings) =>
+    set((state) => ({
+      extensions: {
+        ...state.extensions,
+        [id]: { enabled: state.extensions[id]?.enabled ?? true, settings },
+      },
+    })),
+
   importSettings: (partial) =>
     set((state) => ({
       ...state,
@@ -474,6 +499,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       agent: mergePartial(defaultSettings.agent, partial.agent),
       mcpRunningServerIds: partial.mcpRunningServerIds ?? state.mcpRunningServerIds,
       customThemes: { ...state.customThemes, ...partial.customThemes },
+      extensions: { ...state.extensions, ...partial.extensions },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },
     })),
 
@@ -597,6 +623,7 @@ function mergeWithDefaults(
     experimental: mergePartial(defaults.experimental, partial.experimental),
     agent: mergePartial(defaults.agent, partial.agent),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
+    extensions: { ...defaults.extensions, ...partial.extensions },
     shortcuts: { ...defaults.shortcuts, ...partial.shortcuts },
   };
 }

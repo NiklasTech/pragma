@@ -16,6 +16,7 @@ import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBeha
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
+import { useExtensions } from "@/features/extensions/useExtensions";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
@@ -35,6 +36,7 @@ export default function App() {
   useWorkspaceRestore();
   useDiagnosticsCleanup();
   useTerminalShellResolver();
+  useExtensions();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useAppShortcutActions();
