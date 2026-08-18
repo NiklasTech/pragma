@@ -1,6 +1,7 @@
 import { useLayoutStore } from "@/shell/layout/store";
 import { cn } from "@/shared/lib/utils";
 import {
+  Bug,
   Cube,
   Files,
   GitBranch,
@@ -18,6 +19,7 @@ import {
   ProcessManagerPanel,
   SearchPanel,
 } from "@/features/sidebar/components";
+import { DebugPanel } from "@/features/debug/components/DebugPanel";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 
 const tabs = [
@@ -27,6 +29,7 @@ const tabs = [
   { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
   { id: "docker" as const, icon: Cube, label: "Docker" },
   { id: "processes" as const, icon: Terminal, label: "Processes" },
+  { id: "debug" as const, icon: Bug, label: "Debug" },
 ];
 
 export const DOCK_WIDTH = 40;
@@ -162,6 +165,7 @@ export function SidebarContent() {
           {sidebar.tab === "git-status" && <GitStatus />}
           {sidebar.tab === "docker" && <DockerPanel />}
           {sidebar.tab === "processes" && <ProcessManagerPanel />}
+          {sidebar.tab === "debug" && <DebugPanel />}
         </div>
         {activeFilePath && (
           <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />

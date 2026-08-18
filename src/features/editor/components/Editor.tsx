@@ -49,6 +49,13 @@ import {
 import { signatureHelpExtension } from "@/features/editor/lsp/signatureHelp";
 import { setLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
 import {
+  breakpointGutter,
+  getBreakpointLines,
+  setBreakpointLinesEffect,
+} from "@/features/debug/breakpointGutter";
+import { useDebugStore } from "@/features/debug/store";
+import { sameLines } from "@/features/debug/debugState";
+import {
   EDITOR_CHECK_DEFINITION_EVENT,
   EDITOR_CODE_ACTION_EVENT,
   EDITOR_DOCUMENT_SYMBOLS_EVENT,
@@ -103,8 +110,13 @@ function FileEditor({
     [problems, filePath],
   );
 
+  const fileBreakpoints = useDebugStore((state) => state.breakpoints[filePath]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const filePathRef = useRef(filePath);
+  filePathRef.current = filePath;
+  const breakpointCompartmentRef = useRef(new Compartment());
   const diagnosticsCompartmentRef = useRef(new Compartment());
   const lspCompletionCompartmentRef = useRef(new Compartment());
   const lspDefinitionCompartmentRef = useRef(new Compartment());
@@ -175,6 +187,11 @@ function FileEditor({
         lspRenameCompartmentRef.current.of([]),
         lspSignatureHelpCompartmentRef.current.of([]),
         lspDocumentSymbolsCompartmentRef.current.of([]),
+        breakpointCompartmentRef.current.of(
+          breakpointGutter((line) => {
+            useDebugStore.getState().toggleBreakpoint(filePathRef.current, line);
+          }),
+        ),
         lintGutter(),
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         history(),
@@ -191,6 +208,11 @@ function FileEditor({
             );
             if (!isExternal) {
               onChangeValue(update.state.doc.toString());
+            }
+            const debugStore = useDebugStore.getState();
+            const breakpointLines = getBreakpointLines(update.state);
+            if (!sameLines(breakpointLines, debugStore.breakpoints[filePathRef.current] ?? [])) {
+              debugStore.syncFileBreakpoints(filePathRef.current, breakpointLines);
             }
           }
           if (update.selectionSet) {
@@ -340,6 +362,14 @@ function FileEditor({
       effects: lineNumbersCompartment.reconfigure(showLineNumbers ? lineNumbers() : []),
     });
   }, [showLineNumbers]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const lines = fileBreakpoints ?? [];
+    if (sameLines(getBreakpointLines(view.state), lines)) return;
+    view.dispatch({ effects: setBreakpointLinesEffect.of(lines) });
+  }, [fileBreakpoints, filePath]);
 
   useEffect(() => {
     if (!viewRef.current) return;
