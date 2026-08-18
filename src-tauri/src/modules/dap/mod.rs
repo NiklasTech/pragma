@@ -4,13 +4,21 @@ pub mod types;
 
 pub use manager::DapManager;
 pub use types::{
-    DapAdapterInfo, DapBreakpoint, DapEvaluateResult, DapFileBreakpoints, DapScope, DapStackFrame,
-    DapStartRequest, DapVariable,
+    DapAdapterInfo, DapBreakpoint, DapEvaluateResult, DapFileBreakpoints, DapInstallResult,
+    DapScope, DapStackFrame, DapStartRequest, DapVariable,
 };
 
 #[tauri::command]
 pub async fn dap_list_adapters() -> Result<Vec<DapAdapterInfo>, String> {
     Ok(DapManager::list_adapters().await)
+}
+
+#[tauri::command]
+pub async fn dap_install_adapter(adapter_id: String) -> Result<DapInstallResult, String> {
+    if adapter_id.is_empty() {
+        return Err("adapter_id is required".to_string());
+    }
+    DapManager::install_adapter(&adapter_id).await
 }
 
 #[tauri::command]

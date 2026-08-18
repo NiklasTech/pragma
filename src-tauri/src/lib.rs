@@ -149,6 +149,7 @@ pub fn run() {
             modules::lsp::lsp_did_close,
             modules::lsp::lsp_server_capabilities,
             modules::dap::dap_list_adapters,
+            modules::dap::dap_install_adapter,
             modules::dap::dap_start,
             modules::dap::dap_stop,
             modules::dap::dap_set_breakpoints,
