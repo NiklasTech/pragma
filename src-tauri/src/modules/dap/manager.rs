@@ -117,11 +117,16 @@ fn resolve_adapter(id: &str, adapters_dir: Option<&Path>) -> Option<DapAdapterCo
                 transport: DapTransport::Stdio,
             })
         }
-        "python" => Some(DapAdapterConfig {
-            command: "python".to_string(),
-            args: vec!["-m".to_string(), "debugpy.adapter".to_string()],
-            transport: DapTransport::Stdio,
-        }),
+        "python" => {
+            let python = python_with_debugpy()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|| "python".to_string());
+            Some(DapAdapterConfig {
+                command: python,
+                args: vec!["-m".to_string(), "debugpy.adapter".to_string()],
+                transport: DapTransport::Stdio,
+            })
+        }
         "lldb" => {
             let args = vec!["--port".to_string(), "{port}".to_string()];
             if let Ok(path) = std::env::var("PRAGMA_CODELLDB_PATH") {
@@ -161,6 +166,51 @@ fn resolve_adapter(id: &str, adapters_dir: Option<&Path>) -> Option<DapAdapterCo
     }
 }
 
+/// Candidate interpreters for the Python adapter, in priority order.
+fn python_candidate_names() -> Vec<&'static str> {
+    // On Windows the `py` launcher often resolves the latest installed Python
+    // even when `python` points at the Microsoft Store stub.
+    if cfg!(target_os = "windows") {
+        vec!["python", "python3", "py"]
+    } else {
+        vec!["python3", "python"]
+    }
+}
+
+/// Find a Python interpreter that can import the given module.
+async fn python_with_module(module: &str) -> Option<PathBuf> {
+    for name in python_candidate_names() {
+        if let Ok(path) = resolve_program(name) {
+            let output = crate::platform::new_tokio_command(&path)
+                .args(["-c", &format!("import {module}")])
+                .output()
+                .await;
+            if output.map(|out| out.status.success()).unwrap_or(false) {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
+/// Find a Python interpreter that already has debugpy installed.
+fn python_with_debugpy() -> Option<PathBuf> {
+    // Synchronous variant for resolve_adapter, which is not async.  We use a
+    // short-lived std::process::Command here; the async availability check uses
+    // the async version below.
+    for name in python_candidate_names() {
+        if let Ok(path) = resolve_program(name) {
+            let output = std::process::Command::new(&path)
+                .args(["-c", "import debugpy"])
+                .output();
+            if output.map(|out| out.status.success()).unwrap_or(false) {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
 async fn check_adapter_available(id: &str, adapters_dir: Option<&Path>) -> bool {
     match id {
         "node" => {
@@ -172,17 +222,7 @@ async fn check_adapter_available(id: &str, adapters_dir: Option<&Path>) -> bool 
             }
             resolve_program("js-debug-dap").is_ok()
         }
-        "python" => {
-            let program = match resolve_program("python") {
-                Ok(p) => p,
-                Err(_) => return false,
-            };
-            let output = crate::platform::new_tokio_command(&program)
-                .args(["-c", "import debugpy"])
-                .output()
-                .await;
-            matches!(output, Ok(out) if out.status.success())
-        }
+        "python" => python_with_module("debugpy").await.is_some(),
         "lldb" => {
             if let Ok(path) = std::env::var("PRAGMA_CODELLDB_PATH") {
                 if !path.is_empty() {
@@ -331,8 +371,12 @@ impl DapManager {
                     None,
                     format!("Running {} {}", program, args.join(" ")),
                 );
-                let program_path = resolve_program(program)
-                    .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?;
+                let program_path = if matches!(spec, InstallSpec::Pip { .. }) {
+                    python_with_module("pip").await.unwrap_or(program.into())
+                } else {
+                    resolve_program(program)
+                        .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?
+                };
                 let output = tokio::time::timeout(
                     INSTALL_TIMEOUT,
                     crate::platform::new_tokio_command(&program_path)
@@ -543,9 +587,6 @@ impl DapManager {
                 .map_err(|e| e.to_string())?;
         }
 
-        // Not every adapter supports configurationDone; ignore its failure.
-        let _ = client.request("configurationDone", None, None).await;
-
         let arguments = build_launch_arguments(
             launch.adapter,
             launch.request,
@@ -559,6 +600,12 @@ impl DapManager {
             .request(launch.request, Some(arguments), None)
             .await
             .map_err(|e| e.to_string())?;
+
+        // Not every adapter supports configurationDone; ignore its failure.
+        // It is sent after launch because some adapters (e.g. debugpy) start
+        // the debuggee on launch and expect configuration to be complete by
+        // the time they run.
+        let _ = client.request("configurationDone", None, None).await;
 
         Ok(())
     }
