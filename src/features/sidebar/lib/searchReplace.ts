@@ -20,6 +20,53 @@ export interface ReplaceOneResult {
   replaced: boolean;
 }
 
+export interface SearchResult {
+  path: string;
+  line: number;
+  column: number;
+  preview: string;
+  matchText: string;
+}
+
+export interface SearchResultGroup {
+  path: string;
+  relativePath: string;
+  matches: SearchResult[];
+}
+
+export interface ReplaceMatchLocation extends ReplaceOneTarget {
+  path: string;
+}
+
+export interface ReplaceWorkspaceRequest {
+  workspaceRoot: string;
+  query: string;
+  replacement: string;
+  caseSensitive: boolean;
+  wholeWord: boolean;
+  useRegex: boolean;
+  includeGlobs: string[];
+  excludeGlobs: string[];
+  skipPaths: string[];
+  singlePath: string | null;
+  oneMatch: ReplaceMatchLocation | null;
+}
+
+export interface ReplaceWorkspaceResult {
+  filesChanged: number;
+  replacementCount: number;
+}
+
+export interface SearchQueryState {
+  query: string;
+  replacement: string;
+  caseSensitive: boolean;
+  wholeWord: boolean;
+  useRegex: boolean;
+  includePatterns: string;
+  excludePatterns: string;
+}
+
 const textEncoder = new TextEncoder();
 
 function escapeRegExp(input: string): string {
@@ -129,4 +176,68 @@ export function isPathInsideRoot(path: string, root: string): boolean {
   const normalizedPath = normalizePathForCompare(path);
   const normalizedRoot = normalizePathForCompare(root).replace(/\/+$/, "");
   return normalizedPath === normalizedRoot || normalizedPath.startsWith(`${normalizedRoot}/`);
+}
+
+export function parsePatterns(value: string): string[] {
+  return value
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+export function groupSearchResults(
+  results: SearchResult[],
+  rootPath: string | null,
+): SearchResultGroup[] {
+  const map = new Map<string, SearchResult[]>();
+  for (const result of results) {
+    const list = map.get(result.path) ?? [];
+    list.push(result);
+    map.set(result.path, list);
+  }
+
+  const groups: SearchResultGroup[] = [];
+  for (const [path, matches] of map.entries()) {
+    const relativePath = rootPath ? path.replace(rootPath, "").replace(/^[/\\]/, "") : path;
+    groups.push({ path, relativePath, matches });
+  }
+  groups.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+  return groups;
+}
+
+export function toReplaceQueryOptions(state: SearchQueryState): ReplaceQueryOptions {
+  return {
+    query: state.query.trim(),
+    caseSensitive: state.caseSensitive,
+    wholeWord: state.wholeWord,
+    useRegex: state.useRegex,
+  };
+}
+
+export interface ReplaceWorkspaceRequestExtra {
+  skipPaths?: string[];
+  singlePath?: string;
+  oneMatch?: ReplaceMatchLocation;
+}
+
+export function buildReplaceWorkspaceRequest(
+  rootPath: string,
+  state: SearchQueryState,
+  extra?: ReplaceWorkspaceRequestExtra,
+): { req: ReplaceWorkspaceRequest } {
+  return {
+    req: {
+      workspaceRoot: rootPath,
+      query: state.query.trim(),
+      replacement: state.replacement,
+      caseSensitive: state.caseSensitive,
+      wholeWord: state.wholeWord,
+      useRegex: state.useRegex,
+      includeGlobs: parsePatterns(state.includePatterns),
+      excludeGlobs: parsePatterns(state.excludePatterns),
+      skipPaths: extra?.skipPaths ?? [],
+      singlePath: extra?.singlePath ?? null,
+      oneMatch: extra?.oneMatch ?? null,
+    },
+  };
 }

@@ -1,13 +1,11 @@
 import {
-  search,
-  searchKeymap,
   highlightSelectionMatches,
   openSearchPanel,
+  search,
+  searchKeymap,
 } from "@codemirror/search";
 import { keymap, type EditorView } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
-
-export { search, searchKeymap, highlightSelectionMatches };
 
 export type EditorSearchMode = "find" | "replace";
 

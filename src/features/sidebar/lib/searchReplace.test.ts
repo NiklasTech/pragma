@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   buildReplaceRegExp,
+  buildReplaceWorkspaceRequest,
+  groupSearchResults,
   isPathInsideRoot,
   isSameFilePath,
+  parsePatterns,
   replaceAllInContent,
   replaceOneMatchInContent,
 } from "./searchReplace";
@@ -103,6 +106,58 @@ describe("replaceOneMatchInContent", () => {
     const result = replaceOneMatchInContent("foo", literalOptions, { line: 2, column: 1 }, "baz");
     expect(result.replaced).toBe(false);
     expect(result.content).toBe("foo");
+  });
+});
+
+describe("parsePatterns", () => {
+  it("splits and trims comma-separated globs", () => {
+    expect(parsePatterns(" *.ts, src/** , ")).toEqual(["*.ts", "src/**"]);
+  });
+});
+
+describe("groupSearchResults", () => {
+  it("groups matches by path and strips the workspace root", () => {
+    const groups = groupSearchResults(
+      [
+        { path: "C:/work/a.ts", line: 1, column: 1, preview: "one", matchText: "foo" },
+        { path: "C:/work/b.ts", line: 2, column: 1, preview: "two", matchText: "foo" },
+        { path: "C:/work/a.ts", line: 4, column: 1, preview: "three", matchText: "foo" },
+      ],
+      "C:/work",
+    );
+    expect(groups.map((group) => group.relativePath)).toEqual(["a.ts", "b.ts"]);
+    expect(groups[0]?.matches).toHaveLength(2);
+  });
+});
+
+describe("buildReplaceWorkspaceRequest", () => {
+  it("maps query state onto the Tauri request shape", () => {
+    const { req } = buildReplaceWorkspaceRequest(
+      "C:/work",
+      {
+        query: " foo ",
+        replacement: "bar",
+        caseSensitive: true,
+        wholeWord: true,
+        useRegex: false,
+        includePatterns: "*.ts",
+        excludePatterns: "*.test.ts",
+      },
+      { skipPaths: ["C:/work/open.ts"], singlePath: "C:/work/a.ts" },
+    );
+    expect(req).toEqual({
+      workspaceRoot: "C:/work",
+      query: "foo",
+      replacement: "bar",
+      caseSensitive: true,
+      wholeWord: true,
+      useRegex: false,
+      includeGlobs: ["*.ts"],
+      excludeGlobs: ["*.test.ts"],
+      skipPaths: ["C:/work/open.ts"],
+      singlePath: "C:/work/a.ts",
+      oneMatch: null,
+    });
   });
 });
 
