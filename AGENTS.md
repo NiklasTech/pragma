@@ -4,6 +4,66 @@
 
 AI-native desktop IDE with Tauri 2, Rust, React 19, TypeScript, CodeMirror 6.
 
+## Operating model (read first)
+
+This session is the **principal**. DeepSeek Harness is the **worker**. Keep principal tokens low: plan, brief, review. Do not implement non-trivial product code yourself.
+
+| Role      | Who                 | Does                                                                                               |
+| --------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| Principal | this session (Grok) | talk to the user, explore just enough for a brief, plan, delegate, review diffs, verify, git/PR/CI |
+| Worker    | DeepSeek via `dsh`  | edit files, run commands, tests, multi-file implementation                                         |
+
+Do **not** spawn Grok subagents to write product code. That still spends principal tokens. Do **not** drive `http://127.0.0.1:3080/` (web UI is cookie-gated). Do **not** paste worker transcripts or whole files back into this chat.
+
+### You act directly only when
+
+- Fast-track: typos, one-line style, obvious one-file fixes, edits to this guide
+- Questions, design, review, git/PR/CI
+- The worker cannot start (then say so and implement yourself)
+
+### Delegate everything else
+
+1. Explore the **minimum** real paths (no guessing). Do not dump file bodies into the brief.
+2. Hand each worker a brief under ~40 lines: goal, paths, constraints (`AGENTS.md` rules), done-when, **model + effort**. Fan out independent simple slices as separate `flash`+`low` workers.
+3. After it returns: `git diff` + verification commands. Review the diff, not the whole tree.
+4. Fail once → one retry brief with the error. Still wrong → you fix only the leftover, surgically.
+
+### Worker invoke
+
+The principal **starts `dsh` itself** as a subprocess for each job. Do not ask the user to launch `dsh web` and do not attach to `:3080`. The Web UI is optional and a different profile; headless/ACP sessions do not appear there.
+
+Cwd = repo root. Credentials come from `$DSH_HOME` (default `~/.dsh`) or `DEEPSEEK_API_KEY` — the same store the Web UI uses, but no running Web process is required. First `npx` call may be slow; later calls reuse the cache.
+
+- **One-shot (default from this CLI):**
+
+```
+npx --yes @deepseek-ai/dsh --profile headless "<brief>"
+```
+
+- **Multi-turn / cancel / resume / parallel sessions:** `npx --yes @deepseek-ai/dsh --profile acp` then one `session/new` per worker (absolute cwd) → `session/set_config_option` for `model` and `reasoning_effort` → `session/prompt`. Auto-allow writes inside this repo; reject anything outside it. Prefer **one ACP process with N sessions** over N headless boots.
+
+Use a long command timeout. If the worker blocks on permission, do not sit on it — retry with an explicit allow in the brief or continue yourself.
+
+### Model and effort
+
+Provider: `deepseek-official`. Put the pair in **every** brief / session — cheap tasks must not inherit `high`.
+
+| Work                                                                       | Model               | Effort |
+| -------------------------------------------------------------------------- | ------------------- | ------ |
+| Simple, local, well-specified (rename, one function, test, copy a pattern) | `deepseek-v4-flash` | `low`  |
+| Default implementation                                                     | `deepseek-v4-flash` | `high` |
+| Architecture, hard bugs, large refactors                                   | `deepseek-v4-pro`   | `high` |
+| Worker stuck after a retry                                                 | `deepseek-v4-pro`   | `max`  |
+| Tiny lookup the worker must do                                             | `deepseek-v4-flash` | `off`  |
+
+Effort values: `off` (no thinking), `low`, `high` (default for mixed work), `max`. A change mid-turn applies to the **next** turn only.
+
+### Parallel workers
+
+Split only **independent** slices (different files, no shared types/imports you are changing). Cap at **3** concurrent workers. Each slice gets its own brief and its own model/effort — simple slices stay `flash` + `low`.
+
+Do not run two workers on the same file. Sequential if they would touch the same module. After they return: one combined `git diff`, then verify once. You merge conflicts; workers do not.
+
 ## Tech Stack
 
 - Frontend: React 19, TypeScript, Tailwind CSS v4, CodeMirror 6, xterm.js
@@ -44,12 +104,12 @@ The Superpowers plugin loads process skills automatically based on the task. Whe
 ## Workflow
 
 > [!IMPORTANT]
-> **Fast-Track**: For trivial tasks (typos, single-line styles, obvious fixes), skip planning and apply surgical changes directly.
+> **Fast-Track**: For trivial tasks (typos, single-line styles, obvious fixes), skip planning and apply surgical changes directly (principal). Everything else goes to the DeepSeek worker; you only review and verify.
 
-1. **Explore first**: Read the full target file before changing it. No exceptions.
-2. **Plan when complex**: For architectural or multi-file changes, draft 2-3 sentences before coding.
-3. **Write directly**: Use `Write` / `Edit` — do not flood the chat with code. Confirm with the full file path only.
-4. **Verify**: Run the verification commands below and show real output — never claim success without evidence.
+1. **Explore first**: Read the full target file before changing it, or before writing the worker brief. No exceptions.
+2. **Plan when complex**: For architectural or multi-file changes, draft 2-3 sentences, then delegate. Do not start implementing in this session.
+3. **Delegate, then review**: Worker writes the code. You confirm with paths + `git diff`. Do not flood the chat with code or worker logs.
+4. **Verify**: Run the verification commands below (or confirm the worker's output) — never claim success without evidence.
 
 ## Tauri Security by Default
 
