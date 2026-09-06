@@ -27,6 +27,8 @@ export const EDITOR_FIND_REFERENCES_EVENT = "pragma:editor:find-references";
 export const EDITOR_RENAME_EVENT = "pragma:editor:rename";
 export const EDITOR_CODE_ACTION_EVENT = "pragma:editor:code-action";
 export const EDITOR_DOCUMENT_SYMBOLS_EVENT = "pragma:editor:document-symbols";
+export const EDITOR_FIND_EVENT = "pragma:editor:find";
+export const EDITOR_REPLACE_EVENT = "pragma:editor:replace";
 
 export function dispatchEditorGoToDefinition(detail: EditorGoToDefinitionEventDetail): void {
   window.dispatchEvent(new CustomEvent(EDITOR_GO_TO_DEFINITION_EVENT, { detail }));
@@ -50,6 +52,14 @@ export function dispatchEditorDocumentSymbols(): void {
 
 export function dispatchEditorFormatDocument(): void {
   window.dispatchEvent(new CustomEvent(EDITOR_FORMAT_DOCUMENT_EVENT));
+}
+
+export function dispatchEditorFind(): void {
+  window.dispatchEvent(new CustomEvent(EDITOR_FIND_EVENT));
+}
+
+export function dispatchEditorReplace(): void {
+  window.dispatchEvent(new CustomEvent(EDITOR_REPLACE_EVENT));
 }
 
 export function dispatchEditorCheckDefinition(detail: EditorCheckDefinitionEventDetail): void {

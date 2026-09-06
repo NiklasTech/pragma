@@ -8,6 +8,7 @@ import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { useLayoutStore } from "@/shell/layout";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { dispatchEditorFind, dispatchEditorReplace } from "@/shared/lib/editor-events";
 import { type ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
 
 export function useAppShortcutActions(): ShortcutActions {
@@ -55,6 +56,12 @@ export function useAppShortcutActions(): ShortcutActions {
         layout.setSidebarCollapsed(false);
         layout.setSidebarTab("search");
         window.dispatchEvent(new CustomEvent("focus-search"));
+      },
+      "search.find": () => {
+        dispatchEditorFind();
+      },
+      "search.replace": () => {
+        dispatchEditorReplace();
       },
       "ai.toggle": () => {
         useLayoutStore.getState().toggleAI();

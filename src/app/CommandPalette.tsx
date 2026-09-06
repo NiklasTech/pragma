@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
+  ArrowsLeftRight,
   FileText,
   FloppyDisk,
   X,
@@ -45,6 +46,8 @@ const COMMAND_ICONS: Record<string, Icon> = {
   "view.openSettings": Gear,
   "view.commandPalette": Command,
   "search.findInFiles": MagnifyingGlass,
+  "search.find": MagnifyingGlass,
+  "search.replace": ArrowsLeftRight,
   "ai.toggle": Robot,
   "edit.editWithAI": Robot,
   "chat.send": Command,

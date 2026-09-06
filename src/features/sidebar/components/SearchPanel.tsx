@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
+  ArrowsLeftRight,
   BracketsAngle,
   File,
   MagnifyingGlass,
@@ -10,14 +11,33 @@ import {
   X,
   type Icon,
 } from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
-import { useEditorStore } from "@/shared/stores/editor";
+import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import {
+  isPathInsideRoot,
+  isSameFilePath,
+  replaceAllInContent,
+  replaceOneMatchInContent,
+  type ReplaceOneTarget,
+  type ReplaceQueryOptions,
+} from "@/features/sidebar/lib/searchReplace";
 import { cn } from "@/shared/lib/utils";
 
 interface SearchResult {
@@ -32,6 +52,11 @@ interface ResultGroup {
   path: string;
   relativePath: string;
   matches: SearchResult[];
+}
+
+interface ReplaceResult {
+  filesChanged: number;
+  replacementCount: number;
 }
 
 const DEBOUNCE_MS = 300;
@@ -60,12 +85,18 @@ function groupResults(results: SearchResult[], rootPath: string | null): ResultG
   return groups;
 }
 
+function openFileTabForPath(path: string): FileTab | null {
+  const { tabs } = useEditorStore.getState();
+  return tabs.find((t): t is FileTab => t.kind === "file" && isSameFilePath(t.path, path)) ?? null;
+}
+
 export function SearchPanel() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const { openFileByPath } = useFileExplorer();
   const goToPosition = useEditorStore((s) => s.goToPosition);
 
   const [query, setQuery] = useState("");
+  const [replacement, setReplacement] = useState("");
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [useRegex, setUseRegex] = useState(false);
@@ -74,6 +105,9 @@ export function SearchPanel() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [replacing, setReplacing] = useState(false);
+  const [replaceAllOpen, setReplaceAllOpen] = useState(false);
+  const [searchVersion, setSearchVersion] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -136,9 +170,214 @@ export function SearchPanel() {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [query, caseSensitive, wholeWord, useRegex, includePatterns, excludePatterns, rootPath]);
+  }, [
+    query,
+    caseSensitive,
+    wholeWord,
+    useRegex,
+    includePatterns,
+    excludePatterns,
+    rootPath,
+    searchVersion,
+  ]);
 
   const grouped = useMemo(() => groupResults(results, rootPath), [results, rootPath]);
+
+  const searchOptions = useCallback((): ReplaceQueryOptions => {
+    const trimmedQuery = query.trim();
+    return {
+      query: trimmedQuery,
+      caseSensitive,
+      wholeWord,
+      useRegex,
+    };
+  }, [query, caseSensitive, wholeWord, useRegex]);
+
+  const openTabPaths = useCallback((): string[] => {
+    const root = useFileExplorerStore.getState().rootPath;
+    if (!root) return [];
+    const { tabs } = useEditorStore.getState();
+    return tabs
+      .filter((t): t is FileTab => t.kind === "file" && isPathInsideRoot(t.path, root))
+      .map((t) => t.path);
+  }, []);
+
+  const replaceRequest = useCallback(
+    (extra: {
+      singlePath?: string;
+      oneMatch?: ReplaceOneTarget & { path: string };
+      skipPaths?: string[];
+    }): Record<string, unknown> => ({
+      req: {
+        workspaceRoot: rootPath,
+        query: query.trim(),
+        replacement,
+        caseSensitive,
+        wholeWord,
+        useRegex,
+        includeGlobs: parsePatterns(includePatterns),
+        excludeGlobs: parsePatterns(excludePatterns),
+        skipPaths: extra.skipPaths ?? [],
+        singlePath: extra.singlePath ?? null,
+        oneMatch: extra.oneMatch ?? null,
+      },
+    }),
+    [
+      rootPath,
+      query,
+      replacement,
+      caseSensitive,
+      wholeWord,
+      useRegex,
+      includePatterns,
+      excludePatterns,
+    ],
+  );
+
+  const refreshResults = useCallback(() => {
+    setSearchVersion((v) => v + 1);
+  }, []);
+
+  const replaceOneInOpenTab = useCallback(
+    (path: string, target: ReplaceOneTarget): boolean => {
+      const tab = openFileTabForPath(path);
+      if (!tab) return false;
+      const result = replaceOneMatchInContent(tab.content, searchOptions(), target, replacement);
+      if (result.replaced) {
+        useEditorStore.getState().updateFileContent(tab.id, result.content);
+      } else {
+        toast.error("Match not found in the open file");
+      }
+      return true;
+    },
+    [replacement, searchOptions],
+  );
+
+  const replaceAllInOpenTab = useCallback(
+    (path: string): { handled: boolean; replacementCount: number } => {
+      const tab = openFileTabForPath(path);
+      if (!tab) return { handled: false, replacementCount: 0 };
+      const result = replaceAllInContent(tab.content, searchOptions(), replacement);
+      if (result.replacementCount > 0) {
+        useEditorStore.getState().updateFileContent(tab.id, result.content);
+      }
+      return { handled: true, replacementCount: result.replacementCount };
+    },
+    [replacement, searchOptions],
+  );
+
+  const handleReplaceOne = useCallback(
+    async (result: SearchResult) => {
+      if (replacing) return;
+      setReplacing(true);
+      try {
+        if (replaceOneInOpenTab(result.path, { line: result.line, column: result.column })) {
+          refreshResults();
+          return;
+        }
+        const response = await invoke<ReplaceResult>(
+          "replace_workspace",
+          replaceRequest({
+            skipPaths: openTabPaths(),
+            singlePath: result.path,
+            oneMatch: { path: result.path, line: result.line, column: result.column },
+          }),
+        );
+        if (response.replacementCount === 0) {
+          toast.info("No matches replaced");
+        }
+        refreshResults();
+      } catch (err) {
+        toast.error(String(err));
+      } finally {
+        setReplacing(false);
+      }
+    },
+    [replacing, replaceOneInOpenTab, replaceRequest, openTabPaths, refreshResults],
+  );
+
+  const handleReplaceAllInFile = useCallback(
+    async (path: string) => {
+      if (replacing) return;
+      setReplacing(true);
+      try {
+        const openResult = replaceAllInOpenTab(path);
+        if (openResult.handled) {
+          if (openResult.replacementCount === 0) {
+            toast.info("No matches replaced");
+          }
+          refreshResults();
+          return;
+        }
+        const response = await invoke<ReplaceResult>(
+          "replace_workspace",
+          replaceRequest({ skipPaths: openTabPaths(), singlePath: path }),
+        );
+        if (response.replacementCount === 0) {
+          toast.info("No matches replaced");
+        }
+        refreshResults();
+      } catch (err) {
+        toast.error(String(err));
+      } finally {
+        setReplacing(false);
+      }
+    },
+    [replacing, replaceAllInOpenTab, replaceRequest, openTabPaths, refreshResults],
+  );
+
+  const confirmReplaceAll = useCallback(async () => {
+    setReplaceAllOpen(false);
+    if (replacing) return;
+    setReplacing(true);
+    try {
+      const openPaths = openTabPaths();
+      const { tabs } = useEditorStore.getState();
+      let filesChanged = 0;
+      let replacementCount = 0;
+
+      for (const group of grouped) {
+        const tab = tabs.find(
+          (t): t is FileTab => t.kind === "file" && isSameFilePath(t.path, group.path),
+        );
+        if (!tab) continue;
+        const result = replaceAllInContent(tab.content, searchOptions(), replacement);
+        if (result.replacementCount > 0) {
+          useEditorStore.getState().updateFileContent(tab.id, result.content);
+          filesChanged += 1;
+          replacementCount += result.replacementCount;
+        }
+      }
+
+      const response = await invoke<ReplaceResult>(
+        "replace_workspace",
+        replaceRequest({ skipPaths: openPaths }),
+      );
+      filesChanged += response.filesChanged;
+      replacementCount += response.replacementCount;
+
+      if (replacementCount > 0) {
+        toast.success(
+          `Replaced ${replacementCount} match${replacementCount === 1 ? "" : "es"} in ${filesChanged} file${filesChanged === 1 ? "" : "s"}`,
+        );
+      } else {
+        toast.info("No matches replaced");
+      }
+      refreshResults();
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setReplacing(false);
+    }
+  }, [
+    replacing,
+    grouped,
+    openTabPaths,
+    searchOptions,
+    replacement,
+    replaceRequest,
+    refreshResults,
+  ]);
 
   const handleOpenResult = async (result: SearchResult) => {
     await openFileByPath(result.path);
@@ -213,6 +452,19 @@ export function SearchPanel() {
           />
         </div>
 
+        <div className="relative">
+          <ArrowsLeftRight
+            size={14}
+            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
+          />
+          <Input
+            value={replacement}
+            onChange={(e) => setReplacement(e.target.value)}
+            placeholder="Replace"
+            className="h-8 pl-8 pr-7"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <Input
             value={includePatterns}
@@ -246,7 +498,14 @@ export function SearchPanel() {
             <ScrollArea className="h-full">
               <div className="flex flex-col gap-3 pb-2">
                 {grouped.map((group) => (
-                  <ResultGroupView key={group.path} group={group} onOpenResult={handleOpenResult} />
+                  <ResultGroupView
+                    key={group.path}
+                    group={group}
+                    disabled={replacing}
+                    onOpenResult={handleOpenResult}
+                    onReplaceOne={handleReplaceOne}
+                    onReplaceAllInFile={handleReplaceAllInFile}
+                  />
                 ))}
               </div>
             </ScrollArea>
@@ -254,11 +513,42 @@ export function SearchPanel() {
         </div>
 
         {results.length > 0 && (
-          <p className="text-ui-xs text-fg-subtle">
-            {results.length} result{results.length === 1 ? "" : "s"}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-ui-xs text-fg-subtle">
+              {results.length} result{results.length === 1 ? "" : "s"}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => setReplaceAllOpen(true)}
+              disabled={replacing}
+            >
+              <ArrowsLeftRight size={12} className="mr-1" />
+              Replace All
+            </Button>
+          </div>
         )}
       </div>
+
+      <AlertDialog open={replaceAllOpen} onOpenChange={setReplaceAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace all matches?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This replaces {results.length} match{results.length === 1 ? "" : "es"} in{" "}
+              {grouped.length} file{grouped.length === 1 ? "" : "s"} across the workspace. Files
+              already open in the editor are updated without saving them to disk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void confirmReplaceAll()}>
+              Replace All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -290,10 +580,16 @@ function OptionButton({
 
 function ResultGroupView({
   group,
+  disabled,
   onOpenResult,
+  onReplaceOne,
+  onReplaceAllInFile,
 }: {
   group: ResultGroup;
+  disabled: boolean;
   onOpenResult: (result: SearchResult) => void;
+  onReplaceOne: (result: SearchResult) => void;
+  onReplaceAllInFile: (path: string) => void;
 }) {
   const fileName = group.relativePath.split(/[/\\]/).pop() ?? group.relativePath;
 
@@ -305,19 +601,41 @@ function ResultGroupView({
           {fileName}
         </span>
         <span className="truncate text-fg-subtle">{group.relativePath}</span>
+        <button
+          type="button"
+          onClick={() => onReplaceAllInFile(group.path)}
+          disabled={disabled}
+          title={`Replace all matches in ${fileName}`}
+          className="shrink-0 rounded p-1 text-fg-subtle hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+        >
+          <ArrowsLeftRight size={12} />
+        </button>
       </div>
       {group.matches.map((match, index) => (
-        <button
+        <div
           key={`${match.line}:${match.column}:${index}`}
-          type="button"
-          onClick={() => onOpenResult(match)}
-          className="flex flex-col gap-0.5 rounded-md px-1 py-1 text-left text-ui-xs hover:bg-bg-hover"
+          className="flex items-center gap-1 rounded-md px-1 py-0.5 hover:bg-bg-hover"
         >
-          <div className="flex items-center gap-2 text-fg-subtle">
-            <span className="w-8 shrink-0 text-right tabular-nums">{match.line}</span>
+          <button
+            type="button"
+            onClick={() => onOpenResult(match)}
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left text-ui-xs"
+          >
+            <span className="w-8 shrink-0 text-right text-fg-subtle tabular-nums">
+              {match.line}
+            </span>
             <span className="truncate text-fg-default">{match.preview}</span>
-          </div>
-        </button>
+          </button>
+          <button
+            type="button"
+            onClick={() => onReplaceOne(match)}
+            disabled={disabled}
+            title={`Replace this match in ${fileName}`}
+            className="shrink-0 rounded p-1 text-fg-subtle hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ArrowsLeftRight size={12} />
+          </button>
+        </div>
       ))}
     </div>
   );
