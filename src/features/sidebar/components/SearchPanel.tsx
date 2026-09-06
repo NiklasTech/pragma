@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
+  ArrowsLeftRight,
   BracketsAngle,
   File,
   MagnifyingGlass,
@@ -13,52 +14,32 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import { useWorkspaceReplace } from "@/features/sidebar/hooks/useWorkspaceReplace";
+import {
+  groupSearchResults,
+  parsePatterns,
+  type SearchQueryState,
+  type SearchResult,
+  type SearchResultGroup,
+} from "@/features/sidebar/lib/searchReplace";
 import { cn } from "@/shared/lib/utils";
 
-interface SearchResult {
-  path: string;
-  line: number;
-  column: number;
-  preview: string;
-  matchText: string;
-}
-
-interface ResultGroup {
-  path: string;
-  relativePath: string;
-  matches: SearchResult[];
-}
-
 const DEBOUNCE_MS = 300;
-
-function parsePatterns(value: string): string[] {
-  return value
-    .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean);
-}
-
-function groupResults(results: SearchResult[], rootPath: string | null): ResultGroup[] {
-  const map = new Map<string, SearchResult[]>();
-  for (const result of results) {
-    const list = map.get(result.path) ?? [];
-    list.push(result);
-    map.set(result.path, list);
-  }
-
-  const groups: ResultGroup[] = [];
-  for (const [path, matches] of map.entries()) {
-    const relativePath = rootPath ? path.replace(rootPath, "").replace(/^[/\\]/, "") : path;
-    groups.push({ path, relativePath, matches });
-  }
-  groups.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
-  return groups;
-}
 
 export function SearchPanel() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
@@ -66,6 +47,7 @@ export function SearchPanel() {
   const goToPosition = useEditorStore((s) => s.goToPosition);
 
   const [query, setQuery] = useState("");
+  const [replacement, setReplacement] = useState("");
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [useRegex, setUseRegex] = useState(false);
@@ -74,8 +56,32 @@ export function SearchPanel() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [replaceAllOpen, setReplaceAllOpen] = useState(false);
+  const [searchVersion, setSearchVersion] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const grouped = useMemo(() => groupSearchResults(results, rootPath), [results, rootPath]);
+  const searchState = useMemo<SearchQueryState>(
+    () => ({
+      query,
+      replacement,
+      caseSensitive,
+      wholeWord,
+      useRegex,
+      includePatterns,
+      excludePatterns,
+    }),
+    [query, replacement, caseSensitive, wholeWord, useRegex, includePatterns, excludePatterns],
+  );
+  const refreshResults = useCallback(() => {
+    setSearchVersion((v) => v + 1);
+  }, []);
+  const { replacing, replaceOne, replaceAllInFile, replaceAllInWorkspace } = useWorkspaceReplace({
+    rootPath,
+    state: searchState,
+    grouped,
+    onRefresh: refreshResults,
+  });
 
   useEffect(() => {
     const handleFocus = () => {
@@ -136,9 +142,16 @@ export function SearchPanel() {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [query, caseSensitive, wholeWord, useRegex, includePatterns, excludePatterns, rootPath]);
-
-  const grouped = useMemo(() => groupResults(results, rootPath), [results, rootPath]);
+  }, [
+    query,
+    caseSensitive,
+    wholeWord,
+    useRegex,
+    includePatterns,
+    excludePatterns,
+    rootPath,
+    searchVersion,
+  ]);
 
   const handleOpenResult = async (result: SearchResult) => {
     await openFileByPath(result.path);
@@ -213,6 +226,19 @@ export function SearchPanel() {
           />
         </div>
 
+        <div className="relative">
+          <ArrowsLeftRight
+            size={14}
+            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
+          />
+          <Input
+            value={replacement}
+            onChange={(e) => setReplacement(e.target.value)}
+            placeholder="Replace"
+            className="h-8 pl-8 pr-7"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <Input
             value={includePatterns}
@@ -246,7 +272,14 @@ export function SearchPanel() {
             <ScrollArea className="h-full">
               <div className="flex flex-col gap-3 pb-2">
                 {grouped.map((group) => (
-                  <ResultGroupView key={group.path} group={group} onOpenResult={handleOpenResult} />
+                  <ResultGroupView
+                    key={group.path}
+                    group={group}
+                    disabled={replacing}
+                    onOpenResult={handleOpenResult}
+                    onReplaceOne={replaceOne}
+                    onReplaceAllInFile={replaceAllInFile}
+                  />
                 ))}
               </div>
             </ScrollArea>
@@ -254,11 +287,47 @@ export function SearchPanel() {
         </div>
 
         {results.length > 0 && (
-          <p className="text-ui-xs text-fg-subtle">
-            {results.length} result{results.length === 1 ? "" : "s"}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-ui-xs text-fg-subtle">
+              {results.length} result{results.length === 1 ? "" : "s"}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => setReplaceAllOpen(true)}
+              disabled={replacing}
+            >
+              <ArrowsLeftRight size={12} className="mr-1" />
+              Replace All
+            </Button>
+          </div>
         )}
       </div>
+
+      <AlertDialog open={replaceAllOpen} onOpenChange={setReplaceAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace all matches?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This replaces {results.length} match{results.length === 1 ? "" : "es"} in{" "}
+              {grouped.length} file{grouped.length === 1 ? "" : "s"} across the workspace. Files
+              already open in the editor are updated without saving them to disk.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setReplaceAllOpen(false);
+                void replaceAllInWorkspace();
+              }}
+            >
+              Replace All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -290,10 +359,16 @@ function OptionButton({
 
 function ResultGroupView({
   group,
+  disabled,
   onOpenResult,
+  onReplaceOne,
+  onReplaceAllInFile,
 }: {
-  group: ResultGroup;
+  group: SearchResultGroup;
+  disabled: boolean;
   onOpenResult: (result: SearchResult) => void;
+  onReplaceOne: (result: SearchResult) => void;
+  onReplaceAllInFile: (path: string) => void;
 }) {
   const fileName = group.relativePath.split(/[/\\]/).pop() ?? group.relativePath;
 
@@ -305,19 +380,41 @@ function ResultGroupView({
           {fileName}
         </span>
         <span className="truncate text-fg-subtle">{group.relativePath}</span>
+        <button
+          type="button"
+          onClick={() => onReplaceAllInFile(group.path)}
+          disabled={disabled}
+          title={`Replace all matches in ${fileName}`}
+          className="shrink-0 rounded p-1 text-fg-subtle hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+        >
+          <ArrowsLeftRight size={12} />
+        </button>
       </div>
       {group.matches.map((match, index) => (
-        <button
+        <div
           key={`${match.line}:${match.column}:${index}`}
-          type="button"
-          onClick={() => onOpenResult(match)}
-          className="flex flex-col gap-0.5 rounded-md px-1 py-1 text-left text-ui-xs hover:bg-bg-hover"
+          className="flex items-center gap-1 rounded-md px-1 py-0.5 hover:bg-bg-hover"
         >
-          <div className="flex items-center gap-2 text-fg-subtle">
-            <span className="w-8 shrink-0 text-right tabular-nums">{match.line}</span>
+          <button
+            type="button"
+            onClick={() => onOpenResult(match)}
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left text-ui-xs"
+          >
+            <span className="w-8 shrink-0 text-right text-fg-subtle tabular-nums">
+              {match.line}
+            </span>
             <span className="truncate text-fg-default">{match.preview}</span>
-          </div>
-        </button>
+          </button>
+          <button
+            type="button"
+            onClick={() => onReplaceOne(match)}
+            disabled={disabled}
+            title={`Replace this match in ${fileName}`}
+            className="shrink-0 rounded p-1 text-fg-subtle hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ArrowsLeftRight size={12} />
+          </button>
+        </div>
       ))}
     </div>
   );

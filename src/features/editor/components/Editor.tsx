@@ -29,6 +29,7 @@ import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-text";
 import { insertTabBinding } from "./extensions/tab-keymap";
+import { openEditorSearchPanel, searchExtension } from "./extensions/search";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { lspServerCapabilities } from "@/features/editor/lsp/client";
 import { lspCompletionExtension } from "@/features/editor/lsp/completion";
@@ -59,10 +60,12 @@ import {
   EDITOR_CHECK_DEFINITION_EVENT,
   EDITOR_CODE_ACTION_EVENT,
   EDITOR_DOCUMENT_SYMBOLS_EVENT,
+  EDITOR_FIND_EVENT,
   EDITOR_FIND_REFERENCES_EVENT,
   EDITOR_FORMAT_DOCUMENT_EVENT,
   EDITOR_GO_TO_DEFINITION_EVENT,
   EDITOR_RENAME_EVENT,
+  EDITOR_REPLACE_EVENT,
   dispatchEditorDefinitionAvailability,
   type EditorCheckDefinitionEventDetail,
   type EditorFindReferencesEventDetail,
@@ -197,6 +200,7 @@ function FileEditor({
         history(),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
         keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding]),
+        searchExtension(),
         drawSelection(),
         editorBaseTheme,
         fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
@@ -590,6 +594,29 @@ function FileEditor({
       window.removeEventListener(EDITOR_DOCUMENT_SYMBOLS_EVENT, onDocumentSymbols);
     };
   }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
+
+  useEffect(() => {
+    const onFind = () => {
+      const view = viewRef.current;
+      if (!view) return;
+      if (useEditorStore.getState().activeTabId !== tabId) return;
+      openEditorSearchPanel(view, "find");
+    };
+
+    const onReplace = () => {
+      const view = viewRef.current;
+      if (!view) return;
+      if (useEditorStore.getState().activeTabId !== tabId) return;
+      openEditorSearchPanel(view, "replace");
+    };
+
+    window.addEventListener(EDITOR_FIND_EVENT, onFind);
+    window.addEventListener(EDITOR_REPLACE_EVENT, onReplace);
+    return () => {
+      window.removeEventListener(EDITOR_FIND_EVENT, onFind);
+      window.removeEventListener(EDITOR_REPLACE_EVENT, onReplace);
+    };
+  }, [tabId]);
 
   useEffect(() => {
     if (!viewRef.current) return;

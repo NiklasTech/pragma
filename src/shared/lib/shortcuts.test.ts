@@ -99,6 +99,8 @@ describe("findConflictingAction", () => {
       "view.openSettings": { ctrl: true, code: "Comma" },
       "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
       "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
+      "search.find": { ctrl: true, code: "KeyF" },
+      "search.replace": { ctrl: true, code: "KeyH" },
       "view.commandPalette": { ctrl: true, shift: true, code: "KeyP" },
       "chat.send": { key: "Enter" },
     };
@@ -120,6 +122,8 @@ describe("findConflictingAction", () => {
       "view.openSettings": { ctrl: true, code: "Comma" },
       "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
       "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
+      "search.find": { ctrl: true, code: "KeyF" },
+      "search.replace": { ctrl: true, code: "KeyH" },
       "view.commandPalette": { ctrl: true, shift: true, code: "KeyP" },
       "chat.send": { key: "Enter" },
     };
@@ -166,10 +170,12 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(13);
+    expect(Object.keys(defaults)).toHaveLength(15);
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
     expect(defaults["view.commandPalette"]).toEqual({ ctrl: true, shift: true, code: "KeyP" });
     expect(defaults["file.goToFile"]).toEqual({ ctrl: true, code: "KeyP" });
+    expect(defaults["search.find"]).toEqual({ ctrl: true, code: "KeyF" });
+    expect(defaults["search.replace"]).toEqual({ ctrl: true, code: "KeyH" });
   });
 });
 

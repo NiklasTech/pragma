@@ -112,6 +112,24 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "search.find" as const,
+    label: "Find in File",
+    category: "search" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "KeyF",
+    }),
+  },
+  {
+    id: "search.replace" as const,
+    label: "Replace in File",
+    category: "search" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "KeyH",
+    }),
+  },
+  {
     id: "ai.toggle" as const,
     label: "Toggle AI Chat",
     category: "ai" as const,
