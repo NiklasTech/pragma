@@ -114,7 +114,7 @@ describe("countAgentSteps", () => {
       assistantWithTools("a1", [
         { toolCallId: "t1", toolName: AGENT_TOOL_NAMES.readFile, state: "output-available" },
         { toolCallId: "t2", toolName: AGENT_TOOL_NAMES.writeFile, state: "output-error" },
-        { toolCallId: "t3", toolName: AGENT_TOOL_NAMES.listFiles, state: "input-available" },
+        { toolCallId: "t3", toolName: AGENT_TOOL_NAMES.grep, state: "input-available" },
       ]),
     ];
     expect(countAgentSteps(messages)).toBe(2);

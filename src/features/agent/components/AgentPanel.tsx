@@ -14,6 +14,8 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { cn } from "@/shared/lib/utils";
 
 import { useAgentStore, type AgentStatus, type AgentStep } from "../store";
+import { AgentRulesStatus } from "./AgentRulesStatus";
+import { AgentTodoList } from "./AgentTodoList";
 
 const STATUS_LABELS: Record<AgentStatus, string> = {
   idle: "Idle",
@@ -65,7 +67,8 @@ function StepRow({ step }: { step: AgentStep }) {
 }
 
 export function AgentPanel() {
-  const { status, goal, steps, stepCount, maxSteps, summary, error, requestStop } = useAgentStore();
+  const { status, goal, steps, stepCount, maxSteps, summary, error, editReviews, requestStop } =
+    useAgentStore();
 
   const canStop = status === "running" || status === "waiting-approval";
 
@@ -89,6 +92,8 @@ export function AgentPanel() {
         }
       />
 
+      <AgentRulesStatus />
+
       {status === "idle" ? (
         <PanelEmptyState
           icon={MagicWand}
@@ -110,13 +115,16 @@ export function AgentPanel() {
 
           <ScrollArea className="min-h-0 flex-1 border-t border-border/40">
             <div className="flex flex-col py-1">
+              <AgentTodoList />
               {steps.map((step) => (
                 <StepRow key={step.id} step={step} />
               ))}
               {status === "waiting-approval" && (
                 <div className="flex items-center gap-2 px-3 py-1.5 text-ui-xs text-status-warning">
                   <CircleDashed size={13} className="shrink-0" />
-                  Waiting for approval in the chat panel
+                  {editReviews.length > 0
+                    ? "Waiting for review in the editor"
+                    : "Waiting for approval in the chat panel"}
                 </div>
               )}
             </div>

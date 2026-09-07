@@ -1,8 +1,18 @@
 import { create } from "zustand";
 
+import type { ProjectRules } from "./rules";
+
 export type AgentStatus = "idle" | "running" | "waiting-approval" | "done" | "error" | "cancelled";
 
 export type AgentStepStatus = "running" | "done" | "error" | "denied";
+
+export type AgentTodoStatus = "pending" | "in_progress" | "done";
+
+export interface AgentTodo {
+  id: string;
+  content: string;
+  status: AgentTodoStatus;
+}
 
 export interface AgentStep {
   id: string;
@@ -20,6 +30,12 @@ export interface AgentApproval {
   resolve: (approved: boolean) => void;
 }
 
+export interface AgentEditReview {
+  toolCallId: string;
+  path: string;
+  resolve: (accepted: boolean) => void;
+}
+
 interface AgentState {
   modeActive: boolean;
   status: AgentStatus;
@@ -31,6 +47,9 @@ interface AgentState {
   error: string | null;
   pendingApprovals: AgentApproval[];
   checkpointedPaths: string[];
+  todos: AgentTodo[];
+  rules: ProjectRules | null;
+  editReviews: AgentEditReview[];
   stopCallback: (() => void) | null;
 }
 
@@ -44,7 +63,11 @@ interface AgentActions {
   failTask: (error: string) => void;
   requestApproval: (approval: Omit<AgentApproval, "resolve">) => Promise<boolean>;
   resolveApproval: (toolCallId: string, approved: boolean) => void;
+  requestEditReview: (review: Omit<AgentEditReview, "resolve">) => Promise<boolean>;
+  resolveEditReview: (toolCallId: string, accepted: boolean) => void;
   markCheckpointed: (path: string) => void;
+  setTodos: (items: AgentTodo[], merge: boolean) => void;
+  setRules: (rules: ProjectRules | null) => void;
   setStopCallback: (callback: (() => void) | null) => void;
   requestStop: () => void;
 }
@@ -60,6 +83,9 @@ const initialState: AgentState = {
   error: null,
   pendingApprovals: [],
   checkpointedPaths: [],
+  todos: [],
+  rules: null,
+  editReviews: [],
   stopCallback: null,
 };
 
@@ -79,6 +105,8 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
       error: null,
       pendingApprovals: [],
       checkpointedPaths: [],
+      todos: [],
+      editReviews: [],
     }),
 
   addStep: (step) =>
@@ -94,9 +122,15 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
 
   setStatus: (status) => set({ status }),
 
-  finishTask: (summary) => set({ status: "done", summary, pendingApprovals: [] }),
+  finishTask: (summary) => {
+    for (const review of get().editReviews) review.resolve(false);
+    set({ status: "done", summary, pendingApprovals: [], editReviews: [] });
+  },
 
-  failTask: (error) => set({ status: "error", error, pendingApprovals: [] }),
+  failTask: (error) => {
+    for (const review of get().editReviews) review.resolve(false);
+    set({ status: "error", error, pendingApprovals: [], editReviews: [] });
+  },
 
   requestApproval: (approval) =>
     new Promise<boolean>((resolve) => {
@@ -115,6 +149,23 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
     approval?.resolve(approved);
   },
 
+  requestEditReview: (review) =>
+    new Promise<boolean>((resolve) => {
+      set((state) => ({
+        status: "waiting-approval",
+        editReviews: [...state.editReviews, { ...review, resolve }],
+      }));
+    }),
+
+  resolveEditReview: (toolCallId, accepted) => {
+    const review = get().editReviews.find((r) => r.toolCallId === toolCallId);
+    set((state) => ({
+      status: "running",
+      editReviews: state.editReviews.filter((r) => r.toolCallId !== toolCallId),
+    }));
+    review?.resolve(accepted);
+  },
+
   markCheckpointed: (path) =>
     set((state) => ({
       checkpointedPaths: state.checkpointedPaths.includes(path)
@@ -122,14 +173,29 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
         : [...state.checkpointedPaths, path],
     })),
 
+  setTodos: (items, merge) =>
+    set((state) => {
+      if (!merge) return { todos: items };
+      const byId = new Map<string, AgentTodo>(state.todos.map((todo) => [todo.id, todo] as const));
+      for (const item of items) {
+        byId.set(item.id, item);
+      }
+      return { todos: [...byId.values()] };
+    }),
+
+  setRules: (rules) => set({ rules }),
+
   setStopCallback: (callback) => set({ stopCallback: callback }),
 
   requestStop: () => {
-    const { stopCallback, pendingApprovals } = get();
+    const { stopCallback, pendingApprovals, editReviews } = get();
     for (const approval of pendingApprovals) {
       approval.resolve(false);
     }
-    set({ status: "cancelled", pendingApprovals: [] });
+    for (const review of editReviews) {
+      review.resolve(false);
+    }
+    set({ status: "cancelled", pendingApprovals: [], editReviews: [] });
     stopCallback?.();
   },
 }));

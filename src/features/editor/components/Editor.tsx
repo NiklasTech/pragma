@@ -20,6 +20,7 @@ import { vim, getCM } from "@replit/codemirror-vim";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useAgentStore } from "@/features/agent/store";
 import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAutoSave } from "@/shared/hooks/useAutoSave";
@@ -706,8 +707,13 @@ export function Editor({ panelId }: EditorProps) {
 
   if (activeTab.kind === "diff") {
     const isAiEdit = !!activeTab.sourceTabId;
+    const isAgentReview = activeTab.agentReviewId !== undefined && !activeTab.agentApplied;
 
     const handleAccept = (modified: string) => {
+      if (activeTab.agentReviewId) {
+        useAgentStore.getState().resolveEditReview(activeTab.agentReviewId, true);
+        return;
+      }
       if (activeTab.sourceTabId) {
         updateFileContent(activeTab.sourceTabId, modified);
       }
@@ -716,9 +722,15 @@ export function Editor({ panelId }: EditorProps) {
     };
 
     const handleReject = () => {
+      if (activeTab.agentReviewId) {
+        useAgentStore.getState().resolveEditReview(activeTab.agentReviewId, false);
+        return;
+      }
       closeTab(activeTab.id);
       useAIEditStore.getState().rejectEdit();
     };
+
+    const showActions = isAiEdit || isAgentReview;
 
     return (
       <div className="flex h-full w-full flex-col">
@@ -728,8 +740,8 @@ export function Editor({ panelId }: EditorProps) {
             modified={activeTab.modified}
             patchText={activeTab.patchText}
             filePath={activeTab.path}
-            onAccept={isAiEdit ? handleAccept : undefined}
-            onReject={isAiEdit ? handleReject : undefined}
+            onAccept={showActions ? handleAccept : undefined}
+            onReject={showActions ? handleReject : undefined}
           />
         </div>
         <EditorStatusbar vimMode={null} line={0} column={0} fileType={activeTab.path} />

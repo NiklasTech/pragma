@@ -29,6 +29,8 @@ export interface DiffTab {
   patchText: string;
   staged: boolean;
   sourceTabId?: string;
+  agentReviewId?: string;
+  agentApplied?: boolean;
 }
 
 export interface ReferenceLocation {

@@ -1,7 +1,9 @@
 mod find;
+mod glob;
 mod replace;
 
 pub use find::*;
+pub use glob::*;
 pub use replace::*;
 
 use regex::{Regex, RegexBuilder};

@@ -20,11 +20,14 @@ describe("agent tool name resolution", () => {
     expect(isAgentTool("")).toBe(false);
   });
 
-  it("flags only write_file and run_command as destructive", () => {
+  it("flags only write_file, search_replace and run_command as destructive", () => {
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.writeFile)).toBe(true);
+    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.searchReplace)).toBe(true);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.runCommand)).toBe(true);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.readFile)).toBe(false);
-    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.listFiles)).toBe(false);
+    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.grep)).toBe(false);
+    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.glob)).toBe(false);
+    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.todoWrite)).toBe(false);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.taskComplete)).toBe(false);
   });
 
