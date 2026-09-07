@@ -3,9 +3,12 @@ import type { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 
 import { useSettingsStore } from "@/shared/stores/settings";
 
-import { useAgentStore, type AgentStep } from "./store";
-import { resolveAgentApproval } from "./permissions";
-import { AGENT_TOOL_NAMES } from "./tools";
+import { useAgentStore, type AgentStep, type AgentTodo } from "./store";
+import { resolveAgentApproval, type AgentApprovalDecision } from "./permissions";
+import { AGENT_TOOL_NAMES, isFileEditTool } from "./tools";
+import { applySearchReplace } from "./searchReplace";
+import { sliceFileLines } from "./readSlice";
+import { applyAgentFileEdit } from "./applyEdit";
 
 export interface AgentToolCall {
   toolCallId: string;
@@ -19,13 +22,6 @@ interface FileReadResult {
   path: string;
   name: string;
   content: string;
-}
-
-interface DirEntry {
-  path: string;
-  name: string;
-  is_directory: boolean;
-  is_file: boolean;
 }
 
 interface SearchMatch {
@@ -44,13 +40,43 @@ interface AgentCommandResult {
 }
 
 const MAX_TOOL_OUTPUT_CHARS = 50_000;
-const MAX_LIST_ENTRIES = 500;
 const MAX_SEARCH_MATCHES = 100;
 
 function readStringInput(input: unknown, key: string): string {
   if (typeof input !== "object" || input === null) return "";
   const value = (input as Record<string, unknown>)[key];
   return typeof value === "string" ? value : "";
+}
+
+function readNumberInput(input: unknown, key: string): number | undefined {
+  if (typeof input !== "object" || input === null) return undefined;
+  const value = (input as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function readBooleanInput(input: unknown, key: string): boolean {
+  if (typeof input !== "object" || input === null) return false;
+  const value = (input as Record<string, unknown>)[key];
+  return typeof value === "boolean" ? value : false;
+}
+
+function readTodoItems(input: unknown): AgentTodo[] {
+  if (typeof input !== "object" || input === null) return [];
+  const raw = (input as Record<string, unknown>).items;
+  if (!Array.isArray(raw)) return [];
+  const items: AgentTodo[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const item = entry as Record<string, unknown>;
+    const id = typeof item.id === "string" ? item.id : "";
+    if (!id) continue;
+    const status =
+      item.status === "pending" || item.status === "in_progress" || item.status === "done"
+        ? item.status
+        : "pending";
+    items.push({ id, content: typeof item.content === "string" ? item.content : "", status });
+  }
+  return items;
 }
 
 function resolveWorkspacePath(rootPath: string, path: string): string {
@@ -72,12 +98,14 @@ function stepLabel(toolName: string, input: unknown): { label: string; detail?: 
       return { label: "Read file", detail: readStringInput(input, "path") };
     case AGENT_TOOL_NAMES.writeFile:
       return { label: "Write file", detail: readStringInput(input, "path") };
-    case AGENT_TOOL_NAMES.listFiles: {
-      const query = readStringInput(input, "query");
-      return query
-        ? { label: "Search files", detail: query }
-        : { label: "List files", detail: readStringInput(input, "path") || undefined };
-    }
+    case AGENT_TOOL_NAMES.grep:
+      return { label: "Search", detail: readStringInput(input, "query") };
+    case AGENT_TOOL_NAMES.glob:
+      return { label: "Find files", detail: readStringInput(input, "pattern") };
+    case AGENT_TOOL_NAMES.searchReplace:
+      return { label: "Edit file", detail: readStringInput(input, "path") };
+    case AGENT_TOOL_NAMES.todoWrite:
+      return { label: "Update todos" };
     case AGENT_TOOL_NAMES.runCommand:
       return { label: "Run command", detail: readStringInput(input, "command") };
     case AGENT_TOOL_NAMES.taskComplete:
@@ -87,15 +115,47 @@ function stepLabel(toolName: string, input: unknown): { label: string; detail?: 
   }
 }
 
-async function checkpointBeforeWrite(path: string): Promise<void> {
-  const store = useAgentStore.getState();
-  if (store.checkpointedPaths.includes(path)) return;
+async function readOriginalContent(path: string): Promise<string> {
   try {
-    await invoke("local_history_snapshot", { filePath: path });
+    const result = await invoke<FileReadResult>("read_text_file", { path });
+    return result.content;
   } catch {
-    // Checkpointing is best-effort; the write itself must not fail because of it.
+    return "";
   }
-  store.markCheckpointed(path);
+}
+
+async function dispatchFileEdit(
+  call: AgentToolCall,
+  rootPath: string,
+  decision: AgentApprovalDecision,
+): Promise<string> {
+  if (call.toolName === AGENT_TOOL_NAMES.writeFile) {
+    const path = resolveWorkspacePath(rootPath, readStringInput(call.input, "path"));
+    const content = readStringInput(call.input, "content");
+    const originalContent = await readOriginalContent(path);
+    await applyAgentFileEdit(
+      { toolCallId: call.toolCallId, path, originalContent, content },
+      decision,
+    );
+    return `Wrote ${path}`;
+  }
+
+  const path = resolveWorkspacePath(rootPath, readStringInput(call.input, "path"));
+  const oldString = readStringInput(call.input, "old_string");
+  const newString = readStringInput(call.input, "new_string");
+  const replaceAll = readBooleanInput(call.input, "replace_all");
+  const result = await invoke<FileReadResult>("read_text_file", { path });
+  const applied = applySearchReplace(result.content, oldString, newString, replaceAll);
+  await applyAgentFileEdit(
+    {
+      toolCallId: call.toolCallId,
+      path,
+      originalContent: result.content,
+      content: applied.content,
+    },
+    decision,
+  );
+  return `Replaced in ${path}`;
 }
 
 async function dispatchTool(
@@ -106,46 +166,53 @@ async function dispatchTool(
   switch (toolName) {
     case AGENT_TOOL_NAMES.readFile: {
       const path = resolveWorkspacePath(rootPath, readStringInput(input, "path"));
+      const offset = readNumberInput(input, "offset");
+      const limit = readNumberInput(input, "limit");
       const result = await invoke<FileReadResult>("read_text_file", { path });
-      return { output: truncateOutput(result.content) };
+      const slice = sliceFileLines(result.content, offset, limit);
+      return { output: truncateOutput(slice.text) };
     }
-    case AGENT_TOOL_NAMES.writeFile: {
-      const path = resolveWorkspacePath(rootPath, readStringInput(input, "path"));
-      await checkpointBeforeWrite(path);
-      await invoke("write_text_file", { path, content: readStringInput(input, "content") });
-      return { output: `Wrote ${path}` };
-    }
-    case AGENT_TOOL_NAMES.listFiles: {
+    case AGENT_TOOL_NAMES.grep: {
       const path = resolveWorkspacePath(rootPath, readStringInput(input, "path") || rootPath);
-      const query = readStringInput(input, "query");
-      if (query) {
-        const matches = await invoke<SearchMatch[]>("search_workspace", {
-          req: {
-            workspaceRoot: path,
-            query,
-            caseSensitive: false,
-            wholeWord: false,
-            useRegex: false,
-            includeGlobs: [],
-            excludeGlobs: [],
-          },
-        });
-        const limited = matches.slice(0, MAX_SEARCH_MATCHES);
-        return {
-          output:
-            limited.map((m) => `${m.path}:${m.line}:${m.column}: ${m.preview}`).join("\n") ||
-            "No matches found.",
-          detail: `${matches.length} matches`,
-        };
-      }
-      const entries = await invoke<DirEntry[]>("list_directory_recursive", { path });
-      const limited = entries.slice(0, MAX_LIST_ENTRIES);
+      const glob = readStringInput(input, "glob");
+      const matches = await invoke<SearchMatch[]>("search_workspace", {
+        req: {
+          workspaceRoot: path,
+          query: readStringInput(input, "query"),
+          caseSensitive: readBooleanInput(input, "caseSensitive"),
+          wholeWord: false,
+          useRegex: readBooleanInput(input, "useRegex"),
+          includeGlobs: glob ? [glob] : [],
+          excludeGlobs: [],
+        },
+      });
+      const limited = matches.slice(0, MAX_SEARCH_MATCHES);
       return {
         output:
-          limited.map((e) => `${e.path}${e.is_directory ? "/" : ""}`).join("\n") ||
-          "Directory is empty.",
-        detail: `${entries.length} entries`,
+          limited.map((m) => `${m.path}:${m.line}:${m.column}: ${m.preview}`).join("\n") ||
+          "No matches found.",
+        detail: `${matches.length} matches`,
       };
+    }
+    case AGENT_TOOL_NAMES.glob: {
+      const pathInput = readStringInput(input, "path");
+      const matches = await invoke<string[]>("glob_workspace", {
+        req: {
+          workspaceRoot: rootPath,
+          pattern: readStringInput(input, "pattern"),
+          path: pathInput ? resolveWorkspacePath(rootPath, pathInput) : null,
+        },
+      });
+      return {
+        output: matches.join("\n") || "No files found.",
+        detail: `${matches.length} files`,
+      };
+    }
+    case AGENT_TOOL_NAMES.todoWrite: {
+      const items = readTodoItems(input);
+      useAgentStore.getState().setTodos(items, true);
+      const count = useAgentStore.getState().todos.length;
+      return { output: `Todo list updated (${count} items).` };
     }
     case AGENT_TOOL_NAMES.runCommand: {
       const result = await invoke<AgentCommandResult>("agent_run_command", {
@@ -215,6 +282,18 @@ export async function executeAgentTool(
     settings.agent,
     settings.ai.yoloMode,
   );
+
+  if (isFileEditTool(call.toolName)) {
+    try {
+      const output = await dispatchFileEdit(call, rootPath, decision);
+      finishStep("done", detail);
+      return { output };
+    } catch (err) {
+      const errorText = String(err);
+      finishStep("error", errorText);
+      return { errorText };
+    }
+  }
 
   if (decision === "required") {
     const approved = await store.requestApproval({

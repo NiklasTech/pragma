@@ -242,6 +242,7 @@ pub fn run() {
             commands::perf::memory_stats,
             commands::search::search_workspace,
             commands::search::replace_workspace,
+            commands::search::glob_workspace,
             cli::get_cli_project_path,
             window::create_external_window,
             window::close_external_window,

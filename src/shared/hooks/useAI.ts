@@ -31,6 +31,7 @@ import {
   buildAgentSystemPrompt,
   isAgentTool,
 } from "@/features/agent/tools";
+import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
 
 export { getMessageText };
 
@@ -90,10 +91,27 @@ export function useAI() {
     () => (agentActive ? AGENT_TOOL_DEFINITIONS : []),
     [agentActive],
   );
-  const agentSystemPrompt = useMemo(
-    () => (agentActive ? buildAgentSystemPrompt(rootPath) : undefined),
-    [agentActive, rootPath],
-  );
+
+  const projectRules = useAgentStore((state) => state.rules);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!rootPath || rootPath === "default") {
+      useAgentStore.getState().setRules(null);
+      return;
+    }
+    void loadProjectRules(rootPath).then((loaded) => {
+      if (!cancelled) useAgentStore.getState().setRules(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rootPath]);
+
+  const systemPrompt = useMemo(() => {
+    if (agentActive) return buildAgentSystemPrompt(rootPath, projectRules);
+    return formatRulesForPrompt(projectRules) || undefined;
+  }, [agentActive, rootPath, projectRules]);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -107,7 +125,7 @@ export function useAI() {
         rootPath,
         activeChatSessionId,
         experimentalAcp,
-        agentSystemPrompt,
+        systemPrompt,
       ),
     [
       activeProvider,
@@ -120,7 +138,7 @@ export function useAI() {
       rootPath,
       activeChatSessionId,
       experimentalAcp,
-      agentSystemPrompt,
+      systemPrompt,
     ],
   );
 

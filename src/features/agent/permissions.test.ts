@@ -51,10 +51,23 @@ describe("isCommandAllowed", () => {
 describe("resolveAgentApproval", () => {
   it("always auto-approves read-only tools", () => {
     expect(resolveAgentApproval(AGENT_TOOL_NAMES.readFile, {}, baseSettings, false)).toBe("auto");
-    expect(resolveAgentApproval(AGENT_TOOL_NAMES.listFiles, {}, baseSettings, false)).toBe("auto");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.grep, {}, baseSettings, false)).toBe("auto");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.glob, {}, baseSettings, false)).toBe("auto");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.todoWrite, {}, baseSettings, false)).toBe("auto");
     expect(resolveAgentApproval(AGENT_TOOL_NAMES.taskComplete, {}, baseSettings, false)).toBe(
       "auto",
     );
+  });
+
+  it("requires approval for search_replace when autoApprove is never", () => {
+    expect(
+      resolveAgentApproval(
+        AGENT_TOOL_NAMES.searchReplace,
+        { path: "a.ts", old_string: "x", new_string: "y" },
+        baseSettings,
+        false,
+      ),
+    ).toBe("required");
   });
 
   it("requires approval for writes when autoApprove is never", () => {
