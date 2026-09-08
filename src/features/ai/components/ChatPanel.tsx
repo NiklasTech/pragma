@@ -1,10 +1,8 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import {
-  PaperPlaneRight,
   Warning,
   Terminal,
   Plus,
-  Stop,
   Robot,
   ArrowCounterClockwise,
   Check,
@@ -13,24 +11,19 @@ import {
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Textarea } from "@/shared/components/ui/textarea";
 import { useAI, getMessageText } from "@/shared/hooks/useAI";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
-import { matchShortcut } from "@/shared/lib/shortcuts";
 import type { UIMessage } from "@ai-sdk/react";
 
-import { AiModelSelector } from "./AiModelSelector";
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
+import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatSessionList } from "./ChatSessionList";
-import { ChatToolbar } from "./ChatToolbar";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
-import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
 import { Message, MessageContent, MessageResponse } from "./Message";
 import { ReasoningBlock } from "./ReasoningBlock";
@@ -71,7 +64,6 @@ export function ChatPanel() {
     messages,
     input,
     setInput,
-    handleInputChange,
     handleSubmit,
     isLoading,
     status,
@@ -85,14 +77,10 @@ export function ChatPanel() {
     mcpLoaded,
   } = useAI();
   const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
-  const { edit, prefillPrompt, consumePrefill, receiveProposal, cancelEdit } = useAIEditStore();
+  const { edit, receiveProposal, cancelEdit } = useAIEditStore();
   const openDiff = useEditorStore((state) => state.openDiff);
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
-  const contextPickerRef = useRef<ContextPickerRef>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [cursorPosition, setCursorPosition] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState<
     Array<{
       sessionId: string;
@@ -107,17 +95,6 @@ export function ChatPanel() {
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
 
   const previousStatusRef = useRef(status);
-
-  const inputRef = useRef(input);
-  inputRef.current = input;
-
-  useEffect(() => {
-    if (!prefillPrompt) return;
-    if (inputRef.current !== prefillPrompt) {
-      setInput(prefillPrompt);
-    }
-    consumePrefill();
-  }, [prefillPrompt, setInput, consumePrefill]);
 
   useEffect(() => {
     const previous = previousStatusRef.current;
@@ -200,52 +177,6 @@ export function ChatPanel() {
     }
   }, [yoloMode, pendingApprovals, handleApproval]);
 
-  const sendShortcut = useSettingsStore((s) => s.shortcuts["chat.send"]);
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (contextPickerRef.current?.handleKeyDown(e)) {
-        return;
-      }
-
-      if (matchShortcut(e, sendShortcut)) {
-        e.preventDefault();
-        if (input.trim() && !isLoading) {
-          void handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
-        }
-      }
-    },
-    [input, isLoading, handleSubmit, sendShortcut],
-  );
-
-  const updateCursorPosition = useCallback(() => {
-    const position = textareaRef.current?.selectionStart ?? 0;
-    setCursorPosition(position);
-  }, []);
-
-  const handleInputChangeWithCursor = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      handleInputChange(e);
-      setCursorPosition(e.target.selectionStart);
-    },
-    [handleInputChange],
-  );
-
-  const handleContextSelect = useCallback(
-    (value: string, position: number) => {
-      setInput(value);
-      setCursorPosition(position);
-      requestAnimationFrame(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.focus();
-          textarea.setSelectionRange(position, position);
-        }
-      });
-    },
-    [setInput],
-  );
-
   const handleNewSession = useCallback(() => {
     void createChatSession();
   }, [createChatSession]);
@@ -261,10 +192,6 @@ export function ChatPanel() {
 
   const headerTitle =
     activeSession && activeSession.title !== "New Chat" ? activeSession.title : undefined;
-
-  const unconfiguredText = isCLIActive
-    ? "CLI provider not authenticated. Please reconnect."
-    : "No AI provider configured. Add an API key in Settings or connect a CLI subscription.";
 
   const cliStatusText = cliStatus
     ? `Using ${cliStatus.provider_id} via CLI${cliStatus.user ? ` — ${cliStatus.user}` : ""}`
@@ -441,7 +368,7 @@ export function ChatPanel() {
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 p-4">
+      <div className="shrink-0 px-2 pb-2">
         {/* Error Banner */}
         {error && (
           <div className="mb-3 flex items-start gap-2 rounded-lg bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
@@ -467,15 +394,6 @@ export function ChatPanel() {
             <Terminal size={14} className="shrink-0" />
             <span className="min-w-0 flex-1 truncate" title={cliStatusText}>
               {cliStatusText}
-            </span>
-          </div>
-        )}
-
-        {!canChat && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-status-warning/10 px-3 py-2 text-ui-sm text-status-warning">
-            <Warning size={14} className="shrink-0" />
-            <span className="min-w-0 flex-1 truncate" title={unconfiguredText}>
-              {unconfiguredText}
             </span>
           </div>
         )}
@@ -530,57 +448,16 @@ export function ChatPanel() {
 
         <AgentApprovals />
 
-        {/* Compose Box */}
-        <form
+        <ChatComposer
+          input={input}
+          onInputChange={setInput}
           onSubmit={handleSubmit}
-          className="rounded-xl border border-border bg-bg-input p-2.5 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20 sm:p-3"
-        >
-          <div className="relative">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChangeWithCursor}
-              onKeyDown={onKeyDown}
-              onKeyUp={updateCursorPosition}
-              onClick={updateCursorPosition}
-              onSelect={updateCursorPosition}
-              placeholder={canChat ? "Ask anything..." : "Configure a provider first..."}
-              rows={1}
-              className="min-h-[40px] resize-none border-0 bg-transparent px-0 py-0 text-ui-sm shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent sm:min-h-[44px] sm:text-ui-base"
-              disabled={!canChat || isLoading}
-            />
-            <ContextPicker
-              ref={contextPickerRef}
-              input={input}
-              cursorPosition={cursorPosition}
-              rootPath={rootPath}
-              onSelect={handleContextSelect}
-            />
-          </div>
-          <div className="mt-2 flex flex-nowrap items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5">
-              <AiModelSelector variant="icon" />
-              <ChatToolbar />
-            </div>
-            {status === "streaming" ? (
-              <button
-                type="button"
-                onClick={stop}
-                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90 sm:size-8 sm:rounded-lg"
-              >
-                <Stop size={14} weight="bold" />
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary sm:size-8 sm:rounded-lg"
-              >
-                <PaperPlaneRight size={14} weight="bold" />
-              </button>
-            )}
-          </div>
-        </form>
+          isLoading={isLoading}
+          isStreaming={status === "streaming"}
+          canChat={canChat}
+          mcpLoaded={mcpLoaded}
+          onStop={stop}
+        />
       </div>
     </div>
   );

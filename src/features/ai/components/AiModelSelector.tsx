@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/
 import { Input } from "@/shared/components/ui/input";
 import { CaretDown, Check, Robot, Warning } from "@phosphor-icons/react";
 
-export type AiModelSelectorVariant = "default" | "pill" | "icon";
+export type AiModelSelectorVariant = "default" | "pill" | "icon" | "compact";
 
 function isCLIAuthenticated(
   ids: string[],
@@ -178,13 +178,20 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
           "h-6 max-w-[140px] cursor-pointer gap-1.5 rounded-full border border-border bg-bg-root px-2 text-ui-xs font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-default",
         variant === "default" &&
           "h-7 max-w-[220px] cursor-pointer gap-1.5 rounded-md border border-border bg-bg-root px-2 text-ui-sm font-medium hover:bg-bg-hover",
+        variant === "compact" &&
+          "h-6 min-w-0 max-w-[150px] cursor-pointer gap-1 rounded-md px-1.5 text-ui-xs font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-default",
         !isAvailable && "text-fg-muted",
       )}
     >
-      {variant !== "icon" && <Robot size={variant === "pill" ? 11 : 13} className="shrink-0" />}
+      {variant !== "icon" && variant !== "compact" && (
+        <Robot size={variant === "pill" ? 11 : 13} className="shrink-0" />
+      )}
       {variant === "icon" && <Robot size={14} className="shrink-0" />}
+      {variant === "compact" && (
+        <Robot size={13} className="hidden shrink-0 @max-[320px]:inline-flex" />
+      )}
 
-      {variant !== "icon" && (
+      {(variant === "default" || variant === "pill") && (
         <span className={cn("min-w-0 truncate", variant === "pill" && "max-w-[80px]")}>
           {variant === "pill" ? (
             <>
@@ -201,10 +208,17 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         </span>
       )}
 
-      {statusDot}
+      {variant === "compact" && (
+        <span className="min-w-0 max-w-[100px] truncate @max-[320px]:hidden">{modelLabel}</span>
+      )}
 
-      {variant !== "icon" && (
+      {variant !== "compact" && statusDot}
+
+      {variant !== "icon" && variant !== "compact" && (
         <CaretDown size={variant === "pill" ? 10 : 12} className="shrink-0 text-fg-subtle" />
+      )}
+      {variant === "compact" && (
+        <CaretDown size={10} className="shrink-0 text-fg-subtle @max-[320px]:hidden" />
       )}
     </span>
   );
@@ -212,7 +226,9 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger>
-        <span title={variant === "icon" ? tooltipLabel : undefined}>{trigger}</span>
+        <span title={variant === "icon" || variant === "compact" ? tooltipLabel : undefined}>
+          {trigger}
+        </span>
       </PopoverTrigger>
 
       <PopoverContent
