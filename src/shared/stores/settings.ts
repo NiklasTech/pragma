@@ -52,6 +52,8 @@ export interface ProviderSettings {
   baseUrl?: string;
 }
 
+export type VoiceEngine = "web-speech" | "whisper";
+
 export interface AISettings {
   defaultProvider: AIProvider;
   defaultModel: string;
@@ -63,6 +65,8 @@ export interface AISettings {
   yoloMode: boolean;
   showThinking: boolean;
   showUnavailableProviders: boolean;
+  voiceInput: boolean;
+  voiceEngine: VoiceEngine;
   providers: Record<AIProvider, ProviderSettings>;
 }
 
@@ -234,6 +238,8 @@ const defaultSettings: SettingsState = {
     yoloMode: false,
     showThinking: true,
     showUnavailableProviders: true,
+    voiceInput: true,
+    voiceEngine: "web-speech",
     providers: {
       openai: { model: "" },
       anthropic: { model: "" },

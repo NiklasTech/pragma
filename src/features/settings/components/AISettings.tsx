@@ -30,6 +30,7 @@ import {
 } from "@phosphor-icons/react";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
+import { VoiceSettings } from "./VoiceSettings";
 
 function isProviderConfigured(
   provider: AIProvider,
@@ -671,6 +672,8 @@ export function AISettings() {
           }
         />
       </SettingSection>
+
+      <VoiceSettings />
     </div>
   );
 }

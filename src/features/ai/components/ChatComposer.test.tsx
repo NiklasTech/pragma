@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vite-plus/test";
+import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { renderToStaticMarkup } from "react-dom/server";
+
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { ChatComposer } from "./ChatComposer";
 
@@ -17,10 +19,17 @@ describe("ChatComposer", () => {
     onStop: noop,
   };
 
-  it("renders one input card with textarea, context add and send", () => {
+  beforeEach(() => {
+    useSettingsStore.setState((state) => ({
+      ai: { ...state.ai, voiceInput: true, voiceEngine: "web-speech" },
+    }));
+  });
+
+  it("renders one input card with textarea, context add, mic and send", () => {
     const html = renderToStaticMarkup(<ChatComposer {...baseProps} />);
     expect(html).toContain("Ask anything...");
     expect(html).toContain('aria-label="Add context"');
+    expect(html).toContain('aria-label="Dictate"');
     expect(html).toContain('aria-label="Send"');
     expect(html).toContain("flex-nowrap");
   });
@@ -37,9 +46,12 @@ describe("ChatComposer", () => {
     expect(html).not.toContain('aria-label="Send"');
   });
 
-  it("disables the composer and points to Settings when unconfigured", () => {
+  it("keeps textarea and mic enabled and send disabled when unconfigured", () => {
     const html = renderToStaticMarkup(<ChatComposer {...baseProps} canChat={false} />);
-    expect(html).toContain('disabled=""');
+    const textarea = html.match(/<textarea[\s\S]*?<\/textarea>/)?.[0] ?? "";
+    expect(textarea).not.toContain("disabled=");
+    expect(html).toContain('aria-label="Dictate"');
     expect(html).toContain("Configure a provider in Settings");
+    expect(html).toMatch(/aria-label="Send"[^>]*disabled/);
   });
 });
