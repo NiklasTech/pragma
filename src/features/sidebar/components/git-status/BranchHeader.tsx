@@ -70,31 +70,34 @@ export function BranchHeader({
   };
 
   return (
-    <div className="relative flex items-center justify-between gap-2 px-3 py-2" ref={menuRef}>
+    <div
+      className="relative flex min-w-0 items-center justify-between gap-2 px-2 py-1.5"
+      ref={menuRef}
+    >
       <button
         type="button"
         onClick={() => setOpen(!open)}
         disabled={actionBusy === "checkout"}
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-md bg-bg-hover px-2 py-1 text-ui-sm font-medium transition-colors",
+          "inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-md bg-bg-hover px-2 py-1 text-ui-sm font-medium transition-colors",
           open ? "bg-bg-active" : "hover:bg-bg-hover",
         )}
       >
         {actionBusy === "checkout" ? (
-          <Spinner size={12} className="animate-spin text-fg-muted" />
+          <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
         ) : (
-          <GitBranchIcon size={12} className="text-fg-muted" />
+          <GitBranchIcon size={12} className="shrink-0 text-fg-muted" />
         )}
-        <span className="max-w-[140px] truncate">{currentBranch}</span>
-        <CaretDown size={10} className="text-fg-subtle" />
+        <span className="min-w-0 flex-1 truncate text-left">{currentBranch}</span>
+        <CaretDown size={10} className="shrink-0 text-fg-subtle" />
         {isDetached && (
-          <span className="rounded bg-bg-hover px-1 py-px text-ui-2xs font-medium uppercase tracking-wider text-fg-muted">
+          <span className="shrink-0 rounded bg-bg-hover px-1 py-px text-ui-2xs font-medium uppercase tracking-wider text-fg-muted">
             detached
           </span>
         )}
       </button>
 
-      <div className="flex items-center gap-1 text-ui-xs font-semibold text-fg-muted">
+      <div className="flex shrink-0 items-center gap-1 text-ui-xs font-semibold text-fg-muted">
         {behind > 0 && (
           <span className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-px text-status-success">
             <ArrowDown size={9} />
@@ -108,7 +111,7 @@ export function BranchHeader({
           </span>
         )}
         {ahead === 0 && behind === 0 && (
-          <span className="rounded border border-border px-1.5 py-px text-fg-subtle">
+          <span className="hidden items-center gap-0.5 rounded border border-border px-1.5 py-px text-fg-subtle @min-[260px]:inline-flex">
             up to date
           </span>
         )}

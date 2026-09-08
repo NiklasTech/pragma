@@ -254,43 +254,42 @@ export function ChatPanel() {
     void regenerate();
   }, [regenerate]);
 
-  const handlePromptSelect = useCallback(
-    (prompt: string) => {
-      setInput(prompt);
-      requestAnimationFrame(() => {
-        textareaRef.current?.focus();
-      });
-    },
-    [setInput],
-  );
-
   const streamingMessageId =
     status === "streaming" && messages[messages.length - 1]?.role === "assistant"
       ? messages[messages.length - 1]?.id
       : null;
 
+  const headerTitle =
+    activeSession && activeSession.title !== "New Chat" ? activeSession.title : undefined;
+
+  const unconfiguredText = isCLIActive
+    ? "CLI provider not authenticated. Please reconnect."
+    : "No AI provider configured. Add an API key in Settings or connect a CLI subscription.";
+
+  const cliStatusText = cliStatus
+    ? `Using ${cliStatus.provider_id} via CLI${cliStatus.user ? ` — ${cliStatus.user}` : ""}`
+    : "";
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="@container flex h-full flex-col">
       {/* Header */}
-      <div className="flex shrink-0 items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent-subtle sm:size-7 sm:rounded-lg">
-            <Robot size={14} weight="bold" className="text-primary" />
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-ui-xs font-semibold sm:text-ui-sm">AI Assistant</span>
-            {activeSession && (
-              <span className="truncate text-ui-xs text-fg-subtle">{activeSession.title}</span>
-            )}
-          </div>
+      <div className="flex h-8 shrink-0 items-center justify-between gap-2 px-2">
+        <div className="flex min-w-0 flex-1 items-center">
+          {headerTitle ? (
+            <span className="truncate text-ui-xs font-semibold" title={headerTitle}>
+              {headerTitle}
+            </span>
+          ) : (
+            <span className="truncate text-ui-xs font-medium text-fg-muted">New thread</span>
+          )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-0.5">
           <ChatSessionList />
           <button
-            onClick={handleNewSession}
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default sm:size-7 sm:rounded-lg"
-            title="New Session"
             type="button"
+            onClick={handleNewSession}
+            title="New Session"
+            className="flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
           >
             <Plus size={13} weight="bold" />
           </button>
@@ -301,7 +300,7 @@ export function ChatPanel() {
       <div className="relative flex-1 min-h-0">
         <Conversation className="h-full">
           <ConversationContent className="gap-5 px-4 py-5">
-            {messages.length === 0 && <ChatEmptyState onPromptSelect={handlePromptSelect} />}
+            {messages.length === 0 && <ChatEmptyState />}
 
             {messages.map((msg: UIMessage) => {
               const reasoningParts = msg.parts
@@ -465,21 +464,18 @@ export function ChatPanel() {
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
           <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
-            <Terminal size={14} />
-            <span>
-              Using {cliStatus.provider_id} via CLI
-              {cliStatus.user && ` — ${cliStatus.user}`}
+            <Terminal size={14} className="shrink-0" />
+            <span className="min-w-0 flex-1 truncate" title={cliStatusText}>
+              {cliStatusText}
             </span>
           </div>
         )}
 
         {!canChat && (
           <div className="mb-3 flex items-center gap-2 rounded-lg bg-status-warning/10 px-3 py-2 text-ui-sm text-status-warning">
-            <Warning size={14} />
-            <span>
-              {isCLIActive
-                ? "CLI provider not authenticated. Please reconnect."
-                : "No AI provider configured. Add an API key in Settings or connect a CLI subscription."}
+            <Warning size={14} className="shrink-0" />
+            <span className="min-w-0 flex-1 truncate" title={unconfiguredText}>
+              {unconfiguredText}
             </span>
           </div>
         )}
@@ -561,8 +557,8 @@ export function ChatPanel() {
               onSelect={handleContextSelect}
             />
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+          <div className="mt-2 flex flex-nowrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
               <AiModelSelector variant="icon" />
               <ChatToolbar />
             </div>

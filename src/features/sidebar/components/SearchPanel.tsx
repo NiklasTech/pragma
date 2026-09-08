@@ -24,7 +24,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
-import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -176,7 +175,6 @@ export function SearchPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <PanelHeader icon={MagnifyingGlass} title="Search" />
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
         <div className="relative">
           <MagnifyingGlass

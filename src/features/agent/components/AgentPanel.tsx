@@ -75,9 +75,7 @@ export function AgentPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
-        icon={MagicWand}
-        title="Agent"
-        subtitle={STATUS_LABELS[status]}
+        title={STATUS_LABELS[status]}
         actions={
           canStop ? (
             <button
