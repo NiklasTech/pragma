@@ -124,10 +124,12 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 name = "app"
 version = "0.3.0"
 dependencies = [
+ "base64 0.22.1",
  "bollard",
  "chrono",
  "criterion",
  "diffy",
+ "flate2",
  "futures-util",
  "ignore",
  "keyring",
@@ -143,6 +145,7 @@ dependencies = [
  "shared_child",
  "shellwords",
  "sysinfo",
+ "tar",
  "tauri",
  "tauri-build",
  "tauri-plugin-cli",

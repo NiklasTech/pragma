@@ -9,9 +9,12 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout/store";
+import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
+import { useComposerDictation } from "@/features/ai/dictation/useComposerDictation";
 
 import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
+import { ComposerMicButton } from "./ComposerMicButton";
 import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
 
 interface ChatComposerProps {
@@ -37,13 +40,16 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const sendShortcut = useSettingsStore((state) => state.shortcuts["chat.send"]);
+  const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
+  const voiceEngine = useSettingsStore((state) => state.ai.voiceEngine);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contextPickerRef = useRef<ContextPickerRef>(null);
   const inputRef = useRef(input);
   inputRef.current = input;
+  const cursorRef = useRef(0);
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  const disabled = !canChat || isLoading;
+  const busy = isLoading;
 
   const { prefillPrompt, consumePrefill } = useAIEditStore();
 
@@ -63,16 +69,21 @@ export function ChatComposer({
     useLayoutStore.getState().addFloatingPanel("settings");
   };
 
-  const updateCursorPosition = useCallback(() => {
-    setCursorPosition(textareaRef.current?.selectionStart ?? 0);
+  const moveCursor = useCallback((position: number) => {
+    cursorRef.current = position;
+    setCursorPosition(position);
   }, []);
+
+  const updateCursorPosition = useCallback(() => {
+    moveCursor(textareaRef.current?.selectionStart ?? 0);
+  }, [moveCursor]);
 
   const handleTextareaChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onInputChange(e.target.value);
-      setCursorPosition(e.target.selectionStart);
+      moveCursor(e.target.selectionStart);
     },
-    [onInputChange],
+    [moveCursor, onInputChange],
   );
 
   const handleKeyDown = useCallback(
@@ -94,7 +105,7 @@ export function ChatComposer({
   const handleContextSelect = useCallback(
     (value: string, position: number) => {
       onInputChange(value);
-      setCursorPosition(position);
+      moveCursor(position);
       requestAnimationFrame(() => {
         const textarea = textareaRef.current;
         if (textarea) {
@@ -103,13 +114,13 @@ export function ChatComposer({
         }
       });
     },
-    [onInputChange],
+    [moveCursor, onInputChange],
   );
 
   const insertContextMention = useCallback(() => {
     const position = textareaRef.current?.selectionStart ?? input.length;
     onInputChange(`${input.slice(0, position)}@${input.slice(position)}`);
-    setCursorPosition(position + 1);
+    moveCursor(position + 1);
     requestAnimationFrame(() => {
       const textarea = textareaRef.current;
       if (textarea) {
@@ -117,7 +128,34 @@ export function ChatComposer({
         textarea.setSelectionRange(position + 1, position + 1);
       }
     });
-  }, [input, onInputChange]);
+  }, [input, moveCursor, onInputChange]);
+
+  const handleDictationTranscript = useCallback(
+    (text: string) => {
+      const value = inputRef.current;
+      const position = Math.min(cursorRef.current, value.length);
+      const result = insertAtCursor(value, text, position);
+      if (result.value === value) {
+        return;
+      }
+      onInputChange(result.value);
+      moveCursor(result.cursor);
+      requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.focus();
+          textarea.setSelectionRange(result.cursor, result.cursor);
+        }
+      });
+    },
+    [moveCursor, onInputChange],
+  );
+
+  const dictation = useComposerDictation({
+    engine: voiceEngine,
+    enabled: voiceInput,
+    onTranscript: handleDictationTranscript,
+  });
 
   return (
     <div>
@@ -136,7 +174,7 @@ export function ChatComposer({
             onClick={updateCursorPosition}
             onSelect={updateCursorPosition}
             placeholder="Ask anything..."
-            disabled={disabled}
+            disabled={busy}
             className="max-h-48 min-h-9 resize-none border-0 bg-transparent px-0 py-1.5 text-ui-sm shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
           />
           <ContextPicker
@@ -151,7 +189,7 @@ export function ChatComposer({
           <button
             type="button"
             onClick={insertContextMention}
-            disabled={disabled}
+            disabled={busy}
             aria-label="Add context"
             title="Add context"
             className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
@@ -161,6 +199,13 @@ export function ChatComposer({
           <AiModelSelector variant="compact" />
           <ChatToolbar />
           <div className="ml-auto flex items-center gap-0.5">
+            {voiceInput && (
+              <ComposerMicButton
+                recording={dictation.recording}
+                disabled={busy && !dictation.recording}
+                onClick={dictation.toggle}
+              />
+            )}
             {isStreaming ? (
               <button
                 type="button"
@@ -185,6 +230,7 @@ export function ChatComposer({
           </div>
         </div>
       </form>
+      {dictation.status && <p className="mt-1 text-ui-2xs text-fg-muted">{dictation.status}</p>}
       {!canChat && (
         <button
           type="button"
