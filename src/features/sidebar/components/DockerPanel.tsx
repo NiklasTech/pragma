@@ -271,9 +271,7 @@ export function DockerPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
-        icon={Cube}
-        title="Docker"
-        subtitle={
+        title={
           containers.length > 0
             ? `${containers.length} container${containers.length === 1 ? "" : "s"}`
             : undefined

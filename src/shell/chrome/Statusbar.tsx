@@ -1,4 +1,4 @@
-import { GitBranch, Warning, XCircle, CheckCircle, Robot, Palette } from "@phosphor-icons/react";
+import { GitBranch, Warning, XCircle, Robot, Palette } from "@phosphor-icons/react";
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
 import { useEditorStore, type EditorTab } from "@/shared/stores/editor";
 import { useGitStore } from "@/shared/stores/git";
@@ -165,19 +165,13 @@ export function Statusbar() {
   if (items.length === 0) return null;
 
   return (
-    <div className="flex h-statusbar shrink-0 items-center justify-between bg-bg-root px-1 select-none">
+    <div className="flex h-statusbar shrink-0 items-center bg-bg-root px-1 select-none">
       <div className="flex items-center">
         {items.map((item, index) => (
           <span key={index} className="contents">
             {item}
           </span>
         ))}
-      </div>
-      <div className="flex items-center">
-        <StatusbarSection>
-          <CheckCircle size={12} className="text-status-success" />
-          <span>Ready</span>
-        </StatusbarSection>
       </div>
     </div>
   );

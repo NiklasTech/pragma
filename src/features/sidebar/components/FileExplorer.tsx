@@ -69,7 +69,7 @@ export function FileExplorer() {
     <ContextMenu>
       <ContextMenuTrigger className="h-full">
         <div className="flex h-full flex-col">
-          <PanelHeader icon={Files} title="Explorer" subtitle={rootName ?? undefined} />
+          <PanelHeader title={rootName ?? "Workspace"} />
           <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
             {showTreeLoading ? (
               <div className="flex items-center justify-center py-8">

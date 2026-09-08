@@ -310,9 +310,7 @@ export function DebugPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
-        icon={Bug}
-        title="Debug"
-        subtitle={subtitle}
+        title={subtitle}
         actions={
           <>
             <ToolbarButton

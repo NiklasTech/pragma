@@ -239,9 +239,7 @@ export function ProcessManagerPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader
-        icon={Terminal}
-        title="Processes"
-        subtitle={
+        title={
           configs.length > 0
             ? `${configs.length} configuration${configs.length === 1 ? "" : "s"}`
             : undefined

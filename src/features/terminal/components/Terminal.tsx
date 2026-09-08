@@ -98,13 +98,6 @@ export function Terminal({ panelId }: TerminalProps) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-bg-surface">
       <PanelHeader
-        icon={TerminalIcon}
-        title="Terminal"
-        subtitle={
-          panelSessions.length > 0
-            ? `${panelSessions.length} session${panelSessions.length === 1 ? "" : "s"}`
-            : undefined
-        }
         actions={
           <div className="flex items-center gap-0.5">
             <button

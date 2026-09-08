@@ -264,7 +264,7 @@ export function GitStatus() {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col">
+    <div className="@container flex h-full min-w-0 flex-col">
       <GitToolbar
         onRefresh={() => void refreshAll()}
         onFetch={() => void fetch()}
