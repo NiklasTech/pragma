@@ -34,13 +34,15 @@ The principal **starts `dsh` itself** as a subprocess for each job. Do not ask t
 
 Cwd = repo root. Credentials come from `$DSH_HOME` (default `~/.dsh`) or `DEEPSEEK_API_KEY` — the same store the Web UI uses, but no running Web process is required. First `npx` call may be slow; later calls reuse the cache.
 
+Pin: `@deepseek-ai/dsh@0.1.5-rc.2`. Unpinned `npx @deepseek-ai/dsh` resolves npm `latest` (currently `0.1.5-rc.1`) and must not be used.
+
 - **One-shot (default from this CLI):**
 
 ```
-npx --yes @deepseek-ai/dsh --profile headless "<brief>"
+npx --yes @deepseek-ai/dsh@0.1.5-rc.2 --profile headless "<brief>"
 ```
 
-- **Multi-turn / cancel / resume / parallel sessions:** `npx --yes @deepseek-ai/dsh --profile acp` then one `session/new` per worker (absolute cwd) → `session/set_config_option` for `model` and `reasoning_effort` → `session/prompt`. Auto-allow writes inside this repo; reject anything outside it. Prefer **one ACP process with N sessions** over N headless boots.
+- **Multi-turn / cancel / resume / parallel sessions:** `npx --yes @deepseek-ai/dsh@0.1.5-rc.2 --profile acp` then one `session/new` per worker (absolute cwd) → `session/set_config_option` for `model` and `reasoning_effort` → `session/prompt`. Auto-allow writes inside this repo; reject anything outside it. Prefer **one ACP process with N sessions** over N headless boots.
 
 Use a long command timeout. If the worker blocks on permission, do not sit on it — retry with an explicit allow in the brief or continue yourself.
 
@@ -48,13 +50,15 @@ Use a long command timeout. If the worker blocks on permission, do not sit on it
 
 Provider: `deepseek-official`. Put the pair in **every** brief / session — cheap tasks must not inherit `high`.
 
-| Work                                                                       | Model               | Effort |
-| -------------------------------------------------------------------------- | ------------------- | ------ |
-| Simple, local, well-specified (rename, one function, test, copy a pattern) | `deepseek-v4-flash` | `low`  |
-| Default implementation                                                     | `deepseek-v4-flash` | `high` |
-| Architecture, hard bugs, large refactors                                   | `deepseek-v4-pro`   | `high` |
-| Worker stuck after a retry                                                 | `deepseek-v4-pro`   | `max`  |
-| Tiny lookup the worker must do                                             | `deepseek-v4-flash` | `off`  |
+| Work                                                                       | Model            | Effort |
+| -------------------------------------------------------------------------- | ---------------- | ------ |
+| Simple, local, well-specified (rename, one function, test, copy a pattern) | `deepseek-flash` | `low`  |
+| Default implementation                                                     | `deepseek-flash` | `high` |
+| Architecture, hard bugs, large refactors                                   | `deepseek-flash` | `high` |
+| Worker stuck after a retry                                                 | `deepseek-flash` | `max`  |
+| Tiny lookup the worker must do                                             | `deepseek-flash` | `off`  |
+
+`deepseek-flash` is V4.1 Flash (`dsh` default). Do not use `deepseek-v4-flash` or `deepseek-v4-pro`.
 
 Effort values: `off` (no thinking), `low`, `high` (default for mixed work), `max`. A change mid-turn applies to the **next** turn only.
 
