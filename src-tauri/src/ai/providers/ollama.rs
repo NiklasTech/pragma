@@ -7,8 +7,8 @@ use crate::ai::{
     config::ProviderConfig,
     error::AIError,
     provider::{
-        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse, Message,
-        ModelInfo, Role, Usage,
+        coalesce_system_messages, AIProvider, BoxFuture, CompletionChunk, CompletionRequest,
+        CompletionResponse, Message, ModelInfo, Role, Usage,
     },
 };
 
@@ -330,7 +330,10 @@ impl OllamaRequestBody {
     fn from_completion_request(model: &str, req: CompletionRequest) -> Self {
         Self {
             model: model.to_string(),
-            messages: req.messages.into_iter().map(Into::into).collect(),
+            messages: coalesce_system_messages(req.messages)
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             temperature: req.temperature,
             num_predict: req.max_tokens,
             stream: false,
