@@ -23,13 +23,13 @@ export function ToolbarButton({
       disabled={disabled || busy}
       title={label}
       className={cn(
-        "relative flex size-7 items-center justify-center rounded-md text-fg-muted transition-colors",
+        "relative flex size-8 items-center justify-center rounded-md text-fg-muted transition-colors",
         disabled ? "opacity-40" : "hover:bg-bg-hover hover:text-fg-default",
       )}
     >
-      {busy ? <Spinner size={14} className="animate-spin" /> : <Icon size={16} />}
+      {busy ? <Spinner size={16} className="animate-spin" /> : <Icon size={16} />}
       {badge !== undefined && badge !== null && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-fg-inverse">
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-ui-2xs font-bold text-fg-inverse">
           {badge}
         </span>
       )}

@@ -93,13 +93,13 @@ function ViewTab({
       onClick={() => onSelect(view.id)}
       title={view.label}
       className={cn(
-        "flex h-6 min-w-0 flex-1 items-center justify-center gap-1 rounded-sm px-1 text-ui-2xs font-medium transition-colors",
+        "flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-sm px-1 text-ui-xs font-medium transition-colors",
         isActive
           ? "bg-bg-elevated text-fg-default"
           : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
       )}
     >
-      <view.icon size={13} weight={isActive ? "duotone" : "regular"} className="shrink-0" />
+      <view.icon size={16} weight={isActive ? "duotone" : "regular"} className="shrink-0" />
       <span className="hidden truncate @min-[250px]:inline">{view.label}</span>
     </button>
   );
@@ -108,9 +108,11 @@ function ViewTab({
 function MoreViewsMenu({
   activeTab,
   onSelect,
+  iconSize = 16,
 }: {
   activeTab: SidebarTab;
   onSelect: (tab: SidebarTab) => void;
+  iconSize?: number;
 }) {
   const isActive = moreViews.some((view) => view.id === activeTab);
 
@@ -123,13 +125,13 @@ function MoreViewsMenu({
             aria-label="More views"
             title="More views"
             className={cn(
-              "flex h-6 shrink-0 items-center justify-center rounded-sm px-1 transition-colors",
+              "flex h-7 shrink-0 items-center justify-center rounded-sm px-1 transition-colors",
               isActive
                 ? "bg-bg-elevated text-fg-default"
                 : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
             )}
           >
-            <CaretUpDown size={13} className="shrink-0" />
+            <CaretUpDown size={iconSize} className="shrink-0" />
           </button>
         }
       />
@@ -168,7 +170,7 @@ function SidebarCollapsedStrip() {
         title="Expand Sidebar (Ctrl+B)"
         className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
       >
-        <SidebarSimple size={15} />
+        <SidebarSimple size={18} />
       </button>
 
       <div className="flex flex-col items-center gap-0.5">
@@ -187,10 +189,10 @@ function SidebarCollapsedStrip() {
                 : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
             )}
           >
-            <view.icon size={15} weight={sidebar.tab === view.id ? "duotone" : "regular"} />
+            <view.icon size={18} weight={sidebar.tab === view.id ? "duotone" : "regular"} />
           </button>
         ))}
-        <MoreViewsMenu activeTab={sidebar.tab} onSelect={handleSelect} />
+        <MoreViewsMenu activeTab={sidebar.tab} onSelect={handleSelect} iconSize={18} />
       </div>
     </div>
   );
