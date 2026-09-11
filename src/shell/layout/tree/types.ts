@@ -13,6 +13,8 @@ export type SidebarTab =
 
 export type AIMode = "hidden" | "floating" | "drawer-left" | "drawer-right" | "bottom-sheet";
 
+export type AIPlacement = "right" | "left" | "bottom" | "floating" | "tab" | "hidden";
+
 export type TerminalMode = "docked-bottom" | "floating-tab" | "hidden";
 
 export interface SidebarState {
@@ -31,6 +33,7 @@ export interface FloatingState {
 
 export interface AIState {
   mode: AIMode;
+  placement: AIPlacement;
   floating: FloatingState;
   size: number;
 }
@@ -57,7 +60,8 @@ export type PanelKind =
   | "problems"
   | "preview"
   | "markdown"
-  | "settings";
+  | "settings"
+  | "ai";
 
 export interface BaseNode {
   id: string;
@@ -118,6 +122,7 @@ export interface LayoutTreeActions {
   toggleSidebar: () => void;
 
   setAIMode: (mode: AIMode) => void;
+  setAIPlacement: (placement: AIPlacement) => void;
   setAIFloating: (floating: Partial<FloatingState>) => void;
   setAISize: (size: number) => void;
   toggleAI: () => void;
