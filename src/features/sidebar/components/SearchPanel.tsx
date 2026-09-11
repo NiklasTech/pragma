@@ -8,10 +8,12 @@ import {
   Quotes,
   Spinner,
   TextAa,
+  Warning,
   X,
   type Icon,
 } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import {
@@ -252,7 +254,12 @@ export function SearchPanel() {
           />
         </div>
 
-        {error && <p className="text-ui-xs text-status-error">{error}</p>}
+        {error && (
+          <Alert variant="destructive">
+            <Warning size={16} />
+            <AlertDescription className="text-ui-base">{error}</AlertDescription>
+          </Alert>
+        )}
 
         <div className="min-h-0 flex-1">
           {loading && results.length === 0 ? (

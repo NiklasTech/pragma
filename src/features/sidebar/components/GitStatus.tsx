@@ -7,6 +7,7 @@ import {
   type GitCommit,
 } from "@/shared/stores/git";
 import { Button } from "@/shared/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorStore } from "@/shared/stores/editor";
 import { Spinner, Trash, GitBranch as GitBranchIcon, Warning } from "@phosphor-icons/react";
@@ -40,11 +41,11 @@ type GitRow =
   | { kind: "history-entry"; key: string; commit: GitCommit };
 
 const ROW_HEIGHTS = {
-  "commit-area": 176,
+  "commit-area": 180,
   "staged-header": 28,
-  "staged-entry": 30,
+  "staged-entry": 36,
   "unstaged-header": 28,
-  "unstaged-entry": 30,
+  "unstaged-entry": 36,
   "clean-hint": 120,
   "history-header": 28,
   "history-entry": 44,
@@ -265,6 +266,14 @@ export function GitStatus() {
 
   return (
     <div className="@container flex h-full min-w-0 flex-col">
+      {error && (
+        <Alert variant="destructive" className="m-2 mb-0">
+          <Warning size={16} />
+          <AlertTitle>Git error</AlertTitle>
+          <AlertDescription className="text-ui-base">{error}</AlertDescription>
+        </Alert>
+      )}
+
       <GitToolbar
         onRefresh={() => void refreshAll()}
         onFetch={() => void fetch()}

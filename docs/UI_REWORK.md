@@ -109,20 +109,20 @@ Persist `pragma.ui.mode` = `agents` | `editor`.
 
 ## Visual language
 
-Calm dark app. Layered surfaces. Rounded, not squircles-on-everything. Depth from **surface steps + hairline borders + one shadow level**, not neon.
+Calm dark app. Layered surfaces. Rounded, not squircles-on-everything. Depth from **surface steps + visible hairline borders + one shadow level**, not neon.
 
 ### Type
 
 Keep Geist / Geist Mono (already in `globals.css`).
 
-| Token            | Size | Use                             |
-| ---------------- | ---- | ------------------------------- |
-| `--text-ui-2xs`  | 10px | badges, vim, counts             |
-| `--text-ui-xs`   | 11px | sidebar rows, statusbar, helper |
-| `--text-ui-sm`   | 12px | section labels, composer meta   |
-| `--text-ui-base` | 13px | body UI, messages, tree         |
-| `--text-ui-md`   | 14px | composer input, titles          |
-| `--text-ui-lg`   | 16px | empty-state title, home         |
+| Token            | Size | Line height | Use                             |
+| ---------------- | ---- | ----------- | ------------------------------- |
+| `--text-ui-2xs`  | 11px | 14px        | badges, counts, dense meta      |
+| `--text-ui-xs`   | 12px | 16px        | sidebar rows, statusbar, helper |
+| `--text-ui-sm`   | 13px | 18px        | section labels, descriptions    |
+| `--text-ui-base` | 14px | 21px        | body UI, messages, tree         |
+| `--text-ui-md`   | 15px | 23px        | dialog titles, panel titles     |
+| `--text-ui-lg`   | 18px | 26px        | empty-state title, home         |
 
 Do not introduce a second UI font.
 
@@ -141,23 +141,28 @@ Keep the scale, **use larger steps on chrome**:
 
 The mode switch is a **pill segmented control**. Panels are `--radius-lg`. The composer is `--radius-xl`.
 
-### Elevation (new tokens — add to `globals.css` + theme JSON)
+### Elevation
 
-| Token           | Role                                  |
-| --------------- | ------------------------------------- |
-| `--bg-root`     | window                                |
-| `--bg-surface`  | sidebar, statusbar, panel chrome      |
-| `--bg-elevated` | titlebar, popovers, composer, dialogs |
-| `--bg-input`    | fields                                |
-| `--shadow-sm`   | composer, dropdown                    |
-| `--shadow-md`   | dialog, settings                      |
+Signature Dark values (may refine at implementation, not per-component):
 
-Default dark values (signature theme; may refine at implementation, not per-component):
+| Token              | Value                          | Role                                                           |
+| ------------------ | ------------------------------ | -------------------------------------------------------------- |
+| `--bg-root`        | `#0c0e12`                      | window                                                         |
+| `--bg-surface`     | `#151a22`                      | sidebar, statusbar, panel chrome                               |
+| `--bg-elevated`    | `#1d2430`                      | titlebar, popovers, composer, dialogs                          |
+| `--bg-input`       | `#232b38`                      | fields                                                         |
+| `--bg-hover`       | `rgba(255, 255, 255, 0.08)`    | row/item hover                                                 |
+| `--bg-overlay`     | `rgba(0, 0, 0, 0.72)`          | modal scrim (dialogs, alert dialogs)                           |
+| `--fg-subtle`      | `#8b93a0`                      | placeholder and tertiary text; must clear 3.5:1 on `--bg-root` |
+| `--border-default` | `rgba(255, 255, 255, 0.12)`    | borders on every control and popup                             |
+| `--border-subtle`  | `rgba(255, 255, 255, 0.08)`    | internal separators inside an already-bordered surface         |
+| `--border-focus`   | `rgba(110, 123, 242, 0.50)`    | keyboard focus ring, the only remaining glow                   |
+| `--shadow-sm`      | `0 4px 16px rgba(0,0,0,0.28)`  | composer, dropdown, popover                                    |
+| `--shadow-md`      | `0 12px 40px rgba(0,0,0,0.45)` | dialog, settings                                               |
 
-- root `#0b0d10`, surface `#101318`, elevated `#161a21` (already close — keep family)
-- borders stay hairline (`rgba(255,255,255,0.06)`)
-- `--shadow-sm`: `0 4px 16px rgba(0,0,0,0.28)`
-- `--shadow-md`: `0 12px 40px rgba(0,0,0,0.45)`
+Light mirrors the same steps (`--border-default` `rgba(15, 23, 42, 0.14)`, `--border-subtle` `rgba(15, 23, 42, 0.08)`, hover `rgba(15, 23, 42, 0.07)`). Other built-in themes keep their hue but must use the same contrast floor for borders, hover, and `--fg-subtle`.
+
+The 0.06 hairline was too faint: it read as no border at all on `--bg-root`. `--border-default` is the hairline for chrome; `--border-subtle` is only for separators nested inside a bordered surface.
 
 **Kill button glow.** Primary is solid accent fill, no `accent-glow` shadow on default buttons. Glow may remain only as a focus ring (`--border-focus`).
 
@@ -297,7 +302,7 @@ Rules:
 
 1. No hardcoded hex in components (tokens only). Theme JSON is the color source.
 2. Variants stay: `default | outline | secondary | ghost | destructive` — but `default` loses glow.
-3. Inputs/buttons share height scale: `h-7` default, `h-6` compact (sidebar), `h-8` composer send.
+3. Inputs/buttons share height scale: `h-8` default (button, input, select, send), `h-7` compact (`sm`), `h-6` inline (`xs`).
 4. Focus: `ring-2 ring-accent/40`, never OS blue.
 5. Depth: popovers/dialogs/composer use `--shadow-sm` or `--shadow-md` + `--bg-elevated`.
 6. New God files are forbidden. If `ChatPanel.tsx` or `Sidebar.tsx` would absorb the Agents shell, split modules instead.
@@ -362,7 +367,7 @@ Each PR is independently reviewable and mergeable to `main`. Label `feat` / `enh
 ### PR 1 — Tokens and primitives
 
 - **Title:** `feat: unify design tokens and restyle shared UI primitives`
-- **Files:** `src/globals.css`, `src/theme/themes/dark-default.json`, `src/theme/themes/light-default.json`, `src/theme/types.ts` / `validateTheme.ts` if schema grows, `src/shared/components/ui/*`, `PanelHeader.tsx`, `PanelEmptyState.tsx`
+- **Files:** `src/globals.css`, `src/theme/themes/*.json`, `src/theme/types.ts` / `validateTheme.ts` if schema grows, `src/shared/components/ui/*`, `PanelHeader.tsx`, `PanelEmptyState.tsx`
 - **Deps:** none
 - **Done when:** glow gone, radius/elevation used by Button/Input/Dialog/Popover/Tabs; Light + Dark token maps valid; `pnpm run check` + tests pass. App still Editor-only, but already looks calmer.
 

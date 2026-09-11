@@ -1,7 +1,7 @@
 import { PencilSimple, Plus, Trash, ArrowsLeftRight, File } from "@phosphor-icons/react";
 
 export function StatusIcon({ status }: { status: string }) {
-  const props = { size: 13, className: "shrink-0" };
+  const props = { size: 16, className: "shrink-0" };
   switch (status) {
     case "modified":
       return <PencilSimple {...props} className="shrink-0 text-status-warning" />;

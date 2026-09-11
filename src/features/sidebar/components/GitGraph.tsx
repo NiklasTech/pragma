@@ -13,9 +13,11 @@ import {
   Cherries,
   ArrowUUpLeft,
   ArrowCounterClockwise,
+  Warning,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Input } from "@/shared/components/ui/input";
 import {
   Dialog,
@@ -55,8 +57,8 @@ import { GitCommitDetailsDialog } from "./GitCommitDetailsDialog";
 const RAIL_RESERVED_PX = railWidth(MAX_VISIBLE_LANES);
 
 const PAGE_SIZE = 30;
-const ROW_HEIGHT = 28;
-const TABLE_HEADER_HEIGHT = 24;
+const ROW_HEIGHT = 32;
+const TABLE_HEADER_HEIGHT = 32;
 const GRID_COLUMNS = `${RAIL_RESERVED_PX + 4}px 60px minmax(0, 2fr) minmax(0, 1fr) 90px 76px`;
 const NEAR_BOTTOM_PX = 240;
 const MIN_TABLE_WIDTH = 560;
@@ -438,11 +440,12 @@ export function GitGraph() {
 
   if (loadStatus === "error" && commits.length === 0) {
     return (
-      <PanelEmptyState
-        icon={Info}
-        title="Could not load history"
-        description={error ?? "Unknown error"}
-      />
+      <PanelEmptyState icon={Info} title="Could not load history">
+        <Alert variant="destructive" className="w-full text-left">
+          <Warning size={16} />
+          <AlertDescription className="text-ui-base">{error ?? "Unknown error"}</AlertDescription>
+        </Alert>
+      </PanelEmptyState>
     );
   }
 
@@ -466,7 +469,7 @@ export function GitGraph() {
         <div className="px-1.5" style={{ minWidth: MIN_TABLE_WIDTH }}>
           {/* Header */}
           <div
-            className="sticky top-0 z-10 grid items-center gap-5 bg-bg-surface pr-3 text-ui-2xs font-semibold uppercase tracking-[0.12em] text-fg-muted select-none"
+            className="sticky top-0 z-10 grid items-center gap-5 border-b border-border bg-bg-surface pr-3 text-ui-sm font-medium text-fg-muted select-none"
             style={{
               height: TABLE_HEADER_HEIGHT,
               gridTemplateColumns: GRID_COLUMNS,
@@ -696,7 +699,7 @@ function CommitRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative grid h-full w-full cursor-pointer items-center gap-5 rounded-md pr-3 text-left transition-colors",
+        "group relative grid h-full w-full cursor-pointer items-center gap-5 rounded-md pr-3 text-left text-ui-base transition-colors",
         active ? "bg-bg-active" : "hover:bg-bg-hover",
       )}
       style={{
@@ -718,8 +721,8 @@ function CommitRow({
       {/* SHA — collapsed: only first 4 chars */}
       <span
         className={cn(
-          "pl-px font-mono text-ui-2xs tabular-nums text-fg-muted",
-          shaCollapsed && "text-ui-xs",
+          "pl-px font-mono text-ui-xs tabular-nums text-fg-muted",
+          shaCollapsed && "text-ui-sm",
         )}
         title={commit.short_sha}
       >
@@ -729,9 +732,9 @@ function CommitRow({
       {/* Subject — collapsed */}
       <span
         className={cn(
-          "min-w-0 truncate text-ui-xs leading-tight",
+          "min-w-0 truncate text-ui-base leading-tight",
           active ? "font-semibold text-fg-default" : "font-medium text-fg-default/95",
-          subjectCollapsed && "text-ui-2xs opacity-70",
+          subjectCollapsed && "text-ui-sm opacity-70",
         )}
         title={commit.subject}
       >
@@ -741,7 +744,7 @@ function CommitRow({
       {/* Author — collapsed: only avatar */}
       <span
         className={cn(
-          "mr-2 inline-flex h-[16px] max-w-full min-w-0 items-center gap-1.5 justify-self-end self-center overflow-hidden rounded-md bg-fg-default/6 pl-1 pr-1.5 text-ui-2xs font-medium text-fg-default/85",
+          "mr-2 inline-flex h-[18px] max-w-full min-w-0 items-center gap-1.5 justify-self-end self-center overflow-hidden rounded-md bg-fg-default/6 pl-1 pr-1.5 text-ui-xs font-medium text-fg-default/85",
           authorCollapsed && "!p-0 !bg-transparent",
         )}
         title={commit.author_email || commit.author}
@@ -757,14 +760,14 @@ function CommitRow({
 
       {/* Date — collapsed: only month+day */}
       <span
-        className="pr-6 text-right font-mono text-ui-xs tabular-nums text-fg-muted/75"
+        className="pr-6 text-right font-mono text-ui-xs tabular-nums text-fg-muted"
         title={date}
       >
         {dateCollapsed ? date.split(" ").slice(0, 2).join(" ") : date}
       </span>
 
       {/* Changes — collapsed: only total delta */}
-      <span className="flex min-w-0 items-center justify-end gap-1.5 pl-6 font-mono text-ui-2xs tabular-nums">
+      <span className="flex min-w-0 items-center justify-end gap-1.5 pl-6 font-mono text-ui-xs tabular-nums">
         {changesCollapsed ? (
           totalStat > 0 ? (
             <span

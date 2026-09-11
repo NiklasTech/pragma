@@ -9,6 +9,8 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { Button } from "@/shared/components/ui/button";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
@@ -333,21 +335,17 @@ export function ChatPanel() {
       <div className="shrink-0 px-2 pb-2">
         {/* Error Banner */}
         {error && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
-            <Warning size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium">Something went wrong</p>
-              <p className="mt-0.5 break-words">{error.message}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-status-error/15"
-            >
-              <ArrowCounterClockwise size={12} weight="bold" />
-              <span>Retry</span>
-            </button>
-          </div>
+          <Alert variant="destructive" className="mb-3">
+            <Warning size={16} />
+            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertDescription className="text-ui-base">{error.message}</AlertDescription>
+            <AlertAction>
+              <Button variant="outline" size="sm" onClick={handleRetry}>
+                <ArrowCounterClockwise size={12} weight="bold" />
+                Retry
+              </Button>
+            </AlertAction>
+          </Alert>
         )}
 
         {/* Status Banner */}

@@ -26,7 +26,7 @@ function Toaster({ ...props }: ToasterProps) {
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast shadow-[var(--shadow-md)]!",
+          toast: "cn-toast text-ui-base! shadow-[var(--shadow-md)]!",
         },
       }}
       {...props}

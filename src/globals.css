@@ -181,27 +181,27 @@
   /* --------------------------------------------------------------------------
      Backgrounds
      -------------------------------------------------------------------------- */
-  --bg-root: #0b0d10;
-  --bg-surface: #101318;
-  --bg-elevated: #161a21;
-  --bg-input: #1a1f28;
-  --bg-hover: rgba(255, 255, 255, 0.04);
+  --bg-root: #0c0e12;
+  --bg-surface: #151a22;
+  --bg-elevated: #1d2430;
+  --bg-input: #232b38;
+  --bg-hover: rgba(255, 255, 255, 0.08);
   --bg-active: rgba(110, 123, 242, 0.12);
-  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-overlay: rgba(0, 0, 0, 0.72);
 
   /* --------------------------------------------------------------------------
      Foregrounds
      -------------------------------------------------------------------------- */
   --fg-default: #e8eaee;
   --fg-muted: #9ba3af;
-  --fg-subtle: #646c7a;
-  --fg-inverse: #0b0d10;
+  --fg-subtle: #8b93a0;
+  --fg-inverse: #0c0e12;
 
   /* --------------------------------------------------------------------------
      Borders
      -------------------------------------------------------------------------- */
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(110, 123, 242, 0.5);
 
   /* --------------------------------------------------------------------------
@@ -270,20 +270,20 @@
   /* --------------------------------------------------------------------------
      Typography values
      -------------------------------------------------------------------------- */
-  --text-ui-2xs: 10px;
-  --text-ui-xs: 11px;
-  --text-ui-sm: 12px;
-  --text-ui-base: 13px;
-  --text-ui-md: 14px;
-  --text-ui-lg: 16px;
+  --text-ui-2xs: 11px;
+  --text-ui-xs: 12px;
+  --text-ui-sm: 13px;
+  --text-ui-base: 14px;
+  --text-ui-md: 15px;
+  --text-ui-lg: 18px;
   --text-editor: 14px;
 
-  --leading-ui-2xs: 12px;
-  --leading-ui-xs: 14px;
-  --leading-ui-sm: 16px;
-  --leading-ui-base: 20px;
-  --leading-ui-md: 22px;
-  --leading-ui-lg: 24px;
+  --leading-ui-2xs: 14px;
+  --leading-ui-xs: 16px;
+  --leading-ui-sm: 18px;
+  --leading-ui-base: 21px;
+  --leading-ui-md: 23px;
+  --leading-ui-lg: 26px;
   --leading-editor: 22px;
 
   /* --------------------------------------------------------------------------
@@ -549,6 +549,16 @@ button:disabled,
 [role="button"]:disabled,
 [role="button"][aria-disabled="true"] {
   cursor: not-allowed;
+}
+
+/* ============================================================================
+   SONNER — toast variants
+   Sonner injects its own sheet, so variant colors need to beat its base rules.
+   ============================================================================ */
+
+[data-sonner-toast][data-type="error"] {
+  border-color: color-mix(in srgb, var(--color-status-error) 40%, transparent) !important;
+  background-color: color-mix(in srgb, var(--color-status-error) 10%, transparent) !important;
 }
 
 /* ============================================================================

@@ -42,7 +42,7 @@ export function ModeSwitch() {
             aria-pressed={isActive}
             onClick={() => setUiMode(mode.id)}
             className={cn(
-              "h-6 rounded-pill px-3 text-ui-xs font-semibold transition-colors duration-fast",
+              "h-6 rounded-pill px-3 text-ui-sm font-semibold transition-colors duration-fast",
               isActive
                 ? "bg-bg-elevated text-fg-default shadow-[var(--shadow-sm)]"
                 : "text-fg-muted hover:text-fg-default",

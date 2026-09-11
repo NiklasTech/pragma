@@ -15,6 +15,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import {
   Collapsible,
   CollapsibleContent,
@@ -305,7 +306,12 @@ export function DockerPanel() {
               title="Docker detection failed"
               description="Failed to detect Docker or Podman runtime. Make sure it is installed and running."
             >
-              {error && <p className="text-ui-xs text-status-error">{error}</p>}
+              {error && (
+                <Alert variant="destructive" className="w-full text-left">
+                  <Warning size={16} />
+                  <AlertDescription className="text-ui-base">{error}</AlertDescription>
+                </Alert>
+              )}
             </PanelEmptyState>
           ) : !runtime.available ? (
             <PanelEmptyState
@@ -314,7 +320,12 @@ export function DockerPanel() {
               description="Docker or Podman is not available on this system."
             >
               {runtime.daemon_error ? (
-                <p className="text-ui-xs text-status-error">{runtime.daemon_error}</p>
+                <Alert variant="destructive" className="w-full text-left">
+                  <Warning size={16} />
+                  <AlertDescription className="text-ui-base">
+                    {runtime.daemon_error}
+                  </AlertDescription>
+                </Alert>
               ) : (
                 <p className="text-ui-xs text-fg-subtle">
                   Shell: /bin/fish · PATH entries: check Tauri log
@@ -330,7 +341,12 @@ export function DockerPanel() {
                 <span className="text-ui-xs text-status-success">connected</span>
               </div>
 
-              {error && <p className="text-ui-xs text-status-error px-1">{error}</p>}
+              {error && (
+                <Alert variant="destructive">
+                  <Warning size={16} />
+                  <AlertDescription className="text-ui-base">{error}</AlertDescription>
+                </Alert>
+              )}
 
               {runtime.compose_file && (
                 <div className="space-y-1.5">

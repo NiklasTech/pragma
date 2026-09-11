@@ -39,7 +39,7 @@ export function FileRow({
   const row = (
     <div
       className={cn(
-        "group relative flex h-[30px] items-center gap-2 rounded-md pl-2 pr-2 transition-all duration-100",
+        "group relative flex h-9 items-center gap-2 rounded-md pl-2 pr-2 transition-all duration-100",
         isSelected ? "bg-bg-active text-fg-default" : "hover:bg-bg-hover",
       )}
       onClick={() => onSelect(entry)}
@@ -55,14 +55,14 @@ export function FileRow({
         checked={checkState === "checked"}
         disabled={actionBusy !== null}
         onCheckedChange={() => onToggle(entry)}
-        className="size-3.5"
+        className="size-4"
         data-indeterminate={checkState === "indeterminate" || undefined}
         onClick={(e) => e.stopPropagation()}
       />
       <StatusIcon status={entry.status} />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
-        <span className="truncate text-ui-sm leading-tight">{fileName}</span>
-        {dir && <span className="truncate text-ui-xs text-fg-muted/70">{dir}</span>}
+        <span className="truncate text-ui-base leading-tight">{fileName}</span>
+        {dir && <span className="truncate text-ui-sm text-fg-muted">{dir}</span>}
       </div>
       <button
         type="button"
@@ -73,7 +73,7 @@ export function FileRow({
         className="shrink-0 rounded p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
         title="Open diff in editor"
       >
-        <GitDiff size={13} />
+        <GitDiff size={16} />
       </button>
     </div>
   );
