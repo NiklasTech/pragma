@@ -39,6 +39,18 @@ export function normalizeAIPlacement(value: unknown): AIPlacement {
     : defaultAIPlacement;
 }
 
+/// Floating, bottom and editor-tab placements are no longer first-class. Stored
+/// values migrate onto the editor dock so the shortcut keeps working.
+export function normalizeDockPlacement(value: unknown): AIPlacement {
+  const placement = normalizeAIPlacement(value);
+  if (placement === "left" || placement === "hidden") return placement;
+  return "right";
+}
+
+export function needsDockMigration(value: unknown): boolean {
+  return value === "floating" || value === "bottom" || value === "tab";
+}
+
 export function hasMountedAIPanel(state: Pick<AIPlacementState, "root" | "floating">): boolean {
   return (
     findPanelByKind(state.root, "ai") !== null ||

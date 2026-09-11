@@ -20,7 +20,8 @@ import {
 import { layoutPresets } from "./presets";
 import {
   applyAIPlacement,
-  normalizeAIPlacement,
+  needsDockMigration,
+  normalizeDockPlacement,
   removeMountedAIPanel,
   toggleAIPlacement,
 } from "./aiPlacement";
@@ -35,7 +36,7 @@ const AI_DEFAULT_WIDTH = 360;
 const AI_MIN_WIDTH = 260;
 const AI_MAX_WIDTH = 720;
 
-const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MIN_WIDTH = 220;
 
 const TERMINAL_MIN_HEIGHT = 20;
 const TERMINAL_MAX_HEIGHT = 80;
@@ -353,13 +354,23 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
     name: STORAGE_KEY,
     merge: (persisted, current) => {
       const merged = { ...current, ...(persisted as Partial<FullLayoutTreeState>) };
+      const needsMigration = needsDockMigration(merged.ai?.placement);
+      const panels = needsMigration
+        ? removeMountedAIPanel({
+            ai: merged.ai,
+            root: merged.root,
+            floating: merged.floating,
+          })
+        : { root: merged.root, floating: merged.floating };
       return {
         ...merged,
+        ...panels,
         sidebar: { ...merged.sidebar, tab: normalizeSidebarTab(merged.sidebar.tab) },
         ai: {
           ...current.ai,
           ...merged.ai,
-          placement: normalizeAIPlacement(merged.ai?.placement),
+          mode: needsMigration ? "drawer-right" : merged.ai.mode,
+          placement: normalizeDockPlacement(merged.ai?.placement),
         },
       };
     },

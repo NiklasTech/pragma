@@ -219,6 +219,11 @@ export interface MotionTokens {
   ease: MotionEaseTokens;
 }
 
+export interface ShadowTokens {
+  sm: string;
+  md: string;
+}
+
 export interface ThemeTokens {
   colors: ColorTokens;
   editor: EditorTokens;
@@ -226,6 +231,7 @@ export interface ThemeTokens {
   layout?: Partial<LayoutTokens>;
   typography?: Partial<TypographyTokens>;
   motion?: Partial<MotionTokens>;
+  shadows?: ShadowTokens;
 }
 
 export interface Theme {

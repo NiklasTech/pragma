@@ -1,7 +1,7 @@
-import { useLayoutStore } from "@/shell/layout/store";
-import { cn } from "@/shared/lib/utils";
+import type { Icon } from "@phosphor-icons/react";
 import {
   Bug,
+  CaretUpDown,
   Cube,
   Files,
   GitBranch,
@@ -11,6 +11,19 @@ import {
   SidebarSimple,
   Terminal,
 } from "@phosphor-icons/react";
+
+import { useLayoutStore } from "@/shell/layout/store";
+import type { SidebarTab } from "@/shell/layout/tree/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
+import { cn } from "@/shared/lib/utils";
+import { getWorkspaceName } from "@/shared/lib/workspaceName";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import {
   DockerPanel,
   FileExplorer,
@@ -22,158 +35,222 @@ import {
 } from "@/features/sidebar/components";
 import { DebugPanel } from "@/features/debug/components/DebugPanel";
 import { ExtensionSidebarPanel } from "@/features/extensions/components/ExtensionSidebarPanel";
-import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 
-const tabs = [
-  { id: "explorer" as const, icon: Files, label: "Explorer" },
-  { id: "search" as const, icon: MagnifyingGlass, label: "Search" },
-  { id: "git" as const, icon: GitBranch, label: "Git Graph" },
-  { id: "git-status" as const, icon: GitDiff, label: "Git Status" },
-  { id: "docker" as const, icon: Cube, label: "Docker" },
-  { id: "processes" as const, icon: Terminal, label: "Processes" },
-  { id: "debug" as const, icon: Bug, label: "Debug" },
-  { id: "extensions" as const, icon: PuzzlePiece, label: "Extensions" },
+interface SidebarView {
+  id: SidebarTab;
+  label: string;
+  icon: Icon;
+}
+
+const primaryViews: SidebarView[] = [
+  { id: "explorer", label: "Files", icon: Files },
+  { id: "search", label: "Search", icon: MagnifyingGlass },
+  { id: "git", label: "Git", icon: GitBranch },
+  { id: "git-status", label: "Status", icon: GitDiff },
 ];
 
-export const DOCK_WIDTH = 40;
+const moreViews: SidebarView[] = [
+  { id: "debug", label: "Debug", icon: Bug },
+  { id: "docker", label: "Docker", icon: Cube },
+  { id: "processes", label: "Processes", icon: Terminal },
+  { id: "extensions", label: "Extensions", icon: PuzzlePiece },
+];
 
-function DockTabButton({
-  tab,
-  index,
+function SidebarViewContent({ tab }: { tab: SidebarTab }) {
+  switch (tab) {
+    case "search":
+      return <SearchPanel />;
+    case "git":
+      return <GitGraph />;
+    case "git-status":
+      return <GitStatus />;
+    case "docker":
+      return <DockerPanel />;
+    case "processes":
+      return <ProcessManagerPanel />;
+    case "debug":
+      return <DebugPanel />;
+    case "extensions":
+      return <ExtensionSidebarPanel />;
+    default:
+      return <FileExplorer />;
+  }
+}
+
+function ViewTab({
+  view,
   isActive,
   onSelect,
 }: {
-  tab: (typeof tabs)[number];
-  index: number;
+  view: SidebarView;
   isActive: boolean;
-  onSelect: (tabId: (typeof tabs)[number]["id"]) => void;
+  onSelect: (tab: SidebarTab) => void;
 }) {
   return (
     <button
       type="button"
-      aria-label={tab.label}
       aria-pressed={isActive}
-      onClick={() => onSelect(tab.id)}
+      onClick={() => onSelect(view.id)}
+      title={view.label}
       className={cn(
-        "relative flex size-8 items-center justify-center rounded-md outline-none transition-all duration-fast",
+        "flex h-6 min-w-0 flex-1 items-center justify-center gap-1 rounded-sm px-1 text-ui-2xs font-medium transition-colors",
         isActive
-          ? "bg-accent-subtle text-fg-default"
+          ? "bg-bg-elevated text-fg-default"
           : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
       )}
-      title={`${tab.label} (Ctrl+Shift+${index + 1})`}
     >
-      <tab.icon
-        size={18}
-        weight={isActive ? "duotone" : "regular"}
-        className="shrink-0 transition-all duration-fast"
-      />
+      <view.icon size={13} weight={isActive ? "duotone" : "regular"} className="shrink-0" />
+      <span className="hidden truncate @min-[250px]:inline">{view.label}</span>
     </button>
   );
 }
 
-export function SidebarDock() {
+function MoreViewsMenu({
+  activeTab,
+  onSelect,
+}: {
+  activeTab: SidebarTab;
+  onSelect: (tab: SidebarTab) => void;
+}) {
+  const isActive = moreViews.some((view) => view.id === activeTab);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            aria-label="More views"
+            title="More views"
+            className={cn(
+              "flex h-6 shrink-0 items-center justify-center rounded-sm px-1 transition-colors",
+              isActive
+                ? "bg-bg-elevated text-fg-default"
+                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+            )}
+          >
+            <CaretUpDown size={13} className="shrink-0" />
+          </button>
+        }
+      />
+      <DropdownMenuContent side="top" align="start" className="min-w-[160px]">
+        {moreViews.map((view) => (
+          <DropdownMenuItem key={view.id} onClick={() => onSelect(view.id)}>
+            <view.icon size={14} />
+            {view.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function SidebarCollapsedStrip() {
   const { sidebar, setSidebarTab, setSidebarCollapsed } = useLayoutStore();
-
-  const handleSelectView = (tabId: (typeof tabs)[number]["id"]) => {
-    if (sidebar.tab === tabId && !sidebar.collapsed) {
-      setSidebarCollapsed(true);
-    } else {
-      setSidebarCollapsed(false);
-      setSidebarTab(tabId);
-    }
-  };
-
   const isRight = sidebar.position === "right";
+
+  const handleSelect = (tab: SidebarTab) => {
+    setSidebarTab(tab);
+    setSidebarCollapsed(false);
+  };
 
   return (
     <div
       className={cn(
-        "flex h-full w-[--width-sidebar-collapsed] shrink-0 flex-col py-2",
-        isRight ? "pr-2" : "pl-2",
+        "flex h-full w-[var(--width-sidebar-collapsed)] shrink-0 flex-col items-center gap-1 py-2",
+        isRight ? "border-l border-border/60" : "border-r border-border/60",
       )}
     >
-      <div className="flex w-full flex-1 flex-col items-center rounded-xl border border-border bg-bg-surface py-2">
-        <div className="flex w-full flex-col gap-1 px-1">
-          <div className="flex w-full flex-col gap-1">
-            {tabs.slice(0, 2).map((tab, index) => (
-              <DockTabButton
-                key={tab.id}
-                tab={tab}
-                index={index}
-                isActive={tab.id === sidebar.tab && !sidebar.collapsed}
-                onSelect={handleSelectView}
-              />
-            ))}
-          </div>
+      <button
+        type="button"
+        onClick={() => setSidebarCollapsed(false)}
+        aria-label="Expand sidebar"
+        title="Expand Sidebar (Ctrl+B)"
+        className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+      >
+        <SidebarSimple size={15} />
+      </button>
 
-          <div className="my-1 mx-2 h-px bg-border/30" />
-
-          <div className="flex w-full flex-col gap-1">
-            {tabs.slice(2, 4).map((tab, index) => (
-              <DockTabButton
-                key={tab.id}
-                tab={tab}
-                index={index + 2}
-                isActive={tab.id === sidebar.tab && !sidebar.collapsed}
-                onSelect={handleSelectView}
-              />
-            ))}
-          </div>
-
-          <div className="my-1 mx-2 h-px bg-border/30" />
-
-          <div className="flex w-full flex-col gap-1">
-            {tabs.slice(4).map((tab, index) => (
-              <DockTabButton
-                key={tab.id}
-                tab={tab}
-                index={index + 4}
-                isActive={tab.id === sidebar.tab && !sidebar.collapsed}
-                onSelect={handleSelectView}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="flex-1" />
-
-        <button
-          type="button"
-          onClick={() => setSidebarCollapsed(!sidebar.collapsed)}
-          className={cn(
-            "flex size-8 items-center justify-center rounded-md outline-none",
-            "text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-muted",
-            "focus-visible:ring-2 focus-visible:ring-primary/40",
-          )}
-          title={sidebar.collapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
-        >
-          <SidebarSimple size={18} />
-        </button>
+      <div className="flex flex-col items-center gap-0.5">
+        {primaryViews.map((view) => (
+          <button
+            key={view.id}
+            type="button"
+            aria-label={view.label}
+            aria-pressed={sidebar.tab === view.id}
+            onClick={() => handleSelect(view.id)}
+            title={view.label}
+            className={cn(
+              "flex size-7 items-center justify-center rounded-sm transition-colors",
+              sidebar.tab === view.id
+                ? "bg-bg-elevated text-fg-default"
+                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+            )}
+          >
+            <view.icon size={15} weight={sidebar.tab === view.id ? "duotone" : "regular"} />
+          </button>
+        ))}
+        <MoreViewsMenu activeTab={sidebar.tab} onSelect={handleSelect} />
       </div>
     </div>
   );
 }
 
 export function SidebarContent() {
-  const { sidebar } = useLayoutStore();
+  const { sidebar, setSidebarCollapsed, setSidebarTab } = useLayoutStore();
   const { isOpen, activeFilePath, closePanel } = useLocalHistory();
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
+
+  if (sidebar.collapsed) {
+    return <SidebarCollapsedStrip />;
+  }
+
+  const workspaceName = getWorkspaceName(rootPath) || "No folder";
+  const isRight = sidebar.position === "right";
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col py-2 pr-1 pl-1">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-bg-surface">
-        <div className="min-h-0 flex-1 overflow-hidden">
-          {sidebar.tab === "explorer" && <FileExplorer />}
-          {sidebar.tab === "search" && <SearchPanel />}
-          {sidebar.tab === "git" && <GitGraph />}
-          {sidebar.tab === "git-status" && <GitStatus />}
-          {sidebar.tab === "docker" && <DockerPanel />}
-          {sidebar.tab === "processes" && <ProcessManagerPanel />}
-          {sidebar.tab === "debug" && <DebugPanel />}
-          {sidebar.tab === "extensions" && <ExtensionSidebarPanel />}
-        </div>
-        {activeFilePath && (
-          <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />
-        )}
+    <div
+      className={cn(
+        "@container flex h-full min-h-0 flex-col bg-bg-surface",
+        isRight ? "border-l border-border/60" : "border-r border-border/60",
+      )}
+    >
+      <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2">
+        <span
+          className="min-w-0 flex-1 truncate text-ui-xs font-semibold text-fg-default"
+          title={rootPath ?? undefined}
+        >
+          {workspaceName}
+        </span>
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(true)}
+          aria-label="Collapse sidebar"
+          title="Collapse Sidebar (Ctrl+B)"
+          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+        >
+          <SidebarSimple size={14} />
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <SidebarViewContent tab={sidebar.tab} />
+      </div>
+
+      {activeFilePath && (
+        <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />
+      )}
+
+      <div className="flex shrink-0 items-center gap-0.5 border-t border-border/60 px-1 py-1">
+        {primaryViews.map((view) => (
+          <ViewTab
+            key={view.id}
+            view={view}
+            isActive={sidebar.tab === view.id}
+            onSelect={setSidebarTab}
+          />
+        ))}
+        <MoreViewsMenu activeTab={sidebar.tab} onSelect={setSidebarTab} />
       </div>
     </div>
   );

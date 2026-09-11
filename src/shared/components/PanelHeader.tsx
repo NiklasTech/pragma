@@ -19,7 +19,7 @@ export function PanelHeader({ icon: Icon, title, subtitle, actions, className }:
   return (
     <div
       className={cn(
-        "flex h-8 shrink-0 items-center gap-2 px-2",
+        "flex h-8 shrink-0 items-center gap-2 px-3",
         hasText ? "justify-between" : "justify-end",
         className,
       )}
@@ -28,7 +28,7 @@ export function PanelHeader({ icon: Icon, title, subtitle, actions, className }:
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {Icon && <Icon size={13} weight="bold" className="shrink-0 text-fg-muted" />}
           <div className="flex min-w-0 flex-col">
-            {title && <span className="truncate text-ui-xs font-semibold">{title}</span>}
+            {title && <span className="truncate text-ui-sm font-semibold">{title}</span>}
             {subtitle && <span className="truncate text-ui-xs text-fg-subtle">{subtitle}</span>}
           </div>
         </div>

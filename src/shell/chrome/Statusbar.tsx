@@ -62,7 +62,7 @@ export function Statusbar() {
         if (!editor.vimMode) return null;
         return (
           <StatusbarSection key={item}>
-            <span className="rounded-sm bg-accent-subtle px-1.5 py-px text-ui-2xs font-semibold text-primary">
+            <span className="rounded-full bg-accent-subtle px-1.5 py-px text-ui-2xs font-semibold text-primary">
               VIM
             </span>
           </StatusbarSection>

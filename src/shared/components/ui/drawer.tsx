@@ -58,7 +58,7 @@ function DrawerContent({
       <DrawerPrimitive.Popup
         data-slot="drawer-content"
         className={cn(
-          "fixed z-[70] grid gap-3 border border-border/60 bg-bg-elevated p-0 text-ui-base text-fg-default shadow-xl shadow-black/20 ring-0 opacity-0 transition-all duration-200 outline-none data-[open]:opacity-100 data-[open]:translate-x-0",
+          "fixed z-[70] grid gap-3 border border-border/60 bg-bg-elevated p-0 text-ui-base text-fg-default shadow-[var(--shadow-md)] ring-0 opacity-0 transition-all duration-200 outline-none data-[open]:opacity-100 data-[open]:translate-x-0",
           sideStyles[side],
           className,
         )}
