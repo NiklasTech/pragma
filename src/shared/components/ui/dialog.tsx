@@ -52,7 +52,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-bg-elevated p-5 text-ui-base text-fg-default shadow-[var(--shadow-md)] ring-0 opacity-0 transition-all duration-200 outline-none sm:max-w-md data-[open]:opacity-100 data-[open]:scale-100 scale-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-md border border-border bg-bg-elevated p-4 text-ui-base text-fg-default shadow-[var(--shadow-md)] ring-0 opacity-0 transition-all duration-200 outline-none sm:max-w-lg data-[open]:opacity-100 data-[open]:scale-100 scale-95",
           className,
         )}
         {...props}
@@ -92,7 +92,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-5 -mb-5 flex flex-col-reverse gap-2 rounded-b-xl border-t border-border-subtle bg-bg-hover p-3 sm:flex-row sm:justify-end",
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-md border-t border-border-subtle bg-bg-hover p-3 sm:flex-row sm:justify-end",
         className,
       )}
       {...props}
@@ -111,7 +111,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("font-heading text-ui-md font-semibold text-fg-default", className)}
+      className={cn("font-heading text-ui-base font-semibold text-fg-default", className)}
       {...props}
     />
   );
