@@ -4,18 +4,18 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/shared/lib/utils";
 
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-md border border-border/60 px-2.5 py-2 text-left text-ui-base has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-3.5",
+  "group/alert relative grid w-full gap-0.5 rounded-md border border-border px-2.5 py-2 text-left text-ui-base has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: "bg-bg-elevated text-fg-default",
         destructive:
-          "border-status-error/30 bg-status-error/5 text-status-error *:data-[slot=alert-description]:text-status-error/80 *:[svg]:text-current",
+          "border-status-error/40 bg-status-error/10 text-status-error *:data-[slot=alert-description]:text-status-error",
         warning:
-          "border-status-warning/30 bg-status-warning/5 text-status-warning *:data-[slot=alert-description]:text-status-warning/80",
+          "border-status-warning/40 bg-status-warning/10 text-status-warning *:data-[slot=alert-description]:text-status-warning",
         success:
-          "border-status-success/30 bg-status-success/5 text-status-success *:data-[slot=alert-description]:text-status-success/80",
-        info: "border-primary/20 bg-primary/5 text-primary *:data-[slot=alert-description]:text-primary/80",
+          "border-status-success/40 bg-status-success/10 text-status-success *:data-[slot=alert-description]:text-status-success",
+        info: "border-primary/30 bg-primary/10 text-primary *:data-[slot=alert-description]:text-primary",
       },
     },
     defaultVariants: {
@@ -57,7 +57,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<"div">) 
     <div
       data-slot="alert-description"
       className={cn(
-        "text-ui-xs text-balance text-fg-subtle md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-fg-default [&_p:not(:last-child)]:mb-3",
+        "text-ui-sm text-balance text-fg-default md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-fg-default [&_p:not(:last-child)]:mb-3",
         className,
       )}
       {...props}

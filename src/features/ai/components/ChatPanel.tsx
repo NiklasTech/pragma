@@ -1,13 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import {
-  Warning,
-  Terminal,
-  Plus,
-  Robot,
-  ArrowCounterClockwise,
-  Check,
-  X,
-} from "@phosphor-icons/react";
+import { Warning, Terminal, Robot, ArrowCounterClockwise, Check, X } from "@phosphor-icons/react";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -17,12 +9,15 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { Button } from "@/shared/components/ui/button";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
+import { AgentRunBar } from "./AgentRunBar";
 import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
-import { ChatSessionList } from "./ChatSessionList";
+import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
 import { Message, MessageContent, MessageResponse } from "./Message";
@@ -73,10 +68,9 @@ export function ChatPanel() {
     canChat,
     isCLIActive,
     activeCLIProvider,
-    createChatSession,
     mcpLoaded,
   } = useAI();
-  const { cliStatuses, activeChatSessionId, chatSessions } = useAIStore();
+  const { cliStatuses } = useAIStore();
   const { edit, receiveProposal, cancelEdit } = useAIEditStore();
   const openDiff = useEditorStore((state) => state.openDiff);
   const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
@@ -92,7 +86,6 @@ export function ChatPanel() {
   >([]);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
-  const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
 
   const previousStatusRef = useRef(status);
 
@@ -177,10 +170,6 @@ export function ChatPanel() {
     }
   }, [yoloMode, pendingApprovals, handleApproval]);
 
-  const handleNewSession = useCallback(() => {
-    void createChatSession();
-  }, [createChatSession]);
-
   const handleRetry = useCallback(() => {
     void regenerate();
   }, [regenerate]);
@@ -190,38 +179,13 @@ export function ChatPanel() {
       ? messages[messages.length - 1]?.id
       : null;
 
-  const headerTitle =
-    activeSession && activeSession.title !== "New Chat" ? activeSession.title : undefined;
-
   const cliStatusText = cliStatus
     ? `Using ${cliStatus.provider_id} via CLI${cliStatus.user ? ` — ${cliStatus.user}` : ""}`
     : "";
 
   return (
     <div className="@container flex h-full flex-col">
-      {/* Header */}
-      <div className="flex h-8 shrink-0 items-center justify-between gap-2 px-2">
-        <div className="flex min-w-0 flex-1 items-center">
-          {headerTitle ? (
-            <span className="truncate text-ui-xs font-semibold" title={headerTitle}>
-              {headerTitle}
-            </span>
-          ) : (
-            <span className="truncate text-ui-xs font-medium text-fg-muted">New thread</span>
-          )}
-        </div>
-        <div className="flex shrink-0 items-center gap-0.5">
-          <ChatSessionList />
-          <button
-            type="button"
-            onClick={handleNewSession}
-            title="New Session"
-            className="flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          >
-            <Plus size={13} weight="bold" />
-          </button>
-        </div>
-      </div>
+      <ChatPanelHeader />
 
       {/* Messages */}
       <div className="relative flex-1 min-h-0">
@@ -371,21 +335,17 @@ export function ChatPanel() {
       <div className="shrink-0 px-2 pb-2">
         {/* Error Banner */}
         {error && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg bg-status-error/10 px-3 py-2 text-ui-sm text-status-error">
-            <Warning size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium">Something went wrong</p>
-              <p className="mt-0.5 break-words">{error.message}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 hover:bg-status-error/15"
-            >
-              <ArrowCounterClockwise size={12} weight="bold" />
-              <span>Retry</span>
-            </button>
-          </div>
+          <Alert variant="destructive" className="mb-3">
+            <Warning size={16} />
+            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertDescription className="text-ui-base">{error.message}</AlertDescription>
+            <AlertAction>
+              <Button variant="outline" size="sm" onClick={handleRetry}>
+                <ArrowCounterClockwise size={12} weight="bold" />
+                Retry
+              </Button>
+            </AlertAction>
+          </Alert>
         )}
 
         {/* Status Banner */}
@@ -447,6 +407,8 @@ export function ChatPanel() {
         )}
 
         <AgentApprovals />
+
+        <AgentRunBar />
 
         <ChatComposer
           input={input}

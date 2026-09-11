@@ -8,8 +8,9 @@ use crate::ai::{
     error::AIError,
     keychain,
     provider::{
-        AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse,
-        FunctionCall, Message, ModelInfo, Role, ToolCall, ToolDefinition, Usage,
+        coalesce_system_messages, AIProvider, BoxFuture, CompletionChunk, CompletionRequest,
+        CompletionResponse, FunctionCall, Message, ModelInfo, Role, ToolCall, ToolDefinition,
+        Usage,
     },
 };
 
@@ -266,55 +267,23 @@ impl AIProvider for OpenAIProvider {
             let mut in_reasoning = false;
             for line in text.lines() {
                 let line = line.trim();
-                if line.is_empty() || line == "data: [DONE]" {
+                if line.is_empty() || line == DONE_EVENT {
                     continue;
                 }
-                if let Some(data) = line.strip_prefix("data: ") {
-                    let event: OpenAIStreamEvent = serde_json::from_str(data)
-                        .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
+                if let Some(data) = line.strip_prefix(DATA_PREFIX) {
+                    let event = match parse_stream_event(data)? {
+                        ParseOutcome::Event(event) => event,
+                        ParseOutcome::Skip => continue,
+                    };
 
-                    if let Some(choice) = event.choices.into_iter().next() {
-                        let has_content = choice
-                            .delta
-                            .content
-                            .as_ref()
-                            .map(|c| !c.is_empty())
-                            .unwrap_or(false);
-                        let has_reasoning = choice
-                            .delta
-                            .reasoning_content
-                            .as_ref()
-                            .map(|c| !c.is_empty())
-                            .unwrap_or(false);
-
-                        if has_content || has_reasoning {
-                            let mut chunk = String::new();
-
-                            if has_content {
-                                if in_reasoning {
-                                    chunk.push_str("</thinking>");
-                                    in_reasoning = false;
-                                }
-                                chunk.push_str(choice.delta.content.as_deref().unwrap_or_default());
-                            }
-
-                            if has_reasoning {
-                                if !in_reasoning {
-                                    chunk.push_str("<thinking>");
-                                    in_reasoning = true;
-                                }
-                                chunk.push_str(
-                                    choice
-                                        .delta
-                                        .reasoning_content
-                                        .as_deref()
-                                        .unwrap_or_default(),
-                                );
-                            }
-
+                    if let Some(mut choice) = event.choices.into_iter().next() {
+                        choice.delta.tool_calls = None;
+                        let (content, finish_reason) =
+                            build_stream_chunk(&mut choice, &mut in_reasoning);
+                        if !content.is_empty() {
                             chunks.push(CompletionChunk {
-                                content: chunk,
-                                finish_reason: choice.finish_reason,
+                                content,
+                                finish_reason,
                                 tool_calls: None,
                             });
                         }
@@ -407,125 +376,73 @@ impl AIProvider for OpenAIProvider {
 
                                 if line.is_empty() {
                                     for data in &event_data {
-                                        if data == "[DONE]" {
+                                        if data == DONE_EVENT {
                                             continue;
                                         }
 
-                                        match serde_json::from_str::<OpenAIStreamEvent>(data) {
-                                            Ok(event) => {
-                                                if let Some(choice) =
-                                                    event.choices.into_iter().next()
+                                        let event = match parse_stream_event(data) {
+                                            Ok(ParseOutcome::Event(event)) => event,
+                                            Ok(ParseOutcome::Skip) => continue,
+                                            Err(e) => {
+                                                let _ = tx.send(Err(e)).await;
+                                                continue;
+                                            }
+                                        };
+
+                                        if let Some(mut choice) = event.choices.into_iter().next() {
+                                            let tool_call_deltas = choice.delta.tool_calls.take();
+                                            let (chunk, finish_reason) =
+                                                build_stream_chunk(&mut choice, &mut in_reasoning);
+
+                                            if !chunk.is_empty() {
+                                                content_buffer.push_str(&chunk);
+
+                                                if tx
+                                                    .send(Ok(CompletionChunk {
+                                                        content: chunk,
+                                                        finish_reason: finish_reason.clone(),
+                                                        tool_calls: None,
+                                                    }))
+                                                    .await
+                                                    .is_err()
                                                 {
-                                                    let has_content = choice
-                                                        .delta
-                                                        .content
-                                                        .as_ref()
-                                                        .map(|c| !c.is_empty())
-                                                        .unwrap_or(false);
-                                                    let has_reasoning = choice
-                                                        .delta
-                                                        .reasoning_content
-                                                        .as_ref()
-                                                        .map(|c| !c.is_empty())
-                                                        .unwrap_or(false);
+                                                    break;
+                                                }
+                                            }
 
-                                                    if has_content || has_reasoning {
-                                                        let mut chunk = String::new();
-
-                                                        if has_content {
-                                                            if in_reasoning {
-                                                                chunk.push_str("</thinking>");
-                                                                in_reasoning = false;
-                                                            }
-                                                            chunk.push_str(
-                                                                choice
-                                                                    .delta
-                                                                    .content
-                                                                    .as_deref()
-                                                                    .unwrap_or_default(),
-                                                            );
-                                                        }
-
-                                                        if has_reasoning {
-                                                            if !in_reasoning {
-                                                                chunk.push_str("<thinking>");
-                                                                in_reasoning = true;
-                                                            }
-                                                            chunk.push_str(
-                                                                choice
-                                                                    .delta
-                                                                    .reasoning_content
-                                                                    .as_deref()
-                                                                    .unwrap_or_default(),
-                                                            );
-                                                        }
-
-                                                        content_buffer.push_str(&chunk);
-
-                                                        if tx
-                                                            .send(Ok(CompletionChunk {
-                                                                content: chunk,
-                                                                finish_reason: choice
-                                                                    .finish_reason
-                                                                    .clone(),
-                                                                tool_calls: None,
-                                                            }))
-                                                            .await
-                                                            .is_err()
-                                                        {
-                                                            break;
-                                                        }
+                                            if let Some(deltas) = tool_call_deltas {
+                                                for delta in deltas {
+                                                    let partial = partial_tool_calls
+                                                        .entry(delta.index)
+                                                        .or_default();
+                                                    if let Some(id) = delta.id {
+                                                        partial.id = id;
                                                     }
-
-                                                    if let Some(deltas) = choice.delta.tool_calls {
-                                                        for delta in deltas {
-                                                            let partial = partial_tool_calls
-                                                                .entry(delta.index)
-                                                                .or_default();
-                                                            if let Some(id) = delta.id {
-                                                                partial.id = id;
-                                                            }
-                                                            if let Some(r#type) = delta.r#type {
-                                                                partial.r#type = r#type;
-                                                            }
-                                                            if let Some(function) = delta.function {
-                                                                if let Some(name) = function.name {
-                                                                    partial.name = Some(name);
-                                                                }
-                                                                if let Some(args) =
-                                                                    function.arguments
-                                                                {
-                                                                    partial
-                                                                        .arguments
-                                                                        .push_str(&args);
-                                                                }
-                                                            }
-                                                        }
+                                                    if let Some(r#type) = delta.r#type {
+                                                        partial.r#type = r#type;
                                                     }
-
-                                                    if choice.finish_reason.as_deref()
-                                                        == Some("tool_calls")
-                                                    {
-                                                        let completed: Vec<ToolCall> =
-                                                            partial_tool_calls
-                                                                .drain()
-                                                                .map(|(_, partial)| partial.into())
-                                                                .collect();
-                                                        send_tool_call_chunk(completed, &tx).await;
+                                                    if let Some(function) = delta.function {
+                                                        if let Some(name) = function.name {
+                                                            partial.name = Some(name);
+                                                        }
+                                                        if let Some(args) = function.arguments {
+                                                            partial.arguments.push_str(&args);
+                                                        }
                                                     }
                                                 }
                                             }
-                                            Err(e) => {
-                                                let _ = tx
-                                                    .send(Err(AIError::Stream(format!(
-                                                        "invalid sse event: {e}"
-                                                    ))))
-                                                    .await;
+
+                                            if finish_reason.as_deref() == Some("tool_calls") {
+                                                let completed: Vec<ToolCall> = partial_tool_calls
+                                                    .drain()
+                                                    .map(|(_, partial)| partial.into())
+                                                    .collect();
+                                                send_tool_call_chunk(completed, &tx).await;
                                             }
                                         }
                                     }
                                     event_data.clear();
-                                } else if let Some(data) = line.strip_prefix("data: ") {
+                                } else if let Some(data) = line.strip_prefix(DATA_PREFIX) {
                                     event_data.push(data.to_string());
                                 }
                             }
@@ -557,6 +474,66 @@ impl AIProvider for OpenAIProvider {
             Ok(rx)
         })
     }
+}
+
+const DATA_PREFIX: &str = "data: ";
+const DONE_EVENT: &str = "[DONE]";
+
+#[derive(Debug)]
+enum ParseOutcome {
+    Event(OpenAIStreamEvent),
+    Skip,
+}
+
+/// Parses one SSE `data:` payload. Providers emit events without `choices`
+/// (usage, citations, metadata); those are skipped instead of failing the stream.
+fn parse_stream_event(data: &str) -> Result<ParseOutcome, AIError> {
+    let event: OpenAIStreamEvent = serde_json::from_str(data)
+        .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
+
+    if event.choices.is_empty() {
+        if let Some(error) = event.error {
+            return Err(AIError::Provider(
+                error.message.unwrap_or_else(|| "unknown error".to_string()),
+            ));
+        }
+        return Ok(ParseOutcome::Skip);
+    }
+
+    Ok(ParseOutcome::Event(event))
+}
+
+/// Builds the text of a single chunk and keeps `<thinking>` tags balanced across the stream.
+fn build_stream_chunk(
+    choice: &mut OpenAIStreamChoice,
+    in_reasoning: &mut bool,
+) -> (String, Option<String>) {
+    let delta = &mut choice.delta;
+    let content = delta.content.take();
+    let reasoning = delta.reasoning_content.take();
+
+    let has_content = content.as_ref().is_some_and(|value| !value.is_empty());
+    let has_reasoning = reasoning.as_ref().is_some_and(|value| !value.is_empty());
+
+    let mut chunk = String::new();
+
+    if has_content {
+        if *in_reasoning {
+            chunk.push_str("</thinking>");
+            *in_reasoning = false;
+        }
+        chunk.push_str(content.as_deref().unwrap_or_default());
+    }
+
+    if has_reasoning {
+        if !*in_reasoning {
+            chunk.push_str("<thinking>");
+            *in_reasoning = true;
+        }
+        chunk.push_str(reasoning.as_deref().unwrap_or_default());
+    }
+
+    (chunk, choice.finish_reason.take())
 }
 
 fn extract_tool_calls_from_content(content: &str) -> Option<Vec<ToolCall>> {
@@ -692,7 +669,10 @@ impl OpenAIRequestBody {
     fn from_completion_request(model: &str, req: CompletionRequest) -> Self {
         Self {
             model: model.to_string(),
-            messages: req.messages.into_iter().map(Into::into).collect(),
+            messages: coalesce_system_messages(req.messages)
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             temperature: req.temperature.or_else(|| {
                 if req.tools.is_some() {
                     Some(0.1)
@@ -817,16 +797,24 @@ struct OpenAIUsage {
 
 #[derive(Debug, Deserialize)]
 struct OpenAIStreamEvent {
+    #[serde(default)]
     choices: Vec<OpenAIStreamChoice>,
+    error: Option<OpenAIStreamError>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIStreamError {
+    message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct OpenAIStreamChoice {
+    #[serde(default)]
     delta: OpenAIStreamDelta,
     finish_reason: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 struct OpenAIStreamDelta {
     content: Option<String>,
     reasoning_content: Option<String>,
@@ -870,5 +858,106 @@ impl From<PartialToolCall> for ToolCall {
                 arguments: partial.arguments,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_event(data: &str) -> OpenAIStreamEvent {
+        match parse_stream_event(data) {
+            Ok(ParseOutcome::Event(event)) => event,
+            Ok(ParseOutcome::Skip) => panic!("expected event, got skip"),
+            Err(e) => panic!("expected event, got error: {e}"),
+        }
+    }
+
+    fn first_choice(data: &str) -> OpenAIStreamChoice {
+        parse_event(data)
+            .choices
+            .into_iter()
+            .next()
+            .expect("expected a choice")
+    }
+
+    fn chunk_for(data: &str) -> String {
+        let mut choice = first_choice(data);
+        let mut in_reasoning = false;
+        build_stream_chunk(&mut choice, &mut in_reasoning).0
+    }
+
+    #[test]
+    fn parses_normal_content_chunk() {
+        let data = r#"{"id":"c1","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}"#;
+        let event = parse_event(data);
+        assert_eq!(event.choices.len(), 1);
+        assert_eq!(chunk_for(data), "Hello");
+    }
+
+    #[test]
+    fn skips_event_without_choices_field() {
+        let data =
+            r#"{"id":"c1","usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}"#;
+        assert!(matches!(parse_stream_event(data), Ok(ParseOutcome::Skip)));
+    }
+
+    #[test]
+    fn skips_event_with_empty_choices() {
+        let data = r#"{"id":"c1","choices":[]}"#;
+        assert!(matches!(parse_stream_event(data), Ok(ParseOutcome::Skip)));
+    }
+
+    #[test]
+    fn surfaces_provider_error_event() {
+        let data =
+            r#"{"error":{"message":"context length exceeded","type":"invalid_request_error"}}"#;
+        match parse_stream_event(data) {
+            Err(AIError::Provider(message)) => assert_eq!(message, "context length exceeded"),
+            other => panic!("expected provider error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_choice_with_finish_reason_and_no_delta() {
+        let data = r#"{"id":"c1","choices":[{"index":0,"finish_reason":"stop"}]}"#;
+        let mut choice = first_choice(data);
+        let mut in_reasoning = false;
+        let (content, finish_reason) = build_stream_chunk(&mut choice, &mut in_reasoning);
+        assert!(content.is_empty());
+        assert_eq!(finish_reason.as_deref(), Some("stop"));
+    }
+
+    #[test]
+    fn malformed_json_is_a_stream_error() {
+        assert!(matches!(
+            parse_stream_event("{not json"),
+            Err(AIError::Stream(_))
+        ));
+    }
+
+    #[test]
+    fn parses_reasoning_content() {
+        let data =
+            r#"{"choices":[{"delta":{"reasoning_content":"thinking"},"finish_reason":null}]}"#;
+        assert_eq!(chunk_for(data), "<thinking>thinking");
+    }
+
+    #[test]
+    fn parses_tool_call_delta() {
+        let data = r#"{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"read_file","arguments":"{}"}}]},"finish_reason":"tool_calls"}]}"#;
+        let choice = first_choice(data);
+        let deltas = choice.delta.tool_calls.expect("expected tool call deltas");
+        assert_eq!(deltas.len(), 1);
+        assert_eq!(deltas[0].index, 0);
+        assert_eq!(deltas[0].id.as_deref(), Some("call_1"));
+        assert_eq!(
+            deltas[0]
+                .function
+                .as_ref()
+                .and_then(|function| function.name.as_deref()),
+            Some("read_file")
+        );
+        assert_eq!(choice.finish_reason.as_deref(), Some("tool_calls"));
     }
 }

@@ -22,9 +22,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="flex h-7 items-center gap-2 px-3">
-      <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-fg-muted">
-        {title}
-      </span>
+      <span className="text-ui-sm font-medium text-fg-muted">{title}</span>
       <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border px-1 text-ui-xs font-semibold text-fg-muted">
         {count}
       </span>
@@ -34,7 +32,7 @@ export function SectionHeader({
             type="button"
             onClick={onStageAll}
             disabled={actionBusy !== null}
-            className="text-ui-2xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
+            className="text-ui-xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
           >
             Stage all
           </button>
@@ -44,7 +42,7 @@ export function SectionHeader({
             type="button"
             onClick={onUnstageAll}
             disabled={actionBusy !== null}
-            className="text-ui-2xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
+            className="text-ui-xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
           >
             Unstage all
           </button>

@@ -161,7 +161,7 @@ export function ChatComposer({
     <div>
       <form
         onSubmit={onSubmit}
-        className="rounded-lg border border-border bg-bg-input px-2 pb-2 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20"
+        className="rounded-xl border border-border bg-bg-input p-3 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20"
       >
         <div className="relative">
           <Textarea
@@ -175,7 +175,7 @@ export function ChatComposer({
             onSelect={updateCursorPosition}
             placeholder="Ask anything..."
             disabled={busy}
-            className="max-h-48 min-h-9 resize-none border-0 bg-transparent px-0 py-1.5 text-ui-sm shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
+            className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
           />
           <ContextPicker
             ref={contextPickerRef}
@@ -192,7 +192,7 @@ export function ChatComposer({
             disabled={busy}
             aria-label="Add context"
             title="Add context"
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
           >
             <Plus size={13} weight="bold" />
           </button>
@@ -212,7 +212,7 @@ export function ChatComposer({
                 onClick={onStop}
                 aria-label="Stop"
                 title="Stop"
-                className="flex size-6 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
               >
                 <Stop size={13} weight="bold" />
               </button>
@@ -222,7 +222,7 @@ export function ChatComposer({
                 aria-label="Send"
                 title="Send"
                 disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-                className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
               >
                 <PaperPlaneRight size={13} weight="bold" />
               </button>

@@ -26,6 +26,8 @@ export const panelLabel = (kind: PanelKind): string => {
       return "Markdown";
     case "settings":
       return "Settings";
+    case "ai":
+      return "AI";
     default:
       return kind;
   }

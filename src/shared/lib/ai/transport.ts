@@ -21,10 +21,9 @@ export function createStreamTransport(
   tools: BackendToolDefinition[],
   rootPath: string,
   activeChatSessionId: string | null,
-  experimentalAcp: boolean,
+  isAcpActive: boolean,
   systemPrompt?: string,
 ): ChatTransport<UIMessage> {
-  const isAcpActive = activeCLIProvider === "moonshot-kimi" && experimentalAcp;
   return {
     async sendMessages({ messages, abortSignal }) {
       const chunkId = generateId();
@@ -155,7 +154,7 @@ export function createStreamTransport(
 
           const send = async () => {
             try {
-              if (isAcpActive && activeChatSessionId) {
+              if (isAcpActive && activeChatSessionId && activeCLIProvider) {
                 const req: AcpChatRequest = {
                   provider_id: activeCLIProvider,
                   chat_session_id: activeChatSessionId,

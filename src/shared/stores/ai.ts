@@ -61,6 +61,7 @@ export interface CLIManifest {
   name: string;
   description: string;
   supports_sessions: boolean;
+  uses_acp: boolean;
 }
 
 export interface CLIStatus {
@@ -126,6 +127,7 @@ interface AIActions {
     firstMessage: string,
   ) => Promise<void>;
   createChatSession: (rootPath: string) => Promise<ChatSession>;
+  renameChatSession: (rootPath: string, sessionId: string, title: string) => Promise<void>;
   deleteSession: (rootPath: string, sessionId: string) => Promise<void>;
   saveSession: (rootPath: string, session: ChatSession) => Promise<void>;
   saveSessionMessages: (
@@ -355,6 +357,18 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   deleteSession: async (rootPath, sessionId) => {
     await deleteStoredSession(rootPath, sessionId);
     get().removeChatSession(sessionId);
+  },
+
+  renameChatSession: async (rootPath, sessionId, title) => {
+    const session = get().chatSessions.find((s) => s.id === sessionId);
+    const trimmed = title.trim();
+    if (!session || !trimmed || trimmed === session.title) return;
+
+    const renamed: ChatSession = { ...session, title: trimmed, updatedAt: Date.now() };
+    set({
+      chatSessions: get().chatSessions.map((s) => (s.id === sessionId ? renamed : s)),
+    });
+    await saveStoredSession(rootPath, renamed);
   },
 
   saveSession: async (rootPath, session) => {

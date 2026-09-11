@@ -11,6 +11,7 @@ const MarkdownPanel = lazy(() => import("./panels/MarkdownPanel"));
 const PreviewPanel = lazy(() => import("./panels/PreviewPanel"));
 const ProblemsPanel = lazy(() => import("./panels/ProblemsPanel"));
 const SettingsPanel = lazy(() => import("./panels/SettingsPanel"));
+const AIPanel = lazy(() => import("./panels/AIPanel"));
 const WelcomePanel = lazy(() => import("./panels/WelcomePanel"));
 
 interface PanelHostProps {
@@ -55,6 +56,8 @@ function PanelContent({ kind, panelId }: { kind: PanelKind; panelId: string }) {
       return <WelcomePanel />;
     case "settings":
       return <SettingsPanel />;
+    case "ai":
+      return <AIPanel />;
     default:
       return null;
   }

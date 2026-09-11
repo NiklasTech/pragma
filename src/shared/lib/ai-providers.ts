@@ -14,10 +14,11 @@ export const PROVIDER_LABELS: Record<AIProvider, string> = {
 
 /**
  * CLI providers that can back a given API provider label.
- * E.g. the "Kimi" provider can be fulfilled by the local Kimi Code CLI.
+ * E.g. the "Kimi" provider can be fulfilled by the local Kimi Code CLI and
+ * the "OpenAI" provider by the local Codex CLI subscription.
  */
 export const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
-  openai: [],
+  openai: ["openai-codex"],
   anthropic: [],
   ollama: [],
   deepseek: [],

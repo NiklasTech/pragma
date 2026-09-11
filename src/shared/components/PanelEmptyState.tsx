@@ -23,12 +23,12 @@ export function PanelEmptyState({
         className,
       )}
     >
-      <div className="mb-3 flex size-8 items-center justify-center rounded-md text-fg-muted">
-        <Icon size={18} weight="bold" />
+      <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-bg-elevated text-fg-muted">
+        <Icon size={22} weight="bold" />
       </div>
 
-      <h3 className="text-ui-sm font-medium">{title}</h3>
-      {description && <p className="mt-1 max-w-[240px] text-ui-xs text-fg-muted">{description}</p>}
+      <h3 className="text-ui-md font-medium">{title}</h3>
+      {description && <p className="mt-1 max-w-[260px] text-ui-sm text-fg-muted">{description}</p>}
 
       {children && (
         <div className="mt-3 flex max-w-[280px] flex-wrap justify-center gap-2">{children}</div>

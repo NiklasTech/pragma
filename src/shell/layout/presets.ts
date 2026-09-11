@@ -31,7 +31,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       collapsed: true,
       tab: "explorer",
     },
-    ai: { mode: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
+    ai: { mode: "hidden", placement: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
       mode: "hidden",
       height: 30,
@@ -50,7 +50,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       collapsed: false,
       tab: "explorer",
     },
-    ai: { mode: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
+    ai: { mode: "hidden", placement: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
       mode: "docked-bottom",
       height: 35,
@@ -69,7 +69,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       collapsed: false,
       tab: "explorer",
     },
-    ai: { mode: "drawer-right", floating: { ...DEFAULT_FLOATING }, size: 380 },
+    ai: { mode: "drawer-right", placement: "right", floating: { ...DEFAULT_FLOATING }, size: 380 },
     terminal: {
       mode: "docked-bottom",
       height: 25,
@@ -88,7 +88,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       collapsed: true,
       tab: "explorer",
     },
-    ai: { mode: "floating", floating: { ...DEFAULT_FLOATING }, size: 360 },
+    ai: { mode: "floating", placement: "floating", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
       mode: "hidden",
       height: 30,
@@ -107,7 +107,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       collapsed: false,
       tab: "debug",
     },
-    ai: { mode: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
+    ai: { mode: "hidden", placement: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
       mode: "docked-bottom",
       height: 45,

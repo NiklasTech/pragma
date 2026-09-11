@@ -13,7 +13,8 @@ describe("PanelHeader", () => {
     const html = renderToStaticMarkup(<PanelHeader title="my-folder" />);
     expect(html).toContain("my-folder");
     expect(html).toContain("h-8");
-    expect(html).toContain("px-2");
+    expect(html).toContain("px-3");
+    expect(html).toContain("text-ui-sm");
   });
 
   it("renders no accent icon tile even when an icon is passed", () => {

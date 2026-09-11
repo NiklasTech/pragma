@@ -9,9 +9,10 @@ export const themeCompartment = new Compartment();
 
 export type EditorThemeName = "dark-default" | "one-dark";
 
-export const editorBaseTheme = EditorView.theme({
+const editorBaseSpec = {
   "&": {
     height: "100%",
+    position: "relative",
   },
   ".cm-scroller": {
     overflow: "auto",
@@ -103,47 +104,55 @@ export const editorBaseTheme = EditorView.theme({
     fontSize: "12px",
     lineHeight: "1.5",
   },
-  ".cm-panel.cm-search": {
-    backgroundColor: "var(--bg-surface)",
-    color: "var(--fg-default)",
-    borderTop: "1px solid var(--border-default)",
-    fontFamily: "var(--font-sans, ui-sans-serif, system-ui, sans-serif)",
-    fontSize: "12px",
-    padding: "4px 6px",
-    "& input, & button, & label": {
-      fontFamily: "inherit",
-    },
-    "& .cm-textfield": {
-      backgroundColor: "var(--bg-input)",
-      border: "1px solid var(--border-default)",
-      borderRadius: "4px",
-      color: "var(--fg-default)",
-      outline: "none",
-      padding: "2px 6px",
-    },
-    "& .cm-textfield:focus": {
-      borderColor: "var(--border-focus)",
-    },
-    "& .cm-button": {
-      backgroundColor: "transparent",
-      border: "none",
-      borderRadius: "4px",
-      color: "var(--fg-muted)",
-      cursor: "pointer",
-      padding: "2px 8px",
-    },
-    "& .cm-button:hover": {
-      backgroundColor: "var(--bg-hover)",
-      color: "var(--fg-default)",
-    },
-    "& label": {
-      color: "var(--fg-subtle)",
-    },
-    "& input[type=checkbox]": {
-      accentColor: "var(--color-accent)",
-    },
+};
+
+export const searchPanelOverlayTheme = {
+  "& .cm-panels.cm-panels-top": {
+    position: "absolute",
+    top: "8px",
+    right: "12px",
+    left: "auto",
+    bottom: "auto",
+    zIndex: "60",
+    width: "min(420px, calc(100% - 24px))",
+    maxWidth: "min(420px, calc(100% - 24px))",
+    height: "auto",
+    overflow: "visible",
+    backgroundColor: "transparent",
+    border: "none",
+    boxShadow: "none",
+    pointerEvents: "none",
   },
-});
+  "& .cm-panel.cm-search": {
+    position: "relative",
+    margin: "0",
+    padding: "0",
+    pointerEvents: "auto",
+  },
+  "& .cm-panel.cm-search input": {
+    margin: "0",
+  },
+  "& .cm-panel.cm-search button": {
+    margin: "0",
+    font: "inherit",
+  },
+  "& .cm-panel.cm-search label": {
+    margin: "0",
+    fontSize: "inherit",
+    whiteSpace: "normal",
+  },
+  "& .cm-panel.cm-search .pragma-search-replace-toggle svg": {
+    transition: "transform 120ms ease",
+  },
+  "& .cm-panel.cm-search .pragma-search-replace-toggle[aria-expanded=true] svg": {
+    transform: "rotate(90deg)",
+  },
+};
+
+export const editorBaseTheme: Extension[] = [
+  EditorView.theme(editorBaseSpec),
+  EditorView.theme(searchPanelOverlayTheme),
+];
 
 export function createEditorFontStyleExtension(fontSize: number, fontFamily: string): Extension {
   const family = fontFamily.trim() || 'var(--font-mono, "JetBrains Mono", ui-monospace, monospace)';

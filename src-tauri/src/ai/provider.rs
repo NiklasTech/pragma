@@ -106,6 +106,35 @@ impl CompletionRequest {
     }
 }
 
+/// Fold every system message into one leading system message (Qwen chat templates).
+pub fn coalesce_system_messages(messages: Vec<Message>) -> Vec<Message> {
+    let mut system_contents: Vec<String> = Vec::new();
+    let mut rest: Vec<Message> = Vec::new();
+
+    for message in messages {
+        match message.role {
+            Role::System => {
+                if !message.content.trim().is_empty() {
+                    system_contents.push(message.content);
+                }
+            }
+            _ => rest.push(message),
+        }
+    }
+
+    let mut coalesced = Vec::with_capacity(rest.len() + 1);
+    if !system_contents.is_empty() {
+        coalesced.push(Message {
+            role: Role::System,
+            content: system_contents.join("\n\n"),
+            tool_calls: None,
+            tool_call_id: None,
+        });
+    }
+    coalesced.extend(rest);
+    coalesced
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CompletionResponse {
     pub content: String,
@@ -167,5 +196,96 @@ pub trait AIProvider: Send + Sync {
     ) -> BoxFuture<'_, Result<mpsc::Receiver<Result<CompletionChunk, AIError>>, AIError>> {
         let _ = cancel_token;
         self.stream_chunks(req)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn msg(role: Role, content: &str) -> Message {
+        Message {
+            role,
+            content: content.to_string(),
+            tool_calls: None,
+            tool_call_id: None,
+        }
+    }
+
+    fn roles(messages: &[Message]) -> Vec<Role> {
+        messages
+            .iter()
+            .map(|message| message.role.clone())
+            .collect()
+    }
+
+    #[test]
+    fn coalesce_empty_input_stays_empty() {
+        assert!(coalesce_system_messages(Vec::new()).is_empty());
+    }
+
+    #[test]
+    fn coalesce_without_system_messages_is_unchanged() {
+        let messages = vec![
+            msg(Role::User, "hello"),
+            msg(Role::Assistant, "hi"),
+            msg(Role::User, "bye"),
+        ];
+        assert_eq!(coalesce_system_messages(messages.clone()), messages);
+    }
+
+    #[test]
+    fn coalesce_merges_two_leading_system_messages() {
+        let messages = vec![
+            msg(Role::System, "You are Pragma."),
+            msg(Role::System, "Follow AGENTS.md."),
+            msg(Role::User, "hello"),
+        ];
+
+        let result = coalesce_system_messages(messages);
+
+        assert_eq!(roles(&result), vec![Role::System, Role::User]);
+        assert_eq!(result[0].content, "You are Pragma.\n\nFollow AGENTS.md.");
+        assert_eq!(result[1].content, "hello");
+    }
+
+    #[test]
+    fn coalesce_moves_late_system_message_to_the_front() {
+        let messages = vec![
+            msg(Role::System, "first"),
+            msg(Role::User, "question"),
+            msg(Role::System, "second"),
+            msg(Role::Assistant, "answer"),
+        ];
+
+        let result = coalesce_system_messages(messages);
+
+        assert_eq!(
+            roles(&result),
+            vec![Role::System, Role::User, Role::Assistant]
+        );
+        assert_eq!(result[0].content, "first\n\nsecond");
+        assert_eq!(result[1].content, "question");
+        assert_eq!(result[2].content, "answer");
+    }
+
+    #[test]
+    fn coalesce_omits_empty_system_contents() {
+        let messages = vec![
+            msg(Role::System, ""),
+            msg(Role::System, "  "),
+            msg(Role::User, "hello"),
+        ];
+
+        let result = coalesce_system_messages(messages);
+
+        assert_eq!(roles(&result), vec![Role::User]);
+        assert_eq!(result[0].content, "hello");
+    }
+
+    #[test]
+    fn coalesce_all_empty_system_messages_drops_system_role() {
+        let messages = vec![msg(Role::System, ""), msg(Role::System, "")];
+        assert!(coalesce_system_messages(messages).is_empty());
     }
 }

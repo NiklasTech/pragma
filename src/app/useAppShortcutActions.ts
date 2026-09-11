@@ -6,6 +6,7 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { useLayoutStore } from "@/shell/layout";
+import { resolveUiMode, useUiModeStore } from "@/shell/mode";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
 import { dispatchEditorFind, dispatchEditorReplace } from "@/shared/lib/editor-events";
@@ -50,6 +51,17 @@ export function useAppShortcutActions(): ShortcutActions {
       },
       "view.openSettings": () => {
         useLayoutStore.getState().addFloatingPanel("settings");
+      },
+      "view.switchToAgents": () => {
+        useUiModeStore.getState().setUiMode("agents");
+      },
+      "view.switchToEditor": () => {
+        useUiModeStore.getState().setUiMode("editor");
+      },
+      "view.toggleUiMode": () => {
+        const { uiMode, setUiMode } = useUiModeStore.getState();
+        const hasRootPath = useFileExplorerStore.getState().rootPath !== null;
+        setUiMode(resolveUiMode(uiMode, hasRootPath) === "agents" ? "editor" : "agents");
       },
       "search.findInFiles": () => {
         const layout = useLayoutStore.getState();

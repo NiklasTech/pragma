@@ -18,6 +18,14 @@ import {
   updateSplitSizes,
 } from "./tree/operations";
 import { layoutPresets } from "./presets";
+import {
+  applyAIPlacement,
+  needsDockMigration,
+  normalizeDockPlacement,
+  removeMountedAIPanel,
+  toggleAIPlacement,
+} from "./aiPlacement";
+import { normalizeSidebarTab } from "./sidebar-tab";
 import { useEditorStore } from "@/shared/stores/editor";
 import { getWindowScope } from "@/shared/lib/windowScope";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -28,7 +36,7 @@ const AI_DEFAULT_WIDTH = 360;
 const AI_MIN_WIDTH = 260;
 const AI_MAX_WIDTH = 720;
 
-const SIDEBAR_MIN_WIDTH = 180;
+const SIDEBAR_MIN_WIDTH = 220;
 
 const TERMINAL_MIN_HEIGHT = 20;
 const TERMINAL_MAX_HEIGHT = 80;
@@ -64,7 +72,11 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     })),
   setSidebarCollapsed: (collapsed) =>
     set((s) => ({ sidebar: { ...s.sidebar, collapsed }, ...markCustomized(s) })),
-  setSidebarTab: (tab) => set((s) => ({ sidebar: { ...s.sidebar, tab }, ...markCustomized(s) })),
+  setSidebarTab: (tab) =>
+    set((s) => ({
+      sidebar: { ...s.sidebar, tab: normalizeSidebarTab(tab) },
+      ...markCustomized(s),
+    })),
   toggleSidebar: () =>
     set((s) => ({
       sidebar: { ...s.sidebar, collapsed: !s.sidebar.collapsed },
@@ -76,6 +88,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     set((s) => {
       const prev = s.ai;
       const size = prev.mode === "floating" ? prev.floating.width : prev.size;
+      const isDrawer = mode === "drawer-left" || mode === "drawer-right" || mode === "bottom-sheet";
       return {
         ai: {
           ...prev,
@@ -83,9 +96,12 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
           size: clamp(size ?? AI_DEFAULT_WIDTH, AI_MIN_WIDTH, AI_MAX_WIDTH),
           floating: prev.floating ?? { ...defaultFloating },
         },
+        ...(isDrawer ? removeMountedAIPanel(s) : {}),
         ...markCustomized(s),
       };
     }),
+  setAIPlacement: (placement) =>
+    set((s) => ({ ...applyAIPlacement(s, placement), ...markCustomized(s) })),
   setAIFloating: (floating) =>
     set((s) => ({
       ai: { ...s.ai, floating: { ...s.ai.floating, ...floating } },
@@ -96,18 +112,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
       ai: { ...s.ai, size: clamp(size, AI_MIN_WIDTH, AI_MAX_WIDTH) },
       ...markCustomized(s),
     })),
-  toggleAI: () =>
-    set((s) => {
-      const nextMode = s.ai.mode === "hidden" ? "drawer-right" : "hidden";
-      return {
-        ai: {
-          ...s.ai,
-          mode: nextMode,
-          size: clamp(s.ai.size ?? AI_DEFAULT_WIDTH, AI_MIN_WIDTH, AI_MAX_WIDTH),
-        },
-        ...markCustomized(s),
-      };
-    }),
+  toggleAI: () => set((s) => ({ ...toggleAIPlacement(s), ...markCustomized(s) })),
 
   // Terminal
   setTerminalMode: (mode) =>
@@ -345,7 +350,31 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
 }));
 
 export const useLayoutStore = create<FullLayoutTreeState>()(
-  persist(layoutStoreCreator, { name: STORAGE_KEY }),
+  persist(layoutStoreCreator, {
+    name: STORAGE_KEY,
+    merge: (persisted, current) => {
+      const merged = { ...current, ...(persisted as Partial<FullLayoutTreeState>) };
+      const needsMigration = needsDockMigration(merged.ai?.placement);
+      const panels = needsMigration
+        ? removeMountedAIPanel({
+            ai: merged.ai,
+            root: merged.root,
+            floating: merged.floating,
+          })
+        : { root: merged.root, floating: merged.floating };
+      return {
+        ...merged,
+        ...panels,
+        sidebar: { ...merged.sidebar, tab: normalizeSidebarTab(merged.sidebar.tab) },
+        ai: {
+          ...current.ai,
+          ...merged.ai,
+          mode: needsMigration ? "drawer-right" : merged.ai.mode,
+          placement: normalizeDockPlacement(merged.ai?.placement),
+        },
+      };
+    },
+  }),
 );
 
 function extractFirstPanel(node: LayoutNode): LayoutNode | null {

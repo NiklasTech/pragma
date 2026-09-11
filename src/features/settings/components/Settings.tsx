@@ -26,7 +26,6 @@ import {
   Layout,
   Keyboard,
   Info,
-  MagicWand,
   MagnifyingGlass,
   ArrowCounterClockwise,
   DownloadSimple,
@@ -51,8 +50,7 @@ import { exportSettings, importSettings } from "./settings-io";
 type Category =
   | "editor"
   | "terminal"
-  | "ai"
-  | "agent"
+  | "agents"
   | "theme"
   | "mcp"
   | "layout"
@@ -70,8 +68,7 @@ interface CategoryDef {
 const CATEGORIES: CategoryDef[] = [
   { id: "editor", label: "Editor", icon: Code },
   { id: "terminal", label: "Terminal", icon: Terminal },
-  { id: "ai", label: "AI", icon: Robot },
-  { id: "agent", label: "Agent", icon: MagicWand },
+  { id: "agents", label: "Agents", icon: Robot },
   { id: "theme", label: "Theme", icon: Palette },
   { id: "mcp", label: "MCP", icon: PlugsConnected },
   { id: "languages", label: "Languages", icon: BracketsAngle },
@@ -173,31 +170,31 @@ const SEARCH_ITEMS: SearchItem[] = [
     id: "ai-provider",
     label: "AI Provider",
     keywords: "ai provider model openai anthropic ollama",
-    category: "ai",
+    category: "agents",
   },
   {
     id: "ai-inline-completion",
     label: "Inline Completion",
     keywords: "inline completion ghost text ai",
-    category: "ai",
+    category: "agents",
   },
   {
     id: "ai-terminal-suggestions",
     label: "AI Terminal Suggestions",
     keywords: "ai terminal suggestions",
-    category: "ai",
+    category: "agents",
   },
   {
     id: "ai-debounce",
     label: "Completion Debounce",
     keywords: "debounce ai completion delay",
-    category: "ai",
+    category: "agents",
   },
   {
     id: "agent-mode",
     label: "Agent Mode",
     keywords: "agent mode autonomous task tools auto approve allowed commands",
-    category: "agent",
+    category: "agents",
   },
   {
     id: "theme-mode",
@@ -451,8 +448,12 @@ export function Settings() {
             <div className="px-5 pb-5">
               {activeCategory === "editor" && <EditorSettings />}
               {activeCategory === "terminal" && <TerminalSettings />}
-              {activeCategory === "ai" && <AISettings />}
-              {activeCategory === "agent" && <AgentSettings />}
+              {activeCategory === "agents" && (
+                <div className="flex flex-col gap-6">
+                  <AISettings />
+                  <AgentSettings />
+                </div>
+              )}
               {activeCategory === "theme" && <ThemeSettings />}
               {activeCategory === "mcp" && <McpSettings />}
               {activeCategory === "layout" && <LayoutSettings />}
