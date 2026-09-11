@@ -50,6 +50,56 @@ pub fn new_tokio_command<S: AsRef<std::ffi::OsStr>>(program: S) -> tokio::proces
 
 // -- Program resolution --------------------------------------------------------
 
+/// Resolve a bare program name against an explicit PATH-style string.
+///
+/// Unlike [`resolve_program`], this does not consult the process PATH or the
+/// well-known fallback directories, so callers can search an enriched PATH
+/// before it is handed to the child process.
+pub fn resolve_on_path(program: &str, path_var: &str) -> Option<std::path::PathBuf> {
+    let path = std::path::Path::new(program);
+    if path.is_absolute() || path.components().count() > 1 {
+        if path.is_file() {
+            return Some(path.to_path_buf());
+        }
+        return None;
+    }
+
+    for dir in std::env::split_paths(path_var) {
+        if dir.as_os_str().is_empty() {
+            continue;
+        }
+        for candidate in candidate_names(program) {
+            let full = dir.join(&candidate);
+            if full.is_file() {
+                return Some(full);
+            }
+        }
+    }
+
+    None
+}
+
+/// Like [`new_tokio_command`], but resolves `program` against `path_var` first.
+/// On Windows, npm-style `.cmd` / `.bat` shims run through `cmd /c` so they are
+/// executable from the GUI app.
+pub fn new_tokio_command_on_path(program: &str, path_var: &str) -> tokio::process::Command {
+    let resolved = resolve_on_path(program, path_var)
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|| program.to_string());
+
+    #[cfg(target_os = "windows")]
+    {
+        let lower = resolved.to_ascii_lowercase();
+        if lower.ends_with(".cmd") || lower.ends_with(".bat") {
+            let mut cmd = new_tokio_command("cmd");
+            cmd.arg("/c").arg(&resolved);
+            return cmd;
+        }
+    }
+
+    new_tokio_command(&resolved)
+}
+
 /// Resolve a program name to an executable path.
 ///
 /// GUI apps on Windows often do not inherit the user's shell PATH, so package
@@ -354,4 +404,33 @@ fn find_pid_by_port(port: u16) -> Option<u32> {
     }
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_on_path_finds_binary_in_explicit_path() {
+        let dir = std::env::temp_dir().join(format!("pragma-resolve-path-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+
+        let name = if cfg!(target_os = "windows") {
+            "pragma-resolve-tool.cmd"
+        } else {
+            "pragma-resolve-tool"
+        };
+        let file = dir.join(name);
+        std::fs::write(&file, b"").expect("write temp binary");
+
+        let resolved = resolve_on_path("pragma-resolve-tool", &dir.to_string_lossy());
+        let _ = std::fs::remove_dir_all(&dir);
+
+        assert_eq!(resolved.as_deref(), Some(file.as_path()));
+    }
+
+    #[test]
+    fn resolve_on_path_returns_none_for_missing_binary() {
+        assert!(resolve_on_path("pragma-missing-tool", "").is_none());
+    }
 }

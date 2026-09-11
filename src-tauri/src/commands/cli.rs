@@ -45,6 +45,7 @@ pub struct CLIManifestResponse {
     pub name: String,
     pub description: String,
     pub supports_sessions: bool,
+    pub uses_acp: bool,
 }
 
 // ─── Commands ────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ pub async fn cli_list_manifests() -> Result<Vec<CLIManifestResponse>, String> {
             name: m.name,
             description: m.description,
             supports_sessions: m.supports_sessions,
+            uses_acp: m.uses_acp,
         })
         .collect())
 }
