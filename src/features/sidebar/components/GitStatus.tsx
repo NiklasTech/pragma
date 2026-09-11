@@ -41,10 +41,10 @@ type GitRow =
   | { kind: "history-entry"; key: string; commit: GitCommit };
 
 const ROW_HEIGHTS = {
-  "commit-area": 180,
-  "staged-header": 28,
+  "commit-area": 130,
+  "staged-header": 24,
   "staged-entry": 36,
-  "unstaged-header": 28,
+  "unstaged-header": 24,
   "unstaged-entry": 36,
   "clean-hint": 120,
   "history-header": 28,

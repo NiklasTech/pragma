@@ -21,11 +21,9 @@ export function SectionHeader({
   mode: "staged" | "unstaged";
 }) {
   return (
-    <div className="flex h-7 items-center gap-2 px-3">
-      <span className="text-ui-sm font-medium text-fg-muted">{title}</span>
-      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border px-1 text-ui-xs font-semibold text-fg-muted">
-        {count}
-      </span>
+    <div className="flex h-6 items-center gap-2 px-3">
+      <span className="text-ui-xs font-medium uppercase tracking-wide text-fg-muted">{title}</span>
+      <span className="text-ui-xs tabular-nums text-fg-muted">{count}</span>
       <div className="ml-auto flex items-center gap-1">
         {mode === "unstaged" && onStageAll && count > 0 && (
           <button
