@@ -375,7 +375,7 @@
 }
 
 /* ============================================================================
-   PILL TABS — shared utility classes
+   EDITOR TABS — shared utility classes
    ============================================================================ */
 
 .pragma-pill-tab {
@@ -383,10 +383,11 @@
   align-items: center;
   gap: 6px;
   height: var(--chrome-tab-h);
-  padding: 0 14px;
-  border-radius: var(--radius-md);
-  font-size: var(--text-ui-base);
-  line-height: var(--leading-ui-base);
+  padding: 0 10px;
+  border-radius: 0;
+  box-shadow: inset -1px 0 0 var(--border-subtle);
+  font-size: var(--text-ui-sm);
+  line-height: var(--leading-ui-sm);
   font-weight: 500;
   white-space: nowrap;
   user-select: none;
@@ -397,8 +398,11 @@
 }
 
 .pragma-pill-tab[data-active="true"] {
-  background-color: var(--bg-surface);
+  background-color: var(--bg-root);
   color: var(--fg-default);
+  box-shadow:
+    inset 0 2px 0 var(--color-accent),
+    inset -1px 0 0 var(--border-subtle);
 }
 
 .pragma-pill-tab[data-active="false"] {

@@ -213,7 +213,7 @@ export function McpSettings() {
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Model Context Protocol Servers">
         <div className="mb-2 flex justify-end">
           <Button size="xs" onClick={handleAdd} disabled={editingId !== null} className="gap-1">

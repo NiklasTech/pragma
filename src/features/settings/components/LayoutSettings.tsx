@@ -27,7 +27,7 @@ export function LayoutSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Panels">
         <SettingRow
           label="Reset Layout"

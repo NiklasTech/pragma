@@ -96,7 +96,7 @@ export function Terminal({ panelId }: TerminalProps) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-bg-surface">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-bg-root">
       <PanelHeader
         actions={
           <div className="flex items-center gap-0.5">
@@ -104,7 +104,7 @@ export function Terminal({ panelId }: TerminalProps) {
               type="button"
               onClick={dispatchTerminalCopyOutput}
               disabled={panelSessions.length === 0}
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
+              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
               title="Copy Output"
             >
               <Copy size={13} />
@@ -113,7 +113,7 @@ export function Terminal({ panelId }: TerminalProps) {
               type="button"
               onClick={dispatchTerminalClear}
               disabled={panelSessions.length === 0}
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
+              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
               title="Clear Terminal"
             >
               <Broom size={13} />
@@ -122,7 +122,7 @@ export function Terminal({ panelId }: TerminalProps) {
               <button
                 type="button"
                 onClick={handleSplit}
-                className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default sm:size-7 sm:rounded-lg"
+                className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
                 title="Split Terminal Right"
               >
                 <SplitHorizontal size={13} />
@@ -132,7 +132,7 @@ export function Terminal({ panelId }: TerminalProps) {
               type="button"
               onClick={handleNewSession}
               disabled={!defaultShell}
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
+              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
               title="New Session"
             >
               <Plus size={13} weight="bold" />
@@ -141,7 +141,7 @@ export function Terminal({ panelId }: TerminalProps) {
               <button
                 type="button"
                 onClick={handleClosePanel}
-                className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error sm:size-7 sm:rounded-lg"
+                className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
                 title="Close Panel"
               >
                 <X size={13} weight="bold" />

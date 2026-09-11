@@ -56,39 +56,35 @@ export function ThemeSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Built-in Themes">
-        <div className="mb-2 flex justify-end">
+        <div className="flex justify-end py-2">
           <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
             <UploadSimple size={14} />
             Import Theme
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {builtInThemes.map((theme) => (
+        {builtInThemes.map((theme) => (
+          <ThemeCard
+            key={theme.metadata.id}
+            theme={theme}
+            active={themeId === theme.metadata.id}
+            onSelect={() => setTheme(theme.metadata.id)}
+          />
+        ))}
+      </SettingSection>
+
+      {customThemeList.length > 0 && (
+        <SettingSection title="Custom Themes">
+          {customThemeList.map((theme) => (
             <ThemeCard
               key={theme.metadata.id}
               theme={theme}
               active={themeId === theme.metadata.id}
               onSelect={() => setTheme(theme.metadata.id)}
+              onDelete={() => handleDeleteCustom(theme.metadata.id)}
             />
           ))}
-        </div>
-      </SettingSection>
-
-      {customThemeList.length > 0 && (
-        <SettingSection title="Custom Themes">
-          <div className="grid grid-cols-2 gap-3">
-            {customThemeList.map((theme) => (
-              <ThemeCard
-                key={theme.metadata.id}
-                theme={theme}
-                active={themeId === theme.metadata.id}
-                onSelect={() => setTheme(theme.metadata.id)}
-                onDelete={() => handleDeleteCustom(theme.metadata.id)}
-              />
-            ))}
-          </div>
         </SettingSection>
       )}
     </div>
@@ -110,48 +106,42 @@ function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
       type="button"
       onClick={onSelect}
       className={cn(
-        "flex flex-col gap-2 rounded-md border p-3 text-left transition-colors",
-        active
-          ? "border-transparent ring-2 ring-primary"
-          : "border-border/30 bg-bg-root hover:border-border hover:bg-bg-hover",
+        "flex w-full items-center gap-3 py-2 text-left transition-colors",
+        active ? "text-fg-default" : "text-fg-muted hover:text-fg-default",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-ui-sm font-medium text-fg-default">
-            {theme.metadata.name}
-          </span>
-          <span className="text-ui-xs text-fg-muted">
-            {theme.metadata.author ?? "Pragma"} · {theme.appearance.defaultMode}
-          </span>
-        </div>
-        {active && <Check size={14} className="shrink-0 text-primary" />}
-        {onDelete && (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.stopPropagation();
-                onDelete();
-              }
-            }}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-fg-muted hover:bg-bg-hover hover:text-status-error"
-          >
-            <Trash size={12} />
-          </span>
-        )}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-ui-sm text-fg-default">{theme.metadata.name}</span>
+        <span className="text-ui-xs text-fg-muted">
+          {theme.metadata.author ?? "Pragma"} · {theme.appearance.defaultMode}
+        </span>
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1">
         <ColorSwatch color={bg} />
         <ColorSwatch color={fg} />
         <ColorSwatch color={primary} />
         <ColorSwatch color={accent} />
       </div>
+      {active && <Check size={14} className="shrink-0 text-primary" />}
+      {onDelete && (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.stopPropagation();
+              onDelete();
+            }
+          }}
+          className="flex h-5 w-5 shrink-0 items-center justify-center text-fg-muted hover:text-status-error"
+        >
+          <Trash size={12} />
+        </span>
+      )}
     </button>
   );
 }
@@ -159,7 +149,7 @@ function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
 function ColorSwatch({ color }: { color: string }) {
   return (
     <span
-      className="size-4 rounded-full border border-border/30"
+      className="size-3 rounded-sm border border-border/30"
       style={{ backgroundColor: color }}
     />
   );

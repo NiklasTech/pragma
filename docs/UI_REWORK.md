@@ -111,6 +111,11 @@ Persist `pragma.ui.mode` = `agents` | `editor`.
 
 Calm dark app. Layered surfaces. Rounded, not squircles-on-everything. Depth from **surface steps + visible hairline borders + one shadow level**, not neon.
 
+> **Chrome is IDE, not SaaS.** In-app chrome is flush: editor tabs are square, toolbar
+> controls and inputs use a small radius, panels butt against their edges. `--radius-lg`
+> and `--radius-xl` belong only to genuinely floating product surfaces. We are not a
+> SaaS settings site.
+
 ### Type
 
 Keep Geist / Geist Mono (already in `globals.css`).
