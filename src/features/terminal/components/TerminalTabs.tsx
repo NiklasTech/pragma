@@ -44,9 +44,7 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
   };
 
   return (
-    <div
-      className="flex h-tab shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-1"
-    >
+    <div className="flex h-tab shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-1">
       {sessions.map((session) => {
         const isActive = session.id === activeSessionId;
         const isRunning = now - (activity[session.id] ?? 0) < 2000;

@@ -35,7 +35,7 @@ export function CommitArea({
             ? "Nothing staged"
             : `${stagedCount} ${stagedCount === 1 ? "file" : "files"} staged`}
         </span>
-        <Button size="default" className="h-8" disabled={!canCommit} onClick={onCommit}>
+        <Button disabled={!canCommit} onClick={onCommit}>
           {actionBusy === "commit" ? "Committing…" : "Commit"}
         </Button>
       </div>
