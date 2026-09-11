@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { cn } from "@/shared/lib/utils";
 import { useLayoutStore } from "../store";
+import { hasMountedAIPanel } from "../aiPlacement";
 import { FloatingWindow } from "./FloatingWindow";
 import { ChatPanel } from "@/features/ai/components/ChatPanel";
 
@@ -43,7 +44,7 @@ function ResizeHandle({
 }
 
 export function AIChatHost() {
-  const { ai, setAIMode, setAIFloating, setAISize } = useLayoutStore();
+  const { ai, root, floating, setAIMode, setAIFloating, setAISize } = useLayoutStore();
 
   const handleMove = useCallback(
     (x: number, y: number) => {
@@ -58,6 +59,9 @@ export function AIChatHost() {
     },
     [setAIFloating],
   );
+
+  // The AI panel is already docked, floated or tabbed, so the host must not render ChatPanel again.
+  if (hasMountedAIPanel({ root, floating })) return null;
 
   if (ai.mode === "hidden") return null;
 

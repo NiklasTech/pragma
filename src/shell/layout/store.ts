@@ -18,6 +18,12 @@ import {
   updateSplitSizes,
 } from "./tree/operations";
 import { layoutPresets } from "./presets";
+import {
+  applyAIPlacement,
+  normalizeAIPlacement,
+  removeMountedAIPanel,
+  toggleAIPlacement,
+} from "./aiPlacement";
 import { normalizeSidebarTab } from "./sidebar-tab";
 import { useEditorStore } from "@/shared/stores/editor";
 import { getWindowScope } from "@/shared/lib/windowScope";
@@ -81,6 +87,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     set((s) => {
       const prev = s.ai;
       const size = prev.mode === "floating" ? prev.floating.width : prev.size;
+      const isDrawer = mode === "drawer-left" || mode === "drawer-right" || mode === "bottom-sheet";
       return {
         ai: {
           ...prev,
@@ -88,9 +95,12 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
           size: clamp(size ?? AI_DEFAULT_WIDTH, AI_MIN_WIDTH, AI_MAX_WIDTH),
           floating: prev.floating ?? { ...defaultFloating },
         },
+        ...(isDrawer ? removeMountedAIPanel(s) : {}),
         ...markCustomized(s),
       };
     }),
+  setAIPlacement: (placement) =>
+    set((s) => ({ ...applyAIPlacement(s, placement), ...markCustomized(s) })),
   setAIFloating: (floating) =>
     set((s) => ({
       ai: { ...s.ai, floating: { ...s.ai.floating, ...floating } },
@@ -101,18 +111,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
       ai: { ...s.ai, size: clamp(size, AI_MIN_WIDTH, AI_MAX_WIDTH) },
       ...markCustomized(s),
     })),
-  toggleAI: () =>
-    set((s) => {
-      const nextMode = s.ai.mode === "hidden" ? "drawer-right" : "hidden";
-      return {
-        ai: {
-          ...s.ai,
-          mode: nextMode,
-          size: clamp(s.ai.size ?? AI_DEFAULT_WIDTH, AI_MIN_WIDTH, AI_MAX_WIDTH),
-        },
-        ...markCustomized(s),
-      };
-    }),
+  toggleAI: () => set((s) => ({ ...toggleAIPlacement(s), ...markCustomized(s) })),
 
   // Terminal
   setTerminalMode: (mode) =>
@@ -357,6 +356,11 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
       return {
         ...merged,
         sidebar: { ...merged.sidebar, tab: normalizeSidebarTab(merged.sidebar.tab) },
+        ai: {
+          ...current.ai,
+          ...merged.ai,
+          placement: normalizeAIPlacement(merged.ai?.placement),
+        },
       };
     },
   }),
