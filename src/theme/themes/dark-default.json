@@ -108,7 +108,8 @@
     },
 
     "terminal": {
-      "background": "#090b0e",      "foreground": "{colors.foreground.default}",
+      "background": "#090b0e",
+      "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
       "cursorAccent": "{colors.accent.default}",
       "selection": "{colors.selection}",

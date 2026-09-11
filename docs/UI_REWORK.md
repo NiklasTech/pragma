@@ -145,20 +145,20 @@ The mode switch is a **pill segmented control**. Panels are `--radius-lg`. The c
 
 Signature Dark values (may refine at implementation, not per-component):
 
-| Token                             | Value                         | Role                                                           |
-| --------------------------------- | ----------------------------- | -------------------------------------------------------------- |
-| `--bg-root`                       | `#0c0e12`                     | window                                                         |
-| `--bg-surface`                    | `#151a22`                     | sidebar, statusbar, panel chrome                               |
-| `--bg-elevated`                   | `#1d2430`                     | titlebar, popovers, composer, dialogs                          |
-| `--bg-input`                      | `#232b38`                     | fields                                                         |
-| `--bg-hover`                      | `rgba(255, 255, 255, 0.08)`   | row/item hover                                                 |
-| `--bg-overlay`                    | `rgba(0, 0, 0, 0.72)`         | modal scrim (dialogs, alert dialogs)                           |
-| `--fg-subtle`                     | `#8b93a0`                     | placeholder and tertiary text; must clear 3.5:1 on `--bg-root` |
-| `--border-default`                | `rgba(255, 255, 255, 0.12)`   | borders on every control and popup                             |
-| `--border-subtle`                 | `rgba(255, 255, 255, 0.08)`   | internal separators inside an already-bordered surface         |
-| `--border-focus`                  | `rgba(110, 123, 242, 0.50)`   | keyboard focus ring, the only remaining glow                   |
-| `--shadow-sm`                     | `0 4px 16px rgba(0,0,0,0.28)` | composer, dropdown, popover                                    |
-| `--shadow-md`                     | `0 12px 40px rgba(0,0,0,0.45)` | dialog, settings                                              |
+| Token              | Value                          | Role                                                           |
+| ------------------ | ------------------------------ | -------------------------------------------------------------- |
+| `--bg-root`        | `#0c0e12`                      | window                                                         |
+| `--bg-surface`     | `#151a22`                      | sidebar, statusbar, panel chrome                               |
+| `--bg-elevated`    | `#1d2430`                      | titlebar, popovers, composer, dialogs                          |
+| `--bg-input`       | `#232b38`                      | fields                                                         |
+| `--bg-hover`       | `rgba(255, 255, 255, 0.08)`    | row/item hover                                                 |
+| `--bg-overlay`     | `rgba(0, 0, 0, 0.72)`          | modal scrim (dialogs, alert dialogs)                           |
+| `--fg-subtle`      | `#8b93a0`                      | placeholder and tertiary text; must clear 3.5:1 on `--bg-root` |
+| `--border-default` | `rgba(255, 255, 255, 0.12)`    | borders on every control and popup                             |
+| `--border-subtle`  | `rgba(255, 255, 255, 0.08)`    | internal separators inside an already-bordered surface         |
+| `--border-focus`   | `rgba(110, 123, 242, 0.50)`    | keyboard focus ring, the only remaining glow                   |
+| `--shadow-sm`      | `0 4px 16px rgba(0,0,0,0.28)`  | composer, dropdown, popover                                    |
+| `--shadow-md`      | `0 12px 40px rgba(0,0,0,0.45)` | dialog, settings                                               |
 
 Light mirrors the same steps (`--border-default` `rgba(15, 23, 42, 0.14)`, `--border-subtle` `rgba(15, 23, 42, 0.08)`, hover `rgba(15, 23, 42, 0.07)`). Other built-in themes keep their hue but must use the same contrast floor for borders, hover, and `--fg-subtle`.
 

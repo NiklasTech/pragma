@@ -73,7 +73,7 @@ export function FileRow({
         className="shrink-0 rounded p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
         title="Open diff in editor"
       >
-        <GitDiff size={13} />
+        <GitDiff size={16} />
       </button>
     </div>
   );
