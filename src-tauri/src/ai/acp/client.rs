@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::platform::new_tokio_command;
+use crate::platform::new_tokio_command_on_path;
 use serde_json::Value;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::process::Child;
@@ -85,7 +85,8 @@ impl AcpClient {
         }
 
         let request_timeout_ms = config.request_timeout_ms;
-        let mut cmd = new_tokio_command(&config.command);
+        let path_var = config.env.get("PATH").cloned().unwrap_or_default();
+        let mut cmd = new_tokio_command_on_path(&config.command, &path_var);
         cmd.args(&config.args)
             .envs(&config.env)
             .stdin(Stdio::piped())

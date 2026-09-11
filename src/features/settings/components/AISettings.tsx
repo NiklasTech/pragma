@@ -508,7 +508,7 @@ export function AISettings() {
               Enable local CLI integration
             </span>
             <span className="text-ui-xs text-fg-muted">
-              Turn on experimental support for provider CLIs like Kimi Code.
+              Turn on experimental support for subscription CLIs like OpenAI Codex and Kimi Code.
             </span>
           </div>
           <Switch
@@ -526,13 +526,16 @@ export function AISettings() {
 
         <div className="flex flex-col gap-3">
           <p className="text-ui-xs text-fg-muted">
-            Pragma wraps official provider CLI tools that run locally on your machine. It does not
-            provide models, accounts, or credentials — authentication happens independently in the
-            CLI.
+            Pragma can speak the Agent Client Protocol (ACP) with supported CLIs running locally.
+            ACP turns use the subscription you signed into in the official CLI. API keys configured
+            above are a separate path: they stay in Pragma's own request loop and are never handed
+            to a CLI.
           </p>
           <p className="text-ui-xs text-fg-muted">
-            Kimi Code CLI is published by Moonshot AI under the MIT License and is installed from
-            its official npm registry. Pragma is not affiliated with Moonshot AI.
+            Nothing is installed or launched until you press Install, and a CLI only runs while it
+            is the active provider. Codex CLI is published by OpenAI and Kimi Code by Moonshot AI,
+            each as its own npm package. Pragma runs the unmodified official CLIs and is not
+            affiliated with either vendor.
           </p>
 
           {aiStore.cliManifests.length === 0 && (
