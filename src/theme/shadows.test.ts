@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { generateCssVariables } from "./applyTheme";
+import { builtInThemeList } from "./themes";
 import darkDefault from "./themes/dark-default.json";
 import lightDefault from "./themes/light-default.json";
 import type { Theme, ThemeInput } from "./types";
@@ -40,6 +41,14 @@ describe("theme shadow tokens", () => {
     const theme = darkTheme();
     setShadows(theme, { sm: 4, md: "" });
     expect(shadowErrors(theme)).toContain("tokens.shadows.sm: must be a string");
+  });
+
+  it("gives every built-in theme complete shadow tokens", () => {
+    for (const theme of builtInThemeList) {
+      expect(shadowErrors(theme)).toEqual([]);
+      expect(typeof theme.tokens.shadows?.sm).toBe("string");
+      expect(typeof theme.tokens.shadows?.md).toBe("string");
+    }
   });
 
   it("maps dark shadows onto --shadow-sm and --shadow-md", () => {
