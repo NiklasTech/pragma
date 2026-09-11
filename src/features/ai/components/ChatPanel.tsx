@@ -20,6 +20,7 @@ import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
+import { AgentRunBar } from "./AgentRunBar";
 import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatSessionList } from "./ChatSessionList";
@@ -447,6 +448,8 @@ export function ChatPanel() {
         )}
 
         <AgentApprovals />
+
+        <AgentRunBar />
 
         <ChatComposer
           input={input}
