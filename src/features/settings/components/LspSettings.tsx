@@ -89,7 +89,7 @@ export function LspSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Language Servers">
         <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
           <div className="flex flex-col">

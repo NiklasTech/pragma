@@ -87,7 +87,7 @@ export function AboutSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Application">
         <div className="flex flex-col gap-4 py-2">
           <div className="flex items-center gap-3">

@@ -12,26 +12,24 @@ interface SettingSectionProps {
 }
 
 const BADGE_COLORS: Record<NonNullable<SettingSectionBadge["variant"]>, string> = {
-  default: "bg-primary/10 text-primary",
-  warning: "bg-status-warning/10 text-status-warning",
-  success: "bg-status-success/10 text-status-success",
-  error: "bg-status-error/10 text-status-error",
+  default: "text-fg-muted",
+  warning: "text-status-warning",
+  success: "text-status-success",
+  error: "text-status-error",
 };
 
 export function SettingSection({ title, children, badge }: SettingSectionProps) {
   return (
-    <section className="flex flex-col rounded-xl border border-border bg-bg-surface px-4 py-3">
-      <div className="flex items-center gap-2 pb-1">
-        <h3 className="text-ui-sm font-semibold text-fg-default">{title}</h3>
+    <section className="flex flex-col">
+      <div className="flex items-baseline gap-2 pb-1">
+        <h3 className="text-ui-xs font-semibold tracking-wide text-fg-muted uppercase">{title}</h3>
         {badge && (
-          <span
-            className={`rounded-full px-1.5 py-0.5 text-ui-xs ${BADGE_COLORS[badge.variant ?? "default"]}`}
-          >
+          <span className={`text-ui-xs normal-case ${BADGE_COLORS[badge.variant ?? "default"]}`}>
             {badge.label}
           </span>
         )}
       </div>
-      <div className="flex flex-col divide-y divide-border/40">{children}</div>
+      <div className="flex flex-col divide-y divide-border">{children}</div>
     </section>
   );
 }

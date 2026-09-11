@@ -92,7 +92,7 @@ export function ExtensionSettings() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Installed Extensions">
         <div className="flex justify-end gap-2 py-2">
           <Button variant="outline" size="xs" onClick={handleReload} className="gap-1">

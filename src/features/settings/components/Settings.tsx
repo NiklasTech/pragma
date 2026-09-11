@@ -287,7 +287,6 @@ export function Settings() {
 
   const activeCategoryDef = CATEGORIES.find((c) => c.id === activeCategory);
   const activeLabel = activeCategoryDef?.label ?? "Settings";
-  const ActiveIcon = activeCategoryDef?.icon ?? Info;
 
   React.useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -318,11 +317,11 @@ export function Settings() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex min-h-0 flex-1 gap-0">
-        <div className="flex w-[210px] shrink-0 flex-col overflow-hidden">
-          <div className="relative shrink-0 p-3 pb-2">
+        <div className="flex w-52 shrink-0 flex-col overflow-hidden border-r border-border">
+          <div className="relative shrink-0 p-2">
             <MagnifyingGlass
               size={14}
-              className="absolute top-1/2 left-5 -translate-y-1/2 text-fg-subtle"
+              className="absolute top-1/2 left-4 -translate-y-1/2 text-fg-subtle"
             />
             <Input
               value={query}
@@ -332,7 +331,7 @@ export function Settings() {
             />
 
             {(filteredItems.length > 0 || query.trim()) && (
-              <div className="absolute top-full right-0 left-0 z-50 mx-3 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
+              <div className="absolute top-full right-0 left-0 z-50 mx-2 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
                 {filteredItems.length > 0 ? (
                   filteredItems.map((item) => (
                     <button
@@ -354,8 +353,8 @@ export function Settings() {
             )}
           </div>
 
-          <ScrollArea className="min-h-0 flex-1 px-2">
-            <div className="flex flex-col gap-0.5 py-1">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="flex flex-col py-1">
               {CATEGORIES.map((category) => {
                 const Icon = category.icon;
                 const active = activeCategory === category.id;
@@ -365,13 +364,13 @@ export function Settings() {
                     type="button"
                     onClick={() => handleSelectCategory(category.id)}
                     className={cn(
-                      "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm font-medium transition-colors",
+                      "flex items-center gap-2 border-l-2 py-1 pr-2 pl-2 text-left text-ui-sm transition-colors",
                       active
-                        ? "bg-accent-subtle text-fg-default"
-                        : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+                        ? "border-primary bg-bg-hover text-fg-default"
+                        : "border-transparent text-fg-muted hover:bg-bg-hover hover:text-fg-default",
                     )}
                   >
-                    <Icon size={16} className={cn(active && "text-primary")} />
+                    <Icon size={16} />
                     {category.label}
                   </button>
                 );
@@ -379,21 +378,21 @@ export function Settings() {
             </div>
           </ScrollArea>
 
-          <div className="flex shrink-0 flex-col gap-0.5 p-2">
+          <div className="flex shrink-0 flex-col border-t border-border p-1">
             <button
               type="button"
               onClick={handleExport}
-              className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
             >
-              <DownloadSimple size={15} />
+              <DownloadSimple size={16} />
               Export
             </button>
             <button
               type="button"
               onClick={handleImport}
-              className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
             >
-              <UploadSimple size={15} />
+              <UploadSimple size={16} />
               Import
             </button>
             <AlertDialog>
@@ -401,9 +400,9 @@ export function Settings() {
                 render={
                   <button
                     type="button"
-                    className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+                    className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
                   >
-                    <ArrowCounterClockwise size={15} />
+                    <ArrowCounterClockwise size={16} />
                     Reset Defaults
                   </button>
                 }
@@ -426,13 +425,8 @@ export function Settings() {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between px-5 pt-4 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-7 items-center justify-center rounded-md bg-accent-subtle">
-                <ActiveIcon size={15} weight="bold" className="text-primary" />
-              </div>
-              <h2 className="text-ui-md font-semibold text-fg-default">{activeLabel}</h2>
-            </div>
+          <div className="flex shrink-0 items-center justify-between px-4 py-3">
+            <h2 className="text-ui-base font-medium text-fg-default">{activeLabel}</h2>
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-ui-xs text-status-success transition-opacity duration-200",
@@ -445,11 +439,11 @@ export function Settings() {
             </span>
           </div>
           <ScrollArea className="min-h-0 flex-1">
-            <div className="px-5 pb-5">
+            <div className="px-4 py-3">
               {activeCategory === "editor" && <EditorSettings />}
               {activeCategory === "terminal" && <TerminalSettings />}
               {activeCategory === "agents" && (
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-8">
                   <AISettings />
                   <AgentSettings />
                 </div>

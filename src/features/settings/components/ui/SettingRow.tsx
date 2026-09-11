@@ -13,7 +13,7 @@ export function SettingRow({ label, description, control, disabled }: SettingRow
   return (
     <div
       className={cn(
-        "flex w-full flex-row items-center justify-between py-2.5",
+        "flex w-full flex-row items-center justify-between py-2",
         disabled && "opacity-50",
       )}
     >
