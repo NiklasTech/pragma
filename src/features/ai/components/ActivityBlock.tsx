@@ -23,25 +23,24 @@ export function ActivityBlock({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="my-2 overflow-hidden rounded-md border border-border bg-bg-hover/30">
+    <div className="flex flex-col">
       <button
         type="button"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center gap-1.5 text-left text-ui-xs text-fg-muted transition-colors hover:text-fg-default"
       >
-        <span className="flex min-w-0 items-center gap-1.5 text-ui-xs text-fg-muted">
-          {icon && <span className="shrink-0">{icon}</span>}
-          <span className="min-w-0 truncate">{title}</span>
-        </span>
+        {icon && <span className="shrink-0">{icon}</span>}
+        <span className="min-w-0 flex-1 truncate">{title}</span>
         <CaretDown
           size={12}
-          className={cn("shrink-0 text-fg-muted transition-transform", open && "rotate-180")}
+          className={cn("shrink-0 transition-transform", open && "rotate-180")}
         />
       </button>
       {open && (
         <div
           data-state={streaming ? "streaming" : "done"}
-          className="max-h-48 overflow-y-auto border-t border-border px-3 py-2 data-[state=streaming]:animate-pulse"
+          className="mt-1 max-h-48 overflow-y-auto border-l border-border/40 pl-2 data-[state=streaming]:animate-pulse"
         >
           {children}
         </div>

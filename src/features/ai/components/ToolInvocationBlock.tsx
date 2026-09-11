@@ -43,12 +43,7 @@ export function ToolInvocationBlock({
     <CheckCircle size={12} className="text-status-success" />
   );
 
-  const title = (
-    <span className="flex items-center gap-2">
-      <span className="font-medium">{toolName}</span>
-      {isRunning && <span className="text-ui-xs text-fg-muted">Running...</span>}
-    </span>
-  );
+  const title = <span className="font-medium text-fg-default">{toolName}</span>;
 
   return (
     <ActivityBlock icon={icon} title={title} streaming={isRunning} defaultOpen={isRunning}>
