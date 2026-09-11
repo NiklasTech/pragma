@@ -3,7 +3,9 @@ import {
   applyAIPlacement,
   defaultAIPlacement,
   hasMountedAIPanel,
+  needsDockMigration,
   normalizeAIPlacement,
+  normalizeDockPlacement,
   toggleAIPlacement,
   type AIPlacementState,
 } from "./aiPlacement";
@@ -117,6 +119,32 @@ describe("applyAIPlacement", () => {
     expect(normalizeAIPlacement(undefined)).toBe(defaultAIPlacement);
     expect(normalizeAIPlacement("bogus")).toBe(defaultAIPlacement);
     expect(normalizeAIPlacement("tab")).toBe("tab");
+  });
+});
+
+describe("normalizeDockPlacement", () => {
+  it("keeps the supported dock placements", () => {
+    expect(normalizeDockPlacement("left")).toBe("left");
+    expect(normalizeDockPlacement("right")).toBe("right");
+    expect(normalizeDockPlacement("hidden")).toBe("hidden");
+  });
+
+  it("collapses floating, bottom and tab onto the right dock", () => {
+    expect(normalizeDockPlacement("floating")).toBe("right");
+    expect(normalizeDockPlacement("bottom")).toBe("right");
+    expect(normalizeDockPlacement("tab")).toBe("right");
+    expect(normalizeDockPlacement(undefined)).toBe("right");
+  });
+});
+
+describe("needsDockMigration", () => {
+  it("flags only the removed placements", () => {
+    expect(needsDockMigration("floating")).toBe(true);
+    expect(needsDockMigration("bottom")).toBe(true);
+    expect(needsDockMigration("tab")).toBe(true);
+    expect(needsDockMigration("right")).toBe(false);
+    expect(needsDockMigration("left")).toBe(false);
+    expect(needsDockMigration("hidden")).toBe(false);
   });
 });
 
