@@ -249,6 +249,7 @@ pub fn run() {
             cli::get_cli_project_path,
             window::create_external_window,
             window::close_external_window,
+            window::floating_debug_log,
             window::update_window_folder,
         ])
         .build(tauri::generate_context!());

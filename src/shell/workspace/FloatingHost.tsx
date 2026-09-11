@@ -8,6 +8,7 @@ import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { FloatingNode, LayoutNode } from "@/shell/layout/tree/types";
+import { logFloatingDebug } from "@/shared/lib/floatingDebug";
 
 function floatingTitle(child: LayoutNode): string {
   if (child.type === "panel") return panelLabel(child.kind);
@@ -102,12 +103,17 @@ export function FloatingHost() {
         height: Math.round(node.height),
       };
       try {
+        logFloatingDebug(
+          `externalize start nodeId=${node.id} title=${title} bounds=${JSON.stringify(bounds)}`,
+        );
         await invoke("close_external_window", { label: node.id }).catch(() => {});
         const awaitReady = await waitForExternalReady(node.id, 8000);
         const newLabel = await invoke<string>("create_external_window", {
           request: { nodeId: node.id, title, bounds },
         });
+        logFloatingDebug(`externalize created label=${newLabel}`);
         const ok = await awaitReady();
+        logFloatingDebug(`externalize ready=${ok} label=${newLabel}`);
         if (!ok) {
           await invoke("close_external_window", { label: newLabel }).catch(() => {});
           toast.error("Could not open a separate window. The panel stays in Pragma.");
@@ -116,6 +122,7 @@ export function FloatingHost() {
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        logFloatingDebug(`externalize error=${message}`);
         toast.error(`External window failed: ${message}`);
       }
     },

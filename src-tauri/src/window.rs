@@ -1,8 +1,63 @@
 use std::collections::HashMap;
+use std::io::Write;
+use std::path::PathBuf;
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Deserialize;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+
+fn thread_debug() -> String {
+    let current = std::thread::current();
+    format!(
+        "thread_id={:?} thread_name={}",
+        current.id(),
+        current.name().unwrap_or("unnamed")
+    )
+}
+
+fn floating_debug_paths() -> Vec<PathBuf> {
+    let mut paths = vec![std::env::temp_dir().join("pragma-floating-debug.log")];
+    if let Ok(cwd) = std::env::current_dir() {
+        paths.push(cwd.join("pragma-floating-debug.log"));
+        paths.push(cwd.join("..").join("pragma-floating-debug.log"));
+    }
+    paths
+}
+
+fn write_floating_debug(message: &str) {
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let line = format!("{ts} {message}\n");
+    eprintln!("[pragma-floating] {message}");
+    for path in floating_debug_paths() {
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+        {
+            let _ = file.write_all(line.as_bytes());
+        }
+    }
+}
+
+fn clear_floating_debug() {
+    for path in floating_debug_paths() {
+        let _ = std::fs::write(&path, "");
+    }
+}
+
+/// Appends a line to the floating-window debug log. Returns the temp log path.
+#[tauri::command]
+pub fn floating_debug_log(message: String) -> Result<String, String> {
+    write_floating_debug(&format!("[js] {message}"));
+    Ok(std::env::temp_dir()
+        .join("pragma-floating-debug.log")
+        .display()
+        .to_string())
+}
 
 const LABEL_PREFIX: &str = "floating-";
 
@@ -57,17 +112,39 @@ pub fn create_external_window(
         return Err(msg);
     }
 
+    clear_floating_debug();
+    write_floating_debug(&format!(
+        "[rust] create_external_window start {} node_id={} parent={} bounds={:?} {}",
+        thread_debug(),
+        request.node_id,
+        window.label(),
+        request.bounds,
+        thread_debug()
+    ));
+
     let label = build_label(&request.node_id);
     let parent = window.label().to_string();
     let url = floating_app_url(&request.node_id, &parent);
     let init_script = floating_init_script(&request.node_id, &parent)?;
+    write_floating_debug(&format!(
+        "[rust] label={label} url={url} init_script_len={}",
+        init_script.len()
+    ));
     let title = request.title;
     let bounds = request.bounds;
 
     let (tx, rx) = std::sync::mpsc::channel();
     let app_main = app.clone();
     let label_main = label.clone();
+    write_floating_debug(&format!(
+        "[rust] scheduling run_on_main_thread {}",
+        thread_debug()
+    ));
     app.run_on_main_thread(move || {
+        write_floating_debug(&format!(
+            "[rust] inside run_on_main_thread {}",
+            thread_debug()
+        ));
         let result = create_external_window_on_main(
             &app_main,
             &label_main,
@@ -76,12 +153,20 @@ pub fn create_external_window(
             &title,
             &bounds,
         );
+        write_floating_debug(&format!("[rust] main-thread build result={result:?}"));
         let _ = tx.send(result);
     })
-    .map_err(|err| format!("Failed to schedule window creation: {err}"))?;
+    .map_err(|err| {
+        let msg = format!("Failed to schedule window creation: {err}");
+        write_floating_debug(&format!("[rust] {msg}"));
+        msg
+    })?;
 
-    rx.recv()
-        .map_err(|err| format!("Window creation was cancelled: {err}"))?
+    let result = rx
+        .recv()
+        .map_err(|err| format!("Window creation was cancelled: {err}"))?;
+    write_floating_debug(&format!("[rust] create_external_window done {result:?}"));
+    result
 }
 
 fn create_external_window_on_main(
@@ -109,9 +194,20 @@ fn create_external_window_on_main(
     #[cfg(not(target_os = "windows"))]
     let builder = builder.decorations(false);
 
-    builder
+    let built = builder
         .build()
         .map_err(|err| format!("Failed to create external window: {err}"))?;
+
+    match built.url() {
+        Ok(loaded) => write_floating_debug(&format!("[rust] webview.url={loaded}")),
+        Err(err) => write_floating_debug(&format!("[rust] webview.url error={err}")),
+    }
+
+    let paint = r#"(function(){function paint(){try{document.documentElement.style.backgroundColor='#e100ff';if(document.body){document.body.style.backgroundColor='#e100ff';if(!document.getElementById('pragma-float-debug')){var d=document.createElement('div');d.id='pragma-float-debug';d.textContent='FLOATING EVAL';d.style.cssText='position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#e100ff;color:#fff;font:20px sans-serif;';document.body.appendChild(d);}}}catch(e){}}paint();setTimeout(paint,100);setTimeout(paint,500);setTimeout(paint,1500);})();"#;
+    match built.eval(paint) {
+        Ok(()) => write_floating_debug("[rust] eval paint ok"),
+        Err(err) => write_floating_debug(&format!("[rust] eval paint error={err}")),
+    }
 
     Ok(label.to_string())
 }
@@ -132,7 +228,32 @@ fn floating_init_script(node_id: &str, parent: &str) -> Result<String, String> {
         "nodeId": node_id,
         "parent": parent,
     });
-    Ok(format!("window.__PRAGMA_FLOATING__ = {payload};"))
+    Ok(format!(
+        r#"window.__PRAGMA_FLOATING__ = {payload};
+(function(){{
+  function paint(){{
+    try {{
+      document.documentElement.style.backgroundColor = '#e100ff';
+      document.documentElement.style.color = '#fff';
+      if (document.body) {{
+        document.body.style.backgroundColor = '#e100ff';
+        if (!document.getElementById('pragma-float-debug')) {{
+          var d = document.createElement('div');
+          d.id = 'pragma-float-debug';
+          d.textContent = 'FLOATING INIT ' + (window.__PRAGMA_FLOATING__ && window.__PRAGMA_FLOATING__.nodeId);
+          d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#e100ff;color:#fff;font:18px sans-serif;';
+          document.body.appendChild(d);
+        }}
+      }}
+    }} catch (e) {{}}
+  }}
+  paint();
+  document.addEventListener('DOMContentLoaded', paint);
+  setTimeout(paint, 50);
+  setTimeout(paint, 250);
+  setTimeout(paint, 1000);
+}})();"#
+    ))
 }
 
 /// Closes an external floating window by label.
@@ -293,7 +414,8 @@ mod tests {
     fn floating_init_script_json_escapes_quotes() {
         let script = floating_init_script("id\"x", "main").unwrap();
         let payload = serde_json::json!({ "nodeId": "id\"x", "parent": "main" }).to_string();
-        assert_eq!(script, format!("window.__PRAGMA_FLOATING__ = {payload};"));
+        assert!(script.contains(&format!("window.__PRAGMA_FLOATING__ = {payload};")));
+        assert!(script.contains("FLOATING INIT"));
     }
 
     #[test]

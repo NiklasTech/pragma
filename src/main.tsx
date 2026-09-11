@@ -10,6 +10,7 @@ import { ThemeProvider } from "./theme";
 import { Toaster } from "@/shared/components/ui/sonner";
 import { ExternalPanelApp } from "@/shell/external/ExternalPanelApp";
 import { getFloatingContext } from "@/shared/lib/windowScope";
+import { logFloatingDebug } from "@/shared/lib/floatingDebug";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
 import { initDebugListeners } from "@/features/debug/client";
 import { useFontStore } from "@/shared/stores/fonts";
@@ -84,6 +85,9 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 const floating = getFloatingContext();
+logFloatingDebug(
+  `main.tsx boot href=${globalThis.location?.href ?? "n/a"} search=${globalThis.location?.search ?? ""} hash=${globalThis.location?.hash ?? ""} nodeId=${floating.nodeId ?? "null"} parent=${floating.parent} hasRoot=${Boolean(document.getElementById("root"))} injected=${Boolean((globalThis as { __PRAGMA_FLOATING__?: unknown }).__PRAGMA_FLOATING__)}`,
+);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
