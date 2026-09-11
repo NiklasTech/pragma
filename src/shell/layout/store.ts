@@ -18,6 +18,7 @@ import {
   updateSplitSizes,
 } from "./tree/operations";
 import { layoutPresets } from "./presets";
+import { normalizeSidebarTab } from "./sidebar-tab";
 import { useEditorStore } from "@/shared/stores/editor";
 import { getWindowScope } from "@/shared/lib/windowScope";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -64,7 +65,11 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
     })),
   setSidebarCollapsed: (collapsed) =>
     set((s) => ({ sidebar: { ...s.sidebar, collapsed }, ...markCustomized(s) })),
-  setSidebarTab: (tab) => set((s) => ({ sidebar: { ...s.sidebar, tab }, ...markCustomized(s) })),
+  setSidebarTab: (tab) =>
+    set((s) => ({
+      sidebar: { ...s.sidebar, tab: normalizeSidebarTab(tab) },
+      ...markCustomized(s),
+    })),
   toggleSidebar: () =>
     set((s) => ({
       sidebar: { ...s.sidebar, collapsed: !s.sidebar.collapsed },
@@ -345,7 +350,16 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
 }));
 
 export const useLayoutStore = create<FullLayoutTreeState>()(
-  persist(layoutStoreCreator, { name: STORAGE_KEY }),
+  persist(layoutStoreCreator, {
+    name: STORAGE_KEY,
+    merge: (persisted, current) => {
+      const merged = { ...current, ...(persisted as Partial<FullLayoutTreeState>) };
+      return {
+        ...merged,
+        sidebar: { ...merged.sidebar, tab: normalizeSidebarTab(merged.sidebar.tab) },
+      };
+    },
+  }),
 );
 
 function extractFirstPanel(node: LayoutNode): LayoutNode | null {
