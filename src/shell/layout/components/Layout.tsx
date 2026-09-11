@@ -6,7 +6,7 @@ import {
   ResizablePanelGroup,
 } from "@/shared/components/ui/resizable";
 import { useLayoutStore } from "../store";
-import { SidebarDock, SidebarContent } from "@/shell/chrome/Sidebar";
+import { SidebarContent } from "@/shell/chrome/Sidebar";
 import { LayoutTreeRenderer } from "./LayoutTreeRenderer";
 import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
@@ -30,9 +30,9 @@ export function Layout() {
   };
 
   const showSidebar = sidebar.position !== "hidden";
+  const sidebarExpanded = showSidebar && !sidebar.collapsed;
   const aiDrawerLeft = ai.mode === "drawer-left";
   const aiDrawerRight = ai.mode === "drawer-right";
-  const sidebarExpanded = showSidebar && !sidebar.collapsed;
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
@@ -46,7 +46,7 @@ export function Layout() {
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
           {aiDrawerLeft && <AIChatHost />}
 
-          {showSidebar && sidebar.position === "left" && <SidebarDock />}
+          {showSidebar && !sidebarExpanded && sidebar.position === "left" && <SidebarContent />}
 
           {sidebarExpanded ? (
             <ResizablePanelGroup
@@ -65,7 +65,7 @@ export function Layout() {
                     id="sidebar"
                     ref={sidebarRef}
                     defaultSize={`${sidebar.width}px`}
-                    minSize={`${180}px`}
+                    minSize={`${220}px`}
                     onResize={handleSidebarResize}
                   >
                     <SidebarContent />
@@ -85,7 +85,7 @@ export function Layout() {
                     id="sidebar"
                     ref={sidebarRef}
                     defaultSize={`${sidebar.width}px`}
-                    minSize={`${180}px`}
+                    minSize={`${220}px`}
                     onResize={handleSidebarResize}
                   >
                     <SidebarContent />
@@ -99,7 +99,7 @@ export function Layout() {
             </div>
           )}
 
-          {showSidebar && sidebar.position === "right" && <SidebarDock />}
+          {showSidebar && !sidebarExpanded && sidebar.position === "right" && <SidebarContent />}
           {aiDrawerRight && <AIChatHost />}
         </div>
       )}
