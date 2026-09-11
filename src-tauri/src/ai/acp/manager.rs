@@ -21,6 +21,7 @@ use super::types::{
 };
 use crate::ai::cli::{enriched_path, get_manifest};
 use crate::commands::ai::StreamChunk;
+use crate::platform::resolve_on_path;
 
 const ACP_PROTOCOL_VERSION: u64 = 1;
 
@@ -71,14 +72,19 @@ impl AcpSessionManager {
             return Err(AcpError::Spawn("empty chat command".to_string()));
         }
 
-        let mut env = std::collections::HashMap::new();
-        env.insert("PATH".to_string(), enriched_path());
-        for (key, value) in std::env::vars() {
-            env.insert(key, value);
-        }
+        let path_var = enriched_path();
+        let mut env: HashMap<String, String> = std::env::vars().collect();
+        env.insert("PATH".to_string(), path_var.clone());
         if let Some(manifest_env) = &manifest.env {
             for (key, value) in manifest_env {
                 env.insert(key.clone(), value.clone());
+            }
+        }
+        if let Some(path_env) = &manifest.path_env {
+            for (key, binary) in path_env {
+                if let Some(resolved) = resolve_on_path(binary, &path_var) {
+                    env.insert(key.clone(), resolved.to_string_lossy().to_string());
+                }
             }
         }
 

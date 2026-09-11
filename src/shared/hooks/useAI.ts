@@ -14,6 +14,7 @@ import {
   type ChatContextResult,
 } from "@/shared/lib/chat-context";
 import { createStreamTransport } from "@/shared/lib/ai/transport";
+import { isAcpActive } from "@/shared/lib/ai/acp";
 import {
   getMessageText,
   getToolInvocation,
@@ -41,6 +42,8 @@ export function useAI() {
     activeModel,
     providers,
     activeCLIProvider,
+    cliManifests,
+    cliStatuses,
     apiKeyRefs,
     copilotAuth,
     activeChatSessionId,
@@ -75,7 +78,14 @@ export function useAI() {
   const providerConfig = providers[activeProvider];
   const hasAPIKey = apiKeyRefs[activeProvider] !== null;
   const isCLIActive = activeCLIProvider !== null;
+  const cliAuthenticated = activeCLIProvider
+    ? cliStatuses[activeCLIProvider]?.authenticated === true
+    : false;
   const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
+  const acpActive = useMemo(
+    () => isAcpActive(cliManifests, activeCLIProvider, experimentalAcp),
+    [cliManifests, activeCLIProvider, experimentalAcp],
+  );
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
@@ -124,7 +134,7 @@ export function useAI() {
         isCLIActive ? [] : [...toolDefinitions, ...agentToolDefinitions],
         rootPath,
         activeChatSessionId,
-        experimentalAcp,
+        acpActive,
         systemPrompt,
       ),
     [
@@ -137,7 +147,7 @@ export function useAI() {
       agentToolDefinitions,
       rootPath,
       activeChatSessionId,
-      experimentalAcp,
+      acpActive,
       systemPrompt,
     ],
   );
@@ -162,8 +172,8 @@ export function useAI() {
       const chat = chatRef.current;
       if (!chat) return;
 
-      // Kimi ACP executes tools itself via reverse-RPC; the frontend only displays results.
-      if (activeCLIProvider === "moonshot-kimi" && experimentalAcp) {
+      // ACP agents execute tools themselves via reverse-RPC; the frontend only displays results.
+      if (acpActive) {
         return;
       }
 
@@ -221,7 +231,7 @@ export function useAI() {
         });
       }
     },
-    [resolveTool, activeCLIProvider, experimentalAcp, rootPath],
+    [resolveTool, acpActive, rootPath],
   );
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
@@ -431,7 +441,7 @@ export function useAI() {
   }, [activeChatSessionId, rootPath, chatSessions, saveSessionMessages]);
 
   const canChat =
-    isCLIActive ||
+    (isCLIActive && cliAuthenticated) ||
     hasAPIKey ||
     activeProvider === "ollama" ||
     (activeProvider === "custom" && Boolean(providerConfig.baseUrl)) ||

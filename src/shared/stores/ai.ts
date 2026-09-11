@@ -61,6 +61,7 @@ export interface CLIManifest {
   name: string;
   description: string;
   supports_sessions: boolean;
+  uses_acp: boolean;
 }
 
 export interface CLIStatus {

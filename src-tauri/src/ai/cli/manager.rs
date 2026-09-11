@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
 
-use crate::platform::new_tokio_command;
+use crate::platform::new_tokio_command_on_path;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::time::timeout;
@@ -224,12 +224,12 @@ impl CLIManager {
             return Err(AIError::Provider("empty install command".to_string()));
         }
 
-        let mut cmd = new_tokio_command(&parts[0]);
+        let path_var = enriched_path();
+        let mut cmd = new_tokio_command_on_path(&parts[0], &path_var);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .env("PATH", enriched_path())
-            .envs(env::vars());
+            .env("PATH", path_var);
 
         let output = cmd
             .output()
@@ -259,11 +259,12 @@ impl CLIManager {
             return Err(AIError::Provider("empty login command".to_string()));
         }
 
-        let mut cmd = new_tokio_command(&parts[0]);
+        let path_var = enriched_path();
+        let mut cmd = new_tokio_command_on_path(&parts[0], &path_var);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .env("PATH", enriched_path());
+            .env("PATH", path_var);
 
         // Set up environment if specified
         if let Some(env_vars) = &manifest.env {
@@ -303,12 +304,12 @@ impl CLIManager {
             return Err(AIError::Provider("empty logout command".to_string()));
         }
 
-        let mut cmd = new_tokio_command(&parts[0]);
+        let path_var = enriched_path();
+        let mut cmd = new_tokio_command_on_path(&parts[0], &path_var);
         cmd.args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .env("PATH", enriched_path())
-            .envs(env::vars());
+            .env("PATH", path_var);
 
         let output = cmd
             .output()
@@ -355,12 +356,12 @@ impl CLIManager {
             return Err(AIError::Provider("empty check command".to_string()));
         }
 
-        let output = new_tokio_command(&parts[0])
+        let path_var = enriched_path();
+        let output = new_tokio_command_on_path(&parts[0], &path_var)
             .args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .env("PATH", enriched_path())
-            .envs(env::vars())
+            .env("PATH", path_var)
             .output()
             .await
             .map_err(|e| AIError::Provider(format!("check failed: {e}")))?;
@@ -385,12 +386,12 @@ impl CLIManager {
             return Ok((false, None));
         }
 
-        let output = new_tokio_command(&parts[0])
+        let path_var = enriched_path();
+        let output = new_tokio_command_on_path(&parts[0], &path_var)
             .args(&parts[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .env("PATH", enriched_path())
-            .envs(env::vars())
+            .env("PATH", path_var)
             .output()
             .await
             .map_err(|e| AIError::Provider(format!("auth check failed: {e}")))?;
@@ -445,13 +446,13 @@ async fn run_chat_process(
         return Err(AIError::Provider("empty chat command".to_string()));
     }
 
-    let mut child = new_tokio_command(&cmd_parts[0])
+    let path_var = enriched_path();
+    let mut child = new_tokio_command_on_path(&cmd_parts[0], &path_var)
         .args(&cmd_parts[1..])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .stdin(Stdio::piped())
-        .env("PATH", enriched_path())
-        .envs(env::vars())
+        .env("PATH", path_var)
         .spawn()
         .map_err(|e| AIError::Provider(format!("failed to spawn chat: {e}")))?;
 
