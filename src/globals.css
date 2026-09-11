@@ -27,6 +27,7 @@
      --syntax-*  : syntax highlighting tokens
      --terminal-*: terminal-specific tokens
      --motion-*  : durations and easings
+     --shadow-*  : elevation shadows
    ============================================================================ */
 
 @theme inline {
@@ -293,6 +294,12 @@
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+
+  /* --------------------------------------------------------------------------
+     Elevation
+     -------------------------------------------------------------------------- */
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 12px 40px rgba(0, 0, 0, 0.45);
 
   /* --------------------------------------------------------------------------
      Motion

@@ -21,12 +21,12 @@ function Toaster({ ...props }: ToasterProps) {
           "--normal-bg": "var(--color-bg-elevated)",
           "--normal-text": "var(--color-fg-default)",
           "--normal-border": "var(--color-border)",
-          "--border-radius": "var(--radius-md)",
+          "--border-radius": "var(--radius-lg)",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "cn-toast shadow-[var(--shadow-md)]!",
         },
       }}
       {...props}

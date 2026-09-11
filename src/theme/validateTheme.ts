@@ -416,6 +416,13 @@ function validateMotionTokens(errors: string[], motion: unknown, path: string): 
   }
 }
 
+function validateShadowTokens(errors: string[], shadows: unknown, path: string): void {
+  validateTokenObject(errors, shadows, path, ["sm", "md"]);
+  if (!validateObject(errors, shadows, path)) return;
+  validateString(errors, shadows, "sm", path);
+  validateString(errors, shadows, "md", path);
+}
+
 function validateThemeTokens(errors: string[], tokens: unknown, path: string): void {
   validateTokenObject(errors, tokens, path, ["colors", "editor", "terminal"]);
   if (!validateObject(errors, tokens, path)) return;
@@ -436,6 +443,9 @@ function validateThemeTokens(errors: string[], tokens: unknown, path: string): v
   }
   if ("motion" in tokens) {
     validateMotionTokens(errors, (tokens as Record<string, unknown>).motion, `${path}.motion`);
+  }
+  if ("shadows" in tokens) {
+    validateShadowTokens(errors, (tokens as Record<string, unknown>).shadows, `${path}.shadows`);
   }
 }
 

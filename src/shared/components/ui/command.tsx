@@ -17,7 +17,7 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex size-full flex-col overflow-hidden rounded-md bg-bg-elevated text-fg-default",
+        "flex size-full flex-col overflow-hidden rounded-lg bg-bg-elevated text-fg-default",
         className,
       )}
       {...props}
@@ -47,7 +47,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-[28%] translate-y-0 overflow-hidden rounded-xl border-border p-0 shadow-2xl shadow-black/30",
+          "top-[28%] translate-y-0 overflow-hidden rounded-lg border-border p-0 shadow-[var(--shadow-md)]",
           className,
         )}
         overlayClassName="supports-backdrop-filter:backdrop-blur-none"

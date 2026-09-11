@@ -228,6 +228,10 @@ const TOKEN_TO_CSS_VAR: Record<string, string> = {
   "motion-ease-out": "--motion-ease-out",
   "motion-ease-in-out": "--motion-ease-in-out",
   "motion-ease-spring": "--motion-ease-spring",
+
+  // Shadows
+  "shadows-sm": "--shadow-sm",
+  "shadows-md": "--shadow-md",
 };
 
 // Additional CSS variables that should receive the same value as another.
@@ -674,6 +678,7 @@ export function clearAppliedTheme(): void {
         duration: { fast: "", base: "", slow: "", layout: "" },
         ease: { default: "", out: "", inOut: "", spring: "" },
       },
+      shadows: { sm: "", md: "" },
     },
   });
 
