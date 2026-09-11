@@ -38,6 +38,9 @@ fn build_label(node_id: &str) -> String {
 }
 
 /// Creates a new external floating window for the given layout node.
+///
+/// WebView2 on Windows paints a blank white surface if the webview is created
+/// off the UI thread (Tauri commands do not run on the main thread).
 #[tauri::command]
 pub fn create_external_window(
     app: AppHandle,
@@ -55,38 +58,62 @@ pub fn create_external_window(
     }
 
     let label = build_label(&request.node_id);
+    let parent = window.label().to_string();
+    let url = floating_app_url(&request.node_id, &parent);
+    let init_script = floating_init_script(&request.node_id, &parent)?;
+    let title = request.title;
+    let bounds = request.bounds;
 
-    if app.get_webview_window(&label).is_some() {
-        let msg = format!("External window {label} already exists");
-        return Err(msg);
+    let (tx, rx) = std::sync::mpsc::channel();
+    let app_main = app.clone();
+    let label_main = label.clone();
+    app.run_on_main_thread(move || {
+        let result = create_external_window_on_main(
+            &app_main,
+            &label_main,
+            &url,
+            &init_script,
+            &title,
+            &bounds,
+        );
+        let _ = tx.send(result);
+    })
+    .map_err(|err| format!("Failed to schedule window creation: {err}"))?;
+
+    rx.recv()
+        .map_err(|err| format!("Window creation was cancelled: {err}"))?
+}
+
+fn create_external_window_on_main(
+    app: &AppHandle,
+    label: &str,
+    url: &str,
+    init_script: &str,
+    title: &str,
+    bounds: &WindowBounds,
+) -> Result<String, String> {
+    if app.get_webview_window(label).is_some() {
+        return Err(format!("External window {label} already exists"));
     }
 
-    let parent = window.label();
-    let url = floating_app_url(&request.node_id, parent);
-    let init_script = floating_init_script(&request.node_id, parent)?;
-
-    // Windows WebView2 often will not run page JS while the window is hidden,
-    // so the window must be visible. Native decorations on Windows keep it
-    // closeable even if the frontend chrome fails to mount.
-    let builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
-        .title(request.title)
+    let builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
+        .title(title)
         .resizable(true)
         .visible(true)
-        .inner_size(request.bounds.width as f64, request.bounds.height as f64)
-        .position(request.bounds.x as f64, request.bounds.y as f64)
-        .initialization_script(&init_script);
+        .inner_size(bounds.width as f64, bounds.height as f64)
+        .position(bounds.x as f64, bounds.y as f64)
+        .initialization_script(init_script);
 
     #[cfg(target_os = "windows")]
     let builder = builder.decorations(true);
     #[cfg(not(target_os = "windows"))]
     let builder = builder.decorations(false);
 
-    builder.build().map_err(|err| {
-        let msg = format!("Failed to create external window: {err}");
-        msg
-    })?;
+    builder
+        .build()
+        .map_err(|err| format!("Failed to create external window: {err}"))?;
 
-    Ok(label)
+    Ok(label.to_string())
 }
 
 fn floating_app_url(node_id: &str, parent: &str) -> String {
