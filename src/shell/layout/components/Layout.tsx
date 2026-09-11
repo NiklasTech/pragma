@@ -13,7 +13,7 @@ import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Titlebar } from "@/shell/chrome/Titlebar";
 import { Statusbar } from "@/shell/chrome/Statusbar";
-import { AgentsHome } from "@/features/ai/components/AgentsHome";
+import { AgentsWorkspace } from "@/features/ai/components/AgentsWorkspace";
 import { useUiMode } from "@/shell/mode";
 import { useDiagnostics } from "@/shared/hooks/useDiagnostics";
 
@@ -31,8 +31,8 @@ export function Layout() {
 
   const showSidebar = sidebar.position !== "hidden";
   const sidebarExpanded = showSidebar && !sidebar.collapsed;
+  const aiVisible = ai.mode !== "hidden";
   const aiDrawerLeft = ai.mode === "drawer-left";
-  const aiDrawerRight = ai.mode === "drawer-right";
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
@@ -40,11 +40,11 @@ export function Layout() {
 
       {uiMode === "agents" ? (
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          <AgentsHome />
+          <AgentsWorkspace />
         </div>
       ) : (
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          {aiDrawerLeft && <AIChatHost />}
+          {aiVisible && aiDrawerLeft && <AIChatHost />}
 
           {showSidebar && !sidebarExpanded && sidebar.position === "left" && <SidebarContent />}
 
@@ -100,12 +100,10 @@ export function Layout() {
           )}
 
           {showSidebar && !sidebarExpanded && sidebar.position === "right" && <SidebarContent />}
-          {aiDrawerRight && <AIChatHost />}
+          {aiVisible && !aiDrawerLeft && <AIChatHost />}
         </div>
       )}
 
-      {ai.mode === "bottom-sheet" && <AIChatHost />}
-      {ai.mode === "floating" && <AIChatHost />}
       <Statusbar />
       <TerminalFloatingHost />
       <FloatingHost />

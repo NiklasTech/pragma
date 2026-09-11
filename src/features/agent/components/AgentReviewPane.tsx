@@ -9,11 +9,11 @@ import {
 } from "@phosphor-icons/react";
 
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
-import { PanelHeader } from "@/shared/components/PanelHeader";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { cn } from "@/shared/lib/utils";
 
 import { useAgentStore, type AgentStatus, type AgentStep } from "../store";
+import { AgentApprovals } from "./AgentApprovals";
 import { AgentRulesStatus } from "./AgentRulesStatus";
 import { AgentTodoList } from "./AgentTodoList";
 
@@ -66,50 +66,48 @@ function StepRow({ step }: { step: AgentStep }) {
   );
 }
 
-export function AgentPanel() {
-  const { status, goal, steps, stepCount, maxSteps, summary, error, editReviews, requestStop } =
-    useAgentStore();
+export function AgentReviewPane() {
+  const { status, goal, steps, stepCount, maxSteps, summary, error, requestStop } = useAgentStore();
 
   const canStop = status === "running" || status === "waiting-approval";
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <PanelHeader
-        title={STATUS_LABELS[status]}
-        actions={
-          canStop ? (
-            <button
-              type="button"
-              onClick={requestStop}
-              title="Stop agent"
-              className="flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
-            >
-              <Stop size={13} weight="bold" />
-            </button>
-          ) : undefined
-        }
-      />
-
-      <AgentRulesStatus />
-
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {status === "idle" ? (
         <PanelEmptyState
           icon={MagicWand}
-          title="No active task"
-          description="Enable Agent mode in the chat toolbar and send a task. The agent will plan, edit files and run commands autonomously."
+          title="No active run"
+          description="Start a thread and enable Agent mode to see steps, todos and approvals here."
         />
       ) : (
         <>
-          <div className="flex shrink-0 flex-col gap-1 border-t border-border/40 px-3 py-2.5">
-            <span className="text-ui-xs font-medium text-fg-default">Goal</span>
-            <p className="line-clamp-3 text-ui-xs break-words text-fg-muted" title={goal}>
+          <div className="flex shrink-0 flex-col gap-1 px-3 py-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className={cn("text-ui-xs font-medium", STATUS_COLORS[status])}>
+                {STATUS_LABELS[status]}
+              </span>
+              {canStop && (
+                <button
+                  type="button"
+                  onClick={requestStop}
+                  title="Stop agent"
+                  aria-label="Stop agent"
+                  className="flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+                >
+                  <Stop size={13} weight="bold" />
+                </button>
+              )}
+            </div>
+            <span className="text-ui-xs text-fg-muted">Goal</span>
+            <p className="line-clamp-3 text-ui-xs break-words text-fg-subtle" title={goal}>
               {goal}
             </p>
-            <span className="mt-1 text-ui-xs text-fg-subtle">
+            <span className="mt-1 text-ui-2xs text-fg-subtle">
               Step {stepCount} of {maxSteps}
             </span>
-            <span className={cn("text-ui-xs", STATUS_COLORS[status])}>{STATUS_LABELS[status]}</span>
           </div>
+
+          <AgentRulesStatus />
 
           <ScrollArea className="min-h-0 flex-1 border-t border-border/40">
             <div className="flex flex-col py-1">
@@ -120,9 +118,7 @@ export function AgentPanel() {
               {status === "waiting-approval" && (
                 <div className="flex items-center gap-2 px-3 py-1.5 text-ui-xs text-status-warning">
                   <CircleDashed size={13} className="shrink-0" />
-                  {editReviews.length > 0
-                    ? "Waiting for review in the editor"
-                    : "Waiting for approval in the chat panel"}
+                  Waiting for your review
                 </div>
               )}
             </div>
@@ -142,6 +138,10 @@ export function AgentPanel() {
           )}
         </>
       )}
+
+      <div className="shrink-0 px-3 pt-3">
+        <AgentApprovals />
+      </div>
     </div>
   );
 }
