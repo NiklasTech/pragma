@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
+import { shouldToastLspError } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 interface LspStatusEvent {
@@ -8,6 +9,7 @@ interface LspStatusEvent {
   project_root: string;
   status: "stopped" | "starting" | "running" | "error";
   error?: string;
+  expected?: boolean;
 }
 
 export function useLspStatus() {
@@ -22,10 +24,13 @@ export function useLspStatus() {
 
     const setup = async () => {
       unlisten = await listen<LspStatusEvent>("lsp_status_changed", (event) => {
-        if (event.payload.status === "error") {
-          const message = event.payload.error ?? `${event.payload.language} language server failed`;
-          toast.error(message);
+        if (
+          !shouldToastLspError({ status: event.payload.status, expected: event.payload.expected })
+        ) {
+          return;
         }
+        const message = event.payload.error ?? `${event.payload.language} language server failed`;
+        toast.error(message);
       });
     };
 

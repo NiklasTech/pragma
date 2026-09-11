@@ -27,10 +27,33 @@ import {
   SignIn,
   SignOut,
   Robot,
+  Info,
 } from "@phosphor-icons/react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 import { VoiceSettings } from "./VoiceSettings";
+
+const UNREACHABLE_MESSAGES = [
+  "connection refused",
+  "connection failed",
+  "failed to fetch",
+  "network error",
+  "error sending request",
+];
+
+function formatModelError(error: string): string {
+  const normalized = error.toLowerCase();
+  if (UNREACHABLE_MESSAGES.some((pattern) => normalized.includes(pattern))) {
+    return "Local model server is not running";
+  }
+  const withoutUrl = error
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const message = withoutUrl.replace(/[:\s]+$/, "") || "Could not load models";
+  return message.length > 100 ? `${message.slice(0, 97)}...` : message;
+}
 
 function isProviderConfigured(
   provider: AIProvider,
@@ -504,8 +527,34 @@ export function AISettings() {
       >
         <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
           <div className="flex flex-col">
-            <span className="text-ui-sm font-medium text-fg-default">
+            <span className="flex items-center gap-1.5 text-ui-sm font-medium text-fg-default">
               Enable local CLI integration
+              <Tooltip>
+                <TooltipTrigger
+                  type="button"
+                  delay={100}
+                  aria-label="About local CLI integration"
+                  className="flex items-center text-fg-subtle transition-colors hover:text-fg-default"
+                >
+                  <Info size={14} />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-sm">
+                  <span className="flex flex-col gap-2">
+                    <span>
+                      Pragma can speak the Agent Client Protocol (ACP) with supported CLIs running
+                      locally. ACP turns use the subscription you signed into in the official CLI.
+                      API keys configured above are a separate path: they stay in Pragma's own
+                      request loop and are never handed to a CLI.
+                    </span>
+                    <span>
+                      Nothing is installed or launched until you press Install, and a CLI only runs
+                      while it is the active provider. Codex CLI is published by OpenAI and Kimi
+                      Code by Moonshot AI, each as its own npm package. Pragma runs the unmodified
+                      official CLIs and is not affiliated with either vendor.
+                    </span>
+                  </span>
+                </TooltipContent>
+              </Tooltip>
             </span>
             <span className="text-ui-xs text-fg-muted">
               Turn on experimental support for subscription CLIs like OpenAI Codex and Kimi Code.
@@ -525,19 +574,6 @@ export function AISettings() {
         )}
 
         <div className="flex flex-col gap-3">
-          <p className="text-ui-xs text-fg-muted">
-            Pragma can speak the Agent Client Protocol (ACP) with supported CLIs running locally.
-            ACP turns use the subscription you signed into in the official CLI. API keys configured
-            above are a separate path: they stay in Pragma's own request loop and are never handed
-            to a CLI.
-          </p>
-          <p className="text-ui-xs text-fg-muted">
-            Nothing is installed or launched until you press Install, and a CLI only runs while it
-            is the active provider. Codex CLI is published by OpenAI and Kimi Code by Moonshot AI,
-            each as its own npm package. Pragma runs the unmodified official CLIs and is not
-            affiliated with either vendor.
-          </p>
-
           {aiStore.cliManifests.length === 0 && (
             <p className="text-sm text-fg-muted">Loading providers...</p>
           )}
@@ -663,19 +699,6 @@ export function AISettings() {
         />
       </SettingSection>
 
-      <SettingSection title="Terminal AI">
-        <SettingRow
-          label="Enable"
-          description="Show AI command suggestions in the terminal"
-          control={
-            <Switch
-              checked={settingsStore.ai.terminalSuggestions}
-              onCheckedChange={(v) => settingsStore.setAISettings({ terminalSuggestions: v })}
-            />
-          }
-        />
-      </SettingSection>
-
       <VoiceSettings />
     </div>
   );
@@ -725,7 +748,7 @@ function ModelSelect({ provider, value, onChange }: ModelSelectProps) {
       {loading && <span className="text-ui-xs text-fg-muted">Loading models…</span>}
       {needsKey && <span className="text-ui-xs text-fg-muted">Save an API key to load models</span>}
       {error && !loading && (
-        <span className="text-ui-xs text-status-error">Could not load models: {error}</span>
+        <span className="text-ui-xs text-status-error">{formatModelError(error)}</span>
       )}
     </div>
   );

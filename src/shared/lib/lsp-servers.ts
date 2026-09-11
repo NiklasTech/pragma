@@ -109,11 +109,11 @@ export const LSP_SERVERS: Record<string, LspServerDefinition> = {
     displayName: "VS Code HTML Language Server",
     command: "vscode-html-language-server",
     args: ["--stdio"],
-    installCommand: "npm install -g @vscode/langserver-html",
+    installCommand: "npm install -g vscode-langservers-extracted",
     installProgram: "npm",
-    installArgs: ["install", "-g", "@vscode/langserver-html"],
+    installArgs: ["install", "-g", "vscode-langservers-extracted"],
     packageManager: "npm",
-    homepage: "https://github.com/microsoft/vscode-html-languageservice",
+    homepage: "https://github.com/hrsh7th/vscode-langservers-extracted",
     requiredRuntime: "Node.js",
   },
   css: {
@@ -121,11 +121,11 @@ export const LSP_SERVERS: Record<string, LspServerDefinition> = {
     displayName: "VS Code CSS Language Server",
     command: "vscode-css-language-server",
     args: ["--stdio"],
-    installCommand: "npm install -g @vscode/langserver-css",
+    installCommand: "npm install -g vscode-langservers-extracted",
     installProgram: "npm",
-    installArgs: ["install", "-g", "@vscode/langserver-css"],
+    installArgs: ["install", "-g", "vscode-langservers-extracted"],
     packageManager: "npm",
-    homepage: "https://github.com/microsoft/vscode-css-languageservice",
+    homepage: "https://github.com/hrsh7th/vscode-langservers-extracted",
     requiredRuntime: "Node.js",
   },
 };
@@ -147,4 +147,16 @@ export function isLspAutoInstallable(language: string): boolean {
   const def = LSP_SERVERS[language];
   if (!def) return false;
   return Boolean(def.installProgram && def.installArgs && def.installArgs.length > 0);
+}
+
+/**
+ * Language servers are optional, so a server that is missing or never started
+ * must stay quiet. Only surface failures the user can act on.
+ */
+export function shouldToastLspError(options: {
+  status: string;
+  expected?: boolean | null;
+}): boolean {
+  if (options.status !== "error") return false;
+  return options.expected !== true;
 }

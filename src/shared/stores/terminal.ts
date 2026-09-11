@@ -191,6 +191,9 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
 
     killAllSessions: async () => {
       const { sessions } = get();
+      // Clear first so sessions created while the kills are in flight are kept.
+      set({ sessions: [], activeByPanel: {}, lastActiveSessionId: null, activity: {} });
+
       await Promise.all(
         sessions.map(async (session) => {
           if (session.ptyId) {
@@ -202,7 +205,6 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
           }
         }),
       );
-      set({ sessions: [], activeByPanel: {}, lastActiveSessionId: null, activity: {} });
     },
 
     reloadSession: async (sessionId, shell) => {

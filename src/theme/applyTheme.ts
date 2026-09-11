@@ -234,6 +234,17 @@ const TOKEN_TO_CSS_VAR: Record<string, string> = {
   "shadows-md": "--shadow-md",
 };
 
+// Layout dimensions are unitless numbers in theme tokens; CSS lengths need a unit.
+const TOKEN_UNITS: Record<string, string> = {
+  "layout-tab-height": "px",
+};
+
+function withTokenUnit(tokenPath: string, value: string): string {
+  const unit = TOKEN_UNITS[tokenPath];
+  if (!unit || !/^\d+(\.\d+)?$/.test(value)) return value;
+  return `${value}${unit}`;
+}
+
 // Additional CSS variables that should receive the same value as another.
 const ADDITIONAL_ALIASES: Record<string, string[]> = {
   "--editor-bg": ["--editor-background", "--color-editor-bg"],
@@ -288,14 +299,15 @@ export function generateCssVariables(theme: Theme): CssVariableMapping[] {
     const name = cssVarName(mapping.name);
     if (seen.has(name)) continue;
     seen.add(name);
-    cssVars.push({ name, value: mapping.value });
+    const value = withTokenUnit(mapping.name, mapping.value);
+    cssVars.push({ name, value });
 
     const aliases = ADDITIONAL_ALIASES[name];
     if (aliases) {
       for (const alias of aliases) {
         if (!seen.has(alias)) {
           seen.add(alias);
-          cssVars.push({ name: alias, value: mapping.value });
+          cssVars.push({ name: alias, value });
         }
       }
     }

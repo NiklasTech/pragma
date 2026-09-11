@@ -119,7 +119,7 @@ export function TabBar({ panelId }: TabBarProps) {
                   data-active={isActive}
                   className={cn(
                     props.className,
-                    "pragma-pill-tab group relative max-w-[180px] cursor-pointer",
+                    "pragma-pill-tab group relative max-w-[240px] cursor-pointer",
                     isDropTarget && draggedIndex !== index && "bg-accent-subtle",
                   )}
                 >

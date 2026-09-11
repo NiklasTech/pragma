@@ -99,6 +99,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       t.open(containerRef.current);
       termRef.current = t;
       setTermState(t);
+      ptyIdRef.current = session.ptyId ?? null;
 
       da1Handler = t.parser.registerCsiHandler({ final: "c" }, (params) => {
         // DA1: CSI c or CSI 0 c
@@ -163,7 +164,10 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
               rows: Math.max(rows, 2),
             });
           }
-          if (disposed) return;
+          if (disposed) {
+            safePtyInvoke(invoke("kill_pty", { id: ptyId }));
+            return;
+          }
           ptyIdRef.current = ptyId;
           useTerminalStore.getState().attachPty(session.id, ptyId);
 

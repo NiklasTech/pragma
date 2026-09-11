@@ -177,6 +177,95 @@ export const SHORTCUT_ACTIONS = [
     category: "chat" as const,
     default: (): ShortcutBinding => ({ key: "Enter" }),
   },
+  {
+    id: "editor.formatDocument" as const,
+    label: "Format Document",
+    category: "edit" as const,
+    default: (): ShortcutBinding => ({ shift: true, alt: true, code: "KeyF" }),
+  },
+  {
+    id: "tab.next" as const,
+    label: "Next Tab",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ ctrl: true, key: "Tab" }),
+  },
+  {
+    id: "tab.prev" as const,
+    label: "Previous Tab",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ ctrl: true, shift: true, key: "Tab" }),
+  },
+  {
+    id: "view.splitEditor" as const,
+    label: "Split Editor",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Backslash",
+    }),
+  },
+  {
+    id: "view.toggleProblems" as const,
+    label: "Toggle Problems",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyM",
+    }),
+  },
+  {
+    id: "view.togglePreview" as const,
+    label: "Toggle Preview",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyV",
+    }),
+  },
+  {
+    id: "debug.currentFile" as const,
+    label: "Start / Continue Debugging",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ code: "F5" }),
+  },
+  {
+    id: "debug.stop" as const,
+    label: "Stop Debugging",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ shift: true, code: "F5" }),
+  },
+  {
+    id: "debug.stepOver" as const,
+    label: "Step Over",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ code: "F10" }),
+  },
+  {
+    id: "debug.stepInto" as const,
+    label: "Step Into",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ code: "F11" }),
+  },
+  {
+    id: "debug.stepOut" as const,
+    label: "Step Out",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ shift: true, code: "F11" }),
+  },
+  {
+    id: "debug.toggleBreakpoint" as const,
+    label: "Toggle Breakpoint",
+    category: "view" as const,
+    default: (): ShortcutBinding => ({ code: "F9" }),
+  },
+  {
+    id: "agent.toggle" as const,
+    label: "Toggle Agent Mode",
+    category: "ai" as const,
+    default: (): ShortcutBinding | null => null,
+  },
 ] satisfies ShortcutAction[];
 
 export type ShortcutActionId = (typeof SHORTCUT_ACTIONS)[number]["id"];

@@ -1,5 +1,3 @@
-import { keymap } from "@codemirror/view";
-import type { Extension } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { toast } from "sonner";
 
@@ -28,16 +26,4 @@ export async function formatDocumentInView(
     console.error("LSP format request failed", error);
     toast.error(error instanceof Error ? error.message : String(error));
   }
-}
-
-export function lspFormattingExtension(language: string, filePath: string): Extension {
-  return keymap.of([
-    {
-      key: "Shift-Alt-f",
-      run: (view) => {
-        void formatDocumentInView(view, language, filePath);
-        return true;
-      },
-    },
-  ]);
 }

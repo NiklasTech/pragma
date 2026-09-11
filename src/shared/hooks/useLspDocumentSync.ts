@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { markLspDocumentSynced, flushLspDocumentSync } from "@/features/editor/lsp/lspDocuments";
@@ -40,9 +39,8 @@ export function useLspDocumentSync(
         if (!cancelled) {
           markLspDocumentSynced(filePath, content);
         }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        toast.error(message);
+      } catch {
+        // Missing optional servers are reported once via lsp_status_changed.
       }
     };
 

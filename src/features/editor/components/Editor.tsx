@@ -40,7 +40,7 @@ import {
   lspDefinitionExtension,
 } from "@/features/editor/lsp/definition";
 import { lspHoverExtension } from "@/features/editor/lsp/hover";
-import { lspFormattingExtension, formatDocumentInView } from "@/features/editor/lsp/formatting";
+import { formatDocumentInView } from "@/features/editor/lsp/formatting";
 import { lspReferencesExtension, findReferencesAtCoords } from "@/features/editor/lsp/references";
 import { lspRenameExtension, requestRenameAtCoords } from "@/features/editor/lsp/rename";
 import { requestCodeActionsAtCoords } from "@/features/editor/lsp/codeActions";
@@ -125,7 +125,6 @@ function FileEditor({
   const lspCompletionCompartmentRef = useRef(new Compartment());
   const lspDefinitionCompartmentRef = useRef(new Compartment());
   const lspHoverCompartmentRef = useRef(new Compartment());
-  const lspFormattingCompartmentRef = useRef(new Compartment());
   const lspReferencesCompartmentRef = useRef(new Compartment());
   const lspRenameCompartmentRef = useRef(new Compartment());
   const lspSignatureHelpCompartmentRef = useRef(new Compartment());
@@ -186,7 +185,6 @@ function FileEditor({
         lspCompletionCompartmentRef.current.of([]),
         lspDefinitionCompartmentRef.current.of([]),
         lspHoverCompartmentRef.current.of([]),
-        lspFormattingCompartmentRef.current.of([]),
         lspReferencesCompartmentRef.current.of([]),
         lspRenameCompartmentRef.current.of([]),
         lspSignatureHelpCompartmentRef.current.of([]),
@@ -452,7 +450,6 @@ function FileEditor({
       effects: [
         lspCompletionCompartmentRef.current.reconfigure([]),
         lspHoverCompartmentRef.current.reconfigure([]),
-        lspFormattingCompartmentRef.current.reconfigure([]),
         lspSignatureHelpCompartmentRef.current.reconfigure([]),
       ],
     });
@@ -472,9 +469,6 @@ function FileEditor({
           ? lspCompletionExtension(resolvedLanguage, filePath, flags)
           : [];
         const hoverExtension = flags.hover ? lspHoverExtension(resolvedLanguage, filePath) : [];
-        const formattingExtension = flags.formatting
-          ? lspFormattingExtension(resolvedLanguage, filePath)
-          : [];
         const signatureHelp = flags.signatureHelp
           ? signatureHelpExtension(resolvedLanguage, filePath, flags.signatureHelpTriggerCharacters)
           : [];
@@ -482,7 +476,6 @@ function FileEditor({
           effects: [
             lspCompletionCompartmentRef.current.reconfigure(extension),
             lspHoverCompartmentRef.current.reconfigure(hoverExtension),
-            lspFormattingCompartmentRef.current.reconfigure(formattingExtension),
             lspSignatureHelpCompartmentRef.current.reconfigure(signatureHelp),
           ],
         });
