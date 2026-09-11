@@ -15,10 +15,9 @@ import { Titlebar } from "@/shell/chrome/Titlebar";
 import { Statusbar } from "@/shell/chrome/Statusbar";
 import { AgentsWorkspace } from "@/features/ai/components/AgentsWorkspace";
 import { useUiMode } from "@/shell/mode";
-import { useDiagnostics } from "@/shared/hooks/useDiagnostics";
+import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
 
 export function Layout() {
-  useDiagnostics();
   const sidebar = useLayoutStore((s) => s.sidebar);
   const ai = useLayoutStore((s) => s.ai);
   const root = useLayoutStore((s) => s.root);
@@ -39,6 +38,7 @@ export function Layout() {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
+      <DiagnosticsHost />
       <Titlebar />
 
       {uiMode === "agents" ? (

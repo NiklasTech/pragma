@@ -65,22 +65,26 @@ pub fn create_external_window(
     let url = floating_app_url(&request.node_id, parent);
     let init_script = floating_init_script(&request.node_id, parent)?;
 
-    // Hidden until the frontend paints and calls show(). If JS never loads,
-    // the host times out and closes this window instead of leaving a blank
-    // undecorated WebView2 that cannot be closed.
-    let _created = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+    // Windows WebView2 often will not run page JS while the window is hidden,
+    // so the window must be visible. Native decorations on Windows keep it
+    // closeable even if the frontend chrome fails to mount.
+    let builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(request.title)
-        .decorations(false)
         .resizable(true)
-        .visible(false)
+        .visible(true)
         .inner_size(request.bounds.width as f64, request.bounds.height as f64)
         .position(request.bounds.x as f64, request.bounds.y as f64)
-        .initialization_script(&init_script)
-        .build()
-        .map_err(|err| {
-            let msg = format!("Failed to create external window: {err}");
-            msg
-        })?;
+        .initialization_script(&init_script);
+
+    #[cfg(target_os = "windows")]
+    let builder = builder.decorations(true);
+    #[cfg(not(target_os = "windows"))]
+    let builder = builder.decorations(false);
+
+    builder.build().map_err(|err| {
+        let msg = format!("Failed to create external window: {err}");
+        msg
+    })?;
 
     Ok(label)
 }

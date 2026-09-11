@@ -103,7 +103,7 @@ export function FloatingHost() {
       };
       try {
         await invoke("close_external_window", { label: node.id }).catch(() => {});
-        const awaitReady = await waitForExternalReady(node.id, 4000);
+        const awaitReady = await waitForExternalReady(node.id, 8000);
         const newLabel = await invoke<string>("create_external_window", {
           request: { nodeId: node.id, title, bounds },
         });

@@ -4,10 +4,9 @@ import { toast } from "sonner";
 import { useEditorStore } from "@/shared/stores/editor";
 
 export function useSaveFile() {
-  const { tabs, activeTabId, markModified } = useEditorStore();
-
   return useCallback(async () => {
-    const tab = tabs.find((t) => t.id === activeTabId);
+    const { tabs, activeTabId, markModified } = useEditorStore.getState();
+    const tab = tabs.find((candidate) => candidate.id === activeTabId);
     if (!tab || tab.kind !== "file") return;
     if (!tab.isModified) return;
 
@@ -21,5 +20,5 @@ export function useSaveFile() {
     } catch (err) {
       toast.error(String(err));
     }
-  }, [tabs, activeTabId, markModified]);
+  }, []);
 }

@@ -6,10 +6,14 @@ import { useAppShortcutActions } from "@/app/useAppShortcutActions";
 import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
 import { useLayoutStore } from "@/shell/layout";
 import { whenCrossWindowSyncReady } from "@/shared/stores/sync/crossWindowSync";
+import { getFloatingContext } from "@/shared/lib/windowScope";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { LayoutNode } from "@/shell/layout/tree/types";
 import { ExternalWindowTitlebar } from "./ExternalWindowTitlebar";
+
+const useNativeWindowChrome =
+  typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent);
 
 function externalTitle(child: LayoutNode): string {
   if (child.type === "panel") return panelLabel(child.kind);
@@ -33,7 +37,7 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
 
   useEffect(() => {
     const win = getCurrentWindow();
-    const parent = new URLSearchParams(window.location.search).get("parent") ?? "main";
+    const parent = getFloatingContext().parent;
     // Announce readiness only after the store sync listeners are registered,
     // otherwise the parent's snapshot can be emitted before we listen for it.
     void whenCrossWindowSyncReady().then(() =>
@@ -68,7 +72,7 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
     <>
       <WindowResizeHandles />
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
-        <ExternalWindowTitlebar title={title} />
+        {!useNativeWindowChrome && <ExternalWindowTitlebar title={title} />}
         <div className="min-h-0 flex-1 overflow-hidden">
           {node ? (
             <LayoutTreeRenderer node={node.child} />

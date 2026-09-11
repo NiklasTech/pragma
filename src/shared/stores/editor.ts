@@ -323,7 +323,6 @@ export const useEditorStore = create<EditorState & EditorActions>()(
         activeTabId: state.activeTabId,
         activeTabIds: state.activeTabIds,
         lastFocusedPanelId: state.lastFocusedPanelId,
-        cursorPositions: state.cursorPositions,
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;

@@ -42,7 +42,10 @@ export function Titlebar() {
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
   const { selectRoot } = useFileExplorer();
-  const { tabs, activeTabId } = useEditorStore();
+  const canSave = useEditorStore((s) => {
+    const tab = s.tabs.find((candidate) => candidate.id === s.activeTabId);
+    return tab?.kind === "file" ? tab.isModified : false;
+  });
   const shortcuts = useSettingsStore((s) => s.shortcuts);
   const recentFolders = useSettingsStore((s) => s.workspace.recentFolders);
   const favoriteFolders = useSettingsStore((s) => s.workspace.favoriteFolders);
@@ -51,9 +54,6 @@ export function Titlebar() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const isMac = getIsMac();
   const workspaceName = getWorkspaceName(rootPath);
-
-  const activeTab = tabs.find((t) => t.id === activeTabId);
-  const canSave = activeTab?.kind === "file" ? activeTab.isModified : false;
 
   const handleOpenFolder = async () => {
     await selectRoot();
@@ -72,7 +72,7 @@ export function Titlebar() {
     }
   };
 
-  const { addFloatingPanel } = useLayoutStore();
+  const addFloatingPanel = useLayoutStore((s) => s.addFloatingPanel);
 
   useEffect(() => {
     const unlisten = win.onResized(() => {
