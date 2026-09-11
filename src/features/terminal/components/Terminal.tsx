@@ -13,6 +13,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync";
 import { useLayoutStore } from "@/shell/layout";
 import { findPanelByKind } from "@/shell/layout/tree/operations";
+import { resolvePanelActiveSessionId } from "@/shared/lib/terminal-panels";
 import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { Button } from "@/shared/components/ui/button";
@@ -27,8 +28,12 @@ interface TerminalProps {
 
 export function Terminal({ panelId }: TerminalProps) {
   useTerminalSettingsSync();
-  const { sessions, activeByPanel, defaultShell, shellResolved, reloadSession, addSession } =
-    useTerminalStore();
+  const sessions = useTerminalStore((s) => s.sessions);
+  const activeByPanel = useTerminalStore((s) => s.activeByPanel);
+  const defaultShell = useTerminalStore((s) => s.defaultShell);
+  const shellResolved = useTerminalStore((s) => s.shellResolved);
+  const reloadSession = useTerminalStore((s) => s.reloadSession);
+  const addSession = useTerminalStore((s) => s.addSession);
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const prevDefaultShellRef = useRef(defaultShell);
 
@@ -38,10 +43,10 @@ export function Terminal({ panelId }: TerminalProps) {
   const panelSessions = sessions.filter(
     (s) => s.panelId === panelId || (s.panelId == null && panelId === firstTerminalPanelId),
   );
-  const activeSessionId =
-    (panelId ? activeByPanel[panelId] : undefined) ??
-    panelSessions[panelSessions.length - 1]?.id ??
-    null;
+  const activeSessionId = resolvePanelActiveSessionId(
+    panelSessions.map((session) => session.id),
+    panelId ? activeByPanel[panelId] : undefined,
+  );
 
   useEffect(() => {
     if (panelSessions.length > 0 || !shellResolved) return;

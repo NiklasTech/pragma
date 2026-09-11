@@ -4,14 +4,11 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Toaster } from "@/shared/components/ui/sonner";
 import { ThemeProvider } from "@/theme";
 import { ErrorBoundary } from "@/app/ErrorBoundary";
+import { getFloatingContext } from "@/shared/lib/windowScope";
 import "@/globals.css";
 import { ExternalPanelApp } from "./ExternalPanelApp";
 
-function getNodeId(): string | null {
-  return new URLSearchParams(window.location.search).get("nodeId");
-}
-
-const nodeId = getNodeId();
+const nodeId = getFloatingContext().nodeId;
 const root = document.getElementById("floating-root");
 
 if (!root) {
@@ -23,7 +20,7 @@ createRoot(root).render(
     <ErrorBoundary>
       <ThemeProvider>
         <Toaster position="bottom-right" />
-        {nodeId ? <ExternalPanelApp nodeId={nodeId} /> : <div>Missing nodeId</div>}
+        <ExternalPanelApp nodeId={nodeId ?? ""} />
       </ThemeProvider>
     </ErrorBoundary>
   </StrictMode>,

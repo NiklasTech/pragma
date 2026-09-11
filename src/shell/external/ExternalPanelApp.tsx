@@ -73,11 +73,8 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
           {node ? (
             <LayoutTreeRenderer node={node.child} />
           ) : (
-            <div
-              className="flex h-full items-center justify-center text-ui-sm"
-              style={{ color: "#888" }}
-            >
-              Loading panel snapshot…
+            <div className="flex h-full items-center justify-center text-ui-sm text-fg-muted">
+              {nodeId ? "Loading panel snapshot…" : "This window is missing its panel id."}
             </div>
           )}
         </div>

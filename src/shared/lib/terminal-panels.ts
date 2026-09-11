@@ -5,3 +5,12 @@ import { findPanelByKind } from "@/shell/layout/tree/operations";
 export function resolveDefaultTerminalPanelId(): string | undefined {
   return findPanelByKind(useLayoutStore.getState().root, "terminal")?.id;
 }
+
+/** Ignore stale activeByPanel ids that no longer belong to this panel. */
+export function resolvePanelActiveSessionId(
+  sessionIds: string[],
+  storedId: string | undefined,
+): string | null {
+  if (storedId && sessionIds.includes(storedId)) return storedId;
+  return sessionIds[sessionIds.length - 1] ?? null;
+}

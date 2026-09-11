@@ -19,7 +19,10 @@ import { useDiagnostics } from "@/shared/hooks/useDiagnostics";
 
 export function Layout() {
   useDiagnostics();
-  const { sidebar, ai, root, setSidebarWidth } = useLayoutStore();
+  const sidebar = useLayoutStore((s) => s.sidebar);
+  const ai = useLayoutStore((s) => s.ai);
+  const root = useLayoutStore((s) => s.root);
+  const setSidebarWidth = useLayoutStore((s) => s.setSidebarWidth);
   const uiMode = useUiMode();
 
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);

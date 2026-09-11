@@ -61,19 +61,21 @@ pub fn create_external_window(
         return Err(msg);
     }
 
-    let url = format!(
-        "floating.html?nodeId={}&parent={}",
-        request.node_id,
-        url_encode(window.label())
-    );
+    let parent = window.label();
+    let url = floating_app_url(&request.node_id, parent);
+    let init_script = floating_init_script(&request.node_id, parent)?;
 
-    let _window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+    // Hidden until the frontend paints and calls show(). If JS never loads,
+    // the host times out and closes this window instead of leaving a blank
+    // undecorated WebView2 that cannot be closed.
+    let _created = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(request.title)
         .decorations(false)
         .resizable(true)
-        .visible(true)
+        .visible(false)
         .inner_size(request.bounds.width as f64, request.bounds.height as f64)
         .position(request.bounds.x as f64, request.bounds.y as f64)
+        .initialization_script(&init_script)
         .build()
         .map_err(|err| {
             let msg = format!("Failed to create external window: {err}");
@@ -81,6 +83,22 @@ pub fn create_external_window(
         })?;
 
     Ok(label)
+}
+
+fn floating_app_url(node_id: &str, parent: &str) -> String {
+    format!(
+        "floating.html#nodeId={}&parent={}",
+        url_encode(node_id),
+        url_encode(parent)
+    )
+}
+
+fn floating_init_script(node_id: &str, parent: &str) -> Result<String, String> {
+    let payload = serde_json::json!({
+        "nodeId": node_id,
+        "parent": parent,
+    });
+    Ok(format!("window.__PRAGMA_FLOATING__ = {payload};"))
 }
 
 /// Closes an external floating window by label.
@@ -226,6 +244,22 @@ mod tests {
     #[test]
     fn url_encode_escapes_spaces_and_backslashes() {
         assert_eq!(url_encode("C:\\my proj"), "C%3A%5Cmy%20proj");
+    }
+
+    #[test]
+    fn floating_app_url_uses_hash_not_query() {
+        let url = floating_app_url("floating-abc", "main");
+        assert!(url.starts_with("floating.html#"));
+        assert!(!url.contains('?'));
+        assert!(url.contains("nodeId=floating-abc"));
+        assert!(url.contains("parent=main"));
+    }
+
+    #[test]
+    fn floating_init_script_json_escapes_quotes() {
+        let script = floating_init_script("id\"x", "main").unwrap();
+        let payload = serde_json::json!({ "nodeId": "id\"x", "parent": "main" }).to_string();
+        assert_eq!(script, format!("window.__PRAGMA_FLOATING__ = {payload};"));
     }
 
     #[test]

@@ -1,5 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "sonner";
 import { useLayoutStore } from "@/shell/layout";
 import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
@@ -28,6 +30,46 @@ function clampFloating(node: FloatingNode): FloatingNode {
   };
 }
 
+async function clientToScreen(x: number, y: number): Promise<{ x: number; y: number }> {
+  try {
+    const win = getCurrentWindow();
+    const pos = await win.outerPosition();
+    const factor = await win.scaleFactor();
+    return { x: pos.x / factor + x, y: pos.y / factor + y };
+  } catch {
+    return { x, y };
+  }
+}
+
+async function waitForExternalReady(
+  nodeId: string,
+  timeoutMs: number,
+): Promise<() => Promise<boolean>> {
+  let settled = false;
+  let resolveWait: (ok: boolean) => void = () => {};
+  let unlisten: (() => void) | undefined;
+  let timer = 0;
+  const wait = new Promise<boolean>((resolve) => {
+    resolveWait = resolve;
+  });
+
+  const finish = (ok: boolean) => {
+    if (settled) return;
+    settled = true;
+    window.clearTimeout(timer);
+    unlisten?.();
+    resolveWait(ok);
+  };
+
+  unlisten = await listen<{ nodeId: string }>("pragma:external:ready", (event) => {
+    if (event.payload.nodeId !== nodeId) return;
+    finish(true);
+  });
+  timer = window.setTimeout(() => finish(false), timeoutMs);
+
+  return () => wait;
+}
+
 export function FloatingHost() {
   const floating = useLayoutStore((s) => s.floating);
   const dockFloatingPanel = useLayoutStore((s) => s.dockFloatingPanel);
@@ -52,25 +94,29 @@ export function FloatingHost() {
   const handleExternalize = useCallback(
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
-      const label = node.id;
+      const screen = await clientToScreen(node.x, node.y);
       const bounds = {
-        x: Math.round(node.x),
-        y: Math.round(node.y),
+        x: Math.round(screen.x),
+        y: Math.round(screen.y),
         width: Math.round(node.width),
         height: Math.round(node.height),
       };
       try {
-        // Close any stale external window for this node before creating a new one.
-        await invoke("close_external_window", { label }).catch(() => {});
+        await invoke("close_external_window", { label: node.id }).catch(() => {});
+        const awaitReady = await waitForExternalReady(node.id, 4000);
         const newLabel = await invoke<string>("create_external_window", {
           request: { nodeId: node.id, title, bounds },
         });
+        const ok = await awaitReady();
+        if (!ok) {
+          await invoke("close_external_window", { label: newLabel }).catch(() => {});
+          toast.error("Could not open a separate window. The panel stays in Pragma.");
+          return;
+        }
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         toast.error(`External window failed: ${message}`);
-        // eslint-disable-next-line no-alert
-        alert(`External window failed: ${message}`);
       }
     },
     [moveFloatingToExternal],
