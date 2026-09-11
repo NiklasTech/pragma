@@ -90,8 +90,11 @@ pub fn create_external_window(
 }
 
 fn floating_app_url(node_id: &str, parent: &str) -> String {
+    // Same entry as the main/workspace windows. A second HTML file plus a
+    // hash fragment 404s as a blank WebView2 on Windows; query params on
+    // index.html already work for workspace windows.
     format!(
-        "floating.html#nodeId={}&parent={}",
+        "index.html?nodeId={}&parent={}",
         url_encode(node_id),
         url_encode(parent)
     )
@@ -251,10 +254,10 @@ mod tests {
     }
 
     #[test]
-    fn floating_app_url_uses_hash_not_query() {
+    fn floating_app_url_uses_index_html_query() {
         let url = floating_app_url("floating-abc", "main");
-        assert!(url.starts_with("floating.html#"));
-        assert!(!url.contains('?'));
+        assert!(url.starts_with("index.html?"));
+        assert!(!url.contains('#'));
         assert!(url.contains("nodeId=floating-abc"));
         assert!(url.contains("parent=main"));
     }
