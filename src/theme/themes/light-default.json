@@ -21,17 +21,17 @@
     "colors": {
       "background": {
         "root": "#ffffff",
-        "surface": "#f6f7f9",
-        "elevated": "#edeef2",
+        "surface": "#f4f6f9",
+        "elevated": "#e9edf3",
         "input": "#ffffff",
-        "hover": "rgba(15, 23, 42, 0.04)",
+        "hover": "rgba(15, 23, 42, 0.07)",
         "active": "rgba(79, 94, 208, 0.10)",
         "overlay": "rgba(15, 23, 42, 0.35)"
       },
       "foreground": {
         "default": "#1c1f26",
         "muted": "#5a6270",
-        "subtle": "#98a1af",
+        "subtle": "#828b99",
         "inverse": "#ffffff"
       },
       "accent": {
@@ -40,8 +40,8 @@
         "glow": "rgba(79, 94, 208, 0.25)"
       },
       "border": {
-        "default": "rgba(15, 23, 42, 0.09)",
-        "subtle": "rgba(15, 23, 42, 0.05)",
+        "default": "rgba(15, 23, 42, 0.14)",
+        "subtle": "rgba(15, 23, 42, 0.08)",
         "focus": "rgba(79, 94, 208, 0.45)"
       },
       "status": {
@@ -158,22 +158,22 @@
 
     "typography": {
       "ui": {
-        "2xs": "9px",
-        "xs": "11px",
-        "sm": "12px",
-        "base": "13px",
-        "md": "14px",
-        "lg": "16px"
+        "2xs": "11px",
+        "xs": "12px",
+        "sm": "13px",
+        "base": "14px",
+        "md": "15px",
+        "lg": "18px"
       },
       "editor": "14px",
       "lineHeight": {
         "ui": {
-          "2xs": "12px",
-          "xs": "14px",
-          "sm": "16px",
-          "base": "20px",
-          "md": "22px",
-          "lg": "24px"
+          "2xs": "14px",
+          "xs": "16px",
+          "sm": "18px",
+          "base": "21px",
+          "md": "23px",
+          "lg": "26px"
         },
         "editor": "22px"
       }

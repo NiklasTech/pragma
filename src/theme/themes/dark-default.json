@@ -20,19 +20,19 @@
   "tokens": {
     "colors": {
       "background": {
-        "root": "#0b0d10",
-        "surface": "#101318",
-        "elevated": "#161a21",
-        "input": "#1a1f28",
-        "hover": "rgba(255, 255, 255, 0.04)",
+        "root": "#0c0e12",
+        "surface": "#151a22",
+        "elevated": "#1d2430",
+        "input": "#232b38",
+        "hover": "rgba(255, 255, 255, 0.08)",
         "active": "rgba(110, 123, 242, 0.12)",
-        "overlay": "rgba(0, 0, 0, 0.60)"
+        "overlay": "rgba(0, 0, 0, 0.72)"
       },
       "foreground": {
         "default": "#e8eaee",
         "muted": "#9ba3af",
-        "subtle": "#646c7a",
-        "inverse": "#0b0d10"
+        "subtle": "#8b93a0",
+        "inverse": "#0c0e12"
       },
       "accent": {
         "default": "#6e7bf2",
@@ -40,8 +40,8 @@
         "glow": "rgba(110, 123, 242, 0.30)"
       },
       "border": {
-        "default": "rgba(255, 255, 255, 0.06)",
-        "subtle": "rgba(255, 255, 255, 0.04)",
+        "default": "rgba(255, 255, 255, 0.12)",
+        "subtle": "rgba(255, 255, 255, 0.08)",
         "focus": "rgba(110, 123, 242, 0.50)"
       },
       "status": {
@@ -108,8 +108,7 @@
     },
 
     "terminal": {
-      "background": "#090b0e",
-      "foreground": "{colors.foreground.default}",
+      "background": "#090b0e",      "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
       "cursorAccent": "{colors.accent.default}",
       "selection": "{colors.selection}",
@@ -158,22 +157,22 @@
 
     "typography": {
       "ui": {
-        "2xs": "9px",
-        "xs": "11px",
-        "sm": "12px",
-        "base": "13px",
-        "md": "14px",
-        "lg": "16px"
+        "2xs": "11px",
+        "xs": "12px",
+        "sm": "13px",
+        "base": "14px",
+        "md": "15px",
+        "lg": "18px"
       },
       "editor": "14px",
       "lineHeight": {
         "ui": {
-          "2xs": "12px",
-          "xs": "14px",
-          "sm": "16px",
-          "base": "20px",
-          "md": "22px",
-          "lg": "24px"
+          "2xs": "14px",
+          "xs": "16px",
+          "sm": "18px",
+          "base": "21px",
+          "md": "23px",
+          "lg": "26px"
         },
         "editor": "22px"
       }

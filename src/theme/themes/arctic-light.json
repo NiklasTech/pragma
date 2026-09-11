@@ -24,14 +24,14 @@
         "surface": "#eef3f9",
         "elevated": "#e3ebf5",
         "input": "#ffffff",
-        "hover": "rgba(15, 40, 80, 0.04)",
+        "hover": "rgba(15, 40, 80, 0.10)",
         "active": "rgba(37, 99, 235, 0.10)",
         "overlay": "rgba(15, 40, 80, 0.35)"
       },
       "foreground": {
         "default": "#1a2433",
         "muted": "#51607a",
-        "subtle": "#8e9db3",
+        "subtle": "#758092",
         "inverse": "#ffffff"
       },
       "accent": {
@@ -40,8 +40,8 @@
         "glow": "rgba(37, 99, 235, 0.25)"
       },
       "border": {
-        "default": "rgba(15, 40, 80, 0.10)",
-        "subtle": "rgba(15, 40, 80, 0.05)",
+        "default": "rgba(15, 40, 80, 0.18)",
+        "subtle": "rgba(15, 40, 80, 0.12)",
         "focus": "rgba(37, 99, 235, 0.45)"
       },
       "status": {
