@@ -102,6 +102,28 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "view.switchToAgents" as const,
+    label: "Switch to Agents",
+    category: "view" as const,
+    default: (): ShortcutBinding | null => null,
+  },
+  {
+    id: "view.switchToEditor" as const,
+    label: "Switch to Editor",
+    category: "view" as const,
+    default: (): ShortcutBinding | null => null,
+  },
+  {
+    id: "view.toggleUiMode" as const,
+    label: "Toggle Agents / Editor",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyE",
+    }),
+  },
+  {
     id: "search.findInFiles" as const,
     label: "Find in Files",
     category: "search" as const,

@@ -21,7 +21,9 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout";
+import { ModeSwitch } from "@/shell/chrome/ModeSwitch";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
+import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { RunConfigWidget } from "@/features/run-config/components";
 import {
   DropdownMenu,
@@ -48,6 +50,7 @@ export function Titlebar() {
   const removeFavoriteFolder = useSettingsStore((s) => s.removeFavoriteFolder);
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const isMac = getIsMac();
+  const workspaceName = getWorkspaceName(rootPath);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const canSave = activeTab?.kind === "file" ? activeTab.isModified : false;
@@ -106,11 +109,11 @@ export function Titlebar() {
             render={
               <button
                 type="button"
-                className="flex h-7 items-center justify-center gap-0.5 rounded-md px-2 text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-                title="Open folder or file"
+                className="flex h-7 max-w-[200px] min-w-0 items-center gap-1 rounded-md px-2 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                title={rootPath ?? "Open folder or file"}
               >
-                <FolderOpen size={15} />
-                <CaretDown size={10} className="opacity-60" />
+                <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
+                <CaretDown size={10} className="shrink-0 opacity-60" />
               </button>
             }
           />
@@ -200,7 +203,9 @@ export function Titlebar() {
         <RunConfigWidget />
       </div>
 
-      <div className="flex-1" data-tauri-drag-region />
+      <div className="flex flex-1 items-center justify-center" data-tauri-drag-region>
+        <ModeSwitch />
+      </div>
 
       <div className="flex items-center gap-1 px-2">
         <button
