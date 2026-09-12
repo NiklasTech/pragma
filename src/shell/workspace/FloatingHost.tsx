@@ -6,7 +6,6 @@ import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { FloatingNode, LayoutNode } from "@/shell/layout/tree/types";
-import { logFloatingDebug } from "@/shared/lib/floatingDebug";
 import { openFloatingWebview } from "@/shared/lib/openFloatingWebview";
 
 function floatingTitle(child: LayoutNode): string {
@@ -84,7 +83,6 @@ export function FloatingHost() {
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
       try {
-        logFloatingDebug(`externalize start nodeId=${node.id} title=${title}`);
         const awaitReady = await waitForExternalReady(node.id, 8000);
         const newLabel = await openFloatingWebview({
           nodeId: node.id,
@@ -92,9 +90,7 @@ export function FloatingHost() {
           width: node.width,
           height: node.height,
         });
-        logFloatingDebug(`externalize created label=${newLabel}`);
         const ok = await awaitReady();
-        logFloatingDebug(`externalize ready=${ok} label=${newLabel}`);
         if (!ok) {
           toast.error("Could not load Settings in the new window. The panel stays in Pragma.");
           return;
@@ -102,7 +98,6 @@ export function FloatingHost() {
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        logFloatingDebug(`externalize error=${message}`);
         toast.error(`External window failed: ${message}`);
       }
     },

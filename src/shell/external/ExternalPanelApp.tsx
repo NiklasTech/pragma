@@ -10,7 +10,6 @@ import { getFloatingContext } from "@/shared/lib/windowScope";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { LayoutNode } from "@/shell/layout/tree/types";
-import { logFloatingDebug } from "@/shared/lib/floatingDebug";
 import { ExternalWindowTitlebar } from "./ExternalWindowTitlebar";
 
 const useNativeWindowChrome =
@@ -37,18 +36,13 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
   useGlobalShortcuts(actions);
 
   useEffect(() => {
-    logFloatingDebug(
-      `ExternalPanelApp mount nodeId=${nodeId} hasNode=${Boolean(node)} nativeChrome=${useNativeWindowChrome}`,
-    );
     const win = getCurrentWindow();
     const parent = getFloatingContext().parent;
-    logFloatingDebug(`ExternalPanelApp windowLabel=${win.label} parent=${parent}`);
     // Announce readiness only after the store sync listeners are registered,
     // otherwise the parent's snapshot can be emitted before we listen for it.
-    void whenCrossWindowSyncReady().then(() => {
-      logFloatingDebug(`emitting ready label=${win.label} nodeId=${nodeId} parent=${parent}`);
-      return emit("pragma:external:ready", { label: win.label, nodeId, parent });
-    });
+    void whenCrossWindowSyncReady().then(() =>
+      emit("pragma:external:ready", { label: win.label, nodeId, parent }),
+    );
 
     const setupCloseListener = async () => {
       return win.onCloseRequested(async () => {

@@ -1,63 +1,8 @@
 use std::collections::HashMap;
-use std::io::Write;
-use std::path::PathBuf;
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Deserialize;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
-
-fn thread_debug() -> String {
-    let current = std::thread::current();
-    format!(
-        "thread_id={:?} thread_name={}",
-        current.id(),
-        current.name().unwrap_or("unnamed")
-    )
-}
-
-fn floating_debug_paths() -> Vec<PathBuf> {
-    let mut paths = vec![std::env::temp_dir().join("pragma-floating-debug.log")];
-    if let Ok(cwd) = std::env::current_dir() {
-        paths.push(cwd.join("pragma-floating-debug.log"));
-        paths.push(cwd.join("..").join("pragma-floating-debug.log"));
-    }
-    paths
-}
-
-fn write_floating_debug(message: &str) {
-    let ts = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or(0);
-    let line = format!("{ts} {message}\n");
-    eprintln!("[pragma-floating] {message}");
-    for path in floating_debug_paths() {
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&path)
-        {
-            let _ = file.write_all(line.as_bytes());
-        }
-    }
-}
-
-fn clear_floating_debug() {
-    for path in floating_debug_paths() {
-        let _ = std::fs::write(&path, "");
-    }
-}
-
-/// Appends a line to the floating-window debug log. Returns the temp log path.
-#[tauri::command]
-pub fn floating_debug_log(message: String) -> Result<String, String> {
-    write_floating_debug(&format!("[js] {message}"));
-    Ok(std::env::temp_dir()
-        .join("pragma-floating-debug.log")
-        .display()
-        .to_string())
-}
 
 const LABEL_PREFIX: &str = "floating-";
 
@@ -93,9 +38,6 @@ fn build_label(node_id: &str) -> String {
 }
 
 /// Creates a new external floating window for the given layout node.
-///
-/// WebView2 on Windows paints a blank white surface if the webview is created
-/// off the UI thread (Tauri commands do not run on the main thread).
 #[tauri::command]
 pub fn create_external_window(
     app: AppHandle,
@@ -112,80 +54,33 @@ pub fn create_external_window(
         return Err(msg);
     }
 
-    clear_floating_debug();
-    write_floating_debug(&format!(
-        "[rust] create_external_window start {} node_id={} parent={} bounds={:?} {}",
-        thread_debug(),
-        request.node_id,
-        window.label(),
-        request.bounds,
-        thread_debug()
-    ));
-
     let label = build_label(&request.node_id);
     let parent = window.label().to_string();
     let url = floating_app_url(&request.node_id, &parent);
     let init_script = floating_init_script(&request.node_id, &parent)?;
-    write_floating_debug(&format!(
-        "[rust] label={label} url={url} init_script_len={}",
-        init_script.len()
-    ));
-    let title = request.title;
-    let bounds = request.bounds;
 
-    // Commands already run on the UI thread in this app. Queueing another
-    // main-thread callback and blocking on recv() deadlocks WebView2: the
-    // previous log stopped inside builder.build() and the new page never booted.
-    write_floating_debug("[rust] building webview on current thread");
-    let result = create_external_window_on_main(&app, &label, &url, &init_script, &title, &bounds);
-    write_floating_debug(&format!("[rust] create_external_window done {result:?}"));
-    result
-}
-
-fn create_external_window_on_main(
-    app: &AppHandle,
-    label: &str,
-    url: &str,
-    init_script: &str,
-    title: &str,
-    bounds: &WindowBounds,
-) -> Result<String, String> {
-    write_floating_debug("[rust] before get_webview_window");
-    if app.get_webview_window(label).is_some() {
+    if app.get_webview_window(&label).is_some() {
         return Err(format!("External window {label} already exists"));
     }
 
-    write_floating_debug("[rust] before WebviewWindowBuilder::new");
-    let builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
-        .title(title)
+    let builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+        .title(request.title)
         .resizable(true)
         .visible(true)
-        .inner_size(bounds.width as f64, bounds.height as f64)
-        .position(80.0, 80.0)
-        .initialization_script(init_script);
-    write_floating_debug("[rust] before builder.build");
+        .inner_size(request.bounds.width as f64, request.bounds.height as f64)
+        .position(request.bounds.x as f64, request.bounds.y as f64)
+        .initialization_script(&init_script);
 
     #[cfg(target_os = "windows")]
     let builder = builder.decorations(true);
     #[cfg(not(target_os = "windows"))]
     let builder = builder.decorations(false);
 
-    let built = builder
+    builder
         .build()
         .map_err(|err| format!("Failed to create external window: {err}"))?;
 
-    match built.url() {
-        Ok(loaded) => write_floating_debug(&format!("[rust] webview.url={loaded}")),
-        Err(err) => write_floating_debug(&format!("[rust] webview.url error={err}")),
-    }
-
-    let paint = r#"(function(){function paint(){try{document.documentElement.style.backgroundColor='#e100ff';if(document.body){document.body.style.backgroundColor='#e100ff';if(!document.getElementById('pragma-float-debug')){var d=document.createElement('div');d.id='pragma-float-debug';d.textContent='FLOATING EVAL';d.style.cssText='position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#e100ff;color:#fff;font:20px sans-serif;';document.body.appendChild(d);}}}catch(e){}}paint();setTimeout(paint,100);setTimeout(paint,500);setTimeout(paint,1500);})();"#;
-    match built.eval(paint) {
-        Ok(()) => write_floating_debug("[rust] eval paint ok"),
-        Err(err) => write_floating_debug(&format!("[rust] eval paint error={err}")),
-    }
-
-    Ok(label.to_string())
+    Ok(label)
 }
 
 fn floating_app_url(node_id: &str, parent: &str) -> String {

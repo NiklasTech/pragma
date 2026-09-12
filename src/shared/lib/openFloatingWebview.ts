@@ -1,6 +1,5 @@
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { logFloatingDebug } from "./floatingDebug";
 
 export async function openFloatingWebview(options: {
   nodeId: string;
@@ -19,14 +18,9 @@ export async function openFloatingWebview(options: {
   const x = Math.round(pos.x / factor + 48);
   const y = Math.round(pos.y / factor + 48);
 
-  logFloatingDebug(
-    `openFloatingWebview label=${label} url=${url} x=${x} y=${y} parent=${parent.label}`,
-  );
-
   try {
     const existing = await WebviewWindow.getByLabel(label);
     if (existing) {
-      logFloatingDebug(`closing existing ${label}`);
       await existing.close();
     }
   } catch {
@@ -52,12 +46,10 @@ export async function openFloatingWebview(options: {
     }, 8000);
     void webview.once("tauri://created", () => {
       window.clearTimeout(timer);
-      logFloatingDebug(`tauri://created ${label}`);
       resolve();
     });
     void webview.once("tauri://error", (event) => {
       window.clearTimeout(timer);
-      logFloatingDebug(`tauri://error ${JSON.stringify(event)}`);
       reject(new Error(JSON.stringify(event)));
     });
   });
