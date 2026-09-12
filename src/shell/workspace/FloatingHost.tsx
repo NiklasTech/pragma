@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useCallback, useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
 import { useLayoutStore } from "@/shell/layout";
 import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { FloatingNode, LayoutNode } from "@/shell/layout/tree/types";
+import { openFloatingWebview } from "@/shared/lib/openFloatingWebview";
 
 function floatingTitle(child: LayoutNode): string {
   if (child.type === "panel") return panelLabel(child.kind);
@@ -28,8 +29,33 @@ function clampFloating(node: FloatingNode): FloatingNode {
   };
 }
 
-function isWindowsPlatform(): boolean {
-  return /Windows/i.test(navigator.userAgent);
+async function waitForExternalReady(
+  nodeId: string,
+  timeoutMs: number,
+): Promise<() => Promise<boolean>> {
+  let settled = false;
+  let resolveWait: (ok: boolean) => void = () => {};
+  let unlisten: (() => void) | undefined;
+  let timer = 0;
+  const wait = new Promise<boolean>((resolve) => {
+    resolveWait = resolve;
+  });
+
+  const finish = (ok: boolean) => {
+    if (settled) return;
+    settled = true;
+    window.clearTimeout(timer);
+    unlisten?.();
+    resolveWait(ok);
+  };
+
+  unlisten = await listen<{ nodeId: string }>("pragma:external:ready", (event) => {
+    if (event.payload.nodeId !== nodeId) return;
+    finish(true);
+  });
+  timer = window.setTimeout(() => finish(false), timeoutMs);
+
+  return () => wait;
 }
 
 export function FloatingHost() {
@@ -37,7 +63,6 @@ export function FloatingHost() {
   const dockFloatingPanel = useLayoutStore((s) => s.dockFloatingPanel);
   const moveFloatingToExternal = useLayoutStore((s) => s.moveFloatingToExternal);
   const visible = floating.filter((node) => !node.external);
-  const [isWindows] = useState(() => isWindowsPlatform());
 
   // Clamp floating panels to the viewport on mount and resize so a persisted
   // off-screen position cannot trap the panel or block the titlebar.
@@ -57,25 +82,23 @@ export function FloatingHost() {
   const handleExternalize = useCallback(
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
-      const label = node.id;
-      const bounds = {
-        x: Math.round(node.x),
-        y: Math.round(node.y),
-        width: Math.round(node.width),
-        height: Math.round(node.height),
-      };
       try {
-        // Close any stale external window for this node before creating a new one.
-        await invoke("close_external_window", { label }).catch(() => {});
-        const newLabel = await invoke<string>("create_external_window", {
-          request: { nodeId: node.id, title, bounds },
+        const awaitReady = await waitForExternalReady(node.id, 8000);
+        const newLabel = await openFloatingWebview({
+          nodeId: node.id,
+          title,
+          width: node.width,
+          height: node.height,
         });
+        const ok = await awaitReady();
+        if (!ok) {
+          toast.error("Could not load Settings in the new window. The panel stays in Pragma.");
+          return;
+        }
         moveFloatingToExternal(node.id, newLabel);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         toast.error(`External window failed: ${message}`);
-        // eslint-disable-next-line no-alert
-        alert(`External window failed: ${message}`);
       }
     },
     [moveFloatingToExternal],
@@ -108,7 +131,7 @@ export function FloatingHost() {
             useLayoutStore.setState({ floating: next });
           }}
           onClose={() => dockFloatingPanel(node.id)}
-          onExternalize={isWindows ? undefined : () => void handleExternalize(node)}
+          onExternalize={() => void handleExternalize(node)}
         >
           <div className="h-full w-full">
             <LayoutTreeRenderer node={node.child} />

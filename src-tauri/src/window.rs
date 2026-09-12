@@ -22,7 +22,6 @@ pub struct CreateExternalWindowRequest {
     pub bounds: WindowBounds,
 }
 
-#[cfg(not(target_os = "windows"))]
 fn is_valid_node_id(node_id: &str) -> bool {
     !node_id.is_empty()
         && node_id
@@ -30,7 +29,6 @@ fn is_valid_node_id(node_id: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':' || c == '/')
 }
 
-#[cfg(not(target_os = "windows"))]
 fn build_label(node_id: &str) -> String {
     if node_id.starts_with(LABEL_PREFIX) {
         node_id.to_string()
@@ -40,17 +38,6 @@ fn build_label(node_id: &str) -> String {
 }
 
 /// Creates a new external floating window for the given layout node.
-#[cfg(target_os = "windows")]
-#[tauri::command]
-pub fn create_external_window(
-    _app: AppHandle,
-    _request: CreateExternalWindowRequest,
-) -> Result<String, String> {
-    Err("External floating windows are temporarily disabled on Windows.".to_string())
-}
-
-/// Creates a new external floating window for the given layout node.
-#[cfg(not(target_os = "windows"))]
 #[tauri::command]
 pub fn create_external_window(
     app: AppHandle,
@@ -68,32 +55,51 @@ pub fn create_external_window(
     }
 
     let label = build_label(&request.node_id);
+    let parent = window.label().to_string();
+    let url = floating_app_url(&request.node_id, &parent);
+    let init_script = floating_init_script(&request.node_id, &parent)?;
 
     if app.get_webview_window(&label).is_some() {
-        let msg = format!("External window {label} already exists");
-        return Err(msg);
+        return Err(format!("External window {label} already exists"));
     }
 
-    let url = format!(
-        "floating.html?nodeId={}&parent={}",
-        request.node_id,
-        url_encode(window.label())
-    );
-
-    let _window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+    let builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
         .title(request.title)
-        .decorations(false)
         .resizable(true)
         .visible(true)
         .inner_size(request.bounds.width as f64, request.bounds.height as f64)
         .position(request.bounds.x as f64, request.bounds.y as f64)
+        .initialization_script(&init_script);
+
+    #[cfg(target_os = "windows")]
+    let builder = builder.decorations(true);
+    #[cfg(not(target_os = "windows"))]
+    let builder = builder.decorations(false);
+
+    builder
         .build()
-        .map_err(|err| {
-            let msg = format!("Failed to create external window: {err}");
-            msg
-        })?;
+        .map_err(|err| format!("Failed to create external window: {err}"))?;
 
     Ok(label)
+}
+
+fn floating_app_url(node_id: &str, parent: &str) -> String {
+    // Same entry as the main/workspace windows. A second HTML file plus a
+    // hash fragment 404s as a blank WebView2 on Windows; query params on
+    // index.html already work for workspace windows.
+    format!(
+        "index.html?nodeId={}&parent={}",
+        url_encode(node_id),
+        url_encode(parent)
+    )
+}
+
+fn floating_init_script(node_id: &str, parent: &str) -> Result<String, String> {
+    let payload = serde_json::json!({
+        "nodeId": node_id,
+        "parent": parent,
+    });
+    Ok(format!("window.__PRAGMA_FLOATING__ = {payload};"))
 }
 
 /// Closes an external floating window by label.
@@ -239,6 +245,22 @@ mod tests {
     #[test]
     fn url_encode_escapes_spaces_and_backslashes() {
         assert_eq!(url_encode("C:\\my proj"), "C%3A%5Cmy%20proj");
+    }
+
+    #[test]
+    fn floating_app_url_uses_index_html_query() {
+        let url = floating_app_url("floating-abc", "main");
+        assert!(url.starts_with("index.html?"));
+        assert!(!url.contains('#'));
+        assert!(url.contains("nodeId=floating-abc"));
+        assert!(url.contains("parent=main"));
+    }
+
+    #[test]
+    fn floating_init_script_json_escapes_quotes() {
+        let script = floating_init_script("id\"x", "main").unwrap();
+        let payload = serde_json::json!({ "nodeId": "id\"x", "parent": "main" }).to_string();
+        assert_eq!(script, format!("window.__PRAGMA_FLOATING__ = {payload};"));
     }
 
     #[test]

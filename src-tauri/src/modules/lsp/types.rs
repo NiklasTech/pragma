@@ -25,6 +25,10 @@ pub struct LspStatusEvent {
     pub status: LspServerStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+    /// True when the failure is a missing / not installed server rather than a
+    /// crash, so the UI can stay quiet for optional language servers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]

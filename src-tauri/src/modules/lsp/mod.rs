@@ -12,6 +12,40 @@ pub use types::{
     LspWorkspaceSymbolItem, ProjectLanguage,
 };
 
+/// Loose files may have no resolvable project root. Language servers are
+/// optional, so fall back to the file's directory instead of failing the call.
+fn project_root_for(language: &str, file_path: &str) -> String {
+    resolve_project_root(language, file_path).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn project_root_for_skips_unresolvable_paths_instead_of_erroring() {
+        assert_eq!(project_root_for("html", ""), "");
+    }
+
+    #[test]
+    fn project_root_for_resolves_a_real_file() {
+        let temp = std::env::temp_dir().join("pragma-lsp-project-root-for-test");
+        let _ = std::fs::remove_dir_all(&temp);
+        std::fs::create_dir_all(&temp).unwrap();
+        // Marker stops the upward search from leaving the test directory.
+        std::fs::write(temp.join("index.html"), "").unwrap();
+        let file = temp.join("page.html");
+        std::fs::write(&file, "").unwrap();
+
+        assert_eq!(
+            project_root_for("html", file.to_str().unwrap()),
+            temp.to_str().unwrap()
+        );
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+}
+
 #[tauri::command]
 pub async fn lsp_did_open(
     state: tauri::State<'_, LspManager>,
@@ -25,8 +59,7 @@ pub async fn lsp_did_open(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .did_open(&language, &project_root, &file_path, &content)
         .await
@@ -44,8 +77,7 @@ pub async fn lsp_did_change(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     let incremental = match (range, change_text) {
         (Some(range), Some(text)) => Some((range, text)),
         _ => None,
@@ -64,8 +96,7 @@ pub async fn lsp_did_save(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state.did_save(&language, &project_root, &file_path).await
 }
 
@@ -106,8 +137,7 @@ pub async fn lsp_completion(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .completion(&language, &project_root, &file_path, line, character)
         .await
@@ -126,8 +156,7 @@ pub async fn lsp_completion_resolve(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .resolve_completion(&language, &project_root, item)
         .await
@@ -147,8 +176,7 @@ pub async fn lsp_definition(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .definition(&language, &project_root, &file_path, line, character)
         .await
@@ -168,8 +196,7 @@ pub async fn lsp_hover(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .hover(&language, &project_root, &file_path, line, character)
         .await
@@ -189,8 +216,7 @@ pub async fn lsp_references(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .references(&language, &project_root, &file_path, line, character)
         .await
@@ -210,8 +236,7 @@ pub async fn lsp_format_document(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .format_document(
             &language,
@@ -241,8 +266,7 @@ pub async fn lsp_rename(
     if new_name.is_empty() {
         return Err("new_name is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .rename(
             &language,
@@ -269,8 +293,7 @@ pub async fn lsp_signature_help(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .signature_help(&language, &project_root, &file_path, line, character)
         .await
@@ -290,8 +313,7 @@ pub async fn lsp_code_action(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .code_action(&language, &project_root, &file_path, range, diagnostics)
         .await
@@ -309,8 +331,7 @@ pub async fn lsp_document_symbol(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .document_symbol(&language, &project_root, &file_path)
         .await
@@ -326,8 +347,7 @@ pub async fn lsp_workspace_symbol(
     if language.is_empty() {
         return Err("language is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state
         .workspace_symbol(&language, &project_root, &query)
         .await
@@ -345,8 +365,7 @@ pub async fn lsp_did_close(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state.did_close(&language, &project_root, &file_path).await
 }
 
@@ -362,7 +381,6 @@ pub async fn lsp_server_capabilities(
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    let project_root = resolve_project_root(&language, &file_path)
-        .ok_or_else(|| format!("Could not resolve project root for {file_path}"))?;
+    let project_root = project_root_for(&language, &file_path);
     state.feature_flags(&language, &project_root).await
 }

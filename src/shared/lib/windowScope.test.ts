@@ -5,7 +5,7 @@ vi.mock("@tauri-apps/api/window", () => ({
 }));
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { getWindowScope, isWorkspaceWindow } from "./windowScope";
+import { getFloatingContext, getWindowScope, isWorkspaceWindow } from "./windowScope";
 
 const mockedGetCurrentWindow = vi.mocked(getCurrentWindow);
 
@@ -33,13 +33,27 @@ describe("getWindowScope", () => {
 
   it("returns the parent query param for floating windows", () => {
     mockLabel("floating-editor-1");
-    vi.stubGlobal("location", { search: "?nodeId=x&parent=workspace-2" });
+    vi.stubGlobal("location", { search: "?nodeId=x&parent=workspace-2", hash: "" });
     expect(getWindowScope()).toBe("workspace-2");
+  });
+
+  it("reads parent from the hash when search is empty", () => {
+    mockLabel("floating-editor-1");
+    vi.stubGlobal("location", { search: "", hash: "#nodeId=x&parent=workspace-2" });
+    expect(getWindowScope()).toBe("workspace-2");
+  });
+
+  it("prefers the injected floating context over the URL", () => {
+    mockLabel("floating-editor-1");
+    vi.stubGlobal("location", { search: "?parent=from-search", hash: "" });
+    vi.stubGlobal("__PRAGMA_FLOATING__", { nodeId: "n1", parent: "workspace-9" });
+    expect(getWindowScope()).toBe("workspace-9");
+    expect(getFloatingContext()).toEqual({ nodeId: "n1", parent: "workspace-9" });
   });
 
   it("falls back to main for floating windows without parent param", () => {
     mockLabel("floating-editor-1");
-    vi.stubGlobal("location", { search: "?nodeId=x" });
+    vi.stubGlobal("location", { search: "?nodeId=x", hash: "" });
     expect(getWindowScope()).toBe("main");
   });
 

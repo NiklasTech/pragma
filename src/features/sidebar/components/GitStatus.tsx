@@ -9,7 +9,8 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { parseDiffToSides } from "@/shared/lib/diff";
-import { useEditorStore } from "@/shared/stores/editor";
+import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
+import { openGitDiffInSplit } from "../lib/gitDiffSplit";
 import { Spinner, Trash, GitBranch as GitBranchIcon, Warning } from "@phosphor-icons/react";
 import {
   Dialog,
@@ -81,7 +82,7 @@ export function GitStatus() {
     remotes,
   } = useGitStore();
 
-  const { openDiff } = useEditorStore();
+  const editorPanelId = useEditorPanelId();
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -156,7 +157,7 @@ export function GitStatus() {
 
       const { original, modified } = parseDiffToSides(content);
 
-      openDiff({
+      openGitDiffInSplit(editorPanelId, {
         id: `diff:${entry.path}:${staged ? "staged" : "unstaged"}`,
         path: entry.path,
         original,

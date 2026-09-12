@@ -13,6 +13,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync";
 import { useLayoutStore } from "@/shell/layout";
 import { findPanelByKind } from "@/shell/layout/tree/operations";
+import { resolvePanelActiveSessionId } from "@/shared/lib/terminal-panels";
 import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { Button } from "@/shared/components/ui/button";
@@ -27,11 +28,14 @@ interface TerminalProps {
 
 export function Terminal({ panelId }: TerminalProps) {
   useTerminalSettingsSync();
-  const { sessions, activeByPanel, defaultShell, shellResolved, reloadSession, addSession } =
-    useTerminalStore();
+  const sessions = useTerminalStore((s) => s.sessions);
+  const activeByPanel = useTerminalStore((s) => s.activeByPanel);
+  const defaultShell = useTerminalStore((s) => s.defaultShell);
+  const shellResolved = useTerminalStore((s) => s.shellResolved);
+  const reloadSession = useTerminalStore((s) => s.reloadSession);
+  const addSession = useTerminalStore((s) => s.addSession);
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const prevDefaultShellRef = useRef(defaultShell);
-  const initialSessionGuardRef = useRef(false);
 
   // Orphan sessions without a panelId are shown in the first terminal panel.
   const layoutRoot = useLayoutStore((s) => s.root);
@@ -39,26 +43,24 @@ export function Terminal({ panelId }: TerminalProps) {
   const panelSessions = sessions.filter(
     (s) => s.panelId === panelId || (s.panelId == null && panelId === firstTerminalPanelId),
   );
-  const activeSessionId =
-    (panelId ? activeByPanel[panelId] : undefined) ??
-    panelSessions[panelSessions.length - 1]?.id ??
-    null;
+  const activeSessionId = resolvePanelActiveSessionId(
+    panelSessions.map((session) => session.id),
+    panelId ? activeByPanel[panelId] : undefined,
+  );
 
   useEffect(() => {
-    if (initialSessionGuardRef.current) return;
-    if (panelSessions.length === 0 && defaultShell.length > 0) {
-      initialSessionGuardRef.current = true;
-      useTerminalStore.getState().ensureInitialSession({
-        id: crypto.randomUUID(),
-        name: "Terminal",
-        type: "shell",
-        shell: defaultShell,
-        cwd: rootPath ?? undefined,
-        panelId,
-        isActive: true,
-      });
-    }
-  }, [panelSessions.length, defaultShell, rootPath, panelId]);
+    if (panelSessions.length > 0 || !shellResolved) return;
+
+    useTerminalStore.getState().ensureInitialSession({
+      id: crypto.randomUUID(),
+      name: "Terminal",
+      type: "shell",
+      shell: defaultShell,
+      cwd: rootPath ?? undefined,
+      panelId,
+      isActive: true,
+    });
+  }, [panelSessions.length, shellResolved, defaultShell, rootPath, panelId]);
 
   useEffect(() => {
     const previous = prevDefaultShellRef.current;
@@ -131,7 +133,6 @@ export function Terminal({ panelId }: TerminalProps) {
             <button
               type="button"
               onClick={handleNewSession}
-              disabled={!defaultShell}
               className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
               title="New Session"
             >
@@ -164,13 +165,7 @@ export function Terminal({ panelId }: TerminalProps) {
             title="No sessions"
             description="Start a new shell session in this panel."
           >
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNewSession}
-              disabled={!defaultShell}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={handleNewSession} className="gap-2">
               <Plus size={14} />
               New Session
             </Button>

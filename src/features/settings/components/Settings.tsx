@@ -45,6 +45,7 @@ import { KeyboardSettings } from "./KeyboardSettings";
 import { AboutSettings } from "./AboutSettings";
 import { ExtensionSettings } from "./ExtensionSettings";
 import { LspSettings } from "./LspSettings";
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { exportSettings, importSettings } from "./settings-io";
 
 type Category =
@@ -179,12 +180,6 @@ const SEARCH_ITEMS: SearchItem[] = [
     category: "agents",
   },
   {
-    id: "ai-terminal-suggestions",
-    label: "AI Terminal Suggestions",
-    keywords: "ai terminal suggestions",
-    category: "agents",
-  },
-  {
     id: "ai-debounce",
     label: "Completion Debounce",
     keywords: "debounce ai completion delay",
@@ -315,150 +310,152 @@ export function Settings() {
   }, []);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex min-h-0 flex-1 gap-0">
-        <div className="flex w-52 shrink-0 flex-col overflow-hidden border-r border-border">
-          <div className="relative shrink-0 p-2">
-            <MagnifyingGlass
-              size={14}
-              className="absolute top-1/2 left-4 -translate-y-1/2 text-fg-subtle"
-            />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search settings..."
-              className="h-7 pl-8 text-ui-sm"
-            />
-
-            {(filteredItems.length > 0 || query.trim()) && (
-              <div className="absolute top-full right-0 left-0 z-50 mx-2 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
-                {filteredItems.length > 0 ? (
-                  filteredItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleSelectCategory(item.category)}
-                      className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
-                    >
-                      <span className="text-ui-sm text-fg-default">{item.label}</span>
-                      <span className="text-ui-xs text-fg-subtle">
-                        {CATEGORIES.find((c) => c.id === item.category)?.label}
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-2 py-1.5 text-ui-xs text-fg-subtle">No settings found.</div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col py-1">
-              {CATEGORIES.map((category) => {
-                const Icon = category.icon;
-                const active = activeCategory === category.id;
-                return (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => handleSelectCategory(category.id)}
-                    className={cn(
-                      "flex items-center gap-2 border-l-2 py-1 pr-2 pl-2 text-left text-ui-sm transition-colors",
-                      active
-                        ? "border-primary bg-bg-hover text-fg-default"
-                        : "border-transparent text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-                    )}
-                  >
-                    <Icon size={16} />
-                    {category.label}
-                  </button>
-                );
-              })}
-            </div>
-          </ScrollArea>
-
-          <div className="flex shrink-0 flex-col border-t border-border p-1">
-            <button
-              type="button"
-              onClick={handleExport}
-              className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            >
-              <DownloadSimple size={16} />
-              Export
-            </button>
-            <button
-              type="button"
-              onClick={handleImport}
-              className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            >
-              <UploadSimple size={16} />
-              Import
-            </button>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
-                  >
-                    <ArrowCounterClockwise size={16} />
-                    Reset Defaults
-                  </button>
-                }
+    <TooltipProvider delay={100}>
+      <div className="flex h-full flex-col">
+        <div className="flex min-h-0 flex-1 gap-0">
+          <div className="flex w-52 shrink-0 flex-col overflow-hidden border-r border-border">
+            <div className="relative shrink-0 p-2">
+              <MagnifyingGlass
+                size={14}
+                className="absolute top-1/2 left-4 -translate-y-1/2 text-fg-subtle"
               />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will restore all settings to their default values. Your custom themes and
-                    API keys will not be affected.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={resetToDefaults}>Reset</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search settings..."
+                className="h-7 pl-8 text-ui-sm"
+              />
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between px-4 py-3">
-            <h2 className="text-ui-base font-medium text-fg-default">{activeLabel}</h2>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-ui-xs text-status-success transition-opacity duration-200",
-                saveIndicator === "saved" ? "opacity-100" : "opacity-0",
-              )}
-              aria-live="polite"
-            >
-              <Check size={12} />
-              Saved
-            </span>
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="px-4 py-3">
-              {activeCategory === "editor" && <EditorSettings />}
-              {activeCategory === "terminal" && <TerminalSettings />}
-              {activeCategory === "agents" && (
-                <div className="flex flex-col gap-8">
-                  <AISettings />
-                  <AgentSettings />
+              {(filteredItems.length > 0 || query.trim()) && (
+                <div className="absolute top-full right-0 left-0 z-50 mx-2 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
+                  {filteredItems.length > 0 ? (
+                    filteredItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectCategory(item.category)}
+                        className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                      >
+                        <span className="text-ui-sm text-fg-default">{item.label}</span>
+                        <span className="text-ui-xs text-fg-subtle">
+                          {CATEGORIES.find((c) => c.id === item.category)?.label}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-ui-xs text-fg-subtle">No settings found.</div>
+                  )}
                 </div>
               )}
-              {activeCategory === "theme" && <ThemeSettings />}
-              {activeCategory === "mcp" && <McpSettings />}
-              {activeCategory === "layout" && <LayoutSettings />}
-              {activeCategory === "keyboard" && <KeyboardSettings />}
-              {activeCategory === "languages" && <LspSettings />}
-              {activeCategory === "extensions" && <ExtensionSettings />}
-              {activeCategory === "about" && <AboutSettings />}
             </div>
-          </ScrollArea>
+
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="flex flex-col py-1">
+                {CATEGORIES.map((category) => {
+                  const Icon = category.icon;
+                  const active = activeCategory === category.id;
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => handleSelectCategory(category.id)}
+                      className={cn(
+                        "flex items-center gap-2 border-l-2 py-1 pr-2 pl-2 text-left text-ui-sm transition-colors",
+                        active
+                          ? "border-primary bg-bg-hover text-fg-default"
+                          : "border-transparent text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+                      )}
+                    >
+                      <Icon size={16} />
+                      {category.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+
+            <div className="flex shrink-0 flex-col border-t border-border p-1">
+              <button
+                type="button"
+                onClick={handleExport}
+                className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              >
+                <DownloadSimple size={16} />
+                Export
+              </button>
+              <button
+                type="button"
+                onClick={handleImport}
+                className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              >
+                <UploadSimple size={16} />
+                Import
+              </button>
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+                    >
+                      <ArrowCounterClockwise size={16} />
+                      Reset Defaults
+                    </button>
+                  }
+                />
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset all settings?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will restore all settings to their default values. Your custom themes and
+                      API keys will not be affected.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={resetToDefaults}>Reset</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center justify-between px-4 py-3">
+              <h2 className="text-ui-base font-medium text-fg-default">{activeLabel}</h2>
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-ui-xs text-status-success transition-opacity duration-200",
+                  saveIndicator === "saved" ? "opacity-100" : "opacity-0",
+                )}
+                aria-live="polite"
+              >
+                <Check size={12} />
+                Saved
+              </span>
+            </div>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="px-4 py-3">
+                {activeCategory === "editor" && <EditorSettings />}
+                {activeCategory === "terminal" && <TerminalSettings />}
+                {activeCategory === "agents" && (
+                  <div className="flex flex-col gap-8">
+                    <AISettings />
+                    <AgentSettings />
+                  </div>
+                )}
+                {activeCategory === "theme" && <ThemeSettings />}
+                {activeCategory === "mcp" && <McpSettings />}
+                {activeCategory === "layout" && <LayoutSettings />}
+                {activeCategory === "keyboard" && <KeyboardSettings />}
+                {activeCategory === "languages" && <LspSettings />}
+                {activeCategory === "extensions" && <ExtensionSettings />}
+                {activeCategory === "about" && <AboutSettings />}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

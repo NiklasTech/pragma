@@ -13,7 +13,7 @@ interface FileReadResult {
 }
 
 export function useOpenFile() {
-  const { openFile } = useEditorStore();
+  const openFile = useEditorStore((s) => s.openFile);
   const editorPanelId = useEditorPanelId();
 
   return useCallback(async () => {

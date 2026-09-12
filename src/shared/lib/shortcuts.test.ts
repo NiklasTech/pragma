@@ -87,52 +87,14 @@ describe("isConflict", () => {
 
 describe("findConflictingAction", () => {
   it("finds a conflicting action id", () => {
-    const shortcuts: ShortcutMap = {
-      "file.open": { ctrl: true, code: "KeyO" },
-      "file.save": { ctrl: true, code: "KeyS" },
-      "file.closeTab": { ctrl: true, code: "KeyW" },
-      "file.goToFile": { ctrl: true, code: "KeyP" },
-      "edit.editWithAI": { ctrl: true, code: "KeyL" },
-      "view.toggleSidebar": { ctrl: true, code: "KeyB" },
-      "view.toggleTerminal": { ctrl: true, shift: true, code: "KeyT" },
-      "view.newTerminalTab": { ctrl: true, code: "KeyT" },
-      "view.openSettings": { ctrl: true, code: "Comma" },
-      "view.switchToAgents": null,
-      "view.switchToEditor": null,
-      "view.toggleUiMode": { ctrl: true, shift: true, code: "KeyE" },
-      "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
-      "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
-      "search.find": { ctrl: true, code: "KeyF" },
-      "search.replace": { ctrl: true, code: "KeyH" },
-      "view.commandPalette": { ctrl: true, shift: true, code: "KeyP" },
-      "chat.send": { key: "Enter" },
-    };
+    const shortcuts: ShortcutMap = getDefaultShortcuts(false);
 
     const conflict = findConflictingAction("file.open", { ctrl: true, code: "KeyS" }, shortcuts);
     expect(conflict).toBe("file.save");
   });
 
   it("ignores the action itself", () => {
-    const shortcuts: ShortcutMap = {
-      "file.open": { ctrl: true, code: "KeyO" },
-      "file.save": { ctrl: true, code: "KeyS" },
-      "file.closeTab": { ctrl: true, code: "KeyW" },
-      "file.goToFile": { ctrl: true, code: "KeyP" },
-      "edit.editWithAI": { ctrl: true, code: "KeyL" },
-      "view.toggleSidebar": { ctrl: true, code: "KeyB" },
-      "view.toggleTerminal": { ctrl: true, shift: true, code: "KeyT" },
-      "view.newTerminalTab": { ctrl: true, code: "KeyT" },
-      "view.openSettings": { ctrl: true, code: "Comma" },
-      "view.switchToAgents": null,
-      "view.switchToEditor": null,
-      "view.toggleUiMode": { ctrl: true, shift: true, code: "KeyE" },
-      "ai.toggle": { ctrl: true, shift: true, code: "KeyA" },
-      "search.findInFiles": { ctrl: true, shift: true, code: "KeyF" },
-      "search.find": { ctrl: true, code: "KeyF" },
-      "search.replace": { ctrl: true, code: "KeyH" },
-      "view.commandPalette": { ctrl: true, shift: true, code: "KeyP" },
-      "chat.send": { key: "Enter" },
-    };
+    const shortcuts: ShortcutMap = getDefaultShortcuts(false);
 
     const conflict = findConflictingAction("file.save", { ctrl: true, code: "KeyS" }, shortcuts);
     expect(conflict).toBeNull();
@@ -172,17 +134,31 @@ describe("getDefaultShortcuts", () => {
     const defaults = getDefaultShortcuts(true);
     expect(defaults["file.open"]).toEqual({ meta: true, code: "KeyO" });
     expect(defaults["ai.toggle"]).toEqual({ meta: true, shift: true, code: "KeyA" });
+    expect(defaults["view.splitEditor"]).toEqual({ meta: true, code: "Backslash" });
   });
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(18);
+    expect(Object.keys(defaults)).toHaveLength(31);
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
     expect(defaults["view.commandPalette"]).toEqual({ ctrl: true, shift: true, code: "KeyP" });
     expect(defaults["view.toggleUiMode"]).toEqual({ ctrl: true, shift: true, code: "KeyE" });
     expect(defaults["file.goToFile"]).toEqual({ ctrl: true, code: "KeyP" });
     expect(defaults["search.find"]).toEqual({ ctrl: true, code: "KeyF" });
     expect(defaults["search.replace"]).toEqual({ ctrl: true, code: "KeyH" });
+    expect(defaults["editor.formatDocument"]).toEqual({ shift: true, alt: true, code: "KeyF" });
+    expect(defaults["tab.next"]).toEqual({ ctrl: true, key: "Tab" });
+    expect(defaults["tab.prev"]).toEqual({ ctrl: true, shift: true, key: "Tab" });
+    expect(defaults["view.splitEditor"]).toEqual({ ctrl: true, code: "Backslash" });
+    expect(defaults["view.toggleProblems"]).toEqual({ ctrl: true, shift: true, code: "KeyM" });
+    expect(defaults["view.togglePreview"]).toEqual({ ctrl: true, shift: true, code: "KeyV" });
+    expect(defaults["debug.currentFile"]).toEqual({ code: "F5" });
+    expect(defaults["debug.stop"]).toEqual({ shift: true, code: "F5" });
+    expect(defaults["debug.stepOver"]).toEqual({ code: "F10" });
+    expect(defaults["debug.stepInto"]).toEqual({ code: "F11" });
+    expect(defaults["debug.stepOut"]).toEqual({ shift: true, code: "F11" });
+    expect(defaults["debug.toggleBreakpoint"]).toEqual({ code: "F9" });
+    expect(defaults["agent.toggle"]).toBeNull();
   });
 });
 

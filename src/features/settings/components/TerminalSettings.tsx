@@ -26,7 +26,7 @@ export function TerminalSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <SettingSection title="Shell">
         <SettingRow
           label="Default Shell"
@@ -43,8 +43,8 @@ export function TerminalSettings() {
       </SettingSection>
 
       <SettingSection title="Appearance">
-        <div className="grid grid-cols-3 gap-3 py-2.5">
-          <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-2 gap-3 py-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Font Size</span>
             <Input
               type="number"
@@ -54,14 +54,7 @@ export function TerminalSettings() {
               onChange={(e) => update({ fontSize: Number(e.target.value) })}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-ui-sm text-fg-default">Font Family</span>
-            <FontSelect
-              value={{ fontId: terminal.fontId, fontFamily: terminal.fontFamily }}
-              onChange={(v) => update({ fontId: v.fontId, fontFamily: v.fontFamily })}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Scrollback</span>
             <Input
               type="number"
@@ -73,6 +66,13 @@ export function TerminalSettings() {
                 const value = Math.min(100000, Math.max(1000, Number(e.target.value)));
                 update({ scrollback: Number.isNaN(value) ? 10000 : value });
               }}
+            />
+          </div>
+          <div className="col-span-full flex min-w-0 flex-col gap-1.5">
+            <span className="text-ui-sm text-fg-default">Font Family</span>
+            <FontSelect
+              value={{ fontId: terminal.fontId, fontFamily: terminal.fontFamily }}
+              onChange={(v) => update({ fontId: v.fontId, fontFamily: v.fontFamily })}
             />
           </div>
         </div>

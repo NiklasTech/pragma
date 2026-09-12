@@ -6,6 +6,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./globals.css";
 import App from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
+import { ThemeProvider } from "./theme";
+import { Toaster } from "@/shared/components/ui/sonner";
+import { ExternalPanelApp } from "@/shell/external/ExternalPanelApp";
+import { getFloatingContext } from "@/shared/lib/windowScope";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
 import { initDebugListeners } from "@/features/debug/client";
 import { useFontStore } from "@/shared/stores/fonts";
@@ -79,10 +83,19 @@ window.addEventListener("unhandledrejection", (event) => {
   toast.error("An unexpected error occurred. Details were logged.");
 });
 
+const floating = getFloatingContext();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      {floating.nodeId ? (
+        <ThemeProvider>
+          <Toaster position="bottom-right" />
+          <ExternalPanelApp nodeId={floating.nodeId} />
+        </ThemeProvider>
+      ) : (
+        <App />
+      )}
     </ErrorBoundary>
   </StrictMode>,
 );

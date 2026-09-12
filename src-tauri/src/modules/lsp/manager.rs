@@ -1,5 +1,5 @@
 use crate::ai::cli::manager::enriched_path;
-use crate::modules::lsp::client::{LspClient, Notification};
+use crate::modules::lsp::client::{is_expected_start_error, LspClient, Notification};
 use crate::modules::lsp::types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
     DidSaveTextDocumentParams, InitializeParams, LspDiagnosticsEvent, LspRange, LspServerConfig,
@@ -91,14 +91,14 @@ const SERVERS: &[ServerEntry] = &[
         command: "vscode-html-language-server",
         args: &["--stdio"],
         install_program: Some("npm"),
-        install_args: &["install", "-g", "@vscode/langserver-html"],
+        install_args: &["install", "-g", "vscode-langservers-extracted"],
     },
     ServerEntry {
         language: "css",
         command: "vscode-css-language-server",
         args: &["--stdio"],
         install_program: Some("npm"),
-        install_args: &["install", "-g", "@vscode/langserver-css"],
+        install_args: &["install", "-g", "vscode-langservers-extracted"],
     },
 ];
 
@@ -160,10 +160,32 @@ impl LspManager {
         let config = server_config_for_language(language)
             .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
 
-        self.emit_status(language, project_root, LspServerStatus::Starting, None);
+        self.emit_status(
+            language,
+            project_root,
+            LspServerStatus::Starting,
+            None,
+            None,
+        );
 
-        let (client, child, notifications, stderr_lines) =
-            LspClient::start(config).await.map_err(|e| e.to_string())?;
+        let (client, child, notifications, stderr_lines) = match LspClient::start(config).await {
+            Ok(started) => started,
+            Err(e) => {
+                let expected = is_expected_start_error(&e);
+                self.emit_status(
+                    language,
+                    project_root,
+                    if expected {
+                        LspServerStatus::Stopped
+                    } else {
+                        LspServerStatus::Error
+                    },
+                    Some(e.to_string()),
+                    Some(expected),
+                );
+                return Err(e.to_string());
+            }
+        };
 
         let child = Arc::new(Mutex::new(child));
         let status = Arc::new(Mutex::new(LspServerStatus::Running));
@@ -303,6 +325,7 @@ impl LspManager {
                     project_root,
                     LspServerStatus::Error,
                     Some(e.to_string()),
+                    Some(false),
                 );
                 return Err(e.to_string());
             }
@@ -318,6 +341,7 @@ impl LspManager {
                 project_root,
                 LspServerStatus::Error,
                 Some(e.to_string()),
+                Some(false),
             );
             return Err(e.to_string());
         }
@@ -338,7 +362,7 @@ impl LspManager {
             );
         }
 
-        self.emit_status(language, project_root, LspServerStatus::Running, None);
+        self.emit_status(language, project_root, LspServerStatus::Running, None, None);
         Ok(())
     }
 
@@ -453,7 +477,7 @@ impl LspManager {
 
         if let Some(server) = server {
             Self::stop_running_server(server).await;
-            self.emit_status(language, project_root, LspServerStatus::Stopped, None);
+            self.emit_status(language, project_root, LspServerStatus::Stopped, None, None);
             Ok(())
         } else {
             Err(format!(
@@ -678,6 +702,7 @@ impl LspManager {
                 project_root,
                 status: new_status,
                 error,
+                expected: Some(false),
             },
         );
     }
@@ -729,6 +754,7 @@ impl LspManager {
         project_root: &str,
         status: LspServerStatus,
         error: Option<String>,
+        expected: Option<bool>,
     ) {
         let _ = self.app_handle.emit(
             "lsp_status_changed",
@@ -737,6 +763,7 @@ impl LspManager {
                 project_root: project_root.to_string(),
                 status,
                 error,
+                expected,
             },
         );
     }
@@ -942,5 +969,45 @@ mod tests {
 
         let resolved = resolve_command("typescript-language-server", "/usr/bin");
         assert_eq!(resolved, "typescript-language-server");
+    }
+
+    #[test]
+    fn html_and_css_use_the_langservers_extracted_package() {
+        for language in ["html", "css"] {
+            let config = server_config_for_language(language).unwrap();
+            let expected: Vec<String> = ["install", "-g", "vscode-langservers-extracted"]
+                .iter()
+                .map(|arg| arg.to_string())
+                .collect();
+            assert_eq!(
+                config.install_args, expected,
+                "{language} must install the package that ships its binary"
+            );
+        }
+
+        assert_eq!(
+            server_config_for_language("html").unwrap().command,
+            "vscode-html-language-server"
+        );
+        assert_eq!(
+            server_config_for_language("css").unwrap().command,
+            "vscode-css-language-server"
+        );
+    }
+
+    #[test]
+    fn resolve_project_root_finds_the_marker_above_the_file() {
+        let temp = std::env::temp_dir().join("pragma-lsp-project-root-marker-test");
+        let _ = fs::remove_dir_all(&temp);
+        let nested = temp.join("src");
+        fs::create_dir_all(&nested).unwrap();
+        fs::write(temp.join("package.json"), "{}").unwrap();
+        let file = nested.join("page.html");
+        fs::write(&file, "").unwrap();
+
+        let resolved = resolve_project_root("html", file.to_str().unwrap());
+        assert_eq!(resolved.as_deref(), Some(temp.to_str().unwrap()));
+
+        let _ = fs::remove_dir_all(&temp);
     }
 }

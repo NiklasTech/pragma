@@ -34,15 +34,14 @@ function StatusbarSection({
 
 export function Statusbar() {
   const { statusbar, theme, editor } = useSettingsStore();
-  const { tabs, activeTabId, cursorPositions } = useEditorStore();
+  const activeTab = useEditorStore((s) => s.tabs.find((tab) => tab.id === s.activeTabId));
+  const cursor = useEditorStore((s) => (s.activeTabId ? s.cursorPositions[s.activeTabId] : null));
   const { snapshot } = useGitStore();
   const { activeProvider, activeModel } = useAIStore();
   const { problems } = useProblemsStore();
 
   if (!statusbar.visible) return null;
 
-  const activeTab = tabs.find((t) => t.id === activeTabId);
-  const cursor = activeTabId ? cursorPositions[activeTabId] : null;
   const fileName = activeTab?.name ?? "";
   const activeContent = isFileTab(activeTab) ? activeTab.content : "";
 

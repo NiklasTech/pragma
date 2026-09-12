@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, X } from "@phosphor-icons/react";
+import { Info, Plus, X } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -15,6 +15,7 @@ import {
 import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type AgentAutoApprove } from "@/shared/stores/settings";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 
@@ -86,11 +87,24 @@ export function AgentSettings() {
 
       <SettingSection title="Allowed Commands">
         <div className="py-2.5">
-          <p className="mb-3 text-ui-xs text-fg-muted">
-            Shell commands matching one of these patterns run without approval, even when
-            auto-approve is off. A pattern matches the exact command or the command with extra
-            arguments; end a pattern with * for a plain prefix match.
-          </p>
+          <div className="mb-3 flex items-center gap-1.5">
+            <span className="text-ui-sm text-fg-default">Patterns</span>
+            <Tooltip>
+              <TooltipTrigger
+                type="button"
+                delay={100}
+                aria-label="About allowed commands"
+                className="flex items-center text-fg-subtle transition-colors hover:text-fg-default"
+              >
+                <Info size={14} />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm">
+                Shell commands matching one of these patterns run without approval, even when
+                auto-approve is off. A pattern matches the exact command or the command with extra
+                arguments; end a pattern with * for a plain prefix match.
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <div className="mb-2 flex items-center gap-2">
             <Input
               value={newCommand}

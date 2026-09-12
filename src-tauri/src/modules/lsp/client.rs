@@ -115,6 +115,13 @@ impl From<LspError> for String {
     }
 }
 
+/// A missing or non-executable server binary surfaces as a spawn failure, and a
+/// wrapper that exits immediately surfaces as missing stdio. Neither is a crash,
+/// so callers treat them as a silently unavailable server.
+pub fn is_expected_start_error(err: &LspError) -> bool {
+    matches!(err, LspError::Spawn(_) | LspError::MissingStdio)
+}
+
 pub type Result<T> = std::result::Result<T, LspError>;
 
 struct ClientInner {
@@ -445,6 +452,23 @@ mod tests {
     use super::*;
     use serde_json::json;
     use tokio::io::{duplex, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+
+    #[test]
+    fn missing_server_binary_is_an_expected_start_error() {
+        let not_found = std::io::Error::from_raw_os_error(2);
+        assert!(is_expected_start_error(&LspError::Spawn(not_found)));
+        assert!(is_expected_start_error(&LspError::MissingStdio));
+    }
+
+    #[test]
+    fn runtime_failures_after_spawn_are_not_expected() {
+        assert!(!is_expected_start_error(&LspError::Timeout));
+        assert!(!is_expected_start_error(&LspError::ConnectionClosed));
+        assert!(!is_expected_start_error(&LspError::Rpc {
+            code: -32603,
+            message: "internal error".to_string(),
+        }));
+    }
 
     async fn read_frame<R>(reader: &mut BufReader<R>) -> serde_json::Value
     where
