@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Terminal as TerminalIcon } from "@phosphor-icons/react";
-import { invoke } from "@tauri-apps/api/core";
+import { openFloatingWebview } from "@/shared/lib/openFloatingWebview";
 import { useLayoutStore } from "../store";
 import { FloatingWindow } from "./FloatingWindow";
 import { Terminal } from "@/features/terminal/components";
@@ -33,15 +33,11 @@ export function TerminalFloatingHost() {
     });
 
     try {
-      const label = await invoke<string>("create_external_window", {
+      const label = await openFloatingWebview({
         nodeId: node.id,
         title: "Terminal",
-        bounds: {
-          x: Math.round(node.x),
-          y: Math.round(node.y),
-          width: Math.round(node.width),
-          height: Math.round(node.height),
-        },
+        width: node.width,
+        height: node.height,
       });
       useLayoutStore.setState((s) => ({
         floating: [...s.floating, { ...node, external: label }],

@@ -133,38 +133,11 @@ pub fn create_external_window(
     let title = request.title;
     let bounds = request.bounds;
 
-    let (tx, rx) = std::sync::mpsc::channel();
-    let app_main = app.clone();
-    let label_main = label.clone();
-    write_floating_debug(&format!(
-        "[rust] scheduling run_on_main_thread {}",
-        thread_debug()
-    ));
-    app.run_on_main_thread(move || {
-        write_floating_debug(&format!(
-            "[rust] inside run_on_main_thread {}",
-            thread_debug()
-        ));
-        let result = create_external_window_on_main(
-            &app_main,
-            &label_main,
-            &url,
-            &init_script,
-            &title,
-            &bounds,
-        );
-        write_floating_debug(&format!("[rust] main-thread build result={result:?}"));
-        let _ = tx.send(result);
-    })
-    .map_err(|err| {
-        let msg = format!("Failed to schedule window creation: {err}");
-        write_floating_debug(&format!("[rust] {msg}"));
-        msg
-    })?;
-
-    let result = rx
-        .recv()
-        .map_err(|err| format!("Window creation was cancelled: {err}"))?;
+    // Commands already run on the UI thread in this app. Queueing another
+    // main-thread callback and blocking on recv() deadlocks WebView2: the
+    // previous log stopped inside builder.build() and the new page never booted.
+    write_floating_debug("[rust] building webview on current thread");
+    let result = create_external_window_on_main(&app, &label, &url, &init_script, &title, &bounds);
     write_floating_debug(&format!("[rust] create_external_window done {result:?}"));
     result
 }
@@ -177,17 +150,20 @@ fn create_external_window_on_main(
     title: &str,
     bounds: &WindowBounds,
 ) -> Result<String, String> {
+    write_floating_debug("[rust] before get_webview_window");
     if app.get_webview_window(label).is_some() {
         return Err(format!("External window {label} already exists"));
     }
 
+    write_floating_debug("[rust] before WebviewWindowBuilder::new");
     let builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App(url.into()))
         .title(title)
         .resizable(true)
         .visible(true)
         .inner_size(bounds.width as f64, bounds.height as f64)
-        .position(bounds.x as f64, bounds.y as f64)
+        .position(80.0, 80.0)
         .initialization_script(init_script);
+    write_floating_debug("[rust] before builder.build");
 
     #[cfg(target_os = "windows")]
     let builder = builder.decorations(true);
@@ -228,32 +204,7 @@ fn floating_init_script(node_id: &str, parent: &str) -> Result<String, String> {
         "nodeId": node_id,
         "parent": parent,
     });
-    Ok(format!(
-        r#"window.__PRAGMA_FLOATING__ = {payload};
-(function(){{
-  function paint(){{
-    try {{
-      document.documentElement.style.backgroundColor = '#e100ff';
-      document.documentElement.style.color = '#fff';
-      if (document.body) {{
-        document.body.style.backgroundColor = '#e100ff';
-        if (!document.getElementById('pragma-float-debug')) {{
-          var d = document.createElement('div');
-          d.id = 'pragma-float-debug';
-          d.textContent = 'FLOATING INIT ' + (window.__PRAGMA_FLOATING__ && window.__PRAGMA_FLOATING__.nodeId);
-          d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#e100ff;color:#fff;font:18px sans-serif;';
-          document.body.appendChild(d);
-        }}
-      }}
-    }} catch (e) {{}}
-  }}
-  paint();
-  document.addEventListener('DOMContentLoaded', paint);
-  setTimeout(paint, 50);
-  setTimeout(paint, 250);
-  setTimeout(paint, 1000);
-}})();"#
-    ))
+    Ok(format!("window.__PRAGMA_FLOATING__ = {payload};"))
 }
 
 /// Closes an external floating window by label.
@@ -414,8 +365,7 @@ mod tests {
     fn floating_init_script_json_escapes_quotes() {
         let script = floating_init_script("id\"x", "main").unwrap();
         let payload = serde_json::json!({ "nodeId": "id\"x", "parent": "main" }).to_string();
-        assert!(script.contains(&format!("window.__PRAGMA_FLOATING__ = {payload};")));
-        assert!(script.contains("FLOATING INIT"));
+        assert_eq!(script, format!("window.__PRAGMA_FLOATING__ = {payload};"));
     }
 
     #[test]

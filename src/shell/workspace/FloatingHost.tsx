@@ -1,7 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "sonner";
 import { useLayoutStore } from "@/shell/layout";
 import { FloatingWindow } from "@/shell/layout/components/FloatingWindow";
@@ -9,6 +7,7 @@ import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { FloatingNode, LayoutNode } from "@/shell/layout/tree/types";
 import { logFloatingDebug } from "@/shared/lib/floatingDebug";
+import { openFloatingWebview } from "@/shared/lib/openFloatingWebview";
 
 function floatingTitle(child: LayoutNode): string {
   if (child.type === "panel") return panelLabel(child.kind);
@@ -29,17 +28,6 @@ function clampFloating(node: FloatingNode): FloatingNode {
     x: Math.max(0, Math.min(node.x, maxX)),
     y: Math.max(0, Math.min(node.y, maxY)),
   };
-}
-
-async function clientToScreen(x: number, y: number): Promise<{ x: number; y: number }> {
-  try {
-    const win = getCurrentWindow();
-    const pos = await win.outerPosition();
-    const factor = await win.scaleFactor();
-    return { x: pos.x / factor + x, y: pos.y / factor + y };
-  } catch {
-    return { x, y };
-  }
 }
 
 async function waitForExternalReady(
@@ -95,28 +83,20 @@ export function FloatingHost() {
   const handleExternalize = useCallback(
     async (node: FloatingNode) => {
       const title = floatingTitle(node.child);
-      const screen = await clientToScreen(node.x, node.y);
-      const bounds = {
-        x: Math.round(screen.x),
-        y: Math.round(screen.y),
-        width: Math.round(node.width),
-        height: Math.round(node.height),
-      };
       try {
-        logFloatingDebug(
-          `externalize start nodeId=${node.id} title=${title} bounds=${JSON.stringify(bounds)}`,
-        );
-        await invoke("close_external_window", { label: node.id }).catch(() => {});
+        logFloatingDebug(`externalize start nodeId=${node.id} title=${title}`);
         const awaitReady = await waitForExternalReady(node.id, 8000);
-        const newLabel = await invoke<string>("create_external_window", {
-          request: { nodeId: node.id, title, bounds },
+        const newLabel = await openFloatingWebview({
+          nodeId: node.id,
+          title,
+          width: node.width,
+          height: node.height,
         });
         logFloatingDebug(`externalize created label=${newLabel}`);
         const ok = await awaitReady();
         logFloatingDebug(`externalize ready=${ok} label=${newLabel}`);
         if (!ok) {
-          await invoke("close_external_window", { label: newLabel }).catch(() => {});
-          toast.error("Could not open a separate window. The panel stays in Pragma.");
+          toast.error("Could not load Settings in the new window. The panel stays in Pragma.");
           return;
         }
         moveFloatingToExternal(node.id, newLabel);
