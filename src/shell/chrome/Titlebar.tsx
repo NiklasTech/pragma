@@ -102,6 +102,7 @@ export function Titlebar() {
       className="relative z-[60] flex h-header shrink-0 items-center select-none border-b border-border bg-bg-surface"
     >
       <div className="flex items-center gap-1.5 px-2">
+        {isMac && <div data-tauri-drag-region className="w-[72px] shrink-0 self-stretch" />}
         <img src="/pragma_logo.svg" alt="" className="h-4.5 w-4.5" />
 
         <DropdownMenu>
@@ -217,34 +218,38 @@ export function Titlebar() {
           <Gear size={15} />
         </button>
 
-        <button
-          type="button"
-          onClick={handleMinimize}
-          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label="Minimize"
-        >
-          <Minus size={15} weight="bold" />
-        </button>
-        <button
-          type="button"
-          onClick={handleToggleMaximize}
-          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label={isMaximized ? "Restore" : "Maximize"}
-        >
-          {isMaximized ? (
-            <CornersIn size={15} weight="bold" />
-          ) : (
-            <CornersOut size={15} weight="bold" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
-          aria-label="Close"
-        >
-          <X size={15} weight="bold" />
-        </button>
+        {!isMac && (
+          <>
+            <button
+              type="button"
+              onClick={handleMinimize}
+              className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              aria-label="Minimize"
+            >
+              <Minus size={15} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleMaximize}
+              className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              aria-label={isMaximized ? "Restore" : "Maximize"}
+            >
+              {isMaximized ? (
+                <CornersIn size={15} weight="bold" />
+              ) : (
+                <CornersOut size={15} weight="bold" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+              aria-label="Close"
+            >
+              <X size={15} weight="bold" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

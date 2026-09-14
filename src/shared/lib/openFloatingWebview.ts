@@ -1,5 +1,7 @@
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalPosition } from "@tauri-apps/api/dpi";
+import { getIsMac } from "@/shared/lib/shortcuts";
 
 export async function openFloatingWebview(options: {
   nodeId: string;
@@ -35,6 +37,13 @@ export async function openFloatingWebview(options: {
     x,
     y,
     decorations: true,
+    ...(getIsMac()
+      ? {
+          titleBarStyle: "overlay",
+          hiddenTitle: true,
+          trafficLightPosition: new LogicalPosition(16, 12),
+        }
+      : {}),
     resizable: true,
     visible: true,
     focus: true,
