@@ -41,7 +41,7 @@ export async function openFloatingWebview(options: {
       ? {
           titleBarStyle: "overlay",
           hiddenTitle: true,
-          trafficLightPosition: new LogicalPosition(16, 24),
+          trafficLightPosition: new LogicalPosition(16, 36),
         }
       : {}),
     resizable: true,

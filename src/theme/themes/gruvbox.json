@@ -136,7 +136,7 @@
     },
 
     "layout": {
-      "headerHeight": 40,
+      "headerHeight": 52,
       "tabHeight": 44,
       "statusbarHeight": 24,
       "breadcrumbHeight": 28,
