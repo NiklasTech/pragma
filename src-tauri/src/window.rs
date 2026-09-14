@@ -48,7 +48,10 @@ fn apply_window_chrome<'a, R: tauri::Runtime, M: Manager<R>>(
             .decorations(true)
             .title_bar_style(tauri::TitleBarStyle::Overlay)
             .hidden_title(true)
-            .traffic_light_position(tauri::LogicalPosition::new(16.0, 12.0))
+            .traffic_light_position(tauri::LogicalPosition::new(
+                crate::macos_chrome::TRAFFIC_LIGHT_X,
+                crate::macos_chrome::TRAFFIC_LIGHT_Y,
+            ))
     }
     #[cfg(target_os = "windows")]
     {
@@ -95,9 +98,11 @@ pub fn create_external_window(
         .position(request.bounds.x as f64, request.bounds.y as f64)
         .initialization_script(&init_script);
 
-    apply_window_chrome(builder, true)
+    let created = apply_window_chrome(builder, true)
         .build()
         .map_err(|err| format!("Failed to create external window: {err}"))?;
+    #[cfg(target_os = "macos")]
+    crate::macos_chrome::align_webview(&created);
 
     Ok(label)
 }
@@ -242,9 +247,11 @@ pub fn create_workspace_window(app: &AppHandle, folder_path: &str) -> Result<Str
         .visible(false)
         .inner_size(1200.0, 800.0);
 
-    apply_window_chrome(builder, false)
+    let created = apply_window_chrome(builder, false)
         .build()
         .map_err(|err| format!("Failed to create workspace window: {err}"))?;
+    #[cfg(target_os = "macos")]
+    crate::macos_chrome::align_webview(&created);
 
     if let Some(open_folders) = app.try_state::<OpenFolders>() {
         open_folders.update(&label, Some(folder_path))?;

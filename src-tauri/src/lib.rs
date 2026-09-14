@@ -1,6 +1,8 @@
 pub mod ai;
 pub mod cli;
 pub mod commands;
+#[cfg(target_os = "macos")]
+mod macos_chrome;
 pub mod modules;
 pub mod platform;
 pub mod window;
@@ -72,7 +74,16 @@ pub fn run() {
                 .and_then(|matches| cli::extract_project_path(&matches));
             app.manage(cli::CliArgs { project_path });
 
+            #[cfg(target_os = "macos")]
+            if let Some(main) = app.get_webview_window("main") {
+                crate::macos_chrome::align_webview(&main);
+            }
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            #[cfg(target_os = "macos")]
+            crate::macos_chrome::on_window_event(window, event);
         })
         .invoke_handler(tauri::generate_handler![
             modules::fonts::get_app_data_dir,

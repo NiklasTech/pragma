@@ -60,6 +60,13 @@ keyring = { version = "3.6.3", features = ["linux-native"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = { version = "3.6.3", features = ["apple-native"] }
+objc2-app-kit = { version = "0.3.2", features = [
+  "NSButton",
+  "NSControl",
+  "NSResponder",
+  "NSView",
+  "NSWindow",
+] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3.6.3", features = ["windows-native"] }
