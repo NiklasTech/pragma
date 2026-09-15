@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ArrowLineLeft, CornersIn, CornersOut, Minus, X } from "@phosphor-icons/react";
 import { getIsMac } from "@/shared/lib/shortcuts";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 interface ExternalWindowTitlebarProps {
   title: string;
@@ -18,7 +19,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
     });
     void win.isMaximized().then(setIsMaximized);
     return () => {
-      void unlisten.then((f) => f());
+      void unlisten.then(unlistenQuietly).catch(() => {});
     };
   }, [win]);
 

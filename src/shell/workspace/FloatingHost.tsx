@@ -7,6 +7,7 @@ import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { FloatingNode, LayoutNode } from "@/shell/layout/tree/types";
 import { openFloatingWebview } from "@/shared/lib/openFloatingWebview";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 function floatingTitle(child: LayoutNode): string {
   if (child.type === "panel") return panelLabel(child.kind);
@@ -45,7 +46,7 @@ async function waitForExternalReady(
     if (settled) return;
     settled = true;
     window.clearTimeout(timer);
-    unlisten?.();
+    void unlistenQuietly(unlisten);
     resolveWait(ok);
   };
 

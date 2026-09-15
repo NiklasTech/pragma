@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useProblemsStore, type ProblemSeverity } from "@/shared/stores/problems";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 interface LspPosition {
   line: number;
@@ -107,9 +108,7 @@ export function useLspDiagnostics() {
     void setup();
 
     return () => {
-      if (unlisten) {
-        unlisten();
-      }
+      void unlistenQuietly(unlisten);
     };
   }, [openPaths, setFileDiagnostics, experimentalLsp]);
 }

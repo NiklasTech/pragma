@@ -14,6 +14,7 @@ import {
   Plus,
 } from "@phosphor-icons/react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
@@ -80,7 +81,7 @@ export function Titlebar() {
     });
     void win.isMaximized().then(setIsMaximized);
     return () => {
-      void unlisten.then((f) => f());
+      void unlisten.then(unlistenQuietly).catch(() => {});
     };
   }, [win]);
 

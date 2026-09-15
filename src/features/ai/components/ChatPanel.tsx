@@ -8,6 +8,7 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
@@ -145,14 +146,14 @@ export function ChatPanel() {
         setPendingApprovals((prev) => [...prev, event.payload]);
       });
       if (!active) {
-        unlisten();
+        void unlistenQuietly(unlisten);
         unlisten = undefined;
       }
     })();
 
     return () => {
       active = false;
-      unlisten?.();
+      void unlistenQuietly(unlisten);
     };
   }, []);
 

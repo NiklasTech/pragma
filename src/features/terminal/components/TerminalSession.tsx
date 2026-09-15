@@ -10,6 +10,7 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "@tauri-apps/api/core";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { listen } from "@tauri-apps/api/event";
 import "@xterm/xterm/css/xterm.css";
 import {
@@ -235,7 +236,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     return () => {
       disposed = true;
       if (resizeTimer) clearTimeout(resizeTimer);
-      unlistenFn?.();
+      void unlistenQuietly(unlistenFn);
       resizeObserver?.disconnect();
       da1Handler?.dispose();
       scrollHandler?.dispose();
