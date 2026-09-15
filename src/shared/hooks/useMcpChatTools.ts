@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 export interface McpTool {
   name: string;
@@ -89,7 +90,7 @@ export function useMcpChatTools() {
         },
       );
       if (!active) {
-        unlisten();
+        void unlistenQuietly(unlisten);
         unlisten = undefined;
       }
     })();
@@ -97,7 +98,7 @@ export function useMcpChatTools() {
     return () => {
       active = false;
       clearInterval(interval);
-      unlisten?.();
+      void unlistenQuietly(unlisten);
     };
   }, [loadServers, fetchTools]);
 

@@ -13,7 +13,9 @@ export type UpdaterState =
 
 interface UpdaterStore {
   state: UpdaterState;
+  userRequested: boolean;
   checkForUpdates: (options?: { silent?: boolean }) => Promise<void>;
+  acknowledgeCheck: () => void;
   downloadAndInstall: () => Promise<void>;
   restartApp: () => Promise<void>;
 }
@@ -26,9 +28,11 @@ function errorMessage(error: unknown): string {
 
 export const useUpdaterStore = create<UpdaterStore>((set) => ({
   state: { status: "idle" },
+  userRequested: false,
 
   checkForUpdates: async (options) => {
-    set({ state: { status: "checking" } });
+    const silent = options?.silent ?? false;
+    set({ state: { status: "checking" }, userRequested: !silent });
     try {
       const update = await check();
       pendingUpdate = update;
@@ -41,12 +45,22 @@ export const useUpdaterStore = create<UpdaterStore>((set) => ({
       }
     } catch (error) {
       pendingUpdate = null;
-      if (options?.silent) {
-        set({ state: { status: "idle" } });
+      if (silent) {
+        set({ state: { status: "idle" }, userRequested: false });
       } else {
         set({ state: { status: "error", message: errorMessage(error) } });
       }
     }
+  },
+
+  acknowledgeCheck: () => {
+    set((current) => ({
+      userRequested: false,
+      state:
+        current.state.status === "up-to-date" || current.state.status === "error"
+          ? { status: "idle" }
+          : current.state,
+    }));
   },
 
   downloadAndInstall: async () => {

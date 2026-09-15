@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ArrowLineLeft, CornersIn, CornersOut, Minus, X } from "@phosphor-icons/react";
+import { getIsMac } from "@/shared/lib/shortcuts";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 interface ExternalWindowTitlebarProps {
   title: string;
@@ -9,6 +11,7 @@ interface ExternalWindowTitlebarProps {
 export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
   const win = getCurrentWindow();
   const [isMaximized, setIsMaximized] = useState(false);
+  const isMac = getIsMac();
 
   useEffect(() => {
     const unlisten = win.onResized(() => {
@@ -16,7 +19,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
     });
     void win.isMaximized().then(setIsMaximized);
     return () => {
-      void unlisten.then((f) => f());
+      void unlisten.then(unlistenQuietly).catch(() => {});
     };
   }, [win]);
 
@@ -45,6 +48,7 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
         data-tauri-drag-region
         className="flex flex-1 items-center gap-2 px-3 text-ui-sm font-semibold text-fg-default"
       >
+        {isMac && <div data-tauri-drag-region className="w-[72px] shrink-0 self-stretch" />}
         <span className="truncate">{title}</span>
       </div>
 
@@ -57,34 +61,38 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
         >
           <ArrowLineLeft size={16} />
         </button>
-        <button
-          type="button"
-          onClick={handleMinimize}
-          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label="Minimize"
-        >
-          <Minus size={18} weight="bold" />
-        </button>
-        <button
-          type="button"
-          onClick={handleToggleMaximize}
-          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          aria-label={isMaximized ? "Restore" : "Maximize"}
-        >
-          {isMaximized ? (
-            <CornersIn size={18} weight="bold" />
-          ) : (
-            <CornersOut size={18} weight="bold" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={handleClose}
-          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
-          aria-label="Close"
-        >
-          <X size={18} weight="bold" />
-        </button>
+        {!isMac && (
+          <>
+            <button
+              type="button"
+              onClick={handleMinimize}
+              className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              aria-label="Minimize"
+            >
+              <Minus size={18} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleMaximize}
+              className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              aria-label={isMaximized ? "Restore" : "Maximize"}
+            >
+              {isMaximized ? (
+                <CornersIn size={18} weight="bold" />
+              ) : (
+                <CornersOut size={18} weight="bold" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+              aria-label="Close"
+            >
+              <X size={18} weight="bold" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

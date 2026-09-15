@@ -102,15 +102,16 @@ createRoot(document.getElementById("root")!).render(
 
 if (isTauri()) {
   const appWindow = getCurrentWindow();
-  // Wait for the first paint so the revealed window already shows content,
-  // not a blank frame.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      appWindow.show().catch(() => {
-        // If the window cannot be shown from the frontend, the OS/Tauri
-        // window config remains the fallback. Failures are intentionally
-        // swallowed to avoid an unhandled rejection on startup.
-      });
+  const reveal = () => {
+    appWindow.show().catch((error) => {
+      void logError(`[window] failed to show main window: ${formatErrorDetail(error)}`).catch(
+        () => {},
+      );
     });
-  });
+  };
+  // Wait for the first paint so the revealed window already shows content.
+  requestAnimationFrame(() => requestAnimationFrame(reveal));
+  // WebKit stops rendering updates for a `visible: false` window, so rAF may never
+  // fire on macOS; the timer is what actually guarantees the reveal.
+  setTimeout(reveal, 400);
 }

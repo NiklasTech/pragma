@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { cn } from "@/shared/lib/utils";
+import { getIsMac } from "@/shared/lib/shortcuts";
 
 type ResizeEdge =
   | "north"
@@ -71,6 +72,10 @@ function ResizeHandle({ edge }: { edge: ResizeEdge }) {
  * because the OS no longer provides native resize borders.
  */
 export function WindowResizeHandles() {
+  if (getIsMac()) {
+    return null;
+  }
+
   return (
     <>
       <ResizeHandle edge="north" />

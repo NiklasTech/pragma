@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { McpServerConfig } from "@/shared/stores/settings";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 export type McpServerStatus = "stopped" | "starting" | "running" | "error";
 
@@ -124,7 +125,7 @@ export function useMcpServers() {
         }));
       });
       if (!active) {
-        unlistenStatus();
+        void unlistenQuietly(unlistenStatus);
         unlistenStatus = undefined;
       }
 
@@ -164,7 +165,7 @@ export function useMcpServers() {
         });
       });
       if (!active) {
-        unlistenNotification();
+        void unlistenQuietly(unlistenNotification);
         unlistenNotification = undefined;
       }
     })();
@@ -172,9 +173,9 @@ export function useMcpServers() {
     return () => {
       active = false;
       clearInterval(interval);
-      unlistenStatus?.();
-      unlistenLog?.();
-      unlistenNotification?.();
+      void unlistenQuietly(unlistenStatus);
+      void unlistenQuietly(unlistenLog);
+      void unlistenQuietly(unlistenNotification);
     };
   }, [load]);
 
