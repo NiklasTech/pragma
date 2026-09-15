@@ -93,6 +93,8 @@ pub fn run() {
         .on_window_event(|window, event| {
             #[cfg(target_os = "macos")]
             crate::macos_chrome::on_window_event(window, event);
+            #[cfg(not(target_os = "macos"))]
+            let _ = (window, event);
         })
         .invoke_handler(tauri::generate_handler![
             modules::fonts::get_app_data_dir,

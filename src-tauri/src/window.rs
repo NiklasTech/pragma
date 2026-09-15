@@ -98,6 +98,7 @@ pub fn create_external_window(
         .position(request.bounds.x as f64, request.bounds.y as f64)
         .initialization_script(&init_script);
 
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     let created = apply_window_chrome(builder, true)
         .build()
         .map_err(|err| format!("Failed to create external window: {err}"))?;
@@ -247,6 +248,7 @@ pub fn create_workspace_window(app: &AppHandle, folder_path: &str) -> Result<Str
         .visible(false)
         .inner_size(1200.0, 800.0);
 
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     let created = apply_window_chrome(builder, false)
         .build()
         .map_err(|err| format!("Failed to create workspace window: {err}"))?;
