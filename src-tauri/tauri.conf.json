@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "pragma",
+  "productName": "Pragma",
   "mainBinaryName": "pragma",
   "version": "0.3.0",
   "identifier": "dev.pragma.ide",
@@ -30,6 +30,14 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
+    "publisher": "NiklasTech",
+    "copyright": "Copyright \u00a9 2026 NiklasTech",
+    "category": "DeveloperTool",
+    "shortDescription": "A lightweight, AI-native desktop IDE",
+    "longDescription": "Pragma is a desktop code editor designed for developers who want AI assistance without the bloat of a browser-based IDE.",
+    "macOS": {
+      "bundleName": "Pragma"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

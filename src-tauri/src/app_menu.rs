@@ -3,12 +3,21 @@ use tauri::AppHandle;
 #[cfg(target_os = "macos")]
 use serde::Serialize;
 #[cfg(target_os = "macos")]
+use tauri::image::Image;
+#[cfg(target_os = "macos")]
 use tauri::menu::{
     AboutMetadata, CheckMenuItem, MenuBuilder, MenuItem, PredefinedMenuItem, Submenu,
     SubmenuBuilder,
 };
 #[cfg(target_os = "macos")]
 use tauri::{Emitter, Manager, Wry};
+
+#[cfg(target_os = "macos")]
+const APP_DISPLAY_NAME: &str = "Pragma";
+#[cfg(target_os = "macos")]
+const APP_COPYRIGHT: &str = "Copyright \u{00a9} 2026 NiklasTech";
+#[cfg(target_os = "macos")]
+const APP_CREDITS: &str = "A lightweight, AI-native desktop IDE.";
 
 #[cfg(target_os = "macos")]
 const MENU_EVENT: &str = "pragma:menu";
@@ -110,10 +119,38 @@ struct AppMenuState {
 }
 
 #[cfg(target_os = "macos")]
+fn set_app_menu_title(title: &str) {
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::NSApplication;
+    use objc2_foundation::NSString;
+
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    let app = NSApplication::sharedApplication(mtm);
+    let Some(menu) = app.mainMenu() else {
+        return;
+    };
+    let title = NSString::from_str(title);
+    if let Some(item) = menu.itemAtIndex(0) {
+        item.setTitle(&title);
+        if let Some(submenu) = item.submenu() {
+            submenu.setTitle(&title);
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
 pub fn init(app: &AppHandle) -> tauri::Result<()> {
+    let version = app.package_info().version.to_string();
+    let icon = Image::from_bytes(include_bytes!("../icons/128x128.png"))?;
     let about_metadata = AboutMetadata {
-        name: Some("Pragma".to_string()),
-        version: Some(app.package_info().version.to_string()),
+        name: Some(APP_DISPLAY_NAME.to_string()),
+        version: Some(version.clone()),
+        short_version: Some(version),
+        copyright: Some(APP_COPYRIGHT.to_string()),
+        credits: Some(APP_CREDITS.to_string()),
+        icon: Some(icon),
         ..Default::default()
     };
 
@@ -153,7 +190,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         )?)
         .build()?;
 
-    let pragma = SubmenuBuilder::new(app, "Pragma")
+    let pragma = SubmenuBuilder::new(app, APP_DISPLAY_NAME)
         .item(&PredefinedMenuItem::about(
             app,
             Some("About Pragma"),
@@ -177,11 +214,11 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .separator()
         .item(&PredefinedMenuItem::services(app, None)?)
         .separator()
-        .item(&PredefinedMenuItem::hide(app, None)?)
-        .item(&PredefinedMenuItem::hide_others(app, None)?)
-        .item(&PredefinedMenuItem::show_all(app, None)?)
+        .item(&PredefinedMenuItem::hide(app, Some("Hide Pragma"))?)
+        .item(&PredefinedMenuItem::hide_others(app, Some("Hide Others"))?)
+        .item(&PredefinedMenuItem::show_all(app, Some("Show All"))?)
         .separator()
-        .item(&PredefinedMenuItem::quit(app, None)?)
+        .item(&PredefinedMenuItem::quit(app, Some("Quit Pragma"))?)
         .build()?;
 
     let file = SubmenuBuilder::new(app, "File")
@@ -432,6 +469,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
     app.set_menu(menu)?;
     window.set_as_windows_menu_for_nsapp()?;
     help.set_as_help_menu_for_nsapp()?;
+    set_app_menu_title(APP_DISPLAY_NAME);
 
     app.manage(AppMenuState {
         recent_menu,
