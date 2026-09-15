@@ -102,7 +102,7 @@ When showing file contents, preserve the full code and include the language tag.
     };
 
     let provider: Box<dyn AIProvider> = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "openrouter" => Box::new(
+        "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => Box::new(
             OpenAIProvider::new_for_provider(config, &req.provider).map_err(|e| e.to_string())?,
         ),
         "custom" => Box::new(CustomProvider::new(config).map_err(|e| e.to_string())?),
