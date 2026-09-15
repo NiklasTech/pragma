@@ -37,6 +37,33 @@ fn build_label(node_id: &str) -> String {
     }
 }
 
+fn apply_window_chrome<'a, R: tauri::Runtime, M: Manager<R>>(
+    builder: WebviewWindowBuilder<'a, R, M>,
+    windows_decorations: bool,
+) -> WebviewWindowBuilder<'a, R, M> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = windows_decorations;
+        builder
+            .decorations(true)
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true)
+            .traffic_light_position(tauri::LogicalPosition::new(
+                crate::macos_chrome::TRAFFIC_LIGHT_X,
+                crate::macos_chrome::TRAFFIC_LIGHT_Y,
+            ))
+    }
+    #[cfg(target_os = "windows")]
+    {
+        builder.decorations(windows_decorations)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = windows_decorations;
+        builder.decorations(false)
+    }
+}
+
 /// Creates a new external floating window for the given layout node.
 #[tauri::command]
 pub fn create_external_window(
@@ -71,14 +98,12 @@ pub fn create_external_window(
         .position(request.bounds.x as f64, request.bounds.y as f64)
         .initialization_script(&init_script);
 
-    #[cfg(target_os = "windows")]
-    let builder = builder.decorations(true);
-    #[cfg(not(target_os = "windows"))]
-    let builder = builder.decorations(false);
-
-    builder
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+    let created = apply_window_chrome(builder, true)
         .build()
         .map_err(|err| format!("Failed to create external window: {err}"))?;
+    #[cfg(target_os = "macos")]
+    crate::macos_chrome::align_webview(&created);
 
     Ok(label)
 }
@@ -217,14 +242,18 @@ pub fn create_workspace_window(app: &AppHandle, folder_path: &str) -> Result<Str
     let label = next_workspace_label(app);
     let url = format!("index.html?folder={}", url_encode(folder_path));
 
-    WebviewWindowBuilder::new(app, &label, WebviewUrl::App(url.into()))
+    let builder = WebviewWindowBuilder::new(app, &label, WebviewUrl::App(url.into()))
         .title("Pragma")
-        .decorations(false)
         .resizable(true)
         .visible(false)
-        .inner_size(1200.0, 800.0)
+        .inner_size(1200.0, 800.0);
+
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+    let created = apply_window_chrome(builder, false)
         .build()
         .map_err(|err| format!("Failed to create workspace window: {err}"))?;
+    #[cfg(target_os = "macos")]
+    crate::macos_chrome::align_webview(&created);
 
     if let Some(open_folders) = app.try_state::<OpenFolders>() {
         open_folders.update(&label, Some(folder_path))?;

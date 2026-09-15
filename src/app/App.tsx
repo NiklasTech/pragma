@@ -8,9 +8,11 @@ import { Toaster } from "@/shared/components/ui/sonner";
 import { useAIInit } from "@/shared/hooks/useAIInit";
 import { ThemeProvider } from "@/theme";
 import { useGlobalShortcuts } from "@/shared/hooks/useGlobalShortcuts";
+import { useGuardedShortcutActions, useNativeAppMenu } from "@/shared/hooks/useNativeAppMenu";
 import { useMemoryStats } from "@/shared/hooks/useMemoryStats";
 import { useOnboarding } from "@/shared/hooks/useOnboarding";
 import { Onboarding } from "@/components/onboarding/Onboarding";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindowManager";
 import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
@@ -39,9 +41,10 @@ export default function App() {
   useExtensions();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
-  const actions = useAppShortcutActions();
+  const actions = useGuardedShortcutActions(useAppShortcutActions());
 
   useGlobalShortcuts(actions);
+  useNativeAppMenu(actions);
   useCommandPaletteCommands();
   useLspSymbolCommands();
   useEffect(() => startLspDidCloseWatcher(), []);
@@ -50,7 +53,7 @@ export default function App() {
       toast.error(`Cannot open folder: ${event.payload.path}`);
     });
     return () => {
-      unlisten.then((fn) => fn()).catch(() => {});
+      unlisten.then(unlistenQuietly).catch(() => {});
     };
   }, []);
 

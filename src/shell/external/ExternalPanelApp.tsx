@@ -2,11 +2,13 @@ import { useEffect, useMemo } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useGlobalShortcuts } from "@/shared/hooks/useGlobalShortcuts";
+import { useGuardedShortcutActions, useNativeAppMenu } from "@/shared/hooks/useNativeAppMenu";
 import { useAppShortcutActions } from "@/app/useAppShortcutActions";
 import { WindowResizeHandles } from "@/shell/chrome/WindowResizeHandles";
 import { useLayoutStore } from "@/shell/layout";
 import { whenCrossWindowSyncReady } from "@/shared/stores/sync/crossWindowSync";
 import { getFloatingContext } from "@/shared/lib/windowScope";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { LayoutTreeRenderer } from "@/shell/layout/components/LayoutTreeRenderer";
 import { panelLabel } from "@/shell/layout/components/panels/panelLabels";
 import type { LayoutNode } from "@/shell/layout/tree/types";
@@ -31,9 +33,10 @@ interface ExternalPanelAppProps {
 export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
   const node = useLayoutStore((s) => s.floating.find((f) => f.id === nodeId));
   const title = useMemo(() => (node ? externalTitle(node.child) : "Pragma"), [node]);
-  const actions = useAppShortcutActions();
+  const actions = useGuardedShortcutActions(useAppShortcutActions());
 
   useGlobalShortcuts(actions);
+  useNativeAppMenu(actions);
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -64,7 +67,7 @@ export function ExternalPanelApp({ nodeId }: ExternalPanelAppProps) {
     });
 
     return () => {
-      unlisten?.();
+      void unlistenQuietly(unlisten);
     };
   }, [nodeId]);
 

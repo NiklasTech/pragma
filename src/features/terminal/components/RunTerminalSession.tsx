@@ -10,6 +10,7 @@ import {
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
 import { useTheme } from "@/theme";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { copyToClipboard } from "@/shared/lib/clipboard";
@@ -114,8 +115,8 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
     return () => {
       disposed = true;
       if (resizeTimer) clearTimeout(resizeTimer);
-      unlistenOutput?.();
-      unlistenStatus?.();
+      void unlistenQuietly(unlistenOutput);
+      void unlistenQuietly(unlistenStatus);
       resizeObserver?.disconnect();
       termRef.current?.dispose();
       termRef.current = null;

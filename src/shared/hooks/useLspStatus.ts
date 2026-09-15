@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
 import { shouldToastLspError } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 interface LspStatusEvent {
   language: string;
@@ -37,9 +38,7 @@ export function useLspStatus() {
     void setup();
 
     return () => {
-      if (unlisten) {
-        unlisten();
-      }
+      void unlistenQuietly(unlisten);
     };
   }, [experimentalLsp]);
 }

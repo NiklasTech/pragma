@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Icon } from "@phosphor-icons/react";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import {
   ArrowDown,
   ArrowRight,
@@ -153,7 +154,9 @@ function AdapterSetupSection() {
         unlisten = fn;
       })
       .catch(() => {});
-    return () => unlisten?.();
+    return () => {
+      void unlistenQuietly(unlisten);
+    };
   }, []);
 
   const handleInstall = async (adapter: DapAdapterInfo) => {

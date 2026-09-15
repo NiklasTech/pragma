@@ -24,7 +24,7 @@ beforeEach(async () => {
   checkMock.mockReset().mockResolvedValue(null);
   relaunchMock.mockReset();
   await useUpdaterStore.getState().checkForUpdates();
-  useUpdaterStore.setState({ state: { status: "idle" } });
+  useUpdaterStore.setState({ state: { status: "idle" }, userRequested: false });
 });
 
 describe("useUpdaterStore", () => {
@@ -65,6 +65,32 @@ describe("useUpdaterStore", () => {
     await useUpdaterStore.getState().checkForUpdates({ silent: true });
 
     expect(useUpdaterStore.getState().state).toEqual({ status: "idle" });
+    expect(useUpdaterStore.getState().userRequested).toBe(false);
+  });
+
+  it("marks a menu-initiated check as user requested", async () => {
+    await useUpdaterStore.getState().checkForUpdates();
+
+    expect(useUpdaterStore.getState().userRequested).toBe(true);
+    expect(useUpdaterStore.getState().state).toEqual({ status: "up-to-date" });
+  });
+
+  it("acknowledges an up-to-date or error check without dropping an available update", async () => {
+    await useUpdaterStore.getState().checkForUpdates();
+    useUpdaterStore.getState().acknowledgeCheck();
+    expect(useUpdaterStore.getState()).toMatchObject({
+      userRequested: false,
+      state: { status: "idle" },
+    });
+
+    checkMock.mockResolvedValue(mockUpdate());
+    await useUpdaterStore.getState().checkForUpdates();
+    useUpdaterStore.getState().acknowledgeCheck();
+    expect(useUpdaterStore.getState().state).toEqual({
+      status: "available",
+      version: "0.3.0",
+      notes: "Some release notes",
+    });
   });
 
   it("tracks download progress and ends ready to restart", async () => {

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { useSaveFile } from "@/shared/hooks/useSaveFile";
+import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -45,12 +46,16 @@ function toggleBreakpointAtCursor(): void {
 export function useAppShortcutActions(): ShortcutActions {
   const openFile = useOpenFile();
   const saveFile = useSaveFile();
+  const { selectRoot } = useFileExplorer();
   const editorPanelId = useEditorPanelId();
 
   return useMemo<ShortcutActions>(
     () => ({
       "file.open": () => {
         void openFile();
+      },
+      "file.openFolder": () => {
+        void selectRoot();
       },
       "file.save": () => {
         void saveFile();
@@ -163,6 +168,6 @@ export function useAppShortcutActions(): ShortcutActions {
         agent.setModeActive(!agent.modeActive);
       },
     }),
-    [openFile, saveFile, editorPanelId],
+    [openFile, saveFile, selectRoot, editorPanelId],
   );
 }

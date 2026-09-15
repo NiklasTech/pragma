@@ -236,7 +236,18 @@ const TOKEN_TO_CSS_VAR: Record<string, string> = {
 
 // Layout dimensions are unitless numbers in theme tokens; CSS lengths need a unit.
 const TOKEN_UNITS: Record<string, string> = {
+  "layout-header-height": "px",
   "layout-tab-height": "px",
+  "layout-statusbar-height": "px",
+  "layout-breadcrumb-height": "px",
+  "layout-sidebar-width": "px",
+  "layout-sidebar-collapsed-width": "px",
+  "layout-sidebar-min-width": "px",
+  "layout-sidebar-max-width": "px",
+  "layout-panel-min-height": "px",
+  "layout-panel-default-height": "px",
+  "layout-row-height": "px",
+  "layout-inputbar-height": "px",
 };
 
 function withTokenUnit(tokenPath: string, value: string): string {

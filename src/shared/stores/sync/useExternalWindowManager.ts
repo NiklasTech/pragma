@@ -8,6 +8,7 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { getWindowScope, isWorkspaceWindow } from "@/shared/lib/windowScope";
+import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { storeChannel } from "./crossWindowSync";
 
 interface ExternalWindowReadyPayload {
@@ -102,8 +103,8 @@ export function useExternalWindowManager(): void {
     void setup();
 
     return () => {
-      unlistenReady?.();
-      unlistenClose?.();
+      void unlistenQuietly(unlistenReady);
+      void unlistenQuietly(unlistenClose);
     };
   }, []);
 }
