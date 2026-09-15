@@ -181,7 +181,7 @@ const defaultProviders: Record<AIProvider, ProviderConfig> = {
   openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "" },
   custom: { baseUrl: "", model: "" },
   copilot: { model: "" },
-  grok: { model: "" },
+  grok: { baseUrl: "https://api.x.ai/v1", model: "" },
   cursor: { model: "" },
   opencode: { model: "" },
   hermes: { model: "" },

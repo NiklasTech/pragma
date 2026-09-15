@@ -41,9 +41,7 @@ export const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
  * Providers that are only available through their local CLI, with no API-key path.
  */
 export function isCLIOnlyProvider(provider: AIProvider): boolean {
-  return (
-    provider === "grok" || provider === "cursor" || provider === "opencode" || provider === "hermes"
-  );
+  return provider === "cursor" || provider === "opencode" || provider === "hermes";
 }
 
 export function aiProviderForCLI(cliId: string): AIProvider | null {
