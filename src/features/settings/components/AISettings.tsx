@@ -548,16 +548,18 @@ export function AISettings() {
                     </span>
                     <span>
                       Nothing is installed or launched until you press Install, and a CLI only runs
-                      while it is the active provider. Codex CLI is published by OpenAI and Kimi
+                      while it is the active provider. Codex CLI is published by OpenAI, Claude Code
+                      by Anthropic, Gemini CLI by Google, GitHub Copilot CLI by GitHub, and Kimi
                       Code by Moonshot AI, each as its own npm package. Pragma runs the unmodified
-                      official CLIs and is not affiliated with either vendor.
+                      official CLIs and is not affiliated with any of these vendors.
                     </span>
                   </span>
                 </TooltipContent>
               </Tooltip>
             </span>
             <span className="text-ui-xs text-fg-muted">
-              Turn on experimental support for subscription CLIs like OpenAI Codex and Kimi Code.
+              Turn on experimental support for subscription CLIs like Codex, Claude Code, Gemini
+              CLI, GitHub Copilot CLI, and Kimi Code.
             </span>
           </div>
           <Switch

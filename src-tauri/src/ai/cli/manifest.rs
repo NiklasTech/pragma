@@ -55,8 +55,8 @@ pub enum OutputFormat {
 
 /// Built-in manifests for verified CLI providers.
 ///
-/// OpenAI Codex and Kimi Code both speak the Agent Client Protocol (ACP), so
-/// the ACP session manager is manifest-driven and works for any entry here.
+/// Each entry speaks the Agent Client Protocol (ACP), so the session manager
+/// is manifest-driven and works for any id in this table.
 pub fn built_in_manifests() -> Vec<CLIManifest> {
     vec![
         CLIManifest {
@@ -98,6 +98,60 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
                 "codex".to_string(),
             )])),
         },
+        CLIManifest {
+            id: "anthropic-claude".to_string(),
+            name: "Claude Code".to_string(),
+            description:
+                "Anthropic Claude Code CLI via Agent Client Protocol — uses your Claude Pro/Max plan"
+                    .to_string(),
+            install_cmd: "npm install -g @anthropic-ai/claude-code".to_string(),
+            check_cmd: "claude --version".to_string(),
+            login_cmd: "claude auth login".to_string(),
+            auth_check_cmd: Some("claude auth status".to_string()),
+            logout_cmd: Some("claude auth logout".to_string()),
+            chat_cmd: "npx -y @agentclientprotocol/claude-agent-acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "google-gemini".to_string(),
+            name: "Gemini CLI".to_string(),
+            description:
+                "Google Gemini CLI via Agent Client Protocol — uses your Gemini/Google account"
+                    .to_string(),
+            install_cmd: "npm install -g @google/gemini-cli".to_string(),
+            check_cmd: "gemini --version".to_string(),
+            login_cmd: "gemini".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "gemini --acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "github-copilot".to_string(),
+            name: "GitHub Copilot CLI".to_string(),
+            description:
+                "GitHub Copilot CLI via Agent Client Protocol — uses your Copilot plan"
+                    .to_string(),
+            install_cmd: "npm install -g @github/copilot".to_string(),
+            check_cmd: "copilot --version".to_string(),
+            login_cmd: "copilot login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "copilot --acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
     ]
 }
 
@@ -110,10 +164,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn built_in_manifests_include_kimi_and_codex() {
+    fn built_in_manifests_include_all_five_providers() {
         let ids: Vec<String> = built_in_manifests().into_iter().map(|m| m.id).collect();
         assert!(ids.contains(&"moonshot-kimi".to_string()));
         assert!(ids.contains(&"openai-codex".to_string()));
+        assert!(ids.contains(&"anthropic-claude".to_string()));
+        assert!(ids.contains(&"google-gemini".to_string()));
+        assert!(ids.contains(&"github-copilot".to_string()));
     }
 
     #[test]
@@ -146,5 +203,50 @@ mod tests {
             path_env.get("CODEX_PATH").map(String::as_str),
             Some("codex")
         );
+    }
+
+    #[test]
+    fn anthropic_claude_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("anthropic-claude").expect("claude manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(
+            manifest.install_cmd,
+            "npm install -g @anthropic-ai/claude-code"
+        );
+        assert_eq!(manifest.check_cmd, "claude --version");
+        assert_eq!(manifest.login_cmd, "claude auth login");
+        assert_eq!(
+            manifest.auth_check_cmd.as_deref(),
+            Some("claude auth status")
+        );
+        assert_eq!(manifest.logout_cmd.as_deref(), Some("claude auth logout"));
+        assert_eq!(
+            manifest.chat_cmd,
+            "npx -y @agentclientprotocol/claude-agent-acp"
+        );
+    }
+
+    #[test]
+    fn google_gemini_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("google-gemini").expect("gemini manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(manifest.install_cmd, "npm install -g @google/gemini-cli");
+        assert_eq!(manifest.check_cmd, "gemini --version");
+        assert_eq!(manifest.login_cmd, "gemini");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
+        assert_eq!(manifest.chat_cmd, "gemini --acp");
+    }
+
+    #[test]
+    fn github_copilot_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("github-copilot").expect("copilot manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(manifest.install_cmd, "npm install -g @github/copilot");
+        assert_eq!(manifest.check_cmd, "copilot --version");
+        assert_eq!(manifest.login_cmd, "copilot login");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
+        assert_eq!(manifest.chat_cmd, "copilot --acp");
     }
 }

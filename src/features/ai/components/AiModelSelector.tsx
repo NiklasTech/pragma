@@ -31,7 +31,12 @@ function isProviderAvailable(
 ): boolean {
   if (provider === "ollama") return true;
   if (provider === "custom") return Boolean(config.baseUrl) && config.model.length > 0;
-  if (provider === "copilot") return copilotAuthenticated;
+  if (provider === "copilot") {
+    return (
+      copilotAuthenticated ||
+      isCLIAuthenticated(CLI_PROVIDER_IDS.copilot, activeCLIProvider, cliStatuses)
+    );
+  }
   if (apiKeyRefs[provider] !== null) return true;
   return isCLIAuthenticated(CLI_PROVIDER_IDS[provider], activeCLIProvider, cliStatuses);
 }

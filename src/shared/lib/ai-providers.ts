@@ -19,14 +19,14 @@ export const PROVIDER_LABELS: Record<AIProvider, string> = {
  */
 export const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
   openai: ["openai-codex"],
-  anthropic: [],
+  anthropic: ["anthropic-claude"],
   ollama: [],
   deepseek: [],
   kimi: ["moonshot-kimi"],
-  gemini: [],
+  gemini: ["google-gemini"],
   openrouter: [],
   custom: [],
-  copilot: [],
+  copilot: ["github-copilot"],
 };
 
 /**
