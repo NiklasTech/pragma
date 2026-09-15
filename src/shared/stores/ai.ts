@@ -18,7 +18,11 @@ export type AIProvider =
   | "gemini"
   | "openrouter"
   | "custom"
-  | "copilot";
+  | "copilot"
+  | "grok"
+  | "cursor"
+  | "opencode"
+  | "hermes";
 
 export interface ProviderConfig {
   model: string;
@@ -177,6 +181,10 @@ const defaultProviders: Record<AIProvider, ProviderConfig> = {
   openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "" },
   custom: { baseUrl: "", model: "" },
   copilot: { model: "" },
+  grok: { model: "" },
+  cursor: { model: "" },
+  opencode: { model: "" },
+  hermes: { model: "" },
 };
 
 const initialState: AIState = {
@@ -201,6 +209,10 @@ const initialState: AIState = {
     openrouter: null,
     custom: null,
     copilot: null,
+    grok: null,
+    cursor: null,
+    opencode: null,
+    hermes: null,
   },
   availableModels: {},
   modelsLoading: {},

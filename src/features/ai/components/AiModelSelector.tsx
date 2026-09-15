@@ -4,7 +4,7 @@ import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
 import { cn } from "@/shared/lib/utils";
-import { CLI_PROVIDER_IDS, PROVIDER_LABELS } from "@/shared/lib/ai-providers";
+import { CLI_PROVIDER_IDS, PROVIDER_LABELS, isCLIOnlyProvider } from "@/shared/lib/ai-providers";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import { Input } from "@/shared/components/ui/input";
 import { CaretDown, Check, Robot, Warning } from "@phosphor-icons/react";
@@ -29,6 +29,9 @@ function isProviderAvailable(
   cliStatuses: Record<string, { authenticated?: boolean }>,
   copilotAuthenticated: boolean,
 ): boolean {
+  if (isCLIOnlyProvider(provider)) {
+    return CLI_PROVIDER_IDS[provider].some((id) => cliStatuses[id]?.authenticated ?? false);
+  }
   if (provider === "ollama") return true;
   if (provider === "custom") return Boolean(config.baseUrl) && config.model.length > 0;
   if (provider === "copilot") {
@@ -68,18 +71,8 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
   } = useAvailableModels(activeProvider);
 
   const availableMap = useMemo(() => {
-    const map: Record<AIProvider, boolean> = {
-      openai: false,
-      anthropic: false,
-      ollama: false,
-      deepseek: false,
-      kimi: false,
-      gemini: false,
-      openrouter: false,
-      custom: false,
-      copilot: false,
-    };
-    (Object.keys(map) as AIProvider[]).forEach((p) => {
+    const map = {} as Record<AIProvider, boolean>;
+    (Object.keys(PROVIDER_LABELS) as AIProvider[]).forEach((p) => {
       map[p] = isProviderAvailable(
         p,
         providers[p],
@@ -139,7 +132,13 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
 
   const handleProviderChange = (provider: AIProvider) => {
     setActiveProvider(provider);
-    setActiveCLIProvider(null);
+    if (isCLIOnlyProvider(provider)) {
+      const cliProviderId =
+        CLI_PROVIDER_IDS[provider].find((id) => cliStatuses[id]?.authenticated) ?? null;
+      setActiveCLIProvider(cliProviderId);
+    } else {
+      setActiveCLIProvider(null);
+    }
     const nextModel = providers[provider].model || "";
     setActiveModel(nextModel);
     updateProviderConfig(provider, { model: nextModel });
