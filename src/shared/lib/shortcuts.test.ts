@@ -139,8 +139,9 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(31);
+    expect(Object.keys(defaults)).toHaveLength(32);
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
+    expect(defaults["file.openFolder"]).toBeNull();
     expect(defaults["view.commandPalette"]).toEqual({ ctrl: true, shift: true, code: "KeyP" });
     expect(defaults["view.toggleUiMode"]).toEqual({ ctrl: true, shift: true, code: "KeyE" });
     expect(defaults["file.goToFile"]).toEqual({ ctrl: true, code: "KeyP" });

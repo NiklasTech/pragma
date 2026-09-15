@@ -1,4 +1,5 @@
 pub mod ai;
+mod app_menu;
 pub mod cli;
 pub mod commands;
 #[cfg(target_os = "macos")]
@@ -79,7 +80,15 @@ pub fn run() {
                 crate::macos_chrome::align_webview(&main);
             }
 
+            #[cfg(target_os = "macos")]
+            if let Err(e) = app_menu::init(app.handle()) {
+                log::error!("failed to initialize app menu: {e}");
+            }
+
             Ok(())
+        })
+        .on_menu_event(|app, event| {
+            app_menu::handle_menu_event(app, event.id().as_ref());
         })
         .on_window_event(|window, event| {
             #[cfg(target_os = "macos")]
@@ -261,6 +270,9 @@ pub fn run() {
             window::create_external_window,
             window::close_external_window,
             window::update_window_folder,
+            app_menu::macos_menu_set_recent,
+            app_menu::macos_menu_set_enabled,
+            app_menu::macos_menu_set_checked,
         ])
         .build(tauri::generate_context!());
 

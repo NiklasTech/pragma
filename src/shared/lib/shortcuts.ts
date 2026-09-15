@@ -29,6 +29,12 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "file.openFolder" as const,
+    label: "Open Folder",
+    category: "file" as const,
+    default: (): ShortcutBinding | null => null,
+  },
+  {
     id: "file.save" as const,
     label: "Save File",
     category: "file" as const,
