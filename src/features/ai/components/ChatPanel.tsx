@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { Warning, Terminal, Robot, ArrowCounterClockwise, Check, X } from "@phosphor-icons/react";
 
 import { invoke } from "@tauri-apps/api/core";
@@ -6,7 +6,8 @@ import { listen } from "@tauri-apps/api/event";
 import { useAI, getMessageText } from "@/shared/hooks/useAI";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
-import { useEditorStore } from "@/shared/stores/editor";
+import { useEditorStore, type FileTab } from "@/shared/stores/editor";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
@@ -15,11 +16,14 @@ import { Button } from "@/shared/components/ui/button";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
+import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
+import { ChatApplyProvider } from "./ChatApplyContext";
 import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
+import { ContextAttachments } from "./ContextAttachments";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
 import { Message, MessageContent, MessageResponse } from "./Message";
 import { ReasoningBlock } from "./ReasoningBlock";
@@ -70,10 +74,15 @@ export function ChatPanel() {
     isCLIActive,
     activeCLIProvider,
     mcpLoaded,
+    lastAttachments,
+    lastContextTruncated,
   } = useAI();
   const { cliStatuses } = useAIStore();
   const { edit, receiveProposal, cancelEdit } = useAIEditStore();
   const openDiff = useEditorStore((state) => state.openDiff);
+  const editorTabs = useEditorStore((state) => state.tabs);
+  const activeTabId = useEditorStore((state) => state.activeTabId);
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
   const [pendingApprovals, setPendingApprovals] = useState<
@@ -87,6 +96,19 @@ export function ChatPanel() {
   >([]);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
+
+  const openFiles = useMemo(
+    () =>
+      editorTabs
+        .filter((tab): tab is FileTab => tab.kind === "file")
+        .map((tab) => ({ id: tab.id, path: tab.path, name: tab.name, content: tab.content })),
+    [editorTabs],
+  );
+
+  const activePath = useMemo(() => {
+    const active = editorTabs.find((tab) => tab.id === activeTabId);
+    return active && active.kind === "file" ? active.path : null;
+  }, [editorTabs, activeTabId]);
 
   const previousStatusRef = useRef(status);
 
@@ -274,6 +296,14 @@ export function ChatPanel() {
                 );
               }
 
+              const applyTargets = resolveApplyTargets({
+                messageText: text,
+                blocks: parseFencedBlocks(text),
+                openFiles,
+                activePath,
+                rootPath,
+              });
+
               return (
                 <Message key={msg.id} from="assistant">
                   <MessageContent>
@@ -309,7 +339,9 @@ export function ChatPanel() {
                         errorText={inv.errorText}
                       />
                     ))}
-                    <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
+                    <ChatApplyProvider targets={applyTargets}>
+                      <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
+                    </ChatApplyProvider>
                     {isStreaming && (
                       <span className="mt-2 inline-flex h-4 items-center">
                         <span className="size-1.5 animate-pulse rounded-full bg-fg-muted" />
@@ -410,6 +442,8 @@ export function ChatPanel() {
         <AgentApprovals />
 
         <AgentRunBar />
+
+        <ContextAttachments attachments={lastAttachments} truncated={lastContextTruncated} />
 
         <ChatComposer
           input={input}
