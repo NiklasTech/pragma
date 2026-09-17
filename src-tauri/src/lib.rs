@@ -173,6 +173,7 @@ pub fn run() {
             modules::lsp::lsp_code_action,
             modules::lsp::lsp_document_symbol,
             modules::lsp::lsp_workspace_symbol,
+            modules::lsp::lsp_inlay_hint,
             modules::lsp::lsp_did_close,
             modules::lsp::lsp_server_capabilities,
             modules::dap::dap_list_adapters,

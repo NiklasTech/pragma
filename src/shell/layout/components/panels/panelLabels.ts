@@ -20,6 +20,8 @@ export const panelLabel = (kind: PanelKind): string => {
       return "AI Diff";
     case "problems":
       return "Problems";
+    case "outline":
+      return "Outline";
     case "preview":
       return "Preview";
     case "markdown":

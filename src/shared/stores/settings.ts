@@ -25,6 +25,7 @@ export interface EditorSettings {
   autoSaveDelay: number;
   formatOnSave: boolean;
   stickyLines: boolean;
+  inlayHints: boolean;
 }
 
 export interface TerminalSettings {
@@ -222,6 +223,7 @@ const defaultSettings: SettingsState = {
     autoSaveDelay: 1000,
     formatOnSave: false,
     stickyLines: false,
+    inlayHints: false,
   },
   terminal: {
     shell: "",
