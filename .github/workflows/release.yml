@@ -65,7 +65,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Pragma ${{ github.ref_name }}"
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
-          generateReleaseNotes: true
+          generateReleaseNotes: false
           args: ${{ matrix.args }}
