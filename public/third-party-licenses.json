@@ -1,47 +1,47 @@
 {
-  "generatedAt": "2026-07-29T21:51:00.929Z",
-  "total": 66,
+  "generatedAt": "2026-09-17T20:16:11.907Z",
+  "total": 75,
   "entries": [
     {
       "name": "@types/node",
-      "version": "26.1.2",
+      "version": "26.5.1",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/node/v/26.1.2",
+      "url": "https://www.npmjs.com/package/@types/node/v/26.5.1",
       "source": "npm"
     },
     {
       "name": "@types/react",
-      "version": "19.2.17",
+      "version": "19.3.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/react/v/19.2.17",
+      "url": "https://www.npmjs.com/package/@types/react/v/19.3.0",
       "source": "npm"
     },
     {
       "name": "@types/react-dom",
-      "version": "19.2.3",
+      "version": "19.3.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/react-dom/v/19.2.3",
+      "url": "https://www.npmjs.com/package/@types/react-dom/v/19.3.0",
       "source": "npm"
     },
     {
       "name": "@vitejs/plugin-react",
-      "version": "6.0.4",
+      "version": "6.1.1",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@vitejs/plugin-react/v/6.0.4",
+      "url": "https://www.npmjs.com/package/@vitejs/plugin-react/v/6.1.1",
       "source": "npm"
     },
     {
       "name": "@voidzero-dev/vite-plus-core",
-      "version": "0.2.2",
+      "version": "0.3.2",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@voidzero-dev/vite-plus-core/v/0.2.2",
+      "url": "https://www.npmjs.com/package/@voidzero-dev/vite-plus-core/v/0.3.2",
       "source": "npm"
     },
     {
       "name": "ai",
-      "version": "7.0.37",
+      "version": "7.0.99",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.37",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.99",
       "source": "npm"
     },
     {
@@ -59,10 +59,31 @@
       "source": "npm"
     },
     {
+      "name": "base64",
+      "version": "0.21.7",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/base64/0.21.7",
+      "source": "rust"
+    },
+    {
+      "name": "base64",
+      "version": "0.22.1",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/base64/0.22.1",
+      "source": "rust"
+    },
+    {
+      "name": "base64",
+      "version": "0.23.1",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/base64/0.23.1",
+      "source": "rust"
+    },
+    {
       "name": "bollard",
-      "version": "0.20.2",
+      "version": "0.21.1",
       "license": "Apache-2.0",
-      "url": "https://crates.io/crates/bollard/0.20.2",
+      "url": "https://crates.io/crates/bollard/0.21.1",
       "source": "rust"
     },
     {
@@ -102,17 +123,24 @@
     },
     {
       "name": "diffy",
-      "version": "0.5.1",
+      "version": "0.5.2",
       "license": "MIT OR Apache-2.0",
-      "url": "https://crates.io/crates/diffy/0.5.1",
+      "url": "https://crates.io/crates/diffy/0.5.2",
       "source": "rust"
     },
     {
       "name": "esbuild",
-      "version": "0.28.1",
+      "version": "0.28.2",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/esbuild/v/0.28.1",
+      "url": "https://www.npmjs.com/package/esbuild/v/0.28.2",
       "source": "npm"
+    },
+    {
+      "name": "flate2",
+      "version": "1.1.10",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/flate2/1.1.10",
+      "source": "rust"
     },
     {
       "name": "Fontsource",
@@ -123,16 +151,16 @@
     },
     {
       "name": "futures-util",
-      "version": "0.3.33",
+      "version": "0.3.34",
       "license": "MIT OR Apache-2.0",
-      "url": "https://crates.io/crates/futures-util/0.3.33",
+      "url": "https://crates.io/crates/futures-util/0.3.34",
       "source": "rust"
     },
     {
       "name": "ignore",
-      "version": "0.4.31",
+      "version": "0.4.33",
       "license": "Unlicense OR MIT",
-      "url": "https://crates.io/crates/ignore/0.4.31",
+      "url": "https://crates.io/crates/ignore/0.4.33",
       "source": "rust"
     },
     {
@@ -158,16 +186,16 @@
     },
     {
       "name": "log",
-      "version": "0.4.33",
+      "version": "0.4.34",
       "license": "MIT OR Apache-2.0",
-      "url": "https://crates.io/crates/log/0.4.33",
+      "url": "https://crates.io/crates/log/0.4.34",
       "source": "rust"
     },
     {
       "name": "material-icon-theme",
-      "version": "5.37.0",
+      "version": "5.38.1",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.37.0",
+      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.38.1",
       "source": "npm"
     },
     {
@@ -175,6 +203,27 @@
       "version": "7.0.0",
       "license": "CC0-1.0",
       "url": "https://crates.io/crates/notify/7.0.0",
+      "source": "rust"
+    },
+    {
+      "name": "objc2",
+      "version": "0.6.4",
+      "license": "MIT",
+      "url": "https://crates.io/crates/objc2/0.6.4",
+      "source": "rust"
+    },
+    {
+      "name": "objc2-app-kit",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/objc2-app-kit/0.3.2",
+      "source": "rust"
+    },
+    {
+      "name": "objc2-foundation",
+      "version": "0.3.2",
+      "license": "MIT",
+      "url": "https://crates.io/crates/objc2-foundation/0.3.2",
       "source": "rust"
     },
     {
@@ -193,23 +242,23 @@
     },
     {
       "name": "react",
-      "version": "19.2.8",
+      "version": "19.3.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react/v/19.2.8",
+      "url": "https://www.npmjs.com/package/react/v/19.3.0",
       "source": "npm"
     },
     {
       "name": "react-dom",
-      "version": "19.2.8",
+      "version": "19.3.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-dom/v/19.2.8",
+      "url": "https://www.npmjs.com/package/react-dom/v/19.3.0",
       "source": "npm"
     },
     {
       "name": "react-resizable-panels",
-      "version": "4.12.2",
+      "version": "4.12.4",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.12.2",
+      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.12.4",
       "source": "npm"
     },
     {
@@ -228,9 +277,9 @@
     },
     {
       "name": "reqwest",
-      "version": "0.13.4",
+      "version": "0.13.5",
       "license": "MIT OR Apache-2.0",
-      "url": "https://crates.io/crates/reqwest/0.13.4",
+      "url": "https://crates.io/crates/reqwest/0.13.5",
       "source": "rust"
     },
     {
@@ -256,9 +305,9 @@
     },
     {
       "name": "shared_child",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "license": "MIT",
-      "url": "https://crates.io/crates/shared_child/1.1.1",
+      "url": "https://crates.io/crates/shared_child/1.1.2",
       "source": "rust"
     },
     {
@@ -270,16 +319,16 @@
     },
     {
       "name": "sonner",
-      "version": "2.0.7",
+      "version": "2.0.8",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/sonner/v/2.0.7",
+      "url": "https://www.npmjs.com/package/sonner/v/2.0.8",
       "source": "npm"
     },
     {
       "name": "streamdown",
-      "version": "2.5.0",
+      "version": "2.6.0",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/streamdown/v/2.5.0",
+      "url": "https://www.npmjs.com/package/streamdown/v/2.6.0",
       "source": "npm"
     },
     {
@@ -298,9 +347,9 @@
     },
     {
       "name": "tailwind-merge",
-      "version": "3.6.0",
+      "version": "3.7.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/tailwind-merge/v/3.6.0",
+      "url": "https://www.npmjs.com/package/tailwind-merge/v/3.7.0",
       "source": "npm"
     },
     {
@@ -316,6 +365,13 @@
       "license": "MIT",
       "url": "https://www.npmjs.com/search?q=TanStack",
       "source": "npm"
+    },
+    {
+      "name": "tar",
+      "version": "0.4.46",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/tar/0.4.46",
+      "source": "rust"
     },
     {
       "name": "tauri",
@@ -340,30 +396,30 @@
     },
     {
       "name": "tauri-plugin-clipboard-manager",
-      "version": "2.3.2",
+      "version": "2.3.3",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-clipboard-manager/2.3.2",
+      "url": "https://crates.io/crates/tauri-plugin-clipboard-manager/2.3.3",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-dialog",
-      "version": "2.7.2",
+      "version": "2.7.3",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-dialog/2.7.2",
+      "url": "https://crates.io/crates/tauri-plugin-dialog/2.7.3",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-log",
-      "version": "2.9.0",
+      "version": "2.9.1",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-log/2.9.0",
+      "url": "https://crates.io/crates/tauri-plugin-log/2.9.1",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-opener",
-      "version": "2.5.4",
+      "version": "2.5.5",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-opener/2.5.4",
+      "url": "https://crates.io/crates/tauri-plugin-opener/2.5.5",
       "source": "rust"
     },
     {
@@ -375,9 +431,9 @@
     },
     {
       "name": "tauri-plugin-single-instance",
-      "version": "2.4.3",
+      "version": "2.4.4",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-single-instance/2.4.3",
+      "url": "https://crates.io/crates/tauri-plugin-single-instance/2.4.4",
       "source": "rust"
     },
     {
@@ -389,9 +445,9 @@
     },
     {
       "name": "tauri-plugin-updater",
-      "version": "2.10.1",
+      "version": "2.11.0",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-updater/2.10.1",
+      "url": "https://crates.io/crates/tauri-plugin-updater/2.11.0",
       "source": "rust"
     },
     {
@@ -431,16 +487,23 @@
     },
     {
       "name": "uuid",
-      "version": "1.24.0",
+      "version": "1.26.1",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/uuid/1.24.0",
+      "url": "https://crates.io/crates/uuid/1.26.1",
       "source": "rust"
     },
     {
       "name": "vite-plus",
-      "version": "0.2.2",
+      "version": "0.3.2",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/vite-plus/v/0.2.2",
+      "url": "https://www.npmjs.com/package/vite-plus/v/0.3.2",
+      "source": "npm"
+    },
+    {
+      "name": "vitepress",
+      "version": "1.6.4",
+      "license": "MIT",
+      "url": "https://www.npmjs.com/package/vitepress/v/1.6.4",
       "source": "npm"
     },
     {
@@ -459,9 +522,9 @@
     },
     {
       "name": "zustand",
-      "version": "5.0.14",
+      "version": "5.0.15",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/zustand/v/5.0.14",
+      "url": "https://www.npmjs.com/package/zustand/v/5.0.15",
       "source": "npm"
     }
   ]
