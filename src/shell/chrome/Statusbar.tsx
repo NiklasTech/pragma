@@ -4,6 +4,7 @@ import { useEditorStore, type EditorTab } from "@/shared/stores/editor";
 import { useGitStore } from "@/shared/stores/git";
 import { useAIStore } from "@/shared/stores/ai";
 import { useProblemsStore } from "@/shared/stores/problems";
+import { useLayoutStore } from "@/shell/layout/store";
 import { cn } from "@/shared/lib/utils";
 
 function isFileTab(tab: EditorTab | undefined): tab is Extract<EditorTab, { kind: "file" }> {
@@ -21,14 +22,29 @@ function detectEol(content: string): string {
 function StatusbarSection({
   children,
   className,
+  onClick,
+  label,
 }: {
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
+  label?: string;
 }) {
+  const classes = cn("flex items-center gap-1.5 px-2 text-ui-xs text-fg-muted", className);
+
+  if (!onClick) {
+    return <div className={classes}>{children}</div>;
+  }
+
   return (
-    <div className={cn("flex items-center gap-1.5 px-2 text-ui-xs text-fg-muted", className)}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={cn(classes, "h-full transition-colors hover:bg-bg-hover hover:text-fg-default")}
+    >
       {children}
-    </div>
+    </button>
   );
 }
 
@@ -120,7 +136,11 @@ export function Statusbar() {
       case "problems":
         if (errorCount === 0 && warningCount === 0) return null;
         return (
-          <StatusbarSection key={item}>
+          <StatusbarSection
+            key={item}
+            label="Open problems panel"
+            onClick={() => useLayoutStore.getState().addFloatingPanel("problems")}
+          >
             {errorCount > 0 && (
               <>
                 <XCircle size={12} className="text-status-error" />
