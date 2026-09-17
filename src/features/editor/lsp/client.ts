@@ -77,6 +77,14 @@ export interface LspWorkspaceSymbolItem {
   containerName?: string;
 }
 
+export interface LspInlayHint {
+  position: { line: number; character: number };
+  label: string;
+  kind?: number;
+  paddingLeft: boolean;
+  paddingRight: boolean;
+}
+
 export interface LspFeatureFlags {
   completion: boolean;
   completionResolve: boolean;
@@ -91,6 +99,7 @@ export interface LspFeatureFlags {
   codeAction: boolean;
   documentSymbol: boolean;
   workspaceSymbol: boolean;
+  inlayHint: boolean;
   incrementalSync: boolean;
 }
 
@@ -188,6 +197,14 @@ export async function lspWorkspaceSymbol(
   query: string,
 ): Promise<LspWorkspaceSymbolItem[]> {
   return invoke("lsp_workspace_symbol", { language, filePath, query });
+}
+
+export async function lspInlayHint(
+  language: string,
+  filePath: string,
+  range: LspRange,
+): Promise<LspInlayHint[]> {
+  return invoke("lsp_inlay_hint", { language, filePath, range });
 }
 
 export async function lspServerCapabilities(

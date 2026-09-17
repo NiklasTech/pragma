@@ -54,6 +54,20 @@ pub fn status(repo_root: &str) -> Result<GitStatusSnapshot> {
     status_inner(&repo_root)
 }
 
+pub fn conflicted_files(repo_root: &str) -> Result<Vec<String>> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    let lines = git_stdout_lines(
+        &repo_root.to_string_lossy(),
+        ["diff", "--name-only", "--diff-filter=U"],
+    )?;
+    Ok(lines
+        .into_iter()
+        .map(|line| line.trim().to_string())
+        .filter(|line| !line.is_empty())
+        .collect())
+}
+
 fn status_inner(repo_root: &Path) -> Result<GitStatusSnapshot> {
     let output = run_git(
         Some(&repo_root.to_string_lossy()),

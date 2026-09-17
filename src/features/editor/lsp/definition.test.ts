@@ -194,5 +194,6 @@ const allFlags: LspFeatureFlags = {
   codeAction: true,
   documentSymbol: true,
   workspaceSymbol: true,
+  inlayHint: true,
   incrementalSync: true,
 };

@@ -110,7 +110,7 @@ pub async fn ai_terminal_suggestion(
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "openrouter" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider

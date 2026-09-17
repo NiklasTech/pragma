@@ -23,6 +23,7 @@ pub struct GitStatusEntry {
     pub status_code: String,
     pub is_staged: bool,
     pub is_unstaged: bool,
+    pub is_conflicted: bool,
 }
 
 #[derive(Serialize)]
@@ -134,6 +135,28 @@ pub struct StashEntry {
     pub index: u32,
     pub message: String,
     pub ref_name: String,
+    pub timestamp_secs: i64,
+}
+
+#[derive(Serialize)]
+pub struct GitConflictSides {
+    pub base_content: String,
+    pub current_content: String,
+    pub incoming_content: String,
+    pub worktree_content: String,
+    pub is_binary: bool,
+    pub truncated: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct GitBlameLine {
+    pub line: u32,
+    pub sha: String,
+    pub short_sha: String,
+    pub author: String,
+    pub author_email: String,
+    pub timestamp_secs: i64,
+    pub content: String,
 }
 
 #[derive(Serialize, Debug, Clone)]

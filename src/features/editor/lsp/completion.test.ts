@@ -72,6 +72,7 @@ describe("createLspCompletionSource", () => {
     codeAction: true,
     documentSymbol: true,
     workspaceSymbol: true,
+    inlayHint: true,
     incrementalSync: true,
   };
 
@@ -162,6 +163,7 @@ describe("completion info documentation", () => {
     codeAction: true,
     documentSymbol: true,
     workspaceSymbol: true,
+    inlayHint: true,
     incrementalSync: true,
   };
   const resolveFlags = { ...baseFlags, completionResolve: true };

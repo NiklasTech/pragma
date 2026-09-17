@@ -12,6 +12,9 @@
     "preview": "vp preview",
     "check": "vp check",
     "test": "vp test --run",
+    "docs:dev": "vitepress dev docs-site",
+    "docs:build": "vitepress build docs-site",
+    "docs:preview": "vitepress preview docs-site",
     "prepare": "vp config",
     "generate:licenses": "node scripts/generate-licenses.mjs",
     "generate:icons": "node scripts/generate-app-icons.js",
@@ -93,7 +96,8 @@
     "esbuild": "^0.28.1",
     "typescript": "~7.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@0.2.2",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vitepress": "^1.6.4"
   },
   "packageManager": "pnpm@11.5.0"
 }

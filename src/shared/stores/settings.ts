@@ -25,6 +25,7 @@ export interface EditorSettings {
   autoSaveDelay: number;
   formatOnSave: boolean;
   stickyLines: boolean;
+  inlayHints: boolean;
 }
 
 export interface TerminalSettings {
@@ -45,7 +46,11 @@ export type AIProvider =
   | "gemini"
   | "openrouter"
   | "custom"
-  | "copilot";
+  | "copilot"
+  | "grok"
+  | "cursor"
+  | "opencode"
+  | "hermes";
 
 export interface ProviderSettings {
   model: string;
@@ -218,6 +223,7 @@ const defaultSettings: SettingsState = {
     autoSaveDelay: 1000,
     formatOnSave: false,
     stickyLines: false,
+    inlayHints: false,
   },
   terminal: {
     shell: "",
@@ -250,6 +256,10 @@ const defaultSettings: SettingsState = {
       openrouter: { baseUrl: "https://openrouter.ai/api/v1", model: "" },
       custom: { baseUrl: "", model: "" },
       copilot: { model: "" },
+      grok: { baseUrl: "https://api.x.ai/v1", model: "" },
+      cursor: { model: "" },
+      opencode: { model: "" },
+      hermes: { model: "" },
     },
   },
   theme: "dark-default",

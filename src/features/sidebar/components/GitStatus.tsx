@@ -30,9 +30,15 @@ import { FileRow } from "./git-status/FileRow";
 import { CleanTreeHint } from "./git-status/CleanTreeHint";
 import { HistoryHeader } from "./git-status/HistoryHeader";
 import { HistoryEntry } from "./git-status/HistoryEntry";
+import { StashPanel } from "./StashPanel";
+import { ConflictFileRow } from "./ConflictFileRow";
+import { GitConflictEditor } from "./GitConflictEditor";
+import { GutterBlame } from "./GutterBlame";
 
 type GitRow =
   | { kind: "commit-area"; key: string }
+  | { kind: "conflict-header"; key: string; count: number }
+  | { kind: "conflict-entry"; key: string; entry: GitStatusEntry }
   | { kind: "staged-header"; key: string; count: number }
   | { kind: "staged-entry"; key: string; entry: GitStatusEntry }
   | { kind: "unstaged-header"; key: string; count: number }
@@ -43,6 +49,8 @@ type GitRow =
 
 const ROW_HEIGHTS = {
   "commit-area": 130,
+  "conflict-header": 24,
+  "conflict-entry": 36,
   "staged-header": 24,
   "staged-entry": 36,
   "unstaged-header": 24,
@@ -80,6 +88,7 @@ export function GitStatus() {
     refreshAll,
     discardFiles,
     remotes,
+    openConflict,
   } = useGitStore();
 
   const editorPanelId = useEditorPanelId();
@@ -105,8 +114,15 @@ export function GitStatus() {
   }, [repoPath, loadLog, loadBranches]);
 
   const allFiles = useMemo(() => snapshot?.changed_files ?? [], [snapshot]);
-  const stagedFiles = useMemo(() => allFiles.filter((f) => f.is_staged), [allFiles]);
-  const unstagedFiles = useMemo(() => allFiles.filter((f) => f.is_unstaged), [allFiles]);
+  const conflictFiles = useMemo(() => allFiles.filter((f) => f.is_conflicted), [allFiles]);
+  const stagedFiles = useMemo(
+    () => allFiles.filter((f) => f.is_staged && !f.is_conflicted),
+    [allFiles],
+  );
+  const unstagedFiles = useMemo(
+    () => allFiles.filter((f) => f.is_unstaged && !f.is_conflicted),
+    [allFiles],
+  );
 
   const stagedCheckState = useMemo<CheckState>(() => {
     if (stagedFiles.length === 0) return "unchecked";
@@ -199,6 +215,16 @@ export function GitStatus() {
     if (allFiles.length === 0) {
       result.push({ kind: "clean-hint", key: "clean-hint" });
     } else {
+      if (conflictFiles.length > 0) {
+        result.push({
+          kind: "conflict-header",
+          key: "conflict-header",
+          count: conflictFiles.length,
+        });
+        for (const entry of conflictFiles) {
+          result.push({ kind: "conflict-entry", key: `conflict-${entry.path}`, entry });
+        }
+      }
       if (stagedFiles.length > 0) {
         result.push({ kind: "staged-header", key: "staged-header", count: stagedFiles.length });
         for (const entry of stagedFiles) {
@@ -227,7 +253,7 @@ export function GitStatus() {
     }
 
     return result;
-  }, [allFiles, stagedFiles, unstagedFiles, commits, historyExpanded]);
+  }, [allFiles, conflictFiles, stagedFiles, unstagedFiles, commits, historyExpanded]);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -302,6 +328,8 @@ export function GitStatus() {
         actionBusy={actionBusy}
       />
 
+      <StashPanel />
+
       {actionStatus && (
         <div className="flex animate-pulse items-center gap-1 px-3 py-1 text-ui-xs text-fg-muted">
           <Spinner size={10} className="animate-spin" />
@@ -346,6 +374,47 @@ export function GitStatus() {
                     actionBusy={actionBusy}
                     onCommit={handleCommit}
                   />
+                </div>
+              );
+            }
+
+            if (row.kind === "conflict-header") {
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: virtualRow.size,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <div className="flex h-6 items-center gap-2 px-3">
+                    <span className="text-ui-xs font-medium uppercase tracking-wide text-status-error">
+                      Conflicts
+                    </span>
+                    <span className="text-ui-xs tabular-nums text-fg-muted">{row.count}</span>
+                  </div>
+                </div>
+              );
+            }
+
+            if (row.kind === "conflict-entry") {
+              return (
+                <div
+                  key={virtualRow.key}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: virtualRow.size,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <ConflictFileRow entry={row.entry} onOpen={(e) => void openConflict(e.path)} />
                 </div>
               );
             }
@@ -609,6 +678,9 @@ export function GitStatus() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <GitConflictEditor />
+      <GutterBlame />
     </div>
   );
 }

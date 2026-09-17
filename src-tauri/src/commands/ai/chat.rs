@@ -56,7 +56,7 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "openrouter" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider
@@ -189,7 +189,7 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
     };
 
     let result = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "openrouter" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider.complete(completion_req).await
@@ -267,7 +267,7 @@ pub async fn ai_list_models(req: ListModelsRequest) -> Result<Vec<ModelInfoRespo
     };
 
     let models = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "openrouter" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider.list_models().await
@@ -414,7 +414,7 @@ pub async fn ai_generate_chat_title(
     };
 
     let response = match req.provider.as_str() {
-        "openai" | "deepseek" | "kimi" | "openrouter" => {
+        "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => {
             let provider = OpenAIProvider::new_for_provider(config, &req.provider)
                 .map_err(|e| e.to_string())?;
             provider.complete(completion_req).await

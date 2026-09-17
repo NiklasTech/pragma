@@ -55,8 +55,8 @@ pub enum OutputFormat {
 
 /// Built-in manifests for verified CLI providers.
 ///
-/// OpenAI Codex and Kimi Code both speak the Agent Client Protocol (ACP), so
-/// the ACP session manager is manifest-driven and works for any entry here.
+/// Each entry speaks the Agent Client Protocol (ACP), so the session manager
+/// is manifest-driven and works for any id in this table.
 pub fn built_in_manifests() -> Vec<CLIManifest> {
     vec![
         CLIManifest {
@@ -98,6 +98,128 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
                 "codex".to_string(),
             )])),
         },
+        CLIManifest {
+            id: "anthropic-claude".to_string(),
+            name: "Claude Code".to_string(),
+            description:
+                "Anthropic Claude Code CLI via Agent Client Protocol — uses your Claude Pro/Max plan"
+                    .to_string(),
+            install_cmd: "npm install -g @anthropic-ai/claude-code".to_string(),
+            check_cmd: "claude --version".to_string(),
+            login_cmd: "claude auth login".to_string(),
+            auth_check_cmd: Some("claude auth status".to_string()),
+            logout_cmd: Some("claude auth logout".to_string()),
+            chat_cmd: "npx -y @agentclientprotocol/claude-agent-acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "google-gemini".to_string(),
+            name: "Gemini CLI".to_string(),
+            description:
+                "Google Gemini CLI via Agent Client Protocol — uses your Gemini/Google account"
+                    .to_string(),
+            install_cmd: "npm install -g @google/gemini-cli".to_string(),
+            check_cmd: "gemini --version".to_string(),
+            login_cmd: "gemini".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "gemini --acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "github-copilot".to_string(),
+            name: "GitHub Copilot CLI".to_string(),
+            description:
+                "GitHub Copilot CLI via Agent Client Protocol — uses your Copilot plan"
+                    .to_string(),
+            install_cmd: "npm install -g @github/copilot".to_string(),
+            check_cmd: "copilot --version".to_string(),
+            login_cmd: "copilot login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "copilot --acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "xai-grok".to_string(),
+            name: "Grok Build".to_string(),
+            description:
+                "xAI Grok Build CLI via Agent Client Protocol — uses your Grok/SuperGrok plan"
+                    .to_string(),
+            install_cmd: "npm install -g @xai-official/grok".to_string(),
+            check_cmd: "grok --version".to_string(),
+            login_cmd: "grok login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: Some("grok logout".to_string()),
+            chat_cmd: "grok agent stdio".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "cursor-agent".to_string(),
+            name: "Cursor CLI".to_string(),
+            description: "Cursor Agent CLI via Agent Client Protocol — uses your Cursor plan"
+                .to_string(),
+            install_cmd: "bash -lc \"curl https://cursor.com/install -fsS | bash\"".to_string(),
+            check_cmd: "cursor-agent --version".to_string(),
+            login_cmd: "cursor-agent login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "cursor-agent acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "opencode".to_string(),
+            name: "OpenCode".to_string(),
+            description: "OpenCode CLI via Agent Client Protocol".to_string(),
+            install_cmd: "npm install -g @opencode/cli".to_string(),
+            check_cmd: "opencode --version".to_string(),
+            login_cmd: "opencode auth login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: Some("opencode auth logout".to_string()),
+            chat_cmd: "opencode acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "hermes-agent".to_string(),
+            name: "Hermes Agent".to_string(),
+            description: "Nous Hermes Agent CLI via Agent Client Protocol".to_string(),
+            install_cmd: "bash -lc \"curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash\""
+                .to_string(),
+            check_cmd: "hermes --version".to_string(),
+            login_cmd: "hermes login".to_string(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "hermes acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            env: None,
+            path_env: None,
+        },
     ]
 }
 
@@ -110,10 +232,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn built_in_manifests_include_kimi_and_codex() {
+    fn built_in_manifests_include_all_nine_providers() {
         let ids: Vec<String> = built_in_manifests().into_iter().map(|m| m.id).collect();
         assert!(ids.contains(&"moonshot-kimi".to_string()));
         assert!(ids.contains(&"openai-codex".to_string()));
+        assert!(ids.contains(&"anthropic-claude".to_string()));
+        assert!(ids.contains(&"google-gemini".to_string()));
+        assert!(ids.contains(&"github-copilot".to_string()));
+        assert!(ids.contains(&"xai-grok".to_string()));
+        assert!(ids.contains(&"cursor-agent".to_string()));
+        assert!(ids.contains(&"opencode".to_string()));
+        assert!(ids.contains(&"hermes-agent".to_string()));
     }
 
     #[test]
@@ -146,5 +275,104 @@ mod tests {
             path_env.get("CODEX_PATH").map(String::as_str),
             Some("codex")
         );
+    }
+
+    #[test]
+    fn anthropic_claude_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("anthropic-claude").expect("claude manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(
+            manifest.install_cmd,
+            "npm install -g @anthropic-ai/claude-code"
+        );
+        assert_eq!(manifest.check_cmd, "claude --version");
+        assert_eq!(manifest.login_cmd, "claude auth login");
+        assert_eq!(
+            manifest.auth_check_cmd.as_deref(),
+            Some("claude auth status")
+        );
+        assert_eq!(manifest.logout_cmd.as_deref(), Some("claude auth logout"));
+        assert_eq!(
+            manifest.chat_cmd,
+            "npx -y @agentclientprotocol/claude-agent-acp"
+        );
+    }
+
+    #[test]
+    fn google_gemini_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("google-gemini").expect("gemini manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(manifest.install_cmd, "npm install -g @google/gemini-cli");
+        assert_eq!(manifest.check_cmd, "gemini --version");
+        assert_eq!(manifest.login_cmd, "gemini");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
+        assert_eq!(manifest.chat_cmd, "gemini --acp");
+    }
+
+    #[test]
+    fn github_copilot_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("github-copilot").expect("copilot manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(manifest.install_cmd, "npm install -g @github/copilot");
+        assert_eq!(manifest.check_cmd, "copilot --version");
+        assert_eq!(manifest.login_cmd, "copilot login");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
+        assert_eq!(manifest.chat_cmd, "copilot --acp");
+    }
+
+    #[test]
+    fn xai_grok_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("xai-grok").expect("grok manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(manifest.install_cmd, "npm install -g @xai-official/grok");
+        assert_eq!(manifest.check_cmd, "grok --version");
+        assert_eq!(manifest.login_cmd, "grok login");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd.as_deref(), Some("grok logout"));
+        assert_eq!(manifest.chat_cmd, "grok agent stdio");
+    }
+
+    #[test]
+    fn cursor_agent_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("cursor-agent").expect("cursor manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(
+            manifest.install_cmd,
+            "bash -lc \"curl https://cursor.com/install -fsS | bash\""
+        );
+        assert_eq!(manifest.check_cmd, "cursor-agent --version");
+        assert_eq!(manifest.login_cmd, "cursor-agent login");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
+        assert_eq!(manifest.chat_cmd, "cursor-agent acp");
+    }
+
+    #[test]
+    fn opencode_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("opencode").expect("opencode manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(manifest.install_cmd, "npm install -g @opencode/cli");
+        assert_eq!(manifest.check_cmd, "opencode --version");
+        assert_eq!(manifest.login_cmd, "opencode auth login");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd.as_deref(), Some("opencode auth logout"));
+        assert_eq!(manifest.chat_cmd, "opencode acp");
+    }
+
+    #[test]
+    fn hermes_agent_manifest_uses_acp_with_official_commands() {
+        let manifest = get_manifest("hermes-agent").expect("hermes manifest");
+        assert!(manifest.uses_acp);
+        assert_eq!(
+            manifest.install_cmd,
+            "bash -lc \"curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash\""
+        );
+        assert_eq!(manifest.check_cmd, "hermes --version");
+        assert_eq!(manifest.login_cmd, "hermes login");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
+        assert_eq!(manifest.chat_cmd, "hermes acp");
     }
 }

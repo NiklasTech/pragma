@@ -7,8 +7,8 @@ pub mod uris;
 pub use manager::{resolve_project_root, LspManager};
 pub use types::{
     DefinitionTarget, LspCodeAction, LspCompletionItem, LspDiagnostic, LspDiagnosticsEvent,
-    LspDocumentSymbolItem, LspFeatureFlags, LspFileEdit, LspHover, LspLocation, LspPosition,
-    LspRange, LspServerStatus, LspSignatureHelp, LspStatusEvent, LspTextEdit,
+    LspDocumentSymbolItem, LspFeatureFlags, LspFileEdit, LspHover, LspInlayHint, LspLocation,
+    LspPosition, LspRange, LspServerStatus, LspSignatureHelp, LspStatusEvent, LspTextEdit,
     LspWorkspaceSymbolItem, ProjectLanguage,
 };
 
@@ -350,6 +350,25 @@ pub async fn lsp_workspace_symbol(
     let project_root = project_root_for(&language, &file_path);
     state
         .workspace_symbol(&language, &project_root, &query)
+        .await
+}
+
+#[tauri::command]
+pub async fn lsp_inlay_hint(
+    state: tauri::State<'_, LspManager>,
+    language: String,
+    file_path: String,
+    range: LspRange,
+) -> Result<Vec<LspInlayHint>, String> {
+    if language.is_empty() {
+        return Err("language is required".to_string());
+    }
+    if file_path.is_empty() {
+        return Err("file_path is required".to_string());
+    }
+    let project_root = project_root_for(&language, &file_path);
+    state
+        .inlay_hint(&language, &project_root, &file_path, range)
         .await
 }
 
