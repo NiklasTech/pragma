@@ -45,6 +45,23 @@ export interface ExtensionSummary {
   error: string | null;
 }
 
+export interface WorkspaceFile {
+  path: string;
+  name: string;
+  content: string;
+}
+
+export interface WorkspaceEntry {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+}
+
+export interface EditorSelection {
+  line: number;
+  column: number;
+}
+
 export interface BridgeRequest {
   kind: "request";
   id: number;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vite-plus/test";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -10,9 +10,14 @@ import {
 } from "./bridge";
 import { useExtensionsStore } from "./store";
 
-function makeContext(sent: string[] = []): BridgeContext {
+const invokeMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
+
+function makeContext(sent: string[] = [], workspaceRoot: string | null = null): BridgeContext {
   return {
     extensionId: "test-ext",
+    workspaceRoot,
     sendCommand: (commandId) => {
       sent.push(commandId);
     },
@@ -47,9 +52,11 @@ describe("parseBridgeRequest", () => {
 
 describe("handleBridgeRequest", () => {
   beforeEach(() => {
+    invokeMock.mockReset();
     useCommandPaletteStore.setState({ commands: [], isOpen: false });
     useSettingsStore.setState({ extensions: {} });
-    useExtensionsStore.setState({ panels: [], summaries: [], statuses: {} });
+    useExtensionsStore.setState({ panels: [], summaries: [], statuses: {}, workspaceRoot: null });
+    useEditorStore.setState({ tabs: [], activeTabId: null, cursorPositions: {} });
   });
 
   it("registers a command with a prefixed id and forwards execution", async () => {
@@ -190,6 +197,191 @@ describe("handleBridgeRequest", () => {
       language: "typescript",
       cursor: { line: 4, column: 2 },
     });
+  });
+
+  it("reads workspace files through the confined workspace command", async () => {
+    invokeMock.mockResolvedValue({ path: "/ws/a.txt", name: "a.txt", content: "hi" });
+    const result = await handleBridgeRequest(makeContext([], "/ws"), {
+      kind: "request",
+      id: 1,
+      method: "workspace.readFile",
+      params: { path: "a.txt" },
+    });
+    expect(invokeMock).toHaveBeenCalledWith("extension_workspace_read_file", {
+      workspaceRoot: "/ws",
+      path: "a.txt",
+    });
+    expect(result).toEqual({ path: "/ws/a.txt", name: "a.txt", content: "hi" });
+  });
+
+  it("writes workspace files through the confined workspace command", async () => {
+    invokeMock.mockResolvedValue(undefined);
+    await handleBridgeRequest(makeContext([], "/ws"), {
+      kind: "request",
+      id: 1,
+      method: "workspace.writeFile",
+      params: { path: "a.txt", content: "" },
+    });
+    expect(invokeMock).toHaveBeenCalledWith("extension_workspace_write_file", {
+      workspaceRoot: "/ws",
+      path: "a.txt",
+      content: "",
+    });
+  });
+
+  it("maps workspace.list entries to camelCase", async () => {
+    invokeMock.mockResolvedValue([
+      { path: "/ws/src", name: "src", is_directory: true, is_file: false },
+    ]);
+    const result = await handleBridgeRequest(makeContext([], "/ws"), {
+      kind: "request",
+      id: 1,
+      method: "workspace.list",
+      params: {},
+    });
+    expect(invokeMock).toHaveBeenCalledWith("extension_workspace_list", {
+      workspaceRoot: "/ws",
+      path: ".",
+    });
+    expect(result).toEqual([{ path: "/ws/src", name: "src", isDirectory: true }]);
+  });
+
+  it("rejects workspace access without an open workspace", async () => {
+    await expect(
+      handleBridgeRequest(makeContext(), {
+        kind: "request",
+        id: 1,
+        method: "workspace.readFile",
+        params: { path: "a.txt" },
+      }),
+    ).rejects.toThrow("No workspace is open");
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects workspace requests with invalid params", async () => {
+    const ctx = makeContext([], "/ws");
+    await expect(
+      handleBridgeRequest(ctx, {
+        kind: "request",
+        id: 1,
+        method: "workspace.readFile",
+        params: {},
+      }),
+    ).rejects.toThrow('"path"');
+    await expect(
+      handleBridgeRequest(ctx, {
+        kind: "request",
+        id: 2,
+        method: "workspace.writeFile",
+        params: { path: "a.txt", content: 5 },
+      }),
+    ).rejects.toThrow('"content"');
+    await expect(
+      handleBridgeRequest(ctx, {
+        kind: "request",
+        id: 3,
+        method: "workspace.list",
+        params: "nope",
+      }),
+    ).rejects.toThrow("params must be an object");
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it("reads and replaces the active editor text", async () => {
+    useEditorStore.setState({
+      tabs: [
+        {
+          id: "f1",
+          kind: "file",
+          path: "/repo/a.ts",
+          name: "a.ts",
+          content: "before",
+          originalContent: "before",
+          isModified: false,
+        },
+      ],
+      activeTabId: "f1",
+    });
+
+    expect(
+      await handleBridgeRequest(makeContext(), {
+        kind: "request",
+        id: 1,
+        method: "editor.getText",
+      }),
+    ).toBe("before");
+
+    await handleBridgeRequest(makeContext(), {
+      kind: "request",
+      id: 2,
+      method: "editor.setText",
+      params: { text: "after" },
+    });
+
+    const tab = useEditorStore.getState().tabs[0];
+    expect(tab?.kind === "file" ? tab.content : null).toBe("after");
+    expect(tab?.kind === "file" ? tab.isModified : false).toBe(true);
+  });
+
+  it("allows setting the active editor text to an empty string", async () => {
+    useEditorStore.setState({
+      tabs: [
+        {
+          id: "f1",
+          kind: "file",
+          path: "/repo/a.ts",
+          name: "a.ts",
+          content: "before",
+          originalContent: "before",
+          isModified: false,
+        },
+      ],
+      activeTabId: "f1",
+    });
+    await handleBridgeRequest(makeContext(), {
+      kind: "request",
+      id: 1,
+      method: "editor.setText",
+      params: { text: "" },
+    });
+    const tab = useEditorStore.getState().tabs[0];
+    expect(tab?.kind === "file" ? tab.content : null).toBe("");
+  });
+
+  it("returns the active editor selection from the cursor position", async () => {
+    useEditorStore.setState({
+      tabs: [
+        {
+          id: "f1",
+          kind: "file",
+          path: "/repo/a.ts",
+          name: "a.ts",
+          content: "",
+          originalContent: "",
+          isModified: false,
+        },
+      ],
+      activeTabId: "f1",
+      cursorPositions: { f1: { line: 7, column: 3 } },
+    });
+    expect(
+      await handleBridgeRequest(makeContext(), {
+        kind: "request",
+        id: 1,
+        method: "editor.getSelection",
+      }),
+    ).toEqual({ line: 7, column: 3 });
+  });
+
+  it("rejects editor writes without an active editor", async () => {
+    await expect(
+      handleBridgeRequest(makeContext(), {
+        kind: "request",
+        id: 1,
+        method: "editor.setText",
+        params: { text: "x" },
+      }),
+    ).rejects.toThrow("No active editor");
   });
 
   it("rejects unknown methods", async () => {

@@ -43,6 +43,7 @@ function onMessage(event: MessageEvent): void {
 
   const ctx = {
     extensionId,
+    workspaceRoot: useExtensionsStore.getState().workspaceRoot,
     sendCommand: (commandId: string) => sendEvent(extensionId, "command", { commandId }),
   };
 

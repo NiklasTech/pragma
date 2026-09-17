@@ -39,6 +39,23 @@ declare namespace pragma {
     commandId: string;
   }
 
+  interface WorkspaceFile {
+    path: string;
+    name: string;
+    content: string;
+  }
+
+  interface WorkspaceEntry {
+    path: string;
+    name: string;
+    isDirectory: boolean;
+  }
+
+  interface EditorSelection {
+    line: number;
+    column: number;
+  }
+
   const commands: {
     register(command: CommandDefinition): Promise<void>;
     unregister(id: string): Promise<void>;
@@ -62,8 +79,18 @@ declare namespace pragma {
     show(message: string, type?: NotificationType): Promise<void>;
   };
 
+  const workspace: {
+    // Paths are relative to the workspace root; anything outside it is rejected.
+    readFile(path: string): Promise<WorkspaceFile>;
+    writeFile(path: string, content: string): Promise<void>;
+    list(path?: string): Promise<WorkspaceEntry[]>;
+  };
+
   const editor: {
     getActiveFile(): Promise<ActiveFile | null>;
+    getText(): Promise<string | null>;
+    setText(text: string): Promise<void>;
+    getSelection(): Promise<EditorSelection | null>;
   };
 
   function onCommand(handler: (event: CommandEvent) => void): () => void;

@@ -84,14 +84,41 @@ await pragma.panels.register({ id: "status", title: "Status", html: "<p>live pan
 const previous = await pragma.settings.get();
 await pragma.settings.set({ runs: (previous?.runs ?? 0) + 1 });
 
-// read-only editor access (v1)
+// read-only editor access
 const file = await pragma.editor.getActiveFile();
 // -> { path, name, language, cursor: { line, column } } or null
+
+// active editor buffer (v2)
+const text = await pragma.editor.getText();
+await pragma.editor.setText("replaced buffer contents");
+const cursor = await pragma.editor.getSelection();
+// -> { line, column } of the active cursor, or null
+
+// workspace file access (v2), paths relative to the workspace root
+const doc = await pragma.workspace.readFile("notes/todo.md");
+// -> { path, name, content }
+await pragma.workspace.writeFile("notes/todo.md", doc.content + "\n- new item");
+const entries = await pragma.workspace.list("notes");
+// -> [{ path, name, isDirectory }]
 ```
 
-All `pragma.*` methods return promises and time out after 5 seconds. The editor
-API is read-only in v1; `pragma.editor.insertText` is intentionally not
-available yet.
+All `pragma.*` methods return promises and time out after 5 seconds.
+
+### Workspace file access (v2)
+
+`pragma.workspace.readFile`, `writeFile` and `list` accept paths relative to the
+workspace root. The host resolves every path against the root and rejects
+absolute paths, `..` traversal and symlinks that point outside the workspace.
+Writes go through the same local-history snapshots as the agent, so replacing an
+existing file stays undoable.
+
+### Editor access (v2)
+
+`editor.getText` returns the active editor buffer (or `null` when no file is
+open), `editor.setText` replaces the buffer through the editor store (the tab is
+marked modified; nothing is written to disk until the user saves) and
+`editor.getSelection` returns the active cursor position. The host does not track
+a selection range, so `getSelection` reports the cursor anchor only.
 
 ## Bridge protocol (host side)
 
