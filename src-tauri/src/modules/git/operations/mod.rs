@@ -1,6 +1,8 @@
+mod blame;
 mod branch;
 mod commit;
 mod compose;
+mod conflict;
 mod diff;
 mod log;
 mod remote;
@@ -8,6 +10,7 @@ mod stage;
 mod stash;
 mod status;
 
+pub use blame::blame;
 pub use branch::{
     checkout_branch, create_branch, delete_branch, get_branches, has_uncommitted_changes,
 };
@@ -16,12 +19,13 @@ pub use commit::{
     create_branch_from_commit, reset_to_commit, revert_commit, show_commit_diff,
 };
 pub use compose::compose_file_changed_between_branches;
+pub use conflict::{conflict_sides, resolve_conflict};
 pub use diff::{diff, diff_content};
 pub use log::{file_history, log};
 pub use remote::{fetch, list_remote_branches, list_remotes, pull_ff_only, push, remote_url};
 pub use stage::{discard, stage, unstage};
-pub use stash::{smart_checkout, stash_list, stash_pop, stash_push};
-pub use status::{resolve_repo, status};
+pub use stash::{smart_checkout, stash_apply, stash_drop, stash_list, stash_pop, stash_push};
+pub use status::{conflicted_files, resolve_repo, status};
 
 use std::path::Path;
 

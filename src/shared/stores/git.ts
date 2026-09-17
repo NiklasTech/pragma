@@ -10,6 +10,7 @@ export interface GitStatusEntry {
   status_code: string;
   is_staged: boolean;
   is_unstaged: boolean;
+  is_conflicted: boolean;
   original_path: string | null;
 }
 
@@ -67,6 +68,32 @@ export interface GitDiffContentResult {
   is_binary: boolean;
   fallback_patch: string;
   truncated: boolean;
+}
+
+export interface StashEntry {
+  index: number;
+  message: string;
+  ref_name: string;
+  timestamp_secs: number;
+}
+
+export interface GitConflictSides {
+  base_content: string;
+  current_content: string;
+  incoming_content: string;
+  worktree_content: string;
+  is_binary: boolean;
+  truncated: boolean;
+}
+
+export interface GitBlameLine {
+  line: number;
+  sha: string;
+  short_sha: string;
+  author: string;
+  author_email: string;
+  timestamp_secs: number;
+  content: string;
 }
 
 export interface GitGraphNode {
@@ -137,6 +164,16 @@ interface GitState {
   remotes: GitRemote[];
   remoteBranches: GitRemoteBranch[];
   pushPullError: string | null;
+  stashes: StashEntry[];
+  stashBusy: boolean;
+  conflictPath: string | null;
+  conflictSides: GitConflictSides | null;
+  conflictLoading: boolean;
+  blameEnabled: boolean;
+  blamePath: string | null;
+  blameLines: GitBlameLine[];
+  blameLoading: boolean;
+  blameSelectedSha: string | null;
 }
 
 interface GitActions {
@@ -177,6 +214,20 @@ interface GitActions {
   cherryPickCommit: (sha: string) => Promise<void>;
   revertCommit: (sha: string) => Promise<void>;
   resetToCommit: (sha: string, mode: "soft" | "mixed" | "hard") => Promise<void>;
+  loadStashes: () => Promise<void>;
+  stashPush: (message?: string) => Promise<void>;
+  stashPop: (stashRef: string) => Promise<void>;
+  stashApply: (stashRef: string) => Promise<void>;
+  stashDrop: (stashRef: string) => Promise<void>;
+  openConflict: (path: string) => Promise<void>;
+  closeConflict: () => void;
+  resolveConflict: (path: string, content: string) => Promise<void>;
+  markConflictResolved: (path: string) => Promise<void>;
+  loadBlame: (path: string) => Promise<void>;
+  setBlameEnabled: (enabled: boolean) => void;
+  toggleBlame: () => void;
+  setBlameSelectedSha: (sha: string | null) => void;
+  focusConflicts: () => Promise<string[]>;
 }
 
 const initialState: GitState = {
@@ -198,11 +249,31 @@ const initialState: GitState = {
   remotes: [],
   remoteBranches: [],
   pushPullError: null,
+  stashes: [],
+  stashBusy: false,
+  conflictPath: null,
+  conflictSides: null,
+  conflictLoading: false,
+  blameEnabled: false,
+  blamePath: null,
+  blameLines: [],
+  blameLoading: false,
+  blameSelectedSha: null,
 };
 
 export const useGitStore = create<GitState & GitActions>((set, get) => ({
   ...initialState,
 
+  focusConflicts: async () => {
+    await get().loadStatus();
+    const paths = (get().snapshot?.changed_files ?? [])
+      .filter((entry) => entry.is_conflicted)
+      .map((entry) => entry.path);
+    if (paths.length > 0) {
+      await get().openConflict(paths[0]);
+    }
+    return paths;
+  },
   setRepoPath: (path) => {
     set({
       repoPath: path,
@@ -265,7 +336,11 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      const result = await invoke<{ data: GitGraphData }>("git_graph", { repoPath, offset, limit });
+      const result = await invoke<{ data: GitGraphData }>("git_graph", {
+        repoPath,
+        offset,
+        limit,
+      });
       set({ graph: result.data, isLoading: false });
     } catch (err) {
       set({ graph: null, isLoading: false, error: String(err) });
@@ -401,6 +476,7 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
 
       if (result.pop_conflict) {
         toast.warning("Stash applied with conflicts. Resolve conflicts before continuing.");
+        await get().focusConflicts();
       } else if (result.stashed && !result.pop_ok) {
         toast.error("Failed to restore stashed changes.");
       }
@@ -461,8 +537,8 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
   },
 
   refreshAll: async () => {
-    const { loadStatus, loadBranches, loadLog, loadRemotes } = get();
-    await Promise.all([loadStatus(), loadBranches(), loadLog(), loadRemotes()]);
+    const { loadStatus, loadBranches, loadLog, loadRemotes, loadStashes } = get();
+    await Promise.all([loadStatus(), loadBranches(), loadLog(), loadRemotes(), loadStashes()]);
   },
 
   clearError: () => set({ error: null }),
@@ -530,8 +606,9 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
         rebase,
       });
       if (result.had_conflicts) {
-        toast.error("Pull resulted in conflicts. Resolve them manually.");
-        set({ pushPullError: "Pull resulted in conflicts. Resolve them manually." });
+        toast.error("Pull resulted in conflicts.");
+        set({ pushPullError: "Pull resulted in conflicts." });
+        await get().focusConflicts();
       } else if (result.pulled) {
         toast.success("Pull complete");
       } else {
@@ -549,8 +626,9 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
         toast.error("Authentication failed. Check your SSH key or HTTPS token.");
         set({ pushPullError: "Authentication failed. Check your SSH key or HTTPS token." });
       } else if (msg.includes("conflict")) {
-        toast.error("Pull resulted in conflicts. Resolve them manually.");
-        set({ pushPullError: "Pull resulted in conflicts. Resolve them manually." });
+        toast.error("Pull resulted in conflicts.");
+        set({ pushPullError: "Pull resulted in conflicts." });
+        await get().focusConflicts();
       } else {
         toast.error(msg);
         set({ pushPullError: msg });
@@ -688,7 +766,8 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
     } catch (err) {
       const msg = String(err);
       if (msg.includes("conflict")) {
-        toast.error("Cherry-pick resulted in conflicts. Resolve them manually.");
+        toast.error("Cherry-pick resulted in conflicts.");
+        await get().focusConflicts();
       } else {
         toast.error(msg);
       }
@@ -710,7 +789,8 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
     } catch (err) {
       const msg = String(err);
       if (msg.includes("conflict")) {
-        toast.error("Revert resulted in conflicts. Resolve them manually.");
+        toast.error("Revert resulted in conflicts.");
+        await get().focusConflicts();
       } else {
         toast.error(msg);
       }
@@ -736,4 +816,177 @@ export const useGitStore = create<GitState & GitActions>((set, get) => ({
       set({ actionBusy: null });
     }
   },
+
+  loadStashes: async () => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    try {
+      const stashes = await invoke<StashEntry[]>("git_stash_list", { repoPath });
+      set({ stashes });
+    } catch {
+      set({ stashes: [] });
+    }
+  },
+
+  stashPush: async (message) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ stashBusy: true });
+    try {
+      await invoke<string>("git_stash_push", { repoPath, message: message ?? "" });
+      toast.success("Changes stashed");
+      await get().loadStashes();
+      await get().loadStatus();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ stashBusy: false });
+    }
+  },
+
+  stashPop: async (stashRef: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ stashBusy: true });
+    try {
+      await invoke("git_stash_pop", { repoPath, stashRef });
+      toast.success("Stash popped");
+      await get().loadStashes();
+      await get().loadStatus();
+    } catch (err) {
+      const msg = String(err);
+      if (msg.toLowerCase().includes("conflict")) {
+        toast.error("Stash popped with conflicts. Resolve them to continue.");
+        await get().focusConflicts();
+      } else {
+        toast.error(msg);
+        set({ error: msg });
+      }
+      await get().loadStashes();
+    } finally {
+      set({ stashBusy: false });
+    }
+  },
+
+  stashApply: async (stashRef: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ stashBusy: true });
+    try {
+      await invoke("git_stash_apply", { repoPath, stashRef });
+      toast.success("Stash applied");
+      await get().loadStatus();
+    } catch (err) {
+      const msg = String(err);
+      if (msg.toLowerCase().includes("conflict")) {
+        toast.error("Stash applied with conflicts. Resolve them to continue.");
+        await get().focusConflicts();
+      } else {
+        toast.error(msg);
+        set({ error: msg });
+      }
+    } finally {
+      set({ stashBusy: false });
+    }
+  },
+
+  stashDrop: async (stashRef: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ stashBusy: true });
+    try {
+      await invoke("git_stash_drop", { repoPath, stashRef });
+      toast.success("Stash dropped");
+      await get().loadStashes();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ stashBusy: false });
+    }
+  },
+
+  openConflict: async (path: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ conflictPath: path, conflictSides: null, conflictLoading: true });
+    try {
+      const sides = await invoke<GitConflictSides>("git_conflict_sides", { repoPath, path });
+      set({ conflictSides: sides, conflictLoading: false });
+    } catch (err) {
+      toast.error(`Failed to load conflict: ${String(err)}`);
+      set({ conflictSides: null, conflictLoading: false });
+    }
+  },
+
+  closeConflict: () => set({ conflictPath: null, conflictSides: null, conflictLoading: false }),
+
+  resolveConflict: async (path: string, content: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ conflictLoading: true });
+    try {
+      await invoke("git_resolve_conflict", { repoPath, path, content });
+      toast.success(`Resolved ${path}`);
+      set({ conflictPath: null, conflictSides: null });
+      await get().loadStatus();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ conflictLoading: false });
+    }
+  },
+
+  markConflictResolved: async (path: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ conflictLoading: true });
+    try {
+      await invoke("git_stage", { repoPath, paths: [path] });
+      toast.success(`Marked ${path} as resolved`);
+      set({ conflictPath: null, conflictSides: null });
+      await get().loadStatus();
+    } catch (err) {
+      toast.error(String(err));
+      set({ error: String(err) });
+    } finally {
+      set({ conflictLoading: false });
+    }
+  },
+
+  loadBlame: async (path: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ blameLoading: true, blamePath: path });
+    try {
+      const lines = await invoke<GitBlameLine[]>("git_blame", { repoPath, path });
+      set({ blameLines: lines, blameLoading: false });
+    } catch {
+      set({ blameLines: [], blameLoading: false });
+    }
+  },
+
+  setBlameEnabled: (enabled: boolean) => set({ blameEnabled: enabled }),
+
+  toggleBlame: () => {
+    const enabled = !get().blameEnabled;
+    if (!enabled) {
+      set({ blameEnabled: false, blamePath: null, blameLines: [] });
+      return;
+    }
+    set({ blameEnabled: true });
+  },
+
+  setBlameSelectedSha: (sha: string | null) => set({ blameSelectedSha: sha }),
 }));
