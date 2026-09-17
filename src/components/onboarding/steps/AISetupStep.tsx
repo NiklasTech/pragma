@@ -18,6 +18,7 @@ import { Eye, EyeSlash } from "@phosphor-icons/react";
 const ONBOARDING_PROVIDERS: AIProvider[] = [
   "anthropic",
   "openai",
+  "grok",
   "deepseek",
   "kimi",
   "gemini",

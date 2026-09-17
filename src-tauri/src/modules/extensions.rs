@@ -2,6 +2,8 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
+pub mod workspace;
+
 pub const EXTENSION_FORMAT: &str = "pragma-extension-v1";
 
 const MAX_MAIN_SIZE_BYTES: u64 = 1024 * 1024;

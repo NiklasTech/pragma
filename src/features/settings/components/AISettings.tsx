@@ -15,7 +15,13 @@ import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
 import { invoke } from "@tauri-apps/api/core";
-import { PROVIDER_LABELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
+import {
+  CLI_PROVIDER_IDS,
+  PROVIDER_LABELS,
+  aiProviderForCLI,
+  isCLIOnlyProvider,
+  isKeyOptionalProvider,
+} from "@/shared/lib/ai-providers";
 import {
   Eye,
   EyeSlash,
@@ -32,6 +38,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
+import { ChatContextSettings } from "./ChatContextSettings";
 import { VoiceSettings } from "./VoiceSettings";
 
 const UNREACHABLE_MESSAGES = [
@@ -60,7 +67,11 @@ function isProviderConfigured(
   config: { baseUrl?: string; model: string },
   apiKeyRef: string | null,
   copilotAuthenticated: boolean,
+  cliStatuses: Record<string, { authenticated?: boolean }>,
 ): boolean {
+  if (isCLIOnlyProvider(provider)) {
+    return CLI_PROVIDER_IDS[provider].some((id) => cliStatuses[id]?.authenticated ?? false);
+  }
   if (provider === "copilot") return copilotAuthenticated;
   if (provider === "ollama") return Boolean(config.baseUrl);
   if (provider === "custom") return Boolean(config.baseUrl) && config.model.length > 0;
@@ -95,7 +106,7 @@ export function AISettings() {
 
   React.useEffect(() => {
     (Object.keys(PROVIDER_LABELS) as AIProvider[])
-      .filter((p) => !isKeyOptionalProvider(p))
+      .filter((p) => !isKeyOptionalProvider(p) && !isCLIOnlyProvider(p))
       .forEach((p) => void aiStore.loadKeyStatus(p));
     void aiStore.loadCLIManifests();
     void aiStore.loadCLIStatuses();
@@ -111,6 +122,13 @@ export function AISettings() {
     }
     settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
     aiStore.setActiveProvider(provider);
+    if (isCLIOnlyProvider(provider)) {
+      const cliProviderId =
+        CLI_PROVIDER_IDS[provider].find((id) => aiStore.cliStatuses[id]?.authenticated) ?? null;
+      aiStore.setActiveCLIProvider(cliProviderId);
+    } else {
+      aiStore.setActiveCLIProvider(null);
+    }
     aiStore.setActiveModel(nextModel);
     aiStore.updateProviderConfig(provider, { model: nextModel });
     setKeyInput("");
@@ -218,6 +236,11 @@ export function AISettings() {
     const status = aiStore.cliStatuses[providerId];
     if (status?.authenticated) {
       aiStore.setActiveCLIProvider(providerId);
+      const provider = aiProviderForCLI(providerId);
+      if (provider) {
+        aiStore.setActiveProvider(provider);
+        settingsStore.setAISettings({ defaultProvider: provider });
+      }
     }
   };
 
@@ -288,6 +311,7 @@ export function AISettings() {
     providerConfig,
     apiKeyRef,
     aiStore.copilotAuth.authenticated,
+    aiStore.cliStatuses,
   );
 
   return (
@@ -382,7 +406,14 @@ export function AISettings() {
           />
         )}
 
-        {needsKey && (
+        {isCLIOnlyProvider(activeProvider) && (
+          <p className="text-ui-xs text-fg-muted">
+            {PROVIDER_LABELS[activeProvider]} is a local CLI and is configured from Local CLI
+            Integration below.
+          </p>
+        )}
+
+        {needsKey && !isCLIOnlyProvider(activeProvider) && (
           <SettingRow
             label="API Key"
             description="Stored securely in the system keychain"
@@ -508,17 +539,19 @@ export function AISettings() {
           </div>
         )}
 
-        <div className="flex flex-col items-start gap-2 pt-1">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleTest}
-            disabled={testStatus === "loading" || !configured}
-          >
-            {testStatus === "loading" ? "Testing..." : "Test Connection"}
-          </Button>
-          {testError && <p className="text-ui-xs text-status-error">{testError}</p>}
-        </div>
+        {!isCLIOnlyProvider(activeProvider) && (
+          <div className="flex flex-col items-start gap-2 pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleTest}
+              disabled={testStatus === "loading" || !configured}
+            >
+              {testStatus === "loading" ? "Testing..." : "Test Connection"}
+            </Button>
+            {testError && <p className="text-ui-xs text-status-error">{testError}</p>}
+          </div>
+        )}
       </SettingSection>
 
       <SettingSection
@@ -548,16 +581,21 @@ export function AISettings() {
                     </span>
                     <span>
                       Nothing is installed or launched until you press Install, and a CLI only runs
-                      while it is the active provider. Codex CLI is published by OpenAI and Kimi
-                      Code by Moonshot AI, each as its own npm package. Pragma runs the unmodified
-                      official CLIs and is not affiliated with either vendor.
+                      while it is the active provider. Codex CLI is published by OpenAI, Claude Code
+                      by Anthropic, Gemini CLI by Google, GitHub Copilot CLI by GitHub, Kimi Code by
+                      Moonshot AI, Grok Build by xAI, Cursor CLI by Cursor, OpenCode by the OpenCode
+                      project, and Hermes Agent by Nous Research, each distributed separately.
+                      Pragma runs the unmodified official CLIs and is not affiliated with any of
+                      these vendors.
                     </span>
                   </span>
                 </TooltipContent>
               </Tooltip>
             </span>
             <span className="text-ui-xs text-fg-muted">
-              Turn on experimental support for subscription CLIs like OpenAI Codex and Kimi Code.
+              Turn on experimental support for subscription CLIs like Codex, Claude Code, Gemini
+              CLI, GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, and Hermes
+              Agent.
             </span>
           </div>
           <Switch
@@ -698,6 +736,8 @@ export function AISettings() {
           }
         />
       </SettingSection>
+
+      <ChatContextSettings />
 
       <VoiceSettings />
     </div>

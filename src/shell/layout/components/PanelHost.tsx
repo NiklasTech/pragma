@@ -10,6 +10,7 @@ const AIDiffPanel = lazy(() => import("./panels/AIDiffPanel"));
 const MarkdownPanel = lazy(() => import("./panels/MarkdownPanel"));
 const PreviewPanel = lazy(() => import("./panels/PreviewPanel"));
 const ProblemsPanel = lazy(() => import("./panels/ProblemsPanel"));
+const OutlinePanel = lazy(() => import("./panels/OutlinePanel"));
 const SettingsPanel = lazy(() => import("./panels/SettingsPanel"));
 const AIPanel = lazy(() => import("./panels/AIPanel"));
 const WelcomePanel = lazy(() => import("./panels/WelcomePanel"));
@@ -52,6 +53,8 @@ function PanelContent({ kind, panelId }: { kind: PanelKind; panelId: string }) {
       return <PreviewPanel />;
     case "problems":
       return <ProblemsPanel />;
+    case "outline":
+      return <OutlinePanel />;
     case "welcome":
       return <WelcomePanel />;
     case "settings":

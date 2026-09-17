@@ -5,10 +5,19 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { validateTheme } from "@/theme/validateTheme";
 import type { Theme, ThemeInput } from "@/theme/types";
 import { useExtensionsStore, type RegisteredPanel } from "./store";
+import {
+  getActiveEditorSelection,
+  getActiveEditorText,
+  listWorkspace,
+  readWorkspaceFile,
+  setActiveEditorText,
+  writeWorkspaceFile,
+} from "./workspaceApi";
 import type { BridgeRequest } from "./types";
 
 export interface BridgeContext {
   extensionId: string;
+  workspaceRoot: string | null;
   sendCommand: (commandId: string) => void;
 }
 
@@ -36,6 +45,27 @@ function requireString(obj: Record<string, unknown>, key: string): string {
     throw new Error(`"${key}" must be a non-empty string`);
   }
   return value;
+}
+
+function requireText(obj: Record<string, unknown>, key: string): string {
+  const value = obj[key];
+  if (typeof value !== "string") {
+    throw new Error(`"${key}" must be a string`);
+  }
+  return value;
+}
+
+function requireWorkspaceRoot(ctx: BridgeContext): string {
+  if (!ctx.workspaceRoot) {
+    throw new Error("No workspace is open");
+  }
+  return ctx.workspaceRoot;
+}
+
+function requireParams(params: unknown): Record<string, unknown> {
+  const record = asRecord(params);
+  if (!record) throw new Error("params must be an object");
+  return record;
 }
 
 export function prefixedCommandId(extensionId: string, commandId: string): string {
@@ -159,6 +189,32 @@ function getActiveFile(): unknown {
   };
 }
 
+function workspaceReadFile(ctx: BridgeContext, params: unknown): Promise<unknown> {
+  const record = requireParams(params);
+  return readWorkspaceFile(requireWorkspaceRoot(ctx), requireString(record, "path"));
+}
+
+function workspaceWriteFile(ctx: BridgeContext, params: unknown): Promise<unknown> {
+  const record = requireParams(params);
+  return writeWorkspaceFile(
+    requireWorkspaceRoot(ctx),
+    requireString(record, "path"),
+    requireText(record, "content"),
+  );
+}
+
+function workspaceList(ctx: BridgeContext, params: unknown): Promise<unknown> {
+  const record = params === undefined ? {} : requireParams(params);
+  const path = record.path === undefined ? "." : requireString(record, "path");
+  return listWorkspace(requireWorkspaceRoot(ctx), path);
+}
+
+function editorSetText(params: unknown): null {
+  const record = requireParams(params);
+  setActiveEditorText(requireText(record, "text"));
+  return null;
+}
+
 export async function handleBridgeRequest(
   ctx: BridgeContext,
   request: BridgeRequest,
@@ -180,6 +236,18 @@ export async function handleBridgeRequest(
       return showNotification(request.params);
     case "editor.getActiveFile":
       return getActiveFile();
+    case "editor.getText":
+      return getActiveEditorText();
+    case "editor.setText":
+      return editorSetText(request.params);
+    case "editor.getSelection":
+      return getActiveEditorSelection();
+    case "workspace.readFile":
+      return workspaceReadFile(ctx, request.params);
+    case "workspace.writeFile":
+      return workspaceWriteFile(ctx, request.params);
+    case "workspace.list":
+      return workspaceList(ctx, request.params);
     default:
       throw new Error(`Unknown method: ${request.method}`);
   }

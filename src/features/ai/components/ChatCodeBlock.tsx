@@ -1,11 +1,14 @@
 "use client";
 
 import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Copy, Terminal } from "@phosphor-icons/react";
+import { ArrowRight, Check, Copy, GitDiff, Terminal } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { injectIntoActivePty } from "@/shared/lib/terminal";
+import { applyChatCodeBlock } from "../context/applyFromChat";
+import type { ResolvedApplyTarget } from "../context/applyTargets";
+import { useChatApplyTarget } from "./ChatApplyContext";
 import { Shimmer } from "./Shimmer";
 import { highlight, isHighlightable, type HighlightedNode } from "./chat-code-lezer";
 
@@ -38,6 +41,7 @@ export type ChatCodeBlockProps = {
 
 export function ChatCodeBlock({ code, lang }: ChatCodeBlockProps) {
   const streaming = useContext(StreamingCtx);
+  const applyTarget = useChatApplyTarget(code);
   const label = normalizeLangLabel(lang ?? "");
 
   if (streaming) {
@@ -48,7 +52,7 @@ export function ChatCodeBlock({ code, lang }: ChatCodeBlockProps) {
     return <CommandCard code={code} lang={label} />;
   }
 
-  return <FinalizedCodeBlock code={code} lang={label} />;
+  return <FinalizedCodeBlock code={code} lang={label} applyTarget={applyTarget} />;
 }
 
 function GeneratingPlaceholder({ label }: { label: string }) {
@@ -65,27 +69,40 @@ function GeneratingPlaceholder({ label }: { label: string }) {
 function BlockChrome({
   label,
   code,
+  applyTarget,
   children,
 }: {
   label: string;
   code: string;
+  applyTarget?: ResolvedApplyTarget;
   children: React.ReactNode;
 }) {
   return (
     <div className="not-prose my-2 overflow-hidden rounded-lg border border-border bg-bg-hover/30">
       <div className="flex items-center justify-between gap-2 border-b border-border bg-bg-hover/20 px-3 py-1">
         <span className="font-mono text-ui-xs uppercase tracking-wide text-fg-muted">{label}</span>
-        <CopyButton text={code} />
+        <div className="flex items-center gap-1">
+          {applyTarget && <ApplyButton target={applyTarget} />}
+          <CopyButton text={code} />
+        </div>
       </div>
       <div className="overflow-x-auto">{children}</div>
     </div>
   );
 }
 
-function FinalizedCodeBlock({ code, lang }: { code: string; lang: string }) {
+function FinalizedCodeBlock({
+  code,
+  lang,
+  applyTarget,
+}: {
+  code: string;
+  lang: string;
+  applyTarget?: ResolvedApplyTarget;
+}) {
   if (!isHighlightable(lang)) {
     return (
-      <BlockChrome label={lang} code={code}>
+      <BlockChrome label={lang} code={code} applyTarget={applyTarget}>
         <pre className="m-0 px-3 py-2.5 font-mono text-ui-sm leading-relaxed text-fg-default">
           {code}
         </pre>
@@ -94,7 +111,7 @@ function FinalizedCodeBlock({ code, lang }: { code: string; lang: string }) {
   }
 
   return (
-    <BlockChrome label={lang} code={code}>
+    <BlockChrome label={lang} code={code} applyTarget={applyTarget}>
       <HighlightedPre code={code} lang={lang} />
     </BlockChrome>
   );
@@ -212,6 +229,35 @@ function RunInTerminalButton({ command }: { command: string }) {
     >
       {sent ? <Terminal size={11} weight="bold" /> : <ArrowRight size={11} weight="bold" />}
       <span>{sent ? "Sent" : "Run"}</span>
+    </Button>
+  );
+}
+
+function ApplyButton({ target }: { target: ResolvedApplyTarget }) {
+  const [busy, setBusy] = useState(false);
+
+  const onApply = async () => {
+    setBusy(true);
+    try {
+      await applyChatCodeBlock(target);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      onClick={() => void onApply()}
+      disabled={busy}
+      className="h-5 gap-1 px-1.5 text-ui-xs font-medium text-fg-muted hover:text-fg-default"
+      aria-label={`Review changes to ${target.name}`}
+      title={`Review changes to ${target.path}`}
+    >
+      <GitDiff size={11} weight="bold" />
+      <span>Apply</span>
     </Button>
   );
 }
