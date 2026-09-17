@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Update } from "@tauri-apps/plugin-updater";
 
-const { checkMock, relaunchMock } = vi.hoisted(() => ({
+const { checkMock, relaunchMock, logErrorMock, logInfoMock } = vi.hoisted(() => ({
   checkMock: vi.fn(),
   relaunchMock: vi.fn(),
+  logErrorMock: vi.fn(async () => {}),
+  logInfoMock: vi.fn(async () => {}),
 }));
 
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: checkMock }));
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch: relaunchMock }));
+vi.mock("@tauri-apps/plugin-log", () => ({ error: logErrorMock, info: logInfoMock }));
 
 import { useUpdaterStore } from "./updaterStore";
 
@@ -152,6 +155,9 @@ describe("useUpdaterStore", () => {
       message: "signature mismatch",
       version: "0.3.0",
     });
+    expect(logErrorMock).toHaveBeenCalledWith(
+      expect.stringContaining("update install failed (0.3.0)"),
+    );
   });
 
   it("keeps the pending update so a failed install can be retried", async () => {
