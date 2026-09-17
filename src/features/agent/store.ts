@@ -189,6 +189,7 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
 
   requestStop: () => {
     const { stopCallback, pendingApprovals, editReviews } = get();
+    stopCallback?.();
     for (const approval of pendingApprovals) {
       approval.resolve(false);
     }
