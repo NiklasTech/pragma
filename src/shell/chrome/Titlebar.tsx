@@ -104,7 +104,7 @@ export function Titlebar() {
     >
       <div className="flex items-center gap-1.5 px-2">
         {isMac && <div data-tauri-drag-region className="w-[72px] shrink-0 self-stretch" />}
-        <img src="/pragma_logo.svg" alt="" className="h-4.5 w-4.5" />
+        {!isMac && <img src="/pragma_logo.svg" alt="" className="h-4.5 w-4.5" />}
 
         {!isMac && (
           <>
