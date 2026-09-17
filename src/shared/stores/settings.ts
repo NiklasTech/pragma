@@ -155,7 +155,6 @@ export interface SettingsState {
   lsp: LspSettings;
   experimental: ExperimentalSettings;
   agent: AgentSettings;
-  mcpRunningServerIds: string[];
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
@@ -169,22 +168,16 @@ export interface FontSelection {
 interface SettingsActions {
   setEditorSettings: (settings: Partial<EditorSettings>) => void;
   setTerminalSettings: (settings: Partial<TerminalSettings>) => void;
-  setEditorFont: (selection: FontSelection) => void;
-  setTerminalFont: (selection: FontSelection) => void;
   setAISettings: (settings: Partial<AISettings>) => void;
   setYoloMode: (enabled: boolean) => void;
   setShowThinking: (enabled: boolean) => void;
   setShowUnavailableProviders: (enabled: boolean) => void;
   setTheme: (theme: string) => void;
   setThemeMode: (mode: ThemeMode) => void;
-  setKeymap: (keymap: string) => void;
-  setLayoutSettings: (settings: Partial<LayoutSettings>) => void;
   addRecentFolder: (path: string) => void;
   addRecentFile: (path: string) => void;
   addFavoriteFolder: (path: string) => void;
   removeFavoriteFolder: (path: string) => void;
-  clearRecentFolders: () => void;
-  clearRecentFiles: () => void;
   setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
   setMcpSettings: (settings: Partial<McpSettings>) => void;
   setLspEnabled: (language: string, enabled: boolean) => void;
@@ -193,8 +186,6 @@ interface SettingsActions {
   addMcpServer: (server: Omit<McpServerConfig, "id">) => void;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;
-  setMcpServerRunning: (id: string, running: boolean) => void;
-  toggleMcpServerRunning: (id: string) => void;
   addCustomTheme: (theme: Theme) => void;
   deleteCustomTheme: (id: string) => void;
   setExtensionEnabled: (id: string, enabled: boolean) => void;
@@ -316,7 +307,6 @@ const defaultSettings: SettingsState = {
     autoApprove: "never",
     allowedCommands: [],
   },
-  mcpRunningServerIds: [],
   customThemes: {},
   extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),
@@ -331,12 +321,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 
   setTerminalSettings: (settings) =>
     set((state) => ({ terminal: { ...state.terminal, ...settings } })),
-
-  setEditorFont: ({ fontId, fontFamily }) =>
-    set((state) => ({ editor: { ...state.editor, fontId, fontFamily } })),
-
-  setTerminalFont: ({ fontId, fontFamily }) =>
-    set((state) => ({ terminal: { ...state.terminal, fontId, fontFamily } })),
 
   setAISettings: (settings) => set((state) => ({ ai: { ...state.ai, ...settings } })),
 
@@ -357,9 +341,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 
   setTheme: (theme) => set({ theme }),
   setThemeMode: (themeMode) => set({ themeMode }),
-  setKeymap: (keymap) => set({ keymap }),
-
-  setLayoutSettings: (settings) => set((state) => ({ layout: { ...state.layout, ...settings } })),
 
   addRecentFolder: (path) =>
     set((state) => ({
@@ -398,11 +379,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
         favoriteFolders: state.workspace.favoriteFolders.filter((p) => p !== path),
       },
     })),
-
-  clearRecentFolders: () =>
-    set((state) => ({ workspace: { ...state.workspace, recentFolders: [] } })),
-
-  clearRecentFiles: () => set((state) => ({ workspace: { ...state.workspace, recentFiles: [] } })),
 
   setStatusbarSettings: (settings) =>
     set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
@@ -449,25 +425,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
         ...state.mcp,
         servers: state.mcp.servers.filter((s) => s.id !== id),
       },
-      mcpRunningServerIds: state.mcpRunningServerIds.filter((runningId) => runningId !== id),
     })),
-
-  setMcpServerRunning: (id, running) =>
-    set((state) => ({
-      mcpRunningServerIds: running
-        ? [...state.mcpRunningServerIds, id]
-        : state.mcpRunningServerIds.filter((runningId) => runningId !== id),
-    })),
-
-  toggleMcpServerRunning: (id) =>
-    set((state) => {
-      const running = state.mcpRunningServerIds.includes(id);
-      return {
-        mcpRunningServerIds: running
-          ? state.mcpRunningServerIds.filter((runningId) => runningId !== id)
-          : [...state.mcpRunningServerIds, id],
-      };
-    }),
 
   addCustomTheme: (theme) =>
     set((state) => ({
@@ -513,7 +471,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       lsp: mergePartial(defaultSettings.lsp, partial.lsp),
       experimental: mergePartial(defaultSettings.experimental, partial.experimental),
       agent: mergePartial(defaultSettings.agent, partial.agent),
-      mcpRunningServerIds: partial.mcpRunningServerIds ?? state.mcpRunningServerIds,
       customThemes: { ...state.customThemes, ...partial.customThemes },
       extensions: { ...state.extensions, ...partial.extensions },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },
@@ -621,7 +578,7 @@ function mergeWithDefaults(
   const partial = persisted as Partial<SettingsState> & Record<string, unknown>;
 
   // Drop legacy persisted keys that have been removed from the settings schema.
-  const { git: _, ...restPartial } = partial;
+  const { git: _, mcpRunningServerIds: _removedMcpRunningServerIds, ...restPartial } = partial;
 
   const migratedAi = migrateAISettings(partial.ai);
 
@@ -648,10 +605,5 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
   persist(settingsStoreCreator, {
     name: STORAGE_KEY,
     merge: (persisted, current) => mergeWithDefaults(persisted, current),
-    partialize: (state) => ({
-      ...state,
-      // Running state is session-only and should not survive app restarts.
-      mcpRunningServerIds: [],
-    }),
   }),
 );
