@@ -220,11 +220,9 @@ export function uiMessageToStored(msg: UIMessage): ChatMessage {
 }
 
 export function storedMessagesToUI(messages: ChatMessage[]): UIMessage[] {
-  return messages.map(
-    (m): UIMessage => ({
-      id: m.id,
-      role: m.role,
-      parts: [{ type: "text", text: m.content }],
-    }),
-  );
+  return messages.map((m): UIMessage => ({
+    id: m.id,
+    role: m.role,
+    parts: [{ type: "text", text: m.content }],
+  }));
 }
