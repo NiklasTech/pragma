@@ -58,6 +58,7 @@ export type PanelKind =
   | "ai-diff"
   | "output"
   | "problems"
+  | "outline"
   | "preview"
   | "markdown"
   | "settings"

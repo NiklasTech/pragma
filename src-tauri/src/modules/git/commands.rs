@@ -1,8 +1,8 @@
 use crate::modules::git::operations;
 use crate::modules::git::types::{
-    GitBranch, GitCommitDetails, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
-    GitDiffResult, GitLogEntry, GitPullResult, GitPushResult, GitRemote, GitRemoteBranch,
-    GitStatusSnapshot, SmartCheckoutResult, StashEntry,
+    GitBlameLine, GitBranch, GitCommitDetails, GitCommitFileChange, GitCommitResult,
+    GitConflictSides, GitDiffContentResult, GitDiffResult, GitLogEntry, GitPullResult,
+    GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot, SmartCheckoutResult, StashEntry,
 };
 
 async fn blocking<F, T>(f: F) -> Result<T, String>
@@ -300,9 +300,10 @@ pub async fn git_pull(
     }
     blocking(move || {
         operations::pull_ff_only(&repo_path)?;
+        let had_conflicts = !operations::conflicted_files(&repo_path)?.is_empty();
         Ok(GitPullResult {
             pulled: true,
-            had_conflicts: false,
+            had_conflicts,
         })
     })
     .await
@@ -360,14 +361,11 @@ pub async fn git_remote_url(
 }
 
 #[tauri::command]
-pub async fn git_stash_push(repo_path: String, message: String) -> Result<String, String> {
+pub async fn git_stash_push(repo_path: String, message: Option<String>) -> Result<String, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
     }
-    let msg = message.trim().to_string();
-    if msg.is_empty() {
-        return Err("Stash message is required".to_string());
-    }
+    let msg = message.unwrap_or_default().trim().to_string();
     blocking(move || operations::stash_push(&repo_path, &msg).map_err(Into::into)).await
 }
 
@@ -383,11 +381,74 @@ pub async fn git_stash_pop(repo_path: String, stash_ref: String) -> Result<(), S
 }
 
 #[tauri::command]
+pub async fn git_stash_apply(repo_path: String, stash_ref: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if stash_ref.is_empty() {
+        return Err("Stash ref is required".to_string());
+    }
+    blocking(move || operations::stash_apply(&repo_path, &stash_ref).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_stash_drop(repo_path: String, stash_ref: String) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if stash_ref.is_empty() {
+        return Err("Stash ref is required".to_string());
+    }
+    blocking(move || operations::stash_drop(&repo_path, &stash_ref).map_err(Into::into)).await
+}
+
+#[tauri::command]
 pub async fn git_stash_list(repo_path: String) -> Result<Vec<StashEntry>, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
     }
     blocking(move || operations::stash_list(&repo_path).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_conflict_sides(
+    repo_path: String,
+    path: String,
+) -> Result<GitConflictSides, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if path.is_empty() {
+        return Err("File path is required".to_string());
+    }
+    blocking(move || operations::conflict_sides(&repo_path, &path).map_err(Into::into)).await
+}
+
+#[tauri::command]
+pub async fn git_resolve_conflict(
+    repo_path: String,
+    path: String,
+    content: String,
+) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if path.is_empty() {
+        return Err("File path is required".to_string());
+    }
+    blocking(move || operations::resolve_conflict(&repo_path, &path, &content).map_err(Into::into))
+        .await
+}
+
+#[tauri::command]
+pub async fn git_blame(repo_path: String, path: String) -> Result<Vec<GitBlameLine>, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if path.is_empty() {
+        return Err("File path is required".to_string());
+    }
+    blocking(move || operations::blame(&repo_path, &path).map_err(Into::into)).await
 }
 
 #[tauri::command]

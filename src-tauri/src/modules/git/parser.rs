@@ -68,6 +68,7 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
                     status_code,
                     is_staged,
                     is_unstaged,
+                    is_conflicted: false,
                 });
             }
             continue;
@@ -99,6 +100,7 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
                     status_code,
                     is_staged,
                     is_unstaged,
+                    is_conflicted: false,
                 });
             }
             continue;
@@ -115,6 +117,7 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
                     status_code: "?".into(),
                     is_staged: false,
                     is_unstaged: true,
+                    is_conflicted: false,
                 });
             }
             continue;
@@ -124,14 +127,16 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
         if line.starts_with('u') {
             let parts: Vec<&str> = line.splitn(11, ' ').collect();
             if parts.len() >= 11 {
+                let xy = parts[1];
                 let path = parts[10];
                 files.push(GitStatusEntry {
                     path: path.into(),
                     original_path: None,
-                    status: "Unmerged".into(),
+                    status: conflict_label(xy),
                     status_code: "U".into(),
-                    is_staged: true,
-                    is_unstaged: true,
+                    is_staged: false,
+                    is_unstaged: false,
+                    is_conflicted: true,
                 });
             }
         }
@@ -144,6 +149,19 @@ pub fn parse_porcelain_v2(input: &str) -> ParsedStatus {
         behind,
         is_detached,
         files,
+    }
+}
+
+fn conflict_label(xy: &str) -> String {
+    match xy {
+        "DD" => "Both deleted".into(),
+        "AU" => "Added by us".into(),
+        "UD" => "Deleted by them".into(),
+        "UA" => "Added by them".into(),
+        "DU" => "Deleted by us".into(),
+        "AA" => "Both added".into(),
+        "UU" => "Both modified".into(),
+        _ => "Unmerged".into(),
     }
 }
 

@@ -77,8 +77,16 @@ const BOOTSTRAP_SCRIPT = String.raw`
     notifications: {
       show: (message, type) => request("notifications.show", { message, type }),
     },
+    workspace: {
+      readFile: (path) => request("workspace.readFile", { path }),
+      writeFile: (path, content) => request("workspace.writeFile", { path, content }),
+      list: (path) => request("workspace.list", path === undefined ? {} : { path }),
+    },
     editor: {
       getActiveFile: () => request("editor.getActiveFile"),
+      getText: () => request("editor.getText"),
+      setText: (text) => request("editor.setText", { text }),
+      getSelection: () => request("editor.getSelection"),
     },
     onCommand: (fn) => subscribe("command", fn),
     on: (event, fn) => subscribe(event, fn),

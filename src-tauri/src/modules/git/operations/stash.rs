@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 
 use crate::modules::git::errors::{GitError, Result};
 use crate::modules::git::process::{
@@ -14,14 +14,14 @@ pub fn stash_push(repo_root: &str, message: &str) -> Result<String> {
     ensure_git_available()?;
 
     let trimmed = message.trim();
+    let mut args: Vec<OsString> = vec!["stash".into(), "push".into()];
+    if !trimmed.is_empty() {
+        args.push("-m".into());
+        args.push(trimmed.into());
+    }
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
-        [
-            OsStr::new("stash"),
-            OsStr::new("push"),
-            OsStr::new("-m"),
-            OsStr::new(trimmed),
-        ],
+        args,
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git stash push failed")?;
@@ -36,20 +36,37 @@ pub fn stash_push(repo_root: &str, message: &str) -> Result<String> {
 }
 
 pub fn stash_pop(repo_root: &str, stash_ref: &str) -> Result<()> {
+    run_stash_ref_command(repo_root, "pop", stash_ref, "git stash pop")
+}
+
+pub fn stash_apply(repo_root: &str, stash_ref: &str) -> Result<()> {
+    run_stash_ref_command(repo_root, "apply", stash_ref, "git stash apply")
+}
+
+pub fn stash_drop(repo_root: &str, stash_ref: &str) -> Result<()> {
+    run_stash_ref_command(repo_root, "drop", stash_ref, "git stash drop")
+}
+
+fn run_stash_ref_command(
+    repo_root: &str,
+    operation: &str,
+    stash_ref: &str,
+    context: &'static str,
+) -> Result<()> {
     let repo_root = authorized_repo_root(repo_root)?;
     ensure_git_available()?;
     if stash_ref.is_empty() {
-        return Err(GitError::command("git stash pop", "empty stash ref"));
+        return Err(GitError::command(context, "empty stash ref"));
     }
     if !is_safe_stash_ref(stash_ref) {
-        return Err(GitError::command("git stash pop", "invalid stash ref"));
+        return Err(GitError::command(context, "invalid stash ref"));
     }
 
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
         [
             OsStr::new("stash"),
-            OsStr::new("pop"),
+            OsStr::new(operation),
             OsStr::new(stash_ref),
         ],
         DEFAULT_TIMEOUT_SECS,
@@ -62,18 +79,18 @@ pub fn stash_pop(repo_root: &str, stash_ref: &str) -> Result<()> {
     let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
     if stderr.contains("conflict") || stderr.contains("merge conflict") {
         return Err(GitError::command(
-            "git stash pop",
+            context,
             "conflicts detected while applying stash",
         ));
     }
-    ensure_success(&output, "git stash pop failed")
+    ensure_success(&output, context)
 }
 
 pub fn stash_list(repo_root: &str) -> Result<Vec<StashEntry>> {
     let repo_root = authorized_repo_root(repo_root)?;
     ensure_git_available()?;
 
-    let format = "%gd%x1f%h%x1f%s";
+    let format = "%gd%x1f%h%x1f%ct%x1f%s";
     let lines = git_stdout_lines(
         &repo_root.to_string_lossy(),
         ["stash", "list", &format!("--format={format}")],
@@ -81,9 +98,10 @@ pub fn stash_list(repo_root: &str) -> Result<Vec<StashEntry>> {
 
     let mut entries = Vec::new();
     for (idx, line) in lines.iter().enumerate() {
-        let mut parts = line.splitn(3, '\x1f');
+        let mut parts = line.splitn(4, '\x1f');
         let ref_name = parts.next().unwrap_or("").to_string();
         let _short_sha = parts.next().unwrap_or("");
+        let timestamp_secs = parts.next().unwrap_or("0").parse().unwrap_or(0);
         let message = parts.next().unwrap_or("").to_string();
         if ref_name.is_empty() {
             continue;
@@ -92,6 +110,7 @@ pub fn stash_list(repo_root: &str) -> Result<Vec<StashEntry>> {
             index: idx as u32,
             message,
             ref_name,
+            timestamp_secs,
         });
     }
     Ok(entries)
