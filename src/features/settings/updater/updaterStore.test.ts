@@ -56,6 +56,7 @@ describe("useUpdaterStore", () => {
     expect(useUpdaterStore.getState().state).toEqual({
       status: "error",
       message: "network down",
+      version: null,
     });
   });
 
@@ -149,6 +150,27 @@ describe("useUpdaterStore", () => {
     expect(useUpdaterStore.getState().state).toEqual({
       status: "error",
       message: "signature mismatch",
+      version: "0.3.0",
+    });
+  });
+
+  it("keeps the pending update so a failed install can be retried", async () => {
+    const downloadMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("installer failed"))
+      .mockResolvedValueOnce(undefined);
+    checkMock.mockResolvedValue(mockUpdate({ downloadAndInstall: downloadMock }));
+    await useUpdaterStore.getState().checkForUpdates();
+
+    await useUpdaterStore.getState().downloadAndInstall();
+    expect(useUpdaterStore.getState().state).toMatchObject({ status: "error" });
+
+    await useUpdaterStore.getState().downloadAndInstall();
+
+    expect(downloadMock).toHaveBeenCalledTimes(2);
+    expect(useUpdaterStore.getState().state).toEqual({
+      status: "ready-to-restart",
+      version: "0.3.0",
     });
   });
 
@@ -166,6 +188,7 @@ describe("useUpdaterStore", () => {
     expect(useUpdaterStore.getState().state).toEqual({
       status: "error",
       message: "relaunch failed",
+      version: null,
     });
   });
 });

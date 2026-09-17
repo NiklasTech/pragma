@@ -26,12 +26,7 @@ export function UpdateDialog() {
     void checkForUpdates({ silent: true });
   }, [checkForUpdates]);
 
-  const version =
-    state.status === "available" ||
-    state.status === "downloading" ||
-    state.status === "ready-to-restart"
-      ? state.version
-      : null;
+  const version = "version" in state ? state.version : null;
 
   const updateOpen =
     version !== null && (state.status !== "available" || version !== dismissedVersion);
@@ -46,7 +41,9 @@ export function UpdateDialog() {
       : state.status === "up-to-date"
         ? "You're up to date"
         : state.status === "error"
-          ? "Couldn't check for updates"
+          ? version
+            ? "Update failed"
+            : "Couldn't check for updates"
           : state.status === "ready-to-restart"
             ? "Update installed"
             : "Update available";
@@ -127,6 +124,10 @@ export function UpdateDialog() {
                 variant={state.status === "error" ? "outline" : "default"}
                 onClick={() => {
                   if (state.status === "error") {
+                    if (version) {
+                      void downloadAndInstall();
+                      return;
+                    }
                     void checkForUpdates();
                     return;
                   }

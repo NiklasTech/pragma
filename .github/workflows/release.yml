@@ -69,4 +69,5 @@ jobs:
           prerelease: false
           generateReleaseNotes: false
           retryAttempts: 3
+          updaterJsonPreferNsis: true
           args: ${{ matrix.args }}

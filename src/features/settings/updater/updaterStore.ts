@@ -9,7 +9,7 @@ export type UpdaterState =
   | { status: "available"; version: string; notes: string | null }
   | { status: "downloading"; version: string; progress: number }
   | { status: "ready-to-restart"; version: string }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; version: string | null };
 
 interface UpdaterStore {
   state: UpdaterState;
@@ -26,7 +26,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export const useUpdaterStore = create<UpdaterStore>((set) => ({
+export const useUpdaterStore = create<UpdaterStore>((set, get) => ({
   state: { status: "idle" },
   userRequested: false,
 
@@ -48,7 +48,7 @@ export const useUpdaterStore = create<UpdaterStore>((set) => ({
       if (silent) {
         set({ state: { status: "idle" }, userRequested: false });
       } else {
-        set({ state: { status: "error", message: errorMessage(error) } });
+        set({ state: { status: "error", message: errorMessage(error), version: null } });
       }
     }
   },
@@ -83,7 +83,7 @@ export const useUpdaterStore = create<UpdaterStore>((set) => ({
       pendingUpdate = null;
       set({ state: { status: "ready-to-restart", version } });
     } catch (error) {
-      set({ state: { status: "error", message: errorMessage(error) } });
+      set({ state: { status: "error", message: errorMessage(error), version } });
     }
   },
 
@@ -91,7 +91,14 @@ export const useUpdaterStore = create<UpdaterStore>((set) => ({
     try {
       await relaunch();
     } catch (error) {
-      set({ state: { status: "error", message: errorMessage(error) } });
+      const current = get().state;
+      set({
+        state: {
+          status: "error",
+          message: errorMessage(error),
+          version: "version" in current ? current.version : null,
+        },
+      });
     }
   },
 }));
