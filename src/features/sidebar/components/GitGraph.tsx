@@ -51,7 +51,7 @@ import {
 } from "@/shared/components/ui/context-menu";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { GraphRail, railWidth, MAX_VISIBLE_LANES } from "./GraphRail";
-import { EMPTY_GRAPH_STATE, layoutGraph, type GraphRow } from "./lib/gitGraphLayout";
+import { EMPTY_GRAPH_STATE, laneColor, layoutGraph, type GraphRow } from "./lib/gitGraphLayout";
 import { GitCommitDetailsDialog } from "./GitCommitDetailsDialog";
 
 const RAIL_RESERVED_PX = railWidth(MAX_VISIBLE_LANES);
@@ -128,23 +128,12 @@ function authorInitials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-const AUTHOR_TINTS = [
-  "#8b96f6",
-  "#bba5f9",
-  "#5fcfa5",
-  "#edbf72",
-  "#ed7f8b",
-  "#7adbe7",
-  "#e8b87d",
-  "#a78bfa",
-];
-
 function authorTint(key: string): string {
   let hash = 0;
   for (let i = 0; i < key.length; i++) {
     hash = (hash * 31 + key.charCodeAt(i)) | 0;
   }
-  return AUTHOR_TINTS[Math.abs(hash) % AUTHOR_TINTS.length];
+  return laneColor(Math.abs(hash));
 }
 
 /* ─── Main component ───────────────────────────────────────────────────── */

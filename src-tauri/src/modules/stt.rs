@@ -3,6 +3,7 @@
 
 use base64::Engine;
 use serde::Serialize;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 use std::io;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
