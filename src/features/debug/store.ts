@@ -48,11 +48,9 @@ interface DebugState {
   status: DebugSessionStatus;
   statusError: string | null;
   sessionName: string | null;
-  sessionAdapter: string | null;
   isStopped: boolean;
   stopReason: string | null;
   stoppedThreadId: number | null;
-  activeThreadId: number | null;
   frames: DebugStackFrame[];
   selectedFrameId: number | null;
   scopes: Record<number, DebugScope[]>;
@@ -84,11 +82,9 @@ const initialState: DebugState = {
   status: "inactive",
   statusError: null,
   sessionName: null,
-  sessionAdapter: null,
   isStopped: false,
   stopReason: null,
   stoppedThreadId: null,
-  activeThreadId: null,
   frames: [],
   selectedFrameId: null,
   scopes: {},
@@ -101,7 +97,6 @@ const clearedSessionState: Partial<DebugState> = {
   isStopped: false,
   stopReason: null,
   stoppedThreadId: null,
-  activeThreadId: null,
   frames: [],
   selectedFrameId: null,
   scopes: {},
@@ -113,7 +108,7 @@ export const useDebugStore = create<DebugState & DebugActions>(
     "debug",
     getWindowScope(),
   )((set, get) => {
-    const currentThreadId = () => get().stoppedThreadId ?? get().activeThreadId ?? 1;
+    const currentThreadId = () => get().stoppedThreadId ?? 1;
 
     const evaluateWatches = async () => {
       const { watches, selectedFrameId, status } = get();
@@ -202,7 +197,6 @@ export const useDebugStore = create<DebugState & DebugActions>(
           status: "starting",
           statusError: null,
           sessionName: config.name,
-          sessionAdapter: config.debug.adapter,
           output: [],
         });
 
@@ -330,12 +324,11 @@ export const useDebugStore = create<DebugState & DebugActions>(
         }
 
         if (effect.isStopped) {
-          const threadId = effect.stoppedThreadId ?? get().activeThreadId ?? 1;
+          const threadId = effect.stoppedThreadId ?? 1;
           set({
             isStopped: true,
             stopReason: effect.stopReason ?? null,
             stoppedThreadId: threadId,
-            activeThreadId: threadId,
           });
           void loadStackTrace(threadId);
         } else if (effect.isStopped === false) {
@@ -364,7 +357,6 @@ export const useDebugStore = create<DebugState & DebugActions>(
               status: "inactive",
               statusError: null,
               sessionName: null,
-              sessionAdapter: null,
             });
             break;
           case "error":
