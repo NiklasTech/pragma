@@ -28,7 +28,8 @@ const STATUS_LABELS: Record<ServerStatus, string> = {
 };
 
 export function LspSettings() {
-  const { lsp, setLspEnabled, experimental, setExperimentalEnabled } = useSettingsStore();
+  const { lsp, setLspEnabled, experimental, setExperimentalEnabled, editor, setEditorSettings } =
+    useSettingsStore();
   const [statuses, setStatuses] = React.useState<Record<string, ServerStatus>>({});
   const [installing, setInstalling] = React.useState<Record<string, boolean>>({});
   const [copied, setCopied] = React.useState<string | null>(null);
@@ -102,6 +103,20 @@ export function LspSettings() {
             checked={experimental.lsp}
             onCheckedChange={(v) => setExperimentalEnabled("lsp", v)}
             aria-label="Enable language servers"
+          />
+        </div>
+
+        <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
+          <div className="flex flex-col">
+            <span className="text-ui-sm font-medium text-fg-default">Inlay hints</span>
+            <span className="text-ui-xs text-fg-muted">
+              Show inline type and parameter hints from the language server when it supports them.
+            </span>
+          </div>
+          <Switch
+            checked={editor.inlayHints}
+            onCheckedChange={(v) => setEditorSettings({ inlayHints: v })}
+            aria-label="Show inlay hints"
           />
         </div>
 

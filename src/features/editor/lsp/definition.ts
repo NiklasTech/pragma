@@ -8,6 +8,7 @@ import { detectLanguage } from "@/shared/lib/language";
 import { lspDefinition, type LspDefinitionTarget } from "./client";
 import { getLspFeatureFlags } from "./lspFlags";
 import { flushLspDocumentSync } from "./lspDocuments";
+import { peekDefinitionKeyBinding } from "./peek";
 
 interface FileReadResult {
   path: string;
@@ -314,6 +315,7 @@ export function lspDefinitionExtension(language: string, filePath: string): Exte
           return true;
         },
       },
+      peekDefinitionKeyBinding(language, filePath),
     ]),
   ];
 }
