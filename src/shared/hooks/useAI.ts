@@ -11,8 +11,11 @@ import {
   buildContextUserMessage,
   parseMentions,
   stripMentions,
+  type AutoContextAttachment,
   type ChatContextResult,
 } from "@/shared/lib/chat-context";
+import { collectLiveAutoContext } from "@/features/ai/context/liveContext";
+import { buildAutoContextPrompt } from "@/features/ai/context/autoContext";
 import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import {
@@ -296,6 +299,8 @@ export function useAI() {
   useAgent({ chatRef, chatStatus: chat.status });
 
   const [input, setInput] = useState("");
+  const [lastAttachments, setLastAttachments] = useState<AutoContextAttachment[]>([]);
+  const [lastContextTruncated, setLastContextTruncated] = useState(false);
 
   // Load sessions whenever the workspace changes.
   useEffect(() => {
@@ -330,7 +335,8 @@ export function useAI() {
       if (!input.trim() || chat.status === "submitted" || chat.status === "streaming") return;
 
       const mentions = parseMentions(input);
-      let messageText = input.trim();
+      let question = input.trim();
+      const contextParts: string[] = [];
 
       if (rootPath && mentions.length > 0) {
         try {
@@ -339,11 +345,28 @@ export function useAI() {
           });
 
           if (result.content) {
-            const question = stripMentions(input);
-            messageText = buildContextUserMessage(result.content, question);
+            question = stripMentions(input);
+            contextParts.push(result.content);
           }
         } catch {}
       }
+
+      try {
+        const autoContext = await collectLiveAutoContext();
+        if (autoContext.attachments.length > 0) {
+          contextParts.push(buildAutoContextPrompt(autoContext));
+        }
+        setLastAttachments(autoContext.attachments);
+        setLastContextTruncated(autoContext.truncated);
+      } catch {
+        setLastAttachments([]);
+        setLastContextTruncated(false);
+      }
+
+      let messageText =
+        contextParts.length > 0
+          ? buildContextUserMessage(contextParts.join("\n\n"), question)
+          : question;
 
       const { edit, submitPrompt } = useAIEditStore.getState();
       if (edit?.status === "composing") {
@@ -465,6 +488,8 @@ export function useAI() {
     mcpReady,
     mcpLoaded,
     mcpServerCount,
+    lastAttachments,
+    lastContextTruncated,
     createChatSession: () => {
       return createChatSession(rootPath);
     },
