@@ -106,102 +106,106 @@ export function Titlebar() {
         {isMac && <div data-tauri-drag-region className="w-[72px] shrink-0 self-stretch" />}
         <img src="/pragma_logo.svg" alt="" className="h-4.5 w-4.5" />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <button
-                type="button"
-                className="flex h-7 max-w-[200px] min-w-0 items-center gap-1 rounded-md px-2 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-                title={rootPath ?? "Open folder or file"}
-              >
-                <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
-                <CaretDown size={10} className="shrink-0 opacity-60" />
-              </button>
-            }
-          />
-          <DropdownMenuContent align="start" className="min-w-[240px]">
-            <DropdownMenuItem onClick={handleOpenFolder}>
-              <FolderOpen size={14} />
-              Open Folder
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={openFile}>
-              <FileText size={14} />
-              Open File
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Star size={14} />
-                Favorites
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="min-w-[240px]">
-                {favoriteFolders.length === 0 && (
-                  <DropdownMenuItem disabled>
-                    <span className="text-fg-subtle">No favorites yet</span>
-                  </DropdownMenuItem>
-                )}
-                {favoriteFolders.map((path) => (
-                  <DropdownMenuItem
-                    key={path}
-                    onClick={() => selectRoot(path)}
-                    className="group justify-between"
+        {!isMac && (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    className="flex h-7 max-w-[200px] min-w-0 items-center gap-1 rounded-md px-2 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                    title={rootPath ?? "Open folder or file"}
                   >
-                    <span className="truncate">{path}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFavoriteFolder(path);
-                      }}
-                      className="ml-2 rounded p-0.5 text-fg-subtle opacity-0 transition-opacity hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
-                      title="Remove favorite"
-                    >
-                      <X size={12} />
-                    </button>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleAddFavorite}>
-                  <Plus size={14} />
-                  Add Favorite…
-                </DropdownMenuItem>
-                {rootPath && (
-                  <DropdownMenuItem onClick={handleAddCurrentFolder}>
-                    <Star size={14} />
-                    Add Current Folder
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            {recentFolders.length > 0 && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
+                    <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
+                    <CaretDown size={10} className="shrink-0 opacity-60" />
+                  </button>
+                }
+              />
+              <DropdownMenuContent align="start" className="min-w-[240px]">
+                <DropdownMenuItem onClick={handleOpenFolder}>
                   <FolderOpen size={14} />
-                  Open Recent
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="min-w-[240px]">
-                  {recentFolders.slice(0, 5).map((path) => (
-                    <DropdownMenuItem key={path} onClick={() => selectRoot(path)}>
-                      <span className="truncate">{path}</span>
+                  Open Folder
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={openFile}>
+                  <FileText size={14} />
+                  Open File
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Star size={14} />
+                    Favorites
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="min-w-[240px]">
+                    {favoriteFolders.length === 0 && (
+                      <DropdownMenuItem disabled>
+                        <span className="text-fg-subtle">No favorites yet</span>
+                      </DropdownMenuItem>
+                    )}
+                    {favoriteFolders.map((path) => (
+                      <DropdownMenuItem
+                        key={path}
+                        onClick={() => selectRoot(path)}
+                        className="group justify-between"
+                      >
+                        <span className="truncate">{path}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFavoriteFolder(path);
+                          }}
+                          className="ml-2 rounded p-0.5 text-fg-subtle opacity-0 transition-opacity hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
+                          title="Remove favorite"
+                        >
+                          <X size={12} />
+                        </button>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleAddFavorite}>
+                      <Plus size={14} />
+                      Add Favorite…
                     </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                    {rootPath && (
+                      <DropdownMenuItem onClick={handleAddCurrentFolder}>
+                        <Star size={14} />
+                        Add Current Folder
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                {recentFolders.length > 0 && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <FolderOpen size={14} />
+                      Open Recent
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="min-w-[240px]">
+                      {recentFolders.slice(0, 5).map((path) => (
+                        <DropdownMenuItem key={path} onClick={() => selectRoot(path)}>
+                          <span className="truncate">{path}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <button
-          type="button"
-          onClick={saveFile}
-          disabled={!canSave}
-          className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
-          title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
-        >
-          <FloppyDisk size={15} />
-        </button>
+            <button
+              type="button"
+              onClick={saveFile}
+              disabled={!canSave}
+              className="flex h-7 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40"
+              title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
+            >
+              <FloppyDisk size={15} />
+            </button>
 
-        <div className="mx-1 h-4 w-px bg-border/60" />
+            <div className="mx-1 h-4 w-px bg-border/60" />
+          </>
+        )}
         <RunConfigWidget />
       </div>
 
