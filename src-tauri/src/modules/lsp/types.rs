@@ -183,6 +183,8 @@ pub struct ServerCapabilities {
     #[serde(default)]
     pub workspace_symbol_provider: Option<serde_json::Value>,
     #[serde(default)]
+    pub inlay_hint_provider: Option<serde_json::Value>,
+    #[serde(default)]
     pub text_document_sync: Option<serde_json::Value>,
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
@@ -218,6 +220,7 @@ impl ServerCapabilities {
             code_action: provider_enabled(&self.code_action_provider),
             document_symbol: provider_enabled(&self.document_symbol_provider),
             workspace_symbol: provider_enabled(&self.workspace_symbol_provider),
+            inlay_hint: provider_enabled(&self.inlay_hint_provider),
             incremental_sync: self.sync_kind() == 2,
         }
     }
@@ -376,6 +379,17 @@ pub struct LspWorkspaceSymbolItem {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct LspInlayHint {
+    pub position: LspPosition,
+    pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<u32>,
+    pub padding_left: bool,
+    pub padding_right: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LspFeatureFlags {
     pub completion: bool,
     pub completion_resolve: bool,
@@ -390,6 +404,7 @@ pub struct LspFeatureFlags {
     pub code_action: bool,
     pub document_symbol: bool,
     pub workspace_symbol: bool,
+    pub inlay_hint: bool,
     pub incremental_sync: bool,
 }
 
@@ -477,6 +492,21 @@ mod tests {
         let capabilities: ServerCapabilities =
             serde_json::from_value(serde_json::json!({ "hoverProvider": false })).unwrap();
         assert!(!capabilities.feature_flags().hover);
+    }
+
+    #[test]
+    fn parses_inlay_hint_provider() {
+        let capabilities: ServerCapabilities =
+            serde_json::from_value(serde_json::json!({ "inlayHintProvider": true })).unwrap();
+        assert!(capabilities.feature_flags().inlay_hint);
+
+        let capabilities: ServerCapabilities =
+            serde_json::from_value(serde_json::json!({ "inlayHintProvider": {} })).unwrap();
+        assert!(capabilities.feature_flags().inlay_hint);
+
+        let capabilities: ServerCapabilities =
+            serde_json::from_value(serde_json::json!({ "inlayHintProvider": false })).unwrap();
+        assert!(!capabilities.feature_flags().inlay_hint);
     }
 
     #[test]

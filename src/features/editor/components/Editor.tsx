@@ -15,7 +15,7 @@ import {
   createEditorFontStyleExtension,
 } from "@/shared/lib/theme/editor-theme";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { indentUnit } from "@codemirror/language";
+import { codeFolding, foldGutter, foldKeymap, indentUnit } from "@codemirror/language";
 import { vim, getCM } from "@replit/codemirror-vim";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
@@ -49,6 +49,8 @@ import {
   openDocumentSymbolsForView,
 } from "@/features/editor/lsp/symbols";
 import { signatureHelpExtension } from "@/features/editor/lsp/signatureHelp";
+import { lspInlayHintsExtension } from "@/features/editor/lsp/inlayHints";
+import { useOutlineCommand } from "@/features/editor/lsp/outline";
 import { setLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
 import {
   breakpointGutter,
@@ -107,6 +109,7 @@ function FileEditor({
   vimEnabled: boolean;
 }) {
   const language = detectLanguage(fileName);
+  useOutlineCommand();
   useLspDiagnostics();
   useLspStatus();
   useLspDocumentSync(language, filePath, content, isModified);
@@ -132,6 +135,7 @@ function FileEditor({
   const lspRenameCompartmentRef = useRef(new Compartment());
   const lspSignatureHelpCompartmentRef = useRef(new Compartment());
   const lspDocumentSymbolsCompartmentRef = useRef(new Compartment());
+  const lspInlayHintsCompartmentRef = useRef(new Compartment());
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const [vimMode, setVimMode] = useState<string | null>(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
@@ -148,6 +152,7 @@ function FileEditor({
     wordWrap,
     lineNumbers: showLineNumbers,
     stickyLines,
+    inlayHints: inlayHintsEnabled,
   } = useSettingsStore((state) => state.editor);
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const lspEnabledForLanguage = useSettingsStore(
@@ -195,6 +200,7 @@ function FileEditor({
         lspRenameCompartmentRef.current.of([]),
         lspSignatureHelpCompartmentRef.current.of([]),
         lspDocumentSymbolsCompartmentRef.current.of([]),
+        lspInlayHintsCompartmentRef.current.of([]),
         breakpointCompartmentRef.current.of(
           breakpointGutter((line) => {
             useDebugStore.getState().toggleBreakpoint(filePathRef.current, line);
@@ -205,8 +211,10 @@ function FileEditor({
         blameCompartment.of([]),
         history(),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
-        keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding]),
+        keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding, ...foldKeymap]),
         searchExtension(),
+        codeFolding(),
+        foldGutter(),
         drawSelection(),
         editorBaseTheme,
         fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
@@ -458,6 +466,7 @@ function FileEditor({
         lspCompletionCompartmentRef.current.reconfigure([]),
         lspHoverCompartmentRef.current.reconfigure([]),
         lspSignatureHelpCompartmentRef.current.reconfigure([]),
+        lspInlayHintsCompartmentRef.current.reconfigure([]),
       ],
     });
 
@@ -479,11 +488,16 @@ function FileEditor({
         const signatureHelp = flags.signatureHelp
           ? signatureHelpExtension(resolvedLanguage, filePath, flags.signatureHelpTriggerCharacters)
           : [];
+        const inlayHints =
+          flags.inlayHint && inlayHintsEnabled
+            ? lspInlayHintsExtension(resolvedLanguage, filePath)
+            : [];
         viewRef.current.dispatch({
           effects: [
             lspCompletionCompartmentRef.current.reconfigure(extension),
             lspHoverCompartmentRef.current.reconfigure(hoverExtension),
             lspSignatureHelpCompartmentRef.current.reconfigure(signatureHelp),
+            lspInlayHintsCompartmentRef.current.reconfigure(inlayHints),
           ],
         });
       })
@@ -492,7 +506,7 @@ function FileEditor({
     return () => {
       cancelled = true;
     };
-  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
+  }, [language, filePath, experimentalLsp, lspEnabledForLanguage, inlayHintsEnabled]);
 
   useEffect(() => {
     const view = viewRef.current;
