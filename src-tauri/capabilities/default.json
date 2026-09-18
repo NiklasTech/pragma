@@ -21,9 +21,7 @@
     "opener:default",
     "store:default",
     "log:default",
-    "updater:allow-check",
-    "updater:allow-download",
-    "updater:allow-install",
+    "updater:default",
     "process:allow-restart",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text"
