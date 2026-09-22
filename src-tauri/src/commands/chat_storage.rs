@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
 
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
+static SESSION_IO_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -188,6 +189,7 @@ async fn write_file(path: &std::path::Path, content: &[u8]) -> Result<(), String
 
 #[tauri::command]
 pub async fn ai_save_session(app: AppHandle, req: SaveSessionRequest) -> Result<(), String> {
+    let _guard = SESSION_IO_LOCK.lock().await;
     let dir = session_dir(&app, &req.root_path, &req.session.id)?;
     let path = dir.join("state.json");
     let content = serde_json::to_string_pretty(&req.session)
@@ -202,6 +204,7 @@ pub async fn ai_save_session_messages(
     app: AppHandle,
     req: SaveMessagesRequest,
 ) -> Result<(), String> {
+    let _guard = SESSION_IO_LOCK.lock().await;
     let dir = session_dir(&app, &req.root_path, &req.session_id)?;
     let path = dir.join("context.jsonl");
 
@@ -228,6 +231,7 @@ pub async fn ai_save_session_messages(
 
 #[tauri::command]
 pub async fn ai_delete_session(app: AppHandle, req: DeleteSessionRequest) -> Result<(), String> {
+    let _guard = SESSION_IO_LOCK.lock().await;
     let dir = session_dir(&app, &req.root_path, &req.session_id)?;
     if dir.exists() {
         tokio::fs::remove_dir_all(&dir)
