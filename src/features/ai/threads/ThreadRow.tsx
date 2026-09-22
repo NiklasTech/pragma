@@ -62,11 +62,18 @@ export function ThreadRow({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-0.5 rounded-md px-1 transition-colors",
+        "group relative flex min-h-8 items-center gap-1 rounded-lg pr-1 pl-2 transition-colors",
         isActive ? "bg-bg-active/50" : "hover:bg-bg-hover",
       )}
       data-thread-status={status}
     >
+      {isActive && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary"
+        />
+      )}
+
       {isRenaming ? (
         <form
           className="flex min-w-0 flex-1 items-center"
@@ -87,7 +94,7 @@ export function ThreadRow({
               }
             }}
             aria-label="Thread title"
-            className="h-6 text-ui-xs"
+            className="h-8 rounded-lg text-ui-xs"
           />
         </form>
       ) : (
@@ -95,7 +102,7 @@ export function ThreadRow({
           type="button"
           onClick={() => onSelect(session.id)}
           aria-current={isActive ? "true" : undefined}
-          className="flex min-w-0 flex-1 items-center gap-1.5 px-1 py-1.5 text-left"
+          className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md py-1.5 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <span
             className={cn("size-1.5 shrink-0 rounded-full", STATUS_STYLES[status])}
@@ -104,14 +111,16 @@ export function ThreadRow({
           />
           <span
             className={cn(
-              "min-w-0 flex-1 truncate text-ui-xs",
-              isActive ? "font-medium text-fg-default" : "text-fg-muted",
+              "min-w-0 flex-1 truncate text-ui-xs transition-colors",
+              isActive
+                ? "font-medium text-fg-default"
+                : "text-fg-muted group-hover:text-fg-default",
             )}
             title={session.title}
           >
             {session.title}
           </span>
-          <span className="shrink-0 text-ui-2xs text-fg-subtle">
+          <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">
             {formatRelativeTime(session.updatedAt)}
           </span>
         </button>
@@ -124,7 +133,7 @@ export function ThreadRow({
               type="button"
               aria-label="Thread actions"
               title="Thread actions"
-              className="flex size-5 shrink-0 items-center justify-center rounded-sm text-fg-muted opacity-0 transition-colors group-hover:opacity-100 focus:opacity-100 hover:bg-bg-hover hover:text-fg-default"
+              className="flex size-5 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 transition-colors outline-none group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-default focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               <DotsThree size={13} weight="bold" />
             </button>
