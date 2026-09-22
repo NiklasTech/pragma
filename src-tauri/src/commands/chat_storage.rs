@@ -1,8 +1,11 @@
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
+
+static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -162,9 +165,24 @@ async fn write_file(path: &std::path::Path, content: &[u8]) -> Result<(), String
             .await
             .map_err(|e| format!("failed to create parent dir: {e}"))?;
     }
-    tokio::fs::write(path, content)
-        .await
-        .map_err(|e| format!("failed to write file {:?}: {}", path, e))?;
+
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| format!("invalid file path: {path:?}"))?;
+    let nonce = TEMP_FILE_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let temp_path =
+        path.with_file_name(format!("{file_name}.{}.{}.tmp", std::process::id(), nonce));
+
+    if let Err(e) = tokio::fs::write(&temp_path, content).await {
+        let _ = tokio::fs::remove_file(&temp_path).await;
+        return Err(format!("failed to write temp file {temp_path:?}: {e}"));
+    }
+    if let Err(e) = tokio::fs::rename(&temp_path, path).await {
+        let _ = tokio::fs::remove_file(&temp_path).await;
+        return Err(format!("failed to replace file {path:?}: {e}"));
+    }
+
     Ok(())
 }
 
@@ -186,6 +204,15 @@ pub async fn ai_save_session_messages(
 ) -> Result<(), String> {
     let dir = session_dir(&app, &req.root_path, &req.session_id)?;
     let path = dir.join("context.jsonl");
+
+    if req.messages.is_empty() {
+        if let Ok(existing) = tokio::fs::read_to_string(&path).await {
+            if !existing.trim().is_empty() {
+                return Ok(());
+            }
+        }
+    }
+
     let mut lines = String::new();
     for message in req.messages {
         let line = serde_json::to_string(&message)

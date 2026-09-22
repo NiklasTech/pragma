@@ -225,6 +225,26 @@ const initialState: AIState = {
   activeCLIProvider: null,
 };
 
+export function mergeSessionsWithStored(
+  stored: ChatSession[],
+  inMemory: ChatSession[],
+): ChatSession[] {
+  const inMemoryById = new Map(inMemory.map((session) => [session.id, session]));
+
+  return stored
+    .map((diskSession) => {
+      const memorySession = inMemoryById.get(diskSession.id);
+      if (!memorySession) return diskSession;
+
+      return {
+        ...diskSession,
+        messages: memorySession.messages.length > 0 ? memorySession.messages : diskSession.messages,
+        updatedAt: Math.max(memorySession.updatedAt, diskSession.updatedAt),
+      };
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
 export const useAIStore = create<AIState & AIActions>((set, get) => ({
   ...initialState,
 
@@ -248,8 +268,8 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
   },
 
   loadSessions: async (rootPath) => {
-    const sessions = await loadStoredSessions(rootPath);
-    if (sessions.length === 0) {
+    const stored = await loadStoredSessions(rootPath);
+    if (stored.length === 0) {
       const session: ChatSession = {
         id: crypto.randomUUID(),
         title: "New Chat",
@@ -262,20 +282,23 @@ export const useAIStore = create<AIState & AIActions>((set, get) => ({
       return;
     }
 
-    const sorted = sessions.sort((a, b) => b.updatedAt - a.updatedAt);
-    const { activeChatSessionId } = get();
+    const { chatSessions, activeChatSessionId } = get();
+    const merged = mergeSessionsWithStored(stored, chatSessions);
     const activeStillExists = activeChatSessionId
-      ? sorted.some((s) => s.id === activeChatSessionId)
+      ? merged.some((s) => s.id === activeChatSessionId)
       : false;
 
     set({
-      chatSessions: sorted,
-      activeChatSessionId: activeStillExists ? activeChatSessionId : sorted[0].id,
+      chatSessions: merged,
+      activeChatSessionId: activeStillExists ? activeChatSessionId : merged[0].id,
     });
   },
 
   loadSessionMessages: async (rootPath, sessionId) => {
     const messages = await loadStoredSessionMessages(rootPath, sessionId);
+    const existing = get().chatSessions.find((s) => s.id === sessionId);
+    if (messages.length === 0 && (existing?.messages.length ?? 0) > 0) return;
+
     set({
       chatSessions: get().chatSessions.map((s) => (s.id === sessionId ? { ...s, messages } : s)),
     });
