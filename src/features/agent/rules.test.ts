@@ -8,10 +8,12 @@ import {
   CHAR_CAP,
   RULES_FILENAMES,
   formatRulesForPrompt,
+  formatRulesSize,
   loadProjectRules,
   selectRulesFile,
   truncateRulesContent,
 } from "./rules";
+import { PRAGMA_MD_TEMPLATE, pragmaRulesPath } from "./rulesTemplate";
 
 describe("selectRulesFile", () => {
   it("prefers PRAGMA.md over the others", () => {
@@ -104,5 +106,29 @@ describe("loadProjectRules", () => {
     const rules = await loadProjectRules("/root");
     expect(rules).toBeNull();
     expect(invokeMock).toHaveBeenCalledTimes(RULES_FILENAMES.length);
+  });
+});
+
+describe("formatRulesSize", () => {
+  it("renders small sizes in characters", () => {
+    expect(formatRulesSize(42)).toBe("42 chars");
+  });
+
+  it("renders larger sizes in thousands", () => {
+    expect(formatRulesSize(1200)).toBe("1.2k chars");
+  });
+});
+
+describe("PRAGMA.md template and creation path", () => {
+  it("exposes a non-empty markdown template", () => {
+    expect(PRAGMA_MD_TEMPLATE.trim().length).toBeGreaterThan(0);
+    expect(PRAGMA_MD_TEMPLATE).toContain("# Project Rules");
+    expect(PRAGMA_MD_TEMPLATE).toContain("## Commands");
+    expect(PRAGMA_MD_TEMPLATE).toContain("## Things to avoid");
+  });
+
+  it("builds the creation path from the workspace root", () => {
+    expect(pragmaRulesPath("/root")).toBe("/root/PRAGMA.md");
+    expect(pragmaRulesPath("/root/")).toBe("/root/PRAGMA.md");
   });
 });

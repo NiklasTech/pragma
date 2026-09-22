@@ -40,6 +40,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 import { ChatContextSettings } from "./ChatContextSettings";
+import { ProjectRulesSettings } from "./ProjectRulesSettings";
 import { VoiceSettings } from "./VoiceSettings";
 
 const UNREACHABLE_MESSAGES = [
@@ -742,6 +743,8 @@ export function AISettings() {
       </SettingSection>
 
       <ChatContextSettings />
+
+      <ProjectRulesSettings />
 
       <VoiceSettings />
     </div>

@@ -47,6 +47,10 @@ export function formatRulesForPrompt(rules: ProjectRules | null): string {
   ].join("\n");
 }
 
+export function formatRulesSize(chars: number): string {
+  return chars >= 1000 ? `${(chars / 1000).toFixed(1)}k chars` : `${chars} chars`;
+}
+
 export async function loadProjectRules(rootPath: string): Promise<ProjectRules | null> {
   for (const name of RULES_FILENAMES) {
     const path = `${rootPath.replace(/[\\/]+$/, "")}/${name}`;

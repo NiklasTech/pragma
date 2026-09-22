@@ -12,11 +12,12 @@ export interface ChatContextSources {
   terminal: boolean;
 }
 
+// Nothing is attached automatically; every source is opt-in through Settings -> Chat Context or an @-mention.
 export const DEFAULT_CHAT_CONTEXT_SOURCES: ChatContextSources = {
-  activeFile: true,
-  openTabs: true,
-  gitDiff: true,
-  terminal: true,
+  activeFile: false,
+  openTabs: false,
+  gitDiff: false,
+  terminal: false,
 };
 
 const ACTIVE_FILE_CHAR_CAP = 6000;

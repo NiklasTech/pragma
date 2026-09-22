@@ -8,7 +8,6 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import {
-  buildContextUserMessage,
   parseMentions,
   stripMentions,
   type AutoContextAttachment,
@@ -95,8 +94,11 @@ export function useAI() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
+  // Request-scoped context for the next API call; consumed once so continuations stay clean.
+  const pendingContextRef = useRef<string | null>(null);
 
   const agentEnabled = useSettingsStore((state) => state.agent.enabled);
+  const useProjectRules = useSettingsStore((state) => state.agent.useProjectRules);
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const agentActive = agentEnabled && agentModeActive;
 
@@ -122,9 +124,10 @@ export function useAI() {
   }, [rootPath]);
 
   const systemPrompt = useMemo(() => {
-    if (agentActive) return buildAgentSystemPrompt(rootPath, projectRules);
-    return formatRulesForPrompt(projectRules) || undefined;
-  }, [agentActive, rootPath, projectRules]);
+    const rules = useProjectRules ? projectRules : null;
+    if (agentActive) return buildAgentSystemPrompt(rootPath, rules);
+    return formatRulesForPrompt(rules) || undefined;
+  }, [agentActive, rootPath, projectRules, useProjectRules]);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -139,6 +142,11 @@ export function useAI() {
         activeChatSessionId,
         acpActive,
         systemPrompt,
+        () => {
+          const pending = pendingContextRef.current;
+          pendingContextRef.current = null;
+          return pending;
+        },
       ),
     [
       activeProvider,
@@ -363,10 +371,7 @@ export function useAI() {
         setLastContextTruncated(false);
       }
 
-      let messageText =
-        contextParts.length > 0
-          ? buildContextUserMessage(contextParts.join("\n\n"), question)
-          : question;
+      let messageText = question;
 
       const { edit, submitPrompt } = useAIEditStore.getState();
       if (edit?.status === "composing") {
@@ -392,6 +397,7 @@ export function useAI() {
         useAgentStore.getState().startTask(messageText, MAX_AGENT_STEPS);
       }
 
+      pendingContextRef.current = contextParts.length > 0 ? contextParts.join("\n\n") : null;
       void chat.sendMessage({ text: messageText });
       setInput("");
     },
