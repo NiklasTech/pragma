@@ -21,6 +21,7 @@ import {
   aiProviderForCLI,
   isCLIOnlyProvider,
   isKeyOptionalProvider,
+  supportsApiKey,
 } from "@/shared/lib/ai-providers";
 import {
   Eye,
@@ -103,11 +104,10 @@ export function AISettings() {
   const activeProvider = settingsStore.ai.defaultProvider;
   const providerConfig = settingsStore.ai.providers[activeProvider];
   const apiKeyRef = aiStore.apiKeyRefs[activeProvider];
-  const needsKey = !isKeyOptionalProvider(activeProvider);
 
   React.useEffect(() => {
     (Object.keys(PROVIDER_LABELS) as AIProvider[])
-      .filter((p) => !isKeyOptionalProvider(p) && !isCLIOnlyProvider(p))
+      .filter((p) => supportsApiKey(p))
       .forEach((p) => void aiStore.loadKeyStatus(p));
     void aiStore.loadCLIManifests();
     void aiStore.loadCLIStatuses();
@@ -414,10 +414,14 @@ export function AISettings() {
           </p>
         )}
 
-        {needsKey && !isCLIOnlyProvider(activeProvider) && (
+        {supportsApiKey(activeProvider) && (
           <SettingRow
-            label="API Key"
-            description="Stored securely in the system keychain"
+            label={isKeyOptionalProvider(activeProvider) ? "API Key (optional)" : "API Key"}
+            description={
+              isKeyOptionalProvider(activeProvider)
+                ? "Only needed if your local server requires one. Stored securely in the system keychain"
+                : "Stored securely in the system keychain"
+            }
             control={
               <div className="flex max-w-[280px] flex-col gap-1">
                 <div className="flex gap-2">
