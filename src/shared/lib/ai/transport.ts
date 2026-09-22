@@ -5,6 +5,7 @@ import { generateId } from "./id";
 import {
   getMessageText,
   uiMessageToBackendMessages,
+  withPendingContext,
   type AcpChatRequest,
   type APIChatRequest,
   type BackendToolDefinition,
@@ -23,6 +24,7 @@ export function createStreamTransport(
   activeChatSessionId: string | null,
   isAcpActive: boolean,
   systemPrompt?: string,
+  consumePendingContext: () => string | null = () => null,
 ): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages, abortSignal }) {
@@ -154,24 +156,31 @@ export function createStreamTransport(
 
           const send = async () => {
             try {
+              const pendingContext = consumePendingContext();
               if (isAcpActive && activeChatSessionId && activeCLIProvider) {
                 const req: AcpChatRequest = {
                   provider_id: activeCLIProvider,
                   chat_session_id: activeChatSessionId,
                   cwd: rootPath,
-                  messages: messages.map((m: UIMessage) => ({
-                    role: m.role,
-                    content: getMessageText(m),
-                  })),
+                  messages: withPendingContext(
+                    messages.map((m: UIMessage) => ({
+                      role: m.role,
+                      content: getMessageText(m),
+                    })),
+                    pendingContext,
+                  ),
                 };
                 await invoke("cli_acp_chat_stream", { req, channel });
               } else if (isCLIActive && activeCLIProvider) {
                 const req: CLIChatRequest = {
                   provider_id: activeCLIProvider,
-                  messages: messages.map((m: UIMessage) => ({
-                    role: m.role,
-                    content: getMessageText(m),
-                  })),
+                  messages: withPendingContext(
+                    messages.map((m: UIMessage) => ({
+                      role: m.role,
+                      content: getMessageText(m),
+                    })),
+                    pendingContext,
+                  ),
                   session_id: generateId(),
                 };
                 await invoke("cli_chat_stream", { req, channel });
@@ -182,7 +191,10 @@ export function createStreamTransport(
                   base_url: baseUrl,
                   messages: [
                     ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-                    ...messages.flatMap(uiMessageToBackendMessages),
+                    ...withPendingContext(
+                      messages.flatMap(uiMessageToBackendMessages),
+                      pendingContext,
+                    ),
                   ],
                   stream_id: streamId,
                   tools: tools.length > 0 ? tools : undefined,

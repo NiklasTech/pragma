@@ -134,6 +134,7 @@ export interface AgentSettings {
   enabled: boolean;
   autoApprove: AgentAutoApprove;
   allowedCommands: string[];
+  useProjectRules: boolean;
 }
 
 export interface ExtensionSettings {
@@ -306,6 +307,7 @@ const defaultSettings: SettingsState = {
     enabled: false,
     autoApprove: "never",
     allowedCommands: [],
+    useProjectRules: true,
   },
   customThemes: {},
   extensions: {},
