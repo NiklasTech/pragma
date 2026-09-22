@@ -72,7 +72,7 @@ impl OpenAIProvider {
 
         let client = reqwest::Client::builder()
             .default_headers(headers)
-            .timeout(Duration::from_secs(config.timeout_seconds))
+            .read_timeout(Duration::from_secs(config.timeout_seconds))
             .pool_max_idle_per_host(0)
             .build()
             .map_err(|e| AIError::Network(e.to_string()))?;
@@ -115,6 +115,7 @@ impl AIProvider for OpenAIProvider {
             let response = self
                 .client
                 .get(&url)
+                .timeout(Duration::from_secs(self.config.timeout_seconds))
                 .send()
                 .await
                 .map_err(map_reqwest_error)?;
@@ -162,6 +163,7 @@ impl AIProvider for OpenAIProvider {
             let response = self
                 .client
                 .post(&url)
+                .timeout(Duration::from_secs(self.config.timeout_seconds))
                 .json(&body)
                 .send()
                 .await
