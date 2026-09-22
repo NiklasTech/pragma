@@ -161,7 +161,7 @@ export function ChatComposer({
     <div>
       <form
         onSubmit={onSubmit}
-        className="rounded-xl border border-border bg-bg-input p-3 transition-all focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20"
+        className="flex flex-col gap-2 rounded-xl border border-border/60 bg-bg-input p-3 transition-colors focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20"
       >
         <div className="relative">
           <Textarea
@@ -175,7 +175,7 @@ export function ChatComposer({
             onSelect={updateCursorPosition}
             placeholder="Ask anything..."
             disabled={busy}
-            className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
+            className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
           />
           <ContextPicker
             ref={contextPickerRef}
@@ -185,20 +185,20 @@ export function ChatComposer({
             onSelect={handleContextSelect}
           />
         </div>
-        <div className="flex flex-nowrap items-center gap-0.5 pt-1.5">
+        <div className="flex flex-nowrap items-center gap-1 border-t border-border/60 pt-2">
           <button
             type="button"
             onClick={insertContextMention}
             disabled={busy}
             aria-label="Add context"
             title="Add context"
-            className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40"
           >
             <Plus size={13} weight="bold" />
           </button>
           <AiModelSelector variant="compact" />
           <ChatToolbar />
-          <div className="ml-auto flex items-center gap-0.5">
+          <div className="ml-auto flex items-center gap-1">
             {voiceInput && (
               <ComposerMicButton
                 recording={dictation.recording}
@@ -212,7 +212,7 @@ export function ChatComposer({
                 onClick={onStop}
                 aria-label="Stop"
                 title="Stop"
-                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
               >
                 <Stop size={13} weight="bold" />
               </button>
@@ -222,7 +222,7 @@ export function ChatComposer({
                 aria-label="Send"
                 title="Send"
                 disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary"
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:bg-bg-hover disabled:text-fg-subtle disabled:hover:bg-bg-hover"
               >
                 <PaperPlaneRight size={13} weight="bold" />
               </button>

@@ -52,12 +52,10 @@ export function AgentRunBar() {
   const canStop = status === "running" || status === "waiting-approval";
 
   return (
-    <div className="mb-2 flex flex-col overflow-hidden rounded-lg border border-border bg-bg-surface">
-      <div className="flex items-center gap-2 px-2.5 py-1.5">
+    <div className="mb-2 flex flex-col overflow-hidden rounded-xl border border-border bg-bg-surface">
+      <div className="flex items-center gap-2 px-3 py-1.5">
         <StatusIcon status={status} />
-        <span className={cn("text-ui-xs font-medium", STATUS_COLORS[status])}>
-          {STATUS_LABELS[status]}
-        </span>
+        <span className="text-ui-xs font-medium text-fg-default">{STATUS_LABELS[status]}</span>
         <span className="text-ui-xs text-fg-subtle">
           Step {stepCount} of {maxSteps}
         </span>
@@ -67,7 +65,7 @@ export function AgentRunBar() {
             onClick={requestStop}
             aria-label="Stop agent"
             title="Stop agent"
-            className="ml-auto flex size-5 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+            className="ml-auto flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors outline-none hover:bg-bg-hover hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             <Stop size={12} weight="bold" />
           </button>
@@ -77,7 +75,7 @@ export function AgentRunBar() {
       <AgentTodoList />
 
       {status === "waiting-approval" && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-ui-xs text-status-warning">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 text-ui-xs text-status-warning">
           <CircleDashed size={12} className="shrink-0" />
           {editReviews.length > 0 ? "Waiting for review in the editor" : "Waiting for approval"}
         </div>
