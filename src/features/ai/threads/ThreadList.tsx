@@ -71,13 +71,12 @@ export function ThreadList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 flex-col gap-2 px-2 py-2">
+      <div className="flex shrink-0 flex-col gap-2 p-2">
         <Button
-          variant="secondary"
-          size="sm"
+          size="default"
           onClick={handleNewThread}
           disabled={!rootPath}
-          className="w-full justify-start"
+          className="w-full justify-start rounded-lg"
         >
           <Plus size={13} weight="bold" />
           New thread
@@ -87,6 +86,7 @@ export function ThreadList() {
           <div className="relative">
             <MagnifyingGlass
               size={12}
+              weight="bold"
               className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-fg-subtle"
             />
             <Input
@@ -94,19 +94,19 @@ export function ThreadList() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search threads"
               aria-label="Search threads"
-              className="h-6 pl-7 text-ui-xs"
+              className="h-7 rounded-lg pl-7 text-ui-xs"
             />
           </div>
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-1 py-1">
+      <div className="min-h-0 flex-1 overflow-y-auto p-1">
         {visibleSessions.length === 0 ? (
-          <p className="px-2 py-4 text-center text-ui-xs text-fg-subtle">
+          <p className="mx-1 rounded-lg border border-dashed border-border/60 px-3 py-6 text-center text-ui-xs text-fg-subtle">
             {chatSessions.length === 0 ? "No threads yet." : "No threads match your search."}
           </p>
         ) : (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {visibleSessions.map((session) => (
               <ThreadRow
                 key={session.id}
