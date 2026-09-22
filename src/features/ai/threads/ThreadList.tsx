@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { MagnifyingGlass, Plus, Warning } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 import {
   AlertDialog,
@@ -61,10 +62,14 @@ export function ThreadList() {
     [renameChatSession, rootPath],
   );
 
-  const handleConfirmDelete = useCallback(() => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!sessionToDelete) return;
-    void deleteSession(rootPath ?? "default", sessionToDelete);
-    setSessionToDelete(null);
+    try {
+      await deleteSession(rootPath ?? "default", sessionToDelete);
+      setSessionToDelete(null);
+    } catch {
+      toast.error("Failed to delete thread");
+    }
   }, [deleteSession, rootPath, sessionToDelete]);
 
   const sessionToDeleteTitle = chatSessions.find((s) => s.id === sessionToDelete)?.title ?? "";
