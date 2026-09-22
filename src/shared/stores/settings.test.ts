@@ -1,5 +1,33 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
-import { useSettingsStore } from "./settings";
+import { migrateAISettings, useSettingsStore } from "./settings";
+
+describe("migrateAISettings", () => {
+  const currentAI = useSettingsStore.getState().ai;
+
+  it("hides model reasoning for profiles written before the revision marker", () => {
+    const legacy = { ...currentAI, showThinking: true };
+    delete legacy.migrationRevision;
+
+    const migrated = migrateAISettings(legacy);
+
+    expect(migrated?.showThinking).toBe(false);
+    expect(migrated?.migrationRevision).toBe(1);
+  });
+
+  it("keeps an explicit choice made after the migration", () => {
+    const migrated = migrateAISettings({
+      ...currentAI,
+      showThinking: true,
+      migrationRevision: 1,
+    });
+
+    expect(migrated?.showThinking).toBe(true);
+  });
+
+  it("leaves profiles without providers untouched", () => {
+    expect(migrateAISettings({ showThinking: true })).toEqual({ showThinking: true });
+  });
+});
 
 describe("settings extensions namespace", () => {
   beforeEach(() => {

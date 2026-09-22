@@ -73,6 +73,8 @@ export interface AISettings {
   voiceInput: boolean;
   voiceEngine: VoiceEngine;
   providers: Record<AIProvider, ProviderSettings>;
+  /** Internal marker for one-time default migrations. */
+  migrationRevision?: number;
 }
 
 export interface LayoutSettings {
@@ -234,8 +236,9 @@ const defaultSettings: SettingsState = {
     terminalSuggestionProvider: null,
     terminalSuggestionModel: null,
     yoloMode: false,
-    showThinking: true,
+    showThinking: false,
     showUnavailableProviders: true,
+    migrationRevision: 1,
     voiceInput: true,
     voiceEngine: "web-speech",
     providers: {
@@ -540,7 +543,11 @@ function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null
 
 const OLD_MOONSHOT_MODELS = new Set(["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"]);
 
-function migrateAISettings(ai: Partial<AISettings> | undefined): Partial<AISettings> | undefined {
+const AI_DEFAULTS_REVISION = 1;
+
+export function migrateAISettings(
+  ai: Partial<AISettings> | undefined,
+): Partial<AISettings> | undefined {
   if (!ai || !ai.providers) return ai;
 
   const providers = { ...ai.providers };
@@ -565,6 +572,12 @@ function migrateAISettings(ai: Partial<AISettings> | undefined): Partial<AISetti
   const updated: Partial<AISettings> = { ...ai, providers };
   if (defaultModel !== ai.defaultModel) {
     updated.defaultModel = defaultModel;
+  }
+
+  // Revision 1 hides the model reasoning by default; a later explicit toggle is kept.
+  if ((ai.migrationRevision ?? 0) < AI_DEFAULTS_REVISION) {
+    updated.showThinking = false;
+    updated.migrationRevision = AI_DEFAULTS_REVISION;
   }
   return updated;
 }
