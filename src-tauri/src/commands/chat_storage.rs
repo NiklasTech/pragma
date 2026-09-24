@@ -240,36 +240,3 @@ pub async fn ai_delete_session(app: AppHandle, req: DeleteSessionRequest) -> Res
     }
     Ok(())
 }
-
-#[tauri::command]
-pub async fn ai_migrate_chat_storage(
-    app: AppHandle,
-    root_path: String,
-    sessions: Vec<ChatSessionMetadata>,
-    messages_by_session: Vec<(String, Vec<ChatMessage>)>,
-) -> Result<(), String> {
-    for session in sessions {
-        ai_save_session(
-            app.clone(),
-            SaveSessionRequest {
-                root_path: root_path.clone(),
-                session,
-            },
-        )
-        .await?;
-    }
-
-    for (session_id, messages) in messages_by_session {
-        ai_save_session_messages(
-            app.clone(),
-            SaveMessagesRequest {
-                root_path: root_path.clone(),
-                session_id,
-                messages,
-            },
-        )
-        .await?;
-    }
-
-    Ok(())
-}

@@ -95,14 +95,3 @@ export async function deleteSession(rootPath: string, sessionId: string): Promis
     req: { root_path: rootPath || "default", session_id: sessionId },
   });
 }
-
-export async function migrateChatStorage(rootPath: string, sessions: ChatSession[]): Promise<void> {
-  const messagesBySession = sessions.map(
-    (s) => [s.id, s.messages.map(toStoredMessage)] as [string, StoredChatMessage[]],
-  );
-  await invoke("ai_migrate_chat_storage", {
-    root_path: rootPath || "default",
-    sessions: sessions.map(toStoredSession),
-    messages_by_session: messagesBySession,
-  });
-}
