@@ -6,6 +6,13 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    # vite is an alias of @voidzero-dev/vite-plus-core, so its version and the
+    # vite-plus version in the catalog have to move in lockstep. Dependabot
+    # cannot express that and used to bump only vite-plus, which broke the
+    # frontend build. Update both by hand instead.
+    ignore:
+      - dependency-name: "vite"
+      - dependency-name: "vite-plus"
     groups:
       npm-dependencies:
         patterns:
