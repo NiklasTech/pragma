@@ -1,0 +1,40 @@
+name: Keep open pull requests up to date
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-branches:
+    name: Update stale pull request branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask Dependabot to rebase its own pull requests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --state open --author "app/dependabot" \
+            --json number,isDraft,mergeStateStatus \
+            --jq '.[] | select(.isDraft | not) | select(.mergeStateStatus == "BEHIND") | .number' |
+          while read -r number; do
+            [ -n "$number" ] || continue
+            echo "asking dependabot to rebase #$number"
+            gh pr comment "$number" --body "@dependabot rebase"
+          done
+
+      - name: Update branches of the remaining pull requests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --state open \
+            --json number,isDraft,headRefName,mergeStateStatus \
+            --jq '.[] | select(.isDraft | not) | select(.mergeStateStatus == "BEHIND") | select(.headRefName | startswith("dependabot/") | not) | .number' |
+          while read -r number; do
+            [ -n "$number" ] || continue
+            echo "updating branch of #$number"
+            gh pr update-branch "$number" || true
+          done
