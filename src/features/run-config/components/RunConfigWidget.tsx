@@ -50,7 +50,7 @@ function RunningProcessBadge({
         title="Open output"
       >
         <StatusDot status={process.status} />
-        <span className="text-xs text-fg-default">{process.configName}</span>
+        <span className="text-ui-xs text-fg-default">{process.configName}</span>
       </button>
       <button
         type="button"
@@ -181,7 +181,7 @@ export function RunConfigWidget() {
                   >
                     <div className="flex items-center gap-2">
                       <StatusDot status={proc?.status ?? "stopped"} />
-                      <span className="text-xs text-fg-default">{config.name}</span>
+                      <span className="text-ui-xs text-fg-default">{config.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       {proc?.status === "running" ? (
@@ -255,7 +255,7 @@ export function RunConfigWidget() {
                 >
                   <div className="flex items-center gap-2">
                     <StatusDot status={proc.status} />
-                    <span className="text-xs text-fg-default">{proc.configName}</span>
+                    <span className="text-ui-xs text-fg-default">{proc.configName}</span>
                     {proc.exitCode !== null && (
                       <span className="text-ui-xs text-fg-muted">({proc.exitCode})</span>
                     )}

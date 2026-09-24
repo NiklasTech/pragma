@@ -142,7 +142,7 @@ export function CopilotBlock({
           <span className="text-ui-xs text-fg-muted">
             Enter this code on GitHub if the browser did not open:
           </span>
-          <code className="rounded bg-bg-surface px-2 py-1 text-center text-sm font-mono">
+          <code className="rounded bg-bg-surface px-2 py-1 text-center text-ui-base font-mono">
             {userCode}
           </code>
           <Button

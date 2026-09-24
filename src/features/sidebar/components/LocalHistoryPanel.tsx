@@ -92,7 +92,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
       <DialogContent className="sm:max-w-6xl w-[95vw] h-[85vh] p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-sm">
+            <DialogTitle className="flex items-center gap-2 text-ui-base">
               <ClockCounterClockwise size={16} />
               Local History
               <span className="text-fg-muted font-normal">— {fileName}</span>

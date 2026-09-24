@@ -38,7 +38,7 @@ export function CliProviderCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{manifest.name}</span>
+            <span className="text-ui-base font-medium">{manifest.name}</span>
             {status?.installed && (
               <span className="rounded-full bg-status-success/10 px-1.5 py-0.5 text-ui-xs text-status-success">
                 Installed

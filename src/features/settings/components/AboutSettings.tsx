@@ -97,7 +97,9 @@ export function AboutSettings() {
               className="h-12 w-12 rounded-lg bg-bg-surface p-1.5"
             />
             <div className="flex flex-col">
-              <span className="font-heading text-sm font-semibold text-fg-default">Pragma</span>
+              <span className="font-heading text-ui-base font-semibold text-fg-default">
+                Pragma
+              </span>
               <span className="text-ui-xs text-fg-muted">Local-first AI coding environment</span>
             </div>
           </div>

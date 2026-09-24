@@ -123,7 +123,7 @@ export function CliIntegrationSection() {
 
       <div className="flex flex-col gap-3">
         {aiStore.cliManifests.length === 0 && (
-          <p className="text-sm text-fg-muted">Loading providers...</p>
+          <p className="text-ui-base text-fg-muted">Loading providers...</p>
         )}
 
         {aiStore.cliManifests.map((manifest) => {
