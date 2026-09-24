@@ -29,7 +29,7 @@ export function AISuggestionsOverlay({ suggestion, loading, visible }: AISuggest
       {loading && !suggestion ? (
         <Skeleton className="h-4 w-32" />
       ) : (
-        <span className="truncate font-mono text-sm text-fg-muted">{suggestion}</span>
+        <span className="truncate font-mono text-ui-base text-fg-muted">{suggestion}</span>
       )}
 
       <div className="ml-1 flex shrink-0 items-center gap-1">

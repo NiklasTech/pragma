@@ -48,7 +48,7 @@ export function RunOutputPanel() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-fg-default">{activeProcess.configName}</span>
+          <span className="text-ui-xs font-medium text-fg-default">{activeProcess.configName}</span>
           <StatusBadge status={activeProcess.status} />
           {activeProcess.exitCode !== null && (
             <span className="text-ui-xs text-fg-muted">exit {activeProcess.exitCode}</span>
@@ -108,7 +108,7 @@ export function RunOutputPanel() {
       </div>
 
       {/* Output */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-3 font-mono text-xs">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-3 font-mono text-ui-xs">
         {activeProcess.output.length === 0 ? (
           <span className="italic text-fg-muted">No output yet...</span>
         ) : (
