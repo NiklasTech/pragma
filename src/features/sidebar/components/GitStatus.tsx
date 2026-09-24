@@ -1,64 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  useGitStore,
-  type GitStatusEntry,
-  type CheckState,
-  type GitCommit,
-} from "@/shared/stores/git";
-import { Button } from "@/shared/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { useGitStore, type GitStatusEntry, type CheckState } from "@/shared/stores/git";
 import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { openGitDiffInSplit } from "../lib/gitDiffSplit";
-import { Spinner, Trash, GitBranch as GitBranchIcon, Warning } from "@phosphor-icons/react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/ui/dialog";
-import { Input } from "@/shared/components/ui/input";
-import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { GitToolbar } from "./git-status/GitToolbar";
 import { BranchHeader } from "./git-status/BranchHeader";
-import { CommitArea } from "./git-status/CommitArea";
-import { SectionHeader } from "./git-status/SectionHeader";
-import { FileRow } from "./git-status/FileRow";
-import { CleanTreeHint } from "./git-status/CleanTreeHint";
-import { HistoryHeader } from "./git-status/HistoryHeader";
-import { HistoryEntry } from "./git-status/HistoryEntry";
+import { GitStatusList } from "./git-status/GitStatusList";
+import { ROW_HEIGHTS, buildRows, type GitRow } from "./git-status/rows";
+import {
+  GitStatusErrorState,
+  GitStatusLoadingState,
+  OpenFolderState,
+} from "./git-status/GitStatusStates";
+import { ActionStatusBanner, GitErrorAlert } from "./git-status/GitStatusBanners";
+import { CreateBranchDialog } from "./git-status/CreateBranchDialog";
+import { DiscardChangesDialog } from "./git-status/DiscardChangesDialog";
 import { StashPanel } from "./StashPanel";
-import { ConflictFileRow } from "./ConflictFileRow";
 import { GitConflictEditor } from "./GitConflictEditor";
 import { GutterBlame } from "./GutterBlame";
-
-type GitRow =
-  | { kind: "commit-area"; key: string }
-  | { kind: "conflict-header"; key: string; count: number }
-  | { kind: "conflict-entry"; key: string; entry: GitStatusEntry }
-  | { kind: "staged-header"; key: string; count: number }
-  | { kind: "staged-entry"; key: string; entry: GitStatusEntry }
-  | { kind: "unstaged-header"; key: string; count: number }
-  | { kind: "unstaged-entry"; key: string; entry: GitStatusEntry }
-  | { kind: "clean-hint"; key: string }
-  | { kind: "history-header"; key: string }
-  | { kind: "history-entry"; key: string; commit: GitCommit };
-
-const ROW_HEIGHTS = {
-  "commit-area": 130,
-  "conflict-header": 24,
-  "conflict-entry": 36,
-  "staged-header": 24,
-  "staged-entry": 36,
-  "unstaged-header": 24,
-  "unstaged-entry": 36,
-  "clean-hint": 120,
-  "history-header": 28,
-  "history-entry": 44,
-} as const;
 
 export function GitStatus() {
   const {
@@ -208,52 +168,18 @@ export function GitStatus() {
   const ahead = snapshot?.ahead ?? 0;
   const behind = snapshot?.behind ?? 0;
 
-  const rows = useMemo<GitRow[]>(() => {
-    const result: GitRow[] = [];
-    result.push({ kind: "commit-area", key: "commit-area" });
-
-    if (allFiles.length === 0) {
-      result.push({ kind: "clean-hint", key: "clean-hint" });
-    } else {
-      if (conflictFiles.length > 0) {
-        result.push({
-          kind: "conflict-header",
-          key: "conflict-header",
-          count: conflictFiles.length,
-        });
-        for (const entry of conflictFiles) {
-          result.push({ kind: "conflict-entry", key: `conflict-${entry.path}`, entry });
-        }
-      }
-      if (stagedFiles.length > 0) {
-        result.push({ kind: "staged-header", key: "staged-header", count: stagedFiles.length });
-        for (const entry of stagedFiles) {
-          result.push({ kind: "staged-entry", key: `staged-${entry.path}`, entry });
-        }
-      }
-      if (unstagedFiles.length > 0) {
-        result.push({
-          kind: "unstaged-header",
-          key: "unstaged-header",
-          count: unstagedFiles.length,
-        });
-        for (const entry of unstagedFiles) {
-          result.push({ kind: "unstaged-entry", key: `unstaged-${entry.path}`, entry });
-        }
-      }
-    }
-
-    if (commits.length > 0) {
-      result.push({ kind: "history-header", key: "history-header" });
-      if (historyExpanded) {
-        for (const c of commits) {
-          result.push({ kind: "history-entry", key: `commit-${c.id}`, commit: c });
-        }
-      }
-    }
-
-    return result;
-  }, [allFiles, conflictFiles, stagedFiles, unstagedFiles, commits, historyExpanded]);
+  const rows = useMemo<GitRow[]>(
+    () =>
+      buildRows({
+        allFiles,
+        conflictFiles,
+        stagedFiles,
+        unstagedFiles,
+        commits,
+        historyExpanded,
+      }),
+    [allFiles, conflictFiles, stagedFiles, unstagedFiles, commits, historyExpanded],
+  );
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -270,36 +196,20 @@ export function GitStatus() {
   const isSelected = (path: string) => selectedPath === path;
 
   if (!repoPath) {
-    return (
-      <PanelEmptyState
-        icon={GitBranchIcon}
-        title="Open a folder"
-        description="Open a folder with a Git repository to view status and commit changes."
-      />
-    );
+    return <OpenFolderState />;
   }
 
   if (isLoading && !snapshot) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Spinner size={20} className="animate-spin text-fg-muted" />
-      </div>
-    );
+    return <GitStatusLoadingState />;
   }
 
   if (error && !snapshot) {
-    return <PanelEmptyState icon={Warning} title="Git status unavailable" description={error} />;
+    return <GitStatusErrorState error={error} />;
   }
 
   return (
     <div className="@container flex h-full min-w-0 flex-col">
-      {error && (
-        <Alert variant="destructive" className="m-2 mb-0">
-          <Warning size={16} />
-          <AlertTitle>Git error</AlertTitle>
-          <AlertDescription className="text-ui-base">{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <GitErrorAlert error={error} />}
 
       <GitToolbar
         onRefresh={() => void refreshAll()}
@@ -330,354 +240,50 @@ export function GitStatus() {
 
       <StashPanel />
 
-      {actionStatus && (
-        <div className="flex animate-pulse items-center gap-1 px-3 py-1 text-ui-xs text-fg-muted">
-          <Spinner size={10} className="animate-spin" />
-          <span className="max-w-[180px] truncate">{actionStatus}</span>
-        </div>
-      )}
+      {actionStatus && <ActionStatusBanner status={actionStatus} />}
 
-      <div
-        ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]"
-      >
-        <div
-          style={{
-            height: virtualizer.getTotalSize(),
-            position: "relative",
-            width: "100%",
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const row = rows[virtualRow.index];
-            if (!row) return null;
+      <GitStatusList
+        scrollRef={scrollRef}
+        virtualizer={virtualizer}
+        rows={rows}
+        commitMessage={commitMessage}
+        setCommitMessage={setCommitMessage}
+        handleKeyDown={handleKeyDown}
+        canCommit={canCommit}
+        stagedCount={stagedCount}
+        actionBusy={actionBusy}
+        onCommit={handleCommit}
+        onOpenConflict={openConflict}
+        historyExpanded={historyExpanded}
+        onToggleHistory={() => setHistoryExpanded((v) => !v)}
+        stagedCheckState={stagedCheckState}
+        unstagedCheckState={unstagedCheckState}
+        onStageAll={handleStageAll}
+        onUnstageAll={handleUnstageAll}
+        onToggleStaged={handleToggleStaged}
+        onToggleUnstaged={handleToggleUnstaged}
+        onSelectFile={handleSelectFile}
+        onOpenDiff={handleOpenDiff}
+        onDiscard={setDiscardEntry}
+        isSelected={isSelected}
+        repoLabel={repoLabel}
+      />
 
-            if (row.kind === "commit-area") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <CommitArea
-                    commitMessage={commitMessage}
-                    setCommitMessage={setCommitMessage}
-                    handleKeyDown={handleKeyDown}
-                    canCommit={canCommit}
-                    stagedCount={stagedCount}
-                    actionBusy={actionBusy}
-                    onCommit={handleCommit}
-                  />
-                </div>
-              );
-            }
+      <CreateBranchDialog
+        open={createBranchOpen}
+        onOpenChange={setCreateBranchOpen}
+        currentBranch={currentBranch}
+        branchName={newBranchName}
+        onBranchNameChange={setNewBranchName}
+        actionBusy={actionBusy}
+        onCreate={(name) => void createBranch(name, true)}
+      />
 
-            if (row.kind === "conflict-header") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <div className="flex h-6 items-center gap-2 px-3">
-                    <span className="text-ui-xs font-medium uppercase tracking-wide text-status-error">
-                      Conflicts
-                    </span>
-                    <span className="text-ui-xs tabular-nums text-fg-muted">{row.count}</span>
-                  </div>
-                </div>
-              );
-            }
-
-            if (row.kind === "conflict-entry") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <ConflictFileRow entry={row.entry} onOpen={(e) => void openConflict(e.path)} />
-                </div>
-              );
-            }
-
-            if (row.kind === "history-header") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <HistoryHeader
-                    expanded={historyExpanded}
-                    onToggle={() => setHistoryExpanded((v) => !v)}
-                  />
-                </div>
-              );
-            }
-
-            if (row.kind === "staged-header") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <SectionHeader
-                    title="Staged"
-                    count={row.count}
-                    checkState={stagedCheckState}
-                    actionBusy={actionBusy}
-                    onToggleAll={handleUnstageAll}
-                    onUnstageAll={handleUnstageAll}
-                    mode="staged"
-                  />
-                </div>
-              );
-            }
-
-            if (row.kind === "unstaged-header") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <SectionHeader
-                    title="Changes"
-                    count={row.count}
-                    checkState={unstagedCheckState}
-                    actionBusy={actionBusy}
-                    onToggleAll={handleStageAll}
-                    onStageAll={handleStageAll}
-                    mode="unstaged"
-                  />
-                </div>
-              );
-            }
-
-            if (row.kind === "staged-entry") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <FileRow
-                    entry={row.entry}
-                    isSelected={isSelected(row.entry.path)}
-                    actionBusy={actionBusy}
-                    mode="staged"
-                    onToggle={handleToggleStaged}
-                    onSelect={handleSelectFile}
-                    onOpenDiff={(e) => void handleOpenDiff(e, true)}
-                  />
-                </div>
-              );
-            }
-
-            if (row.kind === "unstaged-entry") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <FileRow
-                    entry={row.entry}
-                    isSelected={isSelected(row.entry.path)}
-                    actionBusy={actionBusy}
-                    mode="unstaged"
-                    onToggle={handleToggleUnstaged}
-                    onSelect={handleSelectFile}
-                    onOpenDiff={(e) => void handleOpenDiff(e, false)}
-                    onDiscard={(e) => setDiscardEntry(e)}
-                  />
-                </div>
-              );
-            }
-
-            if (row.kind === "clean-hint") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <CleanTreeHint repoLabel={repoLabel} />
-                </div>
-              );
-            }
-
-            if (row.kind === "history-entry") {
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: virtualRow.size,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <HistoryEntry commit={row.commit} />
-                </div>
-              );
-            }
-
-            return null;
-          })}
-        </div>
-      </div>
-
-      <Dialog open={createBranchOpen} onOpenChange={setCreateBranchOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-ui-md">
-              <GitBranchIcon size={18} className="text-primary" />
-              Create Branch
-            </DialogTitle>
-            <DialogDescription className="text-ui-sm">
-              Create a new branch from{" "}
-              <span className="font-mono font-medium">{currentBranch}</span>.
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            value={newBranchName}
-            onChange={(e) => setNewBranchName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void createBranch(newBranchName.trim(), true);
-                setNewBranchName("");
-                setCreateBranchOpen(false);
-              }
-              if (e.key === "Escape") {
-                setCreateBranchOpen(false);
-                setNewBranchName("");
-              }
-            }}
-            placeholder="Branch name"
-            className="text-ui-sm"
-            autoFocus
-          />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCreateBranchOpen(false);
-                setNewBranchName("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              disabled={!newBranchName.trim() || actionBusy === "create-branch"}
-              onClick={() => {
-                void createBranch(newBranchName.trim(), true);
-                setNewBranchName("");
-                setCreateBranchOpen(false);
-              }}
-            >
-              {actionBusy === "create-branch" ? (
-                <>
-                  <Spinner size={12} className="animate-spin mr-1" />
-                  Creating…
-                </>
-              ) : (
-                "Create & checkout"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!discardEntry} onOpenChange={() => setDiscardEntry(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-ui-md">
-              <Trash size={18} className="text-status-error" />
-              Discard Changes
-            </DialogTitle>
-            <DialogDescription className="text-ui-sm">
-              Are you sure you want to discard all changes in{" "}
-              <span className="font-mono font-medium">{discardEntry?.path}</span>? This cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDiscardEntry(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => discardEntry && handleDiscard(discardEntry)}
-            >
-              Discard
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DiscardChangesDialog
+        entry={discardEntry}
+        onCancel={() => setDiscardEntry(null)}
+        onConfirm={handleDiscard}
+      />
 
       <GitConflictEditor />
       <GutterBlame />
