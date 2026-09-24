@@ -15,13 +15,6 @@ pub struct SnapshotMeta {
     pub file_path: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SnapshotData {
-    pub meta: SnapshotMeta,
-    pub diff: String,
-    pub full_content: Option<String>,
-}
-
 fn file_hash(file_path: &str) -> String {
     let mut hasher = DefaultHasher::new();
     file_path.hash(&mut hasher);
@@ -45,39 +38,6 @@ fn meta_path(dir: &Path) -> PathBuf {
 
 fn snapshot_path(dir: &Path, timestamp: &DateTime<Utc>) -> PathBuf {
     dir.join(format!("{}.diff", timestamp.timestamp_millis()))
-}
-
-pub fn load_snapshots(
-    app_data_dir: &Path,
-    repo_path: &str,
-    file_path: &str,
-) -> Result<Vec<SnapshotData>, String> {
-    let hash = file_hash(file_path);
-    let dir = history_dir(app_data_dir, repo_path, &hash);
-    let meta_file = meta_path(&dir);
-
-    if !meta_file.exists() {
-        return Ok(Vec::new());
-    }
-
-    let meta_json =
-        fs::read_to_string(&meta_file).map_err(|e| format!("Failed to read meta file: {e}"))?;
-    let metas: Vec<SnapshotMeta> =
-        serde_json::from_str(&meta_json).map_err(|e| format!("Corrupt meta file: {e}"))?;
-
-    let mut snapshots = Vec::with_capacity(metas.len());
-    for meta in metas {
-        let snap_path = snapshot_path(&dir, &meta.timestamp);
-        let diff = fs::read_to_string(&snap_path)
-            .map_err(|e| format!("Failed to read snapshot {}: {e}", meta.id))?;
-        snapshots.push(SnapshotData {
-            meta,
-            diff,
-            full_content: None,
-        });
-    }
-
-    Ok(snapshots)
 }
 
 pub fn save_snapshot(

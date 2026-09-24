@@ -39,8 +39,3 @@ export function installFontFaces(fonts: FontConfig[]): void {
   );
   el.textContent = rules.join("\n");
 }
-
-export function fontFamilyStack(fontId: string | undefined, fallback: string): string {
-  if (!fontId) return fallback;
-  return `"${fontId}", ${fallback}`;
-}

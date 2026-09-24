@@ -135,10 +135,6 @@ export function isLspSupported(language: string | undefined): boolean {
   return language in LSP_SERVERS;
 }
 
-export function getLspServerDefinition(language: string): LspServerDefinition | undefined {
-  return LSP_SERVERS[language];
-}
-
 export function listLspLanguages(): string[] {
   return Object.keys(LSP_SERVERS);
 }

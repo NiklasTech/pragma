@@ -98,8 +98,4 @@ export async function loadLanguage(filename: string): Promise<Extension> {
   }
 }
 
-export function isLanguageSupported(filename: string): boolean {
-  return getExtension(filename) in languageMap;
-}
-
 export const supportedLanguageCount = Object.keys(languageMap).length;

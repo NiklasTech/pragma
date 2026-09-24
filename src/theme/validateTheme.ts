@@ -1,4 +1,4 @@
-import type { Theme, ThemeInput } from "./types";
+import type { ThemeInput } from "./types";
 
 const FORMAT = "pragma-theme-v1";
 
@@ -491,12 +491,4 @@ export function validateTheme(theme: ThemeInput): ValidationResult {
     valid: errors.length === 0,
     errors,
   };
-}
-
-export function assertValidTheme(theme: ThemeInput): Theme {
-  const result = validateTheme(theme);
-  if (!result.valid) {
-    throw new Error(`Invalid theme: ${result.errors.join("; ")}`);
-  }
-  return theme as Theme;
 }

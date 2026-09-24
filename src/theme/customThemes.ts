@@ -27,22 +27,8 @@ export function loadCustomThemes(): Record<string, Theme> {
   return readStorage();
 }
 
-export function saveCustomTheme(theme: Theme): void {
-  const themes = readStorage();
-  themes[theme.metadata.id] = theme;
-  writeStorage(themes);
-}
-
 export function deleteCustomTheme(id: string): void {
   const themes = readStorage();
   delete themes[id];
   writeStorage(themes);
-}
-
-export function getCustomTheme(id: string): Theme | undefined {
-  return readStorage()[id];
-}
-
-export function exportThemeFile(theme: Theme): string {
-  return JSON.stringify(theme, null, 2);
 }
