@@ -129,7 +129,3 @@ export const presetLabels: Record<string, { name: string; description?: string }
   minimal: { name: "Minimal", description: "Welcome screen with floating AI" },
   debug: { name: "Debug", description: "Terminal-heavy with sidebar on the right" },
 };
-
-export function getDefaultPreset(): LayoutTreeState {
-  return layoutPresets[defaultPresetId];
-}

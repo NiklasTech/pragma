@@ -12,7 +12,7 @@ import {
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
-import { PROVIDER_LABELS, isKeyOptionalProvider } from "@/shared/lib/ai-providers";
+import { PROVIDER_LABELS, isKeyOptionalProvider, supportsApiKey } from "@/shared/lib/ai-providers";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 const ONBOARDING_PROVIDERS: AIProvider[] = [
@@ -46,7 +46,7 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
-    ONBOARDING_PROVIDERS.filter((p) => !isKeyOptionalProvider(p)).forEach(
+    ONBOARDING_PROVIDERS.filter((p) => supportsApiKey(p)).forEach(
       (p) => void aiStore.loadKeyStatus(p),
     );
   }, [aiStore]);
@@ -80,7 +80,6 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
     setKeyInput("");
   };
 
-  const needsKey = !isKeyOptionalProvider(activeProvider);
   const apiKeyRef = aiStore.apiKeyRefs[activeProvider];
 
   return (
@@ -155,9 +154,11 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
           )}
         </div>
 
-        {needsKey && (
+        {supportsApiKey(activeProvider) && (
           <div className="space-y-1.5">
-            <Label>API Key</Label>
+            <Label>
+              {isKeyOptionalProvider(activeProvider) ? "API Key (optional)" : "API Key"}
+            </Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Input

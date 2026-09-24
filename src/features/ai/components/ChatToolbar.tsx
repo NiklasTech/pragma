@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
 import { useSettingsStore } from "@/shared/stores/settings";
 
@@ -35,14 +36,22 @@ export function ChatToolbar() {
             type="button"
             aria-label={`Mode: ${modeLabel}`}
             title={modeLabel}
-            className="flex h-6 items-center gap-1 rounded-md px-1.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className={cn(
+              "flex h-7 items-center gap-1 rounded-lg px-2 text-ui-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              agentMode
+                ? "bg-primary/10 text-primary hover:bg-primary/15"
+                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+            )}
           >
             <ModeIcon size={13} weight={agentMode ? "fill" : "bold"} className="shrink-0" />
             <span className="@max-[320px]:hidden">{modeLabel}</span>
             <CaretDown
               size={10}
               weight="bold"
-              className="shrink-0 text-fg-subtle @max-[320px]:hidden"
+              className={cn(
+                "shrink-0 @max-[320px]:hidden",
+                agentMode ? "text-primary/70" : "text-fg-subtle",
+              )}
             />
           </button>
         }

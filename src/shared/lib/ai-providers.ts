@@ -57,3 +57,8 @@ export function aiProviderForCLI(cliId: string): AIProvider | null {
 export function isKeyOptionalProvider(provider: AIProvider): boolean {
   return provider === "ollama" || provider === "custom";
 }
+
+/** Providers that accept an API key, whether it is required or optional. */
+export function supportsApiKey(provider: AIProvider): boolean {
+  return !isCLIOnlyProvider(provider) && provider !== "ollama";
+}

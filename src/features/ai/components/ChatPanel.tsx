@@ -213,7 +213,7 @@ export function ChatPanel() {
       {/* Messages */}
       <div className="relative flex-1 min-h-0">
         <Conversation className="h-full">
-          <ConversationContent className="gap-5 px-4 py-5">
+          <ConversationContent>
             {messages.length === 0 && <ChatEmptyState />}
 
             {messages.map((msg: UIMessage) => {
@@ -343,8 +343,8 @@ export function ChatPanel() {
                       <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
                     </ChatApplyProvider>
                     {isStreaming && (
-                      <span className="mt-2 inline-flex h-4 items-center">
-                        <span className="size-1.5 animate-pulse rounded-full bg-fg-muted" />
+                      <span aria-hidden className="mt-1 inline-flex h-4 items-center">
+                        <span className="h-3.5 w-0.5 animate-pulse rounded-full bg-fg-subtle motion-reduce:animate-none" />
                       </span>
                     )}
                   </MessageContent>
@@ -365,7 +365,7 @@ export function ChatPanel() {
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 px-2 pb-2">
+      <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-4">
         {/* Error Banner */}
         {error && (
           <Alert variant="destructive" className="mb-3">
@@ -403,7 +403,7 @@ export function ChatPanel() {
             {pendingApprovals.map((approval) => (
               <div
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-lg border border-border bg-bg-root p-3"
+                className="flex flex-col gap-2 rounded-xl border border-border/60 bg-bg-surface p-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
@@ -412,7 +412,7 @@ export function ChatPanel() {
                   <p className="text-ui-xs text-fg-muted">{approval.description}</p>
                 )}
                 {approval.args ? (
-                  <pre className="max-h-32 overflow-auto rounded-md bg-bg-surface p-2 text-ui-xs text-fg-muted">
+                  <pre className="max-h-32 overflow-auto rounded-lg border border-border/60 bg-bg-root p-2 text-ui-xs text-fg-muted">
                     {JSON.stringify(approval.args, null, 2)}
                   </pre>
                 ) : null}
@@ -420,7 +420,7 @@ export function ChatPanel() {
                   <button
                     type="button"
                     onClick={() => handleApproval(approval.toolCallId, false)}
-                    className="flex items-center gap-1 rounded-md bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-error/90"
+                    className="flex items-center gap-1 rounded-lg bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse transition-colors hover:bg-status-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
                   >
                     <X size={12} weight="bold" />
                     Deny
@@ -428,7 +428,7 @@ export function ChatPanel() {
                   <button
                     type="button"
                     onClick={() => handleApproval(approval.toolCallId, true)}
-                    className="flex items-center gap-1 rounded-md bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse hover:bg-status-success/90"
+                    className="flex items-center gap-1 rounded-lg bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse transition-colors hover:bg-status-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-success/40"
                   >
                     <Check size={12} weight="bold" />
                     Allow

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 
 import { cn } from "@/shared/lib/utils";
+import { Shimmer } from "./Shimmer";
 
 type ActivityBlockProps = {
   icon?: ReactNode;
@@ -30,8 +31,20 @@ export function ActivityBlock({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-1.5 text-left text-ui-xs text-fg-muted transition-colors hover:text-fg-default"
       >
-        {icon && <span className="shrink-0">{icon}</span>}
-        <span className="min-w-0 flex-1 truncate">{title}</span>
+        {icon && (
+          <span className={cn("shrink-0", streaming && "animate-pulse motion-reduce:animate-none")}>
+            {icon}
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate">
+          {streaming && typeof title === "string" ? (
+            <Shimmer as="span" className="max-w-full truncate" duration={1.4}>
+              {title}
+            </Shimmer>
+          ) : (
+            title
+          )}
+        </span>
         <CaretDown
           size={12}
           className={cn("shrink-0 transition-transform", open && "rotate-180")}

@@ -1,5 +1,6 @@
 import { getToolName, isToolUIPart, type DynamicToolUIPart, type UIMessage } from "ai";
 
+import { buildContextUserMessage } from "@/shared/lib/chat-context";
 import type { ChatMessage } from "@/shared/stores/ai";
 
 export interface BackendToolCall {
@@ -208,6 +209,29 @@ export function uiMessageToBackendMessages(msg: UIMessage): APIChatRequest["mess
   }
 
   return [{ role: msg.role, content: text }];
+}
+
+// Request-scoped context is prepended to the last user message only, so the stored transcript stays clean.
+export function withPendingContext(
+  messages: APIChatRequest["messages"],
+  context: string | null,
+): APIChatRequest["messages"] {
+  if (!context) return messages;
+
+  let lastUserIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i].role === "user") {
+      lastUserIndex = i;
+      break;
+    }
+  }
+  if (lastUserIndex === -1) return messages;
+
+  return messages.map((message, index) =>
+    index === lastUserIndex
+      ? { ...message, content: buildContextUserMessage(context, message.content) }
+      : message,
+  );
 }
 
 export function uiMessageToStored(msg: UIMessage): ChatMessage {

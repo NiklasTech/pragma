@@ -19,16 +19,6 @@ pub fn authorized_repo_root(repo_root: &str) -> Result<PathBuf> {
     Ok(canonical)
 }
 
-pub fn split_upstream(upstream: &str) -> (Option<String>, Option<String>) {
-    if let Some(pos) = upstream.find('/') {
-        let remote = &upstream[..pos];
-        let branch = &upstream[pos + 1..];
-        (Some(remote.into()), Some(branch.into()))
-    } else {
-        (None, None)
-    }
-}
-
 pub fn sha_is_safe(sha: &str) -> bool {
     !sha.is_empty() && sha.len() <= 64 && sha.chars().all(|c| c.is_ascii_hexdigit())
 }

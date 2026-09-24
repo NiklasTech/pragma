@@ -8,7 +8,10 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import {
-  buildContextUserMessage,
+  shouldPersistSession,
+  type SessionPersistSnapshot,
+} from "@/shared/stores/sessionPersistence";
+import {
   parseMentions,
   stripMentions,
   type AutoContextAttachment,
@@ -95,8 +98,11 @@ export function useAI() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
+  // Request-scoped context for the next API call; consumed once so continuations stay clean.
+  const pendingContextRef = useRef<string | null>(null);
 
   const agentEnabled = useSettingsStore((state) => state.agent.enabled);
+  const useProjectRules = useSettingsStore((state) => state.agent.useProjectRules);
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const agentActive = agentEnabled && agentModeActive;
 
@@ -122,9 +128,10 @@ export function useAI() {
   }, [rootPath]);
 
   const systemPrompt = useMemo(() => {
-    if (agentActive) return buildAgentSystemPrompt(rootPath, projectRules);
-    return formatRulesForPrompt(projectRules) || undefined;
-  }, [agentActive, rootPath, projectRules]);
+    const rules = useProjectRules ? projectRules : null;
+    if (agentActive) return buildAgentSystemPrompt(rootPath, rules);
+    return formatRulesForPrompt(rules) || undefined;
+  }, [agentActive, rootPath, projectRules, useProjectRules]);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -139,6 +146,11 @@ export function useAI() {
         activeChatSessionId,
         acpActive,
         systemPrompt,
+        () => {
+          const pending = pendingContextRef.current;
+          pendingContextRef.current = null;
+          return pending;
+        },
       ),
     [
       activeProvider,
@@ -363,10 +375,7 @@ export function useAI() {
         setLastContextTruncated(false);
       }
 
-      let messageText =
-        contextParts.length > 0
-          ? buildContextUserMessage(contextParts.join("\n\n"), question)
-          : question;
+      let messageText = question;
 
       const { edit, submitPrompt } = useAIEditStore.getState();
       if (edit?.status === "composing") {
@@ -392,6 +401,7 @@ export function useAI() {
         useAgentStore.getState().startTask(messageText, MAX_AGENT_STEPS);
       }
 
+      pendingContextRef.current = contextParts.length > 0 ? contextParts.join("\n\n") : null;
       void chat.sendMessage({ text: messageText });
       setInput("");
     },
@@ -422,20 +432,30 @@ export function useAI() {
   }, [activeChatSessionId]);
 
   // Persist session metadata and messages to disk.
-  const previousStatusRef = useRef(chat.status);
+  const previousPersistRef = useRef<SessionPersistSnapshot>({
+    sessionId: null,
+    title: null,
+    status: chat.status,
+  });
   useEffect(() => {
-    const previous = previousStatusRef.current;
-    previousStatusRef.current = chat.status;
-
     if (!activeChatSessionId) return;
     const session = chatSessions.find((s) => s.id === activeChatSessionId);
     if (!session) return;
 
-    // Save metadata whenever the title changes.
-    void saveSession(rootPath, session);
+    const previous = previousPersistRef.current;
+    const current: SessionPersistSnapshot = {
+      sessionId: activeChatSessionId,
+      title: session.title,
+      status: chat.status,
+    };
+    previousPersistRef.current = current;
 
-    // Save messages when streaming finishes or when the message list grows.
-    const wasStreaming = previous === "streaming" || previous === "submitted";
+    if (shouldPersistSession(previous, current)) {
+      void saveSession(rootPath, session);
+    }
+
+    // Save messages when streaming finishes.
+    const wasStreaming = previous.status === "streaming" || previous.status === "submitted";
     const isReady = chat.status === "ready";
     if (wasStreaming && isReady) {
       void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
@@ -453,6 +473,11 @@ export function useAI() {
       clearTimeout(debouncedSaveRef.current);
     }
     debouncedSaveRef.current = setTimeout(() => {
+      // The session may have been deleted while the timeout was pending.
+      const stillExists = useAIStore
+        .getState()
+        .chatSessions.some((s) => s.id === activeChatSessionId);
+      if (!stillExists) return;
       void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
     }, 1000);
 
