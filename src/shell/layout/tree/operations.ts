@@ -16,10 +16,6 @@ export function generateId(prefix = "node"): string {
   return `${prefix}-${Date.now().toString(36)}-${idCounter.toString(36)}`;
 }
 
-export function resetIdCounter(): void {
-  idCounter = 0;
-}
-
 export function createPanel(kind: PanelKind, id = generateId("panel")): PanelNode {
   return { type: "panel", id, kind };
 }
@@ -396,8 +392,4 @@ export function allPanelIds(root: LayoutNode): string[] {
     return allPanelIds(root.child);
   }
   return [];
-}
-
-export function allFloatingPanelIds(floating: FloatingNode[]): string[] {
-  return floating.flatMap((f) => allPanelIds(f.child));
 }
