@@ -1,22 +1,13 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { EditorView, keymap, lineNumbers, drawSelection } from "@codemirror/view";
-import { lintGutter } from "@codemirror/lint";
-import { Compartment, EditorState, StateEffect, type Extension } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
+import { Compartment } from "@codemirror/state";
+import { externalUpdate } from "@/features/editor/compartments";
 import { useLspDiagnostics } from "@/shared/hooks/useLspDiagnostics";
 import { useLspDocumentSync } from "@/shared/hooks/useLspDocumentSync";
 import { useLspStatus } from "@/shared/hooks/useLspStatus";
 import { useProblemsStore } from "@/shared/stores/problems";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { createLinter } from "./extensions/diagnostics";
-import {
-  pragmaDarkTheme,
-  themeCompartment,
-  editorBaseTheme,
-  createEditorFontStyleExtension,
-} from "@/shared/lib/theme/editor-theme";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { codeFolding, foldGutter, foldKeymap, indentUnit } from "@codemirror/language";
-import { vim, getCM } from "@replit/codemirror-vim";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
@@ -25,71 +16,22 @@ import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAutoSave } from "@/shared/hooks/useAutoSave";
 import { useTheme } from "@/theme";
-import { loadLanguage } from "@/shared/lib/editor/languages";
 import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
-import { ghostTextExtension, type GhostTextConfig } from "./extensions/ghost-text";
-import { insertTabBinding } from "./extensions/tab-keymap";
-import { openEditorSearchPanel, searchExtension } from "./extensions/search";
-import { isLspSupported } from "@/shared/lib/lsp-servers";
-import { lspServerCapabilities } from "@/features/editor/lsp/client";
-import { lspCompletionExtension } from "@/features/editor/lsp/completion";
-import {
-  goToDefinitionAtCoords,
-  hasDefinitionAtCoords,
-  lspDefinitionExtension,
-} from "@/features/editor/lsp/definition";
-import { lspHoverExtension } from "@/features/editor/lsp/hover";
-import { formatDocumentInView } from "@/features/editor/lsp/formatting";
-import { lspReferencesExtension, findReferencesAtCoords } from "@/features/editor/lsp/references";
-import { lspRenameExtension, requestRenameAtCoords } from "@/features/editor/lsp/rename";
-import { requestCodeActionsAtCoords } from "@/features/editor/lsp/codeActions";
-import {
-  lspDocumentSymbolsExtension,
-  openDocumentSymbolsForView,
-} from "@/features/editor/lsp/symbols";
-import { signatureHelpExtension } from "@/features/editor/lsp/signatureHelp";
-import { lspInlayHintsExtension } from "@/features/editor/lsp/inlayHints";
 import { useOutlineCommand } from "@/features/editor/lsp/outline";
-import { setLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
-import {
-  breakpointGutter,
-  getBreakpointLines,
-  setBreakpointLinesEffect,
-} from "@/features/debug/breakpointGutter";
 import { useDebugStore } from "@/features/debug/store";
-import { sameLines } from "@/features/debug/debugState";
-import {
-  EDITOR_CHECK_DEFINITION_EVENT,
-  EDITOR_CODE_ACTION_EVENT,
-  EDITOR_DOCUMENT_SYMBOLS_EVENT,
-  EDITOR_FIND_EVENT,
-  EDITOR_FIND_REFERENCES_EVENT,
-  EDITOR_FORMAT_DOCUMENT_EVENT,
-  EDITOR_GO_TO_DEFINITION_EVENT,
-  EDITOR_RENAME_EVENT,
-  EDITOR_REPLACE_EVENT,
-  dispatchEditorDefinitionAvailability,
-  type EditorCheckDefinitionEventDetail,
-  type EditorFindReferencesEventDetail,
-  type EditorGoToDefinitionEventDetail,
-} from "@/shared/lib/editor-events";
 import { EditorStatusbar } from "./EditorStatusbar";
 import { ReferencesView } from "./ReferencesView";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { InlineDiff } from "./InlineDiff";
 import { useGitStore } from "@/shared/stores/git";
-import { blameGutterExtension, openBlameCommit } from "@/features/sidebar/components/blameGutter";
-
-const languageCompartment = new Compartment();
-const ghostTextCompartment = new Compartment();
-const fontStyleCompartment = new Compartment();
-const lineNumbersCompartment = new Compartment();
-const wordWrapCompartment = new Compartment();
-const tabSizeCompartment = new Compartment();
-const indentUnitCompartment = new Compartment();
-const blameCompartment = new Compartment();
-const externalUpdate = StateEffect.define<void>();
+import { useEditorExtensions } from "@/features/editor/hooks/useEditorExtensions";
+import { useEditorMount } from "@/features/editor/hooks/useEditorMount";
+import { useEditorReconfiguration } from "@/features/editor/hooks/useEditorReconfiguration";
+import { useLspEditorWiring } from "@/features/editor/hooks/useLspEditorWiring";
+import { useEditorSearchEvents } from "@/features/editor/hooks/useEditorSearchEvents";
+import { useEditorLanguageSync } from "@/features/editor/hooks/useEditorLanguageSync";
+import { useBlameGutter } from "@/features/editor/hooks/useBlameGutter";
 
 function FileEditor({
   content,
@@ -182,81 +124,27 @@ function FileEditor({
         ? Boolean(providerConfig.baseUrl)
         : apiKeyRefs[activeProvider] !== null);
 
-  const createExtensions = useCallback(
-    (
-      onChangeValue: (value: string) => void,
-      onCursorChange: (pos: { line: number; column: number }) => void,
-      enableVim: boolean,
-      ghostConfig: GhostTextConfig,
-    ): Extension[] => {
-      const extensions: Extension[] = [
-        languageCompartment.of([]),
-        themeCompartment.of(pragmaDarkTheme),
-        diagnosticsCompartmentRef.current.of([]),
-        lspCompletionCompartmentRef.current.of([]),
-        lspDefinitionCompartmentRef.current.of([]),
-        lspHoverCompartmentRef.current.of([]),
-        lspReferencesCompartmentRef.current.of([]),
-        lspRenameCompartmentRef.current.of([]),
-        lspSignatureHelpCompartmentRef.current.of([]),
-        lspDocumentSymbolsCompartmentRef.current.of([]),
-        lspInlayHintsCompartmentRef.current.of([]),
-        breakpointCompartmentRef.current.of(
-          breakpointGutter((line) => {
-            useDebugStore.getState().toggleBreakpoint(filePathRef.current, line);
-          }),
-        ),
-        lintGutter(),
-        lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
-        blameCompartment.of([]),
-        history(),
-        ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
-        keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding, ...foldKeymap]),
-        searchExtension(),
-        codeFolding(),
-        foldGutter(),
-        drawSelection(),
-        editorBaseTheme,
-        fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
-        wordWrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            const isExternal = update.transactions.some((tr) =>
-              tr.effects.some((e) => e.is(externalUpdate)),
-            );
-            if (!isExternal) {
-              onChangeValue(update.state.doc.toString());
-            }
-            const debugStore = useDebugStore.getState();
-            const breakpointLines = getBreakpointLines(update.state);
-            if (!sameLines(breakpointLines, debugStore.breakpoints[filePathRef.current] ?? [])) {
-              debugStore.syncFileBreakpoints(filePathRef.current, breakpointLines);
-            }
-          }
-          if (update.selectionSet) {
-            const head = update.state.selection.main.head;
-            const line = update.state.doc.lineAt(head);
-            onCursorChange({ line: line.number, column: head - line.from + 1 });
-
-            const { from, to } = update.state.selection.main;
-            const selected = from !== to;
-            setHasSelection(selected);
-            selectedTextRef.current = selected ? update.state.doc.sliceString(from, to) : "";
-          }
-        }),
-        tabSizeCompartment.of(EditorState.tabSize.of(tabSize)),
-        EditorState.allowMultipleSelections.of(true),
-        indentUnitCompartment.of(indentUnit.of(insertSpaces ? " ".repeat(tabSize) : "\t")),
-      ];
-
-      if (enableVim) {
-        extensions.unshift(vim({ status: false }));
-      }
-
-      return extensions;
-    },
-    [tabSize, insertSpaces, fontSize, editorFontFamily, wordWrap, showLineNumbers],
-  );
+  const createExtensions = useEditorExtensions({
+    diagnosticsCompartmentRef,
+    breakpointCompartmentRef,
+    lspCompletionCompartmentRef,
+    lspDefinitionCompartmentRef,
+    lspHoverCompartmentRef,
+    lspReferencesCompartmentRef,
+    lspRenameCompartmentRef,
+    lspSignatureHelpCompartmentRef,
+    lspDocumentSymbolsCompartmentRef,
+    lspInlayHintsCompartmentRef,
+    filePathRef,
+    selectedTextRef,
+    setHasSelection,
+    showLineNumbers,
+    tabSize,
+    insertSpaces,
+    fontSize,
+    editorFontFamily,
+    wordWrap,
+  });
 
   useEffect(() => {
     if (activeProvider !== "ollama") {
@@ -264,61 +152,24 @@ function FileEditor({
     }
   }, [activeProvider, loadKeyStatus]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const view = new EditorView({
-      state: EditorState.create({
-        doc: content,
-        extensions: createExtensions(
-          (value) => onChange(value),
-          (pos) => setCursorPos(pos),
-          vimEnabled,
-          {
-            enabled: canComplete,
-            debounceMs: completionDebounce,
-            triggerCharacters: completionTriggerCharacters,
-            filePath,
-            provider: activeProvider,
-            model: activeModel,
-            baseUrl: providerConfig.baseUrl,
-          },
-        ),
-      }),
-      parent: container,
-    });
-    viewRef.current = view;
-    setEditorView(view);
-
-    const head = view.state.selection.main.head;
-    const line = view.state.doc.lineAt(head);
-    setCursorPos({ line: line.number, column: head - line.from + 1 });
-
-    let vimModeHandler: ((e: { mode: string }) => void) | null = null;
-    if (vimEnabled) {
-      const cm = getCM(view);
-      if (cm) {
-        vimModeHandler = (e: { mode: string }) => setVimMode(e.mode);
-        cm.on("vim-mode-change", vimModeHandler);
-        setVimMode("normal");
-      }
-    }
-
-    return () => {
-      if (vimModeHandler) {
-        const cm = getCM(view);
-        if (cm) cm.off("vim-mode-change", vimModeHandler);
-      }
-      view.destroy();
-      viewRef.current = null;
-      setEditorView(null);
-      setVimMode(null);
-      setCursorPos({ line: 1, column: 1 });
-    };
-    // The editor instance must survive content edits; external updates are synced separately.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filePath, vimEnabled]);
+  useEditorMount({
+    containerRef,
+    viewRef,
+    content,
+    onChange,
+    vimEnabled,
+    filePath,
+    createExtensions,
+    canComplete,
+    completionDebounce,
+    completionTriggerCharacters,
+    activeProvider,
+    activeModel,
+    providerConfig,
+    setEditorView,
+    setVimMode,
+    setCursorPos,
+  });
 
   const handleEditWithAI = useCallback(() => {
     if (!hasSelection || selectedTextRef.current.length === 0) return;
@@ -355,58 +206,19 @@ function FileEditor({
     goToPosition(tabId, null);
   }, [pendingScroll, tabId, goToPosition]);
 
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    viewRef.current.dispatch({
-      effects: themeCompartment.reconfigure(pragmaDarkTheme),
-    });
-  }, [themeId, resolvedMode]);
-
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    viewRef.current.dispatch({
-      effects: fontStyleCompartment.reconfigure(
-        createEditorFontStyleExtension(fontSize, editorFontFamily),
-      ),
-    });
-  }, [fontSize, editorFontFamily]);
-
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    viewRef.current.dispatch({
-      effects: lineNumbersCompartment.reconfigure(showLineNumbers ? lineNumbers() : []),
-    });
-  }, [showLineNumbers]);
-
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-    const lines = fileBreakpoints ?? [];
-    if (sameLines(getBreakpointLines(view.state), lines)) return;
-    view.dispatch({ effects: setBreakpointLinesEffect.of(lines) });
-  }, [fileBreakpoints, filePath]);
-
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    viewRef.current.dispatch({
-      effects: wordWrapCompartment.reconfigure(wordWrap ? EditorView.lineWrapping : []),
-    });
-  }, [wordWrap]);
-
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    viewRef.current.dispatch({
-      effects: [
-        tabSizeCompartment.reconfigure(EditorState.tabSize.of(tabSize)),
-        indentUnitCompartment.reconfigure(indentUnit.of(insertSpaces ? " ".repeat(tabSize) : "\t")),
-      ],
-    });
-  }, [tabSize, insertSpaces]);
+  useEditorReconfiguration({
+    viewRef,
+    themeId,
+    resolvedMode,
+    fontSize,
+    editorFontFamily,
+    showLineNumbers,
+    fileBreakpoints,
+    filePath,
+    wordWrap,
+    tabSize,
+    insertSpaces,
+  });
 
   const shortcuts = useSettingsStore((state) => state.shortcuts);
 
@@ -457,243 +269,46 @@ function FileEditor({
     });
   }, [diagnostics]);
 
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
+  useLspEditorWiring({
+    viewRef,
+    language,
+    filePath,
+    experimentalLsp,
+    lspEnabledForLanguage,
+    inlayHintsEnabled,
+    tabId,
+    lspCompletionCompartmentRef,
+    lspDefinitionCompartmentRef,
+    lspHoverCompartmentRef,
+    lspReferencesCompartmentRef,
+    lspRenameCompartmentRef,
+    lspSignatureHelpCompartmentRef,
+    lspDocumentSymbolsCompartmentRef,
+    lspInlayHintsCompartmentRef,
+  });
 
-    view.dispatch({
-      effects: [
-        lspCompletionCompartmentRef.current.reconfigure([]),
-        lspHoverCompartmentRef.current.reconfigure([]),
-        lspSignatureHelpCompartmentRef.current.reconfigure([]),
-        lspInlayHintsCompartmentRef.current.reconfigure([]),
-      ],
-    });
+  useEditorSearchEvents({ viewRef, tabId });
 
-    if (!experimentalLsp || !lspEnabledForLanguage || !language || !isLspSupported(language)) {
-      return;
-    }
-
-    const resolvedLanguage = language;
-    let cancelled = false;
-
-    void lspServerCapabilities(resolvedLanguage, filePath)
-      .then((flags) => {
-        if (cancelled || !viewRef.current) return;
-        setLspFeatureFlags(filePath, flags);
-        const extension = flags.completion
-          ? lspCompletionExtension(resolvedLanguage, filePath, flags)
-          : [];
-        const hoverExtension = flags.hover ? lspHoverExtension(resolvedLanguage, filePath) : [];
-        const signatureHelp = flags.signatureHelp
-          ? signatureHelpExtension(resolvedLanguage, filePath, flags.signatureHelpTriggerCharacters)
-          : [];
-        const inlayHints =
-          flags.inlayHint && inlayHintsEnabled
-            ? lspInlayHintsExtension(resolvedLanguage, filePath)
-            : [];
-        viewRef.current.dispatch({
-          effects: [
-            lspCompletionCompartmentRef.current.reconfigure(extension),
-            lspHoverCompartmentRef.current.reconfigure(hoverExtension),
-            lspSignatureHelpCompartmentRef.current.reconfigure(signatureHelp),
-            lspInlayHintsCompartmentRef.current.reconfigure(inlayHints),
-          ],
-        });
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [language, filePath, experimentalLsp, lspEnabledForLanguage, inlayHintsEnabled]);
-
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-
-    const enabled =
-      experimentalLsp && lspEnabledForLanguage && language && isLspSupported(language);
-    view.dispatch({
-      effects: [
-        lspDefinitionCompartmentRef.current.reconfigure(
-          enabled ? lspDefinitionExtension(language, filePath) : [],
-        ),
-        lspReferencesCompartmentRef.current.reconfigure(
-          enabled ? lspReferencesExtension(language, filePath) : [],
-        ),
-        lspRenameCompartmentRef.current.reconfigure(
-          enabled ? lspRenameExtension(language, filePath) : [],
-        ),
-        lspDocumentSymbolsCompartmentRef.current.reconfigure(
-          enabled ? lspDocumentSymbolsExtension(language, filePath) : [],
-        ),
-      ],
-    });
-  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
-
-  useEffect(() => {
-    if (!language) return;
-
-    const lspActive = () => experimentalLsp && lspEnabledForLanguage && isLspSupported(language);
-
-    const onGoToDefinition = (event: Event) => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      const { clientX, clientY } = (event as CustomEvent<EditorGoToDefinitionEventDetail>).detail;
-      goToDefinitionAtCoords(view, language, filePath, clientX, clientY);
-    };
-
-    const onFindReferences = (event: Event) => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      const { clientX, clientY } = (event as CustomEvent<EditorFindReferencesEventDetail>).detail;
-      findReferencesAtCoords(view, language, filePath, clientX, clientY);
-    };
-
-    const onRename = (event: Event) => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      const { clientX, clientY } = (event as CustomEvent<EditorFindReferencesEventDetail>).detail;
-      requestRenameAtCoords(view, language, filePath, clientX, clientY);
-    };
-
-    const onCodeAction = (event: Event) => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      const { clientX, clientY } = (event as CustomEvent<EditorFindReferencesEventDetail>).detail;
-      requestCodeActionsAtCoords(view, language, filePath, clientX, clientY);
-    };
-
-    const onDocumentSymbols = () => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      if (useEditorStore.getState().activeTabId !== tabId) return;
-      void openDocumentSymbolsForView(view, language, filePath);
-    };
-
-    const onFormatDocument = () => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      if (useEditorStore.getState().activeTabId !== tabId) return;
-      void formatDocumentInView(view, language, filePath);
-    };
-
-    const onCheckDefinition = (event: Event) => {
-      const view = viewRef.current;
-      if (!view || !lspActive()) return;
-      const { clientX, clientY, requestId } = (
-        event as CustomEvent<EditorCheckDefinitionEventDetail>
-      ).detail;
-      void hasDefinitionAtCoords(view, language, filePath, clientX, clientY).then((available) => {
-        if (available !== null) {
-          dispatchEditorDefinitionAvailability({ requestId, available });
-        }
-      });
-    };
-
-    window.addEventListener(EDITOR_GO_TO_DEFINITION_EVENT, onGoToDefinition);
-    window.addEventListener(EDITOR_CHECK_DEFINITION_EVENT, onCheckDefinition);
-    window.addEventListener(EDITOR_FORMAT_DOCUMENT_EVENT, onFormatDocument);
-    window.addEventListener(EDITOR_FIND_REFERENCES_EVENT, onFindReferences);
-    window.addEventListener(EDITOR_RENAME_EVENT, onRename);
-    window.addEventListener(EDITOR_CODE_ACTION_EVENT, onCodeAction);
-    window.addEventListener(EDITOR_DOCUMENT_SYMBOLS_EVENT, onDocumentSymbols);
-    return () => {
-      window.removeEventListener(EDITOR_GO_TO_DEFINITION_EVENT, onGoToDefinition);
-      window.removeEventListener(EDITOR_CHECK_DEFINITION_EVENT, onCheckDefinition);
-      window.removeEventListener(EDITOR_FORMAT_DOCUMENT_EVENT, onFormatDocument);
-      window.removeEventListener(EDITOR_FIND_REFERENCES_EVENT, onFindReferences);
-      window.removeEventListener(EDITOR_RENAME_EVENT, onRename);
-      window.removeEventListener(EDITOR_CODE_ACTION_EVENT, onCodeAction);
-      window.removeEventListener(EDITOR_DOCUMENT_SYMBOLS_EVENT, onDocumentSymbols);
-    };
-  }, [language, filePath, experimentalLsp, lspEnabledForLanguage]);
-
-  useEffect(() => {
-    const onFind = () => {
-      const view = viewRef.current;
-      if (!view) return;
-      if (useEditorStore.getState().activeTabId !== tabId) return;
-      openEditorSearchPanel(view, "find");
-    };
-
-    const onReplace = () => {
-      const view = viewRef.current;
-      if (!view) return;
-      if (useEditorStore.getState().activeTabId !== tabId) return;
-      openEditorSearchPanel(view, "replace");
-    };
-
-    window.addEventListener(EDITOR_FIND_EVENT, onFind);
-    window.addEventListener(EDITOR_REPLACE_EVENT, onReplace);
-    return () => {
-      window.removeEventListener(EDITOR_FIND_EVENT, onFind);
-      window.removeEventListener(EDITOR_REPLACE_EVENT, onReplace);
-    };
-  }, [tabId]);
-
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    let cancelled = false;
-    loadLanguage(fileName)
-      .then((ext) => {
-        if (cancelled || !viewRef.current) return;
-        viewRef.current.dispatch({
-          effects: languageCompartment.reconfigure(ext),
-        });
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fileName]);
-
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    viewRef.current.dispatch({
-      effects: ghostTextCompartment.reconfigure(
-        ghostTextExtension({
-          enabled: canComplete,
-          debounceMs: completionDebounce,
-          triggerCharacters: completionTriggerCharacters,
-          filePath,
-          provider: activeProvider,
-          model: activeModel,
-          baseUrl: providerConfig.baseUrl,
-        }),
-      ),
-    });
-  }, [
+  useEditorLanguageSync({
+    viewRef,
+    fileName,
     canComplete,
     completionDebounce,
     completionTriggerCharacters,
     filePath,
     activeProvider,
     activeModel,
-    providerConfig.baseUrl,
-  ]);
+    providerConfig,
+  });
 
-  useEffect(() => {
-    if (!blameEnabled) return;
-    if (useEditorStore.getState().activeTabId !== tabId) return;
-    if (useGitStore.getState().blamePath === filePath) return;
-    void useGitStore.getState().loadBlame(filePath);
-  }, [blameEnabled, filePath, tabId]);
-
-  useEffect(() => {
-    const view = viewRef.current;
-    if (!view) return;
-    const active = blameEnabled && blamePath === filePath && blameLines.length > 0;
-    view.dispatch({
-      effects: blameCompartment.reconfigure(
-        active ? blameGutterExtension(blameLines, openBlameCommit) : [],
-      ),
-    });
-  }, [blameEnabled, blamePath, blameLines, filePath]);
+  useBlameGutter({
+    viewRef,
+    blameEnabled,
+    blamePath,
+    blameLines,
+    filePath,
+    tabId,
+  });
 
   return (
     <div className="flex h-full w-full flex-col">
