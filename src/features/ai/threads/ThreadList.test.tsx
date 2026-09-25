@@ -18,7 +18,7 @@ const ai = vi.hoisted(() => ({
   },
 }));
 
-const agent = vi.hoisted(() => ({ status: "idle" }));
+const agent = vi.hoisted(() => ({ status: "idle", runSessionId: null as string | null }));
 
 vi.mock("@/shared/stores/ai", () => ({
   useAIStore: (selector: (state: typeof ai.state) => unknown) => selector(ai.state),
@@ -30,7 +30,7 @@ vi.mock("@/shared/stores/fileExplorer", () => ({
 }));
 
 vi.mock("@/features/agent/store", () => ({
-  useAgentStore: (selector: (state: { status: string }) => unknown) => selector(agent),
+  useAgentStore: (selector: (state: typeof agent) => unknown) => selector(agent),
 }));
 
 import { ThreadList } from "./ThreadList";
@@ -44,6 +44,7 @@ describe("ThreadList", () => {
     ai.state.chatSessions = [];
     ai.state.activeChatSessionId = null;
     agent.status = "idle";
+    agent.runSessionId = null;
   });
 
   it("marks the active thread as selected", () => {
@@ -57,10 +58,11 @@ describe("ThreadList", () => {
     expect(html.match(/aria-current="true"/g) ?? []).toHaveLength(1);
   });
 
-  it("shows the live run status only on the active thread", () => {
+  it("shows the live run status only on the run owner", () => {
     ai.state.chatSessions = [session("a", "Session A", 2), session("b", "Session B", 1)];
-    ai.state.activeChatSessionId = "a";
+    ai.state.activeChatSessionId = "b";
     agent.status = "running";
+    agent.runSessionId = "a";
 
     const html = renderToStaticMarkup(<ThreadList />);
 

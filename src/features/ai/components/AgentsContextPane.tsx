@@ -7,6 +7,7 @@ import {
   CheckCircle,
   FileText,
   Files,
+  MagicWand,
 } from "@phosphor-icons/react";
 
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
@@ -15,8 +16,10 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
 import { AgentReviewPane } from "@/features/agent/components/AgentReviewPane";
+import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useUiModeStore } from "@/shell/mode";
 
+import { selectFocusedSessionId, useAgentsPanesStore } from "../panes/store";
 import { useAgentsUiStore } from "../store/agentsUi";
 
 type ContextTab = "review" | "files";
@@ -58,7 +61,17 @@ function ContextResizeHandle({ onResize }: { onResize: (delta: number) => void }
   );
 }
 
-function ContextFilesList() {
+function EmptyReview() {
+  return (
+    <PanelEmptyState
+      icon={MagicWand}
+      title="No active run"
+      description="Start a thread and enable Agent mode to see steps, todos and approvals here."
+    />
+  );
+}
+
+function ContextFilesList({ live }: { live: boolean }) {
   const checkpointedPaths = useAgentStore((state) => state.checkpointedPaths);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const openFile = useEditorStore((state) => state.openFile);
@@ -83,7 +96,7 @@ function ContextFilesList() {
     [editorPanelId, openFile, setUiMode],
   );
 
-  if (checkpointedPaths.length === 0) {
+  if (!live || checkpointedPaths.length === 0) {
     return (
       <p className="px-3 py-4 text-center text-ui-xs text-fg-subtle">
         No files changed in this run.
@@ -117,6 +130,13 @@ export function AgentsContextPane() {
   const setCollapsed = useAgentsUiStore((state) => state.setContextPaneCollapsed);
   const setWidth = useAgentsUiStore((state) => state.setContextPaneWidth);
   const [tab, setTab] = useState<ContextTab>("review");
+
+  const workspacePath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const focusedSessionId = useAgentsPanesStore((state) =>
+    selectFocusedSessionId(state, workspacePath),
+  );
+  const runSessionId = useAgentStore((state) => state.runSessionId);
+  const isLive = focusedSessionId !== null && focusedSessionId === runSessionId;
 
   if (collapsed) {
     return (
@@ -201,7 +221,15 @@ export function AgentsContextPane() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === "review" ? <AgentReviewPane /> : <ContextFilesList />}
+        {tab === "review" ? (
+          isLive ? (
+            <AgentReviewPane />
+          ) : (
+            <EmptyReview />
+          )
+        ) : (
+          <ContextFilesList live={isLive} />
+        )}
       </div>
     </aside>
   );

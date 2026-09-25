@@ -39,6 +39,7 @@ export interface AgentEditReview {
 interface AgentState {
   modeActive: boolean;
   status: AgentStatus;
+  runSessionId: string | null;
   goal: string;
   steps: AgentStep[];
   stepCount: number;
@@ -56,6 +57,7 @@ interface AgentState {
 interface AgentActions {
   setModeActive: (active: boolean) => void;
   startTask: (goal: string, maxSteps: number) => void;
+  setRunSessionId: (sessionId: string | null) => void;
   addStep: (step: AgentStep) => void;
   updateStep: (id: string, patch: Partial<AgentStep>) => void;
   setStatus: (status: AgentStatus) => void;
@@ -75,6 +77,7 @@ interface AgentActions {
 const initialState: AgentState = {
   modeActive: false,
   status: "idle",
+  runSessionId: null,
   goal: "",
   steps: [],
   stepCount: 0,
@@ -89,10 +92,16 @@ const initialState: AgentState = {
   stopCallback: null,
 };
 
+function clearsRun(status: AgentStatus): boolean {
+  return status !== "running" && status !== "waiting-approval";
+}
+
 export const useAgentStore = create<AgentState & AgentActions>()((set, get) => ({
   ...initialState,
 
   setModeActive: (active) => set({ modeActive: active }),
+
+  setRunSessionId: (sessionId) => set({ runSessionId: sessionId }),
 
   startTask: (goal, maxSteps) =>
     set({
@@ -120,16 +129,29 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
       steps: state.steps.map((step) => (step.id === id ? { ...step, ...patch } : step)),
     })),
 
-  setStatus: (status) => set({ status }),
+  setStatus: (status) =>
+    set((state) => ({ status, runSessionId: clearsRun(status) ? null : state.runSessionId })),
 
   finishTask: (summary) => {
     for (const review of get().editReviews) review.resolve(false);
-    set({ status: "done", summary, pendingApprovals: [], editReviews: [] });
+    set({
+      status: "done",
+      runSessionId: null,
+      summary,
+      pendingApprovals: [],
+      editReviews: [],
+    });
   },
 
   failTask: (error) => {
     for (const review of get().editReviews) review.resolve(false);
-    set({ status: "error", error, pendingApprovals: [], editReviews: [] });
+    set({
+      status: "error",
+      runSessionId: null,
+      error,
+      pendingApprovals: [],
+      editReviews: [],
+    });
   },
 
   requestApproval: (approval) =>
@@ -196,7 +218,7 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
     for (const review of editReviews) {
       review.resolve(false);
     }
-    set({ status: "cancelled", pendingApprovals: [], editReviews: [] });
+    set({ status: "cancelled", runSessionId: null, pendingApprovals: [], editReviews: [] });
     stopCallback?.();
   },
 }));
