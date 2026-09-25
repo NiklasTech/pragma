@@ -19,6 +19,10 @@ import {
 } from "@/shared/lib/chat-context";
 import { collectLiveAutoContext } from "@/features/ai/context/liveContext";
 import { buildAutoContextPrompt } from "@/features/ai/context/autoContext";
+import {
+  setPendingFirstMessage,
+  takePendingFirstMessage,
+} from "@/features/ai/home/pendingFirstMessage";
 import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import {
@@ -341,13 +345,12 @@ export function useAI() {
     setInput(e.target.value);
   }, []);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!input.trim() || chat.status === "submitted" || chat.status === "streaming") return;
+  const submitText = useCallback(
+    async (raw: string) => {
+      if (!raw.trim() || chat.status === "submitted" || chat.status === "streaming") return false;
 
-      const mentions = parseMentions(input);
-      let question = input.trim();
+      const mentions = parseMentions(raw);
+      let question = raw.trim();
       const contextParts: string[] = [];
 
       if (rootPath && mentions.length > 0) {
@@ -357,7 +360,7 @@ export function useAI() {
           });
 
           if (result.content) {
-            question = stripMentions(input);
+            question = stripMentions(raw);
             contextParts.push(result.content);
           }
         } catch {}
@@ -403,10 +406,34 @@ export function useAI() {
 
       pendingContextRef.current = contextParts.length > 0 ? contextParts.join("\n\n") : null;
       void chat.sendMessage({ text: messageText });
-      setInput("");
+      return true;
     },
-    [input, chat, rootPath, mcpServerCount, mcpLoaded, agentActive],
+    [chat, rootPath, mcpServerCount, mcpLoaded, agentActive],
   );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      const submitted = await submitText(input);
+      if (submitted) setInput("");
+    },
+    [input, submitText],
+  );
+
+  const pendingSessionRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!activeChatSessionId || chat.status !== "ready") return;
+    if (pendingSessionRef.current === activeChatSessionId) return;
+
+    const pending = takePendingFirstMessage();
+    if (pending === null) return;
+
+    pendingSessionRef.current = activeChatSessionId;
+    void submitText(pending).then((submitted) => {
+      if (!submitted) setPendingFirstMessage(pending);
+    });
+  }, [activeChatSessionId, chat.status, submitText]);
 
   // Sync chat messages into the active store session.
   const messagesJsonRef = useRef<string>("");
