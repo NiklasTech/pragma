@@ -93,17 +93,17 @@
         "highlight": "rgba(110, 123, 242, 0.06)"
       },
       "syntax": {
-        "keyword": "#a78bfa",
-        "string": "#7fc8a9",
-        "comment": "{colors.foreground.subtle}",
-        "function": "#7ab8f5",
-        "variable": "{colors.foreground.default}",
-        "number": "#e8b87d",
-        "type": "#8ab4f5",
-        "tag": "{colors.status.error}",
-        "attribute": "{colors.accent.default}",
-        "property": "{colors.foreground.default}",
-        "operator": "{colors.foreground.muted}"
+        "keyword": "#c792ea",
+        "string": "#c3e88d",
+        "comment": "#6d7690",
+        "function": "#82aaff",
+        "variable": "#b6d6ff",
+        "number": "#f78c6c",
+        "type": "#ffcb6b",
+        "tag": "#f07178",
+        "attribute": "#c3e88d",
+        "property": "#f07178",
+        "operator": "#89ddff"
       }
     },
 

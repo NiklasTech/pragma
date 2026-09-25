@@ -268,6 +268,10 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
             {...props}
             className="contents"
             onContextMenu={(event) => {
+              if (detectContextType(event.target) === "generic") {
+                event.preventDefault();
+                return;
+              }
               props.onContextMenu?.(event);
               handleContextMenu(event);
             }}

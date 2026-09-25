@@ -35,11 +35,10 @@ export function useAIInit() {
       void loadCLIManifests();
       void loadCLIStatuses();
 
-      // Check API key statuses for providers that require a key.
-      const providers: Array<
-        "openai" | "anthropic" | "deepseek" | "kimi" | "gemini" | "openrouter" | "grok"
-      > = ["openai", "anthropic", "deepseek", "kimi", "gemini", "openrouter", "grok"];
-      providers.forEach((p) => void loadKeyStatus(p));
+      // Other providers are checked when settings opens, so startup raises at most one keychain dialog.
+      if (settings.ai.defaultProvider !== "ollama") {
+        void loadKeyStatus(settings.ai.defaultProvider);
+      }
 
       // Load GitHub Copilot OAuth status
       void loadCopilotAuthStatus();

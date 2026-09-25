@@ -112,7 +112,7 @@ export function FileTreeNode({
   const content = (
     <div
       className={cn(
-        "group mx-1.5 flex h-6 items-center gap-1 rounded-md py-0.5 pr-2 text-ui-base cursor-pointer select-none transition-colors",
+        "group mx-1.5 my-px flex h-[calc(100%-2px)] items-center gap-1 rounded-md pr-2 text-ui-base cursor-pointer select-none transition-colors",
         isActiveFile
           ? "bg-bg-active text-primary"
           : isSelected
@@ -160,9 +160,9 @@ export function FileTreeNode({
   );
 
   return (
-    <div>
+    <div className="h-full">
       <ContextMenu>
-        <ContextMenuTrigger>{content}</ContextMenuTrigger>
+        <ContextMenuTrigger className="block h-full">{content}</ContextMenuTrigger>
         <ContextMenuContent className="w-48">
           {node.isDirectory ? (
             <>

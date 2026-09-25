@@ -52,6 +52,9 @@ export function Statusbar() {
   const { statusbar, theme, editor } = useSettingsStore();
   const activeTab = useEditorStore((s) => s.tabs.find((tab) => tab.id === s.activeTabId));
   const cursor = useEditorStore((s) => (s.activeTabId ? s.cursorPositions[s.activeTabId] : null));
+  const vimMode = useEditorStore((s) =>
+    s.activeTabId ? (s.vimModes[s.activeTabId] ?? null) : null,
+  );
   const { snapshot } = useGitStore();
   const { activeProvider, activeModel } = useAIStore();
   const { problems } = useProblemsStore();
@@ -78,7 +81,7 @@ export function Statusbar() {
         return (
           <StatusbarSection key={item}>
             <span className="rounded-full bg-accent-subtle px-1.5 py-px text-ui-2xs font-semibold text-primary">
-              VIM
+              {vimMode ? vimMode.toUpperCase() : "VIM"}
             </span>
           </StatusbarSection>
         );

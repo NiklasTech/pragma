@@ -218,17 +218,17 @@
   /* --------------------------------------------------------------------------
      Syntax Highlighting
      -------------------------------------------------------------------------- */
-  --syntax-keyword: #a78bfa;
-  --syntax-string: #7fc8a9;
-  --syntax-comment: #646c7a;
-  --syntax-function: #7ab8f5;
-  --syntax-variable: var(--fg-default);
-  --syntax-number: #e8b87d;
-  --syntax-property: var(--fg-default);
-  --syntax-type: #8ab4f5;
-  --syntax-operator: var(--fg-muted);
-  --syntax-tag: #e35d6a;
-  --syntax-attribute: var(--color-accent);
+  --syntax-keyword: #c792ea;
+  --syntax-string: #c3e88d;
+  --syntax-comment: #6d7690;
+  --syntax-function: #82aaff;
+  --syntax-variable: #b6d6ff;
+  --syntax-number: #f78c6c;
+  --syntax-property: #f07178;
+  --syntax-type: #ffcb6b;
+  --syntax-operator: #89ddff;
+  --syntax-tag: #f07178;
+  --syntax-attribute: #c3e88d;
 
   /* --------------------------------------------------------------------------
      Terminal
@@ -482,13 +482,13 @@
 }
 
 .tok-propertyName {
-  color: var(--syntax-variable);
+  color: var(--syntax-property);
 }
 
 .tok-typeName,
 .tok-className,
 .tok-interfaceName {
-  color: var(--syntax-function);
+  color: var(--syntax-type);
 }
 
 .tok-string,
@@ -524,7 +524,7 @@
 .tok-operator,
 .tok-punctuation,
 .tok-bracket {
-  color: var(--fg-muted);
+  color: var(--syntax-operator);
 }
 
 .tok-link {

@@ -16,7 +16,7 @@ import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { getVisibleNodes } from "@/shared/stores/fileExplorer";
 import { FileTreeNode } from "./FileTreeNode";
 
-const ROW_HEIGHT = 24;
+const ROW_HEIGHT = 26;
 const OVERSCAN = 12;
 
 export function FileExplorer() {
@@ -87,8 +87,11 @@ export function FileExplorer() {
                   return (
                     <div
                       key={virtualItem.key}
-                      className="absolute left-0 right-0"
-                      style={{ transform: `translateY(${virtualItem.start}px)` }}
+                      className="absolute left-0 right-0 overflow-hidden"
+                      style={{
+                        height: `${ROW_HEIGHT}px`,
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
                     >
                       <FileTreeNode
                         node={node}

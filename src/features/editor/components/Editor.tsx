@@ -3,7 +3,6 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useAgentStore } from "@/features/agent/store";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { EditorEmptyState } from "./EditorEmptyState";
-import { EditorStatusbar } from "./EditorStatusbar";
 import { ReferencesView } from "./ReferencesView";
 import { InlineDiff } from "./InlineDiff";
 import { FileEditor } from "./FileEditor";
@@ -62,7 +61,6 @@ export function Editor({ panelId }: EditorProps) {
             onReject={showActions ? handleReject : undefined}
           />
         </div>
-        <EditorStatusbar vimMode={null} line={0} column={0} fileType={activeTab.path} />
       </div>
     );
   }
