@@ -12,29 +12,43 @@ jobs:
   update-branches:
     name: Update stale auto-merge branches
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Ask Dependabot to rebase its own pull requests
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Collect auto-merge pull requests that are behind
+        id: collect
         run: |
-          gh pr list --state open --author "app/dependabot" \
-            --json number,isDraft,mergeStateStatus,autoMergeRequest \
-            --jq '.[] | select(.isDraft | not) | select(.autoMergeRequest != null) | select(.mergeStateStatus == "BEHIND") | .number' |
-          while read -r number; do
-            [ -n "$number" ] || continue
-            echo "asking dependabot to rebase #$number"
-            gh pr comment "$number" --body "@dependabot rebase"
+          behind=""
+          for number in $(gh pr list --state open \
+            --json number,isDraft,autoMergeRequest \
+            --jq '.[] | select(.isDraft | not) | select(.autoMergeRequest != null) | .number'); do
+            state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.mergeable_state' 2>/dev/null || echo unknown)
+            if [ "$state" = "unknown" ] || [ "$state" = "null" ]; then
+              # GitHub computes mergeability lazily: the first read often returns
+              # unknown, a second read a moment later returns the real state.
+              sleep 3
+              state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.mergeable_state' 2>/dev/null || echo unknown)
+            fi
+            echo "#$number mergeable_state=$state"
+            if [ "$state" = "behind" ]; then
+              behind="$behind $number"
+            fi
           done
+          echo "behind=$behind" >> "$GITHUB_OUTPUT"
 
-      - name: Update branches of the other auto-merge pull requests
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Bring the behind branches up to date
+        if: steps.collect.outputs.behind != ''
         run: |
-          gh pr list --state open \
-            --json number,isDraft,headRefName,mergeStateStatus,autoMergeRequest \
-            --jq '.[] | select(.isDraft | not) | select(.autoMergeRequest != null) | select(.mergeStateStatus == "BEHIND") | select(.headRefName | startswith("dependabot/") | not) | .number' |
-          while read -r number; do
-            [ -n "$number" ] || continue
-            echo "updating branch of #$number"
-            gh pr update-branch "$number" || true
+          for number in ${{ steps.collect.outputs.behind }}; do
+            branch=$(gh pr view "$number" --json headRefName --jq '.headRefName')
+            case "$branch" in
+              dependabot/*)
+                # Dependabot regenerates its own branch and lockfile; merging main
+                # in by hand can leave an inconsistent lockfile behind.
+                echo "asking dependabot to rebase #$number"
+                gh pr comment "$number" --body "@dependabot rebase" ;;
+              *)
+                echo "updating branch of #$number"
+                gh pr update-branch "$number" || true ;;
+            esac
           done
