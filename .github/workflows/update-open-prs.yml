@@ -3,6 +3,14 @@ name: Keep auto-merge pull requests up to date
 on:
   push:
     branches: [main]
+  # A pull request also falls behind when main moves while its own checks are
+  # still running, so the completion of a CI run is a signal too.
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  # Safety net for the cases the two events above miss.
+  schedule:
+    - cron: "17 */6 * * *"
 
 permissions:
   contents: write
