@@ -97,13 +97,13 @@
         "string": "#a6e3a1",
         "comment": "{colors.foreground.subtle}",
         "function": "#89b4fa",
-        "variable": "{colors.foreground.default}",
+        "variable": "#eba0ac",
         "number": "#fab387",
         "type": "#94e2d5",
         "tag": "{colors.status.error}",
         "attribute": "{colors.accent.default}",
-        "property": "{colors.foreground.default}",
-        "operator": "{colors.foreground.muted}"
+        "property": "#89dceb",
+        "operator": "#89dceb"
       }
     },
 

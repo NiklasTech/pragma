@@ -21,8 +21,8 @@ interface EditorMountContext {
   activeModel: string;
   providerConfig: ProviderConfig;
   setEditorView: Dispatch<SetStateAction<EditorView | null>>;
-  setVimMode: Dispatch<SetStateAction<string | null>>;
-  setCursorPos: Dispatch<SetStateAction<{ line: number; column: number }>>;
+  setVimMode: (mode: string | null) => void;
+  setCursorPos: (pos: { line: number; column: number }) => void;
 }
 
 export function useEditorMount({
@@ -93,7 +93,6 @@ export function useEditorMount({
       viewRef.current = null;
       setEditorView(null);
       setVimMode(null);
-      setCursorPos({ line: 1, column: 1 });
     };
     // The editor instance must survive content edits; external updates are synced separately.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -66,6 +66,7 @@ interface EditorState {
   activeTabIds: Record<string, string | null>;
   lastFocusedPanelId: string | null;
   cursorPositions: Record<string, CursorPosition>;
+  vimModes: Record<string, string | null>;
   _hasHydrated: boolean;
 }
 
@@ -80,6 +81,7 @@ interface EditorActions {
   getPanelActiveTabId: (panelId: string | null) => string | null;
   updateFileContent: (tabId: string, content: string) => void;
   setCursorPosition: (tabId: string, cursor: CursorPosition) => void;
+  setVimMode: (tabId: string, mode: string | null) => void;
   goToPosition: (tabId: string, position: CursorPosition | null) => void;
   markModified: (tabId: string, isModified: boolean) => void;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
@@ -95,6 +97,7 @@ const initialState: EditorState = {
   activeTabIds: {},
   lastFocusedPanelId: null,
   cursorPositions: {},
+  vimModes: {},
   _hasHydrated: false,
 };
 
@@ -263,6 +266,11 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
       cursorPositions: { ...cursorPositions, [tabId]: cursor },
       tabStates: tabStates.map((s) => (s.tabId === tabId ? { ...s, cursor } : s)),
     });
+  },
+
+  setVimMode: (tabId, mode) => {
+    const { vimModes } = get();
+    set({ vimModes: { ...vimModes, [tabId]: mode } });
   },
 
   goToPosition: (tabId, position) => {

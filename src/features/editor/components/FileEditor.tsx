@@ -18,7 +18,6 @@ import { detectLanguage } from "@/shared/lib/language";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { useOutlineCommand } from "@/features/editor/lsp/outline";
 import { useDebugStore } from "@/features/debug/store";
-import { EditorStatusbar } from "./EditorStatusbar";
 import { StickyLinesOverlay } from "./StickyLinesOverlay";
 import { useGitStore } from "@/shared/stores/git";
 import { useEditorExtensions } from "@/features/editor/hooks/useEditorExtensions";
@@ -75,8 +74,6 @@ export function FileEditor({
   const lspDocumentSymbolsCompartmentRef = useRef(new Compartment());
   const lspInlayHintsCompartmentRef = useRef(new Compartment());
   const [editorView, setEditorView] = useState<EditorView | null>(null);
-  const [vimMode, setVimMode] = useState<string | null>(null);
-  const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
   const { themeId, resolvedMode } = useTheme();
   const [hasSelection, setHasSelection] = useState(false);
   const selectedTextRef = useRef("");
@@ -102,6 +99,8 @@ export function FileEditor({
   const editorFontFamily = fontId || fontFamily;
   const tabStates = useEditorStore((s) => s.tabStates);
   const goToPosition = useEditorStore((s) => s.goToPosition);
+  const setVimMode = useEditorStore((s) => s.setVimMode);
+  const setCursorPosition = useEditorStore((s) => s.setCursorPosition);
   const pendingScroll = tabStates.find((s) => s.tabId === tabId)?.pendingScroll ?? null;
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
@@ -163,8 +162,8 @@ export function FileEditor({
     activeModel,
     providerConfig,
     setEditorView,
-    setVimMode,
-    setCursorPos,
+    setVimMode: (mode) => setVimMode(tabId, mode),
+    setCursorPos: (pos) => setCursorPosition(tabId, pos),
   });
 
   const handleEditWithAI = useCallback(() => {
@@ -322,13 +321,6 @@ export function FileEditor({
           }}
         />
       </div>
-      <EditorStatusbar
-        vimMode={vimMode}
-        line={cursorPos.line}
-        column={cursorPos.column}
-        fileType={fileName}
-        filePath={filePath}
-      />
     </div>
   );
 }

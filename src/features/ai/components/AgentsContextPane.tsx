@@ -122,16 +122,16 @@ export function AgentsContextPane() {
     return (
       <aside
         aria-label="Context"
-        className="flex h-full w-8 shrink-0 flex-col items-center gap-1 border-l border-border/60 bg-bg-surface py-2"
+        className="flex h-full w-10 shrink-0 flex-col items-center gap-1 border-l border-border/60 bg-bg-surface py-2"
       >
         <button
           type="button"
           onClick={() => setCollapsed(false)}
           aria-label="Expand context pane"
           title="Expand context pane"
-          className="flex size-6 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
         >
-          <CaretDoubleLeft size={13} />
+          <CaretDoubleLeft size={16} />
         </button>
         <button
           type="button"
@@ -141,9 +141,9 @@ export function AgentsContextPane() {
           }}
           aria-label="Review"
           title="Review"
-          className="flex size-6 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
         >
-          <CheckCircle size={13} />
+          <CheckCircle size={16} />
         </button>
         <button
           type="button"
@@ -153,9 +153,9 @@ export function AgentsContextPane() {
           }}
           aria-label="Files"
           title="Files"
-          className="flex size-6 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
         >
-          <Files size={13} />
+          <Files size={16} />
         </button>
       </aside>
     );
@@ -196,7 +196,7 @@ export function AgentsContextPane() {
           title="Collapse context pane"
           className="ml-auto flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
         >
-          <CaretDoubleRight size={13} />
+          <CaretDoubleRight size={16} />
         </button>
       </div>
 
