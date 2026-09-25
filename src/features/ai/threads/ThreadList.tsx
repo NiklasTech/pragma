@@ -20,6 +20,7 @@ import { Input } from "@/shared/components/ui/input";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
+import { useAgentsPanesStore } from "@/features/ai/panes/store";
 
 import { resolveThreadStatus } from "./helpers";
 import { ThreadRow } from "./ThreadRow";
@@ -29,12 +30,13 @@ const SEARCH_THRESHOLD = 8;
 export function ThreadList() {
   const chatSessions = useAIStore((state) => state.chatSessions);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
-  const setActiveChatSession = useAIStore((state) => state.setActiveChatSession);
   const createChatSession = useAIStore((state) => state.createChatSession);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
   const deleteSession = useAIStore((state) => state.deleteSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const agentStatus = useAgentStore((state) => state.status);
+  const runSessionId = useAgentStore((state) => state.runSessionId);
+  const openSession = useAgentsPanesStore((state) => state.openSession);
 
   const [query, setQuery] = useState("");
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
@@ -52,8 +54,15 @@ export function ThreadList() {
 
   const handleNewThread = useCallback(() => {
     if (!rootPath) return;
-    void createChatSession(rootPath);
-  }, [createChatSession, rootPath]);
+    void createChatSession(rootPath).then((session) => openSession(rootPath, session.id));
+  }, [createChatSession, openSession, rootPath]);
+
+  const handleSelect = useCallback(
+    (sessionId: string) => {
+      openSession(rootPath ?? "default", sessionId);
+    },
+    [openSession, rootPath],
+  );
 
   const handleRename = useCallback(
     (sessionId: string, title: string) => {
@@ -117,8 +126,8 @@ export function ThreadList() {
                 key={session.id}
                 session={session}
                 isActive={session.id === activeChatSessionId}
-                status={resolveThreadStatus(agentStatus, session.id === activeChatSessionId)}
-                onSelect={setActiveChatSession}
+                status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
+                onSelect={handleSelect}
                 onRename={handleRename}
                 onDelete={setSessionToDelete}
               />

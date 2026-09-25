@@ -59,7 +59,11 @@ function extractInlineReasoning(
   return { text: cleaned.trim(), reasoning: reasoning.trim() };
 }
 
-export function ChatPanel() {
+export interface ChatPanelProps {
+  hideHeader?: boolean;
+}
+
+export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   const {
     messages,
     input,
@@ -208,7 +212,7 @@ export function ChatPanel() {
 
   return (
     <div className="@container flex h-full flex-col">
-      <ChatPanelHeader />
+      {!hideHeader && <ChatPanelHeader />}
 
       {/* Messages */}
       <div className="relative flex-1 min-h-0">

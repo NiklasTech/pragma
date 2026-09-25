@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -9,13 +9,20 @@ import { ThreadList } from "@/features/ai/threads/ThreadList";
 
 import { AgentsContextPane } from "./AgentsContextPane";
 import { AgentsHome } from "./AgentsHome";
-import { ChatPanel } from "./ChatPanel";
+import { PaneTree } from "../panes/PaneTree";
+import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { shouldAutoOpenContextPane, useAgentsUiStore } from "../store/agentsUi";
 
 export function AgentsWorkspace() {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
+  const setActiveChatSession = useAIStore((state) => state.setActiveChatSession);
+  const chatSessions = useAIStore((state) => state.chatSessions);
   const loadSessions = useAIStore((state) => state.loadSessions);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+
+  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
+  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, rootPath));
+  const syncSessions = useAgentsPanesStore((state) => state.syncSessions);
 
   const agentStatus = useAgentStore((state) => state.status);
   const editReviewCount = useAgentStore((state) => state.editReviews.length);
@@ -27,6 +34,18 @@ export function AgentsWorkspace() {
   useEffect(() => {
     void loadSessions(rootPath);
   }, [loadSessions, rootPath]);
+
+  const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
+
+  useEffect(() => {
+    if (sessionIds.length === 0) return;
+    syncSessions(rootPath, sessionIds);
+  }, [rootPath, sessionIds, syncSessions]);
+
+  useEffect(() => {
+    if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;
+    setActiveChatSession(focusedSessionId);
+  }, [focusedSessionId, activeChatSessionId, setActiveChatSession]);
 
   const autoOpen = shouldAutoOpenContextPane({
     status: agentStatus,
@@ -50,7 +69,7 @@ export function AgentsWorkspace() {
       </aside>
 
       <section aria-label="Transcript" className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {activeChatSessionId ? <ChatPanel /> : <AgentsHome />}
+        {root ? <PaneTree /> : <AgentsHome />}
       </section>
 
       <AgentsContextPane />

@@ -402,6 +402,7 @@ export function useAI() {
 
       if (agentActive) {
         useAgentStore.getState().startTask(messageText, MAX_AGENT_STEPS);
+        useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
       }
 
       pendingContextRef.current = contextParts.length > 0 ? contextParts.join("\n\n") : null;

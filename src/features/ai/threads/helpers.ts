@@ -33,9 +33,13 @@ export function formatRelativeTime(timestamp: number, now: number = Date.now()):
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-/// Only the active thread owns the single live run; every other thread stays idle.
-export function resolveThreadStatus(agentStatus: AgentStatus, isActive: boolean): ThreadStatus {
-  if (!isActive) return "idle";
+/// Only the thread that owns the single live run shows its status; all others stay idle.
+export function resolveThreadStatus(
+  agentStatus: AgentStatus,
+  sessionId: string,
+  runSessionId: string | null,
+): ThreadStatus {
+  if (!runSessionId || sessionId !== runSessionId) return "idle";
 
   switch (agentStatus) {
     case "running":

@@ -8,6 +8,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
+import { useAgentsPanesStore } from "../panes/store";
 import { homePromptLabel, isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
 
@@ -17,6 +18,7 @@ export function AgentsHome() {
   const [error, setError] = useState<string | null>(null);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const createChatSession = useAIStore((state) => state.createChatSession);
+  const openSession = useAgentsPanesStore((state) => state.openSession);
 
   const startThread = useCallback(async () => {
     if (!rootPath || creating) return;
@@ -32,7 +34,8 @@ export function AgentsHome() {
     }
 
     try {
-      await createChatSession(rootPath);
+      const session = await createChatSession(rootPath);
+      openSession(rootPath, session.id);
       setPrompt("");
     } catch {
       clearPendingFirstMessage();
@@ -40,7 +43,7 @@ export function AgentsHome() {
     } finally {
       setCreating(false);
     }
-  }, [createChatSession, creating, prompt, rootPath]);
+  }, [createChatSession, creating, openSession, prompt, rootPath]);
 
   return (
     <div className="flex h-full w-full items-center justify-center overflow-y-auto px-6 py-10">
