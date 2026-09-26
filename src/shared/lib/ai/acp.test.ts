@@ -9,8 +9,11 @@ function manifest(id: string, usesAcp: boolean): CLIManifest {
     id,
     name: id,
     description: "",
+    install_cmd: `npm install -g ${id}`,
+    command: id,
     supports_sessions: true,
     uses_acp: usesAcp,
+    offers_terminal: true,
   };
 }
 

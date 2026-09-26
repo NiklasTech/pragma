@@ -12,6 +12,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { getFolderIconPath } from "@/shared/lib/folder-icons";
+import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
 import {
@@ -111,6 +112,11 @@ export function FileTreeNode({
 
   const content = (
     <div
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.setData(PRAGMA_PATH_MIME, node.path);
+        event.dataTransfer.effectAllowed = "copy";
+      }}
       className={cn(
         "group mx-1.5 my-px flex h-[calc(100%-2px)] items-center gap-1 rounded-md pr-2 text-ui-base cursor-pointer select-none transition-colors",
         isActiveFile

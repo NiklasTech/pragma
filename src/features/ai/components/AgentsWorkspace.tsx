@@ -51,6 +51,16 @@ export function AgentsWorkspace() {
     setActiveChatSession(focusedSessionId);
   }, [focusedSessionId, activeChatSessionId, setActiveChatSession]);
 
+  const setActiveCLIProvider = useAIStore((state) => state.setActiveCLIProvider);
+  const activeSession = chatSessions.find((session) => session.id === activeChatSessionId);
+  const activeSessionKind = activeSession?.kind;
+  const activeSessionCliProviderId = activeSession?.cliProviderId;
+
+  useEffect(() => {
+    if (activeSessionKind === "terminal") return;
+    if (activeSessionCliProviderId) setActiveCLIProvider(activeSessionCliProviderId);
+  }, [activeSessionKind, activeSessionCliProviderId, setActiveCLIProvider]);
+
   const autoOpen = shouldAutoOpenContextPane({
     status: agentStatus,
     editReviewCount,

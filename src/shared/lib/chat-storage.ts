@@ -17,6 +17,7 @@ export interface StoredSessionMetadata {
   kind?: string | null;
   environment?: string | null;
   worktree?: StoredWorktree | null;
+  cli_provider_id?: string | null;
 }
 
 export interface StoredChatMessage {
@@ -36,6 +37,7 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
 
   if (session.kind) stored.kind = session.kind;
   if (session.environment) stored.environment = session.environment;
+  if (session.cliProviderId) stored.cli_provider_id = session.cliProviderId;
   if (session.worktree === null) {
     stored.worktree = null;
   } else if (session.worktree) {
@@ -59,10 +61,13 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
     updatedAt: session.updated_at,
   };
 
-  if (session.kind === "ask" || session.kind === "agent") restored.kind = session.kind;
+  if (session.kind === "ask" || session.kind === "agent" || session.kind === "terminal") {
+    restored.kind = session.kind;
+  }
   if (session.environment === "checkout" || session.environment === "worktree") {
     restored.environment = session.environment;
   }
+  if (session.cli_provider_id) restored.cliProviderId = session.cli_provider_id;
   if (session.worktree) {
     restored.worktree = {
       branch: session.worktree.branch,

@@ -1,8 +1,29 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Columns, GitBranch, Rows, SquaresFour, X } from "@phosphor-icons/react";
+import {
+  Broom,
+  Columns,
+  Copy,
+  GitBranch,
+  Rows,
+  SquaresFour,
+  Stop,
+  Warning,
+  X,
+} from "@phosphor-icons/react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -20,7 +41,14 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 
 import { ChatPanel } from "../components/ChatPanel";
+import { NewSessionButton } from "../threads/NewSessionButton";
+import { TerminalPane } from "../terminal/TerminalPane";
+import { getTerminalEntryStatus, requestTerminalStop } from "../terminal/runner";
+import { useTerminalStatus } from "../terminal/useTerminalStatus";
+import { clearTerminalView, copyTerminalView } from "../terminal/view";
 import { ChatTranscript } from "./ChatTranscript";
+import { SessionTab } from "./SessionTab";
+import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
 import {
   MAX_PANES,
   type Leaf,
@@ -88,6 +116,7 @@ function EmptyLeafView({ leafId }: { leafId: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 overflow-y-auto p-6">
       <p className="text-ui-sm font-medium text-fg-muted">Open a session</p>
+      <NewSessionButton targetLeafId={leafId} variant="outline" size="sm" />
       {chatSessions.length > 0 && (
         <div className="flex w-full max-w-[280px] flex-col gap-0.5">
           {chatSessions.map((session) => (
@@ -108,8 +137,15 @@ function EmptyLeafView({ leafId }: { leafId: string }) {
 
 function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
+  const session = useAIStore((state) =>
+    state.chatSessions.find((item) => item.id === leaf.sessionId),
+  );
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   if (leaf.sessionId === null) return <EmptyLeafView leafId={leaf.id} />;
+  if (session?.kind === "terminal") {
+    return <TerminalPane session={session} workspaceRoot={rootPath} />;
+  }
   if (focused && leaf.sessionId === activeChatSessionId) return <ChatPanel hideHeader />;
   return <ChatTranscript sessionId={leaf.sessionId} />;
 }
@@ -141,6 +177,10 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   );
 
   const [dropZone, setDropZone] = useState<DropZone | null>(null);
+  const [pendingClose, setPendingClose] = useState<{
+    leafIds: string[];
+    confirm: CloseConfirm;
+  } | null>(null);
 
   const activeLeaf =
     node.children.find((leaf) => leaf.id === node.activeLeafId) ?? node.children[0];
@@ -150,6 +190,20 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
     ? chatSessions.find((item) => item.id === activeLeaf.sessionId)
     : undefined;
   const activeBranch = activeSession?.worktree?.branch ?? null;
+  const cliManifests = useAIStore((state) => state.cliManifests);
+  const terminalSession = activeSession?.kind === "terminal" ? activeSession : null;
+  const terminalStatus = useTerminalStatus(terminalSession?.id ?? null);
+  const terminalManifest = terminalSession?.cliProviderId
+    ? cliManifests.find((item) => item.id === terminalSession.cliProviderId)
+    : undefined;
+  const terminalLabel =
+    terminalStatus.status === "running"
+      ? "running"
+      : terminalStatus.status === "cancelled"
+        ? "cancelled"
+        : terminalStatus.exitCode !== null
+          ? `exited (${terminalStatus.exitCode})`
+          : "exited";
 
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -184,6 +238,40 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
     [activeLeaf, dockAsTab, dropZone, rootPath, splitToward],
   );
 
+  const requestClose = useCallback(
+    (leafIds: string[]) => {
+      const targets: SessionCloseTarget[] = leafIds.map((leafId) => {
+        const leaf = node.children.find((child) => child.id === leafId);
+        const session = leaf?.sessionId
+          ? chatSessions.find((item) => item.id === leaf.sessionId)
+          : undefined;
+        return {
+          sessionId: leaf?.sessionId ?? null,
+          title: session?.title ?? "New thread",
+          kind: session?.kind,
+          terminalStatus:
+            leaf?.sessionId && session?.kind === "terminal"
+              ? getTerminalEntryStatus(leaf.sessionId)
+              : null,
+        };
+      });
+
+      const confirm = buildCloseConfirm(targets, agentStatus, runSessionId);
+      if (!confirm) {
+        for (const leafId of leafIds) closeLeaf(rootPath, leafId);
+        return;
+      }
+      setPendingClose({ leafIds, confirm });
+    },
+    [agentStatus, chatSessions, closeLeaf, node.children, rootPath, runSessionId],
+  );
+
+  const handleConfirmClose = useCallback(() => {
+    if (!pendingClose) return;
+    for (const leafId of pendingClose.leafIds) closeLeaf(rootPath, leafId);
+    setPendingClose(null);
+  }, [closeLeaf, pendingClose, rootPath]);
+
   if (!activeLeaf) return null;
 
   const isRunOwner = activeLeaf.sessionId !== null && activeLeaf.sessionId === runSessionId;
@@ -205,58 +293,104 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
     >
       <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 bg-bg-surface px-1">
         <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
-          {node.children.map((leaf) => {
+          {node.children.map((leaf, index) => {
             const isActive = leaf.id === activeLeaf.id;
             const title = titleFor(leaf);
             return (
-              <button
+              <SessionTab
                 key={leaf.id}
-                type="button"
-                draggable
+                title={title}
+                isActive={isActive}
+                canCloseOthers={node.children.length > 1}
+                canCloseToRight={index < node.children.length - 1}
+                onSelect={() => selectTab(rootPath, node.id, leaf.id)}
+                onClose={() => requestClose([leaf.id])}
+                onCloseOthers={() =>
+                  requestClose(
+                    node.children.filter((child) => child.id !== leaf.id).map((child) => child.id),
+                  )
+                }
+                onCloseToRight={() =>
+                  requestClose(node.children.slice(index + 1).map((child) => child.id))
+                }
                 onDragStart={(event) => {
                   event.dataTransfer.setData(PANE_MIME, leaf.id);
                   event.dataTransfer.effectAllowed = "move";
                 }}
-                onClick={() => selectTab(rootPath, node.id, leaf.id)}
-                title={title}
-                className={cn(
-                  "max-w-[160px] shrink-0 truncate rounded-sm px-1.5 py-1 text-ui-xs transition-colors",
-                  isActive
-                    ? "bg-bg-elevated font-medium text-fg-default"
-                    : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-                )}
-              >
-                {title}
-              </button>
+              />
             );
           })}
         </div>
 
-        <span
-          className="shrink-0 rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-sm font-medium text-fg-default"
-          title={`Mode: ${modeActive ? "Agent" : "Ask"}`}
-        >
-          {modeActive ? "Agent" : "Ask"}
-        </span>
+        {terminalSession ? (
+          <>
+            <span className="shrink-0 text-ui-sm font-medium text-fg-default">
+              {terminalManifest?.name ?? "Terminal"}
+            </span>
+            <span
+              className="shrink-0 rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-sm text-fg-muted"
+              data-terminal-status={terminalStatus.status}
+            >
+              {terminalLabel}
+            </span>
+            <button
+              type="button"
+              onClick={() => requestTerminalStop(terminalSession.id)}
+              disabled={terminalStatus.status !== "running"}
+              aria-label="Stop"
+              title="Stop"
+              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-status-error disabled:opacity-40"
+            >
+              <Stop size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => copyTerminalView(terminalSession.id)}
+              aria-label="Copy output"
+              title="Copy output"
+              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            >
+              <Copy size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => clearTerminalView(terminalSession.id)}
+              aria-label="Clear terminal"
+              title="Clear terminal"
+              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            >
+              <Broom size={16} />
+            </button>
+          </>
+        ) : (
+          <>
+            <span
+              className="shrink-0 rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-sm font-medium text-fg-default"
+              title={`Mode: ${modeActive ? "Agent" : "Ask"}`}
+            >
+              {modeActive ? "Agent" : "Ask"}
+            </span>
 
-        {activeBranch && (
-          <span
-            className="flex max-w-[140px] shrink-0 items-center gap-1 text-ui-sm text-fg-muted"
-            title={
-              activeSession?.worktree
-                ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
-                : activeBranch
-            }
-          >
-            <GitBranch size={13} className="shrink-0" />
-            <span className="truncate">{activeBranch}</span>
-          </span>
+            {activeBranch && (
+              <span
+                className="flex max-w-[140px] shrink-0 items-center gap-1 text-ui-sm text-fg-muted"
+                title={
+                  activeSession?.worktree
+                    ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
+                    : activeBranch
+                }
+              >
+                <GitBranch size={13} className="shrink-0" />
+                <span className="truncate">{activeBranch}</span>
+              </span>
+            )}
+
+            <span className="flex shrink-0 items-center gap-1.5 text-ui-sm text-fg-muted">
+              <span className={cn("size-2 rounded-full", STATUS_DOTS[status])} aria-hidden="true" />
+              {STATUS_LABELS[status]}
+            </span>
+          </>
         )}
-
-        <span className="flex shrink-0 items-center gap-1.5 text-ui-sm text-fg-muted">
-          <span className={cn("size-2 rounded-full", STATUS_DOTS[status])} aria-hidden="true" />
-          {STATUS_LABELS[status]}
-        </span>
 
         <button
           type="button"
@@ -286,7 +420,7 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         </button>
         <button
           type="button"
-          onClick={() => closeLeaf(rootPath, activeLeaf.id)}
+          onClick={() => requestClose([activeLeaf.id])}
           aria-label="Close pane"
           title="Close pane"
           className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
@@ -300,6 +434,27 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       </div>
 
       {dropZone && <PaneDropOverlay zone={dropZone} />}
+
+      <AlertDialog
+        open={pendingClose !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingClose(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              <Warning size={20} className="text-status-warning" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>{pendingClose?.confirm.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingClose?.confirm.body}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmClose}>Close</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

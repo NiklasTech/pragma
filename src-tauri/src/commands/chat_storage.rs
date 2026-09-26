@@ -22,6 +22,8 @@ pub struct ChatSessionMetadata {
     pub environment: String,
     #[serde(default)]
     pub worktree: Option<SessionWorktreeMetadata>,
+    #[serde(default)]
+    pub cli_provider_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

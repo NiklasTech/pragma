@@ -54,16 +54,19 @@ export interface ChatSession {
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
-  kind?: "ask" | "agent";
+  kind?: "ask" | "agent" | "terminal";
   environment?: "checkout" | "worktree";
   worktree?: SessionWorktree | null;
+  cliProviderId?: string;
 }
 
 export interface CreateChatSessionInit {
   id?: string;
+  title?: string;
   kind?: ChatSession["kind"];
   environment?: ChatSession["environment"];
   worktree?: ChatSession["worktree"];
+  cliProviderId?: string;
 }
 
 // ─── CLI Types ───────────────────────────────────────────────────────────────
@@ -72,8 +75,11 @@ export interface CLIManifest {
   id: string;
   name: string;
   description: string;
+  install_cmd: string;
+  command: string;
   supports_sessions: boolean;
   uses_acp: boolean;
+  offers_terminal: boolean;
 }
 
 export interface CLIStatus {
