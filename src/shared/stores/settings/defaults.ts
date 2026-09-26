@@ -105,10 +105,11 @@ export const defaultSettings: SettingsState = {
     acp: true,
   },
   agent: {
-    enabled: false,
+    enabled: true,
     autoApprove: "never",
     allowedCommands: [],
     useProjectRules: true,
+    stepLimit: null,
   },
   customThemes: {},
   extensions: {},

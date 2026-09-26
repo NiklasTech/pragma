@@ -78,6 +78,11 @@ window.addEventListener("error", (event) => {
 });
 
 window.addEventListener("unhandledrejection", (event) => {
+  // WebKit rejects a cancelled CSS animation's finished promise with `true`.
+  if (event.reason === true) {
+    event.preventDefault();
+    return;
+  }
   const detail = formatErrorDetail(event.reason);
   void logError(`[unhandled rejection] ${detail}`).catch(() => {});
   toast.error("An unexpected error occurred. Details were logged.");

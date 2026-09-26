@@ -33,12 +33,22 @@ describe("AgentRunBar", () => {
     expect(renderToStaticMarkup(<AgentRunBar />)).toBe("");
   });
 
+  it("hides the step count until the agent has taken a step", () => {
+    agent.state.status = "running";
+    agent.state.stepCount = 0;
+    const html = renderToStaticMarkup(<AgentRunBar />);
+    expect(html).toContain("Running");
+    expect(html).not.toContain("step");
+    expect(html).not.toContain("30");
+  });
+
   it("shows status, step count and stop while running", () => {
     agent.state.status = "running";
     agent.state.stepCount = 2;
     const html = renderToStaticMarkup(<AgentRunBar />);
     expect(html).toContain("Running");
-    expect(html).toContain("Step 2 of 30");
+    expect(html).toContain("2 steps");
+    expect(html).not.toContain("of 30");
     expect(html).toContain('aria-label="Stop agent"');
   });
 

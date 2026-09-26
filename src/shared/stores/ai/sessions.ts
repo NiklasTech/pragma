@@ -18,11 +18,16 @@ export function mergeSessionsWithStored(
       const memorySession = inMemoryById.get(diskSession.id);
       if (!memorySession) return diskSession;
 
-      return {
+      const merged: ChatSession = {
         ...diskSession,
         messages: memorySession.messages.length > 0 ? memorySession.messages : diskSession.messages,
         updatedAt: Math.max(memorySession.updatedAt, diskSession.updatedAt),
       };
+      if (memorySession.kind !== undefined) merged.kind = memorySession.kind;
+      if (memorySession.environment !== undefined) merged.environment = memorySession.environment;
+      if (memorySession.worktree !== undefined) merged.worktree = memorySession.worktree;
+
+      return merged;
     })
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
@@ -39,6 +44,7 @@ export const createSessionsSlice: AISlice<
     | "deleteSession"
     | "renameChatSession"
     | "saveSession"
+    | "updateChatSession"
     | "saveSessionMessages"
   >
 > = (set, get) => ({
@@ -102,14 +108,18 @@ export const createSessionsSlice: AISlice<
 
   setActiveChatSession: (sessionId) => set({ activeChatSessionId: sessionId }),
 
-  createChatSession: async (rootPath) => {
+  createChatSession: async (rootPath, init) => {
     const session: ChatSession = {
-      id: crypto.randomUUID(),
+      id: init?.id ?? crypto.randomUUID(),
       title: "New Chat",
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
+    if (init?.kind !== undefined) session.kind = init.kind;
+    if (init?.environment !== undefined) session.environment = init.environment;
+    if (init?.worktree !== undefined) session.worktree = init.worktree;
+
     await saveStoredSession(rootPath, session);
     get().addChatSession(session);
     return session;
@@ -133,6 +143,13 @@ export const createSessionsSlice: AISlice<
   },
 
   saveSession: async (rootPath, session) => {
+    await saveStoredSession(rootPath, session);
+  },
+
+  updateChatSession: async (rootPath, session) => {
+    set({
+      chatSessions: get().chatSessions.map((item) => (item.id === session.id ? session : item)),
+    });
     await saveStoredSession(rootPath, session);
   },
 

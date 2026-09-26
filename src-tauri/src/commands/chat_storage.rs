@@ -16,6 +16,20 @@ pub struct ChatSessionMetadata {
     pub title: String,
     pub created_at: i64,
     pub updated_at: i64,
+    #[serde(default)]
+    pub kind: String,
+    #[serde(default)]
+    pub environment: String,
+    #[serde(default)]
+    pub worktree: Option<SessionWorktreeMetadata>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionWorktreeMetadata {
+    pub branch: String,
+    pub path: String,
+    pub setup_log: String,
+    pub status: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,7 +72,7 @@ pub struct DeleteSessionRequest {
 
 // ─── Paths ───────────────────────────────────────────────────────────────────
 
-fn workspace_hash(root_path: &str) -> String {
+pub(crate) fn workspace_hash(root_path: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(root_path.as_bytes());
     format!("{:x}", hasher.finalize())

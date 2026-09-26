@@ -100,6 +100,7 @@ describe("shouldAgentContinue", () => {
     ];
     expect(shouldAgentContinue(messages, 2)).toBe(false);
     expect(shouldAgentContinue(messages, 3)).toBe(true);
+    expect(shouldAgentContinue(messages, null)).toBe(true);
   });
 });
 

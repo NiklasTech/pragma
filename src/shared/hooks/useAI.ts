@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { useChat, type UIMessage, type UseChatHelpers } from "@ai-sdk/react";
 import { type ChatTransport } from "ai";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { sessionCwd } from "@/features/ai/worktree/cwd";
 import {
   shouldPersistSession,
   type SessionPersistSnapshot,
@@ -38,7 +40,6 @@ import { shouldAgentContinue } from "@/features/agent/loop";
 import { useAgentStore } from "@/features/agent/store";
 import {
   AGENT_TOOL_DEFINITIONS,
-  MAX_AGENT_STEPS,
   buildAgentSystemPrompt,
   isAgentTool,
 } from "@/features/agent/tools";
@@ -100,15 +101,15 @@ export function useAI() {
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const cwd = sessionCwd(activeSession, rootPath);
 
   const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
   // Request-scoped context for the next API call; consumed once so continuations stay clean.
   const pendingContextRef = useRef<string | null>(null);
 
-  const agentEnabled = useSettingsStore((state) => state.agent.enabled);
   const useProjectRules = useSettingsStore((state) => state.agent.useProjectRules);
   const agentModeActive = useAgentStore((state) => state.modeActive);
-  const agentActive = agentEnabled && agentModeActive;
+  const agentActive = agentModeActive;
 
   const agentToolDefinitions = useMemo(
     () => (agentActive ? AGENT_TOOL_DEFINITIONS : []),
@@ -119,23 +120,23 @@ export function useAI() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!rootPath || rootPath === "default") {
+    if (!cwd || cwd === "default") {
       useAgentStore.getState().setRules(null);
       return;
     }
-    void loadProjectRules(rootPath).then((loaded) => {
+    void loadProjectRules(cwd).then((loaded) => {
       if (!cancelled) useAgentStore.getState().setRules(loaded);
     });
     return () => {
       cancelled = true;
     };
-  }, [rootPath]);
+  }, [cwd]);
 
   const systemPrompt = useMemo(() => {
     const rules = useProjectRules ? projectRules : null;
-    if (agentActive) return buildAgentSystemPrompt(rootPath, rules);
+    if (agentActive) return buildAgentSystemPrompt(cwd, rules);
     return formatRulesForPrompt(rules) || undefined;
-  }, [agentActive, rootPath, projectRules, useProjectRules]);
+  }, [agentActive, cwd, projectRules, useProjectRules]);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -146,7 +147,7 @@ export function useAI() {
         isCLIActive,
         activeCLIProvider,
         isCLIActive ? [] : [...toolDefinitions, ...agentToolDefinitions],
-        rootPath,
+        cwd,
         activeChatSessionId,
         acpActive,
         systemPrompt,
@@ -164,7 +165,7 @@ export function useAI() {
       activeCLIProvider,
       toolDefinitions,
       agentToolDefinitions,
-      rootPath,
+      cwd,
       activeChatSessionId,
       acpActive,
       systemPrompt,
@@ -197,7 +198,7 @@ export function useAI() {
       }
 
       if (isAgentTool(toolCall.toolName)) {
-        await executeAgentToolCall(chat, rootPath, toolCall);
+        await executeAgentToolCall(chat, cwd, toolCall);
         return;
       }
 
@@ -250,14 +251,14 @@ export function useAI() {
         });
       }
     },
-    [resolveTool, acpActive, rootPath],
+    [resolveTool, acpActive, cwd],
   );
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
     // Agent Mode keeps iterating on tool outputs until the model calls
-    // agent_task_complete or the step cap is reached.
+    // agent_task_complete. A step limit applies only when the user set one.
     const agentState = useAgentStore.getState();
-    if (agentState.modeActive && useSettingsStore.getState().agent.enabled) {
+    if (agentState.modeActive) {
       if (agentState.status !== "running" && agentState.status !== "waiting-approval") {
         return false;
       }
@@ -349,6 +350,11 @@ export function useAI() {
     async (raw: string) => {
       if (!raw.trim() || chat.status === "submitted" || chat.status === "streaming") return false;
 
+      if (agentActive && activeSession?.worktree?.status === "error") {
+        toast.error("This thread has no working worktree. Check the setup log before starting.");
+        return false;
+      }
+
       const mentions = parseMentions(raw);
       let question = raw.trim();
       const contextParts: string[] = [];
@@ -401,7 +407,9 @@ export function useAI() {
       }
 
       if (agentActive) {
-        useAgentStore.getState().startTask(messageText, MAX_AGENT_STEPS);
+        useAgentStore
+          .getState()
+          .startTask(messageText, useSettingsStore.getState().agent.stepLimit);
         useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
       }
 
@@ -409,7 +417,7 @@ export function useAI() {
       void chat.sendMessage({ text: messageText });
       return true;
     },
-    [chat, rootPath, mcpServerCount, mcpLoaded, agentActive],
+    [chat, rootPath, mcpServerCount, mcpLoaded, agentActive, activeSession],
   );
 
   const handleSubmit = useCallback(

@@ -67,7 +67,7 @@ function StepRow({ step }: { step: AgentStep }) {
 }
 
 export function AgentReviewPane() {
-  const { status, goal, steps, stepCount, maxSteps, summary, error, requestStop } = useAgentStore();
+  const { status, goal, steps, stepCount, summary, error, requestStop } = useAgentStore();
 
   const canStop = status === "running" || status === "waiting-approval";
 
@@ -77,7 +77,7 @@ export function AgentReviewPane() {
         <PanelEmptyState
           icon={MagicWand}
           title="No active run"
-          description="Start a thread and enable Agent mode to see steps, todos and approvals here."
+          description="Start a thread to see steps, todos and approvals here."
         />
       ) : (
         <>
@@ -102,9 +102,11 @@ export function AgentReviewPane() {
             <p className="line-clamp-3 text-ui-xs break-words text-fg-subtle" title={goal}>
               {goal}
             </p>
-            <span className="mt-1 text-ui-2xs text-fg-subtle">
-              Step {stepCount} of {maxSteps}
-            </span>
+            {stepCount > 0 && (
+              <span className="mt-1 text-ui-2xs text-fg-subtle">
+                {stepCount === 1 ? "1 step" : `${stepCount} steps`}
+              </span>
+            )}
           </div>
 
           <AgentRulesStatus />

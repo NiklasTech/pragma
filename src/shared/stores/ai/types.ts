@@ -41,12 +41,29 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export interface SessionWorktree {
+  branch: string;
+  path: string;
+  setupLog: string;
+  status: "ready" | "error";
+}
+
 export interface ChatSession {
   id: string;
   title: string;
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
+  kind?: "ask" | "agent";
+  environment?: "checkout" | "worktree";
+  worktree?: SessionWorktree | null;
+}
+
+export interface CreateChatSessionInit {
+  id?: string;
+  kind?: ChatSession["kind"];
+  environment?: ChatSession["environment"];
+  worktree?: ChatSession["worktree"];
 }
 
 // ─── CLI Types ───────────────────────────────────────────────────────────────
@@ -121,10 +138,11 @@ export interface AIActions {
     baseUrl: string | undefined,
     firstMessage: string,
   ) => Promise<void>;
-  createChatSession: (rootPath: string) => Promise<ChatSession>;
+  createChatSession: (rootPath: string, init?: CreateChatSessionInit) => Promise<ChatSession>;
   renameChatSession: (rootPath: string, sessionId: string, title: string) => Promise<void>;
   deleteSession: (rootPath: string, sessionId: string) => Promise<void>;
   saveSession: (rootPath: string, session: ChatSession) => Promise<void>;
+  updateChatSession: (rootPath: string, session: ChatSession) => Promise<void>;
   saveSessionMessages: (
     rootPath: string,
     sessionId: string,

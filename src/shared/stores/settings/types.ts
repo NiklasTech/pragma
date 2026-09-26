@@ -128,6 +128,7 @@ export interface AgentSettings {
   autoApprove: AgentAutoApprove;
   allowedCommands: string[];
   useProjectRules: boolean;
+  stepLimit: number | null;
 }
 
 export interface ExtensionSettings {

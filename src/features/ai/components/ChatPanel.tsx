@@ -81,7 +81,10 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     lastAttachments,
     lastContextTruncated,
   } = useAI();
-  const { cliStatuses } = useAIStore();
+  const { cliStatuses, chatSessions, activeChatSessionId } = useAIStore();
+  const activeSession = chatSessions.find((session) => session.id === activeChatSessionId);
+  const setupLog =
+    activeSession?.worktree?.status === "error" ? activeSession.worktree.setupLog : null;
   const { edit, receiveProposal, cancelEdit } = useAIEditStore();
   const openDiff = useEditorStore((state) => state.openDiff);
   const editorTabs = useEditorStore((state) => state.tabs);
@@ -383,6 +386,13 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
               </Button>
             </AlertAction>
           </Alert>
+        )}
+
+        {setupLog && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-status-error/40 bg-status-error/10 px-3 py-2 text-ui-xs text-status-error">
+            <Warning size={14} className="mt-0.5 shrink-0" />
+            <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{setupLog}</span>
+          </div>
         )}
 
         {/* Status Banner */}

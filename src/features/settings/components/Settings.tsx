@@ -187,8 +187,8 @@ const SEARCH_ITEMS: SearchItem[] = [
   },
   {
     id: "agent-mode",
-    label: "Agent Mode",
-    keywords: "agent mode autonomous task tools auto approve allowed commands",
+    label: "Approvals",
+    keywords: "agent auto approve allowed commands step limit",
     category: "agents",
   },
   {

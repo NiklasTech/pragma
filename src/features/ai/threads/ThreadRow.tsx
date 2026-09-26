@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { DotsThree, PencilSimple, Trash } from "@phosphor-icons/react";
+import { DotsThree, GitBranch, PencilSimple, Trash } from "@phosphor-icons/react";
 
 import {
   DropdownMenu,
@@ -36,6 +36,7 @@ interface ThreadRowProps {
   onSelect: (sessionId: string) => void;
   onRename: (sessionId: string, title: string) => void;
   onDelete: (sessionId: string) => void;
+  onDiscard: (sessionId: string) => void;
 }
 
 export function ThreadRow({
@@ -45,6 +46,7 @@ export function ThreadRow({
   onSelect,
   onRename,
   onDelete,
+  onDiscard,
 }: ThreadRowProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [draft, setDraft] = useState(session.title);
@@ -120,6 +122,15 @@ export function ThreadRow({
           >
             {session.title}
           </span>
+          {session.worktree && (
+            <span
+              className="flex max-w-[90px] shrink-0 items-center gap-0.5 text-ui-2xs text-fg-subtle"
+              title={`${session.worktree.branch} ${session.worktree.path}`}
+            >
+              <GitBranch size={11} className="shrink-0" />
+              <span className="truncate">{session.worktree.branch}</span>
+            </span>
+          )}
           <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">
             {formatRelativeTime(session.updatedAt)}
           </span>
@@ -148,6 +159,12 @@ export function ThreadRow({
             <Trash size={13} />
             Delete
           </DropdownMenuItem>
+          {session.worktree && (
+            <DropdownMenuItem onClick={() => onDiscard(session.id)}>
+              <GitBranch size={13} />
+              Discard worktree
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

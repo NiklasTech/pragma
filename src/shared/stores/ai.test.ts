@@ -82,4 +82,36 @@ describe("mergeSessionsWithStored", () => {
 
     expect(merged.map((s) => s.id)).toEqual(["old", "new"]);
   });
+
+  it("keeps in-memory kind, environment and worktree over the disk values", () => {
+    const disk = storedSession("a", 100);
+    disk.kind = "agent";
+    disk.environment = "worktree";
+    disk.worktree = { branch: "pragma/old", path: "/old", setupLog: "", status: "ready" };
+
+    const memory = memorySession("a", { messages: [message("m1")] });
+    memory.kind = "agent";
+    memory.environment = "worktree";
+    memory.worktree = { branch: "pragma/new", path: "/new", setupLog: "log", status: "ready" };
+
+    const merged = mergeSessionsWithStored([disk], [memory]);
+
+    expect(merged[0].worktree).toEqual(memory.worktree);
+  });
+
+  it("keeps disk kind, environment and worktree when the in-memory session omits them", () => {
+    const disk = storedSession("a", 100);
+    disk.kind = "agent";
+    disk.environment = "worktree";
+    disk.worktree = { branch: "pragma/a", path: "/wt", setupLog: "", status: "ready" };
+
+    const merged = mergeSessionsWithStored(
+      [disk],
+      [memorySession("a", { messages: [message("m1")] })],
+    );
+
+    expect(merged[0].kind).toBe("agent");
+    expect(merged[0].environment).toBe("worktree");
+    expect(merged[0].worktree).toEqual(disk.worktree);
+  });
 });

@@ -2,11 +2,21 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { ChatMessage, ChatSession } from "@/shared/stores/ai";
 
+export interface StoredWorktree {
+  branch: string;
+  path: string;
+  setup_log: string;
+  status: "ready" | "error";
+}
+
 export interface StoredSessionMetadata {
   id: string;
   title: string;
   created_at: number;
   updated_at: number;
+  kind?: string | null;
+  environment?: string | null;
+  worktree?: StoredWorktree | null;
 }
 
 export interface StoredChatMessage {
@@ -17,22 +27,52 @@ export interface StoredChatMessage {
 }
 
 function toStoredSession(session: ChatSession): StoredSessionMetadata {
-  return {
+  const stored: StoredSessionMetadata = {
     id: session.id,
     title: session.title,
     created_at: session.createdAt,
     updated_at: session.updatedAt,
   };
+
+  if (session.kind) stored.kind = session.kind;
+  if (session.environment) stored.environment = session.environment;
+  if (session.worktree === null) {
+    stored.worktree = null;
+  } else if (session.worktree) {
+    stored.worktree = {
+      branch: session.worktree.branch,
+      path: session.worktree.path,
+      setup_log: session.worktree.setupLog,
+      status: session.worktree.status,
+    };
+  }
+
+  return stored;
 }
 
 export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
-  return {
+  const restored: ChatSession = {
     id: session.id,
     title: session.title,
     messages: [],
     createdAt: session.created_at,
     updatedAt: session.updated_at,
   };
+
+  if (session.kind === "ask" || session.kind === "agent") restored.kind = session.kind;
+  if (session.environment === "checkout" || session.environment === "worktree") {
+    restored.environment = session.environment;
+  }
+  if (session.worktree) {
+    restored.worktree = {
+      branch: session.worktree.branch,
+      path: session.worktree.path,
+      setupLog: session.worktree.setup_log,
+      status: session.worktree.status,
+    };
+  }
+
+  return restored;
 }
 
 function toStoredMessage(message: ChatMessage): StoredChatMessage {

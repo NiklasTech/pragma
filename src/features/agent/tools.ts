@@ -15,8 +15,6 @@ export const AGENT_TOOL_NAMES = {
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[keyof typeof AGENT_TOOL_NAMES];
 
-export const MAX_AGENT_STEPS = 30;
-
 export function isAgentTool(name: string): name is AgentToolName {
   return (Object.values(AGENT_TOOL_NAMES) as string[]).includes(name);
 }

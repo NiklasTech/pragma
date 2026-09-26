@@ -14,9 +14,11 @@ export type {
   ChatSession,
   CLIManifest,
   CLIStatus,
+  CreateChatSessionInit,
   ModelInfo,
   ModelListCache,
   ProviderConfig,
+  SessionWorktree,
 } from "./ai/types";
 export { mergeSessionsWithStored } from "./ai/sessions";
 

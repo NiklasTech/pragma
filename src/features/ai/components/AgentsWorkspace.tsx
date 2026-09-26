@@ -32,6 +32,10 @@ export function AgentsWorkspace() {
   const setContextPaneCollapsed = useAgentsUiStore((state) => state.setContextPaneCollapsed);
 
   useEffect(() => {
+    useAgentStore.getState().setModeActive(true);
+  }, []);
+
+  useEffect(() => {
     void loadSessions(rootPath);
   }, [loadSessions, rootPath]);
 
