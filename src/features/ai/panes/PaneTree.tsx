@@ -193,8 +193,7 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       data-pane-status={status}
       data-pane-focused={focused ? "true" : undefined}
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden border bg-bg-root",
-        focused ? "border-primary" : "border-border/60",
+        "relative flex h-full min-h-0 flex-col overflow-hidden border border-border/60 bg-bg-root",
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -250,9 +249,9 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
           disabled={atCap}
           aria-label="Split right"
           title={atCap ? MAX_PANES_TITLE : "Split right"}
-          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40"
+          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40"
         >
-          <Columns size={14} />
+          <Columns size={16} />
         </button>
         <button
           type="button"
@@ -263,18 +262,18 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
           disabled={atCap}
           aria-label="Split down"
           title={atCap ? MAX_PANES_TITLE : "Split down"}
-          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40"
+          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40"
         >
-          <Rows size={14} />
+          <Rows size={16} />
         </button>
         <button
           type="button"
           onClick={() => closeLeaf(rootPath, activeLeaf.id)}
           aria-label="Close pane"
           title="Close pane"
-          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
         >
-          <X size={14} />
+          <X size={16} />
         </button>
       </div>
 
@@ -337,7 +336,7 @@ export function PaneTree() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-7 shrink-0 items-center justify-end border-b border-border/60 px-1.5">
+      <div className="flex h-8 shrink-0 items-center justify-end border-b border-border/60 px-1.5">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -345,9 +344,9 @@ export function PaneTree() {
                 type="button"
                 aria-label="Pane presets"
                 title="Pane presets"
-                className="flex size-6 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
               >
-                <SquaresFour size={14} />
+                <SquaresFour size={16} />
               </button>
             }
           />

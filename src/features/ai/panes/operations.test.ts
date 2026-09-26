@@ -121,14 +121,20 @@ describe("openSession", () => {
 });
 
 describe("splitFocused", () => {
-  it("copies the focused session into a new pane", () => {
+  it("opens an empty pane beside the focused session", () => {
     const root = tabs([leaf("a", "a")], "t1");
     const result = splitFocused(root, "a", "horizontal");
+    const sessions =
+      result.root?.type === "split"
+        ? result.root.children.flatMap((child) =>
+            child.type === "tabs" ? child.children.map((item) => item.sessionId) : [],
+          )
+        : [];
 
     expect(result.root?.type).toBe("split");
     expect(countLeaves(result.root)).toBe(2);
-    expect(findLeafBySession(result.root, "a")).not.toBeNull();
-    expect(result.focusedLeafId).not.toBe("a");
+    expect(sessions).toEqual(["a", null]);
+    expect(result.focusedLeafId).toBe("a");
   });
 
   it("uses a vertical split when splitting down", () => {
