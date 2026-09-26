@@ -11,8 +11,11 @@ const ai = vi.hoisted(() => ({
       updatedAt: number;
     }>,
     activeChatSessionId: null as string | null,
+    cliManifests: [] as unknown[],
+    cliStatuses: {} as Record<string, unknown>,
     loadSessions: async () => {},
     setActiveChatSession: () => {},
+    setActiveCLIProvider: () => {},
     createChatSession: async () => {},
     renameChatSession: async () => {},
     deleteSession: async () => {},

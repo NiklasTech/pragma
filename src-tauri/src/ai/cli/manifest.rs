@@ -37,6 +37,10 @@ pub struct CLIManifest {
     /// Whether the CLI speaks the Agent Client Protocol over stdio.
     pub uses_acp: bool,
 
+    /// Whether New session offers a raw terminal. False when the CLI has no
+    /// official interactive terminal.
+    pub offers_terminal: bool,
+
     /// Extra environment variables to set when running the CLI
     pub env: Option<HashMap<String, String>>,
 
@@ -74,6 +78,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -92,6 +97,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: Some(HashMap::from([(
                 "CODEX_PATH".to_string(),
@@ -113,6 +119,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -131,6 +138,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -149,6 +157,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -167,6 +176,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -184,6 +194,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -200,6 +211,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
             env: None,
             path_env: None,
         },
@@ -217,6 +229,25 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             output_format: OutputFormat::StreamJson,
             supports_sessions: true,
             uses_acp: true,
+            offers_terminal: true,
+            env: None,
+            path_env: None,
+        },
+        CLIManifest {
+            id: "deepseek-harness".to_string(),
+            name: "DeepSeek Harness".to_string(),
+            description: "DeepSeek Harness via Agent Client Protocol. There is no official terminal UI."
+                .to_string(),
+            install_cmd: "npm install -g @deepseek-ai/dsh".to_string(),
+            check_cmd: "dsh --version".to_string(),
+            login_cmd: String::new(),
+            auth_check_cmd: None,
+            logout_cmd: None,
+            chat_cmd: "dsh --profile acp".to_string(),
+            output_format: OutputFormat::StreamJson,
+            supports_sessions: true,
+            uses_acp: true,
+            offers_terminal: false,
             env: None,
             path_env: None,
         },
@@ -232,7 +263,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn built_in_manifests_include_all_nine_providers() {
+    fn built_in_manifests_include_deepseek_harness() {
         let ids: Vec<String> = built_in_manifests().into_iter().map(|m| m.id).collect();
         assert!(ids.contains(&"moonshot-kimi".to_string()));
         assert!(ids.contains(&"openai-codex".to_string()));
@@ -243,6 +274,19 @@ mod tests {
         assert!(ids.contains(&"cursor-agent".to_string()));
         assert!(ids.contains(&"opencode".to_string()));
         assert!(ids.contains(&"hermes-agent".to_string()));
+        assert!(ids.contains(&"deepseek-harness".to_string()));
+    }
+
+    #[test]
+    fn deepseek_harness_uses_acp_without_a_terminal() {
+        let manifest = get_manifest("deepseek-harness").expect("deepseek harness manifest");
+        assert!(manifest.uses_acp);
+        assert!(!manifest.offers_terminal);
+        assert_eq!(manifest.install_cmd, "npm install -g @deepseek-ai/dsh");
+        assert_eq!(manifest.check_cmd, "dsh --version");
+        assert_eq!(manifest.chat_cmd, "dsh --profile acp");
+        assert_eq!(manifest.auth_check_cmd, None);
+        assert_eq!(manifest.logout_cmd, None);
     }
 
     #[test]

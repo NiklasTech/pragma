@@ -25,7 +25,7 @@ export const CLI_PROVIDER_IDS: Record<AIProvider, string[]> = {
   openai: ["openai-codex"],
   anthropic: ["anthropic-claude"],
   ollama: [],
-  deepseek: [],
+  deepseek: ["deepseek-harness"],
   kimi: ["moonshot-kimi"],
   gemini: ["google-gemini"],
   openrouter: [],

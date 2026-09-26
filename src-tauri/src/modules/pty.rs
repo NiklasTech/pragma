@@ -13,12 +13,30 @@ struct PtyOutputEvent {
     data: String,
 }
 
+#[derive(Serialize, Clone)]
+struct PtyExitEvent {
+    id: String,
+    exit_code: i32,
+}
+
 struct PtyInstance {
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     killer: Arc<Mutex<Box<dyn ChildKiller + Send + Sync>>>,
     master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
-    #[allow(dead_code)]
-    child: Box<dyn portable_pty::Child + Send + Sync>,
+}
+
+fn spawn_exit_watcher(
+    app: AppHandle,
+    id: String,
+    mut child: Box<dyn portable_pty::Child + Send + Sync>,
+) {
+    std::thread::spawn(move || {
+        let exit_code = match child.wait() {
+            Ok(status) => status.exit_code() as i32,
+            Err(_) => -1,
+        };
+        let _ = app.emit("pty_exit", PtyExitEvent { id, exit_code });
+    });
 }
 
 pub struct PtyManager {
@@ -202,6 +220,8 @@ pub fn create_pty(
         }
     });
 
+    spawn_exit_watcher(app, id.clone(), child);
+
     let mut ptys = state.ptys.lock().map_err(|e| e.to_string())?;
     ptys.insert(
         id.clone(),
@@ -209,7 +229,6 @@ pub fn create_pty(
             writer: Arc::new(Mutex::new(writer)),
             killer: Arc::new(Mutex::new(killer)),
             master: Arc::new(Mutex::new(pair.master)),
-            child,
         },
     );
 
@@ -349,6 +368,8 @@ pub fn create_pty_command(
         }
     });
 
+    spawn_exit_watcher(app, id.clone(), child);
+
     let mut ptys = state.ptys.lock().map_err(|e| e.to_string())?;
     ptys.insert(
         id.clone(),
@@ -356,7 +377,6 @@ pub fn create_pty_command(
             writer: Arc::new(Mutex::new(writer)),
             killer: Arc::new(Mutex::new(killer)),
             master: Arc::new(Mutex::new(pair.master)),
-            child,
         },
     );
 

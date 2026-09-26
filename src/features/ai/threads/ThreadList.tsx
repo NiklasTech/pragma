@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Folder, GitBranch, MagnifyingGlass, Plus, Warning } from "@phosphor-icons/react";
-import { invoke } from "@tauri-apps/api/core";
+import { useCallback, useMemo, useState } from "react";
+import { MagnifyingGlass, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import {
@@ -16,56 +15,32 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
-import { Button } from "@/shared/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
 import { Input } from "@/shared/components/ui/input";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
-import { defaultEnvironment, type WorktreeChoice } from "@/features/ai/worktree/choice";
-import { createSessionForChoice } from "@/features/ai/worktree/create";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
-import { useWorktreeChoiceStore } from "@/features/ai/worktree/remember";
 
+import { NewSessionButton } from "./NewSessionButton";
 import { resolveThreadStatus } from "./helpers";
 import { ThreadRow } from "./ThreadRow";
 
 const SEARCH_THRESHOLD = 8;
 
-interface RepoCheckResult {
-  is_repo: boolean;
-  reason: string | null;
-}
-
 export function ThreadList() {
   const chatSessions = useAIStore((state) => state.chatSessions);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
-  const createChatSession = useAIStore((state) => state.createChatSession);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
   const deleteSession = useAIStore((state) => state.deleteSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
-  const agentModeActive = useAgentStore((state) => state.modeActive);
   const openSession = useAgentsPanesStore((state) => state.openSession);
-  const rememberedChoice = useWorktreeChoiceStore((state) =>
-    rootPath ? state.choices[rootPath] : undefined,
-  );
-  const setChoice = useWorktreeChoiceStore((state) => state.setChoice);
-
-  const writingMode = agentModeActive;
-  const defaultChoice = defaultEnvironment(chatSessions, rememberedChoice);
 
   const [query, setQuery] = useState("");
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [discardSessionId, setDiscardSessionId] = useState<string | null>(null);
-  const [repoCheck, setRepoCheck] = useState<RepoCheckResult | null>(null);
 
   const sortedSessions = useMemo(
     () => [...chatSessions].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -77,49 +52,6 @@ export function ThreadList() {
     if (!trimmed) return sortedSessions;
     return sortedSessions.filter((session) => session.title.toLowerCase().includes(trimmed));
   }, [query, sortedSessions]);
-
-  const handleNewThread = useCallback(() => {
-    if (!rootPath) return;
-    const create = writingMode
-      ? createSessionForChoice(rootPath, "checkout")
-      : createChatSession(rootPath, { kind: "ask", environment: "checkout" });
-    void create.then((session) => {
-      if (session) openSession(rootPath, session.id);
-    });
-  }, [createChatSession, openSession, rootPath, writingMode]);
-
-  useEffect(() => {
-    if (!writingMode || !rootPath) {
-      setRepoCheck(null);
-      return;
-    }
-    let cancelled = false;
-    void invoke<RepoCheckResult>("git_session_repo_check", { repoPath: rootPath })
-      .then((result) => {
-        if (!cancelled) setRepoCheck(result);
-      })
-      .catch(() => {
-        if (!cancelled) setRepoCheck({ is_repo: false, reason: null });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [rootPath, writingMode]);
-
-  const handleChoose = useCallback(
-    (choice: WorktreeChoice) => {
-      if (!rootPath) return;
-      setChoice(rootPath, choice);
-      void createSessionForChoice(rootPath, choice)
-        .then((session) => {
-          if (session) openSession(rootPath, session.id);
-        })
-        .catch(() => {
-          toast.error("Could not start the thread");
-        });
-    },
-    [openSession, rootPath, setChoice],
-  );
 
   const handleSelect = useCallback(
     (sessionId: string) => {
@@ -151,44 +83,7 @@ export function ThreadList() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 flex-col gap-2 p-2">
-        {writingMode && repoCheck?.is_repo ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  size="default"
-                  disabled={!rootPath}
-                  className="w-full justify-start rounded-lg"
-                >
-                  <Plus size={13} weight="bold" />
-                  New thread
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="start" className="w-64">
-              <DropdownMenuItem onClick={() => handleChoose("checkout")}>
-                <Folder size={13} />
-                <span className="flex-1">This checkout</span>
-                {defaultChoice === "checkout" && <Check size={13} className="text-primary" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleChoose("worktree")}>
-                <GitBranch size={13} />
-                <span className="flex-1">New worktree</span>
-                {defaultChoice === "worktree" && <Check size={13} className="text-primary" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button
-            size="default"
-            onClick={handleNewThread}
-            disabled={!rootPath}
-            className="w-full justify-start rounded-lg"
-          >
-            <Plus size={13} weight="bold" />
-            New thread
-          </Button>
-        )}
+        <NewSessionButton className="w-full justify-start rounded-lg" />
 
         {chatSessions.length > SEARCH_THRESHOLD && (
           <div className="relative">

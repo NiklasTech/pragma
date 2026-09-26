@@ -95,9 +95,9 @@ export function CliIntegrationSection() {
                     while it is the active provider. Codex CLI is published by OpenAI, Claude Code
                     by Anthropic, Gemini CLI by Google, GitHub Copilot CLI by GitHub, Kimi Code by
                     Moonshot AI, Grok Build by xAI, Cursor CLI by Cursor, OpenCode by the OpenCode
-                    project, and Hermes Agent by Nous Research, each distributed separately. Pragma
-                    runs the unmodified official CLIs and is not affiliated with any of these
-                    vendors.
+                    project, Hermes Agent by Nous Research, and DeepSeek Harness by DeepSeek, each
+                    distributed separately. Pragma runs the unmodified official CLIs and is not
+                    affiliated with any of these vendors.
                   </span>
                 </span>
               </TooltipContent>
@@ -105,7 +105,8 @@ export function CliIntegrationSection() {
           </span>
           <span className="text-ui-xs text-fg-muted">
             Turn on experimental support for subscription CLIs like Codex, Claude Code, Gemini CLI,
-            GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, and Hermes Agent.
+            GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, Hermes Agent, and
+            DeepSeek Harness.
           </span>
         </div>
         <Switch

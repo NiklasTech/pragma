@@ -44,8 +44,18 @@ pub struct CLIManifestResponse {
     pub id: String,
     pub name: String,
     pub description: String,
+    pub install_cmd: String,
+    pub command: String,
     pub supports_sessions: bool,
     pub uses_acp: bool,
+    pub offers_terminal: bool,
+}
+
+fn terminal_command(check_cmd: &str) -> String {
+    shellwords::split(check_cmd)
+        .ok()
+        .and_then(|parts| parts.into_iter().next())
+        .unwrap_or_default()
 }
 
 // ─── Commands ────────────────────────────────────────────────────────────────
@@ -59,8 +69,11 @@ pub async fn cli_list_manifests() -> Result<Vec<CLIManifestResponse>, String> {
             id: m.id,
             name: m.name,
             description: m.description,
+            install_cmd: m.install_cmd,
+            command: terminal_command(&m.check_cmd),
             supports_sessions: m.supports_sessions,
             uses_acp: m.uses_acp,
+            offers_terminal: m.offers_terminal,
         })
         .collect())
 }

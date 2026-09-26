@@ -5,6 +5,7 @@ import {
   saveSession as saveStoredSession,
   saveSessionMessages as saveStoredSessionMessages,
 } from "@/shared/lib/chat-storage";
+import { disposeTerminal } from "@/features/ai/terminal/runner";
 import type { AIActions, AISlice, ChatSession } from "./types";
 
 export function mergeSessionsWithStored(
@@ -26,6 +27,9 @@ export function mergeSessionsWithStored(
       if (memorySession.kind !== undefined) merged.kind = memorySession.kind;
       if (memorySession.environment !== undefined) merged.environment = memorySession.environment;
       if (memorySession.worktree !== undefined) merged.worktree = memorySession.worktree;
+      if (memorySession.cliProviderId !== undefined) {
+        merged.cliProviderId = memorySession.cliProviderId;
+      }
 
       return merged;
     })
@@ -111,7 +115,7 @@ export const createSessionsSlice: AISlice<
   createChatSession: async (rootPath, init) => {
     const session: ChatSession = {
       id: init?.id ?? crypto.randomUUID(),
-      title: "New Chat",
+      title: init?.title ?? "New Chat",
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -119,6 +123,7 @@ export const createSessionsSlice: AISlice<
     if (init?.kind !== undefined) session.kind = init.kind;
     if (init?.environment !== undefined) session.environment = init.environment;
     if (init?.worktree !== undefined) session.worktree = init.worktree;
+    if (init?.cliProviderId !== undefined) session.cliProviderId = init.cliProviderId;
 
     await saveStoredSession(rootPath, session);
     get().addChatSession(session);
@@ -126,6 +131,7 @@ export const createSessionsSlice: AISlice<
   },
 
   deleteSession: async (rootPath, sessionId) => {
+    disposeTerminal(sessionId);
     await deleteStoredSession(rootPath, sessionId);
     get().removeChatSession(sessionId);
   },
