@@ -18,10 +18,17 @@ const ai = vi.hoisted(() => ({
   },
 }));
 
-const agent = vi.hoisted(() => ({ status: "idle", runSessionId: null as string | null }));
+const agent = vi.hoisted(() => ({
+  status: "idle",
+  runSessionId: null as string | null,
+  modeActive: false,
+  requestStop: () => {},
+}));
 
 vi.mock("@/shared/stores/ai", () => ({
-  useAIStore: (selector: (state: typeof ai.state) => unknown) => selector(ai.state),
+  useAIStore: Object.assign((selector: (state: typeof ai.state) => unknown) => selector(ai.state), {
+    getState: () => ai.state,
+  }),
 }));
 
 vi.mock("@/shared/stores/fileExplorer", () => ({
@@ -30,7 +37,13 @@ vi.mock("@/shared/stores/fileExplorer", () => ({
 }));
 
 vi.mock("@/features/agent/store", () => ({
-  useAgentStore: (selector: (state: typeof agent) => unknown) => selector(agent),
+  useAgentStore: Object.assign((selector: (state: typeof agent) => unknown) => selector(agent), {
+    getState: () => agent,
+  }),
+}));
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(async () => ({ is_repo: true, reason: null })),
 }));
 
 import { ThreadList } from "./ThreadList";
@@ -45,6 +58,7 @@ describe("ThreadList", () => {
     ai.state.activeChatSessionId = null;
     agent.status = "idle";
     agent.runSessionId = null;
+    agent.modeActive = false;
   });
 
   it("marks the active thread as selected", () => {

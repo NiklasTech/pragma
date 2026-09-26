@@ -150,6 +150,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     setActiveModel(model);
     updateProviderConfig(activeProvider, { model });
     settingsStore.setAISettings({ defaultModel: model });
+    setOpen(false);
   };
 
   const handleCustomModelSubmit = (e: React.FormEvent) => {
@@ -191,9 +192,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         <Robot size={variant === "pill" ? 11 : 13} className="shrink-0" />
       )}
       {variant === "icon" && <Robot size={14} className="shrink-0" />}
-      {variant === "compact" && (
-        <Robot size={13} className="hidden shrink-0 @max-[320px]:inline-flex" />
-      )}
+      {variant === "compact" && <Robot size={13} className="shrink-0" />}
 
       {(variant === "default" || variant === "pill") && (
         <span className={cn("min-w-0 truncate", variant === "pill" && "max-w-[80px]")}>
@@ -213,7 +212,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
       )}
 
       {variant === "compact" && (
-        <span className="min-w-0 max-w-[100px] truncate @max-[320px]:hidden">{modelLabel}</span>
+        <span className="min-w-0 max-w-[100px] truncate">{modelLabel}</span>
       )}
 
       {variant !== "compact" && statusDot}
@@ -221,9 +220,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
       {variant !== "icon" && variant !== "compact" && (
         <CaretDown size={variant === "pill" ? 10 : 12} className="shrink-0 text-fg-subtle" />
       )}
-      {variant === "compact" && (
-        <CaretDown size={10} className="shrink-0 text-fg-subtle @max-[320px]:hidden" />
-      )}
+      {variant === "compact" && <CaretDown size={10} className="shrink-0 text-fg-subtle" />}
     </span>
   );
 
@@ -237,9 +234,9 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
 
       <PopoverContent
         align="start"
-        side="bottom"
+        side="top"
         sideOffset={6}
-        className="flex w-60 flex-col overflow-hidden p-0"
+        className="flex max-h-[min(24rem,var(--available-height))] w-60 flex-col overflow-hidden p-0"
       >
         {/* Active summary */}
         <div className="flex items-center gap-2 border-b border-border bg-bg-root px-3 py-2">
@@ -259,7 +256,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         </div>
 
         {/* Providers */}
-        <div className="flex max-h-[180px] flex-col overflow-y-auto p-1.5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-1.5">
           <span className="px-2 py-1 text-ui-2xs font-semibold uppercase tracking-wider text-fg-muted">
             Provider
           </span>
@@ -301,7 +298,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         </div>
 
         {/* Models */}
-        <div className="flex max-h-[200px] flex-col overflow-y-auto border-t border-border p-1.5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto border-t border-border p-1.5">
           <span className="px-2 py-1 text-ui-2xs font-semibold uppercase tracking-wider text-fg-muted">
             Model
           </span>

@@ -26,7 +26,7 @@ export function countAgentSteps(messages: UIMessage[]): number {
   return steps;
 }
 
-export function shouldAgentContinue(messages: UIMessage[], maxSteps: number): boolean {
+export function shouldAgentContinue(messages: UIMessage[], maxSteps: number | null): boolean {
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage || lastMessage.role !== "assistant") return false;
 
@@ -37,5 +37,6 @@ export function shouldAgentContinue(messages: UIMessage[], maxSteps: number): bo
     return false;
   }
 
+  if (maxSteps === null) return true;
   return countAgentSteps(messages) < maxSteps;
 }

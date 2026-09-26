@@ -11,12 +11,14 @@ import {
 } from "@phosphor-icons/react";
 
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
+import { useAIStore } from "@/shared/stores/ai";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
 import { AgentReviewPane } from "@/features/agent/components/AgentReviewPane";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
+import { sessionCwd } from "@/features/ai/worktree/cwd";
 import { useUiModeStore } from "@/shell/mode";
 
 import { selectFocusedSessionId, useAgentsPanesStore } from "../panes/store";
@@ -66,14 +68,13 @@ function EmptyReview() {
     <PanelEmptyState
       icon={MagicWand}
       title="No active run"
-      description="Start a thread and enable Agent mode to see steps, todos and approvals here."
+      description="Start a thread to see steps, todos and approvals here."
     />
   );
 }
 
-function ContextFilesList({ live }: { live: boolean }) {
+function ContextFilesList({ live, displayRoot }: { live: boolean; displayRoot: string }) {
   const checkpointedPaths = useAgentStore((state) => state.checkpointedPaths);
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const openFile = useEditorStore((state) => state.openFile);
   const editorPanelId = useEditorPanelId();
   const setUiMode = useUiModeStore((state) => state.setUiMode);
@@ -116,7 +117,7 @@ function ContextFilesList({ live }: { live: boolean }) {
         >
           <FileText size={13} className="shrink-0 text-fg-muted" />
           <span className="min-w-0 flex-1 truncate text-ui-xs text-fg-default">
-            {toDisplayPath(path, rootPath)}
+            {toDisplayPath(path, displayRoot)}
           </span>
         </button>
       ))}
@@ -136,7 +137,10 @@ export function AgentsContextPane() {
     selectFocusedSessionId(state, workspacePath),
   );
   const runSessionId = useAgentStore((state) => state.runSessionId);
+  const chatSessions = useAIStore((state) => state.chatSessions);
   const isLive = focusedSessionId !== null && focusedSessionId === runSessionId;
+  const runSession = chatSessions.find((session) => session.id === runSessionId);
+  const displayRoot = sessionCwd(runSession, workspacePath);
 
   if (collapsed) {
     return (
@@ -228,7 +232,7 @@ export function AgentsContextPane() {
             <EmptyReview />
           )
         ) : (
-          <ContextFilesList live={isLive} />
+          <ContextFilesList live={isLive} displayRoot={displayRoot} />
         )}
       </div>
     </aside>

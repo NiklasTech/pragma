@@ -20,11 +20,10 @@ export function ChatToolbar() {
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
   const setYoloMode = useSettingsStore((state) => state.setYoloMode);
   const setShowThinking = useSettingsStore((state) => state.setShowThinking);
-  const agentEnabled = useSettingsStore((state) => state.agent.enabled);
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const setAgentModeActive = useAgentStore((state) => state.setModeActive);
 
-  const agentMode = agentEnabled && agentModeActive;
+  const agentMode = agentModeActive;
   const ModeIcon = agentMode ? MagicWand : ChatCircle;
   const modeLabel = agentMode ? "Agent" : "Ask";
 
@@ -62,7 +61,7 @@ export function ChatToolbar() {
           onValueChange={(value) => setAgentModeActive(value === "agent")}
         >
           <DropdownMenuRadioItem value="ask">Ask</DropdownMenuRadioItem>
-          {agentEnabled && <DropdownMenuRadioItem value="agent">Agent</DropdownMenuRadioItem>}
+          <DropdownMenuRadioItem value="agent">Agent</DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem checked={yoloMode} onCheckedChange={setYoloMode}>

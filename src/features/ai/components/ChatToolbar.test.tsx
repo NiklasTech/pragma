@@ -4,9 +4,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ChatToolbar } from "./ChatToolbar";
 
 describe("ChatToolbar", () => {
-  it("renders one compact mode dropdown trigger labeled Ask by default", () => {
+  it("renders one compact mode dropdown trigger labeled Agent by default", () => {
     const html = renderToStaticMarkup(<ChatToolbar />);
-    expect(html).toContain("Ask");
+    expect(html).toContain("Agent");
     expect(html.match(/<button/g)?.length).toBe(1);
   });
 

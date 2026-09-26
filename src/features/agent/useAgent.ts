@@ -38,7 +38,7 @@ export function useAgent({ chatRef, chatStatus }: UseAgentOptions) {
 
     if (chatStatus === "ready" && store.steps.length > 0) {
       const messages = chatRef.current?.messages ?? [];
-      if (countAgentSteps(messages) >= store.maxSteps) {
+      if (store.maxSteps !== null && countAgentSteps(messages) >= store.maxSteps) {
         store.failTask(`Stopped after reaching the step limit (${store.maxSteps}).`);
       } else {
         store.setStatus("done");

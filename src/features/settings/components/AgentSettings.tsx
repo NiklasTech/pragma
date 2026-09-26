@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type AgentAutoApprove } from "@/shared/stores/settings";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
@@ -47,22 +46,10 @@ export function AgentSettings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingSection title="Agent Mode">
-        <SettingRow
-          label="Enable Agent Mode"
-          description="Adds an Agent toggle to the chat. The agent works autonomously with workspace tools until the task is done."
-          control={
-            <Switch
-              checked={agent.enabled}
-              onCheckedChange={(v) => setAgentSettings({ enabled: v })}
-              aria-label="Enable Agent Mode"
-            />
-          }
-        />
+      <SettingSection title="Approvals">
         <SettingRow
           label="Auto-approve"
           description="Which destructive actions (file writes, shell commands) run without asking."
-          disabled={!agent.enabled}
           control={
             <Select
               value={agent.autoApprove}
@@ -81,6 +68,31 @@ export function AgentSettings() {
                 ))}
               </SelectContent>
             </Select>
+          }
+        />
+        <SettingRow
+          label="Step limit"
+          description="Stop a run after this many tool calls. Leave empty for no limit."
+          control={
+            <Input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={agent.stepLimit ?? ""}
+              placeholder="No limit"
+              aria-label="Step limit"
+              className="h-7 w-28 text-ui-sm"
+              onChange={(event) => {
+                const raw = event.target.value.trim();
+                if (!raw) {
+                  setAgentSettings({ stepLimit: null });
+                  return;
+                }
+                const value = Number(raw);
+                if (!Number.isInteger(value) || value < 1) return;
+                setAgentSettings({ stepLimit: value });
+              }}
+            />
           }
         />
       </SettingSection>
@@ -117,13 +129,12 @@ export function AgentSettings() {
               }}
               placeholder="e.g. pnpm test"
               className="h-7 text-ui-sm"
-              disabled={!agent.enabled}
             />
             <Button
               size="xs"
               variant="outline"
               onClick={addCommand}
-              disabled={!agent.enabled || !newCommand.trim()}
+              disabled={!newCommand.trim()}
               className="gap-1"
             >
               <Plus size={14} />

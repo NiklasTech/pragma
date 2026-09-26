@@ -10,6 +10,7 @@ const baseSettings: AgentSettings = {
   autoApprove: "never",
   allowedCommands: [],
   useProjectRules: true,
+  stepLimit: null,
 };
 
 describe("matchesCommandPattern", () => {

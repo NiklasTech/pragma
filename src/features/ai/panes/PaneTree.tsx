@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Columns, Rows, SquaresFour, X } from "@phosphor-icons/react";
+import { Columns, GitBranch, Rows, SquaresFour, X } from "@phosphor-icons/react";
 
 import {
   ResizableHandle,
@@ -146,6 +146,10 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
     node.children.find((leaf) => leaf.id === node.activeLeafId) ?? node.children[0];
   const focused = node.children.some((leaf) => leaf.id === focusedLeafId);
   const atCap = totalLeaves >= MAX_PANES;
+  const activeSession = activeLeaf?.sessionId
+    ? chatSessions.find((item) => item.id === activeLeaf.sessionId)
+    : undefined;
+  const activeBranch = activeSession?.worktree?.branch ?? null;
 
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -234,6 +238,20 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         >
           {modeActive ? "Agent" : "Ask"}
         </span>
+
+        {activeBranch && (
+          <span
+            className="flex max-w-[140px] shrink-0 items-center gap-1 text-ui-sm text-fg-muted"
+            title={
+              activeSession?.worktree
+                ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
+                : activeBranch
+            }
+          >
+            <GitBranch size={13} className="shrink-0" />
+            <span className="truncate">{activeBranch}</span>
+          </span>
+        )}
 
         <span className="flex shrink-0 items-center gap-1.5 text-ui-sm text-fg-muted">
           <span className={cn("size-2 rounded-full", STATUS_DOTS[status])} aria-hidden="true" />

@@ -43,7 +43,6 @@ function StatusIcon({ status }: { status: AgentStatus }) {
 export function AgentRunBar() {
   const status = useAgentStore((state) => state.status);
   const stepCount = useAgentStore((state) => state.stepCount);
-  const maxSteps = useAgentStore((state) => state.maxSteps);
   const editReviews = useAgentStore((state) => state.editReviews);
   const requestStop = useAgentStore((state) => state.requestStop);
 
@@ -56,9 +55,11 @@ export function AgentRunBar() {
       <div className="flex items-center gap-2 px-3 py-1.5">
         <StatusIcon status={status} />
         <span className="text-ui-xs font-medium text-fg-default">{STATUS_LABELS[status]}</span>
-        <span className="text-ui-xs text-fg-subtle">
-          Step {stepCount} of {maxSteps}
-        </span>
+        {stepCount > 0 && (
+          <span className="text-ui-xs text-fg-subtle">
+            {stepCount === 1 ? "1 step" : `${stepCount} steps`}
+          </span>
+        )}
         {canStop && (
           <button
             type="button"

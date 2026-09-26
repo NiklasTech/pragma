@@ -43,7 +43,7 @@ interface AgentState {
   goal: string;
   steps: AgentStep[];
   stepCount: number;
-  maxSteps: number;
+  maxSteps: number | null;
   summary: string | null;
   error: string | null;
   pendingApprovals: AgentApproval[];
@@ -56,7 +56,7 @@ interface AgentState {
 
 interface AgentActions {
   setModeActive: (active: boolean) => void;
-  startTask: (goal: string, maxSteps: number) => void;
+  startTask: (goal: string, maxSteps: number | null) => void;
   setRunSessionId: (sessionId: string | null) => void;
   addStep: (step: AgentStep) => void;
   updateStep: (id: string, patch: Partial<AgentStep>) => void;
@@ -75,13 +75,13 @@ interface AgentActions {
 }
 
 const initialState: AgentState = {
-  modeActive: false,
+  modeActive: true,
   status: "idle",
   runSessionId: null,
   goal: "",
   steps: [],
   stepCount: 0,
-  maxSteps: 30,
+  maxSteps: null,
   summary: null,
   error: null,
   pendingApprovals: [],
