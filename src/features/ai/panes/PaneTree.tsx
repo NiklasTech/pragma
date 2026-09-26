@@ -229,14 +229,14 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         </div>
 
         <span
-          className="shrink-0 rounded-sm bg-bg-hover px-1 text-ui-2xs text-fg-subtle"
+          className="shrink-0 rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-sm font-medium text-fg-default"
           title={`Mode: ${modeActive ? "Agent" : "Ask"}`}
         >
           {modeActive ? "Agent" : "Ask"}
         </span>
 
-        <span className="flex shrink-0 items-center gap-1 text-ui-2xs text-fg-muted">
-          <span className={cn("size-1.5 rounded-full", STATUS_DOTS[status])} aria-hidden="true" />
+        <span className="flex shrink-0 items-center gap-1.5 text-ui-sm text-fg-muted">
+          <span className={cn("size-2 rounded-full", STATUS_DOTS[status])} aria-hidden="true" />
           {STATUS_LABELS[status]}
         </span>
 
