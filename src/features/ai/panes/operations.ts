@@ -300,11 +300,11 @@ export function splitFocused(
   const group = findLeafGroup(root, leaf.id);
   if (!group) return { root, focusedLeafId };
 
-  const newLeaf = createLeaf(leaf.sessionId);
+  const newLeaf = createLeaf(null);
   const newGroup = createTabs([newLeaf], newLeaf.id);
   return {
     root: insertGroupBeside(root, group.id, newGroup, direction, true),
-    focusedLeafId: newLeaf.id,
+    focusedLeafId: leaf.id,
   };
 }
 
