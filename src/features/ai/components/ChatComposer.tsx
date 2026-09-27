@@ -12,6 +12,9 @@ import { useLayoutStore } from "@/shell/layout/store";
 import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
 import { useComposerDictation } from "@/features/ai/dictation/useComposerDictation";
 
+import { CliSessionOptionsMenu } from "@/features/ai/acp/CliSessionOptionsMenu";
+import { useCliSessionOptions } from "@/features/ai/acp/useCliSessionOptions";
+
 import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
 import { ComposerMicButton } from "./ComposerMicButton";
@@ -41,6 +44,7 @@ export function ChatComposer({
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const sendShortcut = useSettingsStore((state) => state.shortcuts["chat.send"]);
   const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
+  const cliSession = useCliSessionOptions();
   const voiceEngine = useSettingsStore((state) => state.ai.voiceEngine);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contextPickerRef = useRef<ContextPickerRef>(null);
@@ -211,7 +215,11 @@ export function ChatComposer({
           >
             <Plus size={13} weight="bold" />
           </button>
-          <AiModelSelector variant="compact" />
+          {cliSession ? (
+            <CliSessionOptionsMenu session={cliSession} />
+          ) : (
+            <AiModelSelector variant="compact" />
+          )}
           <ChatToolbar />
           <div className="ml-auto flex items-center gap-1">
             {voiceInput && (

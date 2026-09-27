@@ -5,7 +5,6 @@ import { CaretDoubleRight, FileText, MagicWand } from "@phosphor-icons/react";
 
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { useAIStore } from "@/shared/stores/ai";
-import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
@@ -16,6 +15,8 @@ import { sessionCwd } from "@/features/ai/worktree/cwd";
 import { useUiModeStore } from "@/shell/mode";
 
 import { selectFocusedSessionId, useAgentsPanesStore } from "../panes/store";
+import { openWorkspaceFile } from "./openWorkspaceFile";
+import { SessionChanges } from "./SessionChanges";
 import { useAgentsUiStore } from "../store/agentsUi";
 
 type ContextTab = "review" | "files";
@@ -69,26 +70,14 @@ function EmptyReview() {
 
 function ContextFilesList({ live, displayRoot }: { live: boolean; displayRoot: string }) {
   const checkpointedPaths = useAgentStore((state) => state.checkpointedPaths);
-  const openFile = useEditorStore((state) => state.openFile);
   const editorPanelId = useEditorPanelId();
   const setUiMode = useUiModeStore((state) => state.setUiMode);
 
   const handleOpen = useCallback(
-    (path: string) => {
-      openFile(
-        {
-          id: path,
-          path,
-          name: path.split("/").pop() ?? path,
-          content: "",
-          originalContent: "",
-          isModified: false,
-        },
-        editorPanelId,
-      );
-      setUiMode("editor");
+    async (path: string) => {
+      if (await openWorkspaceFile(path, editorPanelId)) setUiMode("editor");
     },
-    [editorPanelId, openFile, setUiMode],
+    [editorPanelId, setUiMode],
   );
 
   if (!live || checkpointedPaths.length === 0) {
@@ -105,7 +94,7 @@ function ContextFilesList({ live, displayRoot }: { live: boolean; displayRoot: s
         <button
           key={path}
           type="button"
-          onClick={() => handleOpen(path)}
+          onClick={() => void handleOpen(path)}
           title={path}
           className="flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-bg-hover"
         >
@@ -135,6 +124,8 @@ export function AgentsContextPane() {
   const isLive = focusedSessionId !== null && focusedSessionId === runSessionId;
   const runSession = chatSessions.find((session) => session.id === runSessionId);
   const displayRoot = sessionCwd(runSession, workspacePath);
+  const focusedSession = chatSessions.find((session) => session.id === focusedSessionId);
+  const focusedCwd = focusedSession ? sessionCwd(focusedSession, workspacePath) : null;
 
   if (collapsed) return null;
 
@@ -178,14 +169,16 @@ export function AgentsContextPane() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === "review" ? (
-          isLive ? (
+        {isLive ? (
+          tab === "review" ? (
             <AgentReviewPane />
           ) : (
-            <EmptyReview />
+            <ContextFilesList live={isLive} displayRoot={displayRoot} />
           )
+        ) : focusedCwd && focusedCwd !== "default" ? (
+          <SessionChanges cwd={focusedCwd} action={tab === "review" ? "diff" : "open"} />
         ) : (
-          <ContextFilesList live={isLive} displayRoot={displayRoot} />
+          <EmptyReview />
         )}
       </div>
     </aside>

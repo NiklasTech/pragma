@@ -5,12 +5,15 @@ import {
   ArrowsClockwise,
   Chat,
   Check,
+  Copy,
+  DownloadSimple,
   Folder,
   GitBranch,
   Plus,
   Robot,
   Terminal,
 } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -25,6 +28,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { copyToClipboard } from "@/shared/lib/clipboard";
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
 
 import { buildSessionMenuCliRows } from "./session-menu";
@@ -75,6 +79,16 @@ export function NewSessionMenu({
   );
 
   const rows = buildSessionMenuCliRows(manifests, statuses);
+  const installedRows = rows.filter((row) => !row.disabled);
+  const missingRows = rows.filter((row) => row.disabled);
+
+  const copyInstallCommand = (name: string, command: string | null) => {
+    if (!command) return;
+    void copyToClipboard(command).then(
+      () => toast.success(`Install command for ${name} copied`),
+      () => toast.error("Could not copy the install command"),
+    );
+  };
   const findManifest = (manifestId: string): CLIManifest | undefined =>
     manifests.find((manifest) => manifest.id === manifestId);
 
@@ -127,21 +141,13 @@ export function NewSessionMenu({
         <DropdownMenuGroup>
           <DropdownMenuLabel>Coding CLIs</DropdownMenuLabel>
 
-          {rows.map((row) => {
-            if (row.disabled) {
-              return (
-                <DropdownMenuItem key={row.manifestId} disabled title={row.hint ?? undefined}>
-                  <Terminal size={13} />
-                  <span className="flex-1 truncate">{row.name}</span>
-                  {row.hint && (
-                    <span className="max-w-[150px] truncate text-ui-2xs text-fg-subtle">
-                      {row.hint}
-                    </span>
-                  )}
-                </DropdownMenuItem>
-              );
-            }
+          {installedRows.length === 0 && (
+            <DropdownMenuItem disabled>
+              <span className="text-fg-subtle">No coding CLI installed</span>
+            </DropdownMenuItem>
+          )}
 
+          {installedRows.map((row) => {
             if (row.items.length > 1) {
               return (
                 <DropdownMenuSub key={row.manifestId}>
@@ -192,6 +198,32 @@ export function NewSessionMenu({
               </DropdownMenuItem>
             );
           })}
+
+          {missingRows.length > 0 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <DownloadSimple size={13} />
+                <span className="flex-1 text-fg-muted">Not installed</span>
+                <span className="text-ui-2xs text-fg-subtle tabular-nums">
+                  {missingRows.length}
+                </span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-80">
+                <DropdownMenuLabel>Click to copy the install command</DropdownMenuLabel>
+                {missingRows.map((row) => (
+                  <DropdownMenuItem
+                    key={row.manifestId}
+                    title={row.hint ?? undefined}
+                    onClick={() => copyInstallCommand(row.name, row.hint)}
+                  >
+                    <Terminal size={13} />
+                    <ItemText title={row.name} hint={row.hint ?? ""} />
+                    <Copy size={12} className="text-fg-subtle" />
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

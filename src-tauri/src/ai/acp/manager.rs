@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::process::Child;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
@@ -11,6 +12,7 @@ use super::approval_bridge::ApprovalBridge;
 use super::client::{
     AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest, DEFAULT_TIMEOUT_MS,
 };
+use super::config_options::{parse_config_options, SessionConfigOption};
 use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
@@ -24,6 +26,16 @@ use crate::commands::ai::StreamChunk;
 use crate::platform::resolve_on_path;
 
 const ACP_PROTOCOL_VERSION: u64 = 1;
+const CONFIG_OPTIONS_EVENT: &str = "acp_config_options";
+
+type SharedConfigOptions = Arc<Mutex<Vec<SessionConfigOption>>>;
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfigOptionsEvent {
+    chat_session_id: String,
+    options: Vec<SessionConfigOption>,
+}
 
 pub struct AcpSession {
     client: AcpClient,
@@ -32,6 +44,7 @@ pub struct AcpSession {
     cwd: String,
     acp_session_id: String,
     current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
+    config_options: SharedConfigOptions,
     _notification_handle: JoinHandle<()>,
     _reverse_rpc_handle: JoinHandle<()>,
 }
@@ -139,11 +152,21 @@ impl AcpSessionManager {
         let cwd = cwd.to_string();
         let current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>> =
             Arc::new(Mutex::new(None));
+        let config_options: SharedConfigOptions = Arc::new(Mutex::new(parse_config_options(
+            new_session_resp
+                .get("configOptions")
+                .unwrap_or(&Value::Null),
+        )));
 
         let notification_handle = spawn_notification_handler(
             current_chunk_tx.clone(),
             acp_session_id.clone(),
             notifications,
+            ConfigOptionsSink {
+                app_handle: self.app_handle.clone(),
+                chat_session_id: chat_session_id.to_string(),
+                options: config_options.clone(),
+            },
         );
 
         let reverse_rpc_handle =
@@ -155,6 +178,7 @@ impl AcpSessionManager {
             cwd,
             acp_session_id: acp_session_id.clone(),
             current_chunk_tx,
+            config_options,
             _notification_handle: notification_handle,
             _reverse_rpc_handle: reverse_rpc_handle,
         };
@@ -234,6 +258,67 @@ impl AcpSessionManager {
             .await
     }
 
+    pub async fn config_options(&self, chat_session_id: &str) -> Result<Vec<SessionConfigOption>> {
+        let sessions = self.sessions.lock().await;
+        let session = sessions
+            .get(chat_session_id)
+            .ok_or_else(|| AcpError::Protocol(format!("no ACP session for {chat_session_id}")))?;
+        let options = session.config_options.lock().await.clone();
+        Ok(options)
+    }
+
+    pub async fn set_config_option(
+        &self,
+        chat_session_id: &str,
+        config_id: &str,
+        value: &str,
+    ) -> Result<Vec<SessionConfigOption>> {
+        let (client, acp_session_id, shared) = {
+            let sessions = self.sessions.lock().await;
+            let session = sessions.get(chat_session_id).ok_or_else(|| {
+                AcpError::Protocol(format!("no ACP session for {chat_session_id}"))
+            })?;
+            (
+                session.client.clone(),
+                session.acp_session_id.clone(),
+                session.config_options.clone(),
+            )
+        };
+
+        let known = shared.lock().await.iter().any(|option| {
+            option.id == config_id && option.options.iter().any(|choice| choice.value == value)
+        });
+        if !known {
+            return Err(AcpError::Protocol(format!(
+                "unknown value {value} for config option {config_id}"
+            )));
+        }
+
+        let response = client
+            .request(
+                "session/set_config_option",
+                Some(serde_json::json!({
+                    "sessionId": acp_session_id,
+                    "configId": config_id,
+                    "value": value,
+                })),
+                Default::default(),
+            )
+            .await?;
+
+        let options = parse_config_options(response.get("configOptions").unwrap_or(&Value::Null));
+        let mut stored = shared.lock().await;
+        if options.is_empty() {
+            // Agents may answer without the full list; keep ours and record the new value.
+            for option in stored.iter_mut().filter(|option| option.id == config_id) {
+                option.current_value = value.to_string();
+            }
+        } else {
+            *stored = options;
+        }
+        Ok(stored.clone())
+    }
+
     pub async fn approve(&self, tool_call_id: &str, approved: bool) -> Result<()> {
         self.approval_bridge.respond(tool_call_id, approved).await
     }
@@ -252,10 +337,32 @@ impl AcpSessionManager {
     }
 }
 
+/// Keeps a session's config options current and tells the UI when the agent changes them.
+struct ConfigOptionsSink {
+    app_handle: AppHandle,
+    chat_session_id: String,
+    options: SharedConfigOptions,
+}
+
+impl ConfigOptionsSink {
+    async fn replace(&self, raw: &Value) {
+        let options = parse_config_options(raw);
+        *self.options.lock().await = options.clone();
+        let _ = self.app_handle.emit(
+            CONFIG_OPTIONS_EVENT,
+            ConfigOptionsEvent {
+                chat_session_id: self.chat_session_id.clone(),
+                options,
+            },
+        );
+    }
+}
+
 fn spawn_notification_handler(
     chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
     acp_session_id: String,
     mut notifications: mpsc::UnboundedReceiver<Notification>,
+    config_sink: ConfigOptionsSink,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         while let Some(notification) = notifications.recv().await {
@@ -274,6 +381,11 @@ fn spawn_notification_handler(
             };
 
             if update.session_id != acp_session_id {
+                continue;
+            }
+
+            if let SessionUpdateDetail::ConfigOptionUpdate { config_options } = &update.update {
+                config_sink.replace(config_options).await;
                 continue;
             }
 
@@ -392,14 +504,16 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             tool_calls: None,
             tool_results: None,
         },
-        SessionUpdateDetail::Other => StreamChunk {
-            text: None,
-            error: None,
-            done: false,
-            reasoning: None,
-            tool_calls: None,
-            tool_results: None,
-        },
+        SessionUpdateDetail::ConfigOptionUpdate { .. } | SessionUpdateDetail::Other => {
+            StreamChunk {
+                text: None,
+                error: None,
+                done: false,
+                reasoning: None,
+                tool_calls: None,
+                tool_results: None,
+            }
+        }
     }
 }
 

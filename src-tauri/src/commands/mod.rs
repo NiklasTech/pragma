@@ -1,3 +1,4 @@
+pub mod acp_config;
 pub mod ai;
 pub mod chat_storage;
 pub mod cli;

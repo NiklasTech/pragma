@@ -12,7 +12,7 @@ import { ArrowCounterClockwise, GitDiff, Trash } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { basename, dirname } from "./utils";
 
-function statusLetter(code: string): { text: string; className: string } {
+export function statusLetter(code: string): { text: string; className: string } {
   switch (code) {
     case "A":
       return { text: "A", className: "text-git-added" };

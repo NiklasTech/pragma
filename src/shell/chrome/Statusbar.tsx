@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, GitBranch, Warning, XCircle, Palette } from "@phosphor-icons/react";
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
 import { useGitStore } from "@/shared/stores/git";
+import { currentModelName, useAcpSessionOptionsStore } from "@/features/ai/acp/sessionOptions";
 import { useAIStore } from "@/shared/stores/ai";
 import { useProblemsStore } from "@/shared/stores/problems";
 import { useLayoutStore } from "@/shell/layout/store";
@@ -39,7 +40,15 @@ function StatusChip({
 export function Statusbar() {
   const { statusbar, theme } = useSettingsStore();
   const { snapshot } = useGitStore();
-  const { activeProvider, activeModel } = useAIStore();
+  const { activeProvider, activeModel, activeCLIProvider, activeChatSessionId, cliManifests } =
+    useAIStore();
+  const cliOptions = useAcpSessionOptionsStore((state) =>
+    activeChatSessionId ? state.bySession[activeChatSessionId] : undefined,
+  );
+  const cliName = cliManifests.find((manifest) => manifest.id === activeCLIProvider)?.name;
+  const aiLabel = cliName
+    ? [cliName, cliOptions ? currentModelName(cliOptions) : null].filter(Boolean).join(" · ")
+    : [activeProvider, activeModel].filter(Boolean).join(" · ");
   const { problems } = useProblemsStore();
 
   if (!statusbar.visible) return null;
@@ -115,9 +124,7 @@ export function Statusbar() {
               )}
             />
             <span className="max-w-[160px] truncate">
-              {activeProvider
-                ? [activeProvider, activeModel].filter(Boolean).join(" · ")
-                : "No AI provider"}
+              {activeProvider || cliName ? aiLabel : "No AI provider"}
             </span>
           </StatusChip>
         );
