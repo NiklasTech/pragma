@@ -86,7 +86,6 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     runSessionId === activeChatSessionId &&
     (agentStatus === "running" || agentStatus === "waiting-approval");
   const inFlight = status === "submitted" || status === "streaming" || ownsRun;
-  const canFlush = status !== "error" && agentStatus !== "error" && agentStatus !== "cancelled";
 
   const {
     queued,
@@ -97,7 +96,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     sessionId: activeChatSessionId,
     ownsRun,
     inFlight,
-    canFlush,
+    chatFailed: status === "error",
+    runFailed: agentStatus === "error" || agentStatus === "cancelled",
     submitText,
     stopChat: stop,
   });

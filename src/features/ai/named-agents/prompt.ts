@@ -9,11 +9,8 @@ export function buildAgentContextBlock(agent: Agent): string {
   return sections.join("\n\n");
 }
 
-export function composeAgentSystemPrompt(
-  agentBlock: string | null,
-  rulesBlock: string | null,
-): string | undefined {
-  const blocks = [agentBlock, rulesBlock].filter((block): block is string =>
+export function composeAgentSystemPrompt(...parts: Array<string | null>): string | undefined {
+  const blocks = parts.filter((block): block is string =>
     Boolean(block && block.trim().length > 0),
   );
   if (blocks.length === 0) return undefined;

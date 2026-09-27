@@ -9,6 +9,8 @@ import {
   type AgentAccess,
 } from "@/features/ai/named-agents/folders";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import { isSkillPath } from "@/features/ai/skills/paths";
+import { useSkillsStore } from "@/features/ai/skills/store";
 
 import { useAgentStore, type AgentStep, type AgentTodo } from "./store";
 import { resolveAgentApproval, type AgentApprovalDecision } from "./permissions";
@@ -306,17 +308,18 @@ export async function executeAgentTool(
   }
 
   const settings = useSettingsStore.getState();
-  const decision = resolveAgentApproval(
-    call.toolName,
-    call.input,
-    settings.agent,
-    settings.ai.yoloMode,
-  );
+  const writesSkill =
+    isFileEditTool(call.toolName) &&
+    isSkillPath(resolveWorkspacePath(rootPath, readStringInput(call.input, "path")));
+  const decision = writesSkill
+    ? "required"
+    : resolveAgentApproval(call.toolName, call.input, settings.agent, settings.ai.yoloMode);
 
   if (isFileEditTool(call.toolName)) {
     try {
       const output = await dispatchFileEdit(call, rootPath, decision);
       finishStep("done", detail);
+      if (writesSkill) void useSkillsStore.getState().reloadSkills();
       return { output };
     } catch (err) {
       const errorText = String(err);

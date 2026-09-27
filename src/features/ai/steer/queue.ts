@@ -26,3 +26,13 @@ export function decideRemove(): RemoveDecision {
 export function decideStopIntent(queued: string | null): StopIntent {
   return queued === null ? "cancel" : "steer";
 }
+
+export function shouldFlush(input: {
+  queued: string | null;
+  chatFailed: boolean;
+  ownedRun: boolean;
+  runFailed: boolean;
+}): boolean {
+  if (input.queued === null || input.chatFailed) return false;
+  return !(input.ownedRun && input.runFailed);
+}

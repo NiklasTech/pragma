@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { GitDiffContentResult } from "@/shared/stores/git";
 
@@ -49,14 +49,17 @@ async function loadWrittenDiff(cwd: string, row: ReviewRow): Promise<ReviewDiffD
 
 export function useReviewDiff(row: ReviewRow | null, cwd: string): ReviewDiffState {
   const [state, setState] = useState<ReviewDiffState>({ status: "idle" });
+  const shownRowIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!row) {
+      shownRowIdRef.current = null;
       setState({ status: "idle" });
       return;
     }
 
     if (row.editReview) {
+      shownRowIdRef.current = row.id;
       setState({
         status: "loaded",
         data: {
@@ -69,13 +72,18 @@ export function useReviewDiff(row: ReviewRow | null, cwd: string): ReviewDiffSta
     }
 
     let cancelled = false;
-    setState({ status: "loading" });
+    // Status polling rebuilds the row every few seconds; keep the shown diff while it reloads.
+    if (shownRowIdRef.current !== row.id) setState({ status: "loading" });
     void loadWrittenDiff(cwd, row)
       .then((data) => {
-        if (!cancelled) setState({ status: "loaded", data });
+        if (cancelled) return;
+        shownRowIdRef.current = row.id;
+        setState({ status: "loaded", data });
       })
       .catch((err) => {
-        if (!cancelled) setState({ status: "error", message: String(err) });
+        if (cancelled) return;
+        shownRowIdRef.current = row.id;
+        setState({ status: "error", message: String(err) });
       });
 
     return () => {
