@@ -25,6 +25,8 @@ import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
 import { AgentRoster } from "@/features/ai/named-agents/AgentRoster";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
+import { TasksEntry } from "@/features/ai/tasks/TasksEntry";
+import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { cn } from "@/shared/lib/utils";
 
 import { NewSessionButton } from "./NewSessionButton";
@@ -90,6 +92,7 @@ export function ThreadList() {
 
   const handleSelect = useCallback(
     (sessionId: string) => {
+      useTasksUiStore.getState().closeBoard();
       openSession(rootPath ?? "default", sessionId);
     },
     [openSession, rootPath],
@@ -169,10 +172,13 @@ export function ThreadList() {
         </div>
 
         {view === "sessions" ? (
-          <NewSessionButton
-            variant="secondary"
-            className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm"
-          />
+          <>
+            <NewSessionButton
+              variant="secondary"
+              className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm"
+            />
+            <TasksEntry />
+          </>
         ) : (
           <AgentRoster
             agents={agents}

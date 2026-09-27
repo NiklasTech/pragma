@@ -247,6 +247,8 @@ pub fn run() {
             commands::chat_storage::ai_load_sessions,
             commands::agents::agents_load,
             commands::agents::agents_save,
+            commands::tasks::tasks_load,
+            commands::tasks::tasks_save,
             commands::chat_storage::ai_load_session_messages,
             commands::chat_storage::ai_save_session,
             commands::chat_storage::ai_save_session_messages,

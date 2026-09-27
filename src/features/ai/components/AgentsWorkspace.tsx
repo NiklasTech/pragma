@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
@@ -13,6 +13,9 @@ import { AgentPage } from "@/features/ai/named-agents/AgentPage";
 import { createAgentChat } from "@/features/ai/named-agents/createChat";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
+import { TaskBoard } from "@/features/ai/tasks/TaskBoard";
+import { useTasksStore } from "@/features/ai/tasks/store";
+import { useTasksUiStore } from "@/features/ai/tasks/ui";
 
 import { AgentsContextPane } from "./AgentsContextPane";
 import { AgentsHome } from "./AgentsHome";
@@ -48,6 +51,9 @@ export function AgentsWorkspace() {
   const startEditingAgent = useNamedAgentsUiStore((state) => state.startEditingAgent);
   const closeAgentForm = useNamedAgentsUiStore((state) => state.closeAgentForm);
 
+  const boardOpen = useTasksUiStore((state) => state.boardOpen);
+  const closeBoard = useTasksUiStore((state) => state.closeBoard);
+
   useEffect(() => {
     useAgentStore.getState().setModeActive(true);
   }, []);
@@ -55,6 +61,18 @@ export function AgentsWorkspace() {
   useEffect(() => {
     void loadSessions(rootPath);
   }, [loadSessions, rootPath]);
+
+  useEffect(() => {
+    if (rootPath === "default" || useTasksStore.getState().rootPath === rootPath) return;
+    void useTasksStore.getState().load(rootPath);
+  }, [rootPath]);
+
+  const previousFocusRef = useRef(focusedSessionId);
+  useEffect(() => {
+    if (previousFocusRef.current === focusedSessionId) return;
+    previousFocusRef.current = focusedSessionId;
+    closeBoard();
+  }, [focusedSessionId, closeBoard]);
 
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
 
@@ -98,6 +116,7 @@ export function AgentsWorkspace() {
     selectedAgent !== null && focusedSession?.agentId === selectedAgent.id;
   const showAgentPage =
     !showForm && view === "agents" && selectedAgent !== null && !focusedBelongsToSelected;
+  const showBoard = boardOpen && view === "sessions";
 
   const handleNewChat = (agentId: string) => {
     const agent = agents.find((item) => item.id === agentId);
@@ -129,10 +148,18 @@ export function AgentsWorkspace() {
             onEdit={() => startEditingAgent(selectedAgent.id)}
             onDeleted={() => selectAgent(null)}
           />
-        ) : root ? (
-          <PaneTree />
         ) : (
-          <AgentsHome />
+          <>
+            {showBoard && <TaskBoard />}
+            {/* The pane tree stays mounted under the board so a live run keeps its chat. */}
+            {root ? (
+              <div className={showBoard ? "hidden" : "contents"}>
+                <PaneTree />
+              </div>
+            ) : (
+              !showBoard && <AgentsHome />
+            )}
+          </>
         )}
       </section>
 
