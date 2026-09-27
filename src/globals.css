@@ -164,8 +164,8 @@
   --color-accent-glow: rgba(47, 155, 255, 0.32);
 
   /* Pragma signature gradient, taken from the logo */
-  --color-brand-from: #2f6fff;
-  --color-brand-to: #14cdf2;
+  --color-brand-from: #e8531f;
+  --color-brand-to: #ff7a3d;
 
   --color-status-success: #3fb68b;
   --color-status-warning: #e0a94e;

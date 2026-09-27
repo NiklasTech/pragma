@@ -211,6 +211,9 @@ def main():
     write("public/favicon.svg", svg(256, 256, f'<rect width="256" height="256" rx="56" fill="{KOHLE}"/>'
                                     + mark_body(CREME, GLUT, dx=128 - 128 * s, dy=128 - 128 * s, k=s, small=True), "Pragma"))
     write("src/shared/lib/pragma-mark-paths.ts", ts_paths())
+    write("docs-site/public/logo-light.svg", svg(256, 256, mark_body(TINTE, GLUT_TIEF), "Pragma"))
+    write("docs-site/public/logo-dark.svg", svg(256, 256, mark_body(CREME, GLUT), "Pragma"))
+    write("docs-site/public/favicon.svg", open(os.path.join(ROOT, "public", "favicon.svg")).read())
 
 if __name__ == "__main__":
     main()

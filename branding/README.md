@@ -4,19 +4,20 @@ The Pragma mark is two lowercase **p** built from editor cells: one is you, the 
 
 ## Files
 
-| Path                                            | Use                                                                   |
-| ----------------------------------------------- | --------------------------------------------------------------------- |
-| `svg/pragma-mark-{glut,papier,black,white}.svg` | Symbol, 48 px and up                                                  |
-| `svg/pragma-mark-small-{…}.svg`                 | Gap-free symbol for 16–32 px (favicons, title bars, tray)             |
-| `svg/pragma-lockup-horizontal-{…}.svg`          | Symbol + wordmark, default lockup                                     |
-| `svg/pragma-lockup-stacked-{…}.svg`             | Square-ish spaces (splash, social avatars)                            |
-| `svg/pragma-wordmark-{…}.svg`                   | Wordmark alone                                                        |
-| `app-icon/pragma-app-icon.svg`, `-small.svg`    | App icon sources (macOS icon grid, 1024 canvas)                       |
-| `animated/pragma-intro.svg`                     | Build-in animation, plays once (splash, README)                       |
-| `animated/pragma-loader.svg`                    | Looping "thinking" animation                                          |
-| `../public/pragma_logo.svg`                     | Adaptive symbol for `<img>` (README header), follows colour scheme    |
-| `../public/favicon.svg`                         | Favicon (small cut on a Kohle tile)                                   |
-| `../src/shared/components/PragmaMark.tsx`       | In-app symbol; follows the app theme, supports `intro` and `thinking` |
+| Path                                                       | Use                                                                   |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| `svg/pragma-mark-{glut,papier,black,white}.svg`            | Symbol, 48 px and up                                                  |
+| `svg/pragma-mark-small-{…}.svg`                            | Gap-free symbol for 16–32 px (favicons, title bars, tray)             |
+| `svg/pragma-lockup-horizontal-{…}.svg`                     | Symbol + wordmark, default lockup                                     |
+| `svg/pragma-lockup-stacked-{…}.svg`                        | Square-ish spaces (splash, social avatars)                            |
+| `svg/pragma-wordmark-{…}.svg`                              | Wordmark alone                                                        |
+| `app-icon/pragma-app-icon.svg`, `-small.svg`               | App icon sources (macOS icon grid, 1024 canvas)                       |
+| `animated/pragma-intro.svg`                                | Build-in animation, plays once (splash, README)                       |
+| `animated/pragma-loader.svg`                               | Looping "thinking" animation                                          |
+| `../public/pragma_logo.svg`                                | Adaptive symbol for `<img>` (README header), follows colour scheme    |
+| `../docs-site/public/logo-{light,dark}.svg`, `favicon.svg` | Docs site logo per colour mode and favicon                            |
+| `../public/favicon.svg`                                    | Favicon (small cut on a Kohle tile)                                   |
+| `../src/shared/components/PragmaMark.tsx`                  | In-app symbol; follows the app theme, supports `intro` and `thinking` |
 
 Variants: **glut** is for dark surfaces, **papier** for light surfaces, **black** and **white** are single-colour versions for print, embossing and places where colour is not available.
 
@@ -35,7 +36,7 @@ Contrast against the surface: Creme 15.8:1, Glut 7.0:1 (on Kohle); Tinte 15.5:1,
 
 CMYK values are straight conversions; use a proper ICC conversion for print. Pantone matches are the nearest guesses and must be checked against a swatch book.
 
-In the app, the keystone uses the theme tokens `--color-brand-key` (light) and `--color-brand-key-bright` (dark).
+In the app, the keystone uses the theme tokens `--color-brand-key` (light) and `--color-brand-key-bright` (dark); status indicators use the gradient `--color-brand-from` (Glut tief) to `--color-brand-to` (Glut).
 
 ## Usage
 
