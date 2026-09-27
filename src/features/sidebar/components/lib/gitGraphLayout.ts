@@ -1,14 +1,14 @@
 export type LaneColor = string;
 
 export const LANE_COLORS: LaneColor[] = [
-  "#8b96f6",
-  "#bba5f9",
-  "#5fcfa5",
-  "#edbf72",
-  "#ed7f8b",
-  "#7adbe7",
-  "#e8b87d",
-  "#a78bfa",
+  "#4ea8ff",
+  "#34d3c4",
+  "#b48cff",
+  "#f2b45c",
+  "#f27a86",
+  "#7ddc8c",
+  "#e88fd8",
+  "#8fa3ff",
 ];
 
 export function laneColor(index: number): LaneColor {

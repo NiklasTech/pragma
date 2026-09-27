@@ -20,9 +20,9 @@ export function ComposerMicButton({ recording, disabled, onClick }: ComposerMicB
       aria-label={recording ? "Stop dictation" : "Dictate"}
       title={recording ? "Stop dictation" : "Dictate"}
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors",
+        "flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
         recording
-          ? "bg-status-error text-fg-inverse hover:bg-status-error/90"
+          ? "animate-pulse bg-status-error/15 text-status-error hover:bg-status-error/25"
           : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
         disabled && "pointer-events-none opacity-40",
       )}

@@ -1,5 +1,6 @@
 pub mod approval_bridge;
 pub mod client;
+pub mod config_options;
 pub mod error;
 pub mod fs_bridge;
 pub mod manager;

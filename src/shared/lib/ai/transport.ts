@@ -57,6 +57,7 @@ export function createStreamTransport(
               safeEnqueue({ type: "reasoning-end", id: chunkId });
             }
             safeEnqueue({ type: "text-end", id: chunkId });
+            safeEnqueue({ type: "finish-step" });
             safeEnqueue({
               type: "finish",
               finishReason: hadToolCalls ? "tool-calls" : "stop",
@@ -77,6 +78,7 @@ export function createStreamTransport(
 
             if (!started) {
               started = true;
+              safeEnqueue({ type: "start-step" });
               safeEnqueue({ type: "text-start", id: chunkId });
             }
 
@@ -203,6 +205,7 @@ export function createStreamTransport(
               }
 
               if (!started) {
+                safeEnqueue({ type: "start-step" });
                 safeEnqueue({ type: "text-start", id: chunkId });
               }
               finish();

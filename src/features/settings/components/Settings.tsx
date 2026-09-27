@@ -64,20 +64,84 @@ interface CategoryDef {
   id: Category;
   label: string;
   icon: Icon;
+  group: string;
+  description: string;
 }
 
 const CATEGORIES: CategoryDef[] = [
-  { id: "editor", label: "Editor", icon: Code },
-  { id: "terminal", label: "Terminal", icon: Terminal },
-  { id: "agents", label: "Agents", icon: Robot },
-  { id: "theme", label: "Theme", icon: Palette },
-  { id: "mcp", label: "MCP", icon: PlugsConnected },
-  { id: "languages", label: "Languages", icon: BracketsAngle },
-  { id: "extensions", label: "Extensions", icon: PuzzlePiece },
-  { id: "layout", label: "Layout", icon: Layout },
-  { id: "keyboard", label: "Keyboard", icon: Keyboard },
-  { id: "about", label: "About", icon: Info },
+  {
+    id: "editor",
+    label: "Editor",
+    icon: Code,
+    group: "Workspace",
+    description: "Typing, formatting and how code is displayed.",
+  },
+  {
+    id: "terminal",
+    label: "Terminal",
+    icon: Terminal,
+    group: "Workspace",
+    description: "Shell, fonts and suggestions in the integrated terminal.",
+  },
+  {
+    id: "layout",
+    label: "Layout",
+    icon: Layout,
+    group: "Workspace",
+    description: "Sidebar, panels and what the status bar shows.",
+  },
+  {
+    id: "keyboard",
+    label: "Keyboard",
+    icon: Keyboard,
+    group: "Workspace",
+    description: "Every shortcut in one place. Click a binding to change it.",
+  },
+  {
+    id: "agents",
+    label: "Agents",
+    icon: Robot,
+    group: "Intelligence",
+    description: "AI providers, models and how agents ask before they act.",
+  },
+  {
+    id: "mcp",
+    label: "MCP",
+    icon: PlugsConnected,
+    group: "Intelligence",
+    description: "Connect Model Context Protocol servers as extra tools.",
+  },
+  {
+    id: "languages",
+    label: "Languages",
+    icon: BracketsAngle,
+    group: "Intelligence",
+    description: "Language servers for completion, diagnostics and navigation.",
+  },
+  {
+    id: "theme",
+    label: "Theme",
+    icon: Palette,
+    group: "Appearance",
+    description: "Colors, light and dark mode and your own themes.",
+  },
+  {
+    id: "extensions",
+    label: "Extensions",
+    icon: PuzzlePiece,
+    group: "More",
+    description: "Install and manage Pragma extensions.",
+  },
+  {
+    id: "about",
+    label: "About",
+    icon: Info,
+    group: "More",
+    description: "Version, updates and open source licenses.",
+  },
 ];
+
+const CATEGORY_GROUPS = Array.from(new Set(CATEGORIES.map((category) => category.group)));
 
 interface SearchItem {
   id: string;
@@ -313,21 +377,21 @@ export function Settings() {
     <TooltipProvider delay={100}>
       <div className="flex h-full flex-col">
         <div className="flex min-h-0 flex-1 gap-0">
-          <div className="flex w-52 shrink-0 flex-col overflow-hidden border-r border-border">
-            <div className="relative shrink-0 p-2">
+          <div className="flex w-56 shrink-0 flex-col overflow-hidden border-r border-border-subtle bg-bg-chrome/40">
+            <div className="relative shrink-0 p-3">
               <MagnifyingGlass
                 size={14}
-                className="absolute top-1/2 left-4 -translate-y-1/2 text-fg-subtle"
+                className="absolute top-1/2 left-5.5 -translate-y-1/2 text-fg-subtle"
               />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search settings..."
-                className="h-7 pl-8 text-ui-sm"
+                placeholder="Search settings"
+                className="h-8 rounded-lg pl-8 text-ui-sm"
               />
 
               {(filteredItems.length > 0 || query.trim()) && (
-                <div className="absolute top-full right-0 left-0 z-50 mx-2 mt-1 rounded-md border border-border/60 bg-bg-surface p-1 shadow-lg">
+                <div className="absolute top-full right-0 left-0 z-50 mx-3 -mt-1 rounded-lg border border-border bg-bg-elevated/95 p-1 shadow-[var(--shadow-md)] backdrop-blur-xl">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
                       <button
@@ -350,45 +414,57 @@ export function Settings() {
             </div>
 
             <ScrollArea className="min-h-0 flex-1">
-              <div className="flex flex-col py-1">
-                {CATEGORIES.map((category) => {
-                  const Icon = category.icon;
-                  const active = activeCategory === category.id;
-                  return (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() => handleSelectCategory(category.id)}
-                      className={cn(
-                        "flex items-center gap-2 border-l-2 py-1 pr-2 pl-2 text-left text-ui-sm transition-colors",
-                        active
-                          ? "border-primary bg-bg-hover text-fg-default"
-                          : "border-transparent text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-                      )}
-                    >
-                      <Icon size={16} />
-                      {category.label}
-                    </button>
-                  );
-                })}
+              <div className="flex flex-col gap-3 px-2 pb-2">
+                {CATEGORY_GROUPS.map((group) => (
+                  <div key={group} className="flex flex-col gap-0.5">
+                    <span className="px-2.5 pb-1 text-ui-2xs font-medium text-fg-subtle">
+                      {group}
+                    </span>
+                    {CATEGORIES.filter((category) => category.group === group).map((category) => {
+                      const Icon = category.icon;
+                      const active = activeCategory === category.id;
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => handleSelectCategory(category.id)}
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-sm transition-colors",
+                            active
+                              ? "bg-bg-hover font-medium text-fg-default"
+                              : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+                          )}
+                        >
+                          <Icon
+                            size={16}
+                            weight={active ? "fill" : "regular"}
+                            className={active ? "text-primary" : undefined}
+                          />
+                          {category.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             </ScrollArea>
 
-            <div className="flex shrink-0 flex-col border-t border-border p-1">
+            <div className="flex shrink-0 flex-col gap-0.5 border-t border-border-subtle p-2">
               <button
                 type="button"
                 onClick={handleExport}
-                className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                className="flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
               >
-                <DownloadSimple size={16} />
+                <DownloadSimple size={14} />
                 Export
               </button>
               <button
                 type="button"
                 onClick={handleImport}
-                className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                className="flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
               >
-                <UploadSimple size={16} />
+                <UploadSimple size={14} />
                 Import
               </button>
               <AlertDialog>
@@ -396,9 +472,9 @@ export function Settings() {
                   render={
                     <button
                       type="button"
-                      className="flex items-center gap-2 border-l-2 border-transparent px-2 py-1 text-left text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+                      className="flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
                     >
-                      <ArrowCounterClockwise size={16} />
+                      <ArrowCounterClockwise size={14} />
                       Reset Defaults
                     </button>
                   }
@@ -421,8 +497,15 @@ export function Settings() {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="flex shrink-0 items-center justify-between px-4 py-3">
-              <h2 className="text-ui-base font-medium text-fg-default">{activeLabel}</h2>
+            <div className="mx-auto flex w-full max-w-3xl shrink-0 items-start justify-between gap-4 px-8 pt-7 pb-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <h2 className="text-xl font-semibold tracking-tight text-fg-default">
+                  {activeLabel}
+                </h2>
+                {activeCategoryDef && (
+                  <p className="text-ui-sm text-fg-subtle">{activeCategoryDef.description}</p>
+                )}
+              </div>
               <span
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-ui-xs text-status-success transition-opacity duration-200",
@@ -435,7 +518,7 @@ export function Settings() {
               </span>
             </div>
             <ScrollArea className="min-h-0 flex-1">
-              <div className="px-4 py-3">
+              <div className="mx-auto w-full max-w-3xl px-8 pb-10">
                 {activeCategory === "editor" && <EditorSettings />}
                 {activeCategory === "terminal" && <TerminalSettings />}
                 {activeCategory === "agents" && (

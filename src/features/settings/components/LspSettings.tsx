@@ -91,8 +91,16 @@ export function LspSettings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingSection title="Language Servers">
-        <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
+      <SettingSection
+        title="Language Servers"
+        action={
+          <Button size="xs" variant="outline" onClick={checkAll} className="gap-1">
+            <ArrowClockwise size={12} />
+            Refresh status
+          </Button>
+        }
+      >
+        <div className="flex items-center justify-between gap-6 py-3">
           <div className="flex flex-col">
             <span className="text-ui-sm font-medium text-fg-default">Enable language servers</span>
             <span className="text-ui-xs text-fg-muted">
@@ -106,7 +114,7 @@ export function LspSettings() {
           />
         </div>
 
-        <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
+        <div className="flex items-center justify-between gap-6 py-3">
           <div className="flex flex-col">
             <span className="text-ui-sm font-medium text-fg-default">Inlay hints</span>
             <span className="text-ui-xs text-fg-muted">
@@ -120,14 +128,7 @@ export function LspSettings() {
           />
         </div>
 
-        <div className="mb-2 flex justify-end">
-          <Button size="xs" variant="outline" onClick={checkAll} className="gap-1">
-            <ArrowClockwise size={14} />
-            Refresh status
-          </Button>
-        </div>
-
-        <p className="mb-3 text-ui-xs text-fg-muted">
+        <p className="py-3 text-ui-xs text-fg-muted">
           Enable the languages you want Pragma to analyze. Missing servers can be installed with the
           command shown below.
         </p>

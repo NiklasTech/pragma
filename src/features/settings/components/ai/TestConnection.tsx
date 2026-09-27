@@ -2,6 +2,7 @@
 
 import { Button } from "@/shared/components/ui/button";
 
+import { SettingRow } from "../ui/SettingRow";
 import type { ConnectionTestStatus } from "./types";
 
 interface TestConnectionProps {
@@ -13,16 +14,25 @@ interface TestConnectionProps {
 
 export function TestConnection({ testStatus, testError, configured, onTest }: TestConnectionProps) {
   return (
-    <div className="flex flex-col items-start gap-2 pt-1">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={onTest}
-        disabled={testStatus === "loading" || !configured}
-      >
-        {testStatus === "loading" ? "Testing..." : "Test Connection"}
-      </Button>
-      {testError && <p className="text-ui-xs text-status-error">{testError}</p>}
-    </div>
+    <SettingRow
+      label="Connection"
+      description={
+        testError ? (
+          <span className="text-status-error">{testError}</span>
+        ) : (
+          "Send a small request to check the provider responds"
+        )
+      }
+      control={
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onTest}
+          disabled={testStatus === "loading" || !configured}
+        >
+          {testStatus === "loading" ? "Testing..." : "Test Connection"}
+        </Button>
+      }
+    />
   );
 }

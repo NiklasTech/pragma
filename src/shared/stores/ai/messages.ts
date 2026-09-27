@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { fallbackChatTitle } from "./chatTitle";
 import type { AIActions, AISlice } from "./types";
 
 export const createMessagesSlice: AISlice<
@@ -19,38 +20,31 @@ export const createMessagesSlice: AISlice<
     });
   },
 
-  generateChatTitle: async (sessionId, provider, model, baseUrl, firstMessage) => {
+  generateChatTitle: async (rootPath, sessionId, firstMessage, model) => {
     if (!firstMessage.trim()) return;
     const session = get().chatSessions.find((s) => s.id === sessionId);
     if (!session || session.title !== "New Chat") return;
 
-    try {
-      const result = await invoke<{ title: string }>("ai_generate_chat_title", {
-        req: {
-          provider,
-          model,
-          base_url: baseUrl,
-          message: firstMessage,
-        },
-      });
-
-      const title = result.title?.trim() || "New Chat";
-      if (title === "New Chat" || title === session.title) return;
-
-      set({
-        chatSessions: get().chatSessions.map((s) =>
-          s.id === sessionId
-            ? {
-                ...s,
-                title,
-                updatedAt: Date.now(),
-              }
-            : s,
-        ),
-      });
-    } catch {
-      // Ignore title-generation failures; the UI can fall back to "New Chat".
+    let title = "";
+    if (model) {
+      try {
+        const result = await invoke<{ title: string }>("ai_generate_chat_title", {
+          req: {
+            provider: model.provider,
+            model: model.model,
+            base_url: model.baseUrl,
+            message: firstMessage,
+          },
+        });
+        title = result.title?.trim() ?? "";
+      } catch {
+        // Reasoning models often spend the short title budget on thinking; fall back below.
+      }
     }
+    if (!title || title === "New Chat") title = fallbackChatTitle(firstMessage);
+    if (!title) return;
+
+    await get().renameChatSession(rootPath, sessionId, title);
   },
 
   addChatMessage: (sessionId, message) => {

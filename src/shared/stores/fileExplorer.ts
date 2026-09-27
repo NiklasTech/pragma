@@ -51,6 +51,7 @@ interface FileExplorerActions {
   toggleDir: (path: string) => void;
   expandDir: (path: string) => void;
   collapseDir: (path: string) => void;
+  collapseAll: () => void;
   setDirChildren: (path: string, children: FileSystemNode[]) => void;
   setDirError: (path: string, error: string) => void;
   setDirLoading: (path: string, loading: boolean) => void;
@@ -106,6 +107,8 @@ const fileExplorerStoreCreator: StateCreator<FileExplorerState & FileExplorerAct
     next.delete(path);
     set({ expandedDirs: next });
   },
+
+  collapseAll: () => set({ expandedDirs: new Set() }),
 
   setDirChildren: (path, children) => {
     const updateNode = (nodes: FileSystemNode[]): FileSystemNode[] =>

@@ -1,18 +1,3 @@
-export function statusAccent(code: string): string {
-  switch (code) {
-    case "A":
-      return "bg-status-success/80";
-    case "M":
-      return "bg-status-warning/80";
-    case "D":
-      return "bg-status-error/80";
-    case "R":
-      return "bg-status-info/80";
-    default:
-      return "bg-fg-muted/40";
-  }
-}
-
 export function basename(path: string): string {
   const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
   return parts.length > 0 ? parts[parts.length - 1] : path;

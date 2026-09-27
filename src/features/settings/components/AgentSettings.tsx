@@ -58,7 +58,10 @@ export function AgentSettings() {
               }
             >
               <SelectTrigger className="max-w-[220px]">
-                <SelectValue />
+                <SelectValue>
+                  {AUTO_APPROVE_OPTIONS.find((option) => option.value === agent.autoApprove)
+                    ?.label ?? agent.autoApprove}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {AUTO_APPROVE_OPTIONS.map((option) => (

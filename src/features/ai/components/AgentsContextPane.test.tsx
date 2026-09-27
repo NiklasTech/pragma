@@ -27,12 +27,10 @@ describe("AgentsContextPane", () => {
     agentsUi.collapsed = true;
   });
 
-  it("renders a collapsed strip by default", () => {
+  it("renders nothing while collapsed; the titlebar toggle reopens it", () => {
     const html = renderToStaticMarkup(<AgentsContextPane />);
 
-    expect(html).toContain('aria-label="Context"');
-    expect(html).toContain('aria-label="Expand context pane"');
-    expect(html).not.toContain("Collapse context pane");
+    expect(html).toBe("");
   });
 
   it("renders the Review and Files tabs when expanded", () => {

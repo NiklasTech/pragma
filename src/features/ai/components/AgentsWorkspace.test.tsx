@@ -88,12 +88,12 @@ describe("AgentsWorkspace", () => {
     });
   });
 
-  it("renders thread list, transcript and context regions", () => {
+  it("renders thread list and transcript, keeping the collapsed context pane hidden", () => {
     const html = renderToStaticMarkup(<AgentsWorkspace />);
 
     expect(html).toContain('aria-label="Threads"');
     expect(html).toContain('aria-label="Transcript"');
-    expect(html).toContain('aria-label="Context"');
+    expect(html).not.toContain('aria-label="Context"');
   });
 
   it("shows the home composer when the pane tree is empty", () => {

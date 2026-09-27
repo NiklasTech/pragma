@@ -49,7 +49,10 @@ function SplitNodeRenderer({ node }: { node: SplitNode }) {
           <LayoutTreeRenderer node={child} />
         </ResizablePanel>,
         index < node.children.length - 1 ? (
-          <ResizableHandle key={`${child.id}-handle`} withHandle />
+          <ResizableHandle
+            key={`${child.id}-handle`}
+            className="bg-border-subtle hover:bg-primary/50 data-[resize-handle-active]:bg-primary"
+          />
         ) : null,
       ])}
     </ResizablePrimitive.Group>

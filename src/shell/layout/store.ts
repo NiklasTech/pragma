@@ -1,7 +1,13 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import { crossWindowSync } from "@/shared/stores/sync/crossWindowSync";
-import type { DropTarget, FloatingState, FullLayoutTreeState, LayoutNode } from "./tree/types";
+import type {
+  DropTarget,
+  FloatingState,
+  FullLayoutTreeState,
+  LayoutNode,
+  PanelKind,
+} from "./tree/types";
 import {
   cleanupTree,
   createFloating,
@@ -313,12 +319,7 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
       const existing = findPanelByKind(s.root, kind);
       const panel = existing ?? createPanel(kind);
       const cleaned = existing ? removeNode(s.root, existing.id) : s.root;
-      const floating = createFloating(panel, {
-        x: 160,
-        y: 120,
-        width: 760,
-        height: 560,
-      });
+      const floating = createFloating(panel, floatingBoundsFor(kind));
       return {
         root: cleanupTree(cleaned ?? createPanel("welcome")),
         floating: [...s.floating, floating],
@@ -348,6 +349,26 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
   setActivePreset: (presetId) => set({ activePreset: presetId }),
   markCustomized: () => set({ isCustomized: true }),
 }));
+
+// Settings get a roomy, centered window; other panels keep the compact default.
+function floatingBoundsFor(kind: PanelKind): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  if (kind !== "settings" || typeof window === "undefined") {
+    return { x: 160, y: 120, width: 760, height: 560 };
+  }
+  const width = Math.min(1040, Math.max(760, window.innerWidth - 160));
+  const height = Math.min(720, Math.max(560, window.innerHeight - 160));
+  return {
+    x: Math.max(24, Math.round((window.innerWidth - width) / 2)),
+    y: Math.max(56, Math.round((window.innerHeight - height) / 2)),
+    width,
+    height,
+  };
+}
 
 export const useLayoutStore = create<FullLayoutTreeState>()(
   persist(layoutStoreCreator, {

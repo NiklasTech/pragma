@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
   ArrowsLeftRight,
@@ -69,7 +69,6 @@ export function CommandPalette() {
   const commands = useCommandPaletteStore((state) => state.commands);
   const shortcuts = useSettingsStore((state) => state.shortcuts);
   const isMac = getIsMac();
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const grouped = useMemo(() => groupByCategory(commands), [commands]);
 
@@ -92,26 +91,22 @@ export function CommandPalette() {
           <CommandGroup key={category} heading={CATEGORY_TITLES[category] ?? category}>
             {items.map((command) => {
               const IconComponent = COMMAND_ICONS[command.id];
-              const isHovered = hoveredId === command.id;
               return (
                 <CommandItem
                   key={command.id}
                   value={command.id}
                   keywords={command.keywords}
                   onSelect={() => handleSelect(command)}
-                  onMouseEnter={() => setHoveredId(command.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  className={
-                    isHovered
-                      ? "border-border-focus bg-bg-input animate-command-item-pulse"
-                      : undefined
-                  }
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {IconComponent && <IconComponent className="size-4 text-fg-subtle" />}
+                    {IconComponent ? (
+                      <IconComponent className="size-4 text-fg-subtle" />
+                    ) : (
+                      <span aria-hidden="true" className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">{command.label}</span>
                   </div>
-                  {command.shortcut && (
+                  {command.shortcut && shortcuts[command.shortcut] && (
                     <CommandShortcut>
                       {formatShortcut(shortcuts[command.shortcut], isMac)}
                     </CommandShortcut>

@@ -49,6 +49,7 @@ impl LspManager {
             None,
         );
 
+        let command = config.command.clone();
         let (client, child, notifications, stderr_lines) = match LspClient::start(config).await {
             Ok(started) => started,
             Err(e) => {
@@ -104,14 +105,25 @@ impl LspManager {
                 notification_handle.abort();
                 supervisor_handle.abort();
                 log_handle.abort();
+                // A launcher shim (e.g. rustup without the component) spawns but exits at once.
+                let missing = !Self::check_server_installed(language).await.unwrap_or(true);
+                let message = if missing {
+                    format!("{command} is not installed")
+                } else {
+                    e.to_string()
+                };
                 self.emit_status(
                     language,
                     project_root,
-                    LspServerStatus::Error,
-                    Some(e.to_string()),
-                    Some(false),
+                    if missing {
+                        LspServerStatus::Stopped
+                    } else {
+                        LspServerStatus::Error
+                    },
+                    Some(message.clone()),
+                    Some(missing),
                 );
-                return Err(e.to_string());
+                return Err(message);
             }
         };
 

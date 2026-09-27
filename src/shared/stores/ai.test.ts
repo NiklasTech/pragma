@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+const invokeMock = vi.hoisted(() => vi.fn());
+vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
 
-import { mergeSessionsWithStored, type ChatMessage, type ChatSession } from "./ai";
+import { mergeSessionsWithStored, useAIStore, type ChatMessage, type ChatSession } from "./ai";
 
 function message(id: string): ChatMessage {
   return { id, role: "user", content: id, timestamp: 1 };
@@ -113,5 +114,26 @@ describe("mergeSessionsWithStored", () => {
     expect(merged[0].kind).toBe("agent");
     expect(merged[0].environment).toBe("worktree");
     expect(merged[0].worktree).toEqual(disk.worktree);
+  });
+});
+
+describe("loadSessionMessages", () => {
+  it("leaves the session list untouched when nothing is stored", async () => {
+    invokeMock.mockResolvedValueOnce([]);
+    const sessions = [memorySession("empty")];
+    useAIStore.setState({ chatSessions: sessions });
+
+    await useAIStore.getState().loadSessionMessages("/workspace", "empty");
+
+    expect(useAIStore.getState().chatSessions).toBe(sessions);
+  });
+
+  it("stores loaded messages on the session", async () => {
+    invokeMock.mockResolvedValueOnce([{ id: "m1", role: "user", content: "hi", timestamp: 1 }]);
+    useAIStore.setState({ chatSessions: [memorySession("filled")] });
+
+    await useAIStore.getState().loadSessionMessages("/workspace", "filled");
+
+    expect(useAIStore.getState().chatSessions[0].messages).toHaveLength(1);
   });
 });

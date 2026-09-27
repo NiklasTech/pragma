@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback } from "react";
+import type { Icon } from "@phosphor-icons/react";
+import { Code, Robot } from "@phosphor-icons/react";
 
 import { cn } from "@/shared/lib/utils";
 import { useUiMode, useUiModeStore, type UiMode } from "@/shell/mode";
 
-const MODES: { id: UiMode; label: string }[] = [
-  { id: "agents", label: "Agents" },
-  { id: "editor", label: "Editor" },
+const MODES: { id: UiMode; label: string; icon: Icon }[] = [
+  { id: "agents", label: "Agents", icon: Robot },
+  { id: "editor", label: "Editor", icon: Code },
 ];
 
 export function ModeSwitch() {
@@ -31,7 +33,7 @@ export function ModeSwitch() {
       role="group"
       aria-label="Workspace mode"
       onKeyDown={handleKeyDown}
-      className="flex h-7 items-center gap-0.5 rounded-pill border border-border/60 bg-bg-input p-0.5"
+      className="flex h-7 shrink-0 items-center gap-0.5"
     >
       {MODES.map((mode) => {
         const isActive = uiMode === mode.id;
@@ -42,12 +44,13 @@ export function ModeSwitch() {
             aria-pressed={isActive}
             onClick={() => setUiMode(mode.id)}
             className={cn(
-              "h-6 rounded-pill px-3 text-ui-sm font-semibold transition-colors duration-fast",
+              "flex h-7 items-center gap-1.5 rounded-full px-3 text-ui-xs font-semibold transition-colors duration-fast",
               isActive
-                ? "bg-bg-elevated text-fg-default shadow-[var(--shadow-sm)]"
-                : "text-fg-muted hover:text-fg-default",
+                ? "bg-bg-elevated text-fg-default shadow-[var(--shadow-sm)] ring-1 ring-border [&>svg]:text-primary"
+                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
             )}
           >
+            <mode.icon size={13} weight={isActive ? "fill" : "regular"} aria-hidden="true" />
             {mode.label}
           </button>
         );

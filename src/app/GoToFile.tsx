@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { SmileySad } from "@phosphor-icons/react";
@@ -43,7 +43,6 @@ export function GoToFile() {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const editorPanelId = useEditorPanelId();
   const { openFile } = useEditorStore();
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
 
   const sortedFiles = useMemo(() => {
     return [...files].sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
@@ -91,18 +90,12 @@ export function GoToFile() {
         </CommandEmpty>
         {sortedFiles.map((file) => {
           const relativePath = getRelativePath(file.path, rootPath);
-          const isHovered = hoveredPath === file.path;
           return (
             <CommandItem
               key={file.path}
               value={file.path}
               keywords={[file.name, relativePath]}
               onSelect={() => handleSelect(file.path)}
-              onMouseEnter={() => setHoveredPath(file.path)}
-              onMouseLeave={() => setHoveredPath(null)}
-              className={
-                isHovered ? "border-border-focus bg-bg-input animate-command-item-pulse" : undefined
-              }
             >
               <img
                 src={getFileIconPath(file.name)}

@@ -1,7 +1,7 @@
 use tauri::{WebviewWindow, Window, WindowEvent};
 
-pub const HEADER_HEIGHT: f64 = 52.0;
-pub const TRAFFIC_LIGHT_X: f64 = 16.0;
+pub const HEADER_HEIGHT: f64 = 40.0;
+pub const TRAFFIC_LIGHT_X: f64 = 14.0;
 pub const TRAFFIC_LIGHT_Y: f64 = HEADER_HEIGHT - 16.0;
 
 pub fn align_webview(window: &WebviewWindow) {

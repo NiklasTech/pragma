@@ -1,4 +1,5 @@
 import { cn } from "@/shared/lib/utils";
+import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useLayoutStore } from "../store";
 import { hasMountedAIPanel } from "../aiPlacement";
 import { ChatPanel } from "@/features/ai/components/ChatPanel";
@@ -53,10 +54,7 @@ export function AIChatHost() {
 
   return (
     <div
-      className={cn(
-        "relative flex h-full shrink-0 flex-col border-border bg-bg-surface",
-        isLeft ? "border-r" : "border-l",
-      )}
+      className={cn(CARD_CLASS, "relative flex h-full shrink-0 flex-col")}
       style={{ width: ai.size }}
     >
       <ResizeHandle

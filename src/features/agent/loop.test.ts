@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { UIMessage } from "@ai-sdk/react";
 
-import { countAgentSteps, shouldAgentContinue } from "./loop";
+import { countAgentSteps, lastStepHasToolCalls, shouldAgentContinue } from "./loop";
 import { AGENT_TOOL_NAMES } from "./tools";
 
 type ToolInvocationState =
@@ -119,5 +119,47 @@ describe("countAgentSteps", () => {
       ]),
     ];
     expect(countAgentSteps(messages)).toBe(2);
+  });
+});
+
+describe("latest step", () => {
+  const readFile = (toolCallId: string) =>
+    ({
+      type: "tool-invocation",
+      toolInvocation: {
+        state: "output-available",
+        toolCallId,
+        toolName: AGENT_TOOL_NAMES.readFile,
+        input: {},
+      },
+    }) as unknown as UIMessage["parts"][number];
+
+  it("stops once the latest step answers without tool calls", () => {
+    const answer = {
+      id: "a1",
+      role: "assistant",
+      parts: [
+        { type: "step-start" },
+        readFile("t1"),
+        { type: "step-start" },
+        { type: "text", text: "The version is 0.3.0." },
+      ],
+    } as UIMessage;
+    const messages = [userMessage("u1", "which version?"), answer];
+
+    expect(shouldAgentContinue(messages, null)).toBe(false);
+    expect(lastStepHasToolCalls(messages)).toBe(false);
+  });
+
+  it("continues while the latest step ended in tool calls", () => {
+    const working = {
+      id: "a1",
+      role: "assistant",
+      parts: [{ type: "step-start" }, readFile("t1"), { type: "step-start" }, readFile("t2")],
+    } as UIMessage;
+    const messages = [userMessage("u1", "which version?"), working];
+
+    expect(shouldAgentContinue(messages, null)).toBe(true);
+    expect(lastStepHasToolCalls(messages)).toBe(true);
   });
 });
