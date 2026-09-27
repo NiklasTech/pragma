@@ -7,3 +7,4 @@ pub mod context;
 pub mod docker;
 pub mod perf;
 pub mod search;
+pub mod tasks;
