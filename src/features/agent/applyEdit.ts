@@ -59,6 +59,8 @@ export async function applyAgentFileEdit(
     const accepted = useAgentStore.getState().requestEditReview({
       toolCallId: edit.toolCallId,
       path: edit.path,
+      originalContent: edit.originalContent,
+      content: edit.content,
     });
     editor.openDiff({
       id,

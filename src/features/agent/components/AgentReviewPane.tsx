@@ -9,7 +9,6 @@ import {
 } from "@phosphor-icons/react";
 
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
-import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStop } from "@/features/ai/steer/useSteerQueue";
 
@@ -76,7 +75,7 @@ export function AgentReviewPane() {
   const canStop = status === "running" || status === "waiting-approval";
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    <div className="flex flex-col">
       {status === "idle" ? (
         <PanelEmptyState
           icon={MagicWand}
@@ -124,25 +123,23 @@ export function AgentReviewPane() {
 
           <AgentRulesStatus />
 
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="flex flex-col pt-1">
-              <AgentTodoList />
-              {steps.length > 0 && (
-                <div className="px-3 pt-2 pb-2 text-ui-2xs font-semibold tracking-wider text-fg-subtle uppercase">
-                  Steps
-                </div>
-              )}
-              {steps.map((step, index) => (
-                <StepRow key={step.id} step={step} isLast={index === steps.length - 1} />
-              ))}
-              {status === "waiting-approval" && (
-                <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg bg-status-warning/10 px-2.5 py-1.5 text-ui-xs text-status-warning">
-                  <CircleDashed size={13} className="shrink-0" />
-                  Waiting for your review
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          <div className="flex flex-col pt-1">
+            <AgentTodoList />
+            {steps.length > 0 && (
+              <div className="px-3 pt-2 pb-2 text-ui-2xs font-semibold tracking-wider text-fg-subtle uppercase">
+                Steps
+              </div>
+            )}
+            {steps.map((step, index) => (
+              <StepRow key={step.id} step={step} isLast={index === steps.length - 1} />
+            ))}
+            {status === "waiting-approval" && (
+              <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg bg-status-warning/10 px-2.5 py-1.5 text-ui-xs text-status-warning">
+                <CircleDashed size={13} className="shrink-0" />
+                Waiting for your review
+              </div>
+            )}
+          </div>
 
           {(summary || error) && (
             <div className="shrink-0 border-t border-border-subtle px-3 py-2.5">
