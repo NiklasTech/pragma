@@ -379,9 +379,9 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           </div>
         )}
 
-        <AgentApprovals />
+        {ownsRun && <AgentApprovals />}
 
-        {!isCLIActive && <AgentRunBar />}
+        {!isCLIActive && ownsRun && <AgentRunBar />}
 
         <ContextAttachments attachments={lastAttachments} truncated={lastContextTruncated} />
 

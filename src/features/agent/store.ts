@@ -33,6 +33,8 @@ export interface AgentApproval {
 export interface AgentEditReview {
   toolCallId: string;
   path: string;
+  originalContent: string;
+  content: string;
   resolve: (accepted: boolean) => void;
 }
 
