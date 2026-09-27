@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
 
 import type { WorktreeChoice } from "./choice";
 
@@ -10,6 +10,22 @@ interface WorktreeCreateResponse {
   path: string;
   setup_log: string;
   status: "ready" | "error";
+}
+
+export async function createSessionWorktree(
+  rootPath: string,
+  sessionId: string,
+): Promise<SessionWorktree> {
+  const created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
+    repoPath: rootPath,
+    sessionId,
+  });
+  return {
+    branch: created.branch,
+    path: created.path,
+    setupLog: created.setup_log,
+    status: created.status,
+  };
 }
 
 export async function createSessionForChoice(
@@ -24,12 +40,9 @@ export async function createSessionForChoice(
 
   const id = crypto.randomUUID();
 
-  let created: WorktreeCreateResponse;
+  let worktree: SessionWorktree;
   try {
-    created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
-      repoPath: rootPath,
-      sessionId: id,
-    });
+    worktree = await createSessionWorktree(rootPath, id);
   } catch {
     toast.error("Could not create a worktree for this thread");
     return null;
@@ -39,11 +52,6 @@ export async function createSessionForChoice(
     id,
     kind: "agent",
     environment: "worktree",
-    worktree: {
-      branch: created.branch,
-      path: created.path,
-      setupLog: created.setup_log,
-      status: created.status,
-    },
+    worktree,
   });
 }

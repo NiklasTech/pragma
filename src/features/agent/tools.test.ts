@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
+import { SPAWN_SESSION_TOOL_DEFINITION } from "./spawnTool";
 import {
   AGENT_TOOL_DEFINITIONS,
   AGENT_TOOL_NAMES,
@@ -20,10 +21,11 @@ describe("agent tool name resolution", () => {
     expect(isAgentTool("")).toBe(false);
   });
 
-  it("flags only write_file, search_replace and run_command as destructive", () => {
+  it("flags only write_file, search_replace, run_command and spawn_session as destructive", () => {
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.writeFile)).toBe(true);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.searchReplace)).toBe(true);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.runCommand)).toBe(true);
+    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.spawnSession)).toBe(true);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.readFile)).toBe(false);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.grep)).toBe(false);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.glob)).toBe(false);
@@ -32,7 +34,9 @@ describe("agent tool name resolution", () => {
   });
 
   it("provides a definition for every agent tool", () => {
-    const defined = AGENT_TOOL_DEFINITIONS.map((def) => def.function.name);
+    const defined = [...AGENT_TOOL_DEFINITIONS, SPAWN_SESSION_TOOL_DEFINITION].map(
+      (def) => def.function.name,
+    );
     expect(defined.sort()).toEqual(Object.values(AGENT_TOOL_NAMES).sort());
   });
 });

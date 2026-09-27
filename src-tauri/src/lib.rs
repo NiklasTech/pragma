@@ -9,6 +9,7 @@ pub mod platform;
 pub mod window;
 
 use ai::acp::AcpSessionManager;
+use ai::child_sessions::ChildSessionServer;
 use modules::dap::DapManager;
 use modules::lsp::LspManager;
 use modules::pty::PtyManager;
@@ -16,6 +17,11 @@ use modules::run::RunManager;
 use tauri::Manager;
 use tauri_plugin_cli::CliExt;
 use tauri_plugin_log::{Target, TargetKind};
+
+/// Serves the stdio MCP bridge an ACP agent starts for child sessions.
+pub fn run_child_sessions_bridge() -> i32 {
+    ai::child_sessions::bridge::run()
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -64,6 +70,9 @@ pub fn run() {
                 log::error!("failed to initialize MCP manager: {e}");
             }
 
+            app.manage(tauri::async_runtime::block_on(ChildSessionServer::start(
+                app.handle().clone(),
+            )));
             app.manage(AcpSessionManager::new(app.handle().clone()));
             app.manage(LspManager::managed(app.handle().clone()));
             app.manage(DapManager::managed(app.handle().clone()));
@@ -271,6 +280,7 @@ pub fn run() {
             commands::cli::cli_chat,
             commands::cli::cli_chat_stream,
             commands::cli::cli_acp_chat_stream,
+            ai::child_sessions::server::child_session_spawn_reply,
             commands::cli::cli_acp_cancel,
             commands::cli::cli_acp_approve,
             commands::acp_config::cli_acp_session_config,

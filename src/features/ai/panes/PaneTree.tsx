@@ -42,6 +42,8 @@ import { TerminalPane } from "../terminal/TerminalPane";
 import { getTerminalEntryStatus, requestTerminalStop } from "../terminal/runner";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { clearTerminalView, copyTerminalView } from "../terminal/view";
+import { ChildRunView } from "../children/ChildRunView";
+import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { ChatTranscript } from "./ChatTranscript";
 import { SessionTab } from "./SessionTab";
 import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
@@ -145,11 +147,15 @@ function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
     state.chatSessions.find((item) => item.id === leaf.sessionId),
   );
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const runningInBackground = useChildRunsStore((state) =>
+    leaf.sessionId ? isRunLive(state.runs[leaf.sessionId]) : false,
+  );
 
   if (leaf.sessionId === null) return <EmptyLeafView leafId={leaf.id} />;
   if (session?.kind === "terminal") {
     return <TerminalPane session={session} workspaceRoot={rootPath} />;
   }
+  if (runningInBackground) return <ChildRunView sessionId={leaf.sessionId} />;
   if (focused && leaf.sessionId === activeChatSessionId) return <ChatPanel hideHeader />;
   return <ChatTranscript sessionId={leaf.sessionId} />;
 }

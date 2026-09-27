@@ -21,6 +21,7 @@ use super::types::{
     ClientCapabilities, ContentBlock, FsCapabilities, InitializeRequest, NewSessionRequest,
     PromptContent, PromptRequest, SessionUpdate, SessionUpdateDetail, ToolCallContent,
 };
+use crate::ai::child_sessions::ChildSessionServer;
 use crate::ai::cli::{enriched_path, get_manifest};
 use crate::commands::ai::StreamChunk;
 use crate::platform::resolve_on_path;
@@ -75,6 +76,7 @@ impl AcpSessionManager {
         provider_id: &str,
         cwd: &str,
         chat_session_id: &str,
+        allow_child_sessions: bool,
     ) -> Result<String> {
         let manifest = get_manifest(provider_id)
             .ok_or_else(|| AcpError::Spawn(format!("unknown provider: {provider_id}")))?;
@@ -127,7 +129,16 @@ impl AcpSessionManager {
             )
             .await?;
 
-        let mcp_servers = self.load_mcp_servers().await;
+        let mut mcp_servers = self.load_mcp_servers().await;
+        if allow_child_sessions {
+            if let Some(server) = self
+                .app_handle
+                .try_state::<ChildSessionServer>()
+                .and_then(|state| state.mcp_server(chat_session_id))
+            {
+                mcp_servers.push(server);
+            }
+        }
         let new_session_req = NewSessionRequest {
             cwd: cwd.to_string(),
             mcp_servers: Some(mcp_servers),

@@ -19,6 +19,7 @@ import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { useExtensions } from "@/features/extensions/useExtensions";
+import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
@@ -39,6 +40,7 @@ export default function App() {
   useDiagnosticsCleanup();
   useTerminalShellResolver();
   useExtensions();
+  useAcpSpawnRequests();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useGuardedShortcutActions(useAppShortcutActions());

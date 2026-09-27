@@ -21,6 +21,8 @@ import { useAgentStore } from "@/features/agent/store";
 import { useSteerQueue } from "@/features/ai/steer/useSteerQueue";
 import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
 import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
+import { SpawnApprovals } from "@/features/ai/children/SpawnApprovals";
+import { ChildSessionCards, inlineChildIds } from "@/features/ai/children/ChildSessionCards";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -321,6 +323,11 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
               );
             })}
 
+            <ChildSessionCards
+              parentId={activeChatSessionId}
+              shownInline={inlineChildIds(messages)}
+            />
+
             {status === "submitted" && (
               <Message from="assistant">
                 <MessageContent>
@@ -388,6 +395,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             ))}
           </div>
         )}
+
+        <SpawnApprovals sessionId={activeChatSessionId} />
 
         {ownsRun && <AgentApprovals />}
 

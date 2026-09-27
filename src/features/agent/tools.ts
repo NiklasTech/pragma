@@ -12,6 +12,7 @@ export const AGENT_TOOL_NAMES = {
   runCommand: "agent_run_command",
   taskComplete: "agent_task_complete",
   remember: "agent_remember",
+  spawnSession: "agent_spawn_session",
 } as const;
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[keyof typeof AGENT_TOOL_NAMES];
@@ -24,7 +25,8 @@ export function isDestructiveAgentTool(name: string): boolean {
   return (
     name === AGENT_TOOL_NAMES.writeFile ||
     name === AGENT_TOOL_NAMES.searchReplace ||
-    name === AGENT_TOOL_NAMES.runCommand
+    name === AGENT_TOOL_NAMES.runCommand ||
+    name === AGENT_TOOL_NAMES.spawnSession
   );
 }
 
