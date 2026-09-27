@@ -119,4 +119,14 @@ describe("resolveAgentApproval", () => {
       ),
     ).toBe("required");
   });
+
+  it("asks before starting a child session unless everything is auto-approved", () => {
+    const edits: AgentSettings = { ...baseSettings, autoApprove: "edits" };
+    const all: AgentSettings = { ...baseSettings, autoApprove: "all" };
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.spawnSession, {}, edits, false)).toBe("required");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.spawnSession, {}, all, false)).toBe("auto");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.spawnSession, {}, baseSettings, true)).toBe(
+      "auto",
+    );
+  });
 });

@@ -7,6 +7,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { Conversation, ConversationContent } from "../components/Conversation";
 import { Message, MessageContent, MessageResponse } from "../components/Message";
+import { ChildSessionCards } from "../children/ChildSessionCards";
 
 export function ChatTranscript({ sessionId }: { sessionId: string }) {
   const session = useAIStore((state) => state.chatSessions.find((item) => item.id === sessionId));
@@ -43,6 +44,7 @@ export function ChatTranscript({ sessionId }: { sessionId: string }) {
             ),
           )
         )}
+        <ChildSessionCards parentId={sessionId} />
       </ConversationContent>
     </Conversation>
   );

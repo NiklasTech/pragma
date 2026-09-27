@@ -51,6 +51,7 @@ export interface AcpChatRequest {
   chat_session_id: string;
   cwd: string;
   messages: CLIChatMessage[];
+  allow_child_sessions: boolean;
 }
 
 export interface StreamChunk {

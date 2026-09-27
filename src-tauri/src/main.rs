@@ -21,6 +21,9 @@ fn print_help() {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some(app_lib::ai::child_sessions::BRIDGE_FLAG) {
+        std::process::exit(app_lib::run_child_sessions_bridge());
+    }
     if args.iter().any(|arg| arg == "--version" || arg == "-v") {
         print_version();
         return;

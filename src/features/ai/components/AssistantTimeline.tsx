@@ -1,6 +1,10 @@
 import type { UIMessage } from "@ai-sdk/react";
 import { useMemo } from "react";
 
+import { AGENT_TOOL_NAMES } from "@/features/agent/tools";
+import { ChildSessionCard } from "@/features/ai/children/ChildSessionCard";
+import { readSpawnOutput } from "@/features/ai/children/spawn";
+
 import { buildAssistantTimeline, taskCompleteSummary, type TimelineItem } from "./timelineItems";
 import { MessageResponse } from "./Message";
 import { ReasoningBlock } from "./ReasoningBlock";
@@ -56,6 +60,17 @@ export function AssistantTimeline({ message, streaming, showThinking }: Assistan
             <MessageResponse key={item.key} streaming={false}>
               {summary}
             </MessageResponse>
+          );
+        }
+
+        const child =
+          item.invocation.toolName === AGENT_TOOL_NAMES.spawnSession &&
+          item.invocation.state === "output-available"
+            ? readSpawnOutput(item.invocation.output)
+            : null;
+        if (child) {
+          return (
+            <ChildSessionCard key={item.key} sessionId={child.sessionId} title={child.title} />
           );
         }
 

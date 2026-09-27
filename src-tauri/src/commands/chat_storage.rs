@@ -31,6 +31,8 @@ pub struct ChatSessionMetadata {
     pub archived: bool,
     #[serde(default)]
     pub agent_engine: Option<AgentEngine>,
+    #[serde(default)]
+    pub parent_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

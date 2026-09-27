@@ -83,7 +83,12 @@ interface SessionOptionsState {
   loading: Record<string, boolean>;
   errors: Record<string, string | null>;
   receive: (chatSessionId: string, options: AcpConfigOption[]) => void;
-  load: (providerId: string, chatSessionId: string, cwd: string) => Promise<void>;
+  load: (
+    providerId: string,
+    chatSessionId: string,
+    cwd: string,
+    allowChildSessions: boolean,
+  ) => Promise<void>;
   setOption: (
     providerId: string,
     chatSessionId: string,
@@ -100,7 +105,7 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
   receive: (chatSessionId, options) =>
     set((state) => ({ bySession: { ...state.bySession, [chatSessionId]: options } })),
 
-  load: async (providerId, chatSessionId, cwd) => {
+  load: async (providerId, chatSessionId, cwd, allowChildSessions) => {
     const state = get();
     if (state.loading[chatSessionId] || state.bySession[chatSessionId]) return;
     set((s) => ({
@@ -110,7 +115,12 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
 
     try {
       let options = await invoke<AcpConfigOption[]>("cli_acp_session_config", {
-        req: { provider_id: providerId, chat_session_id: chatSessionId, cwd },
+        req: {
+          provider_id: providerId,
+          chat_session_id: chatSessionId,
+          cwd,
+          allow_child_sessions: allowChildSessions,
+        },
       });
       const preferred = useAcpPreferenceStore.getState().preferred[providerId];
       for (const { configId, value } of pendingPreferences(options, preferred)) {

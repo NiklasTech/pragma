@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { outsideChildren, releaseChildren } from "@/features/ai/children/release";
 
 import { AgentFoldersTab } from "./AgentFoldersTab";
 import { AgentMemoryTab } from "./AgentMemoryTab";
@@ -42,6 +43,10 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   const chatCount = chatSessions.filter((session) => session.agentId === agent.id).length;
+  const ownedIds = chatSessions
+    .filter((session) => session.agentId === agent.id && !session.archived)
+    .map((session) => session.id);
+  const childCount = outsideChildren(chatSessions, ownedIds).length;
   const cliName =
     cliManifests.find((manifest) => manifest.id === agent.engine.cliProviderId)?.name ?? null;
 
@@ -51,9 +56,10 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = (archiveChildren: boolean) => {
     setConfirmingDelete(false);
     void deleteAgent(rootPath, agent.id)
+      .then(() => releaseChildren(rootPath, ownedIds, archiveChildren))
       .then(onDeleted)
       .catch(() => toast.error("Could not delete the agent"));
   };
@@ -125,6 +131,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
       <DeleteAgentDialog
         agent={agent}
         chatCount={chatCount}
+        childCount={childCount}
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}
         onConfirm={handleDelete}

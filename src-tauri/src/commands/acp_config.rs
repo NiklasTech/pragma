@@ -12,6 +12,8 @@ pub struct AcpSessionConfigRequest {
     pub provider_id: String,
     pub chat_session_id: String,
     pub cwd: String,
+    #[serde(default)]
+    pub allow_child_sessions: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,7 +43,12 @@ pub async fn cli_acp_session_config(
 
     if !state.has_session(&req.chat_session_id).await {
         state
-            .start_session(&req.provider_id, &req.cwd, &req.chat_session_id)
+            .start_session(
+                &req.provider_id,
+                &req.cwd,
+                &req.chat_session_id,
+                req.allow_child_sessions,
+            )
             .await
             .map_err(|e| e.to_string())?;
     }

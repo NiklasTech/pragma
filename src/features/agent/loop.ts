@@ -44,6 +44,14 @@ export function lastStepHasToolCalls(messages: UIMessage[]): boolean {
   return lastStepToolInvocations(lastMessage).length > 0;
 }
 
+export function lastStepToolCallsAnswered(messages: UIMessage[]): boolean {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== "assistant") return false;
+  return lastStepToolInvocations(lastMessage).every(
+    (inv) => inv.state === "output-available" || inv.state === "output-error",
+  );
+}
+
 export function shouldAgentContinue(messages: UIMessage[], maxSteps: number | null): boolean {
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage || lastMessage.role !== "assistant") return false;

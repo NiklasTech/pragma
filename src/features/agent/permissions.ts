@@ -44,6 +44,7 @@ export function resolveAgentApproval(
       ? "auto"
       : "required";
   }
+  if (toolName === AGENT_TOOL_NAMES.spawnSession) return "required";
 
   return settings.autoApprove === "edits" ? "auto" : "required";
 }
