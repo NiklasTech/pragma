@@ -558,6 +558,7 @@ export function useAI() {
     setInput,
     handleInputChange,
     handleSubmit,
+    submitText,
     isLoading: chat.status === "submitted" || chat.status === "streaming",
     status: chat.status,
     error: chat.error,

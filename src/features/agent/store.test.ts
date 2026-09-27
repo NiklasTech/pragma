@@ -29,4 +29,17 @@ describe("agent requestStop", () => {
 
     expect(useAgentStore.getState().status).toBe("cancelled");
   });
+
+  it("marks a steered run idle and still runs the callback", () => {
+    let stopped = false;
+    useAgentStore.getState().setStopCallback(() => {
+      stopped = true;
+    });
+    useAgentStore.setState({ status: "running" });
+
+    useAgentStore.getState().requestStop("steer");
+
+    expect(useAgentStore.getState().status).toBe("idle");
+    expect(stopped).toBe(true);
+  });
 });

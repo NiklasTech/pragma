@@ -17,6 +17,9 @@ import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
 import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
+import { useAgentStore } from "@/features/agent/store";
+import { useSteerQueue } from "@/features/ai/steer/useSteerQueue";
+import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -40,7 +43,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     messages,
     input,
     setInput,
-    handleSubmit,
+    submitText,
     isLoading,
     status,
     error,
@@ -55,6 +58,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   } = useAI();
   const { cliStatuses, chatSessions, activeChatSessionId } = useAIStore();
   const activeSession = chatSessions.find((session) => session.id === activeChatSessionId);
+  const agentStatus = useAgentStore((state) => state.status);
+  const runSessionId = useAgentStore((state) => state.runSessionId);
   const setupLog =
     activeSession?.worktree?.status === "error" ? activeSession.worktree.setupLog : null;
   const { edit, receiveProposal, cancelEdit } = useAIEditStore();
@@ -75,6 +80,27 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   >([]);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
+
+  const ownsRun =
+    activeChatSessionId !== null &&
+    runSessionId === activeChatSessionId &&
+    (agentStatus === "running" || agentStatus === "waiting-approval");
+  const inFlight = status === "submitted" || status === "streaming" || ownsRun;
+  const canFlush = status !== "error" && agentStatus !== "error" && agentStatus !== "cancelled";
+
+  const {
+    queued,
+    enqueue,
+    remove,
+    stop: handleStop,
+  } = useSteerQueue({
+    sessionId: activeChatSessionId,
+    ownsRun,
+    inFlight,
+    canFlush,
+    submitText,
+    stopChat: stop,
+  });
 
   const openFiles = useMemo(
     () =>
@@ -175,6 +201,21 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   const handleRetry = useCallback(() => {
     void regenerate();
   }, [regenerate]);
+
+  const handleComposerSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (inFlight) {
+        const result = enqueue(input);
+        if (result.accepted) setInput(result.restore ?? "");
+        return;
+      }
+      void submitText(input).then((sent) => {
+        if (sent) setInput("");
+      });
+    },
+    [enqueue, inFlight, input, setInput, submitText],
+  );
 
   const streamingMessageId =
     status === "streaming" && messages[messages.length - 1]?.role === "assistant"
@@ -344,15 +385,18 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
         <ContextAttachments attachments={lastAttachments} truncated={lastContextTruncated} />
 
+        {queued && <QueuedMessageCard text={queued} onRemove={remove} />}
+
         <ChatComposer
           input={input}
           onInputChange={setInput}
-          onSubmit={handleSubmit}
+          onSubmit={handleComposerSubmit}
           isLoading={isLoading}
           isStreaming={status === "streaming"}
+          inFlight={inFlight}
           canChat={canChat}
           mcpLoaded={mcpLoaded}
-          onStop={stop}
+          onStop={handleStop}
         />
       </div>
     </div>
