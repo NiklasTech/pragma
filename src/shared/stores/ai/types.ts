@@ -138,11 +138,10 @@ export interface AIActions {
   setActiveChatSession: (sessionId: string | null) => void;
   updateChatSessionMessages: (sessionId: string, messages: ChatMessage[]) => void;
   generateChatTitle: (
+    rootPath: string,
     sessionId: string,
-    provider: AIProvider,
-    model: string,
-    baseUrl: string | undefined,
     firstMessage: string,
+    model: { provider: AIProvider; model: string; baseUrl: string | undefined } | null,
   ) => Promise<void>;
   createChatSession: (rootPath: string, init?: CreateChatSessionInit) => Promise<ChatSession>;
   renameChatSession: (rootPath: string, sessionId: string, title: string) => Promise<void>;

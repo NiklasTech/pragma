@@ -26,12 +26,33 @@ export function countAgentSteps(messages: UIMessage[]): number {
   return steps;
 }
 
+// Tool calls of the latest model step; earlier steps of the same message are already answered.
+function lastStepToolInvocations(msg: UIMessage): ToolInvocationLike[] {
+  const stepStart = msg.parts.reduce(
+    (last, part, index) => (part.type === "step-start" ? index : last),
+    -1,
+  );
+  return msg.parts
+    .slice(stepStart + 1)
+    .map(getToolInvocation)
+    .filter((inv): inv is ToolInvocationLike => inv !== undefined);
+}
+
+export function lastStepHasToolCalls(messages: UIMessage[]): boolean {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== "assistant") return false;
+  return lastStepToolInvocations(lastMessage).length > 0;
+}
+
 export function shouldAgentContinue(messages: UIMessage[], maxSteps: number | null): boolean {
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage || lastMessage.role !== "assistant") return false;
 
-  const completed = completedToolInvocations(lastMessage);
-  if (completed.length === 0) return false;
+  const invocations = lastStepToolInvocations(lastMessage);
+  const completed = invocations.filter(
+    (inv) => inv.state === "output-available" || inv.state === "output-error",
+  );
+  if (completed.length === 0 || completed.length < invocations.length) return false;
 
   if (completed.some((inv) => inv.toolName === AGENT_TOOL_NAMES.taskComplete)) {
     return false;

@@ -14,7 +14,7 @@ export const createModelsSlice: AISlice<
     const hasKey = Boolean(apiKeyRefs[provider]) || keylessProviders.includes(provider);
     if (!hasKey) return;
 
-    if (!force && cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) return;
+    if (!force && cached && !cached.error && Date.now() - cached.fetchedAt < 5 * 60 * 1000) return;
 
     set({ modelsLoading: { ...modelsLoading, [provider]: true } });
 

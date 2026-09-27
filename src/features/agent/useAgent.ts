@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 
-import { countAgentSteps } from "./loop";
+import { countAgentSteps, lastStepHasToolCalls } from "./loop";
 import { useAgentStore } from "./store";
 
 interface UseAgentOptions {
@@ -36,11 +36,12 @@ export function useAgent({ chatRef, chatStatus }: UseAgentOptions) {
       return;
     }
 
-    if (chatStatus === "ready" && store.steps.length > 0) {
+    if (chatStatus === "ready") {
       const messages = chatRef.current?.messages ?? [];
       if (store.maxSteps !== null && countAgentSteps(messages) >= store.maxSteps) {
         store.failTask(`Stopped after reaching the step limit (${store.maxSteps}).`);
-      } else {
+      } else if (!lastStepHasToolCalls(messages)) {
+        // A step that ended in tool calls continues once their outputs arrive.
         store.setStatus("done");
       }
     }

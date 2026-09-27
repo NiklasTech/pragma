@@ -2,6 +2,32 @@ import { useEffect, useRef } from "react";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 
+type AISettingsState = ReturnType<typeof useSettingsStore.getState>["ai"];
+
+const SYNCED_FIELDS = {
+  defaultProvider: "activeProvider",
+  defaultModel: "activeModel",
+  providers: "providers",
+  inlineCompletion: "inlineCompletion",
+  completionDebounce: "completionDebounce",
+  terminalSuggestions: "terminalSuggestions",
+  terminalSuggestionProvider: "terminalSuggestionProvider",
+  terminalSuggestionModel: "terminalSuggestionModel",
+} as const satisfies Partial<
+  Record<keyof AISettingsState, keyof ReturnType<typeof useAIStore.getState>>
+>;
+
+/// Copies the persisted AI settings into the runtime store; with `previous`, only changed fields.
+export function syncAIStore(ai: AISettingsState, previous?: AISettingsState): void {
+  const patch: Partial<ReturnType<typeof useAIStore.getState>> = {};
+  for (const [from, to] of Object.entries(SYNCED_FIELDS) as Array<
+    [keyof typeof SYNCED_FIELDS, (typeof SYNCED_FIELDS)[keyof typeof SYNCED_FIELDS]]
+  >) {
+    if (!previous || ai[from] !== previous[from]) Object.assign(patch, { [to]: ai[from] });
+  }
+  if (Object.keys(patch).length > 0) useAIStore.setState(patch);
+}
+
 /**
  * Initializes AI provider status checks on app mount.
  * This ensures CLI providers are discovered even if the user
@@ -9,27 +35,21 @@ import { useSettingsStore } from "@/shared/stores/settings";
  */
 export function useAIInit() {
   const { loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus } = useAIStore();
-  const initialized = useRef(false);
+  const statusesLoaded = useRef(false);
 
   useEffect(() => {
-    if (initialized.current) return;
+    let unsubscribeSettings: (() => void) | null = null;
 
-    const syncFromSettings = () => {
-      if (initialized.current) return;
-      initialized.current = true;
-
-      // Sync runtime AI store with persisted settings once on startup.
+    const start = () => {
       const settings = useSettingsStore.getState();
-      useAIStore.setState({
-        activeProvider: settings.ai.defaultProvider,
-        activeModel: settings.ai.defaultModel,
-        providers: settings.ai.providers,
-        inlineCompletion: settings.ai.inlineCompletion,
-        completionDebounce: settings.ai.completionDebounce,
-        terminalSuggestions: settings.ai.terminalSuggestions,
-        terminalSuggestionProvider: settings.ai.terminalSuggestionProvider,
-        terminalSuggestionModel: settings.ai.terminalSuggestionModel,
+      syncAIStore(settings.ai);
+      // Settings can change in this window, another window or an import; keep the runtime store in step.
+      unsubscribeSettings = useSettingsStore.subscribe((next, previous) => {
+        if (next.ai !== previous.ai) syncAIStore(next.ai, previous.ai);
       });
+
+      if (statusesLoaded.current) return;
+      statusesLoaded.current = true;
 
       // Load CLI manifests and statuses on app start
       void loadCLIManifests();
@@ -45,10 +65,14 @@ export function useAIInit() {
     };
 
     if (useSettingsStore.persist.hasHydrated()) {
-      syncFromSettings();
-    } else {
-      const unsub = useSettingsStore.persist.onFinishHydration(syncFromSettings);
-      return () => unsub();
+      start();
+      return () => unsubscribeSettings?.();
     }
+
+    const unsubscribeHydration = useSettingsStore.persist.onFinishHydration(start);
+    return () => {
+      unsubscribeHydration();
+      unsubscribeSettings?.();
+    };
   }, [loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus]);
 }
