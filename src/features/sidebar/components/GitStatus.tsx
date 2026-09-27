@@ -211,6 +211,16 @@ export function GitStatus() {
     <div className="@container flex h-full min-w-0 flex-col">
       {error && <GitErrorAlert error={error} />}
 
+      <BranchHeader
+        isDetached={isDetached}
+        branches={branches}
+        currentBranch={currentBranch}
+        onCheckout={(name) => void checkoutBranch(name)}
+        onCreateBranch={(name) => void createBranch(name, true)}
+        onDeleteBranch={(name) => void deleteBranch(name)}
+        actionBusy={actionBusy}
+      />
+
       <GitToolbar
         onRefresh={() => void refreshAll()}
         onFetch={() => void fetch()}
@@ -224,18 +234,6 @@ export function GitStatus() {
         isPullBusy={actionBusy === "pull"}
         isFetchBusy={actionBusy === "fetch"}
         isRefreshBusy={isLoading}
-      />
-
-      <BranchHeader
-        ahead={ahead}
-        behind={behind}
-        isDetached={isDetached}
-        branches={branches}
-        currentBranch={currentBranch}
-        onCheckout={(name) => void checkoutBranch(name)}
-        onCreateBranch={(name) => void createBranch(name, true)}
-        onDeleteBranch={(name) => void deleteBranch(name)}
-        actionBusy={actionBusy}
       />
 
       <StashPanel />

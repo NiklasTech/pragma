@@ -12,7 +12,7 @@ vi.mock("@/shell/mode", () => ({
 import { ModeSwitch } from "./ModeSwitch";
 
 function buttonFor(html: string, label: string): string {
-  const match = html.match(new RegExp(`<button[^>]*>${label}</button>`));
+  const match = html.match(new RegExp(`<button[^>]*>(?:(?!<button).)*?${label}</button>`));
   expect(match).not.toBeNull();
   return match?.[0] ?? "";
 }

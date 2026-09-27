@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Gear, PaperPlaneRight, Plus, Stop } from "@phosphor-icons/react";
+import { PaperPlaneRight, Plug, Plus, Stop } from "@phosphor-icons/react";
 
 import { Textarea } from "@/shared/components/ui/textarea";
 import { matchShortcut } from "@/shared/lib/shortcuts";
@@ -158,12 +158,27 @@ export function ChatComposer({
   });
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
+      {!canChat && (
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-xl border border-border bg-bg-surface py-2 pr-2 pl-3">
+          <Plug size={15} className="shrink-0 text-fg-subtle" />
+          <span className="min-w-[160px] flex-1 text-ui-xs text-fg-muted">
+            Connect an AI provider to start working with Pragma.
+          </span>
+          <button
+            type="button"
+            onClick={openSettings}
+            className="ml-auto shrink-0 rounded-full bg-fg-default px-3 py-1 text-ui-xs font-medium text-bg-root transition-colors hover:bg-fg-default/85"
+          >
+            Configure a provider in Settings
+          </button>
+        </div>
+      )}
       <form
         onSubmit={onSubmit}
-        className="flex flex-col gap-2 rounded-xl border border-border/60 bg-bg-input p-3 transition-colors focus-within:border-primary/40 focus-within:bg-bg-elevated focus-within:ring-2 focus-within:ring-primary/20"
+        className="flex flex-col gap-1 rounded-2xl border border-border bg-bg-surface shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_var(--color-accent-subtle)]"
       >
-        <div className="relative">
+        <div className="relative px-3.5 pt-3">
           <Textarea
             ref={textareaRef}
             rows={1}
@@ -173,9 +188,9 @@ export function ChatComposer({
             onKeyUp={updateCursorPosition}
             onClick={updateCursorPosition}
             onSelect={updateCursorPosition}
-            placeholder="Ask anything..."
+            placeholder="Ask Pragma anything. Type @ to add files."
             disabled={busy}
-            className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors focus-visible:ring-0 focus-visible:bg-transparent disabled:bg-transparent"
+            className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent"
           />
           <ContextPicker
             ref={contextPickerRef}
@@ -185,14 +200,14 @@ export function ChatComposer({
             onSelect={handleContextSelect}
           />
         </div>
-        <div className="flex flex-nowrap items-center gap-1 border-t border-border/60 pt-2">
+        <div className="flex flex-nowrap items-center gap-1 px-2 pb-2">
           <button
             type="button"
             onClick={insertContextMention}
             disabled={busy}
             aria-label="Add context"
-            title="Add context"
-            className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40"
+            title="Add files and context (@)"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40"
           >
             <Plus size={13} weight="bold" />
           </button>
@@ -212,9 +227,9 @@ export function ChatComposer({
                 onClick={onStop}
                 aria-label="Stop"
                 title="Stop"
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-status-error text-fg-inverse transition-colors hover:bg-status-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-status-error/15 text-status-error transition-colors hover:bg-status-error/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
               >
-                <Stop size={13} weight="bold" />
+                <Stop size={12} weight="fill" />
               </button>
             ) : (
               <button
@@ -222,7 +237,7 @@ export function ChatComposer({
                 aria-label="Send"
                 title="Send"
                 disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:bg-bg-hover disabled:text-fg-subtle disabled:hover:bg-bg-hover"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fg-default text-bg-root transition-colors hover:bg-fg-default/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:bg-bg-hover disabled:text-fg-subtle"
               >
                 <PaperPlaneRight size={13} weight="bold" />
               </button>
@@ -230,17 +245,7 @@ export function ChatComposer({
           </div>
         </div>
       </form>
-      {dictation.status && <p className="mt-1 text-ui-2xs text-fg-muted">{dictation.status}</p>}
-      {!canChat && (
-        <button
-          type="button"
-          onClick={openSettings}
-          className="mt-1 flex min-w-0 max-w-full items-center gap-1 text-ui-2xs text-fg-muted transition-colors hover:text-fg-default"
-        >
-          <Gear size={11} className="shrink-0" />
-          <span className="min-w-0 truncate">Configure a provider in Settings</span>
-        </button>
-      )}
+      {dictation.status && <p className="px-3 text-ui-2xs text-fg-muted">{dictation.status}</p>}
     </div>
   );
 }

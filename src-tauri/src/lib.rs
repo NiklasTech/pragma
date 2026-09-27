@@ -226,6 +226,7 @@ pub fn run() {
             modules::stt::stt_status,
             modules::stt::stt_download,
             modules::stt::stt_transcribe,
+            modules::voice_access::voice_input_available,
             modules::extensions::extension_list,
             modules::extensions::extension_read_main,
             modules::extensions::extension_read_asset,

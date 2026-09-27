@@ -45,10 +45,14 @@ export function FontSelect({ value, onChange }: FontSelectProps) {
     <div className="flex items-center gap-2">
       <Select value={selectedId || "__system__"} onValueChange={handleValueChange}>
         <SelectTrigger className="max-w-[220px]">
-          <SelectValue placeholder={value.fontFamily || "System font"} />
+          <SelectValue>
+            {selectedId
+              ? (fonts.find((font) => font.id === selectedId)?.name ?? selectedId)
+              : "Custom font"}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__system__">System / custom font</SelectItem>
+          <SelectItem value="__system__">Custom font</SelectItem>
           {fonts.map((font) => (
             <SelectItem key={font.id} value={font.id}>
               {font.name}

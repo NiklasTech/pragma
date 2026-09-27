@@ -13,7 +13,6 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { cn } from "@/shared/lib/utils";
 
 import { useAgentStore, type AgentStatus, type AgentStep } from "../store";
-import { AgentApprovals } from "./AgentApprovals";
 import { AgentRulesStatus } from "./AgentRulesStatus";
 import { AgentTodoList } from "./AgentTodoList";
 
@@ -38,26 +37,29 @@ const STATUS_COLORS: Record<AgentStatus, string> = {
 function StepIcon({ status }: { status: AgentStep["status"] }) {
   switch (status) {
     case "running":
-      return <Spinner size={13} className="shrink-0 animate-spin text-fg-muted" />;
+      return <Spinner size={12} className="animate-spin text-primary" />;
     case "done":
-      return <Check size={13} weight="bold" className="shrink-0 text-status-success" />;
+      return <Check size={11} weight="bold" className="text-status-success" />;
     case "error":
-      return <Warning size={13} weight="bold" className="shrink-0 text-status-error" />;
+      return <Warning size={11} weight="bold" className="text-status-error" />;
     case "denied":
-      return <Prohibit size={13} weight="bold" className="shrink-0 text-status-warning" />;
+      return <Prohibit size={11} weight="bold" className="text-status-warning" />;
   }
 }
 
-function StepRow({ step }: { step: AgentStep }) {
+function StepRow({ step, isLast }: { step: AgentStep; isLast: boolean }) {
   return (
-    <div className="flex items-start gap-2 px-3 py-1.5">
-      <div className="mt-0.5">
+    <div className="relative flex items-start gap-3 px-3 pb-3">
+      {!isLast && (
+        <span aria-hidden="true" className="absolute top-6 bottom-0 left-[23px] w-px bg-border" />
+      )}
+      <span className="relative flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-bg-surface">
         <StepIcon status={step.status} />
-      </div>
-      <div className="flex min-w-0 flex-col">
+      </span>
+      <div className="flex min-w-0 flex-col pt-0.5">
         <span className="text-ui-xs font-medium text-fg-default">{step.label}</span>
         {step.detail && (
-          <span className="truncate text-ui-xs text-fg-subtle" title={step.detail}>
+          <span className="truncate font-mono text-ui-2xs text-fg-subtle" title={step.detail}>
             {step.detail}
           </span>
         )}
@@ -81,10 +83,22 @@ export function AgentReviewPane() {
         />
       ) : (
         <>
-          <div className="flex shrink-0 flex-col gap-1 px-3 py-2.5">
+          <div className="m-2 flex shrink-0 flex-col gap-2 rounded-xl border border-border-subtle bg-bg-surface p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className={cn("text-ui-xs font-medium", STATUS_COLORS[status])}>
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 text-ui-xs font-medium",
+                  STATUS_COLORS[status],
+                )}
+              >
+                {status === "running" && <Spinner size={12} className="animate-spin" />}
+                {status === "waiting-approval" && <CircleDashed size={12} />}
                 {STATUS_LABELS[status]}
+                {stepCount > 0 && (
+                  <span className="font-normal text-fg-subtle">
+                    {stepCount === 1 ? "· 1 step" : `· ${stepCount} steps`}
+                  </span>
+                )}
               </span>
               {canStop && (
                 <button
@@ -92,33 +106,35 @@ export function AgentReviewPane() {
                   onClick={requestStop}
                   title="Stop agent"
                   aria-label="Stop agent"
-                  className="flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+                  className="flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-status-error/10 hover:text-status-error"
                 >
-                  <Stop size={13} weight="bold" />
+                  <Stop size={11} weight="fill" />
+                  Stop
                 </button>
               )}
             </div>
-            <span className="text-ui-xs text-fg-muted">Goal</span>
-            <p className="line-clamp-3 text-ui-xs break-words text-fg-subtle" title={goal}>
-              {goal}
-            </p>
-            {stepCount > 0 && (
-              <span className="mt-1 text-ui-2xs text-fg-subtle">
-                {stepCount === 1 ? "1 step" : `${stepCount} steps`}
-              </span>
+            {goal && (
+              <p className="line-clamp-3 text-ui-xs break-words text-fg-muted" title={goal}>
+                {goal}
+              </p>
             )}
           </div>
 
           <AgentRulesStatus />
 
-          <ScrollArea className="min-h-0 flex-1 border-t border-border/40">
-            <div className="flex flex-col py-1">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="flex flex-col pt-1">
               <AgentTodoList />
-              {steps.map((step) => (
-                <StepRow key={step.id} step={step} />
+              {steps.length > 0 && (
+                <div className="px-3 pt-2 pb-2 text-ui-2xs font-semibold tracking-wider text-fg-subtle uppercase">
+                  Steps
+                </div>
+              )}
+              {steps.map((step, index) => (
+                <StepRow key={step.id} step={step} isLast={index === steps.length - 1} />
               ))}
               {status === "waiting-approval" && (
-                <div className="flex items-center gap-2 px-3 py-1.5 text-ui-xs text-status-warning">
+                <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg bg-status-warning/10 px-2.5 py-1.5 text-ui-xs text-status-warning">
                   <CircleDashed size={13} className="shrink-0" />
                   Waiting for your review
                 </div>
@@ -127,7 +143,7 @@ export function AgentReviewPane() {
           </ScrollArea>
 
           {(summary || error) && (
-            <div className="shrink-0 border-t border-border/40 px-3 py-2.5">
+            <div className="shrink-0 border-t border-border-subtle px-3 py-2.5">
               <p
                 className={cn(
                   "text-ui-xs break-words",
@@ -140,10 +156,6 @@ export function AgentReviewPane() {
           )}
         </>
       )}
-
-      <div className="shrink-0 px-3 pt-3">
-        <AgentApprovals />
-      </div>
     </div>
   );
 }

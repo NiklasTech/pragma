@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   ArrowsLeftRight,
   BracketsAngle,
-  File,
+  Funnel,
   MagnifyingGlass,
   Quotes,
   Spinner,
@@ -12,7 +12,6 @@ import {
   X,
   type Icon,
 } from "@phosphor-icons/react";
-import { Button } from "@/shared/components/ui/button";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -36,9 +35,9 @@ import {
   parsePatterns,
   type SearchQueryState,
   type SearchResult,
-  type SearchResultGroup,
 } from "@/features/sidebar/lib/searchReplace";
 import { cn } from "@/shared/lib/utils";
+import { SearchResultGroupView } from "./SearchResultGroup";
 
 const DEBOUNCE_MS = 300;
 
@@ -58,6 +57,8 @@ export function SearchPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replaceAllOpen, setReplaceAllOpen] = useState(false);
+  const [showReplace, setShowReplace] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [searchVersion, setSearchVersion] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -169,26 +170,25 @@ export function SearchPanel() {
     );
   }
 
-  const emptyTitle = query.trim().length > 0 ? "No results" : "Type to search";
+  const emptyTitle = query.trim().length > 0 ? "No results" : "Search your workspace";
   const emptyDescription =
     query.trim().length > 0
-      ? "Try a different query or adjust filters."
-      : "Start typing to search across files.";
+      ? "Try a different query or adjust the filters."
+      : "Find text across every file. Use the toggles for case, whole word or regex.";
+  const activeFilters = (includePatterns.trim() ? 1 : 0) + (excludePatterns.trim() ? 1 : 0);
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
-        <div className="relative">
-          <MagnifyingGlass
-            size={14}
-            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
-          />
-          <Input
+      <div className="flex shrink-0 flex-col gap-1.5 px-2.5 pt-1.5 pb-2">
+        <div className={FIELD_CLASS}>
+          <MagnifyingGlass size={14} className="shrink-0 text-fg-subtle" />
+          <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search in workspace"
-            className="h-8 pl-8 pr-7"
+            placeholder="Search in files"
+            aria-label="Search in workspace"
+            className="min-w-0 flex-1 bg-transparent text-ui-sm text-fg-default outline-none placeholder:text-fg-subtle"
           />
           {query.length > 0 && (
             <button
@@ -197,15 +197,55 @@ export function SearchPanel() {
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-subtle hover:text-fg-default"
+              className="flex size-5 shrink-0 items-center justify-center rounded text-fg-subtle hover:text-fg-default"
               aria-label="Clear search"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        {showReplace && (
+          <div className={FIELD_CLASS}>
+            <ArrowsLeftRight size={14} className="shrink-0 text-fg-subtle" />
+            <input
+              value={replacement}
+              onChange={(e) => setReplacement(e.target.value)}
+              placeholder="Replace with"
+              aria-label="Replace with"
+              className="min-w-0 flex-1 bg-transparent text-ui-sm text-fg-default outline-none placeholder:text-fg-subtle"
+            />
+            <button
+              type="button"
+              onClick={() => setReplaceAllOpen(true)}
+              disabled={replacing || results.length === 0}
+              title="Replace all matches"
+              aria-label="Replace all matches"
+              className="flex h-5 shrink-0 items-center rounded px-1.5 text-ui-2xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+            >
+              Replace all
+            </button>
+          </div>
+        )}
+
+        {showFilters && (
+          <div className="flex flex-col gap-1.5">
+            <Input
+              value={includePatterns}
+              onChange={(e) => setIncludePatterns(e.target.value)}
+              placeholder="Files to include, e.g. src/**/*.ts"
+              className="h-7 rounded-md text-ui-xs"
+            />
+            <Input
+              value={excludePatterns}
+              onChange={(e) => setExcludePatterns(e.target.value)}
+              placeholder="Files to exclude, e.g. *.test.ts"
+              className="h-7 rounded-md text-ui-xs"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-0.5">
           <OptionButton
             active={caseSensitive}
             onClick={() => setCaseSensitive((v) => !v)}
@@ -224,89 +264,63 @@ export function SearchPanel() {
             title="Use regular expressions"
             icon={BracketsAngle}
           />
-        </div>
-
-        <div className="relative">
-          <ArrowsLeftRight
-            size={14}
-            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-fg-subtle"
+          <span aria-hidden="true" className="mx-1 h-3.5 w-px bg-border" />
+          <OptionButton
+            active={showReplace}
+            onClick={() => setShowReplace((value) => !value)}
+            title={showReplace ? "Hide replace" : "Show replace"}
+            icon={ArrowsLeftRight}
           />
-          <Input
-            value={replacement}
-            onChange={(e) => setReplacement(e.target.value)}
-            placeholder="Replace"
-            className="h-8 pl-8 pr-7"
+          <OptionButton
+            active={showFilters || activeFilters > 0}
+            onClick={() => setShowFilters((value) => !value)}
+            title="Include and exclude filters"
+            icon={Funnel}
           />
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Input
-            value={includePatterns}
-            onChange={(e) => setIncludePatterns(e.target.value)}
-            placeholder="Include (e.g. *.ts)"
-            className="h-7 text-ui-xs"
-          />
-          <Input
-            value={excludePatterns}
-            onChange={(e) => setExcludePatterns(e.target.value)}
-            placeholder="Exclude (e.g. *.test.ts)"
-            className="h-7 text-ui-xs"
-          />
+          {results.length > 0 && (
+            <span className="ml-auto truncate pl-2 text-ui-2xs text-fg-subtle tabular-nums">
+              {results.length} in {grouped.length} file{grouped.length === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
 
         {error && (
           <Alert variant="destructive">
             <Warning size={16} />
-            <AlertDescription className="text-ui-base">{error}</AlertDescription>
+            <AlertDescription className="text-ui-xs">{error}</AlertDescription>
           </Alert>
         )}
+      </div>
 
-        <div className="min-h-0 flex-1">
-          {loading && results.length === 0 ? (
-            <div className="flex h-full items-center justify-center">
-              <Spinner size={20} className="animate-spin text-fg-muted" />
-            </div>
-          ) : grouped.length === 0 ? (
-            <PanelEmptyState
-              icon={MagnifyingGlass}
-              title={emptyTitle}
-              description={emptyDescription}
-              className="py-4"
-            />
-          ) : (
-            <ScrollArea className="h-full">
-              <div className="flex flex-col gap-3 pb-2">
-                {grouped.map((group) => (
-                  <ResultGroupView
-                    key={group.path}
-                    group={group}
-                    disabled={replacing}
-                    onOpenResult={handleOpenResult}
-                    onReplaceOne={replaceOne}
-                    onReplaceAllInFile={replaceAllInFile}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </div>
-
-        {results.length > 0 && (
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-ui-xs text-fg-subtle">
-              {results.length} result{results.length === 1 ? "" : "s"}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              onClick={() => setReplaceAllOpen(true)}
-              disabled={replacing}
-            >
-              <ArrowsLeftRight size={12} className="mr-1" />
-              Replace All
-            </Button>
+      <div className="min-h-0 flex-1">
+        {loading && results.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <Spinner size={18} className="animate-spin text-fg-subtle" />
           </div>
+        ) : grouped.length === 0 ? (
+          <PanelEmptyState
+            icon={MagnifyingGlass}
+            title={emptyTitle}
+            description={emptyDescription}
+            className="py-4"
+          />
+        ) : (
+          <ScrollArea className="h-full">
+            <div className="flex flex-col gap-1 px-1.5 pb-2">
+              {grouped.map((group) => (
+                <SearchResultGroupView
+                  key={group.path}
+                  group={group}
+                  disabled={replacing}
+                  showReplace={showReplace}
+                  caseSensitive={caseSensitive}
+                  onOpenResult={handleOpenResult}
+                  onReplaceOne={replaceOne}
+                  onReplaceAllInFile={replaceAllInFile}
+                />
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </div>
 
@@ -337,6 +351,9 @@ export function SearchPanel() {
   );
 }
 
+const FIELD_CLASS =
+  "flex h-8 min-w-0 items-center gap-1.5 rounded-lg border border-border bg-bg-input pr-1 pl-2.5 transition-colors focus-within:border-primary/50 focus-within:shadow-[0_0_0_3px_var(--color-accent-subtle)]";
+
 function OptionButton({
   active,
   onClick,
@@ -349,78 +366,20 @@ function OptionButton({
   icon: Icon;
 }) {
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
-      size="icon-xs"
       onClick={onClick}
       title={title}
-      className={cn(active && "bg-bg-active text-primary")}
+      aria-label={title}
+      aria-pressed={active}
+      className={cn(
+        "flex size-6 shrink-0 items-center justify-center rounded-md transition-colors",
+        active
+          ? "bg-accent-subtle text-primary"
+          : "text-fg-subtle hover:bg-bg-hover hover:text-fg-default",
+      )}
     >
-      <Icon size={14} weight={active ? "bold" : "regular"} />
-    </Button>
-  );
-}
-
-function ResultGroupView({
-  group,
-  disabled,
-  onOpenResult,
-  onReplaceOne,
-  onReplaceAllInFile,
-}: {
-  group: SearchResultGroup;
-  disabled: boolean;
-  onOpenResult: (result: SearchResult) => void;
-  onReplaceOne: (result: SearchResult) => void;
-  onReplaceAllInFile: (path: string) => void;
-}) {
-  const fileName = group.relativePath.split(/[/\\]/).pop() ?? group.relativePath;
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-1.5 px-1 py-0.5 text-ui-xs text-fg-default">
-        <File size={12} className="shrink-0 text-fg-muted" />
-        <span className="truncate font-medium" title={group.relativePath}>
-          {fileName}
-        </span>
-        <span className="truncate text-fg-subtle">{group.relativePath}</span>
-        <button
-          type="button"
-          onClick={() => onReplaceAllInFile(group.path)}
-          disabled={disabled}
-          title={`Replace all matches in ${fileName}`}
-          className="shrink-0 rounded p-1 text-fg-subtle hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
-        >
-          <ArrowsLeftRight size={12} />
-        </button>
-      </div>
-      {group.matches.map((match, index) => (
-        <div
-          key={`${match.line}:${match.column}:${index}`}
-          className="flex items-center gap-1 rounded-md px-1 py-0.5 hover:bg-bg-hover"
-        >
-          <button
-            type="button"
-            onClick={() => onOpenResult(match)}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left text-ui-xs"
-          >
-            <span className="w-8 shrink-0 text-right text-fg-subtle tabular-nums">
-              {match.line}
-            </span>
-            <span className="truncate text-fg-default">{match.preview}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onReplaceOne(match)}
-            disabled={disabled}
-            title={`Replace this match in ${fileName}`}
-            className="shrink-0 rounded p-1 text-fg-subtle hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
-          >
-            <ArrowsLeftRight size={12} />
-          </button>
-        </div>
-      ))}
-    </div>
+      <Icon size={13} weight={active ? "bold" : "regular"} />
+    </button>
   );
 }

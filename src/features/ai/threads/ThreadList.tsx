@@ -21,9 +21,10 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
+import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
 
 import { NewSessionButton } from "./NewSessionButton";
-import { resolveThreadStatus } from "./helpers";
+import { groupThreadsByRecency, resolveThreadStatus } from "./helpers";
 import { ThreadRow } from "./ThreadRow";
 
 const SEARCH_THRESHOLD = 8;
@@ -52,6 +53,15 @@ export function ThreadList() {
     if (!trimmed) return sortedSessions;
     return sortedSessions.filter((session) => session.title.toLowerCase().includes(trimmed));
   }, [query, sortedSessions]);
+
+  const groups = useMemo(
+    () =>
+      groupThreadsByRecency(
+        visibleSessions,
+        (session) => resolveThreadStatus(agentStatus, session.id, runSessionId) !== "idle",
+      ),
+    [agentStatus, runSessionId, visibleSessions],
+  );
 
   const handleSelect = useCallback(
     (sessionId: string) => {
@@ -82,8 +92,20 @@ export function ThreadList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 flex-col gap-2 p-2">
-        <NewSessionButton className="w-full justify-start rounded-lg" />
+      <div className="flex shrink-0 flex-col gap-2 pb-1">
+        <NewSessionButton
+          variant="secondary"
+          className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm"
+        />
+
+        <div className="flex h-7 items-center gap-1 pr-0.5 pl-2">
+          <span className="text-ui-xs font-semibold text-fg-default">Threads</span>
+          {chatSessions.length > 0 && (
+            <span className="text-ui-xs text-fg-subtle tabular-nums">{chatSessions.length}</span>
+          )}
+          <span className="flex-1" />
+          <PanePresetsMenu />
+        </div>
 
         {chatSessions.length > SEARCH_THRESHOLD && (
           <div className="relative">
@@ -97,30 +119,37 @@ export function ThreadList() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search threads"
               aria-label="Search threads"
-              className="h-7 rounded-lg pl-7 text-ui-xs"
+              className="h-7 rounded-md pl-7 text-ui-xs"
             />
           </div>
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-1.5">
         {visibleSessions.length === 0 ? (
-          <p className="mx-1 rounded-lg border border-dashed border-border/60 px-3 py-6 text-center text-ui-xs text-fg-subtle">
+          <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-ui-xs text-fg-subtle">
             {chatSessions.length === 0 ? "No threads yet." : "No threads match your search."}
           </p>
         ) : (
-          <div className="flex flex-col gap-1">
-            {visibleSessions.map((session) => (
-              <ThreadRow
-                key={session.id}
-                session={session}
-                isActive={session.id === activeChatSessionId}
-                status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
-                onSelect={handleSelect}
-                onRename={handleRename}
-                onDelete={setSessionToDelete}
-                onDiscard={setDiscardSessionId}
-              />
+          <div className="flex flex-col gap-3">
+            {groups.map((group) => (
+              <section key={group.label} aria-label={group.label} className="flex flex-col gap-0.5">
+                <h3 className="px-2 pb-0.5 text-ui-2xs font-medium text-fg-subtle">
+                  {group.label}
+                </h3>
+                {group.items.map((session) => (
+                  <ThreadRow
+                    key={session.id}
+                    session={session}
+                    isActive={session.id === activeChatSessionId}
+                    status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
+                    onSelect={handleSelect}
+                    onRename={handleRename}
+                    onDelete={setSessionToDelete}
+                    onDiscard={setDiscardSessionId}
+                  />
+                ))}
+              </section>
             ))}
           </div>
         )}

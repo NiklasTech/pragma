@@ -57,14 +57,16 @@ export function ThemeSettings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingSection title="Built-in Themes">
-        <div className="flex flex-col gap-3 py-3">
-          <div className="flex justify-end">
-            <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
-              <UploadSimple size={14} />
-              Import Theme
-            </Button>
-          </div>
+      <SettingSection
+        title="Built-in Themes"
+        action={
+          <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
+            <UploadSimple size={12} />
+            Import Theme
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-3 py-4">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
             {builtInThemes.map((theme) => (
               <ThemeCard

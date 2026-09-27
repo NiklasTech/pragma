@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 
+import { cn } from "@/shared/lib/utils";
+import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
@@ -74,15 +76,12 @@ export function AgentsWorkspace() {
   }, [autoOpen, contextPaneCollapsed, setContextPaneCollapsed]);
 
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      <aside
-        aria-label="Threads"
-        className="flex h-full w-[260px] shrink-0 flex-col border-r border-border/60 bg-bg-surface"
-      >
+    <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5">
+      <aside aria-label="Threads" className="flex h-full w-[256px] shrink-0 flex-col">
         <ThreadList />
       </aside>
 
-      <section aria-label="Transcript" className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <section aria-label="Transcript" className={cn(CARD_CLASS, "flex min-w-0 flex-1 flex-col")}>
         {root ? <PaneTree /> : <AgentsHome />}
       </section>
 

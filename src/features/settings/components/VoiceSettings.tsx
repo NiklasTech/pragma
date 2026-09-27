@@ -80,7 +80,9 @@ export function VoiceSettings() {
         control={
           <Select value={settingsStore.ai.voiceEngine} onValueChange={setEngine}>
             <SelectTrigger className="max-w-[200px]">
-              <SelectValue />
+              <SelectValue>
+                {settingsStore.ai.voiceEngine === "whisper" ? "Whisper (local)" : "Web Speech"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="web-speech">Web Speech</SelectItem>

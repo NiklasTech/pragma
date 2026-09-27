@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
 import { useGitStore } from "@/shared/stores/git";
+import { CommitList } from "./git-graph/CommitList";
 import { CommitTable } from "./git-graph/CommitTable";
 import { GitGraphDialogs } from "./git-graph/GitGraphDialogs";
 import {
@@ -11,7 +12,15 @@ import {
   NoRepositoryState,
 } from "./git-graph/GitGraphStates";
 import type { ColumnKey } from "./git-graph/columns";
-import { NEAR_BOTTOM_PX, PAGE_SIZE, ROW_HEIGHT, TABLE_HEADER_HEIGHT } from "./git-graph/constants";
+import {
+  COMPACT_BREAKPOINT_PX,
+  COMPACT_ROW_HEIGHT,
+  NEAR_BOTTOM_PX,
+  PAGE_SIZE,
+  ROW_HEIGHT,
+  TABLE_HEADER_HEIGHT,
+} from "./git-graph/constants";
+import { useElementWidth } from "./git-graph/useElementWidth";
 import { normalizeError } from "./git-graph/format";
 import type { ConfirmDialogState, GitLogEntry, LoadStatus } from "./git-graph/types";
 import { useGraphLayout } from "./git-graph/useGraphLayout";
@@ -42,15 +51,17 @@ export function GitGraph() {
   const loadMoreRequestIdRef = useRef(0);
   const inflightMoreRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [rootRef, width] = useElementWidth<HTMLDivElement>();
+  const compact = width > 0 && width < COMPACT_BREAKPOINT_PX;
 
   const { graphByCommit, maxLaneCount } = useGraphLayout(commits);
 
   const virtualizer = useVirtualizer({
     count: commits.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => (compact ? COMPACT_ROW_HEIGHT : ROW_HEIGHT),
     overscan: 8,
-    scrollMargin: TABLE_HEADER_HEIGHT,
+    scrollMargin: compact ? 0 : TABLE_HEADER_HEIGHT,
     getItemKey: (index) => commits[index]?.sha ?? index,
   });
 
@@ -141,6 +152,10 @@ export function GitGraph() {
     const id = window.setTimeout(() => void loadMore(), 0);
     return () => window.clearTimeout(id);
   }, [commits.length, endReached, loadMore, loadStatus]);
+
+  useEffect(() => {
+    virtualizer.measure();
+  }, [compact, virtualizer]);
 
   const toggleCol = useCallback((key: ColumnKey) => {
     setCollapsedCols((prev) => {
@@ -239,28 +254,50 @@ export function GitGraph() {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-hidden">
-      <CommitTable
-        virtualizer={virtualizer}
-        scrollRef={scrollRef}
-        onScroll={handleScroll}
-        commits={commits}
-        loadStatus={loadStatus}
-        endReached={endReached}
-        activeSha={activeSha}
-        onSetActive={setActiveSha}
-        graphByCommit={graphByCommit}
-        maxLaneCount={maxLaneCount}
-        collapsedCols={collapsedCols}
-        onToggleCol={toggleCol}
-        onViewDetails={setDetailsSha}
-        onCopySha={handleCopySha}
-        onCheckout={handleCheckoutCommit}
-        onCreateBranch={setBranchDialogSha}
-        onCherryPick={handleCherryPick}
-        onRevert={handleRevert}
-        onReset={handleReset}
-      />
+    <div ref={rootRef} className="flex h-full min-w-0 flex-col overflow-hidden">
+      {compact ? (
+        <CommitList
+          virtualizer={virtualizer}
+          scrollRef={scrollRef}
+          onScroll={handleScroll}
+          commits={commits}
+          loadStatus={loadStatus}
+          endReached={endReached}
+          activeSha={activeSha}
+          onSetActive={setActiveSha}
+          graphByCommit={graphByCommit}
+          maxLaneCount={maxLaneCount}
+          onViewDetails={setDetailsSha}
+          onCopySha={handleCopySha}
+          onCheckout={handleCheckoutCommit}
+          onCreateBranch={setBranchDialogSha}
+          onCherryPick={handleCherryPick}
+          onRevert={handleRevert}
+          onReset={handleReset}
+        />
+      ) : (
+        <CommitTable
+          virtualizer={virtualizer}
+          scrollRef={scrollRef}
+          onScroll={handleScroll}
+          commits={commits}
+          loadStatus={loadStatus}
+          endReached={endReached}
+          activeSha={activeSha}
+          onSetActive={setActiveSha}
+          graphByCommit={graphByCommit}
+          maxLaneCount={maxLaneCount}
+          collapsedCols={collapsedCols}
+          onToggleCol={toggleCol}
+          onViewDetails={setDetailsSha}
+          onCopySha={handleCopySha}
+          onCheckout={handleCheckoutCommit}
+          onCreateBranch={setBranchDialogSha}
+          onCherryPick={handleCherryPick}
+          onRevert={handleRevert}
+          onReset={handleReset}
+        />
+      )}
 
       <GitGraphDialogs
         detailsSha={detailsSha}

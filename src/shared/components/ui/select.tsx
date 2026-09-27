@@ -4,6 +4,7 @@ import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 
 import { cn } from "@/shared/lib/utils";
+import { MENU_INDICATOR_ITEM, MENU_POPUP } from "./menu-styles";
 import { CaretDown, Check, CaretUp } from "@phosphor-icons/react";
 
 const Select = SelectPrimitive.Root;
@@ -41,7 +42,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-md border border-border bg-bg-input py-1 pr-1.5 pl-2 text-ui-base text-fg-default whitespace-nowrap transition-all duration-200 outline-none select-none hover:border-border hover:bg-bg-elevated focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-fg-subtle data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-md *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex w-fit items-center justify-between gap-1.5 rounded-md border border-border bg-bg-input py-1 pr-1.5 pl-2 text-ui-base text-fg-default whitespace-nowrap transition-all duration-200 outline-none select-none hover:border-border hover:bg-bg-elevated focus-visible:border-primary/50 focus-visible:shadow-[0_0_0_3px_var(--color-accent-subtle)] disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-fg-subtle data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-md *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -77,13 +78,14 @@ function SelectContent({
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
         collisionPadding={8}
-        className="isolate z-50"
+        className="isolate z-[80]"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            "relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-40 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-border bg-bg-elevated p-0.5 text-ui-sm text-fg-default shadow-[var(--shadow-sm)] duration-150 outline-none data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-1 data-[side=inline-end]:slide-in-from-left-1 data-[side=inline-start]:slide-in-from-right-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            MENU_POPUP,
+            "relative isolate w-(--anchor-width) min-w-40 data-[align-trigger=true]:animate-none",
             className,
           )}
           {...props}
@@ -112,7 +114,8 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1 pr-8 pl-2 text-ui-sm text-fg-default outline-hidden select-none focus:bg-bg-active focus:text-fg-default not-data-[variant=destructive]:focus:**:text-fg-default data-disabled:pointer-events-none data-disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        MENU_INDICATOR_ITEM,
+        "w-full *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}

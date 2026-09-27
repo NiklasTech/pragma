@@ -52,7 +52,7 @@ export function AgentRunBar() {
 
   return (
     <div className="mb-2 flex flex-col overflow-hidden rounded-xl border border-border bg-bg-surface">
-      <div className="flex items-center gap-2 px-3 py-1.5">
+      <div className="flex h-9 items-center gap-2 pr-1.5 pl-3">
         <StatusIcon status={status} />
         <span className="text-ui-xs font-medium text-fg-default">{STATUS_LABELS[status]}</span>
         {stepCount > 0 && (
@@ -66,9 +66,10 @@ export function AgentRunBar() {
             onClick={requestStop}
             aria-label="Stop agent"
             title="Stop agent"
-            className="ml-auto flex size-6 items-center justify-center rounded-md text-fg-muted transition-colors outline-none hover:bg-bg-hover hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="ml-auto flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors outline-none hover:bg-status-error/10 hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <Stop size={12} weight="bold" />
+            <Stop size={11} weight="fill" />
+            Stop
           </button>
         )}
       </div>
@@ -76,7 +77,7 @@ export function AgentRunBar() {
       <AgentTodoList />
 
       {status === "waiting-approval" && (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 text-ui-xs text-status-warning">
+        <div className="flex items-center gap-1.5 border-t border-border-subtle bg-status-warning/5 px-3 py-2 text-ui-xs text-status-warning">
           <CircleDashed size={12} className="shrink-0" />
           {editReviews.length > 0 ? "Waiting for review in the editor" : "Waiting for approval"}
         </div>

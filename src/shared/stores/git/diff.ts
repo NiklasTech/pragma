@@ -11,7 +11,11 @@ export const createDiffSlice: GitSlice<
 
     set({ isLoading: true, error: null });
     try {
-      const content = await invoke<string>("git_diff_file", { repoPath, path, staged });
+      const { diff_text: content } = await invoke<{ diff_text: string }>("git_diff", {
+        repoPath,
+        path,
+        staged,
+      });
       set({ diffContent: content, diffPath: path, diffStaged: staged, isLoading: false });
       return content;
     } catch (err) {

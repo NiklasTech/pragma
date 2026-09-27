@@ -30,13 +30,22 @@ import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
 import { buildSessionMenuCliRows } from "./session-menu";
 import type { NewSessionActions } from "./useNewSessionActions";
 
+function ItemText({ title, hint }: { title: string; hint: string }) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-col">
+      <span className="truncate">{title}</span>
+      <span className="truncate text-ui-2xs text-fg-subtle">{hint}</span>
+    </span>
+  );
+}
+
 interface NewSessionMenuProps {
   rootPath: string | null;
   isRepo: boolean;
   defaultChoice: "checkout" | "worktree";
   actions: NewSessionActions;
   className?: string;
-  variant?: "default" | "outline";
+  variant?: "default" | "outline" | "secondary";
   size?: "default" | "sm";
 }
 
@@ -83,40 +92,40 @@ export function NewSessionMenu({
         <DropdownMenuGroup>
           <DropdownMenuLabel>Conversation</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => void actions.startAsk()}>
-            <Chat size={13} />
-            <span className="flex-1">Ask</span>
+            <Chat size={14} />
+            <ItemText title="Ask" hint="Talk about the code without changing files" />
           </DropdownMenuItem>
 
           {isRepo ? (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <Robot size={13} />
-                <span className="flex-1">Agent</span>
+                <Robot size={14} />
+                <ItemText title="Agent" hint="Plans, edits files and runs commands" />
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent className="w-64">
                 <DropdownMenuItem onClick={() => void actions.startAgentCheckout()}>
-                  <Folder size={13} />
-                  <span className="flex-1">This checkout</span>
+                  <Folder size={14} />
+                  <ItemText title="This checkout" hint="Work directly in your folder" />
                   {defaultChoice === "checkout" && <Check size={13} className="text-primary" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => void actions.startAgentWorktree()}>
-                  <GitBranch size={13} />
-                  <span className="flex-1">New worktree</span>
+                  <GitBranch size={14} />
+                  <ItemText title="New worktree" hint="Isolated branch, safe to discard" />
                   {defaultChoice === "worktree" && <Check size={13} className="text-primary" />}
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           ) : (
             <DropdownMenuItem onClick={() => void actions.startAgentCheckout()}>
-              <Robot size={13} />
-              <span className="flex-1">Agent</span>
+              <Robot size={14} />
+              <ItemText title="Agent" hint="Plans, edits files and runs commands" />
             </DropdownMenuItem>
           )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Terminal</DropdownMenuLabel>
+          <DropdownMenuLabel>Coding CLIs</DropdownMenuLabel>
 
           {rows.map((row) => {
             if (row.disabled) {

@@ -1,31 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Check, Spinner } from "@phosphor-icons/react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/shared/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from "@/shared/components/ui/drawer";
+import { Copy, Check, Spinner, ArrowLeft } from "@phosphor-icons/react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { InlineDiff } from "@/features/editor/components/InlineDiff";
+import { Separator } from "@/shared/components/ui/separator";
+import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
+import { openGitDiffInSplit } from "../lib/gitDiffSplit";
 import { cn } from "@/shared/lib/utils";
-import {
-  useGitStore,
-  type GitCommitDetails,
-  type GitCommitFileChange,
-  type GitDiffContentResult,
-} from "@/shared/stores/git";
+import { useGitStore, type GitCommitDetails, type GitCommitFileChange } from "@/shared/stores/git";
 
 interface GitCommitDetailsDialogProps {
   sha: string | null;
@@ -33,36 +18,55 @@ interface GitCommitDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function FileChangeRow({ file, onClick }: { file: GitCommitFileChange; onClick: () => void }) {
+function FileChangeRow({
+  file,
+  loading,
+  onClick,
+}: {
+  file: GitCommitFileChange;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  const slashIndex = file.path.lastIndexOf("/");
+  const directory = slashIndex >= 0 ? file.path.slice(0, slashIndex + 1) : "";
+  const fileName = slashIndex >= 0 ? file.path.slice(slashIndex + 1) : file.path;
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-left text-ui-xs transition-colors hover:bg-bg-hover"
+      disabled={loading}
+      className="group flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-ui-xs transition-colors hover:bg-bg-hover disabled:opacity-60"
     >
-      <div className="flex min-w-0 items-center gap-2">
-        <span
-          className={cn(
-            "shrink-0",
-            file.status === "A"
-              ? "text-status-success"
-              : file.status === "D"
-                ? "text-status-error"
-                : file.status === "R" || file.status === "C"
-                  ? "text-status-info"
-                  : "text-fg-muted",
-          )}
-        >
-          {file.status_label}
-        </span>
-        <span className="truncate font-mono text-fg-default group-hover:text-fg-default">
-          {file.path}
+      <span
+        className={cn(
+          "w-5 shrink-0 text-center font-mono",
+          file.status === "A"
+            ? "text-status-success"
+            : file.status === "D"
+              ? "text-status-error"
+              : file.status === "R" || file.status === "C"
+                ? "text-status-info"
+                : "text-fg-muted",
+        )}
+      >
+        {file.status_label}
+      </span>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate">
+          {directory && <span className="text-fg-subtle">{directory}</span>}
+          <span className="text-fg-default">{fileName}</span>
         </span>
         {file.original_path && (
-          <span className="truncate text-fg-subtle">← {file.original_path}</span>
+          <span className="flex min-w-0 shrink items-center gap-1 text-fg-subtle">
+            <ArrowLeft size={12} className="shrink-0" />
+            <span className="truncate">{file.original_path}</span>
+          </span>
         )}
       </div>
-      {!file.is_binary && (file.added > 0 || file.removed > 0) ? (
+      {loading ? (
+        <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
+      ) : !file.is_binary && (file.added > 0 || file.removed > 0) ? (
         <div className="flex shrink-0 gap-2 text-ui-xs tabular-nums">
           <span className="text-status-success">+{file.added}</span>
           <span className="text-status-error">-{file.removed}</span>
@@ -78,19 +82,14 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
   const [details, setDetails] = React.useState<GitCommitDetails | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
-  const [selectedFile, setSelectedFile] = React.useState<GitCommitFileChange | null>(null);
-  const [diff, setDiff] = React.useState<GitDiffContentResult | null>(null);
-  const [diffLoading, setDiffLoading] = React.useState(false);
-  const [diffOpen, setDiffOpen] = React.useState(false);
+  const [loadingDiffPath, setLoadingDiffPath] = React.useState<string | null>(null);
   const loadCommitDetails = useGitStore((s) => s.loadCommitDetails);
   const loadCommitFileDiff = useGitStore((s) => s.loadCommitFileDiff);
+  const editorPanelId = useEditorPanelId();
 
   React.useEffect(() => {
     if (!open || !sha) {
       setDetails(null);
-      setSelectedFile(null);
-      setDiff(null);
-      setDiffOpen(false);
       return;
     }
 
@@ -109,15 +108,31 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
 
   const handleViewDiff = React.useCallback(
     async (file: GitCommitFileChange) => {
-      if (!details) return;
-      setSelectedFile(file);
-      setDiffOpen(true);
-      setDiffLoading(true);
-      const result = await loadCommitFileDiff(details.sha, file.path, file.original_path);
-      setDiff(result);
-      setDiffLoading(false);
+      if (!details || loadingDiffPath) return;
+      setLoadingDiffPath(file.path);
+      try {
+        const result = await loadCommitFileDiff(details.sha, file.path, file.original_path);
+        if (!result) return;
+        if (result.is_binary) {
+          toast.info("Binary file, no diff available");
+          return;
+        }
+        const fileName = file.path.split("/").pop() ?? file.path;
+        openGitDiffInSplit(editorPanelId, {
+          id: `diff:${details.sha}:${file.path}`,
+          name: `${fileName} (${details.short_sha})`,
+          path: file.path,
+          original: result.original_content,
+          modified: result.modified_content,
+          patchText: result.fallback_patch,
+          staged: false,
+        });
+        onOpenChange(false);
+      } finally {
+        setLoadingDiffPath(null);
+      }
     },
-    [details, loadCommitFileDiff],
+    [details, loadingDiffPath, loadCommitFileDiff, editorPanelId, onOpenChange],
   );
 
   const handleCopySha = async () => {
@@ -129,154 +144,83 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col gap-3 overflow-hidden p-0">
-        <DialogHeader className="shrink-0 px-4 pt-4">
-          <DialogTitle className="text-ui-base">Commit Details</DialogTitle>
-          <DialogDescription className="text-ui-xs">
-            {details ? details.short_sha : sha ? sha.slice(0, 7) : "-"}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        {loading && (
+          <div className="flex min-h-[220px] flex-1 items-center justify-center gap-2 px-5 py-8 text-ui-xs text-fg-muted">
+            <Spinner size={16} className="animate-spin" />
+            Loading commit details…
+          </div>
+        )}
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4">
-          {loading && (
-            <div className="flex flex-1 items-center justify-center gap-2 text-ui-xs text-fg-muted">
-              <Spinner size={16} className="animate-spin" />
-              Loading commit details…
-            </div>
-          )}
+        {!loading && !details && (
+          <div className="flex min-h-[220px] flex-1 items-center justify-center px-5 py-8 text-ui-xs text-fg-muted">
+            Could not load commit details.
+          </div>
+        )}
 
-          {!loading && !details && (
-            <div className="flex flex-1 items-center justify-center text-ui-xs text-fg-muted">
-              Could not load commit details.
-            </div>
-          )}
-
-          {!loading && details && (
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-              {/* SHA */}
-              <div className="flex items-center gap-2">
-                <span className="text-ui-xs font-medium text-fg-subtle">SHA</span>
-                <code className="rounded bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
-                  {details.sha}
-                </code>
-                <Button variant="ghost" size="icon-xs" onClick={handleCopySha} title="Copy SHA">
-                  {copied ? <Check size={14} /> : <Copy size={14} />}
-                </Button>
-              </div>
-
-              {/* Author & Date */}
-              <div className="grid grid-cols-2 gap-3 text-ui-xs">
-                <div>
-                  <span className="block text-fg-subtle">Author</span>
-                  <span className="text-fg-default">{details.author}</span>
-                  <span className="block text-fg-subtle">{details.author_email}</span>
-                </div>
-                <div>
-                  <span className="block text-fg-subtle">Date</span>
-                  <span className="text-fg-default">
-                    {new Intl.DateTimeFormat(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(details.timestamp_secs * 1000))}
-                  </span>
-                </div>
-              </div>
-
-              {/* Parents */}
-              {details.parents.length > 0 && (
-                <div className="shrink-0">
-                  <span className="block text-ui-xs text-fg-subtle">Parents</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {details.parents.map((parent) => (
-                      <code
-                        key={parent}
-                        className="rounded bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default"
-                      >
-                        {parent.slice(0, 7)}
-                      </code>
-                    ))}
-                  </div>
-                </div>
+        {!loading && details && (
+          <>
+            <DialogHeader className="shrink-0 px-5 pt-5">
+              <DialogTitle className="line-clamp-2 text-ui-base">{details.subject}</DialogTitle>
+              {details.body && (
+                <p className="max-h-[120px] overflow-y-auto whitespace-pre-wrap text-ui-xs text-fg-muted">
+                  {details.body}
+                </p>
               )}
-
-              {/* Message */}
-              <div className="flex min-h-0 shrink-0 flex-col">
-                <span className="block text-ui-xs text-fg-subtle">Message</span>
-                <div className="max-h-[140px] overflow-y-auto rounded bg-bg-hover p-2 text-ui-sm text-fg-default">
-                  <p className="font-medium">{details.subject}</p>
-                  {details.body && (
-                    <pre className="mt-1 whitespace-pre-wrap font-sans text-ui-xs text-fg-muted">
-                      {details.body}
-                    </pre>
-                  )}
-                </div>
-              </div>
-
-              {/* Files */}
-              <div className="flex min-h-0 flex-1 flex-col">
-                <span className="mb-1 block text-ui-xs text-fg-subtle">
-                  Changed files ({details.files.length})
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-ui-xs text-fg-muted">
+                <span className="text-fg-default" title={details.author_email}>
+                  {details.author}
                 </span>
-                <ScrollArea className="h-full min-h-[180px] rounded border border-border bg-bg-root">
-                  <div className="p-1">
-                    {details.files.length === 0 && (
-                      <div className="px-2 py-3 text-ui-xs text-fg-muted">No files changed.</div>
-                    )}
-                    {details.files.map((file) => (
-                      <FileChangeRow
-                        key={file.path}
-                        file={file}
-                        onClick={() => handleViewDiff(file)}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+                <span>
+                  {new Intl.DateTimeFormat(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(new Date(details.timestamp_secs * 1000))}
+                </span>
+                <span className="flex items-center gap-1">
+                  <code className="rounded bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
+                    {details.short_sha}
+                  </code>
+                  <Button variant="ghost" size="icon-xs" onClick={handleCopySha} title="Copy SHA">
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                  </Button>
+                </span>
+                {details.parents.map((parent) => (
+                  <code
+                    key={parent}
+                    title={parent}
+                    className="rounded bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default"
+                  >
+                    {parent.slice(0, 7)}
+                  </code>
+                ))}
               </div>
+            </DialogHeader>
+
+            <Separator className="my-3" />
+
+            <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
+              <span className="mb-1 block text-ui-xs text-fg-subtle">
+                Changed files ({details.files.length})
+              </span>
+              <ScrollArea className="h-full min-h-[180px] rounded border border-border bg-bg-root">
+                <div className="p-1">
+                  {details.files.length === 0 && (
+                    <div className="px-2 py-3 text-ui-xs text-fg-muted">No files changed.</div>
+                  )}
+                  {details.files.map((file) => (
+                    <FileChangeRow
+                      key={file.path}
+                      file={file}
+                      loading={loadingDiffPath === file.path}
+                      onClick={() => void handleViewDiff(file)}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
-          )}
-        </div>
-
-        <Drawer open={diffOpen} onOpenChange={setDiffOpen}>
-          <DrawerContent side="right" className="max-w-5xl">
-            <DrawerHeader>
-              <DrawerTitle className="text-ui-base">Diff</DrawerTitle>
-              <DrawerDescription className="truncate font-mono text-ui-xs">
-                {selectedFile?.path}
-              </DrawerDescription>
-            </DrawerHeader>
-
-            <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
-              {diffLoading && (
-                <div className="flex h-full items-center justify-center gap-2 text-ui-xs text-fg-muted">
-                  <Spinner size={16} className="animate-spin" />
-                  Loading diff…
-                </div>
-              )}
-
-              {!diffLoading && !diff && (
-                <div className="flex h-full items-center justify-center text-ui-xs text-fg-muted">
-                  Could not load diff.
-                </div>
-              )}
-
-              {!diffLoading && diff && diff.is_binary && (
-                <div className="flex h-full items-center justify-center text-ui-xs text-fg-muted">
-                  Binary file
-                </div>
-              )}
-
-              {!diffLoading && diff && !diff.is_binary && (
-                <InlineDiff
-                  className="h-full"
-                  filePath={selectedFile?.path ?? ""}
-                  original={diff.original_content}
-                  modified={diff.modified_content}
-                  patchText={diff.fallback_patch || undefined}
-                />
-              )}
-            </div>
-          </DrawerContent>
-        </Drawer>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

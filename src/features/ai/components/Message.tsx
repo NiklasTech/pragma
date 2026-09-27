@@ -25,8 +25,8 @@ export const MessageContent = ({ children, className, ...props }: MessageContent
   <div
     className={cn(
       "flex w-full min-w-0 flex-col gap-3 text-ui-sm leading-relaxed",
-      "group-[.is-user]:text-fg-muted group-[.is-assistant]:text-fg-default",
-      "group-[.is-user]:rounded-xl group-[.is-user]:bg-bg-surface/60 group-[.is-user]:px-4 group-[.is-user]:py-3",
+      "text-fg-default",
+      "group-[.is-user]:rounded-l-sm group-[.is-user]:rounded-r-xl group-[.is-user]:bg-bg-surface group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:shadow-[inset_2px_0_0_var(--color-accent)]",
       className,
     )}
     {...props}
@@ -41,7 +41,7 @@ const streamdownComponents: ComponentProps<typeof Streamdown>["components"] = {
   },
   inlineCode({ children }) {
     return (
-      <code className="rounded bg-bg-hover/70 px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
+      <code className="rounded-md bg-bg-hover px-1.5 py-0.5 font-mono text-ui-xs text-fg-default">
         {children}
       </code>
     );

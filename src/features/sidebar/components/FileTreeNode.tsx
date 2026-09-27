@@ -34,6 +34,17 @@ import {
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
 import type { FileSystemNode } from "@/shared/stores/fileExplorer";
+import type { GitDecoration, GitDecorationKind } from "@/features/sidebar/lib/gitDecorations";
+
+const INDENT = 12;
+
+const DECORATION_TEXT: Record<GitDecorationKind, string> = {
+  added: "text-git-added",
+  untracked: "text-git-untracked",
+  modified: "text-git-modified",
+  deleted: "text-git-deleted line-through",
+  conflict: "text-status-error",
+};
 
 interface FileTreeNodeProps {
   node: FileSystemNode;
@@ -46,6 +57,8 @@ interface FileTreeNodeProps {
   onRename: (path: string, newName: string) => void;
   onDelete: (path: string) => void;
   onShowLocalHistory?: (path: string) => void;
+  decoration?: GitDecoration;
+  hasChanges?: boolean;
 }
 
 export function FileTreeNode({
@@ -59,6 +72,8 @@ export function FileTreeNode({
   onRename,
   onDelete,
   onShowLocalHistory,
+  decoration,
+  hasChanges = false,
 }: FileTreeNodeProps) {
   const activeTabId = useEditorStore((s) => s.activeTabId);
   const isExpanded = expandedDirs.has(node.path);
@@ -108,7 +123,7 @@ export function FileTreeNode({
     }
   }, [node.path, onShowLocalHistory]);
 
-  const paddingLeft = depth * 12 + 4;
+  const paddingLeft = depth * INDENT + 6;
 
   const content = (
     <div
@@ -118,16 +133,24 @@ export function FileTreeNode({
         event.dataTransfer.effectAllowed = "copy";
       }}
       className={cn(
-        "group mx-1.5 my-px flex h-[calc(100%-2px)] items-center gap-1 rounded-md pr-2 text-ui-base cursor-pointer select-none transition-colors",
+        "group relative mx-1.5 my-px flex h-[calc(100%-2px)] items-center gap-1.5 rounded-md pr-2 text-ui-sm cursor-pointer select-none transition-colors",
         isActiveFile
-          ? "bg-bg-active text-primary"
+          ? "bg-accent-subtle text-fg-default"
           : isSelected
             ? "bg-bg-hover text-fg-default"
-            : "text-fg-default hover:bg-bg-hover",
+            : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
       )}
       style={{ paddingLeft }}
       onClick={handleClick}
     >
+      {Array.from({ length: depth }, (_, level) => (
+        <span
+          key={level}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 w-px bg-border"
+          style={{ left: level * INDENT + 12 }}
+        />
+      ))}
       {node.isDirectory ? (
         <>
           <span className="flex size-3 shrink-0 items-center justify-center text-fg-subtle">
@@ -155,7 +178,34 @@ export function FileTreeNode({
         <img src={getFileIconPath(node.name)} alt="" className="size-3.5 shrink-0" />
       )}
 
-      <span className={cn("min-w-0 truncate", node.isDirectory && "font-medium")}>{node.name}</span>
+      <span
+        className={cn(
+          "min-w-0 truncate",
+          isActiveFile && "font-medium",
+          decoration && DECORATION_TEXT[decoration.kind],
+        )}
+      >
+        {node.name}
+      </span>
+
+      {decoration && (
+        <span
+          className={cn(
+            "ml-auto shrink-0 font-mono text-ui-2xs font-semibold",
+            DECORATION_TEXT[decoration.kind],
+            "no-underline",
+          )}
+          title={decoration.kind}
+        >
+          {decoration.letter}
+        </span>
+      )}
+      {!decoration && hasChanges && (
+        <span
+          aria-label="Contains changes"
+          className="ml-auto size-1.5 shrink-0 rounded-full bg-git-modified/80"
+        />
+      )}
 
       {node.error && (
         <span className="ml-auto shrink-0 text-ui-xs text-status-error" title={node.error}>

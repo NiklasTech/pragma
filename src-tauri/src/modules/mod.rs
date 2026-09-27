@@ -12,4 +12,5 @@ pub mod mcp;
 pub mod pty;
 pub mod run;
 pub mod stt;
+pub mod voice_access;
 pub mod workspace;

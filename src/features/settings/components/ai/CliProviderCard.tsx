@@ -29,16 +29,16 @@ export function CliProviderCard({
   onLogout,
 }: CliProviderCardProps) {
   return (
-    <div
-      className={`flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3 ${isActive ? "ring-1 ring-primary" : ""}`}
-    >
+    <div className="flex flex-col gap-3 py-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-          <Robot size={16} className="text-primary" />
+        <div
+          className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${isActive ? "bg-accent-subtle text-primary" : "bg-bg-hover text-fg-muted"}`}
+        >
+          <Robot size={16} weight={isActive ? "fill" : "regular"} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-ui-base font-medium">{manifest.name}</span>
+            <span className="text-ui-sm font-medium text-fg-default">{manifest.name}</span>
             {status?.installed && (
               <span className="rounded-full bg-status-success/10 px-1.5 py-0.5 text-ui-xs text-status-success">
                 Installed
@@ -56,7 +56,7 @@ export function CliProviderCard({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pl-11">
         {!status?.installed && (
           <Button size="sm" variant="outline" onClick={onInstall} disabled={isInstalling}>
             <DownloadSimple size={14} className="mr-1" />

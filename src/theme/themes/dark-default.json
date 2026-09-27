@@ -6,8 +6,8 @@
     "id": "dark-default",
     "name": "Dark Default",
     "author": "Pragma Team",
-    "description": "A calm, technical dark theme with cool slate surfaces and an indigo accent. Built for focus.",
-    "version": "2.1.0",
+    "description": "Ink-dark surfaces in a deep frame, signed with the Pragma blue-to-cyan gradient.",
+    "version": "3.0.0",
     "license": "MIT"
   },
 
@@ -20,29 +20,30 @@
   "tokens": {
     "colors": {
       "background": {
-        "root": "#0c0e12",
-        "surface": "#151a22",
-        "elevated": "#1d2430",
-        "input": "#232b38",
-        "hover": "rgba(255, 255, 255, 0.08)",
-        "active": "rgba(110, 123, 242, 0.12)",
-        "overlay": "rgba(0, 0, 0, 0.72)"
+        "chrome": "#06080c",
+        "root": "#0d1016",
+        "surface": "#131720",
+        "elevated": "#191e29",
+        "input": "#151922",
+        "hover": "rgba(160, 185, 255, 0.06)",
+        "active": "rgba(47, 155, 255, 0.14)",
+        "overlay": "rgba(2, 4, 10, 0.62)"
       },
       "foreground": {
-        "default": "#e8eaee",
-        "muted": "#9ba3af",
-        "subtle": "#8b93a0",
-        "inverse": "#0c0e12"
+        "default": "#e7ecf5",
+        "muted": "#9ca6ba",
+        "subtle": "#6c768b",
+        "inverse": "#06080c"
       },
       "accent": {
-        "default": "#6e7bf2",
-        "subtle": "rgba(110, 123, 242, 0.14)",
-        "glow": "rgba(110, 123, 242, 0.30)"
+        "default": "#2f9bff",
+        "subtle": "rgba(47, 155, 255, 0.14)",
+        "glow": "rgba(47, 155, 255, 0.30)"
       },
       "border": {
-        "default": "rgba(255, 255, 255, 0.12)",
-        "subtle": "rgba(255, 255, 255, 0.08)",
-        "focus": "rgba(110, 123, 242, 0.50)"
+        "default": "rgba(150, 175, 235, 0.10)",
+        "subtle": "rgba(150, 175, 235, 0.065)",
+        "focus": "rgba(47, 155, 255, 0.50)"
       },
       "status": {
         "success": "#3fb68b",
@@ -70,11 +71,11 @@
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(110, 123, 242, 0.25)",
+      "selection": "rgba(47, 155, 255, 0.22)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "rgba(255, 255, 255, 0.10)",
-        "thumbHover": "rgba(255, 255, 255, 0.18)"
+        "thumb": "rgba(160, 185, 255, 0.09)",
+        "thumbHover": "rgba(160, 185, 255, 0.18)"
       }
     },
 
@@ -89,8 +90,8 @@
         "activeBackground": "{colors.background.surface}"
       },
       "line": {
-        "active": "rgba(255, 255, 255, 0.025)",
-        "highlight": "rgba(110, 123, 242, 0.06)"
+        "active": "rgba(160, 185, 255, 0.035)",
+        "highlight": "rgba(47, 155, 255, 0.06)"
       },
       "syntax": {
         "keyword": "#c792ea",
@@ -108,7 +109,7 @@
     },
 
     "terminal": {
-      "background": "#090b0e",
+      "background": "{colors.background.root}",
       "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
       "cursorAccent": "{colors.accent.default}",
@@ -118,7 +119,7 @@
         "red": "#e35d6a",
         "green": "#3fb68b",
         "yellow": "#e0a94e",
-        "blue": "#6e7bf2",
+        "blue": "#2f9bff",
         "magenta": "#a78bfa",
         "cyan": "#4ec9d8",
         "white": "#9ba3af"
@@ -128,7 +129,7 @@
         "red": "#ed7f8b",
         "green": "#5fcfa5",
         "yellow": "#edbf72",
-        "blue": "#8b96f6",
+        "blue": "#6cb8ff",
         "magenta": "#bba5f9",
         "cyan": "#7adbe7",
         "white": "#e8eaee"
@@ -136,13 +137,13 @@
     },
 
     "layout": {
-      "headerHeight": 52,
-      "tabHeight": 44,
-      "statusbarHeight": 24,
+      "headerHeight": 40,
+      "tabHeight": 36,
+      "statusbarHeight": 26,
       "breadcrumbHeight": 28,
       "inputbarHeight": 42,
       "sidebarWidth": 260,
-      "sidebarCollapsedWidth": 40,
+      "sidebarCollapsedWidth": 44,
       "sidebarMinWidth": 180,
       "sidebarMaxWidth": 480,
       "panelMinHeight": 160,
@@ -161,9 +162,9 @@
         "2xs": "11px",
         "xs": "12px",
         "sm": "13px",
-        "base": "14px",
-        "md": "15px",
-        "lg": "18px"
+        "base": "13px",
+        "md": "14px",
+        "lg": "17px"
       },
       "editor": "14px",
       "lineHeight": {
@@ -171,9 +172,9 @@
           "2xs": "14px",
           "xs": "16px",
           "sm": "18px",
-          "base": "21px",
-          "md": "23px",
-          "lg": "26px"
+          "base": "20px",
+          "md": "22px",
+          "lg": "24px"
         },
         "editor": "22px"
       }

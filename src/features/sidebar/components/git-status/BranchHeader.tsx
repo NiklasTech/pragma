@@ -13,16 +13,12 @@ import {
   Spinner,
   GitBranch as GitBranchIcon,
   CaretDown,
-  ArrowDown,
-  ArrowUp,
   Check,
   Plus,
   X,
 } from "@phosphor-icons/react";
 
 export function BranchHeader({
-  ahead,
-  behind,
   isDetached,
   branches,
   currentBranch,
@@ -31,8 +27,6 @@ export function BranchHeader({
   onDeleteBranch,
   actionBusy,
 }: {
-  ahead: number;
-  behind: number;
   isDetached: boolean;
   branches: GitBranch[];
   currentBranch: string;
@@ -70,23 +64,20 @@ export function BranchHeader({
   };
 
   return (
-    <div
-      className="relative flex min-w-0 items-center justify-between gap-2 px-2 py-1.5"
-      ref={menuRef}
-    >
+    <div className="relative flex min-w-0 items-center gap-2 px-2.5 pt-2 pb-1.5" ref={menuRef}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
         disabled={actionBusy === "checkout"}
         className={cn(
-          "inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-md bg-bg-hover px-2 py-1 text-ui-sm font-medium transition-colors",
-          open ? "bg-bg-active" : "hover:bg-bg-hover",
+          "inline-flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-bg-surface px-2.5 text-ui-sm font-medium transition-colors",
+          open ? "border-primary/40" : "hover:bg-bg-hover",
         )}
       >
         {actionBusy === "checkout" ? (
           <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
         ) : (
-          <GitBranchIcon size={12} className="shrink-0 text-fg-muted" />
+          <GitBranchIcon size={14} className="shrink-0 text-primary" />
         )}
         <span className="min-w-0 flex-1 truncate text-left">{currentBranch}</span>
         <CaretDown size={10} className="shrink-0 text-fg-subtle" />
@@ -97,28 +88,8 @@ export function BranchHeader({
         )}
       </button>
 
-      <div className="flex shrink-0 items-center gap-1 text-ui-xs font-semibold text-fg-muted">
-        {behind > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-px text-status-success">
-            <ArrowDown size={9} />
-            {behind}
-          </span>
-        )}
-        {ahead > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-px text-status-info">
-            <ArrowUp size={9} />
-            {ahead}
-          </span>
-        )}
-        {ahead === 0 && behind === 0 && (
-          <span className="hidden items-center gap-0.5 rounded border border-border px-1.5 py-px text-fg-subtle @min-[260px]:inline-flex">
-            up to date
-          </span>
-        )}
-      </div>
-
       {open && (
-        <div className="absolute left-3 top-full z-50 mt-1 w-64 rounded-md border border-border bg-bg-elevated shadow-lg shadow-black/10">
+        <div className="absolute inset-x-2.5 top-full z-50 mt-1 overflow-hidden rounded-lg border border-border bg-bg-elevated shadow-[var(--shadow-md)]">
           <div className="max-h-72 overflow-y-auto py-1">
             {branches.map((branch) => {
               const isCurrent = branch.name === currentBranch;

@@ -16,6 +16,8 @@ import {
 export const VOICE_INPUT_WHISPER_MISSING = "Download Whisper in Settings";
 export const VOICE_INPUT_WHISPER_UNAVAILABLE = "Whisper is not available on this platform";
 export const VOICE_INPUT_NO_MIC_ACCESS = "Could not access the microphone.";
+export const VOICE_INPUT_NEEDS_APP_BUNDLE =
+  "Voice input needs the installed Pragma app; development builds cannot ask for microphone access.";
 
 export interface SttStatus {
   supported: boolean;
@@ -259,11 +261,20 @@ export function useComposerDictation({
       return;
     }
     activeRef.current = true;
-    if (engineRef.current === "whisper") {
-      void startWhisper();
-    } else {
-      startWebSpeech();
-    }
+    void (async () => {
+      const available = await invoke<boolean>("voice_input_available").catch(() => false);
+      if (!available) {
+        activeRef.current = false;
+        setStatus(VOICE_INPUT_NEEDS_APP_BUNDLE);
+        return;
+      }
+      if (!activeRef.current) return;
+      if (engineRef.current === "whisper") {
+        void startWhisper();
+      } else {
+        startWebSpeech();
+      }
+    })();
   }, [startWhisper, startWebSpeech, stopRecording]);
 
   useEffect(() => {

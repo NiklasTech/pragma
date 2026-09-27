@@ -61,10 +61,16 @@ export function ModelSelect({ provider, value, onChange }: ModelSelectProps) {
   const placeholder = needsKey ? "Save an API key first" : "Select a model";
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col items-end gap-1.5">
       <Select value={value} onValueChange={(v) => onChange(v ?? "")} disabled={disabled}>
         <SelectTrigger className="max-w-[280px]">
-          <SelectValue placeholder={placeholder} />
+          <SelectValue>
+            {value ? (
+              (options.find((m) => m.id === value)?.name ?? value)
+            ) : (
+              <span className="text-fg-subtle">{placeholder}</span>
+            )}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((m) => (

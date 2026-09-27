@@ -36,7 +36,7 @@ export function ChatToolbar() {
             aria-label={`Mode: ${modeLabel}`}
             title={modeLabel}
             className={cn(
-              "flex h-7 items-center gap-1 rounded-lg px-2 text-ui-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              "flex h-7 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               agentMode
                 ? "bg-primary/10 text-primary hover:bg-primary/15"
                 : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",

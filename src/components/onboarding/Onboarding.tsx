@@ -49,28 +49,32 @@ export function Onboarding() {
   const isLastStep = currentStep === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-root/95 p-6 backdrop-blur-sm">
-      <div className="flex w-full max-w-xl flex-col rounded-xl border border-border/60 bg-bg-surface shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-          <div className="flex gap-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-chrome/95 p-6">
+      <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-bg-surface shadow-[var(--shadow-md)]">
+        <div className="flex flex-col gap-3 px-8 pt-6">
+          <div className="flex items-center justify-between">
+            <span className="text-ui-xs font-medium text-fg-muted">
+              {STEPS[currentStep]?.title}
+            </span>
+            <span className="text-ui-xs text-fg-subtle tabular-nums">
+              {currentStep + 1} / {STEPS.length}
+            </span>
+          </div>
+          <div className="flex gap-1.5">
             {STEPS.map((step, index) => (
               <div
                 key={step.id}
                 className={cn(
-                  "h-2 w-2 rounded-full transition-colors",
-                  index === currentStep ? "bg-primary" : "bg-border",
-                  index < currentStep && "bg-primary/60",
+                  "h-1 flex-1 rounded-full transition-colors duration-300",
+                  index <= currentStep ? "bg-primary" : "bg-bg-hover",
                 )}
                 title={step.title}
               />
             ))}
           </div>
-          <span className="text-ui-xs text-fg-muted">
-            Step {currentStep + 1} of {STEPS.length}
-          </span>
         </div>
 
-        <div className="min-h-[360px] px-8 py-8">
+        <div className="min-h-[380px] px-8 py-8">
           {currentStep === 0 && <WelcomeStep onNext={handleNext} />}
           {currentStep === 1 && <ThemeStep />}
           {currentStep === 2 && <AISetupStep onSkipStep={handleNext} />}
@@ -79,7 +83,7 @@ export function Onboarding() {
           {currentStep === 5 && <LanguagesStep />}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border/60 px-6 py-4">
+        <div className="flex items-center justify-between border-t border-border-subtle bg-bg-root/40 px-6 py-3.5">
           <Button variant="ghost" size="sm" onClick={handleSkip}>
             Skip onboarding
           </Button>

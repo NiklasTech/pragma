@@ -69,8 +69,8 @@ export function CliIntegrationSection() {
       title="Local CLI Integration"
       badge={{ label: "Experimental", variant: "warning" }}
     >
-      <div className="mb-3 flex items-center justify-between rounded-md border border-border/30 bg-bg-root p-3">
-        <div className="flex flex-col">
+      <div className="flex items-center justify-between gap-6 py-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <span className="flex items-center gap-1.5 text-ui-sm font-medium text-fg-default">
             Enable local CLI integration
             <Tooltip>
@@ -103,7 +103,7 @@ export function CliIntegrationSection() {
               </TooltipContent>
             </Tooltip>
           </span>
-          <span className="text-ui-xs text-fg-muted">
+          <span className="text-ui-xs leading-relaxed text-fg-subtle">
             Turn on experimental support for subscription CLIs like Codex, Claude Code, Gemini CLI,
             GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, Hermes Agent, and
             DeepSeek Harness.
@@ -117,14 +117,14 @@ export function CliIntegrationSection() {
       </div>
 
       {!settingsStore.experimental.acp && (
-        <p className="mb-3 text-ui-xs text-status-warning">
+        <p className="py-3 text-ui-xs text-status-warning">
           Local CLI integration is currently disabled. Enable the toggle above to use it.
         </p>
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col divide-y divide-border-subtle">
         {aiStore.cliManifests.length === 0 && (
-          <p className="text-ui-base text-fg-muted">Loading providers...</p>
+          <p className="py-3 text-ui-sm text-fg-muted">Loading providers...</p>
         )}
 
         {aiStore.cliManifests.map((manifest) => {

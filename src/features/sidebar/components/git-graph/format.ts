@@ -39,3 +39,13 @@ export function authorTint(key: string): string {
   }
   return laneColor(Math.abs(hash));
 }
+
+export function relativeDate(secs: number, now: number = Date.now()): string {
+  if (!secs) return "";
+  const diff = Math.max(0, now / 1000 - secs);
+  if (diff < 60) return "now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 7 * 86400) return `${Math.floor(diff / 86400)}d ago`;
+  return compactDate(secs).split(" ").slice(0, 2).join(" ");
+}

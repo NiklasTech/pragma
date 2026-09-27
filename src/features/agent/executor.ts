@@ -92,7 +92,7 @@ function truncateOutput(output: string): string {
   return `${output.slice(0, MAX_TOOL_OUTPUT_CHARS)}\n... [truncated]`;
 }
 
-function stepLabel(toolName: string, input: unknown): { label: string; detail?: string } {
+export function stepLabel(toolName: string, input: unknown): { label: string; detail?: string } {
   switch (toolName) {
     case AGENT_TOOL_NAMES.readFile:
       return { label: "Read file", detail: readStringInput(input, "path") };

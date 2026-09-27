@@ -106,6 +106,7 @@ function validateBackgroundTokens(errors: string[], bg: unknown, path: string): 
   for (const key of ["root", "surface", "elevated", "input", "hover", "active", "overlay"]) {
     validateColor(errors, bg, key, path);
   }
+  if (bg.chrome !== undefined) validateColor(errors, bg, "chrome", path);
 }
 
 function validateForegroundTokens(errors: string[], fg: unknown, path: string): void {

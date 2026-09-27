@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { Warning, Terminal, Robot, ArrowCounterClockwise, Check, X } from "@phosphor-icons/react";
+import { Warning, Terminal, Robot, ArrowCounterClockwise } from "@phosphor-icons/react";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -16,6 +16,7 @@ import { Button } from "@/shared/components/ui/button";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
+import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { ChatApplyProvider } from "./ChatApplyContext";
@@ -375,7 +376,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
       <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-4">
         {/* Error Banner */}
         {error && (
-          <Alert variant="destructive" className="mb-3">
+          <Alert variant="destructive" className="mb-2">
             <Warning size={16} />
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription className="text-ui-base">{error.message}</AlertDescription>
@@ -389,7 +390,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
         )}
 
         {setupLog && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg border border-status-error/40 bg-status-error/10 px-3 py-2 text-ui-xs text-status-error">
+          <div className="mb-2 flex items-start gap-2 rounded-xl border border-status-error/30 bg-status-error/5 px-3 py-2 text-ui-xs text-status-error">
             <Warning size={14} className="mt-0.5 shrink-0" />
             <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{setupLog}</span>
           </div>
@@ -397,8 +398,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
-            <Terminal size={14} className="shrink-0" />
+          <div className="mb-2 flex w-fit max-w-full items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-muted">
+            <Terminal size={13} className="shrink-0 text-primary" />
             <span className="min-w-0 flex-1 truncate" title={cliStatusText}>
               {cliStatusText}
             </span>
@@ -406,49 +407,23 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
         )}
 
         {!mcpLoaded && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
+          <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
           </div>
         )}
 
         {pendingApprovals.length > 0 && (
-          <div className="mb-3 flex flex-col gap-2">
+          <div className="mb-2 flex flex-col gap-2">
             {pendingApprovals.map((approval) => (
-              <div
+              <ApprovalCard
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-xl border border-border/60 bg-bg-surface p-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
-                </div>
-                {approval.description && (
-                  <p className="text-ui-xs text-fg-muted">{approval.description}</p>
-                )}
-                {approval.args ? (
-                  <pre className="max-h-32 overflow-auto rounded-lg border border-border/60 bg-bg-root p-2 text-ui-xs text-fg-muted">
-                    {JSON.stringify(approval.args, null, 2)}
-                  </pre>
-                ) : null}
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleApproval(approval.toolCallId, false)}
-                    className="flex items-center gap-1 rounded-lg bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse transition-colors hover:bg-status-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
-                  >
-                    <X size={12} weight="bold" />
-                    Deny
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApproval(approval.toolCallId, true)}
-                    className="flex items-center gap-1 rounded-lg bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse transition-colors hover:bg-status-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-success/40"
-                  >
-                    <Check size={12} weight="bold" />
-                    Allow
-                  </button>
-                </div>
-              </div>
+                title={`Allow: ${approval.toolName}`}
+                description={approval.description}
+                args={approval.args}
+                onDeny={() => void handleApproval(approval.toolCallId, false)}
+                onAllow={() => void handleApproval(approval.toolCallId, true)}
+              />
             ))}
           </div>
         )}

@@ -10,7 +10,7 @@ export function ChatPanelHeader() {
   });
 
   return (
-    <div className="flex h-8 shrink-0 items-center px-3">
+    <div className="flex h-tab shrink-0 items-center border-b border-border-subtle px-3.5">
       <span
         className={cn(
           "min-w-0 truncate text-ui-sm",

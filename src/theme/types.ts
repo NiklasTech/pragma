@@ -19,6 +19,7 @@ export interface ThemeAppearance {
 }
 
 export interface BackgroundTokens {
+  chrome?: string;
   root: string;
   surface: string;
   elevated: string;

@@ -184,7 +184,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
         variant === "default" &&
           "h-7 max-w-[220px] cursor-pointer gap-1.5 rounded-md border border-border bg-bg-root px-2 text-ui-sm font-medium hover:bg-bg-hover",
         variant === "compact" &&
-          "h-6 min-w-0 max-w-[150px] cursor-pointer gap-1 rounded-md px-1.5 text-ui-xs font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+          "h-7 min-w-0 max-w-[170px] cursor-pointer gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted hover:bg-bg-hover hover:text-fg-default",
         !isAvailable && "text-fg-muted",
       )}
     >

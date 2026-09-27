@@ -1,36 +1,23 @@
-import { GitBranch, Warning, XCircle, Robot, Palette } from "@phosphor-icons/react";
+import { ArrowDown, ArrowUp, GitBranch, Warning, XCircle, Palette } from "@phosphor-icons/react";
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
-import { useEditorStore, type EditorTab } from "@/shared/stores/editor";
 import { useGitStore } from "@/shared/stores/git";
 import { useAIStore } from "@/shared/stores/ai";
 import { useProblemsStore } from "@/shared/stores/problems";
 import { useLayoutStore } from "@/shell/layout/store";
 import { cn } from "@/shared/lib/utils";
 
-function isFileTab(tab: EditorTab | undefined): tab is Extract<EditorTab, { kind: "file" }> {
-  return tab?.kind === "file";
-}
+const LEADING_ITEMS = new Set<StatusbarItem>(["gitBranch", "gitSync", "problems"]);
 
-function detectEncoding(content: string): string {
-  return content.startsWith("\uFEFF") ? "UTF-8 BOM" : "UTF-8";
-}
-
-function detectEol(content: string): string {
-  return content.includes("\r\n") ? "CRLF" : "LF";
-}
-
-function StatusbarSection({
+function StatusChip({
   children,
-  className,
   onClick,
   label,
 }: {
   children: React.ReactNode;
-  className?: string;
   onClick?: () => void;
   label?: string;
 }) {
-  const classes = cn("flex items-center gap-1.5 px-2 text-ui-xs text-fg-muted", className);
+  const classes = "flex h-5 items-center gap-1.5 rounded-full px-2 text-ui-2xs text-fg-subtle";
 
   if (!onClick) {
     return <div className={classes}>{children}</div>;
@@ -41,31 +28,21 @@ function StatusbarSection({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={cn(classes, "h-full transition-colors hover:bg-bg-hover hover:text-fg-default")}
+      className={cn(classes, "transition-colors hover:bg-bg-hover hover:text-fg-default")}
     >
       {children}
     </button>
   );
 }
 
+/// Workspace-level status. Editor details (cursor, encoding, …) live in the editor card.
 export function Statusbar() {
-  const { statusbar, theme, editor } = useSettingsStore();
-  const activeTab = useEditorStore((s) => s.tabs.find((tab) => tab.id === s.activeTabId));
-  const cursor = useEditorStore((s) => (s.activeTabId ? s.cursorPositions[s.activeTabId] : null));
-  const vimMode = useEditorStore((s) =>
-    s.activeTabId ? (s.vimModes[s.activeTabId] ?? null) : null,
-  );
+  const { statusbar, theme } = useSettingsStore();
   const { snapshot } = useGitStore();
   const { activeProvider, activeModel } = useAIStore();
   const { problems } = useProblemsStore();
 
   if (!statusbar.visible) return null;
-
-  const fileName = activeTab?.name ?? "";
-  const activeContent = isFileTab(activeTab) ? activeTab.content : "";
-
-  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-  const fileType = ext ? ext.toUpperCase() : "TXT";
 
   const branch = snapshot?.repo.branch ?? null;
   const ahead = snapshot?.ahead ?? 0;
@@ -76,70 +53,38 @@ export function Statusbar() {
 
   const renderItem = (item: StatusbarItem) => {
     switch (item) {
-      case "vimMode":
-        if (!editor.vimMode) return null;
-        return (
-          <StatusbarSection key={item}>
-            <span className="rounded-full bg-accent-subtle px-1.5 py-px text-ui-2xs font-semibold text-primary">
-              {vimMode ? vimMode.toUpperCase() : "VIM"}
-            </span>
-          </StatusbarSection>
-        );
-
-      case "cursor":
-        return (
-          <StatusbarSection key={item}>
-            <span>
-              Ln {cursor?.line ?? 1}, Col {cursor?.column ?? 1}
-            </span>
-          </StatusbarSection>
-        );
-
-      case "fileType":
-        return (
-          <StatusbarSection key={item}>
-            <span>{fileType}</span>
-          </StatusbarSection>
-        );
-
-      case "encoding":
-        return (
-          <StatusbarSection key={item}>
-            <span>{activeContent ? detectEncoding(activeContent) : "UTF-8"}</span>
-          </StatusbarSection>
-        );
-
-      case "eol":
-        return (
-          <StatusbarSection key={item}>
-            <span>{activeContent ? detectEol(activeContent) : "LF"}</span>
-          </StatusbarSection>
-        );
-
       case "gitBranch":
         if (!branch) return null;
         return (
-          <StatusbarSection key={item}>
+          <StatusChip key={item}>
             <GitBranch size={12} />
-            <span className="font-medium text-fg-default">{branch}</span>
-          </StatusbarSection>
+            <span className="text-fg-muted">{branch}</span>
+          </StatusChip>
         );
 
       case "gitSync":
         if (!branch || (ahead === 0 && behind === 0)) return null;
         return (
-          <StatusbarSection key={item}>
-            <span>
-              {ahead > 0 && `↑${ahead}`}
-              {behind > 0 && `↓${behind}`}
-            </span>
-          </StatusbarSection>
+          <StatusChip key={item}>
+            {ahead > 0 && (
+              <span className="flex items-center gap-0.5">
+                <ArrowUp size={10} weight="bold" />
+                {ahead}
+              </span>
+            )}
+            {behind > 0 && (
+              <span className="flex items-center gap-0.5">
+                <ArrowDown size={10} weight="bold" />
+                {behind}
+              </span>
+            )}
+          </StatusChip>
         );
 
       case "problems":
         if (errorCount === 0 && warningCount === 0) return null;
         return (
-          <StatusbarSection
+          <StatusChip
             key={item}
             label="Open problems panel"
             onClick={() => useLayoutStore.getState().addFloatingPanel("problems")}
@@ -156,25 +101,33 @@ export function Statusbar() {
                 <span>{warningCount}</span>
               </>
             )}
-          </StatusbarSection>
+          </StatusChip>
         );
 
       case "aiProvider":
         return (
-          <StatusbarSection key={item}>
-            <Robot size={12} />
-            <span className="truncate max-w-[120px]">
-              {activeProvider ? `${activeProvider} · ${activeModel}` : "No AI"}
+          <StatusChip key={item}>
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-1.5 rounded-full",
+                activeProvider ? "bg-linear-to-r from-brand-from to-brand-to" : "bg-fg-subtle",
+              )}
+            />
+            <span className="max-w-[160px] truncate">
+              {activeProvider
+                ? [activeProvider, activeModel].filter(Boolean).join(" · ")
+                : "No AI provider"}
             </span>
-          </StatusbarSection>
+          </StatusChip>
         );
 
       case "theme":
         return (
-          <StatusbarSection key={item}>
+          <StatusChip key={item}>
             <Palette size={12} />
             <span className="capitalize">{theme}</span>
-          </StatusbarSection>
+          </StatusChip>
         );
 
       default:
@@ -182,19 +135,15 @@ export function Statusbar() {
     }
   };
 
-  const items = statusbar.items.map(renderItem).filter(Boolean);
+  const leading = statusbar.items.filter((item) => LEADING_ITEMS.has(item)).map(renderItem);
+  const trailing = statusbar.items.filter((item) => !LEADING_ITEMS.has(item)).map(renderItem);
 
-  if (items.length === 0) return null;
+  if (!leading.some(Boolean) && !trailing.some(Boolean)) return null;
 
   return (
-    <div className="flex h-statusbar shrink-0 items-center bg-bg-root px-1 select-none">
-      <div className="flex items-center">
-        {items.map((item, index) => (
-          <span key={index} className="contents">
-            {item}
-          </span>
-        ))}
-      </div>
+    <div className="flex h-statusbar shrink-0 items-center justify-between gap-2 bg-bg-chrome px-2 select-none">
+      <div className="flex min-w-0 items-center gap-0.5">{leading}</div>
+      <div className="flex min-w-0 items-center gap-0.5">{trailing}</div>
     </div>
   );
 }

@@ -1,6 +1,13 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FolderOpen, Files, Spinner } from "@phosphor-icons/react";
+import {
+  ArrowsInLineVertical,
+  FilePlus,
+  FolderOpen,
+  FolderPlus,
+  Files,
+  Spinner,
+} from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import {
   ContextMenu,
@@ -8,12 +15,14 @@ import {
   ContextMenuContent,
   ContextMenuItem,
 } from "@/shared/components/ui/context-menu";
-import { PanelHeader } from "@/shared/components/PanelHeader";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
-import { getVisibleNodes } from "@/shared/stores/fileExplorer";
+import { getVisibleNodes, useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useGitStore } from "@/shared/stores/git";
+import { buildGitDecorations } from "@/features/sidebar/lib/gitDecorations";
 import { FileTreeNode } from "./FileTreeNode";
 
 const ROW_HEIGHT = 26;
@@ -37,6 +46,13 @@ export function FileExplorer() {
   const showTreeLoading = useDelayedLoading(isLoading);
 
   const { openPanel } = useLocalHistory();
+  const collapseAll = useFileExplorerStore((s) => s.collapseAll);
+  const gitSnapshot = useGitStore((s) => s.snapshot);
+  const decorations = useMemo(() => buildGitDecorations(gitSnapshot), [gitSnapshot]);
+  const [createAtRoot, setCreateAtRoot] = useState<{ open: boolean; isDirectory: boolean }>({
+    open: false,
+    isDirectory: false,
+  });
 
   const rootName = rootPath ? rootPath.replace(/\\/g, "/").split("/").pop() || rootPath : null;
 
@@ -69,7 +85,29 @@ export function FileExplorer() {
     <ContextMenu>
       <ContextMenuTrigger className="h-full">
         <div className="flex h-full flex-col">
-          <PanelHeader title={rootName ?? "Workspace"} />
+          <div className="flex h-8 shrink-0 items-center gap-0.5 pr-1.5 pl-3">
+            <span
+              className="min-w-0 flex-1 truncate text-ui-xs font-semibold text-fg-default"
+              title={rootPath}
+            >
+              {rootName ?? "Workspace"}
+            </span>
+            <HeaderAction
+              label="New file"
+              onClick={() => setCreateAtRoot({ open: true, isDirectory: false })}
+            >
+              <FilePlus size={14} />
+            </HeaderAction>
+            <HeaderAction
+              label="New folder"
+              onClick={() => setCreateAtRoot({ open: true, isDirectory: true })}
+            >
+              <FolderPlus size={14} />
+            </HeaderAction>
+            <HeaderAction label="Collapse all folders" onClick={collapseAll}>
+              <ArrowsInLineVertical size={14} />
+            </HeaderAction>
+          </div>
           <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
             {showTreeLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -104,6 +142,8 @@ export function FileExplorer() {
                         onRename={renameNode}
                         onDelete={deleteNode}
                         onShowLocalHistory={openPanel}
+                        decoration={decorations.files.get(node.path)}
+                        hasChanges={node.isDirectory && decorations.dirtyDirs.has(node.path)}
                       />
                     </div>
                   );
@@ -114,11 +154,52 @@ export function FileExplorer() {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
+        <ContextMenuItem onClick={() => setCreateAtRoot({ open: true, isDirectory: false })}>
+          <FilePlus size={14} />
+          <span>New File</span>
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => setCreateAtRoot({ open: true, isDirectory: true })}>
+          <FolderPlus size={14} />
+          <span>New Folder</span>
+        </ContextMenuItem>
         <ContextMenuItem onClick={() => void selectRoot()}>
           <FolderOpen size={14} />
           <span>Open Folder</span>
         </ContextMenuItem>
       </ContextMenuContent>
+      <InputDialog
+        open={createAtRoot.open}
+        onOpenChange={(open) => setCreateAtRoot((prev) => ({ ...prev, open }))}
+        title={createAtRoot.isDirectory ? "New Folder" : "New File"}
+        description={`Create a new ${createAtRoot.isDirectory ? "folder" : "file"} in ${rootName ?? "the workspace"}.`}
+        label="Name"
+        confirmLabel="Create"
+        onConfirm={(name) => {
+          if (name) void createNode(rootPath, name, createAtRoot.isDirectory);
+        }}
+      />
     </ContextMenu>
+  );
+}
+
+function HeaderAction({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+    >
+      {children}
+    </button>
   );
 }

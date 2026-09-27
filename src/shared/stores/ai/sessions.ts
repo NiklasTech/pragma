@@ -81,8 +81,8 @@ export const createSessionsSlice: AISlice<
 
   loadSessionMessages: async (rootPath, sessionId) => {
     const messages = await loadStoredSessionMessages(rootPath, sessionId);
-    const existing = get().chatSessions.find((s) => s.id === sessionId);
-    if (messages.length === 0 && (existing?.messages.length ?? 0) > 0) return;
+    // An empty result changes nothing; replacing the array would re-trigger the loader forever.
+    if (messages.length === 0) return;
 
     set({
       chatSessions: get().chatSessions.map((s) => (s.id === sessionId ? { ...s, messages } : s)),

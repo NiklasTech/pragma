@@ -49,15 +49,10 @@ export function SessionTab({
               }
             }}
             title={title}
-            className={cn(
-              props.className,
-              "max-w-[160px] shrink-0 truncate rounded-sm px-1.5 py-1 text-ui-xs transition-colors",
-              isActive
-                ? "bg-bg-elevated font-medium text-fg-default"
-                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-            )}
+            data-active={isActive}
+            className={cn(props.className, "pragma-pill-tab max-w-[180px] shrink-0 px-2.5")}
           >
-            {title}
+            <span className="truncate">{title}</span>
           </button>
         )}
       />
