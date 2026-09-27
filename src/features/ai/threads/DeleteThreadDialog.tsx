@@ -18,35 +18,13 @@ import {
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
-import { childSessions, descendantIds } from "../children/limits";
+import { childSessions } from "../children/limits";
+import { releaseChildren, stopSession } from "../children/release";
 
 interface DeleteThreadDialogProps {
   session: ChatSession | null;
   rootPath: string;
   onOpenChange: (open: boolean) => void;
-}
-
-async function releaseChildren(
-  rootPath: string,
-  parentId: string,
-  archive: boolean,
-): Promise<void> {
-  const { chatSessions, updateChatSession } = useAIStore.getState();
-  const now = Date.now();
-
-  if (archive) {
-    const ids = new Set(descendantIds(chatSessions, parentId));
-    for (const child of chatSessions.filter((item) => ids.has(item.id) && !item.archived)) {
-      await updateChatSession(rootPath, { ...child, archived: true, updatedAt: now });
-    }
-    return;
-  }
-
-  for (const child of childSessions(chatSessions, parentId)) {
-    const unlinked = { ...child, updatedAt: now };
-    delete unlinked.parentId;
-    await updateChatSession(rootPath, unlinked);
-  }
 }
 
 export function DeleteThreadDialog({ session, rootPath, onOpenChange }: DeleteThreadDialogProps) {
@@ -67,7 +45,8 @@ export function DeleteThreadDialog({ session, rootPath, onOpenChange }: DeleteTh
   const handleConfirm = useCallback(async () => {
     if (!sessionId) return;
     try {
-      if (childCount > 0) await releaseChildren(rootPath, sessionId, archiveChildren);
+      if (childCount > 0) await releaseChildren(rootPath, [sessionId], archiveChildren);
+      stopSession(rootPath, sessionId);
       await deleteSession(rootPath, sessionId);
       onOpenChange(false);
     } catch {

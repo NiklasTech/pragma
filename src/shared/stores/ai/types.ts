@@ -72,7 +72,6 @@ export interface ChatSession {
   archived?: boolean;
   agentEngine?: AgentEngine;
   parentId?: string;
-  pendingPrompt?: string;
 }
 
 export interface CreateChatSessionInit {
@@ -85,7 +84,6 @@ export interface CreateChatSessionInit {
   agentId?: string;
   agentEngine?: AgentEngine;
   parentId?: string;
-  pendingPrompt?: string;
 }
 
 // ─── CLI Types ───────────────────────────────────────────────────────────────

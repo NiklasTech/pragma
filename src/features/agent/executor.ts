@@ -13,12 +13,12 @@ import { runSpawnTool } from "@/features/ai/children/spawn";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
 
-import { useAgentStore, type AgentStep, type AgentTodo } from "./store";
+import type { AgentStep, AgentTodo } from "./store";
 import { resolveAgentApproval, type AgentApprovalDecision } from "./permissions";
+import { foregroundRunContext, type AgentRunContext } from "./runContext";
 import { AGENT_TOOL_NAMES, isFileEditTool } from "./tools";
 import { applySearchReplace } from "./searchReplace";
 import { sliceFileLines } from "./readSlice";
-import { applyAgentFileEdit } from "./applyEdit";
 
 export interface AgentToolCall {
   toolCallId: string;
@@ -142,12 +142,13 @@ async function dispatchFileEdit(
   call: AgentToolCall,
   rootPath: string,
   decision: AgentApprovalDecision,
+  context: AgentRunContext,
 ): Promise<string> {
   if (call.toolName === AGENT_TOOL_NAMES.writeFile) {
     const path = resolveWorkspacePath(rootPath, readStringInput(call.input, "path"));
     const content = readStringInput(call.input, "content");
     const originalContent = await readOriginalContent(path);
-    await applyAgentFileEdit(
+    await context.applyFileEdit(
       { toolCallId: call.toolCallId, path, originalContent, content },
       decision,
     );
@@ -160,7 +161,7 @@ async function dispatchFileEdit(
   const replaceAll = readBooleanInput(call.input, "replace_all");
   const result = await invoke<FileReadResult>("read_text_file", { path });
   const applied = applySearchReplace(result.content, oldString, newString, replaceAll);
-  await applyAgentFileEdit(
+  await context.applyFileEdit(
     {
       toolCallId: call.toolCallId,
       path,
@@ -177,6 +178,7 @@ async function dispatchTool(
   input: unknown,
   rootPath: string,
   agentAccess: AgentAccess | null,
+  context: AgentRunContext,
 ): Promise<{ output: string; detail?: string }> {
   switch (toolName) {
     case AGENT_TOOL_NAMES.readFile: {
@@ -224,9 +226,7 @@ async function dispatchTool(
       };
     }
     case AGENT_TOOL_NAMES.todoWrite: {
-      const items = readTodoItems(input);
-      useAgentStore.getState().setTodos(items, true);
-      const count = useAgentStore.getState().todos.length;
+      const count = context.setTodos(readTodoItems(input));
       return { output: `Todo list updated (${count} items).` };
     }
     case AGENT_TOOL_NAMES.runCommand: {
@@ -265,7 +265,7 @@ async function dispatchTool(
     }
     case AGENT_TOOL_NAMES.taskComplete: {
       const summary = readStringInput(input, "summary");
-      useAgentStore.getState().finishTask(summary);
+      context.finishTask(summary);
       return { output: "Task marked as complete.", detail: summary || undefined };
     }
     default:
@@ -277,8 +277,8 @@ export async function executeAgentTool(
   call: AgentToolCall,
   rootPath: string,
   agentAccess: AgentAccess | null = null,
+  context: AgentRunContext = foregroundRunContext,
 ): Promise<AgentToolResult> {
-  const store = useAgentStore.getState();
   const { label, detail } = stepLabel(call.toolName, call.input);
 
   const step: AgentStep = {
@@ -288,16 +288,16 @@ export async function executeAgentTool(
     status: "running",
     detail,
   };
-  store.addStep(step);
+  context.addStep(step);
 
   const finishStep = (status: AgentStep["status"], stepDetail?: string) => {
-    useAgentStore.getState().updateStep(call.toolCallId, {
+    context.updateStep(call.toolCallId, {
       status,
       ...(stepDetail ? { detail: stepDetail } : {}),
     });
   };
 
-  if (store.status === "cancelled") {
+  if (context.isCancelled()) {
     finishStep("denied");
     return { errorText: "Agent was stopped by the user." };
   }
@@ -319,14 +319,20 @@ export async function executeAgentTool(
     : resolveAgentApproval(call.toolName, call.input, settings.agent, settings.ai.yoloMode);
 
   if (call.toolName === AGENT_TOOL_NAMES.spawnSession) {
-    const outcome = await runSpawnTool(call.toolCallId, call.toolName, call.input, decision);
+    const outcome = await runSpawnTool(
+      call.toolCallId,
+      call.toolName,
+      call.input,
+      decision,
+      context,
+    );
     finishStep(outcome.status, outcome.detail);
     return outcome.result;
   }
 
   if (isFileEditTool(call.toolName)) {
     try {
-      const output = await dispatchFileEdit(call, rootPath, decision);
+      const output = await dispatchFileEdit(call, rootPath, decision, context);
       finishStep("done", detail);
       if (writesSkill) void useSkillsStore.getState().reloadSkills();
       return { output };
@@ -338,7 +344,7 @@ export async function executeAgentTool(
   }
 
   if (decision === "required") {
-    const approved = await store.requestApproval({
+    const approved = await context.requestApproval({
       toolCallId: call.toolCallId,
       toolName: call.toolName,
       args: call.input,
@@ -351,7 +357,7 @@ export async function executeAgentTool(
   }
 
   try {
-    const result = await dispatchTool(call.toolName, call.input, rootPath, agentAccess);
+    const result = await dispatchTool(call.toolName, call.input, rootPath, agentAccess, context);
     finishStep("done", result.detail ?? detail);
     return { output: result.output };
   } catch (err) {

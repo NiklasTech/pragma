@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
+import { toolDisplayName, type McpChatTool } from "@/shared/lib/ai/mcpTools";
 
 export interface McpTool {
   name: string;
@@ -16,17 +17,7 @@ export interface McpServerState {
   status: "stopped" | "starting" | "running" | "error";
 }
 
-export interface McpChatTool {
-  serverId: string;
-  toolName: string;
-  displayName: string;
-  description: string;
-  parameters: unknown;
-}
-
-function toolDisplayName(serverId: string, toolName: string): string {
-  return `${serverId}__${toolName}`;
-}
+export type { McpChatTool };
 
 export function useMcpChatTools() {
   const serversRef = useRef<Record<string, McpServerState["status"]>>({});

@@ -27,6 +27,8 @@ import {
 } from "@/features/ai/home/pendingFirstMessage";
 import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
+import { callMcpTool } from "@/shared/lib/ai/mcpTools";
+import { resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import {
   getMessageText,
   getToolInvocation,
@@ -45,7 +47,6 @@ import {
 } from "@/features/agent/tools";
 import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
 import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
-import { usePendingChildPrompt } from "@/features/ai/children/usePendingChildPrompt";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import {
   buildAgentContextBlock,
@@ -107,25 +108,17 @@ export function useAI() {
     ? (agents.find((agent) => agent.id === activeSession.agentId) ?? null)
     : null;
 
-  const pinnedEngine = activeSession?.agentEngine ?? null;
-  const effectiveCLIProvider =
-    pinnedEngine?.kind === "cli"
-      ? (pinnedEngine.cliProviderId ?? null)
-      : pinnedEngine?.kind === "builtin"
-        ? null
-        : activeCLIProvider;
-  const effectiveProvider =
-    pinnedEngine?.kind === "builtin" && pinnedEngine.provider
-      ? pinnedEngine.provider
-      : activeProvider;
-  const effectiveModel =
-    pinnedEngine?.kind === "builtin" && pinnedEngine.model ? pinnedEngine.model : activeModel;
-
-  const providerConfig = providers[effectiveProvider];
-  const effectiveBaseUrl =
-    pinnedEngine?.kind === "builtin" && pinnedEngine.baseUrl !== undefined
-      ? pinnedEngine.baseUrl
-      : providerConfig.baseUrl;
+  const {
+    cliProviderId: effectiveCLIProvider,
+    provider: effectiveProvider,
+    model: effectiveModel,
+    baseUrl: effectiveBaseUrl,
+  } = resolveEffectiveEngine(activeSession?.agentEngine ?? null, {
+    activeCLIProvider,
+    activeProvider,
+    activeModel,
+    providers,
+  });
   const hasAPIKey = apiKeyRefs[effectiveProvider] !== null;
   const isCLIActive = effectiveCLIProvider !== null;
   const cliAuthenticated = effectiveCLIProvider
@@ -224,6 +217,7 @@ export function useAI() {
           pendingContextRef.current = null;
           return pending;
         },
+        activeSessionKind !== "ask",
       ),
     [
       effectiveProvider,
@@ -238,6 +232,7 @@ export function useAI() {
       acpActive,
       systemPrompt,
       leadingSystemMessage,
+      activeSessionKind,
     ],
   );
 
@@ -282,41 +277,19 @@ export function useAI() {
         return;
       }
 
-      try {
-        const result = await invoke<{
-          content: unknown;
-          is_error?: boolean;
-          error?: string;
-        }>("mcp_call_tool", {
-          id: tool.serverId,
-          toolName: tool.toolName,
-          arguments: typeof toolCall.input === "object" ? toolCall.input : {},
-        });
-
-        const output =
-          typeof result.content === "string" ? result.content : JSON.stringify(result.content);
-
-        if (result.is_error || result.error) {
-          chat.addToolOutput({
-            tool: toolCall.toolName,
-            toolCallId: toolCall.toolCallId,
-            state: "output-error",
-            errorText: result.error ?? output,
-          });
-        } else {
-          chat.addToolOutput({
-            tool: toolCall.toolName,
-            toolCallId: toolCall.toolCallId,
-            output,
-          });
-        }
-      } catch (err) {
-        const errorText = String(err);
+      const result = await callMcpTool(tool, toolCall.input);
+      if ("errorText" in result) {
         chat.addToolOutput({
           tool: toolCall.toolName,
           toolCallId: toolCall.toolCallId,
           state: "output-error",
-          errorText,
+          errorText: result.errorText,
+        });
+      } else {
+        chat.addToolOutput({
+          tool: toolCall.toolName,
+          toolCallId: toolCall.toolCallId,
+          output: result.output,
         });
       }
     },
@@ -494,13 +467,6 @@ export function useAI() {
     },
     [chat, rootPath, mcpServerCount, mcpLoaded, agentActive, isCLIActive, activeSession],
   );
-
-  usePendingChildPrompt({
-    rootPath,
-    session: activeSession,
-    canSend: chat.status === "ready" && chat.messages.length === 0,
-    submitText,
-  });
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {

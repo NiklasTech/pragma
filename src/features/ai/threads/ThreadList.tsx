@@ -16,7 +16,7 @@ import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
 import { TasksEntry } from "@/features/ai/tasks/TasksEntry";
 import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { buildSessionTree } from "@/features/ai/children/limits";
-import { isChildRunning } from "@/features/ai/children/status";
+import { childThreadStatus, isChildRunning } from "@/features/ai/children/status";
 import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
 import { cn } from "@/shared/lib/utils";
 
@@ -125,12 +125,19 @@ export function ThreadList() {
     handleLoadAgents();
   }, [handleLoadAgents]);
 
+  const threadStatus = (session: ChatSession) => {
+    const childStatus = childStatuses.get(session.id);
+    return childStatus
+      ? childThreadStatus(childStatus)
+      : resolveThreadStatus(agentStatus, session.id, runSessionId);
+  };
+
   const renderRow = (session: ChatSession, depth = 0) => (
     <ThreadRow
       key={session.id}
       session={session}
       isActive={session.id === activeChatSessionId}
-      status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
+      status={threadStatus(session)}
       depth={depth}
       runningChildren={runningChildren.get(session.id) ?? 0}
       onSelect={handleSelect}

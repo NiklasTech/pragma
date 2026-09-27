@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { isChildRunning, resolveChildStatus } from "./status";
+import { childThreadStatus, isChildRunning, resolveChildStatus } from "./status";
 
 describe("resolveChildStatus", () => {
-  it("reports a conversation that has not sent its prompt as waiting", () => {
-    const child = { id: "c", kind: "agent" as const, pendingPrompt: "Go" };
-    expect(resolveChildStatus(child, "running", "p", null)).toBe("waiting");
+  it("reads a conversation from its background run", () => {
+    const child = { id: "c", kind: "agent" as const };
+    expect(resolveChildStatus(child, "running", "p", null, "running")).toBe("running");
+    expect(resolveChildStatus(child, "idle", null, null, "waiting-approval")).toBe(
+      "needs-approval",
+    );
+    expect(resolveChildStatus(child, "idle", null, null, "done")).toBe("done");
+    expect(resolveChildStatus(child, "idle", null, null, "cancelled")).toBe("stopped");
+  });
+
+  it("prefers a live turn in the focused chat over the finished background run", () => {
+    const child = { id: "c", kind: "agent" as const };
+    expect(resolveChildStatus(child, "running", "c", null, "done")).toBe("running");
   });
 
   it("follows the live run only when the child owns it", () => {
@@ -30,6 +40,15 @@ describe("isChildRunning", () => {
     expect(isChildRunning("running")).toBe(true);
     expect(isChildRunning("needs-approval")).toBe(true);
     expect(isChildRunning("done")).toBe(false);
-    expect(isChildRunning("waiting")).toBe(false);
+    expect(isChildRunning("idle")).toBe(false);
+  });
+});
+
+describe("childThreadStatus", () => {
+  it("maps a child's status to the list's status dot", () => {
+    expect(childThreadStatus("running")).toBe("running");
+    expect(childThreadStatus("needs-approval")).toBe("waiting-approval");
+    expect(childThreadStatus("error")).toBe("error");
+    expect(childThreadStatus("done")).toBe("idle");
   });
 });

@@ -26,6 +26,8 @@ pub struct AcpChatCommandRequest {
     pub chat_session_id: String,
     pub cwd: String,
     pub messages: Vec<CLIChatMessage>,
+    #[serde(default)]
+    pub allow_child_sessions: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -249,7 +251,12 @@ pub async fn cli_acp_chat_stream(
     // Ensure the ACP session exists; create it on first use.
     if !state.has_session(&req.chat_session_id).await {
         state
-            .start_session(&req.provider_id, &req.cwd, &req.chat_session_id)
+            .start_session(
+                &req.provider_id,
+                &req.cwd,
+                &req.chat_session_id,
+                req.allow_child_sessions,
+            )
             .await
             .map_err(|e| e.to_string())?;
     }

@@ -4,13 +4,15 @@ import { useAgentStore } from "@/features/agent/store";
 import type { ChatSession } from "@/shared/stores/ai";
 
 import { getTerminalEntryStatus, subscribeTerminalStatus } from "../terminal/runner";
+import { useChildRunsStore } from "./runStore";
 import { resolveChildStatus, type ChildSessionStatus } from "./status";
 
-type StatusSession = Pick<ChatSession, "id" | "kind" | "pendingPrompt">;
+type StatusSession = Pick<ChatSession, "id" | "kind">;
 
 export function useSessionStatuses(sessions: StatusSession[]): Map<string, ChildSessionStatus> {
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
+  const runs = useChildRunsStore((state) => state.runs);
   const [terminalVersion, setTerminalVersion] = useState(0);
 
   const terminalKey = sessions
@@ -35,10 +37,16 @@ export function useSessionStatuses(sessions: StatusSession[]): Map<string, Child
         session.kind === "terminal" ? getTerminalEntryStatus(session.id) : null;
       statuses.set(
         session.id,
-        resolveChildStatus(session, agentStatus, runSessionId, terminalStatus),
+        resolveChildStatus(
+          session,
+          agentStatus,
+          runSessionId,
+          terminalStatus,
+          runs[session.id]?.status ?? null,
+        ),
       );
     }
     return statuses;
     // terminalVersion re-reads the terminal statuses, which live outside React.
-  }, [agentStatus, runSessionId, sessions, terminalVersion]);
+  }, [agentStatus, runSessionId, runs, sessions, terminalVersion]);
 }

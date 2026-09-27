@@ -1,11 +1,18 @@
 import type { AgentApprovalDecision } from "@/features/agent/permissions";
-import { useAgentStore, type AgentStepStatus } from "@/features/agent/store";
-import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
+import type { AgentRunContext } from "@/features/agent/runContext";
+import type { AgentStepStatus } from "@/features/agent/store";
+import {
+  useAIStore,
+  type AgentEngine,
+  type ChatSession,
+  type SessionWorktree,
+} from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { disposeTerminal, ensureTerminal } from "../terminal/runner";
 import { createSessionWorktree } from "../worktree/create";
 import { checkSpawnLimits, parseSpawnRequest, type SpawnRequest } from "./limits";
+import { startChildRun } from "./runner";
 import { deliverTerminalPrompt } from "./terminalPrompt";
 
 export const SPAWN_DENIED = "The user denied starting a child session";
@@ -16,6 +23,7 @@ const TERMINAL_ROWS = 32;
 interface SpawnPlan {
   rootPath: string;
   parent: ChatSession;
+  engine: AgentEngine;
   request: SpawnRequest;
   command: string | null;
 }
@@ -35,12 +43,12 @@ function detectedTerminalCliIds(): string[] {
     .map((manifest) => manifest.id);
 }
 
-function prepareChildSpawn(input: unknown): SpawnPrepare {
+function prepareChildSpawn(input: unknown, context: AgentRunContext): SpawnPrepare {
   const rootPath = useFileExplorerStore.getState().rootPath;
   if (!rootPath) return { ok: false, error: "Open a workspace to start a child session" };
 
   const { chatSessions, cliManifests } = useAIStore.getState();
-  const parentId = useAgentStore.getState().runSessionId;
+  const parentId = context.sessionId();
   const parent = chatSessions.find((session) => session.id === parentId);
   if (!parent) return { ok: false, error: "The parent session was not found" };
   if (parent.kind === "ask" || parent.kind === "terminal") {
@@ -66,7 +74,12 @@ function prepareChildSpawn(input: unknown): SpawnPrepare {
     command = manifest.command;
   }
 
-  return { ok: true, plan: { rootPath, parent, request: parsed.request, command } };
+  // A child runs on the parent's engine; a builtin parent's child is always a builtin agent.
+  const engine: AgentEngine =
+    context.childEngine() ??
+    (parent.agentEngine?.kind === "builtin" ? parent.agentEngine : { kind: "builtin" });
+
+  return { ok: true, plan: { rootPath, parent, engine, request: parsed.request, command } };
 }
 
 function describeSpawn(request: SpawnRequest): string {
@@ -76,7 +89,7 @@ function describeSpawn(request: SpawnRequest): string {
 }
 
 async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
-  const { rootPath, parent, request, command } = plan;
+  const { rootPath, parent, engine, request, command } = plan;
   const id = crypto.randomUUID();
   // A child worktree always branches from the workspace, never from the parent's worktree.
   const worktree: SessionWorktree | undefined =
@@ -84,7 +97,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
   const { createChatSession } = useAIStore.getState();
 
   if (request.kind === "conversation") {
-    return createChatSession(
+    const session = await createChatSession(
       rootPath,
       {
         id,
@@ -92,13 +105,13 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         kind: "agent",
         environment: request.environment,
         worktree,
-        agentEngine:
-          parent.agentEngine?.kind === "builtin" ? parent.agentEngine : { kind: "builtin" },
+        agentEngine: engine,
         parentId: parent.id,
-        pendingPrompt: request.prompt,
       },
       { activate: false },
     );
+    await startChildRun(rootPath, session.id, request.prompt);
+    return session;
   }
 
   const cwd = worktree?.status === "ready" ? worktree.path : rootPath;
@@ -137,15 +150,16 @@ export async function runSpawnTool(
   toolName: string,
   input: unknown,
   decision: AgentApprovalDecision,
+  context: AgentRunContext,
 ): Promise<SpawnToolOutcome> {
-  const prepared = prepareChildSpawn(input);
+  const prepared = prepareChildSpawn(input, context);
   if (!prepared.ok) {
     return { status: "error", detail: prepared.error, result: { errorText: prepared.error } };
   }
   const { request } = prepared.plan;
 
   if (decision === "required") {
-    const approved = await useAgentStore.getState().requestApproval({
+    const approved = await context.requestApproval({
       toolCallId,
       toolName,
       args: input,
@@ -156,10 +170,7 @@ export async function runSpawnTool(
 
   try {
     const child = await startChildSession(prepared.plan);
-    const note =
-      request.kind === "conversation"
-        ? "The child conversation starts when the user opens it. Do not wait for it."
-        : "The child terminal is running on its own. Do not wait for it.";
+    const note = `The child ${request.kind} is running on its own. Do not wait for it.`;
     return {
       status: "done",
       detail: request.title,

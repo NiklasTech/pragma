@@ -46,10 +46,13 @@ export function useCliSessionOptions(): CliSessionOptions | null {
     activeChatSessionId ? (state.errors[activeChatSessionId] ?? null) : null,
   );
 
+  const allowChildSessions = session?.kind !== "ask";
   useEffect(() => {
     if (!acpActive || !activeCLIProvider || !activeChatSessionId || !cwd) return;
-    void useAcpSessionOptionsStore.getState().load(activeCLIProvider, activeChatSessionId, cwd);
-  }, [acpActive, activeCLIProvider, activeChatSessionId, cwd]);
+    void useAcpSessionOptionsStore
+      .getState()
+      .load(activeCLIProvider, activeChatSessionId, cwd, allowChildSessions);
+  }, [acpActive, activeCLIProvider, activeChatSessionId, allowChildSessions, cwd]);
 
   useEffect(() => {
     if (!acpActive) return;
