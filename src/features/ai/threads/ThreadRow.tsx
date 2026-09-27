@@ -46,6 +46,8 @@ const STATUS_TEXT: Record<ThreadStatus, string | null> = {
   error: "Stopped with an error",
 };
 
+const DEPTH_INDENT = ["", "ml-5", "ml-10"];
+
 const KIND_ICONS: Record<NonNullable<ChatSession["kind"]>, Icon> = {
   ask: ChatCircle,
   agent: Robot,
@@ -56,6 +58,8 @@ interface ThreadRowProps {
   session: ChatSession;
   isActive: boolean;
   status: ThreadStatus;
+  depth?: number;
+  runningChildren?: number;
   onSelect: (sessionId: string) => void;
   onRename: (sessionId: string, title: string) => void;
   onDelete: (sessionId: string) => void;
@@ -66,6 +70,8 @@ export function ThreadRow({
   session,
   isActive,
   status,
+  depth = 0,
+  runningChildren = 0,
   onSelect,
   onRename,
   onDelete,
@@ -91,6 +97,7 @@ export function ThreadRow({
     <div
       className={cn(
         "group relative flex items-center gap-2.5 rounded-lg py-1.5 pr-1 pl-2 transition-colors",
+        DEPTH_INDENT[Math.min(depth, DEPTH_INDENT.length - 1)],
         isActive
           ? "bg-bg-root shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
           : "hover:bg-bg-hover",
@@ -180,6 +187,9 @@ export function ThreadRow({
                   <span className="truncate">{session.worktree.branch}</span>
                 </span>
               )
+            )}
+            {runningChildren > 0 && (
+              <span className="shrink-0 text-primary tabular-nums">{runningChildren} running</span>
             )}
             <span className="ml-auto shrink-0 tabular-nums">
               {formatRelativeTime(session.updatedAt)}

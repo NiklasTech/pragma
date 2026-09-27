@@ -9,6 +9,7 @@ import {
   type AgentAccess,
 } from "@/features/ai/named-agents/folders";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import { runSpawnTool } from "@/features/ai/children/spawn";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
 
@@ -121,6 +122,8 @@ export function stepLabel(toolName: string, input: unknown): { label: string; de
       return { label: "Task complete" };
     case AGENT_TOOL_NAMES.remember:
       return { label: "Remember" };
+    case AGENT_TOOL_NAMES.spawnSession:
+      return { label: "Start child session", detail: readStringInput(input, "title") };
     default:
       return { label: toolName };
   }
@@ -314,6 +317,12 @@ export async function executeAgentTool(
   const decision = writesSkill
     ? "required"
     : resolveAgentApproval(call.toolName, call.input, settings.agent, settings.ai.yoloMode);
+
+  if (call.toolName === AGENT_TOOL_NAMES.spawnSession) {
+    const outcome = await runSpawnTool(call.toolCallId, call.toolName, call.input, decision);
+    finishStep(outcome.status, outcome.detail);
+    return outcome.result;
+  }
 
   if (isFileEditTool(call.toolName)) {
     try {

@@ -21,6 +21,7 @@ import { useAgentStore } from "@/features/agent/store";
 import { useSteerQueue } from "@/features/ai/steer/useSteerQueue";
 import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
 import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
+import { PendingPromptNotice } from "@/features/ai/children/PendingPromptNotice";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -388,6 +389,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             ))}
           </div>
         )}
+
+        <PendingPromptNotice session={activeSession} />
 
         {ownsRun && <AgentApprovals />}
 

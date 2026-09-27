@@ -71,6 +71,8 @@ export interface ChatSession {
   agentId?: string;
   archived?: boolean;
   agentEngine?: AgentEngine;
+  parentId?: string;
+  pendingPrompt?: string;
 }
 
 export interface CreateChatSessionInit {
@@ -82,6 +84,8 @@ export interface CreateChatSessionInit {
   cliProviderId?: string;
   agentId?: string;
   agentEngine?: AgentEngine;
+  parentId?: string;
+  pendingPrompt?: string;
 }
 
 // ─── CLI Types ───────────────────────────────────────────────────────────────
@@ -158,7 +162,11 @@ export interface AIActions {
     firstMessage: string,
     model: { provider: AIProvider; model: string; baseUrl: string | undefined } | null,
   ) => Promise<void>;
-  createChatSession: (rootPath: string, init?: CreateChatSessionInit) => Promise<ChatSession>;
+  createChatSession: (
+    rootPath: string,
+    init?: CreateChatSessionInit,
+    options?: { activate?: boolean },
+  ) => Promise<ChatSession>;
   renameChatSession: (rootPath: string, sessionId: string, title: string) => Promise<void>;
   deleteSession: (rootPath: string, sessionId: string) => Promise<void>;
   saveSession: (rootPath: string, session: ChatSession) => Promise<void>;

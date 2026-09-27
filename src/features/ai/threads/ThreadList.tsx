@@ -1,20 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { MagnifyingGlass, Warning } from "@phosphor-icons/react";
-import { toast } from "sonner";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/shared/components/ui/alert-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -27,8 +15,12 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
 import { TasksEntry } from "@/features/ai/tasks/TasksEntry";
 import { useTasksUiStore } from "@/features/ai/tasks/ui";
+import { buildSessionTree } from "@/features/ai/children/limits";
+import { isChildRunning } from "@/features/ai/children/status";
+import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
 import { cn } from "@/shared/lib/utils";
 
+import { DeleteThreadDialog } from "./DeleteThreadDialog";
 import { NewSessionButton } from "./NewSessionButton";
 import { groupThreadsByRecency, resolveThreadStatus } from "./helpers";
 import { ThreadRow } from "./ThreadRow";
@@ -39,7 +31,6 @@ export function ThreadList() {
   const chatSessions = useAIStore((state) => state.chatSessions);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
-  const deleteSession = useAIStore((state) => state.deleteSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
@@ -74,14 +65,35 @@ export function ThreadList() {
     return sortedSessions.filter((session) => session.title.toLowerCase().includes(trimmed));
   }, [query, sortedSessions]);
 
+  const searching = query.trim().length > 0;
+  const tree = useMemo(
+    () =>
+      searching
+        ? { roots: visibleSessions, childrenOf: new Map<string, ChatSession[]>() }
+        : buildSessionTree(visibleSessions),
+    [searching, visibleSessions],
+  );
+
   const groups = useMemo(
     () =>
       groupThreadsByRecency(
-        visibleSessions,
+        tree.roots,
         (session) => resolveThreadStatus(agentStatus, session.id, runSessionId) !== "idle",
       ),
-    [agentStatus, runSessionId, visibleSessions],
+    [agentStatus, runSessionId, tree],
   );
+
+  const children = useMemo(() => sessions.filter((session) => session.parentId), [sessions]);
+  const childStatuses = useSessionStatuses(children);
+  const runningChildren = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const child of children) {
+      const status = childStatuses.get(child.id);
+      if (!child.parentId || !status || !isChildRunning(status)) continue;
+      counts.set(child.parentId, (counts.get(child.parentId) ?? 0) + 1);
+    }
+    return counts;
+  }, [childStatuses, children]);
 
   const selectedAgentChats = useMemo(() => {
     if (!selectedAgentId) return [];
@@ -105,16 +117,6 @@ export function ThreadList() {
     [renameChatSession, rootPath],
   );
 
-  const handleConfirmDelete = useCallback(async () => {
-    if (!sessionToDelete) return;
-    try {
-      await deleteSession(rootPath ?? "default", sessionToDelete);
-      setSessionToDelete(null);
-    } catch {
-      toast.error("Failed to delete thread");
-    }
-  }, [deleteSession, rootPath, sessionToDelete]);
-
   const handleLoadAgents = useCallback(() => {
     if (!loaded) void loadAgents();
   }, [loadAgents, loaded]);
@@ -123,12 +125,14 @@ export function ThreadList() {
     handleLoadAgents();
   }, [handleLoadAgents]);
 
-  const renderRow = (session: ChatSession) => (
+  const renderRow = (session: ChatSession, depth = 0) => (
     <ThreadRow
       key={session.id}
       session={session}
       isActive={session.id === activeChatSessionId}
       status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
+      depth={depth}
+      runningChildren={runningChildren.get(session.id) ?? 0}
       onSelect={handleSelect}
       onRename={handleRename}
       onDelete={setSessionToDelete}
@@ -136,7 +140,14 @@ export function ThreadList() {
     />
   );
 
-  const sessionToDeleteTitle = chatSessions.find((s) => s.id === sessionToDelete)?.title ?? "";
+  const renderBranch = (session: ChatSession, depth: number) => (
+    <Fragment key={session.id}>
+      {renderRow(session, depth)}
+      {(tree.childrenOf.get(session.id) ?? []).map((child) => renderBranch(child, depth + 1))}
+    </Fragment>
+  );
+
+  const sessionToDeleteValue = chatSessions.find((s) => s.id === sessionToDelete) ?? null;
   const discardSession = chatSessions.find((s) => s.id === discardSessionId) ?? null;
 
   return (
@@ -237,7 +248,7 @@ export function ThreadList() {
                   <h3 className="px-2 pb-0.5 text-ui-2xs font-medium text-fg-subtle">
                     {group.label}
                   </h3>
-                  {group.items.map(renderRow)}
+                  {group.items.map((session) => renderBranch(session, 0))}
                 </section>
               ))}
             </div>
@@ -251,35 +262,19 @@ export function ThreadList() {
             No chats yet.
           </p>
         ) : (
-          <div className="flex flex-col gap-0.5">{selectedAgentChats.map(renderRow)}</div>
+          <div className="flex flex-col gap-0.5">
+            {selectedAgentChats.map((session) => renderRow(session))}
+          </div>
         )}
       </div>
 
-      <AlertDialog
-        open={sessionToDelete !== null}
+      <DeleteThreadDialog
+        session={sessionToDeleteValue}
+        rootPath={rootPath ?? "default"}
         onOpenChange={(open) => {
           if (!open) setSessionToDelete(null);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <Warning size={20} className="text-status-warning" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Delete thread?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{sessionToDeleteTitle}&quot;? This action cannot
-              be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
 
       <DiscardWorktreeDialog
         session={discardSession}

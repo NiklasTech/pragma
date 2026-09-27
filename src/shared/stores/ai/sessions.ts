@@ -33,6 +33,10 @@ export function mergeSessionsWithStored(
       if (memorySession.agentId !== undefined) merged.agentId = memorySession.agentId;
       if (memorySession.archived !== undefined) merged.archived = memorySession.archived;
       if (memorySession.agentEngine !== undefined) merged.agentEngine = memorySession.agentEngine;
+      if (memorySession.parentId !== undefined) merged.parentId = memorySession.parentId;
+      if (memorySession.pendingPrompt !== undefined) {
+        merged.pendingPrompt = memorySession.pendingPrompt;
+      }
 
       return merged;
     })
@@ -115,7 +119,7 @@ export const createSessionsSlice: AISlice<
 
   setActiveChatSession: (sessionId) => set({ activeChatSessionId: sessionId }),
 
-  createChatSession: async (rootPath, init) => {
+  createChatSession: async (rootPath, init, options) => {
     const session: ChatSession = {
       id: init?.id ?? crypto.randomUUID(),
       title: init?.title ?? "New Chat",
@@ -129,9 +133,15 @@ export const createSessionsSlice: AISlice<
     if (init?.cliProviderId !== undefined) session.cliProviderId = init.cliProviderId;
     if (init?.agentId !== undefined) session.agentId = init.agentId;
     if (init?.agentEngine !== undefined) session.agentEngine = init.agentEngine;
+    if (init?.parentId !== undefined) session.parentId = init.parentId;
+    if (init?.pendingPrompt !== undefined) session.pendingPrompt = init.pendingPrompt;
 
     await saveStoredSession(rootPath, session);
-    get().addChatSession(session);
+    if (options?.activate === false) {
+      set({ chatSessions: [...get().chatSessions, session] });
+    } else {
+      get().addChatSession(session);
+    }
     return session;
   },
 

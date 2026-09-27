@@ -44,6 +44,8 @@ import {
   isAgentTool,
 } from "@/features/agent/tools";
 import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
+import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
+import { usePendingChildPrompt } from "@/features/ai/children/usePendingChildPrompt";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import {
   buildAgentContextBlock,
@@ -143,10 +145,13 @@ export function useAI() {
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const agentActive = agentModeActive;
 
-  const agentToolDefinitions = useMemo(
-    () => (agentActive ? AGENT_TOOL_DEFINITIONS : []),
-    [agentActive],
-  );
+  const activeSessionKind = activeSession?.kind;
+  const agentToolDefinitions = useMemo(() => {
+    if (!agentActive) return [];
+    return activeSessionKind === "ask"
+      ? AGENT_TOOL_DEFINITIONS
+      : [...AGENT_TOOL_DEFINITIONS, SPAWN_SESSION_TOOL_DEFINITION];
+  }, [agentActive, activeSessionKind]);
 
   const projectRules = useAgentStore((state) => state.rules);
 
@@ -489,6 +494,13 @@ export function useAI() {
     },
     [chat, rootPath, mcpServerCount, mcpLoaded, agentActive, isCLIActive, activeSession],
   );
+
+  usePendingChildPrompt({
+    rootPath,
+    session: activeSession,
+    canSend: chat.status === "ready" && chat.messages.length === 0,
+    submitText,
+  });
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
