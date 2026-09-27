@@ -9,6 +9,8 @@ import { createSessionsSlice } from "./ai/sessions";
 import type { AIProvider, AIState, AIStore, ProviderConfig } from "./ai/types";
 
 export type {
+  AgentEngine,
+  AgentEngineKind,
   AIProvider,
   ChatMessage,
   ChatSession,

@@ -3,6 +3,13 @@ import type { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 
 import { useSettingsStore } from "@/shared/stores/settings";
 
+import {
+  checkAgentToolPath,
+  isFolderScopedTool,
+  type AgentAccess,
+} from "@/features/ai/named-agents/folders";
+import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+
 import { useAgentStore, type AgentStep, type AgentTodo } from "./store";
 import { resolveAgentApproval, type AgentApprovalDecision } from "./permissions";
 import { AGENT_TOOL_NAMES, isFileEditTool } from "./tools";
@@ -110,6 +117,8 @@ export function stepLabel(toolName: string, input: unknown): { label: string; de
       return { label: "Run command", detail: readStringInput(input, "command") };
     case AGENT_TOOL_NAMES.taskComplete:
       return { label: "Task complete" };
+    case AGENT_TOOL_NAMES.remember:
+      return { label: "Remember" };
     default:
       return { label: toolName };
   }
@@ -162,6 +171,7 @@ async function dispatchTool(
   toolName: string,
   input: unknown,
   rootPath: string,
+  agentAccess: AgentAccess | null,
 ): Promise<{ output: string; detail?: string }> {
   switch (toolName) {
     case AGENT_TOOL_NAMES.readFile: {
@@ -220,6 +230,7 @@ async function dispatchTool(
         cwd: readStringInput(input, "cwd") || null,
         workspaceRoot: rootPath,
         timeoutMs: null,
+        approvedRoots: agentAccess?.folders ?? null,
       });
       return {
         output: truncateOutput(
@@ -237,6 +248,16 @@ async function dispatchTool(
         detail: `exit ${result.exit_code}${result.timed_out ? " (timed out)" : ""}`,
       };
     }
+    case AGENT_TOOL_NAMES.remember: {
+      const text = readStringInput(input, "text").trim();
+      if (!text) throw new Error("Memory text is required");
+      if (!agentAccess) throw new Error("No agent is active for this chat");
+      const result = useNamedAgentsStore
+        .getState()
+        .appendMemory(agentAccess.agentId, text, "agent");
+      if (!result.ok) throw new Error(result.error);
+      return { output: "Remembered." };
+    }
     case AGENT_TOOL_NAMES.taskComplete: {
       const summary = readStringInput(input, "summary");
       useAgentStore.getState().finishTask(summary);
@@ -250,6 +271,7 @@ async function dispatchTool(
 export async function executeAgentTool(
   call: AgentToolCall,
   rootPath: string,
+  agentAccess: AgentAccess | null = null,
 ): Promise<AgentToolResult> {
   const store = useAgentStore.getState();
   const { label, detail } = stepLabel(call.toolName, call.input);
@@ -273,6 +295,14 @@ export async function executeAgentTool(
   if (store.status === "cancelled") {
     finishStep("denied");
     return { errorText: "Agent was stopped by the user." };
+  }
+
+  if (agentAccess && isFolderScopedTool(call.toolName)) {
+    const check = checkAgentToolPath(call.toolName, call.input, rootPath, agentAccess.folders);
+    if (!check.approved) {
+      finishStep("denied", "Folder is not approved for this agent");
+      return { errorText: "Folder is not approved for this agent" };
+    }
   }
 
   const settings = useSettingsStore.getState();
@@ -309,7 +339,7 @@ export async function executeAgentTool(
   }
 
   try {
-    const result = await dispatchTool(call.toolName, call.input, rootPath);
+    const result = await dispatchTool(call.toolName, call.input, rootPath, agentAccess);
     finishStep("done", result.detail ?? detail);
     return { output: result.output };
   } catch (err) {
@@ -325,8 +355,9 @@ export async function executeAgentToolCall(
   chat: UseChatHelpers<UIMessage>,
   rootPath: string,
   toolCall: AgentToolCall,
+  agentAccess: AgentAccess | null = null,
 ): Promise<void> {
-  const result = await executeAgentTool(toolCall, rootPath);
+  const result = await executeAgentTool(toolCall, rootPath, agentAccess);
   if ("errorText" in result) {
     chat.addToolOutput({
       tool: toolCall.toolName,

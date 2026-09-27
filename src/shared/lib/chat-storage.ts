@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import type { ChatMessage, ChatSession } from "@/shared/stores/ai";
+import type { AgentEngine, ChatMessage, ChatSession } from "@/shared/stores/ai";
 
 export interface StoredWorktree {
   branch: string;
@@ -18,6 +18,9 @@ export interface StoredSessionMetadata {
   environment?: string | null;
   worktree?: StoredWorktree | null;
   cli_provider_id?: string | null;
+  agent_id?: string | null;
+  archived?: boolean;
+  agent_engine?: AgentEngine | null;
 }
 
 export interface StoredChatMessage {
@@ -38,6 +41,9 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
   if (session.kind) stored.kind = session.kind;
   if (session.environment) stored.environment = session.environment;
   if (session.cliProviderId) stored.cli_provider_id = session.cliProviderId;
+  if (session.agentId) stored.agent_id = session.agentId;
+  if (session.archived) stored.archived = true;
+  if (session.agentEngine) stored.agent_engine = session.agentEngine;
   if (session.worktree === null) {
     stored.worktree = null;
   } else if (session.worktree) {
@@ -68,6 +74,9 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
     restored.environment = session.environment;
   }
   if (session.cli_provider_id) restored.cliProviderId = session.cli_provider_id;
+  if (session.agent_id) restored.agentId = session.agent_id;
+  if (session.archived) restored.archived = true;
+  if (session.agent_engine) restored.agentEngine = session.agent_engine;
   if (session.worktree) {
     restored.worktree = {
       branch: session.worktree.branch,

@@ -44,6 +44,12 @@ import {
   isAgentTool,
 } from "@/features/agent/tools";
 import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
+import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import {
+  buildAgentContextBlock,
+  composeAgentSystemPrompt,
+} from "@/features/ai/named-agents/prompt";
+import type { AgentAccess } from "@/features/ai/named-agents/folders";
 
 export { getMessageText };
 
@@ -86,22 +92,45 @@ export function useAI() {
     mcpServerCountRef.current = mcpServerCount;
   }, [mcpServerCount]);
 
-  const providerConfig = providers[activeProvider];
-  const hasAPIKey = apiKeyRefs[activeProvider] !== null;
-  const isCLIActive = activeCLIProvider !== null;
-  const cliAuthenticated = activeCLIProvider
-    ? cliStatuses[activeCLIProvider]?.authenticated === true
-    : false;
-  const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
-  const acpActive = useMemo(
-    () => isAcpActive(cliManifests, activeCLIProvider, experimentalAcp),
-    [cliManifests, activeCLIProvider, experimentalAcp],
-  );
-
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const cwd = sessionCwd(activeSession, rootPath);
+
+  const agents = useNamedAgentsStore((state) => state.agents);
+  const activeAgent = activeSession?.agentId
+    ? (agents.find((agent) => agent.id === activeSession.agentId) ?? null)
+    : null;
+
+  const pinnedEngine = activeSession?.agentEngine ?? null;
+  const effectiveCLIProvider =
+    pinnedEngine?.kind === "cli"
+      ? (pinnedEngine.cliProviderId ?? null)
+      : pinnedEngine?.kind === "builtin"
+        ? null
+        : activeCLIProvider;
+  const effectiveProvider =
+    pinnedEngine?.kind === "builtin" && pinnedEngine.provider
+      ? pinnedEngine.provider
+      : activeProvider;
+  const effectiveModel =
+    pinnedEngine?.kind === "builtin" && pinnedEngine.model ? pinnedEngine.model : activeModel;
+
+  const providerConfig = providers[effectiveProvider];
+  const effectiveBaseUrl =
+    pinnedEngine?.kind === "builtin" && pinnedEngine.baseUrl !== undefined
+      ? pinnedEngine.baseUrl
+      : providerConfig.baseUrl;
+  const hasAPIKey = apiKeyRefs[effectiveProvider] !== null;
+  const isCLIActive = effectiveCLIProvider !== null;
+  const cliAuthenticated = effectiveCLIProvider
+    ? cliStatuses[effectiveCLIProvider]?.authenticated === true
+    : false;
+  const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
+  const acpActive = useMemo(
+    () => isAcpActive(cliManifests, effectiveCLIProvider, experimentalAcp),
+    [cliManifests, effectiveCLIProvider, experimentalAcp],
+  );
 
   const chatRef = useRef<UseChatHelpers<UIMessage> | null>(null);
   // Request-scoped context for the next API call; consumed once so continuations stay clean.
@@ -134,23 +163,36 @@ export function useAI() {
 
   const systemPrompt = useMemo(() => {
     const rules = useProjectRules ? projectRules : null;
-    if (agentActive) return buildAgentSystemPrompt(cwd, rules);
-    return formatRulesForPrompt(rules) || undefined;
-  }, [agentActive, cwd, projectRules, useProjectRules]);
+    const agentBlock = activeAgent ? buildAgentContextBlock(activeAgent) : null;
+    if (agentActive) return buildAgentSystemPrompt(cwd, rules, agentBlock);
+    return composeAgentSystemPrompt(agentBlock, formatRulesForPrompt(rules));
+  }, [activeAgent, agentActive, cwd, projectRules, useProjectRules]);
+
+  const leadingSystemMessage = useMemo(() => {
+    if (!activeAgent) return null;
+    const rules = useProjectRules ? formatRulesForPrompt(projectRules) : null;
+    return composeAgentSystemPrompt(buildAgentContextBlock(activeAgent), rules) ?? null;
+  }, [activeAgent, projectRules, useProjectRules]);
+
+  const agentAccess = useMemo<AgentAccess | null>(
+    () => (activeAgent ? { agentId: activeAgent.id, folders: activeAgent.folders } : null),
+    [activeAgent],
+  );
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
       createStreamTransport(
-        activeProvider,
-        activeModel,
-        providerConfig.baseUrl,
+        effectiveProvider,
+        effectiveModel,
+        effectiveBaseUrl,
         isCLIActive,
-        activeCLIProvider,
+        effectiveCLIProvider,
         isCLIActive ? [] : [...toolDefinitions, ...agentToolDefinitions],
         cwd,
         activeChatSessionId,
         acpActive,
         systemPrompt,
+        leadingSystemMessage,
         () => {
           const pending = pendingContextRef.current;
           pendingContextRef.current = null;
@@ -158,17 +200,18 @@ export function useAI() {
         },
       ),
     [
-      activeProvider,
-      activeModel,
-      providerConfig.baseUrl,
+      effectiveProvider,
+      effectiveModel,
+      effectiveBaseUrl,
       isCLIActive,
-      activeCLIProvider,
+      effectiveCLIProvider,
       toolDefinitions,
       agentToolDefinitions,
       cwd,
       activeChatSessionId,
       acpActive,
       systemPrompt,
+      leadingSystemMessage,
     ],
   );
 
@@ -198,7 +241,7 @@ export function useAI() {
       }
 
       if (isAgentTool(toolCall.toolName)) {
-        await executeAgentToolCall(chat, cwd, toolCall);
+        await executeAgentToolCall(chat, cwd, toolCall, agentAccess);
         return;
       }
 
@@ -251,7 +294,7 @@ export function useAI() {
         });
       }
     },
-    [resolveTool, acpActive, cwd],
+    [resolveTool, acpActive, cwd, agentAccess],
   );
 
   // Coding CLIs run their own tools; their tool calls are reports, never work for Pragma to continue.
@@ -287,7 +330,7 @@ export function useAI() {
   }, []);
 
   const chat = useChat({
-    id: `${sessionId}:${activeProvider}:${activeModel}:${activeCLIProvider ?? "api"}`,
+    id: `${sessionId}:${effectiveProvider}:${effectiveModel}:${effectiveCLIProvider ?? "api"}`,
     transport,
     messages: initialMessages,
     experimental_throttle: 50,
@@ -310,9 +353,9 @@ export function useAI() {
         rootPath,
         activeChatSessionId,
         firstUserMsg.content,
-        isCLIActive || !activeModel
+        isCLIActive || !effectiveModel
           ? null
-          : { provider: activeProvider, model: activeModel, baseUrl: providerConfig.baseUrl },
+          : { provider: effectiveProvider, model: effectiveModel, baseUrl: effectiveBaseUrl },
       );
     },
   });
@@ -533,9 +576,9 @@ export function useAI() {
   const canChat =
     (isCLIActive && cliAuthenticated) ||
     hasAPIKey ||
-    activeProvider === "ollama" ||
-    (activeProvider === "custom" && Boolean(providerConfig.baseUrl)) ||
-    (activeProvider === "copilot" && copilotAuth.authenticated);
+    effectiveProvider === "ollama" ||
+    (effectiveProvider === "custom" && Boolean(effectiveBaseUrl)) ||
+    (effectiveProvider === "copilot" && copilotAuth.authenticated);
 
   const regenerate = useCallback(() => {
     // A retry in Agent Mode is a fresh run; a failed run would otherwise block auto-continue.
@@ -566,7 +609,7 @@ export function useAI() {
     stop: chat.stop,
     canChat,
     isCLIActive,
-    activeCLIProvider,
+    activeCLIProvider: effectiveCLIProvider,
     sessionId,
     mcpReady,
     mcpLoaded,
