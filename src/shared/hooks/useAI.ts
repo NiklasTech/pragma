@@ -50,6 +50,9 @@ import {
   composeAgentSystemPrompt,
 } from "@/features/ai/named-agents/prompt";
 import type { AgentAccess } from "@/features/ai/named-agents/folders";
+import { formatSkillCatalog, selectCatalogSkills } from "@/features/ai/skills/catalog";
+import { skillsDir } from "@/features/ai/skills/paths";
+import { useSkillsStore } from "@/features/ai/skills/store";
 
 export { getMessageText };
 
@@ -161,23 +164,41 @@ export function useAI() {
     };
   }, [cwd]);
 
+  const workspaceSkills = useSkillsStore((state) => state.skills);
+
+  useEffect(() => {
+    void useSkillsStore.getState().loadSkills(rootPath === "default" ? null : rootPath);
+  }, [rootPath]);
+
+  const skillsBlock = useMemo(
+    () => formatSkillCatalog(selectCatalogSkills(workspaceSkills, activeAgent?.skills ?? null)),
+    [activeAgent, workspaceSkills],
+  );
+
   const systemPrompt = useMemo(() => {
     const rules = useProjectRules ? projectRules : null;
     const agentBlock = activeAgent ? buildAgentContextBlock(activeAgent) : null;
-    if (agentActive) return buildAgentSystemPrompt(cwd, rules, agentBlock);
-    return composeAgentSystemPrompt(agentBlock, formatRulesForPrompt(rules));
-  }, [activeAgent, agentActive, cwd, projectRules, useProjectRules]);
+    if (agentActive) {
+      return composeAgentSystemPrompt(buildAgentSystemPrompt(cwd, rules, agentBlock), skillsBlock);
+    }
+    return composeAgentSystemPrompt(agentBlock, formatRulesForPrompt(rules), skillsBlock);
+  }, [activeAgent, agentActive, cwd, projectRules, skillsBlock, useProjectRules]);
 
   const leadingSystemMessage = useMemo(() => {
     if (!activeAgent) return null;
     const rules = useProjectRules ? formatRulesForPrompt(projectRules) : null;
-    return composeAgentSystemPrompt(buildAgentContextBlock(activeAgent), rules) ?? null;
-  }, [activeAgent, projectRules, useProjectRules]);
+    return (
+      composeAgentSystemPrompt(buildAgentContextBlock(activeAgent), rules, skillsBlock) ?? null
+    );
+  }, [activeAgent, projectRules, skillsBlock, useProjectRules]);
 
-  const agentAccess = useMemo<AgentAccess | null>(
-    () => (activeAgent ? { agentId: activeAgent.id, folders: activeAgent.folders } : null),
-    [activeAgent],
-  );
+  const agentAccess = useMemo<AgentAccess | null>(() => {
+    if (!activeAgent) return null;
+    // Skill files live in the workspace, which a worktree session's folder does not contain.
+    const folders =
+      rootPath === "default" ? activeAgent.folders : [...activeAgent.folders, skillsDir(rootPath)];
+    return { agentId: activeAgent.id, folders };
+  }, [activeAgent, rootPath]);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>

@@ -12,6 +12,7 @@ const MAX_BRIEF_CHARS: usize = 4000;
 const MAX_MEMORY_TEXT_CHARS: usize = 500;
 const MAX_MEMORY_ENTRIES: usize = 50;
 const MAX_MEMORY_TOTAL_CHARS: usize = 16000;
+const MAX_SKILL_ID_CHARS: usize = 64;
 const SECRET_MARKERS: [&str; 5] = ["sk-", "ghp_", "github_pat_", "xai-", "Bearer "];
 
 // ─── Public Types ────────────────────────────────────────────────────────────
@@ -50,6 +51,8 @@ pub struct Agent {
     pub folders: Vec<String>,
     #[serde(default)]
     pub memory: Vec<AgentMemory>,
+    #[serde(default)]
+    pub skills: Vec<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -73,6 +76,14 @@ fn roster_path(app: &AppHandle) -> Result<PathBuf, String> {
 
 fn contains_secret(text: &str) -> bool {
     SECRET_MARKERS.iter().any(|marker| text.contains(marker))
+}
+
+fn is_valid_skill_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.chars().count() <= MAX_SKILL_ID_CHARS
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 fn validate_agents(agents: &[Agent]) -> Result<(), String> {
@@ -113,6 +124,10 @@ fn validate_agents(agents: &[Agent]) -> Result<(), String> {
 
         if agent.memory.len() > MAX_MEMORY_ENTRIES || total_chars > MAX_MEMORY_TOTAL_CHARS {
             return Err("Memory is full".to_string());
+        }
+
+        if !agent.skills.iter().all(|id| is_valid_skill_id(id)) {
+            return Err("Invalid skill id".to_string());
         }
     }
 

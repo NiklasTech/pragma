@@ -108,6 +108,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       engine,
       folders,
       memory: agent?.memory ?? [],
+      skills: agent?.skills ?? [],
       createdAt: agent?.createdAt ?? now,
       updatedAt: now,
     };

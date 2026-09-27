@@ -16,6 +16,7 @@ const agent: Agent = {
   engine: { kind: "builtin", provider: "anthropic", model: "claude" },
   folders: [],
   memory: [entry("MEMORY_NEW", 2), entry("MEMORY_OLD", 1)],
+  skills: [],
   createdAt: 1,
   updatedAt: 1,
 };
