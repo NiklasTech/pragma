@@ -6,8 +6,12 @@ export default defineConfig({
   base: "/pragma/",
   cleanUrls: true,
   lastUpdated: true,
-  head: [["meta", { name: "theme-color", content: "#101114" }]],
+  head: [
+    ["meta", { name: "theme-color", content: "#101114" }],
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/pragma/favicon.svg" }],
+  ],
   themeConfig: {
+    logo: { light: "/logo-light.svg", dark: "/logo-dark.svg", alt: "Pragma" },
     nav: [
       { text: "Guide", link: "/getting-started" },
       { text: "Customization", link: "/theming" },

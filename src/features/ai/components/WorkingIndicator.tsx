@@ -1,4 +1,5 @@
-import { PulseDot } from "./PulseDot";
+import { PragmaMark } from "@/shared/components/PragmaMark";
+
 import { Shimmer } from "./Shimmer";
 import { useElapsedSeconds } from "./useElapsedSeconds";
 
@@ -11,7 +12,7 @@ export function WorkingIndicator({ label }: { label: string }) {
       aria-live="polite"
       className="flex h-7 animate-in items-center gap-2 text-ui-xs duration-300 fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
     >
-      <PulseDot />
+      <PragmaMark variant="compact" animation="thinking" className="size-3.5 text-fg-muted" />
       <Shimmer as="span" duration={1.8}>
         {label}
       </Shimmer>

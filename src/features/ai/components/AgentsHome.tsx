@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CaretDown, PaperPlaneRight } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 
+import { PragmaMark } from "@/shared/components/PragmaMark";
 import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
@@ -133,7 +134,7 @@ export function AgentsHome() {
     <div className="flex h-full w-full items-center justify-center overflow-y-auto px-6 py-10">
       <div className="flex w-full max-w-[680px] flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-3 text-center">
-          <img src="/pragma_logo.svg" alt="" className="h-9 w-auto opacity-90" />
+          <PragmaMark className="size-9 text-fg-default opacity-90" />
           <h1 className="text-xl font-semibold tracking-tight text-fg-default">
             Ask Pragma to work in this folder
           </h1>
