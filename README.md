@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/pragma_logo.svg" alt="Pragma logo" width="96">
+</p>
+
 # Pragma
 
 A lightweight, AI-native desktop IDE with an integrated terminal.

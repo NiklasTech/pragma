@@ -14,7 +14,7 @@ The Pragma mark is two lowercase **p** built from editor cells: one is you, the 
 | `app-icon/pragma-app-icon.svg`, `-small.svg`    | App icon sources (macOS icon grid, 1024 canvas)                       |
 | `animated/pragma-intro.svg`                     | Build-in animation, plays once (splash, README)                       |
 | `animated/pragma-loader.svg`                    | Looping "thinking" animation                                          |
-| `../public/pragma_logo.svg`                     | Adaptive symbol for `<img>`: follows the viewer's colour scheme       |
+| `../public/pragma_logo.svg`                     | Adaptive symbol for `<img>` (README header), follows colour scheme    |
 | `../public/favicon.svg`                         | Favicon (small cut on a Kohle tile)                                   |
 | `../src/shared/components/PragmaMark.tsx`       | In-app symbol; follows the app theme, supports `intro` and `thinking` |
 
