@@ -89,6 +89,55 @@ describe("openGitDiffInSplit", () => {
     expect(ref.parent.sizes[index]).toBe(35);
   });
 
+  it("reuses the open diff panel instead of splitting again", () => {
+    const { editorPanelId } = setupEditor();
+    openGitDiffInSplit(editorPanelId, gitDiff());
+    const panelCount = allPanelIds(useLayoutStore.getState().root).length;
+
+    const next = { ...gitDiff(), id: "diff:src/b.ts:unstaged", path: "src/b.ts" };
+    openGitDiffInSplit(editorPanelId, next);
+
+    const root = useLayoutStore.getState().root;
+    expect(allPanelIds(root)).toHaveLength(panelCount);
+    const editor = useEditorStore.getState();
+    expect(editor.getPanelActiveTabId(editorPanelId)).toBe("file-1");
+    const diffPanelId = allPanelIds(root).find(
+      (panelId) => editor.getPanelActiveTabId(panelId) === next.id,
+    );
+    expect(diffPanelId).toBeDefined();
+  });
+
+  it("shows the diff in place when the diff panel is focused", () => {
+    const { editorPanelId } = setupEditor();
+    openGitDiffInSplit(editorPanelId, gitDiff());
+    const root = useLayoutStore.getState().root;
+    const panelCount = allPanelIds(root).length;
+    const diffPanelId = allPanelIds(root).find(
+      (panelId) => useEditorStore.getState().activeTabIds[panelId] === gitDiff().id,
+    );
+    if (!diffPanelId) throw new Error("expected a diff panel");
+
+    const next = { ...gitDiff(), id: "diff:src/b.ts:unstaged", path: "src/b.ts" };
+    openGitDiffInSplit(diffPanelId, next);
+
+    expect(allPanelIds(useLayoutStore.getState().root)).toHaveLength(panelCount);
+    expect(useEditorStore.getState().getPanelActiveTabId(diffPanelId)).toBe(next.id);
+  });
+
+  it("closes the diff panel when its last diff tab closes", () => {
+    const { editorPanelId, terminalPanelId } = setupEditor();
+    const diff = gitDiff();
+    openGitDiffInSplit(editorPanelId, diff);
+    expect(allPanelIds(useLayoutStore.getState().root)).toHaveLength(3);
+
+    useEditorStore.getState().closeTab(diff.id);
+
+    expect(allPanelIds(useLayoutStore.getState().root).sort()).toEqual(
+      [editorPanelId, terminalPanelId].sort(),
+    );
+    expect(useEditorStore.getState().getPanelActiveTabId(editorPanelId)).toBe("file-1");
+  });
+
   it("falls back to a global diff tab without an editor panel", () => {
     useEditorStore.setState({
       tabs: [],

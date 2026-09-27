@@ -20,7 +20,7 @@ interface RepoCheckResult {
 interface NewSessionButtonProps {
   targetLeafId?: string;
   className?: string;
-  variant?: "default" | "outline";
+  variant?: "default" | "outline" | "secondary";
   size?: "default" | "sm";
 }
 

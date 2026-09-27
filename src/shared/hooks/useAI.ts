@@ -254,7 +254,13 @@ export function useAI() {
     [resolveTool, acpActive, cwd],
   );
 
+  // Coding CLIs run their own tools; their tool calls are reports, never work for Pragma to continue.
+  const cliActiveRef = useRef(isCLIActive);
+  cliActiveRef.current = isCLIActive;
+
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
+    if (cliActiveRef.current) return false;
+
     // Agent Mode keeps iterating on tool outputs until the model calls
     // agent_task_complete. A step limit applies only when the user set one.
     const agentState = useAgentStore.getState();
@@ -289,7 +295,6 @@ export function useAI() {
     sendAutomaticallyWhen,
     onFinish: (message) => {
       if (!activeChatSessionId) return;
-      if (isCLIActive || !activeModel) return;
 
       const { chatSessions, generateChatTitle: generateTitle } = useAIStore.getState();
       const session = chatSessions.find((s) => s.id === activeChatSessionId);
@@ -302,11 +307,12 @@ export function useAI() {
       if (message.message.role !== "assistant") return;
 
       void generateTitle(
+        rootPath,
         activeChatSessionId,
-        activeProvider,
-        activeModel,
-        providerConfig.baseUrl,
         firstUserMsg.content,
+        isCLIActive || !activeModel
+          ? null
+          : { provider: activeProvider, model: activeModel, baseUrl: providerConfig.baseUrl },
       );
     },
   });
@@ -406,7 +412,7 @@ export function useAI() {
         }
       }
 
-      if (agentActive) {
+      if (agentActive && !isCLIActive) {
         useAgentStore
           .getState()
           .startTask(messageText, useSettingsStore.getState().agent.stepLimit);
@@ -417,7 +423,7 @@ export function useAI() {
       void chat.sendMessage({ text: messageText });
       return true;
     },
-    [chat, rootPath, mcpServerCount, mcpLoaded, agentActive, activeSession],
+    [chat, rootPath, mcpServerCount, mcpLoaded, agentActive, isCLIActive, activeSession],
   );
 
   const handleSubmit = useCallback(
@@ -531,6 +537,21 @@ export function useAI() {
     (activeProvider === "custom" && Boolean(providerConfig.baseUrl)) ||
     (activeProvider === "copilot" && copilotAuth.authenticated);
 
+  const regenerate = useCallback(() => {
+    // A retry in Agent Mode is a fresh run; a failed run would otherwise block auto-continue.
+    if (agentActive && !isCLIActive) {
+      const lastUser = [...chat.messages].reverse().find((message) => message.role === "user");
+      useAgentStore
+        .getState()
+        .startTask(
+          lastUser ? getMessageText(lastUser) : "",
+          useSettingsStore.getState().agent.stepLimit,
+        );
+      useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
+    }
+    return chat.regenerate();
+  }, [agentActive, isCLIActive, chat]);
+
   return {
     messages: chat.messages,
     input,
@@ -540,7 +561,7 @@ export function useAI() {
     isLoading: chat.status === "submitted" || chat.status === "streaming",
     status: chat.status,
     error: chat.error,
-    regenerate: chat.regenerate,
+    regenerate,
     stop: chat.stop,
     canChat,
     isCLIActive,

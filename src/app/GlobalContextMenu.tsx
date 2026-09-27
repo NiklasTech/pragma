@@ -55,7 +55,14 @@ interface MenuState {
   position: { clientX: number; clientY: number } | null;
 }
 
-const MOD_KEY = navigator.platform.toLowerCase().includes("mac") ? "Cmd" : "Ctrl";
+const IS_MAC = navigator.platform.toLowerCase().includes("mac");
+const MODIFIER_LABELS = IS_MAC
+  ? { mod: "\u2318", shift: "\u21E7", alt: "\u2325" }
+  : { mod: "Ctrl+", shift: "Shift+", alt: "Alt+" };
+
+function combo(modifiers: Array<keyof typeof MODIFIER_LABELS>, key: string): string {
+  return modifiers.map((modifier) => MODIFIER_LABELS[modifier]).join("") + key;
+}
 
 function detectContextType(target: EventTarget | null): ContextType {
   const el = target as HTMLElement | null;
@@ -280,8 +287,17 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
           </div>
         )}
       />
-      <ContextMenuContent className="w-52">
-        {contextType === "editor" && (
+      <ContextMenuContent className="w-60">
+        {showAskAI && (
+          <>
+            <ContextMenuItem onClick={handleAskAI} className="font-medium">
+              <Sparkle size={14} weight="fill" className="text-primary" />
+              <span>Ask Pragma about selection</span>
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+        {contextType === "editor" && lspReady && (
           <>
             <ContextMenuItem disabled={!canGoToDefinition} onClick={handleGoToDefinition}>
               <ArrowSquareOut size={14} />
@@ -290,8 +306,8 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
             </ContextMenuItem>
             <ContextMenuItem disabled={!canFindReferences} onClick={handleFindReferences}>
               <MagnifyingGlass size={14} />
-              <span>Find All References</span>
-              <ContextMenuShortcut>Shift+F12</ContextMenuShortcut>
+              <span>Find References</span>
+              <ContextMenuShortcut>{combo(["shift"], "F12")}</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuItem disabled={!canRename} onClick={handleRename}>
               <PencilLine size={14} />
@@ -300,12 +316,12 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
             </ContextMenuItem>
             <ContextMenuItem disabled={!canQuickFix} onClick={handleQuickFix}>
               <Lightning size={14} />
-              <span>Quick Fix...</span>
+              <span>Quick Fix</span>
             </ContextMenuItem>
             <ContextMenuItem disabled={!canFormatDocument} onClick={handleFormatDocument}>
               <MagicWand size={14} />
               <span>Format Document</span>
-              <ContextMenuShortcut>Shift+Alt+F</ContextMenuShortcut>
+              <ContextMenuShortcut>{combo(["shift", "alt"], "F")}</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
           </>
@@ -315,52 +331,32 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
             <ContextMenuItem disabled={!hasSelection} onClick={handleCut}>
               <Scissors size={14} />
               <span>Cut</span>
-              <ContextMenuShortcut>
-                {MOD_KEY}+{"X"}
-              </ContextMenuShortcut>
+              <ContextMenuShortcut>{combo(["mod"], "X")}</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuItem disabled={!hasSelection} onClick={handleCopy}>
               <Copy size={14} />
               <span>Copy</span>
-              <ContextMenuShortcut>
-                {MOD_KEY}+{"C"}
-              </ContextMenuShortcut>
+              <ContextMenuShortcut>{combo(["mod"], "C")}</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuItem onClick={handlePaste}>
               <ClipboardText size={14} />
               <span>Paste</span>
-              <ContextMenuShortcut>
-                {MOD_KEY}+{"V"}
-              </ContextMenuShortcut>
+              <ContextMenuShortcut>{combo(["mod"], "V")}</ContextMenuShortcut>
             </ContextMenuItem>
+            <ContextMenuSeparator />
             <ContextMenuItem onClick={handleSelectAll}>
               <SelectionAll size={14} />
               <span>Select All</span>
-              <ContextMenuShortcut>
-                {MOD_KEY}+{"A"}
-              </ContextMenuShortcut>
+              <ContextMenuShortcut>{combo(["mod"], "A")}</ContextMenuShortcut>
             </ContextMenuItem>
           </>
         )}
         {showTerminalActions && (
           <>
-            <ContextMenuItem disabled={!hasSelection} onClick={handleCopy}>
-              <Copy size={14} />
-              <span>Copy</span>
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handlePaste}>
-              <ClipboardText size={14} />
-              <span>Paste</span>
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handleClearTerminal}>
-              <Broom size={14} />
-              <span>Clear</span>
-            </ContextMenuItem>
             {showTerminalSuggestion && (
               <>
-                <ContextMenuSeparator />
-                <ContextMenuItem onClick={handleAcceptTerminalSuggestion}>
-                  <Lightning size={14} />
+                <ContextMenuItem onClick={handleAcceptTerminalSuggestion} className="font-medium">
+                  <Lightning size={14} weight="fill" className="text-primary" />
                   <span>Accept Suggestion</span>
                   <ContextMenuShortcut>Tab</ContextMenuShortcut>
                 </ContextMenuItem>
@@ -369,16 +365,23 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
                   <span>Dismiss Suggestion</span>
                   <ContextMenuShortcut>Esc</ContextMenuShortcut>
                 </ContextMenuItem>
+                <ContextMenuSeparator />
               </>
             )}
-          </>
-        )}
-        {showAskAI && (
-          <>
+            <ContextMenuItem disabled={!hasSelection} onClick={handleCopy}>
+              <Copy size={14} />
+              <span>Copy</span>
+              <ContextMenuShortcut>{combo(["mod"], "C")}</ContextMenuShortcut>
+            </ContextMenuItem>
+            <ContextMenuItem onClick={handlePaste}>
+              <ClipboardText size={14} />
+              <span>Paste</span>
+              <ContextMenuShortcut>{combo(["mod"], "V")}</ContextMenuShortcut>
+            </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleAskAI}>
-              <Sparkle size={14} />
-              <span>Ask Pragma</span>
+            <ContextMenuItem onClick={handleClearTerminal}>
+              <Broom size={14} />
+              <span>Clear Terminal</span>
             </ContextMenuItem>
           </>
         )}

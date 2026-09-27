@@ -238,6 +238,11 @@ pub enum SessionUpdateDetail {
         #[serde(default, rename = "rawOutput")]
         raw_output: Option<Value>,
     },
+    #[serde(rename = "config_option_update")]
+    ConfigOptionUpdate {
+        #[serde(default, rename = "configOptions")]
+        config_options: Value,
+    },
     #[serde(rename = "turn_ended")]
     TurnEnded {
         #[serde(default)]

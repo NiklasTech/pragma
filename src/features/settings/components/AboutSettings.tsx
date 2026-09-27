@@ -104,7 +104,7 @@ export function AboutSettings() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-md border border-border/30 bg-bg-root px-3 py-2">
+          <div className="flex items-center justify-between gap-6 py-3">
             <div className="flex flex-col">
               <span className="text-ui-sm text-fg-default">Version</span>
               <span className="font-mono text-ui-xs text-fg-muted">{version ?? "Loading..."}</span>

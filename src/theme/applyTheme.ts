@@ -88,6 +88,7 @@ function cssVarName(tokenPath: string): string {
 
 const TOKEN_TO_CSS_VAR: Record<string, string> = {
   // Backgrounds
+  "colors-background-chrome": "--bg-chrome",
   "colors-background-root": "--bg-root",
   "colors-background-surface": "--bg-surface",
   "colors-background-elevated": "--bg-elevated",
@@ -322,6 +323,14 @@ export function generateCssVariables(theme: Theme): CssVariableMapping[] {
         }
       }
     }
+  }
+
+  // Custom themes without a frame color still need one, or the previous theme's value would stick.
+  if (!seen.has("--bg-chrome")) {
+    cssVars.push({
+      name: "--bg-chrome",
+      value: `color-mix(in oklab, ${resolve(theme.tokens.colors.background.root)} 88%, black)`,
+    });
   }
 
   // shadcn/ui aliases

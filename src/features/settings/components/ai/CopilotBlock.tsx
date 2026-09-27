@@ -99,7 +99,7 @@ export function CopilotBlock({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3">
+    <div className="flex flex-col gap-3 py-3">
       <div className="flex flex-col gap-1.5">
         <span className="text-ui-sm text-fg-default">GitHub OAuth Client ID</span>
         <span className="text-ui-xs text-fg-muted">

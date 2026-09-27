@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { Warning, Terminal, Robot, ArrowCounterClockwise, Check, X } from "@phosphor-icons/react";
+import { Warning, Terminal, Robot, ArrowCounterClockwise } from "@phosphor-icons/react";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -16,48 +16,20 @@ import { Button } from "@/shared/components/ui/button";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
+import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
+import { AssistantTimeline } from "./AssistantTimeline";
+import { splitInlineReasoning } from "./timelineItems";
 import { ChatApplyProvider } from "./ChatApplyContext";
 import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatPanelHeader } from "./ChatPanelHeader";
-import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ContextAttachments } from "./ContextAttachments";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
-import { Message, MessageContent, MessageResponse } from "./Message";
-import { ReasoningBlock } from "./ReasoningBlock";
+import { Message, MessageContent } from "./Message";
 import { SourceBlock } from "./SourceBlock";
-import { ToolInvocationBlock } from "./ToolInvocationBlock";
-
-function extractInlineReasoning(
-  text: string,
-  streaming = false,
-): { text: string; reasoning: string } {
-  const tags = [
-    { open: "<thinking>", close: "</thinking>" },
-    { open: "<reasoning>", close: "</reasoning>" },
-    { open: "<think>", close: "</think>" },
-  ];
-
-  let reasoning = "";
-  let cleaned = text;
-
-  for (const { open, close } of tags) {
-    const start = cleaned.indexOf(open);
-    if (start === -1) continue;
-    const end = cleaned.indexOf(close, start + open.length);
-    if (end !== -1) {
-      reasoning += cleaned.slice(start + open.length, end).trim() + "\n\n";
-      cleaned = cleaned.slice(0, start) + cleaned.slice(end + close.length);
-    } else if (streaming) {
-      reasoning += cleaned.slice(start + open.length).trim();
-      cleaned = cleaned.slice(0, start);
-    }
-  }
-
-  return { text: cleaned.trim(), reasoning: reasoning.trim() };
-}
+import { WorkingIndicator } from "./WorkingIndicator";
 
 export interface ChatPanelProps {
   hideHeader?: boolean;
@@ -224,10 +196,6 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             {messages.length === 0 && <ChatEmptyState />}
 
             {messages.map((msg: UIMessage) => {
-              const reasoningParts = msg.parts
-                .filter((p) => p.type === "reasoning")
-                .map((p) => (p as { text: string }).text)
-                .join("");
               const rawText = msg.parts
                 .filter((p) => p.type === "text")
                 .map((p) => (p as { text: string }).text)
@@ -244,54 +212,12 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                 url: string;
                 title?: string;
               }>;
-              const toolInvocations = msg.parts
-                .map((p) => {
-                  if (p.type === "tool-invocation" && "toolInvocation" in p) {
-                    return (p as { toolInvocation: unknown }).toolInvocation as {
-                      state:
-                        | "input-streaming"
-                        | "input-available"
-                        | "output-streaming"
-                        | "output-available"
-                        | "output-error";
-                      toolCallId: string;
-                      toolName: string;
-                      input: unknown;
-                      output?: unknown;
-                      errorText?: string;
-                    };
-                  }
-                  if (
-                    p.type === "dynamic-tool" ||
-                    (typeof p.type === "string" && p.type.startsWith("tool-"))
-                  ) {
-                    const part = p as {
-                      state:
-                        | "input-streaming"
-                        | "input-available"
-                        | "output-streaming"
-                        | "output-available"
-                        | "output-error";
-                      toolCallId: string;
-                      toolName: string;
-                      input: unknown;
-                      output?: unknown;
-                      errorText?: string;
-                    };
-                    return part;
-                  }
-                  return null;
-                })
-                .filter((inv): inv is NonNullable<typeof inv> => inv !== null);
               const isStreaming = msg.id === streamingMessageId;
-
-              const { text, reasoning: inlineReasoning } = extractInlineReasoning(
-                rawText,
-                isStreaming,
-              );
-              const reasoning = reasoningParts
-                ? `${reasoningParts}\n\n${inlineReasoning}`.trim()
-                : inlineReasoning;
+              const text = splitInlineReasoning(rawText)
+                .filter((segment) => segment.kind === "text")
+                .map((segment) => segment.text)
+                .join("")
+                .trim();
 
               if (msg.role === "user") {
                 return (
@@ -332,28 +258,13 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                         streaming={isStreaming}
                       />
                     ))}
-                    {reasoning && showThinking && (
-                      <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />
-                    )}
-                    {toolInvocations.map((inv) => (
-                      <ToolInvocationBlock
-                        key={inv.toolCallId}
-                        toolCallId={inv.toolCallId}
-                        toolName={inv.toolName}
-                        state={inv.state}
-                        input={inv.input}
-                        output={inv.output}
-                        errorText={inv.errorText}
-                      />
-                    ))}
                     <ChatApplyProvider targets={applyTargets}>
-                      <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
+                      <AssistantTimeline
+                        message={msg}
+                        streaming={isStreaming}
+                        showThinking={showThinking}
+                      />
                     </ChatApplyProvider>
-                    {isStreaming && (
-                      <span aria-hidden className="mt-1 inline-flex h-4 items-center">
-                        <span className="h-3.5 w-0.5 animate-pulse rounded-full bg-fg-subtle motion-reduce:animate-none" />
-                      </span>
-                    )}
                   </MessageContent>
                 </Message>
               );
@@ -362,7 +273,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             {status === "submitted" && (
               <Message from="assistant">
                 <MessageContent>
-                  <ChatTypingIndicator />
+                  <WorkingIndicator label="Thinking" />
                 </MessageContent>
               </Message>
             )}
@@ -375,7 +286,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
       <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-4">
         {/* Error Banner */}
         {error && (
-          <Alert variant="destructive" className="mb-3">
+          <Alert variant="destructive" className="mb-2">
             <Warning size={16} />
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription className="text-ui-base">{error.message}</AlertDescription>
@@ -389,7 +300,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
         )}
 
         {setupLog && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg border border-status-error/40 bg-status-error/10 px-3 py-2 text-ui-xs text-status-error">
+          <div className="mb-2 flex items-start gap-2 rounded-xl border border-status-error/30 bg-status-error/5 px-3 py-2 text-ui-xs text-status-error">
             <Warning size={14} className="mt-0.5 shrink-0" />
             <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{setupLog}</span>
           </div>
@@ -397,8 +308,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle px-3 py-2 text-ui-sm text-primary">
-            <Terminal size={14} className="shrink-0" />
+          <div className="mb-2 flex w-fit max-w-full items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-muted">
+            <Terminal size={13} className="shrink-0 text-primary" />
             <span className="min-w-0 flex-1 truncate" title={cliStatusText}>
               {cliStatusText}
             </span>
@@ -406,56 +317,30 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
         )}
 
         {!mcpLoaded && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-accent-subtle/50 px-3 py-1.5 text-ui-xs text-fg-subtle">
+          <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
           </div>
         )}
 
         {pendingApprovals.length > 0 && (
-          <div className="mb-3 flex flex-col gap-2">
+          <div className="mb-2 flex flex-col gap-2">
             {pendingApprovals.map((approval) => (
-              <div
+              <ApprovalCard
                 key={approval.toolCallId}
-                className="flex flex-col gap-2 rounded-xl border border-border/60 bg-bg-surface p-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-ui-sm font-medium">Allow tool: {approval.toolName}</span>
-                </div>
-                {approval.description && (
-                  <p className="text-ui-xs text-fg-muted">{approval.description}</p>
-                )}
-                {approval.args ? (
-                  <pre className="max-h-32 overflow-auto rounded-lg border border-border/60 bg-bg-root p-2 text-ui-xs text-fg-muted">
-                    {JSON.stringify(approval.args, null, 2)}
-                  </pre>
-                ) : null}
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleApproval(approval.toolCallId, false)}
-                    className="flex items-center gap-1 rounded-lg bg-status-error px-3 py-1.5 text-ui-xs text-fg-inverse transition-colors hover:bg-status-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
-                  >
-                    <X size={12} weight="bold" />
-                    Deny
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApproval(approval.toolCallId, true)}
-                    className="flex items-center gap-1 rounded-lg bg-status-success px-3 py-1.5 text-ui-xs text-fg-inverse transition-colors hover:bg-status-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-success/40"
-                  >
-                    <Check size={12} weight="bold" />
-                    Allow
-                  </button>
-                </div>
-              </div>
+                title={`Allow: ${approval.toolName}`}
+                description={approval.description}
+                args={approval.args}
+                onDeny={() => void handleApproval(approval.toolCallId, false)}
+                onAllow={() => void handleApproval(approval.toolCallId, true)}
+              />
             ))}
           </div>
         )}
 
         <AgentApprovals />
 
-        <AgentRunBar />
+        {!isCLIActive && <AgentRunBar />}
 
         <ContextAttachments attachments={lastAttachments} truncated={lastContextTruncated} />
 

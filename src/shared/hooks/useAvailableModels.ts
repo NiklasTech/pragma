@@ -45,11 +45,12 @@ export function useAvailableModels(provider: AIProvider): UseAvailableModelsResu
   const canFetch =
     hasKey || isKeyOptionalProvider(provider) || (provider === "custom" && hasBaseUrl);
 
+  const baseUrl = providers[provider]?.baseUrl;
   useEffect(() => {
     if (canFetch) {
       void loadAvailableModels(provider);
     }
-  }, [provider, canFetch, loadAvailableModels]);
+  }, [provider, canFetch, baseUrl, loadAvailableModels]);
 
   return useMemo(() => {
     if (needsKey) {

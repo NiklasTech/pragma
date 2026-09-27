@@ -5,6 +5,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/shared/components/ui/resizable";
+import { cn } from "@/shared/lib/utils";
+import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useLayoutStore } from "../store";
 import { SidebarContent } from "@/shell/chrome/Sidebar";
 import { LayoutTreeRenderer } from "./LayoutTreeRenderer";
@@ -16,6 +18,9 @@ import { Statusbar } from "@/shell/chrome/Statusbar";
 import { AgentsWorkspace } from "@/features/ai/components/AgentsWorkspace";
 import { useUiMode } from "@/shell/mode";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
+
+const GAP_HANDLE_CLASS =
+  "w-1.5 hover:bg-transparent data-[resize-handle-active]:bg-transparent focus-visible:ring-0 before:absolute before:inset-y-4 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:rounded-full before:transition-colors hover:before:bg-primary/50 data-[resize-handle-active]:before:bg-primary";
 
 export function Layout() {
   const sidebar = useLayoutStore((s) => s.sidebar);
@@ -36,8 +41,28 @@ export function Layout() {
   const aiVisible = ai.mode !== "hidden";
   const aiDrawerLeft = ai.mode === "drawer-left";
 
+  const sidebarPanel = (
+    <ResizablePanel
+      id="sidebar"
+      ref={sidebarRef}
+      defaultSize={`${sidebar.width}px`}
+      minSize={`${220}px`}
+      onResize={handleSidebarResize}
+    >
+      <div className={cn(CARD_CLASS, "h-full")}>
+        <SidebarContent />
+      </div>
+    </ResizablePanel>
+  );
+
+  const workspace = (
+    <div className={cn(CARD_CLASS, "h-full min-h-0")}>
+      <LayoutTreeRenderer node={root} />
+    </div>
+  );
+
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-root text-fg-default">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-chrome text-fg-default">
       <DiagnosticsHost />
       <Titlebar />
 
@@ -46,10 +71,8 @@ export function Layout() {
           <AgentsWorkspace />
         </div>
       ) : (
-        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5">
           {aiVisible && aiDrawerLeft && <AIChatHost />}
-
-          {showSidebar && !sidebarExpanded && sidebar.position === "left" && <SidebarContent />}
 
           {sidebarExpanded ? (
             <ResizablePanelGroup
@@ -64,45 +87,26 @@ export function Layout() {
             >
               {sidebar.position === "left" && (
                 <>
-                  <ResizablePanel
-                    id="sidebar"
-                    ref={sidebarRef}
-                    defaultSize={`${sidebar.width}px`}
-                    minSize={`${220}px`}
-                    onResize={handleSidebarResize}
-                  >
-                    <SidebarContent />
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
+                  {sidebarPanel}
+                  <ResizableHandle className={GAP_HANDLE_CLASS} />
                 </>
               )}
 
               <ResizablePanel id="workspace" minSize="20%">
-                <LayoutTreeRenderer node={root} />
+                {workspace}
               </ResizablePanel>
 
               {sidebar.position === "right" && (
                 <>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel
-                    id="sidebar"
-                    ref={sidebarRef}
-                    defaultSize={`${sidebar.width}px`}
-                    minSize={`${220}px`}
-                    onResize={handleSidebarResize}
-                  >
-                    <SidebarContent />
-                  </ResizablePanel>
+                  <ResizableHandle className={GAP_HANDLE_CLASS} />
+                  {sidebarPanel}
                 </>
               )}
             </ResizablePanelGroup>
           ) : (
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <LayoutTreeRenderer node={root} />
-            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">{workspace}</div>
           )}
 
-          {showSidebar && !sidebarExpanded && sidebar.position === "right" && <SidebarContent />}
           {aiVisible && !aiDrawerLeft && <AIChatHost />}
         </div>
       )}

@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { InputGroup, InputGroupAddon } from "@/shared/components/ui/input-group";
+import { Kbd } from "@/shared/components/ui/kbd";
 import { MagnifyingGlass, Check } from "@phosphor-icons/react";
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
@@ -47,13 +47,28 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-[28%] translate-y-0 overflow-hidden rounded-lg border-border p-0 shadow-[var(--shadow-md)]",
+          "top-[18%] bottom-auto my-0 overflow-hidden rounded-xl border-border bg-bg-elevated p-0 shadow-[var(--shadow-md)]",
           className,
         )}
-        overlayClassName="supports-backdrop-filter:backdrop-blur-none"
         showCloseButton={showCloseButton}
       >
-        <Command className="bg-transparent">{children}</Command>
+        <Command className="bg-transparent">
+          {children}
+          <div className="flex items-center gap-3 border-t border-border-subtle px-4 py-2 text-ui-2xs text-fg-subtle">
+            <span className="flex items-center gap-1">
+              <Kbd className="h-4 min-w-4 text-ui-2xs">{"\u2191\u2193"}</Kbd>
+              navigate
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd className="h-4 min-w-4 text-ui-2xs">{"\u21B5"}</Kbd>
+              open
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd className="h-4 min-w-4 text-ui-2xs">esc</Kbd>
+              close
+            </span>
+          </div>
+        </Command>
       </DialogContent>
     </Dialog>
   );
@@ -64,20 +79,19 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
-    <div data-slot="command-input-wrapper" className="p-3">
-      <InputGroup className="h-9! rounded-lg border-transparent bg-bg-input shadow-none! *:data-[slot=input-group-addon]:pl-3!">
-        <CommandPrimitive.Input
-          data-slot="command-input"
-          className={cn(
-            "w-full bg-transparent px-3 text-ui-base text-fg-default outline-hidden placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-40",
-            className,
-          )}
-          {...props}
-        />
-        <InputGroupAddon>
-          <MagnifyingGlass className="size-4 shrink-0 text-fg-subtle" />
-        </InputGroupAddon>
-      </InputGroup>
+    <div
+      data-slot="command-input-wrapper"
+      className="flex h-12 items-center gap-3 border-b border-border-subtle px-4"
+    >
+      <MagnifyingGlass className="size-4 shrink-0 text-fg-subtle" />
+      <CommandPrimitive.Input
+        data-slot="command-input"
+        className={cn(
+          "h-full w-full bg-transparent text-ui-md text-fg-default outline-hidden placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-40",
+          className,
+        )}
+        {...props}
+      />
     </div>
   );
 }
@@ -87,7 +101,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "no-scrollbar max-h-[420px] scroll-py-1 overflow-x-hidden overflow-y-auto px-2 pb-2 outline-none",
+        "no-scrollbar max-h-[400px] scroll-py-2 overflow-x-hidden overflow-y-auto p-1.5 outline-none",
         className,
       )}
       {...props}
@@ -116,7 +130,7 @@ function CommandGroup({
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "flex flex-col gap-3 py-2 text-fg-default **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-ui-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-fg-muted",
+        "flex flex-col py-1 text-fg-default **:[[cmdk-group-heading]]:px-2.5 **:[[cmdk-group-heading]]:pt-2 **:[[cmdk-group-heading]]:pb-1 **:[[cmdk-group-heading]]:text-ui-2xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-fg-subtle",
         className,
       )}
       {...props}
@@ -146,7 +160,7 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative my-1.5 flex h-8 cursor-pointer items-center gap-3 rounded-md border border-transparent px-3 text-ui-sm text-fg-default outline-hidden select-none transition-colors duration-150 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40 data-[selected]:bg-bg-hover [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group/command-item relative flex h-9 cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2.5 text-ui-sm text-fg-default outline-hidden select-none transition-colors duration-150 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40 data-[selected=true]:bg-bg-hover [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}

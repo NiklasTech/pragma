@@ -52,3 +52,39 @@ export function resolveThreadStatus(
       return "idle";
   }
 }
+
+export interface ThreadGroup<T> {
+  label: string;
+  items: T[];
+}
+
+/// Buckets threads for the sidebar: live runs first, then by last activity.
+export function groupThreadsByRecency<T extends { updatedAt: number }>(
+  threads: T[],
+  isActive: (thread: T) => boolean,
+  now: number = Date.now(),
+): ThreadGroup<T>[] {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const today = startOfToday.getTime();
+  const yesterday = today - DAY;
+  const lastWeek = today - 6 * DAY;
+
+  const groups: ThreadGroup<T>[] = [
+    { label: "Active", items: [] },
+    { label: "Today", items: [] },
+    { label: "Yesterday", items: [] },
+    { label: "Previous 7 days", items: [] },
+    { label: "Older", items: [] },
+  ];
+
+  for (const thread of threads) {
+    if (isActive(thread)) groups[0].items.push(thread);
+    else if (thread.updatedAt >= today) groups[1].items.push(thread);
+    else if (thread.updatedAt >= yesterday) groups[2].items.push(thread);
+    else if (thread.updatedAt >= lastWeek) groups[3].items.push(thread);
+    else groups[4].items.push(thread);
+  }
+
+  return groups.filter((group) => group.items.length > 0);
+}

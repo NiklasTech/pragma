@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Broom,
+  ChatCircle,
   Columns,
   Copy,
   GitBranch,
+  Robot,
   Rows,
-  SquaresFour,
   Stop,
+  TerminalWindow,
   Warning,
   X,
 } from "@phosphor-icons/react";
@@ -29,12 +31,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/shared/components/ui/resizable";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -62,19 +58,23 @@ import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
 const PANE_MIME = "application/x-pragma-pane";
 const MIN_PANE_SIZE = `${240}px`;
 const MAX_PANES_TITLE = "8 panes is the maximum";
+const PANE_CHIP =
+  "flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-2 text-ui-2xs font-medium text-fg-muted";
+const PANE_ICON_BUTTON =
+  "flex size-6 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
 
 const STATUS_LABELS: Record<AgentStatus, string> = {
-  idle: "idle",
-  running: "running",
-  "waiting-approval": "waiting",
-  done: "done",
-  error: "error",
-  cancelled: "cancelled",
+  idle: "Idle",
+  running: "Running",
+  "waiting-approval": "Waiting",
+  done: "Done",
+  error: "Error",
+  cancelled: "Cancelled",
 };
 
 const STATUS_DOTS: Record<AgentStatus, string> = {
   idle: "bg-fg-subtle",
-  running: "bg-status-success animate-pulse",
+  running: "bg-linear-to-r from-brand-from to-brand-to animate-pulse",
   "waiting-approval": "bg-status-warning",
   done: "bg-status-success",
   error: "bg-status-error",
@@ -114,19 +114,23 @@ function EmptyLeafView({ leafId }: { leafId: string }) {
   const assignSession = useAgentsPanesStore((state) => state.assignSession);
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 overflow-y-auto p-6">
-      <p className="text-ui-sm font-medium text-fg-muted">Open a session</p>
+    <div className="flex h-full flex-col items-center justify-center gap-4 overflow-y-auto p-6">
+      <div className="flex flex-col items-center gap-1 text-center">
+        <p className="text-ui-sm font-medium text-fg-default">Empty pane</p>
+        <p className="text-ui-xs text-fg-subtle">Start something new or show an existing thread.</p>
+      </div>
       <NewSessionButton targetLeafId={leafId} variant="outline" size="sm" />
       {chatSessions.length > 0 && (
-        <div className="flex w-full max-w-[280px] flex-col gap-0.5">
+        <div className="flex w-full max-w-[300px] flex-col gap-0.5 rounded-xl border border-border-subtle bg-bg-surface p-1">
           {chatSessions.map((session) => (
             <button
               key={session.id}
               type="button"
               onClick={() => assignSession(rootPath, leafId, session.id)}
-              className="truncate rounded-md px-2 py-1.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
             >
-              {session.title}
+              <ChatCircle size={13} className="shrink-0 text-fg-subtle" />
+              <span className="truncate">{session.title}</span>
             </button>
           ))}
         </div>
@@ -284,14 +288,12 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       data-pane-group={node.id}
       data-pane-status={status}
       data-pane-focused={focused ? "true" : undefined}
-      className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden border border-border/60 bg-bg-root",
-      )}
+      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg-root"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 bg-bg-surface px-1">
+      <div className="@container/pane-header flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle px-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
           {node.children.map((leaf, index) => {
             const isActive = leaf.id === activeLeaf.id;
@@ -322,111 +324,129 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
           })}
         </div>
 
-        {terminalSession ? (
-          <>
-            <span className="shrink-0 text-ui-sm font-medium text-fg-default">
-              {terminalManifest?.name ?? "Terminal"}
-            </span>
-            <span
-              className="shrink-0 rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-sm text-fg-muted"
-              data-terminal-status={terminalStatus.status}
-            >
-              {terminalLabel}
-            </span>
-            <button
-              type="button"
-              onClick={() => requestTerminalStop(terminalSession.id)}
-              disabled={terminalStatus.status !== "running"}
-              aria-label="Stop"
-              title="Stop"
-              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-status-error disabled:opacity-40"
-            >
-              <Stop size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => copyTerminalView(terminalSession.id)}
-              aria-label="Copy output"
-              title="Copy output"
-              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            >
-              <Copy size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => clearTerminalView(terminalSession.id)}
-              aria-label="Clear terminal"
-              title="Clear terminal"
-              className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            >
-              <Broom size={16} />
-            </button>
-          </>
-        ) : (
-          <>
-            <span
-              className="shrink-0 rounded-sm bg-bg-hover px-1.5 py-0.5 text-ui-sm font-medium text-fg-default"
-              title={`Mode: ${modeActive ? "Agent" : "Ask"}`}
-            >
-              {modeActive ? "Agent" : "Ask"}
-            </span>
-
-            {activeBranch && (
-              <span
-                className="flex max-w-[140px] shrink-0 items-center gap-1 text-ui-sm text-fg-muted"
-                title={
-                  activeSession?.worktree
-                    ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
-                    : activeBranch
-                }
-              >
-                <GitBranch size={13} className="shrink-0" />
-                <span className="truncate">{activeBranch}</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {terminalSession ? (
+            <>
+              <span className={PANE_CHIP} title={terminalManifest?.name ?? "Terminal"}>
+                <TerminalWindow size={12} className="shrink-0" />
+                <span className="@max-[520px]/pane-header:hidden">
+                  {terminalManifest?.name ?? "Terminal"}
+                </span>
               </span>
+              <span className={PANE_CHIP} data-terminal-status={terminalStatus.status}>
+                {terminalLabel}
+              </span>
+            </>
+          ) : (
+            <>
+              {activeBranch && (
+                <span
+                  className={PANE_CHIP}
+                  title={
+                    activeSession?.worktree
+                      ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
+                      : activeBranch
+                  }
+                >
+                  <GitBranch size={12} className="shrink-0" />
+                  <span className="max-w-[140px] truncate @max-[560px]/pane-header:hidden">
+                    {activeBranch}
+                  </span>
+                </span>
+              )}
+              <span className={PANE_CHIP} title={`Mode: ${modeActive ? "Agent" : "Ask"}`}>
+                {modeActive ? (
+                  <Robot size={12} className="shrink-0" />
+                ) : (
+                  <ChatCircle size={12} className="shrink-0" />
+                )}
+                <span className="@max-[460px]/pane-header:hidden">
+                  {modeActive ? "Agent" : "Ask"}
+                </span>
+              </span>
+              <span
+                className={cn(PANE_CHIP, status === "running" && "text-primary")}
+                title={STATUS_LABELS[status]}
+              >
+                <span
+                  className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOTS[status])}
+                  aria-hidden="true"
+                />
+                <span className="@max-[380px]/pane-header:hidden">{STATUS_LABELS[status]}</span>
+              </span>
+            </>
+          )}
+
+          <div className="flex items-center gap-0.5 rounded-full border border-border-subtle p-0.5">
+            {terminalSession && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => requestTerminalStop(terminalSession.id)}
+                  disabled={terminalStatus.status !== "running"}
+                  aria-label="Stop"
+                  title="Stop"
+                  className={cn(PANE_ICON_BUTTON, "enabled:hover:text-status-error")}
+                >
+                  <Stop size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copyTerminalView(terminalSession.id)}
+                  aria-label="Copy output"
+                  title="Copy output"
+                  className={PANE_ICON_BUTTON}
+                >
+                  <Copy size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => clearTerminalView(terminalSession.id)}
+                  aria-label="Clear terminal"
+                  title="Clear terminal"
+                  className={PANE_ICON_BUTTON}
+                >
+                  <Broom size={13} />
+                </button>
+              </>
             )}
-
-            <span className="flex shrink-0 items-center gap-1.5 text-ui-sm text-fg-muted">
-              <span className={cn("size-2 rounded-full", STATUS_DOTS[status])} aria-hidden="true" />
-              {STATUS_LABELS[status]}
-            </span>
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={() => {
-            focusLeaf(rootPath, activeLeaf.id);
-            splitRight(rootPath);
-          }}
-          disabled={atCap}
-          aria-label="Split right"
-          title={atCap ? MAX_PANES_TITLE : "Split right"}
-          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40"
-        >
-          <Columns size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            focusLeaf(rootPath, activeLeaf.id);
-            splitDown(rootPath);
-          }}
-          disabled={atCap}
-          aria-label="Split down"
-          title={atCap ? MAX_PANES_TITLE : "Split down"}
-          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40"
-        >
-          <Rows size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => requestClose([activeLeaf.id])}
-          aria-label="Close pane"
-          title="Close pane"
-          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-        >
-          <X size={16} />
-        </button>
+            <button
+              type="button"
+              onClick={() => {
+                focusLeaf(rootPath, activeLeaf.id);
+                splitRight(rootPath);
+              }}
+              disabled={atCap}
+              aria-label="Split right"
+              title={atCap ? MAX_PANES_TITLE : "Split right"}
+              className={PANE_ICON_BUTTON}
+            >
+              <Columns size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                focusLeaf(rootPath, activeLeaf.id);
+                splitDown(rootPath);
+              }}
+              disabled={atCap}
+              aria-label="Split down"
+              title={atCap ? MAX_PANES_TITLE : "Split down"}
+              className={PANE_ICON_BUTTON}
+            >
+              <Rows size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => requestClose([activeLeaf.id])}
+              aria-label="Close pane"
+              title="Close pane"
+              className={PANE_ICON_BUTTON}
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1" onClick={() => focusLeaf(rootPath, activeLeaf.id)}>
@@ -484,7 +504,10 @@ function SplitView({ node, totalLeaves }: { node: SplitNode; totalLeaves: number
           <PaneNodeView node={child} totalLeaves={totalLeaves} />
         </ResizablePanel>,
         index < node.children.length - 1 ? (
-          <ResizableHandle key={`${child.id}-handle`} withHandle />
+          <ResizableHandle
+            key={`${child.id}-handle`}
+            className="bg-border-subtle hover:bg-primary/50 data-[resize-handle-active]:bg-primary"
+          />
         ) : null,
       ])}
     </ResizablePanelGroup>
@@ -500,46 +523,8 @@ export function PaneTree() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
   const totalLeaves = useAgentsPanesStore((state) => selectLeafCount(state, rootPath));
-  const applyPreset = useAgentsPanesStore((state) => state.applyPreset);
-  const chatSessions = useAIStore((state) => state.chatSessions);
-
-  const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
 
   if (!root) return null;
 
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-8 shrink-0 items-center justify-end border-b border-border/60 px-1.5">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <button
-                type="button"
-                aria-label="Pane presets"
-                title="Pane presets"
-                className="flex size-7 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-              >
-                <SquaresFour size={16} />
-              </button>
-            }
-          />
-          <DropdownMenuContent align="end" className="min-w-[120px]">
-            <DropdownMenuItem onClick={() => applyPreset(rootPath, "focus", sessionIds)}>
-              Focus
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => applyPreset(rootPath, "pair", sessionIds)}>
-              Pair
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => applyPreset(rootPath, "grid", sessionIds)}>
-              Grid
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="min-h-0 flex-1">
-        <PaneNodeView node={root} totalLeaves={totalLeaves} />
-      </div>
-    </div>
-  );
+  return <PaneNodeView node={root} totalLeaves={totalLeaves} />;
 }

@@ -6,7 +6,7 @@
     "id": "light-default",
     "name": "Light Default",
     "author": "Pragma Team",
-    "description": "A clean, calm light theme with cool neutral surfaces and an indigo accent.",
+    "description": "White work surfaces in a soft grey frame with a clear azure accent.",
     "version": "1.1.0",
     "license": "MIT"
   },
@@ -20,12 +20,13 @@
   "tokens": {
     "colors": {
       "background": {
+        "chrome": "#e8ecf2",
         "root": "#ffffff",
-        "surface": "#f4f6f9",
-        "elevated": "#e9edf3",
+        "surface": "#f5f7fb",
+        "elevated": "#ffffff",
         "input": "#ffffff",
-        "hover": "rgba(15, 23, 42, 0.07)",
-        "active": "rgba(79, 94, 208, 0.10)",
+        "hover": "rgba(15, 23, 42, 0.05)",
+        "active": "rgba(10, 110, 230, 0.10)",
         "overlay": "rgba(15, 23, 42, 0.35)"
       },
       "foreground": {
@@ -35,14 +36,14 @@
         "inverse": "#ffffff"
       },
       "accent": {
-        "default": "#4f5ed0",
-        "subtle": "rgba(79, 94, 208, 0.10)",
-        "glow": "rgba(79, 94, 208, 0.25)"
+        "default": "#0a6ee6",
+        "subtle": "rgba(10, 110, 230, 0.10)",
+        "glow": "rgba(10, 110, 230, 0.25)"
       },
       "border": {
-        "default": "rgba(15, 23, 42, 0.14)",
-        "subtle": "rgba(15, 23, 42, 0.08)",
-        "focus": "rgba(79, 94, 208, 0.45)"
+        "default": "rgba(15, 23, 42, 0.11)",
+        "subtle": "rgba(15, 23, 42, 0.07)",
+        "focus": "rgba(10, 110, 230, 0.45)"
       },
       "status": {
         "success": "#1f9d6e",
@@ -70,7 +71,7 @@
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(79, 94, 208, 0.18)",
+      "selection": "rgba(10, 110, 230, 0.16)",
       "scrollbar": {
         "track": "transparent",
         "thumb": "rgba(15, 23, 42, 0.14)",
@@ -90,7 +91,7 @@
       },
       "line": {
         "active": "rgba(15, 23, 42, 0.025)",
-        "highlight": "rgba(79, 94, 208, 0.05)"
+        "highlight": "rgba(10, 110, 230, 0.05)"
       },
       "syntax": {
         "keyword": "#7c5cd6",
@@ -108,7 +109,7 @@
     },
 
     "terminal": {
-      "background": "#fbfbfc",
+      "background": "{colors.background.root}",
       "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
       "cursorAccent": "{colors.accent.default}",
@@ -118,7 +119,7 @@
         "red": "#d6455a",
         "green": "#1f9d6e",
         "yellow": "#c28a1f",
-        "blue": "#4f5ed0",
+        "blue": "#0a6ee6",
         "magenta": "#7c5cd6",
         "cyan": "#0e8fa3",
         "white": "#5a6270"
@@ -136,13 +137,13 @@
     },
 
     "layout": {
-      "headerHeight": 52,
-      "tabHeight": 44,
-      "statusbarHeight": 24,
+      "headerHeight": 40,
+      "tabHeight": 36,
+      "statusbarHeight": 26,
       "breadcrumbHeight": 28,
       "inputbarHeight": 42,
       "sidebarWidth": 260,
-      "sidebarCollapsedWidth": 40,
+      "sidebarCollapsedWidth": 44,
       "sidebarMinWidth": 180,
       "sidebarMaxWidth": 480,
       "panelMinHeight": 160,
@@ -161,9 +162,9 @@
         "2xs": "11px",
         "xs": "12px",
         "sm": "13px",
-        "base": "14px",
-        "md": "15px",
-        "lg": "18px"
+        "base": "13px",
+        "md": "14px",
+        "lg": "17px"
       },
       "editor": "14px",
       "lineHeight": {
@@ -171,9 +172,9 @@
           "2xs": "14px",
           "xs": "16px",
           "sm": "18px",
-          "base": "21px",
-          "md": "23px",
-          "lg": "26px"
+          "base": "20px",
+          "md": "22px",
+          "lg": "24px"
         },
         "editor": "22px"
       }

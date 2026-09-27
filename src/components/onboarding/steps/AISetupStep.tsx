@@ -45,11 +45,10 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
 
+  const loadKeyStatus = aiStore.loadKeyStatus;
   useEffect(() => {
-    ONBOARDING_PROVIDERS.filter((p) => supportsApiKey(p)).forEach(
-      (p) => void aiStore.loadKeyStatus(p),
-    );
-  }, [aiStore]);
+    ONBOARDING_PROVIDERS.filter((p) => supportsApiKey(p)).forEach((p) => void loadKeyStatus(p));
+  }, [loadKeyStatus]);
 
   const handleProviderChange = (provider: AIProvider) => {
     const nextModel =
@@ -99,7 +98,7 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
             onValueChange={(v) => handleProviderChange(v as AIProvider)}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{PROVIDER_LABELS[activeProvider]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {ONBOARDING_PROVIDERS.map((provider) => (
@@ -132,9 +131,16 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
             disabled={modelsLoading || modelSelectNeedsKey}
           >
             <SelectTrigger>
-              <SelectValue
-                placeholder={modelSelectNeedsKey ? "Save an API key first" : "Select a model"}
-              />
+              <SelectValue>
+                {providerConfig.model ? (
+                  (availableModels.find((model) => model.id === providerConfig.model)?.name ??
+                  providerConfig.model)
+                ) : (
+                  <span className="text-fg-subtle">
+                    {modelSelectNeedsKey ? "Save an API key first" : "Select a model"}
+                  </span>
+                )}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {availableModels.map((model) => (

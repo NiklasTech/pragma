@@ -1,5 +1,6 @@
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { getIsMac } from "@/shared/lib/shortcuts";
 
 export function CommitArea({
   commitMessage,
@@ -19,26 +20,27 @@ export function CommitArea({
   onCommit: () => void;
 }) {
   return (
-    <div className="p-2">
+    <div className="flex flex-col gap-2 px-2.5 pt-1 pb-2">
       <Textarea
         value={commitMessage}
         onChange={(e) => setCommitMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Commit message"
+        placeholder="Describe your changes"
         rows={3}
-        className="max-h-[240px] min-h-[72px] resize-none rounded-sm"
+        className="max-h-[240px] min-h-[64px] resize-none rounded-lg"
       />
-
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="truncate text-ui-xs text-fg-muted">
-          {stagedCount === 0
-            ? "Nothing staged"
-            : `${stagedCount} ${stagedCount === 1 ? "file" : "files"} staged`}
-        </span>
-        <Button disabled={!canCommit} onClick={onCommit}>
-          {actionBusy === "commit" ? "Committing…" : "Commit"}
-        </Button>
-      </div>
+      <Button disabled={!canCommit} onClick={onCommit} className="w-full rounded-lg">
+        {actionBusy === "commit"
+          ? "Committing…"
+          : stagedCount === 0
+            ? "Stage files to commit"
+            : `Commit ${stagedCount} ${stagedCount === 1 ? "file" : "files"}`}
+        {stagedCount > 0 && actionBusy !== "commit" && (
+          <span className="ml-auto font-mono text-ui-2xs opacity-60">
+            {getIsMac() ? "\u2318\u21B5" : "Ctrl+\u21B5"}
+          </span>
+        )}
+      </Button>
     </div>
   );
 }

@@ -51,7 +51,7 @@ export function ProviderFields({
         control={
           <Select value={provider} onValueChange={(v) => onProviderChange(v as AIProvider)}>
             <SelectTrigger className="max-w-[200px]">
-              <SelectValue />
+              <SelectValue>{PROVIDER_LABELS[provider]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(PROVIDER_LABELS) as AIProvider[]).map((p) => (
@@ -64,29 +64,38 @@ export function ProviderFields({
         }
       />
 
-      <div className="flex items-center justify-between rounded-md border border-border/30 bg-bg-root px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span
-            className={`size-2 rounded-full ${configured ? "bg-status-success" : "bg-fg-subtle"}`}
-          />
-          <span className="text-ui-sm text-fg-default">{PROVIDER_LABELS[provider]}</span>
-          <span className="text-ui-xs text-fg-muted">
-            {configured ? "Configured" : "Not configured"}
-          </span>
-        </div>
-        {testStatus === "ok" && (
-          <span className="flex items-center gap-1 text-ui-xs text-status-success">
-            <CheckCircle size={14} /> Connected
-          </span>
-        )}
-        {testStatus === "error" && (
-          <span className="flex items-center gap-1 text-ui-xs text-status-error">
-            <XCircle size={14} /> Failed
-          </span>
-        )}
-      </div>
+      <SettingRow
+        label="Status"
+        description={`Whether ${PROVIDER_LABELS[provider]} is ready to use`}
+        control={
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-ui-xs font-medium ${configured ? "bg-status-success/10 text-status-success" : "bg-bg-hover text-fg-muted"}`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${configured ? "bg-status-success" : "bg-fg-subtle"}`}
+              />
+              {configured ? "Configured" : "Not configured"}
+            </span>
+            {testStatus === "ok" && (
+              <span className="flex items-center gap-1 text-ui-xs text-status-success">
+                <CheckCircle size={14} /> Connected
+              </span>
+            )}
+            {testStatus === "error" && (
+              <span className="flex items-center gap-1 text-ui-xs text-status-error">
+                <XCircle size={14} /> Failed
+              </span>
+            )}
+          </div>
+        }
+      />
 
-      <ModelSelect provider={provider} value={model} onChange={onModelChange} />
+      <SettingRow
+        label="Model"
+        description="Used for chat and agent runs"
+        control={<ModelSelect provider={provider} value={model} onChange={onModelChange} />}
+      />
 
       <SettingRow
         label="Show unavailable providers"
@@ -126,7 +135,7 @@ export function ProviderFields({
       )}
 
       {isCLIOnlyProvider(provider) && (
-        <p className="text-ui-xs text-fg-muted">
+        <p className="py-3 text-ui-xs text-fg-muted">
           {PROVIDER_LABELS[provider]} is a local CLI and is configured from Local CLI Integration
           below.
         </p>

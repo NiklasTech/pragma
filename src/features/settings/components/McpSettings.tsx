@@ -214,18 +214,25 @@ export function McpSettings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingSection title="Model Context Protocol Servers">
-        <div className="mb-2 flex justify-end">
-          <Button size="xs" onClick={handleAdd} disabled={editingId !== null} className="gap-1">
-            <Plus size={14} />
+      <SettingSection
+        title="Servers"
+        action={
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={handleAdd}
+            disabled={editingId !== null}
+            className="gap-1"
+          >
+            <Plus size={12} />
             Add Server
           </Button>
-        </div>
-
-        {(loading || statusLoading) && <p className="text-ui-xs text-fg-muted">Loading...</p>}
+        }
+      >
+        {(loading || statusLoading) && <p className="py-3 text-ui-xs text-fg-muted">Loading...</p>}
 
         {editingId !== null && (
-          <div className="flex flex-col gap-3 rounded-md border border-border/30 bg-bg-root p-3">
+          <div className="flex flex-col gap-3 py-3">
             <div className="flex flex-col gap-1.5">
               <Label>Name</Label>
               <Input

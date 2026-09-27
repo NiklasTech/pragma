@@ -14,7 +14,6 @@ import { useTerminalSettingsSync } from "@/shared/hooks/useTerminalSettingsSync"
 import { useLayoutStore } from "@/shell/layout";
 import { findPanelByKind } from "@/shell/layout/tree/operations";
 import { resolvePanelActiveSessionId } from "@/shared/lib/terminal-panels";
-import { PanelHeader } from "@/shared/components/PanelHeader";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { Button } from "@/shared/components/ui/button";
 import { dispatchTerminalClear, dispatchTerminalCopyOutput } from "@/shared/lib/terminal-events";
@@ -99,59 +98,61 @@ export function Terminal({ panelId }: TerminalProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-bg-root">
-      <PanelHeader
-        actions={
-          <div className="flex items-center gap-0.5">
+      <div className="flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle pr-1.5">
+        <TerminalTabs
+          sessions={panelSessions}
+          activeSessionId={activeSessionId}
+          panelId={panelId}
+        />
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={dispatchTerminalCopyOutput}
+            disabled={panelSessions.length === 0}
+            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            title="Copy Output"
+          >
+            <Copy size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={dispatchTerminalClear}
+            disabled={panelSessions.length === 0}
+            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            title="Clear Terminal"
+          >
+            <Broom size={13} />
+          </button>
+          {panelId && (
             <button
               type="button"
-              onClick={dispatchTerminalCopyOutput}
-              disabled={panelSessions.length === 0}
-              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
-              title="Copy Output"
+              onClick={handleSplit}
+              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              title="Split Terminal Right"
             >
-              <Copy size={13} />
+              <SplitHorizontal size={13} />
             </button>
+          )}
+          <button
+            type="button"
+            onClick={handleNewSession}
+            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            title="New Session"
+          >
+            <Plus size={13} weight="bold" />
+          </button>
+          {panelId && (
             <button
               type="button"
-              onClick={dispatchTerminalClear}
-              disabled={panelSessions.length === 0}
-              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
-              title="Clear Terminal"
+              onClick={handleClosePanel}
+              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+              title="Close Panel"
             >
-              <Broom size={13} />
+              <X size={13} weight="bold" />
             </button>
-            {panelId && (
-              <button
-                type="button"
-                onClick={handleSplit}
-                className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-                title="Split Terminal Right"
-              >
-                <SplitHorizontal size={13} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleNewSession}
-              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
-              title="New Session"
-            >
-              <Plus size={13} weight="bold" />
-            </button>
-            {panelId && (
-              <button
-                type="button"
-                onClick={handleClosePanel}
-                className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
-                title="Close Panel"
-              >
-                <X size={13} weight="bold" />
-              </button>
-            )}
-          </div>
-        }
-      />
-      <TerminalTabs sessions={panelSessions} activeSessionId={activeSessionId} panelId={panelId} />
+          )}
+        </div>
+      </div>
       <div className="relative flex-1 min-h-0">
         {showShellError ? (
           <PanelEmptyState
