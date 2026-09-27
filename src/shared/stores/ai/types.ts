@@ -48,6 +48,16 @@ export interface SessionWorktree {
   status: "ready" | "error";
 }
 
+export type AgentEngineKind = "builtin" | "cli";
+
+export interface AgentEngine {
+  kind: AgentEngineKind;
+  provider?: AIProvider;
+  model?: string;
+  baseUrl?: string;
+  cliProviderId?: string;
+}
+
 export interface ChatSession {
   id: string;
   title: string;
@@ -58,6 +68,9 @@ export interface ChatSession {
   environment?: "checkout" | "worktree";
   worktree?: SessionWorktree | null;
   cliProviderId?: string;
+  agentId?: string;
+  archived?: boolean;
+  agentEngine?: AgentEngine;
 }
 
 export interface CreateChatSessionInit {
@@ -67,6 +80,8 @@ export interface CreateChatSessionInit {
   environment?: ChatSession["environment"];
   worktree?: ChatSession["worktree"];
   cliProviderId?: string;
+  agentId?: string;
+  agentEngine?: AgentEngine;
 }
 
 // ─── CLI Types ───────────────────────────────────────────────────────────────

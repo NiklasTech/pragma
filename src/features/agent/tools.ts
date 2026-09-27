@@ -11,6 +11,7 @@ export const AGENT_TOOL_NAMES = {
   todoWrite: "agent_todo_write",
   runCommand: "agent_run_command",
   taskComplete: "agent_task_complete",
+  remember: "agent_remember",
 } as const;
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[keyof typeof AGENT_TOOL_NAMES];
@@ -216,9 +217,28 @@ export const AGENT_TOOL_DEFINITIONS: BackendToolDefinition[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: AGENT_TOOL_NAMES.remember,
+      description:
+        "Append one short fact to the current agent's memory. Use it for durable preferences or context, never for secrets.",
+      parameters: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "The memory entry to store." },
+        },
+        required: ["text"],
+      },
+    },
+  },
 ];
 
-export function buildAgentSystemPrompt(rootPath: string, rules?: ProjectRules | null): string {
+export function buildAgentSystemPrompt(
+  rootPath: string,
+  rules?: ProjectRules | null,
+  agentBlock?: string | null,
+): string {
   const lines = [
     "You are running in Agent Mode inside the Pragma IDE. You work autonomously on the user's task until it is done.",
     `The workspace root is: ${rootPath}`,
@@ -229,10 +249,16 @@ export function buildAgentSystemPrompt(rootPath: string, rules?: ProjectRules | 
     `Do not stop early and do not ask questions. When the task is completely finished and verified, call ${AGENT_TOOL_NAMES.taskComplete} with a summary.`,
   ];
 
+  const blocks: string[] = [];
+  if (agentBlock && agentBlock.trim().length > 0) {
+    blocks.push(agentBlock);
+  }
+  blocks.push(lines.join("\n"));
+
   const rulesBlock = formatRulesForPrompt(rules ?? null);
   if (rulesBlock) {
-    lines.push("", rulesBlock);
+    blocks.push(rulesBlock);
   }
 
-  return lines.join("\n");
+  return blocks.join("\n\n");
 }
