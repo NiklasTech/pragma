@@ -20,6 +20,7 @@ import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
 import { useAgentStore } from "@/features/agent/store";
 import { useSteerQueue } from "@/features/ai/steer/useSteerQueue";
 import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
+import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -100,6 +101,15 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     runFailed: agentStatus === "error" || agentStatus === "cancelled",
     submitText,
     stopChat: stop,
+  });
+
+  const stopRun = useSessionRunReporter({
+    sessionId: activeChatSessionId,
+    inFlight,
+    chatFailed: status === "error",
+    isCLIActive,
+    stop: handleStop,
+    submitText,
   });
 
   const openFiles = useMemo(
@@ -396,7 +406,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           inFlight={inFlight}
           canChat={canChat}
           mcpLoaded={mcpLoaded}
-          onStop={handleStop}
+          onStop={stopRun}
         />
       </div>
     </div>
