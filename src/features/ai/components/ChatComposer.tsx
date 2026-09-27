@@ -26,6 +26,7 @@ interface ChatComposerProps {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   isLoading: boolean;
   isStreaming: boolean;
+  inFlight?: boolean;
   canChat: boolean;
   mcpLoaded: boolean;
   onStop: () => void;
@@ -37,6 +38,7 @@ export function ChatComposer({
   onSubmit,
   isLoading,
   isStreaming,
+  inFlight,
   canChat,
   mcpLoaded,
   onStop,
@@ -53,7 +55,7 @@ export function ChatComposer({
   const cursorRef = useRef(0);
   const [cursorPosition, setCursorPosition] = useState(0);
 
-  const busy = isLoading;
+  const isInFlight = inFlight ?? (isLoading || isStreaming);
 
   const { prefillPrompt, consumePrefill } = useAIEditStore();
 
@@ -98,12 +100,12 @@ export function ChatComposer({
 
       if (matchShortcut(e, sendShortcut)) {
         e.preventDefault();
-        if (input.trim() && !isLoading) {
+        if (input.trim()) {
           onSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
         }
       }
     },
-    [input, isLoading, onSubmit, sendShortcut],
+    [input, onSubmit, sendShortcut],
   );
 
   const handleContextSelect = useCallback(
@@ -193,7 +195,6 @@ export function ChatComposer({
             onClick={updateCursorPosition}
             onSelect={updateCursorPosition}
             placeholder="Ask Pragma anything. Type @ to add files."
-            disabled={busy}
             className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent"
           />
           <ContextPicker
@@ -208,7 +209,6 @@ export function ChatComposer({
           <button
             type="button"
             onClick={insertContextMention}
-            disabled={busy}
             aria-label="Add context"
             title="Add files and context (@)"
             className="flex size-7 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40"
@@ -223,13 +223,9 @@ export function ChatComposer({
           <ChatToolbar />
           <div className="ml-auto flex items-center gap-1">
             {voiceInput && (
-              <ComposerMicButton
-                recording={dictation.recording}
-                disabled={busy && !dictation.recording}
-                onClick={dictation.toggle}
-              />
+              <ComposerMicButton recording={dictation.recording} onClick={dictation.toggle} />
             )}
-            {isStreaming ? (
+            {isInFlight && (
               <button
                 type="button"
                 onClick={onStop}
@@ -239,12 +235,13 @@ export function ChatComposer({
               >
                 <Stop size={12} weight="fill" />
               </button>
-            ) : (
+            )}
+            {(!isInFlight || input.trim()) && (
               <button
                 type="submit"
                 aria-label="Send"
                 title="Send"
-                disabled={!input.trim() || isLoading || !canChat || !mcpLoaded}
+                disabled={!input.trim() || !canChat || !mcpLoaded}
                 className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fg-default text-bg-root transition-colors hover:bg-fg-default/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:bg-bg-hover disabled:text-fg-subtle"
               >
                 <PaperPlaneRight size={13} weight="bold" />

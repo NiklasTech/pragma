@@ -71,7 +71,7 @@ interface AgentActions {
   setTodos: (items: AgentTodo[], merge: boolean) => void;
   setRules: (rules: ProjectRules | null) => void;
   setStopCallback: (callback: (() => void) | null) => void;
-  requestStop: () => void;
+  requestStop: (intent?: "cancel" | "steer") => void;
 }
 
 const initialState: AgentState = {
@@ -209,7 +209,7 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
 
   setStopCallback: (callback) => set({ stopCallback: callback }),
 
-  requestStop: () => {
+  requestStop: (intent = "cancel") => {
     const { stopCallback, pendingApprovals, editReviews } = get();
     stopCallback?.();
     for (const approval of pendingApprovals) {
@@ -218,7 +218,12 @@ export const useAgentStore = create<AgentState & AgentActions>()((set, get) => (
     for (const review of editReviews) {
       review.resolve(false);
     }
-    set({ status: "cancelled", runSessionId: null, pendingApprovals: [], editReviews: [] });
+    set({
+      status: intent === "steer" ? "idle" : "cancelled",
+      runSessionId: null,
+      pendingApprovals: [],
+      editReviews: [],
+    });
     stopCallback?.();
   },
 }));

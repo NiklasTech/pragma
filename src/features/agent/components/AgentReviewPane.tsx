@@ -11,6 +11,7 @@ import {
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { cn } from "@/shared/lib/utils";
+import { useAgentStop } from "@/features/ai/steer/useSteerQueue";
 
 import { useAgentStore, type AgentStatus, type AgentStep } from "../store";
 import { AgentRulesStatus } from "./AgentRulesStatus";
@@ -69,7 +70,8 @@ function StepRow({ step, isLast }: { step: AgentStep; isLast: boolean }) {
 }
 
 export function AgentReviewPane() {
-  const { status, goal, steps, stepCount, summary, error, requestStop } = useAgentStore();
+  const { status, goal, steps, stepCount, summary, error } = useAgentStore();
+  const stopAgent = useAgentStop();
 
   const canStop = status === "running" || status === "waiting-approval";
 
@@ -103,7 +105,7 @@ export function AgentReviewPane() {
               {canStop && (
                 <button
                   type="button"
-                  onClick={requestStop}
+                  onClick={stopAgent}
                   title="Stop agent"
                   aria-label="Stop agent"
                   className="flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-status-error/10 hover:text-status-error"

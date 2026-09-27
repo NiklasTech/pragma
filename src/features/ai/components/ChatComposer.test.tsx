@@ -46,6 +46,22 @@ describe("ChatComposer", () => {
     expect(html).not.toContain('aria-label="Send"');
   });
 
+  it("shows stop and send together while streaming with input", () => {
+    const html = renderToStaticMarkup(
+      <ChatComposer {...baseProps} input="next" isLoading isStreaming />,
+    );
+    expect(html).toContain('aria-label="Stop"');
+    expect(html).toContain('aria-label="Send"');
+  });
+
+  it("keeps the textarea editable while streaming", () => {
+    const html = renderToStaticMarkup(
+      <ChatComposer {...baseProps} input="next" isLoading isStreaming />,
+    );
+    const textarea = html.match(/<textarea[\s\S]*?<\/textarea>/)?.[0] ?? "";
+    expect(textarea).not.toContain("disabled=");
+  });
+
   it("keeps textarea and mic enabled and send disabled when unconfigured", () => {
     const html = renderToStaticMarkup(<ChatComposer {...baseProps} canChat={false} />);
     const textarea = html.match(/<textarea[\s\S]*?<\/textarea>/)?.[0] ?? "";
