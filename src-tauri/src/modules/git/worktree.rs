@@ -417,8 +417,8 @@ pub(crate) fn remove_worktree(
 }
 
 pub(crate) fn branch_merged(repo_path: &str, branch: &str) -> Result<bool, String> {
-    if branch.is_empty() {
-        return Err("Branch name is required".to_string());
+    if !is_pragma_branch(branch) {
+        return Err("Only pragma worktree branches can be checked".to_string());
     }
     let output = run_git(
         Some(repo_path),
@@ -627,6 +627,13 @@ mod tests {
         let result = teardown(&repo_path, &created.path);
         assert!(!result.ok);
         assert!(Path::new(&created.path).exists());
+    }
+
+    #[test]
+    fn branch_merged_rejects_non_pragma_branch() {
+        let (_repo, repo_path) = init_repo();
+        assert!(branch_merged(&repo_path, "--output=/tmp/x").is_err());
+        assert!(branch_merged(&repo_path, "main").is_err());
     }
 
     #[test]
