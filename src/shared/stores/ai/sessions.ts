@@ -30,6 +30,9 @@ export function mergeSessionsWithStored(
       if (memorySession.cliProviderId !== undefined) {
         merged.cliProviderId = memorySession.cliProviderId;
       }
+      if (memorySession.agentId !== undefined) merged.agentId = memorySession.agentId;
+      if (memorySession.archived !== undefined) merged.archived = memorySession.archived;
+      if (memorySession.agentEngine !== undefined) merged.agentEngine = memorySession.agentEngine;
 
       return merged;
     })
@@ -124,6 +127,8 @@ export const createSessionsSlice: AISlice<
     if (init?.environment !== undefined) session.environment = init.environment;
     if (init?.worktree !== undefined) session.worktree = init.worktree;
     if (init?.cliProviderId !== undefined) session.cliProviderId = init.cliProviderId;
+    if (init?.agentId !== undefined) session.agentId = init.agentId;
+    if (init?.agentEngine !== undefined) session.agentEngine = init.agentEngine;
 
     await saveStoredSession(rootPath, session);
     get().addChatSession(session);

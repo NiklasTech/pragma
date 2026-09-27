@@ -29,13 +29,14 @@ pub async fn agent_run_command(
     cwd: Option<String>,
     workspace_root: String,
     timeout_ms: Option<u64>,
+    approved_roots: Option<Vec<String>>,
 ) -> Result<AgentCommandResult, String> {
     let command = command.trim().to_string();
     if command.is_empty() {
         return Err("command is required".to_string());
     }
 
-    let workdir = resolve_workdir(&workspace_root, cwd.as_deref())?;
+    let workdir = resolve_workdir(&workspace_root, cwd.as_deref(), approved_roots.as_deref())?;
     let timeout = Duration::from_millis(
         timeout_ms
             .unwrap_or(DEFAULT_TIMEOUT_MS)
@@ -90,7 +91,11 @@ fn shell_command(command: &str) -> tokio::process::Command {
     }
 }
 
-fn resolve_workdir(workspace_root: &str, cwd: Option<&str>) -> Result<PathBuf, String> {
+fn resolve_workdir(
+    workspace_root: &str,
+    cwd: Option<&str>,
+    approved_roots: Option<&[String]>,
+) -> Result<PathBuf, String> {
     if workspace_root.trim().is_empty() {
         return Err("workspace_root is required".to_string());
     }
@@ -102,6 +107,12 @@ fn resolve_workdir(workspace_root: &str, cwd: Option<&str>) -> Result<PathBuf, S
             "Workspace root is not a directory: {workspace_root}"
         ));
     }
+
+    let approved: Vec<PathBuf> = approved_roots
+        .unwrap_or(&[])
+        .iter()
+        .filter_map(|candidate| std::fs::canonicalize(candidate).ok())
+        .collect();
 
     let dir = match cwd {
         Some(cwd) if !cwd.trim().is_empty() => {
@@ -118,7 +129,8 @@ fn resolve_workdir(workspace_root: &str, cwd: Option<&str>) -> Result<PathBuf, S
         _ => root.clone(),
     };
 
-    if !dir.starts_with(&root) {
+    let allowed = dir.starts_with(&root) || approved.iter().any(|base| dir.starts_with(base));
+    if !allowed {
         return Err("Working directory must be inside the workspace root".to_string());
     }
     if !dir.is_dir() {
@@ -148,7 +160,7 @@ mod tests {
     fn resolve_workdir_defaults_to_root() {
         let temp = tempfile::tempdir().expect("tempdir");
         let root = temp.path().to_string_lossy().to_string();
-        let resolved = resolve_workdir(&root, None).expect("resolve");
+        let resolved = resolve_workdir(&root, None, None).expect("resolve");
         assert_eq!(resolved, std::fs::canonicalize(&root).expect("canonical"));
     }
 
@@ -157,7 +169,7 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         std::fs::create_dir(temp.path().join("sub")).expect("mkdir");
         let root = temp.path().to_string_lossy().to_string();
-        let resolved = resolve_workdir(&root, Some("sub")).expect("resolve");
+        let resolved = resolve_workdir(&root, Some("sub"), None).expect("resolve");
         assert!(resolved.ends_with("sub"));
     }
 
@@ -166,7 +178,7 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let root = temp.path().join("workspace");
         std::fs::create_dir(&root).expect("mkdir");
-        let result = resolve_workdir(&root.to_string_lossy(), Some(".."));
+        let result = resolve_workdir(&root.to_string_lossy(), Some(".."), None);
         assert!(result.is_err());
     }
 
@@ -176,13 +188,34 @@ mod tests {
         let root = temp.path().join("workspace");
         std::fs::create_dir(&root).expect("mkdir");
         let outside = temp.path().to_string_lossy().to_string();
-        let result = resolve_workdir(&root.to_string_lossy(), Some(&outside));
+        let result = resolve_workdir(&root.to_string_lossy(), Some(&outside), None);
         assert!(result.is_err());
     }
 
     #[test]
     fn resolve_workdir_rejects_empty_root() {
-        assert!(resolve_workdir("", None).is_err());
+        assert!(resolve_workdir("", None, None).is_err());
+    }
+
+    #[test]
+    fn resolve_workdir_accepts_approved_root() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let root = temp.path().join("workspace");
+        let approved = temp.path().join("approved");
+        std::fs::create_dir(&root).expect("mkdir");
+        std::fs::create_dir(&approved).expect("mkdir");
+
+        let root_str = root.to_string_lossy().to_string();
+        let approved_str = approved.to_string_lossy().to_string();
+        let approved_roots = vec![approved_str.clone()];
+
+        let allowed = resolve_workdir(
+            &root_str,
+            Some(&approved_str),
+            Some(approved_roots.as_slice()),
+        );
+        assert!(allowed.is_ok());
+        assert!(resolve_workdir(&root_str, Some(&approved_str), None).is_err());
     }
 
     #[test]

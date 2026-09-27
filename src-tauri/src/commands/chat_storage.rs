@@ -1,3 +1,4 @@
+use super::agents::AgentEngine;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -24,6 +25,12 @@ pub struct ChatSessionMetadata {
     pub worktree: Option<SessionWorktreeMetadata>,
     #[serde(default)]
     pub cli_provider_id: Option<String>,
+    #[serde(default)]
+    pub agent_id: Option<String>,
+    #[serde(default)]
+    pub archived: bool,
+    #[serde(default)]
+    pub agent_engine: Option<AgentEngine>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

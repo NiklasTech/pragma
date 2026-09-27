@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MagnifyingGlass, Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -16,12 +16,16 @@ import {
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
 import { Input } from "@/shared/components/ui/input";
-import { useAIStore } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
 import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
+import { AgentRoster } from "@/features/ai/named-agents/AgentRoster";
+import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
+import { cn } from "@/shared/lib/utils";
 
 import { NewSessionButton } from "./NewSessionButton";
 import { groupThreadsByRecency, resolveThreadStatus } from "./helpers";
@@ -39,13 +43,27 @@ export function ThreadList() {
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const openSession = useAgentsPanesStore((state) => state.openSession);
 
+  const agents = useNamedAgentsStore((state) => state.agents);
+  const loaded = useNamedAgentsStore((state) => state.loaded);
+  const loadAgents = useNamedAgentsStore((state) => state.loadAgents);
+  const view = useNamedAgentsUiStore((state) => state.view);
+  const setView = useNamedAgentsUiStore((state) => state.setView);
+  const selectedAgentId = useNamedAgentsUiStore((state) => state.selectedAgentId);
+  const selectAgent = useNamedAgentsUiStore((state) => state.selectAgent);
+  const startCreatingAgent = useNamedAgentsUiStore((state) => state.startCreatingAgent);
+
   const [query, setQuery] = useState("");
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [discardSessionId, setDiscardSessionId] = useState<string | null>(null);
 
-  const sortedSessions = useMemo(
-    () => [...chatSessions].sort((a, b) => b.updatedAt - a.updatedAt),
+  const sessions = useMemo(
+    () => chatSessions.filter((session) => !session.archived),
     [chatSessions],
+  );
+
+  const sortedSessions = useMemo(
+    () => [...sessions].sort((a, b) => b.updatedAt - a.updatedAt),
+    [sessions],
   );
 
   const visibleSessions = useMemo(() => {
@@ -62,6 +80,13 @@ export function ThreadList() {
       ),
     [agentStatus, runSessionId, visibleSessions],
   );
+
+  const selectedAgentChats = useMemo(() => {
+    if (!selectedAgentId) return [];
+    return sessions
+      .filter((session) => session.agentId === selectedAgentId)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [selectedAgentId, sessions]);
 
   const handleSelect = useCallback(
     (sessionId: string) => {
@@ -87,27 +112,91 @@ export function ThreadList() {
     }
   }, [deleteSession, rootPath, sessionToDelete]);
 
+  const handleLoadAgents = useCallback(() => {
+    if (!loaded) void loadAgents();
+  }, [loadAgents, loaded]);
+
+  useEffect(() => {
+    handleLoadAgents();
+  }, [handleLoadAgents]);
+
+  const renderRow = (session: ChatSession) => (
+    <ThreadRow
+      key={session.id}
+      session={session}
+      isActive={session.id === activeChatSessionId}
+      status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
+      onSelect={handleSelect}
+      onRename={handleRename}
+      onDelete={setSessionToDelete}
+      onDiscard={setDiscardSessionId}
+    />
+  );
+
   const sessionToDeleteTitle = chatSessions.find((s) => s.id === sessionToDelete)?.title ?? "";
   const discardSession = chatSessions.find((s) => s.id === discardSessionId) ?? null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 flex-col gap-2 pb-1">
-        <NewSessionButton
-          variant="secondary"
-          className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm"
-        />
-
-        <div className="flex h-7 items-center gap-1 pr-0.5 pl-2">
-          <span className="text-ui-xs font-semibold text-fg-default">Threads</span>
-          {chatSessions.length > 0 && (
-            <span className="text-ui-xs text-fg-subtle tabular-nums">{chatSessions.length}</span>
-          )}
-          <span className="flex-1" />
-          <PanePresetsMenu />
+        <div className="flex items-center gap-1 rounded-md bg-bg-hover p-[3px]">
+          <button
+            type="button"
+            aria-pressed={view === "sessions"}
+            onClick={() => setView("sessions")}
+            className={cn(
+              "h-6 flex-1 rounded-[4px] text-ui-xs font-medium transition-colors",
+              view === "sessions"
+                ? "bg-bg-elevated text-fg-default shadow-sm"
+                : "text-fg-muted hover:text-fg-default",
+            )}
+          >
+            Sessions
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === "agents"}
+            onClick={() => setView("agents")}
+            className={cn(
+              "h-6 flex-1 rounded-[4px] text-ui-xs font-medium transition-colors",
+              view === "agents"
+                ? "bg-bg-elevated text-fg-default shadow-sm"
+                : "text-fg-muted hover:text-fg-default",
+            )}
+          >
+            Agents
+          </button>
         </div>
 
-        {chatSessions.length > SEARCH_THRESHOLD && (
+        {view === "sessions" ? (
+          <NewSessionButton
+            variant="secondary"
+            className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm"
+          />
+        ) : (
+          <AgentRoster
+            agents={agents}
+            selectedAgentId={selectedAgentId}
+            chatSessions={chatSessions}
+            agentStatus={agentStatus}
+            runSessionId={runSessionId}
+            onSelectAgent={selectAgent}
+            onNewAgent={startCreatingAgent}
+          />
+        )}
+
+        <div className="flex h-7 items-center gap-1 pr-0.5 pl-2">
+          <span className="text-ui-xs font-semibold text-fg-default">
+            {view === "sessions" ? "Threads" : "Agents"}
+          </span>
+          {view === "sessions" && sessions.length > 0 && (
+            <span className="text-ui-xs text-fg-subtle tabular-nums">{sessions.length}</span>
+          )}
+          <span className="flex-1" />
+          {view === "sessions" && <PanePresetsMenu />}
+        </div>
+
+        {view === "sessions" && sessions.length > SEARCH_THRESHOLD && (
           <div className="relative">
             <MagnifyingGlass
               size={12}
@@ -126,32 +215,37 @@ export function ThreadList() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-1.5">
-        {visibleSessions.length === 0 ? (
+        {view === "sessions" ? (
+          visibleSessions.length === 0 ? (
+            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-ui-xs text-fg-subtle">
+              {sessions.length === 0 ? "No threads yet." : "No threads match your search."}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {groups.map((group) => (
+                <section
+                  key={group.label}
+                  aria-label={group.label}
+                  className="flex flex-col gap-0.5"
+                >
+                  <h3 className="px-2 pb-0.5 text-ui-2xs font-medium text-fg-subtle">
+                    {group.label}
+                  </h3>
+                  {group.items.map(renderRow)}
+                </section>
+              ))}
+            </div>
+          )
+        ) : !selectedAgentId ? (
           <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-ui-xs text-fg-subtle">
-            {chatSessions.length === 0 ? "No threads yet." : "No threads match your search."}
+            Select an agent to see its chats.
+          </p>
+        ) : selectedAgentChats.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-ui-xs text-fg-subtle">
+            No chats yet.
           </p>
         ) : (
-          <div className="flex flex-col gap-3">
-            {groups.map((group) => (
-              <section key={group.label} aria-label={group.label} className="flex flex-col gap-0.5">
-                <h3 className="px-2 pb-0.5 text-ui-2xs font-medium text-fg-subtle">
-                  {group.label}
-                </h3>
-                {group.items.map((session) => (
-                  <ThreadRow
-                    key={session.id}
-                    session={session}
-                    isActive={session.id === activeChatSessionId}
-                    status={resolveThreadStatus(agentStatus, session.id, runSessionId)}
-                    onSelect={handleSelect}
-                    onRename={handleRename}
-                    onDelete={setSessionToDelete}
-                    onDiscard={setDiscardSessionId}
-                  />
-                ))}
-              </section>
-            ))}
-          </div>
+          <div className="flex flex-col gap-0.5">{selectedAgentChats.map(renderRow)}</div>
         )}
       </div>
 
