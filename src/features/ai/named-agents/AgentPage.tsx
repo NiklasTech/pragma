@@ -18,11 +18,11 @@ import type { Agent } from "./types";
 
 type AgentTab = "brief" | "memory" | "skills" | "folders";
 
-const TABS: Array<{ id: AgentTab; label: string; disabled: boolean }> = [
-  { id: "brief", label: "Brief", disabled: false },
-  { id: "memory", label: "Memory", disabled: false },
-  { id: "skills", label: "Skills", disabled: true },
-  { id: "folders", label: "Folders", disabled: false },
+const TABS: Array<{ id: AgentTab; label: string }> = [
+  { id: "brief", label: "Brief" },
+  { id: "memory", label: "Memory" },
+  { id: "skills", label: "Skills" },
+  { id: "folders", label: "Folders" },
 ];
 
 interface AgentPageProps {
@@ -93,11 +93,9 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
             <button
               key={item.id}
               type="button"
-              disabled={item.disabled}
-              aria-pressed={!item.disabled && tab === item.id}
-              title={item.disabled ? "Skills are not available yet" : undefined}
+              aria-pressed={tab === item.id}
               onClick={() => setTab(item.id)}
-              className="h-6 rounded-md px-2.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              className="h-6 rounded-md px-2.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
             >
               {item.label}
             </button>
@@ -112,12 +110,11 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           </div>
         ) : tab === "memory" ? (
           <AgentMemoryTab agentId={agent.id} memory={agent.memory} />
+        ) : tab === "skills" ? (
+          <AgentSkillsTab agent={agent} />
         ) : (
           <AgentFoldersTab folders={agent.folders} onChange={handleFolders} />
         )}
-        <div className={tab === "skills" ? "" : "hidden"}>
-          <AgentSkillsTab />
-        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border-subtle px-4 py-2 text-ui-2xs text-fg-subtle">

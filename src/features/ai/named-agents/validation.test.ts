@@ -17,6 +17,7 @@ function agent(id: string, name: string): Agent {
     engine: { kind: "builtin", provider: "anthropic", model: "claude" },
     folders: [],
     memory: [],
+    skills: [],
     createdAt: 1,
     updatedAt: 1,
   };

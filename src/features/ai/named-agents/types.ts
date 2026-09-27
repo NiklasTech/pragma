@@ -18,6 +18,7 @@ export interface Agent {
   engine: AgentEngine;
   folders: string[];
   memory: AgentMemoryEntry[];
+  skills: string[];
   createdAt: number;
   updatedAt: number;
 }

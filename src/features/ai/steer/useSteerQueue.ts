@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAgentStore } from "@/features/agent/store";
 
-import { decideRemove, decideStopIntent, decideSubmit } from "./queue";
+import { decideRemove, decideStopIntent, decideSubmit, shouldFlush } from "./queue";
 
 export interface EnqueueResult {
   accepted: boolean;
@@ -13,7 +13,8 @@ interface SteerQueueOptions {
   sessionId: string | null;
   ownsRun: boolean;
   inFlight: boolean;
-  canFlush: boolean;
+  chatFailed: boolean;
+  runFailed: boolean;
   submitText: (text: string) => Promise<boolean>;
   stopChat: () => void;
 }
@@ -53,7 +54,8 @@ export function useSteerQueue({
   sessionId,
   ownsRun,
   inFlight,
-  canFlush,
+  chatFailed,
+  runFailed,
   submitText,
   stopChat,
 }: SteerQueueOptions): SteerQueue {
@@ -61,6 +63,7 @@ export function useSteerQueue({
   const queuedRef = useRef<string | null>(null);
   const sessionRef = useRef(sessionId);
   const inFlightRef = useRef(inFlight);
+  const ownedRunRef = useRef(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -101,10 +104,16 @@ export function useSteerQueue({
   useEffect(() => {
     const wasInFlight = inFlightRef.current;
     inFlightRef.current = inFlight;
-    if (!wasInFlight || inFlight) return;
+    if (inFlight) {
+      if (ownsRun) ownedRunRef.current = true;
+      return;
+    }
+    if (!wasInFlight) return;
 
+    const ownedRun = ownedRunRef.current;
+    ownedRunRef.current = false;
     const text = queuedRef.current;
-    if (text === null || !canFlush) return;
+    if (text === null || !shouldFlush({ queued: text, chatFailed, ownedRun, runFailed })) return;
 
     const token = sessionRef.current;
     queuedRef.current = null;
@@ -115,7 +124,7 @@ export function useSteerQueue({
       queuedRef.current = text;
       setQueued(text);
     });
-  }, [inFlight, canFlush, submitText]);
+  }, [inFlight, ownsRun, chatFailed, runFailed, submitText]);
 
   useEffect(() => {
     if (!ownsRun) return;
