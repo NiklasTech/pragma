@@ -16,11 +16,19 @@ import { openWorkspaceFile } from "./openWorkspaceFile";
 const REFRESH_MS = 4000;
 
 /// Git changes in a session's folder; works for any agent because it reads the worktree itself.
-function useSessionChanges(cwd: string): { entries: GitStatusEntry[]; error: string | null } {
+export function useSessionChanges(cwd: string | null): {
+  entries: GitStatusEntry[];
+  error: string | null;
+} {
   const [entries, setEntries] = useState<GitStatusEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!cwd) {
+      setEntries([]);
+      setError(null);
+      return;
+    }
     let cancelled = false;
     const load = async () => {
       try {
