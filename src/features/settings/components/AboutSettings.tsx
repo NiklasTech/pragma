@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { PragmaMark } from "@/shared/components/PragmaMark";
 import { Button } from "@/shared/components/ui/button";
 import { SettingSection } from "./ui/SettingSection";
 import { invoke } from "@tauri-apps/api/core";
@@ -91,10 +92,9 @@ export function AboutSettings() {
       <SettingSection title="Application">
         <div className="flex flex-col gap-4 py-2">
           <div className="flex items-center gap-3">
-            <img
-              src="/pragma_logo.svg"
-              alt="Pragma logo"
-              className="h-12 w-12 rounded-lg bg-bg-surface p-1.5"
+            <PragmaMark
+              title="Pragma logo"
+              className="size-12 rounded-lg bg-bg-surface p-1.5 text-fg-default"
             />
             <div className="flex flex-col">
               <span className="font-heading text-ui-base font-semibold text-fg-default">

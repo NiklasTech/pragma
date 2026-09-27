@@ -1,6 +1,7 @@
 import type { Icon } from "@phosphor-icons/react";
 import { FileText, MagnifyingGlass, Robot } from "@phosphor-icons/react";
 
+import { PragmaMark } from "@/shared/components/PragmaMark";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
@@ -49,7 +50,7 @@ export function EditorEmptyState() {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-7 p-6 select-none">
       <div className="flex flex-col items-center gap-2 text-center">
-        <img src="/pragma_logo.svg" alt="" className="h-9 w-auto opacity-80" />
+        <PragmaMark className="size-9 text-fg-default opacity-80" />
         <p className="text-ui-md font-semibold text-fg-default">Nothing open yet</p>
         <p className="text-ui-sm text-fg-subtle">Pick a starting point.</p>
       </div>

@@ -1,3 +1,4 @@
+import { PragmaMark } from "@/shared/components/PragmaMark";
 import { Button } from "@/shared/components/ui/button";
 
 interface WelcomeStepProps {
@@ -7,7 +8,7 @@ interface WelcomeStepProps {
 export function WelcomeStep({ onNext }: WelcomeStepProps) {
   return (
     <div className="flex flex-col items-center gap-6 pt-6 text-center">
-      <img src="/pragma_logo.svg" alt="" className="h-16 w-auto" />
+      <PragmaMark animation="intro" className="size-16 text-fg-default" />
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight text-fg-default">Welcome to Pragma</h1>
         <p className="max-w-md text-ui-base text-fg-muted">
