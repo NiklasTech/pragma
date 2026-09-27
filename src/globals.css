@@ -176,6 +176,59 @@
   --color-git-modified: #e0a94e;
   --color-git-deleted: #e35d6a;
   --color-git-untracked: #5b9cf5;
+
+  --color-brand-key: #e8531f;
+  --color-brand-key-bright: #ff7a3d;
+
+  /* --------------------------------------------------------------------------
+     Motion — Pragma mark
+     -------------------------------------------------------------------------- */
+  --animate-intro-cell: pragma-intro-cell 450ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  --animate-intro-key: pragma-intro-key 600ms cubic-bezier(0.3, 1.6, 0.5, 1) 750ms both;
+  --animate-thinking: pragma-thinking-group 1.6s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+  --animate-thinking-key: pragma-thinking-key 1.6s ease-in-out infinite;
+
+  @keyframes pragma-intro-cell {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes pragma-intro-key {
+    from {
+      opacity: 0;
+      transform: scale(0);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes pragma-thinking-group {
+    0% {
+      transform: rotate(0deg);
+    }
+    75%,
+    100% {
+      transform: rotate(180deg);
+    }
+  }
+
+  @keyframes pragma-thinking-key {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(0.72);
+    }
+  }
 }
 
 /* ============================================================================

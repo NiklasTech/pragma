@@ -1,5 +1,6 @@
 import { FolderOpen, Plus } from "@phosphor-icons/react";
 
+import { PragmaMark } from "@/shared/components/PragmaMark";
 import { Button } from "@/shared/components/ui/button";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
@@ -13,7 +14,11 @@ export default function WelcomePanel() {
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-5 px-6 text-center">
-      <img src="/pragma_logo.svg" alt="Pragma logo" className="h-14 w-14 opacity-80" />
+      <PragmaMark
+        animation="intro"
+        title="Pragma logo"
+        className="size-14 text-fg-default opacity-80"
+      />
       <p className="text-ui-sm text-fg-muted">Open a folder to edit, or start an agent thread.</p>
 
       <div className="flex items-center gap-2">

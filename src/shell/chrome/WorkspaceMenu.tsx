@@ -1,6 +1,7 @@
 import { CaretDown, FileText, FolderOpen, GitBranch, Plus, Star, X } from "@phosphor-icons/react";
 import { open } from "@tauri-apps/plugin-dialog";
 
+import { PragmaMark } from "@/shared/components/PragmaMark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +46,7 @@ export function WorkspaceMenu() {
             className="flex h-7 max-w-[280px] min-w-0 items-center gap-2 rounded-full pr-2.5 pl-1.5 text-ui-sm transition-colors hover:bg-bg-hover"
             title={rootPath ?? "Open folder or file"}
           >
-            <img src="/pragma_logo.svg" alt="" className="h-4 w-auto shrink-0" />
+            <PragmaMark variant="compact" className="size-4 shrink-0 text-fg-default" />
             <span className="min-w-0 truncate font-semibold text-fg-default">
               {workspaceName || "Open Folder"}
             </span>
