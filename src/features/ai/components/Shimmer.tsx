@@ -1,5 +1,5 @@
 import type { CSSProperties, ElementType } from "react";
-import { createElement, memo, useMemo } from "react";
+import { createElement, memo } from "react";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -8,7 +8,6 @@ export interface TextShimmerProps {
   as?: ElementType;
   className?: string;
   duration?: number;
-  spread?: number;
 }
 
 const ShimmerComponent = ({
@@ -16,24 +15,17 @@ const ShimmerComponent = ({
   as: Component = "p",
   className,
   duration = 2,
-  spread = 2,
-}: TextShimmerProps) => {
-  const dynamicSpread = useMemo(() => (children?.length ?? 0) * spread, [children, spread]);
-
-  return createElement(
+}: TextShimmerProps) =>
+  createElement(
     Component,
     {
       className: cn(
         "pragma-shimmer relative inline-block bg-clip-text text-transparent",
         className,
       ),
-      style: {
-        "--shimmer-spread": `${dynamicSpread}px`,
-        "--shimmer-duration": `${duration}s`,
-      } as CSSProperties,
+      style: { "--shimmer-duration": `${duration}s` } as CSSProperties,
     },
     children,
   );
-};
 
 export const Shimmer = memo(ShimmerComponent);

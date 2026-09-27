@@ -68,7 +68,7 @@ export function ChatToolbar() {
           Auto-approve
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem checked={showThinking} onCheckedChange={setShowThinking}>
-          Show thinking
+          Expand thinking
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

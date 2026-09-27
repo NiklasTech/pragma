@@ -13,6 +13,7 @@ type ActivityBlockProps = {
   defaultOpen?: boolean;
   streaming?: boolean;
   hint?: string;
+  meta?: ReactNode;
 };
 
 export function ActivityBlock({
@@ -22,11 +23,12 @@ export function ActivityBlock({
   defaultOpen = false,
   streaming = false,
   hint,
+  meta,
 }: ActivityBlockProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex animate-in flex-col duration-200 fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none">
       <button
         type="button"
         aria-expanded={open}
@@ -43,12 +45,13 @@ export function ActivityBlock({
           ) : (
             title
           )}
+          {meta && <span className="shrink-0 text-fg-subtle tabular-nums">{meta}</span>}
         </span>
         <CaretRight
           size={11}
           weight="bold"
           className={cn(
-            "shrink-0 text-fg-subtle opacity-0 transition-[transform,opacity] group-hover/activity:opacity-100",
+            "shrink-0 text-fg-subtle opacity-50 transition-[transform,opacity] group-hover/activity:opacity-100",
             open && "rotate-90 opacity-100",
           )}
         />
@@ -56,7 +59,7 @@ export function ActivityBlock({
       {open && (
         <div
           data-state={streaming ? "streaming" : "done"}
-          className="mt-1 mb-1 ml-2 max-h-56 overflow-y-auto border-l border-border pl-4"
+          className="mt-1 mb-1 ml-2 max-h-56 animate-in overflow-y-auto border-l border-border pl-4 duration-200 fade-in-0 slide-in-from-top-1 motion-reduce:animate-none"
         >
           {children}
         </div>

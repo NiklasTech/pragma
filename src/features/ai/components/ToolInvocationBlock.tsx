@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, Spinner } from "@phosphor-icons/react";
 import { stepLabel } from "@/features/agent/executor";
 
 import { ActivityBlock } from "./ActivityBlock";
+import { Shimmer } from "./Shimmer";
 
 interface ToolInvocationBlockProps {
   toolCallId: string;
@@ -57,14 +58,28 @@ export function ToolInvocationBlock({
   const icon = isRunning ? (
     <Spinner size={13} className="animate-spin text-primary" />
   ) : isError ? (
-    <XCircle size={13} weight="fill" className="text-status-error" />
+    <XCircle
+      size={13}
+      weight="fill"
+      className="animate-in text-status-error duration-200 zoom-in-50 motion-reduce:animate-none"
+    />
   ) : (
-    <CheckCircle size={13} weight="fill" className="text-fg-subtle" />
+    <CheckCircle
+      size={13}
+      weight="fill"
+      className="animate-in text-fg-subtle duration-200 zoom-in-50 motion-reduce:animate-none"
+    />
   );
 
   const title = (
     <>
-      <span className="shrink-0 font-medium text-fg-default">{label}</span>
+      {isRunning ? (
+        <Shimmer as="span" className="shrink-0 font-medium" duration={1.4}>
+          {label}
+        </Shimmer>
+      ) : (
+        <span className="shrink-0 font-medium text-fg-default">{label}</span>
+      )}
       {known.detail && (
         <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
           {known.detail}

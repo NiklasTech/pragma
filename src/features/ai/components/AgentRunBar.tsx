@@ -1,8 +1,12 @@
-import { Check, CircleDashed, Prohibit, Spinner, Stop, Warning } from "@phosphor-icons/react";
+import { Check, CircleDashed, Prohibit, Stop, Warning } from "@phosphor-icons/react";
 
 import { AgentTodoList } from "@/features/agent/components/AgentTodoList";
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 import { cn } from "@/shared/lib/utils";
+
+import { PulseDot } from "./PulseDot";
+import { Shimmer } from "./Shimmer";
+import { useElapsedSeconds } from "./useElapsedSeconds";
 
 const STATUS_LABELS: Record<AgentStatus, string> = {
   idle: "Idle",
@@ -22,11 +26,16 @@ const STATUS_COLORS: Record<AgentStatus, string> = {
   cancelled: "text-fg-muted",
 };
 
+function formatElapsed(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  return minutes > 0 ? `${minutes}m ${seconds % 60}s` : `${seconds}s`;
+}
+
 function StatusIcon({ status }: { status: AgentStatus }) {
   const className = cn("shrink-0", STATUS_COLORS[status]);
   switch (status) {
     case "running":
-      return <Spinner size={12} className={cn(className, "animate-spin")} />;
+      return <PulseDot className="size-3" />;
     case "waiting-approval":
       return <CircleDashed size={12} className={className} />;
     case "done":
@@ -45,20 +54,30 @@ export function AgentRunBar() {
   const stepCount = useAgentStore((state) => state.stepCount);
   const editReviews = useAgentStore((state) => state.editReviews);
   const requestStop = useAgentStore((state) => state.requestStop);
+  const seconds = useElapsedSeconds(status === "running" || status === "waiting-approval");
 
   if (status === "idle") return null;
 
   const canStop = status === "running" || status === "waiting-approval";
 
   return (
-    <div className="mb-2 flex flex-col overflow-hidden rounded-xl border border-border bg-bg-surface">
+    <div className="mb-2 flex animate-in flex-col overflow-hidden rounded-xl border border-border bg-bg-surface duration-200 fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none">
       <div className="flex h-9 items-center gap-2 pr-1.5 pl-3">
         <StatusIcon status={status} />
-        <span className="text-ui-xs font-medium text-fg-default">{STATUS_LABELS[status]}</span>
+        {status === "running" ? (
+          <Shimmer as="span" className="text-ui-xs font-medium" duration={1.8}>
+            {STATUS_LABELS[status]}
+          </Shimmer>
+        ) : (
+          <span className="text-ui-xs font-medium text-fg-default">{STATUS_LABELS[status]}</span>
+        )}
         {stepCount > 0 && (
           <span className="text-ui-xs text-fg-subtle">
             {stepCount === 1 ? "1 step" : `${stepCount} steps`}
           </span>
+        )}
+        {seconds > 0 && canStop && (
+          <span className="text-ui-xs text-fg-subtle tabular-nums">{formatElapsed(seconds)}</span>
         )}
         {canStop && (
           <button

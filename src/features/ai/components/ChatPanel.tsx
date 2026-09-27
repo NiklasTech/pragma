@@ -19,46 +19,17 @@ import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
 import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
+import { AssistantTimeline } from "./AssistantTimeline";
+import { splitInlineReasoning } from "./timelineItems";
 import { ChatApplyProvider } from "./ChatApplyContext";
 import { ChatComposer } from "./ChatComposer";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { ChatPanelHeader } from "./ChatPanelHeader";
-import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ContextAttachments } from "./ContextAttachments";
 import { Conversation, ConversationContent, ConversationScrollButton } from "./Conversation";
-import { Message, MessageContent, MessageResponse } from "./Message";
-import { ReasoningBlock } from "./ReasoningBlock";
+import { Message, MessageContent } from "./Message";
 import { SourceBlock } from "./SourceBlock";
-import { ToolInvocationBlock } from "./ToolInvocationBlock";
-
-function extractInlineReasoning(
-  text: string,
-  streaming = false,
-): { text: string; reasoning: string } {
-  const tags = [
-    { open: "<thinking>", close: "</thinking>" },
-    { open: "<reasoning>", close: "</reasoning>" },
-    { open: "<think>", close: "</think>" },
-  ];
-
-  let reasoning = "";
-  let cleaned = text;
-
-  for (const { open, close } of tags) {
-    const start = cleaned.indexOf(open);
-    if (start === -1) continue;
-    const end = cleaned.indexOf(close, start + open.length);
-    if (end !== -1) {
-      reasoning += cleaned.slice(start + open.length, end).trim() + "\n\n";
-      cleaned = cleaned.slice(0, start) + cleaned.slice(end + close.length);
-    } else if (streaming) {
-      reasoning += cleaned.slice(start + open.length).trim();
-      cleaned = cleaned.slice(0, start);
-    }
-  }
-
-  return { text: cleaned.trim(), reasoning: reasoning.trim() };
-}
+import { WorkingIndicator } from "./WorkingIndicator";
 
 export interface ChatPanelProps {
   hideHeader?: boolean;
@@ -225,10 +196,6 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             {messages.length === 0 && <ChatEmptyState />}
 
             {messages.map((msg: UIMessage) => {
-              const reasoningParts = msg.parts
-                .filter((p) => p.type === "reasoning")
-                .map((p) => (p as { text: string }).text)
-                .join("");
               const rawText = msg.parts
                 .filter((p) => p.type === "text")
                 .map((p) => (p as { text: string }).text)
@@ -245,54 +212,12 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                 url: string;
                 title?: string;
               }>;
-              const toolInvocations = msg.parts
-                .map((p) => {
-                  if (p.type === "tool-invocation" && "toolInvocation" in p) {
-                    return (p as { toolInvocation: unknown }).toolInvocation as {
-                      state:
-                        | "input-streaming"
-                        | "input-available"
-                        | "output-streaming"
-                        | "output-available"
-                        | "output-error";
-                      toolCallId: string;
-                      toolName: string;
-                      input: unknown;
-                      output?: unknown;
-                      errorText?: string;
-                    };
-                  }
-                  if (
-                    p.type === "dynamic-tool" ||
-                    (typeof p.type === "string" && p.type.startsWith("tool-"))
-                  ) {
-                    const part = p as {
-                      state:
-                        | "input-streaming"
-                        | "input-available"
-                        | "output-streaming"
-                        | "output-available"
-                        | "output-error";
-                      toolCallId: string;
-                      toolName: string;
-                      input: unknown;
-                      output?: unknown;
-                      errorText?: string;
-                    };
-                    return part;
-                  }
-                  return null;
-                })
-                .filter((inv): inv is NonNullable<typeof inv> => inv !== null);
               const isStreaming = msg.id === streamingMessageId;
-
-              const { text, reasoning: inlineReasoning } = extractInlineReasoning(
-                rawText,
-                isStreaming,
-              );
-              const reasoning = reasoningParts
-                ? `${reasoningParts}\n\n${inlineReasoning}`.trim()
-                : inlineReasoning;
+              const text = splitInlineReasoning(rawText)
+                .filter((segment) => segment.kind === "text")
+                .map((segment) => segment.text)
+                .join("")
+                .trim();
 
               if (msg.role === "user") {
                 return (
@@ -333,28 +258,13 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                         streaming={isStreaming}
                       />
                     ))}
-                    {reasoning && showThinking && (
-                      <ReasoningBlock reasoning={reasoning} streaming={isStreaming} />
-                    )}
-                    {toolInvocations.map((inv) => (
-                      <ToolInvocationBlock
-                        key={inv.toolCallId}
-                        toolCallId={inv.toolCallId}
-                        toolName={inv.toolName}
-                        state={inv.state}
-                        input={inv.input}
-                        output={inv.output}
-                        errorText={inv.errorText}
-                      />
-                    ))}
                     <ChatApplyProvider targets={applyTargets}>
-                      <MessageResponse streaming={isStreaming}>{text}</MessageResponse>
+                      <AssistantTimeline
+                        message={msg}
+                        streaming={isStreaming}
+                        showThinking={showThinking}
+                      />
                     </ChatApplyProvider>
-                    {isStreaming && (
-                      <span aria-hidden className="mt-1 inline-flex h-4 items-center">
-                        <span className="h-3.5 w-0.5 animate-pulse rounded-full bg-fg-subtle motion-reduce:animate-none" />
-                      </span>
-                    )}
                   </MessageContent>
                 </Message>
               );
@@ -363,7 +273,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             {status === "submitted" && (
               <Message from="assistant">
                 <MessageContent>
-                  <ChatTypingIndicator />
+                  <WorkingIndicator label="Thinking" />
                 </MessageContent>
               </Message>
             )}
@@ -430,7 +340,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
         <AgentApprovals />
 
-        <AgentRunBar />
+        {!isCLIActive && <AgentRunBar />}
 
         <ContextAttachments attachments={lastAttachments} truncated={lastContextTruncated} />
 
