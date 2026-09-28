@@ -270,8 +270,7 @@ export const SHORTCUT_ACTIONS = [
     id: "voice.holdToDictate" as const,
     label: "Hold to Dictate",
     category: "chat" as const,
-    default: (isMac: boolean): ShortcutBinding =>
-      isMac ? { alt: true, code: "Space" } : { ctrl: true, shift: true, code: "Space" },
+    default: (): ShortcutBinding | null => null,
   },
   {
     id: "agent.toggle" as const,

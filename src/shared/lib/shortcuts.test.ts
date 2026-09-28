@@ -160,8 +160,7 @@ describe("getDefaultShortcuts", () => {
     expect(defaults["debug.stepOut"]).toEqual({ shift: true, code: "F11" });
     expect(defaults["debug.toggleBreakpoint"]).toEqual({ code: "F9" });
     expect(defaults["agent.toggle"]).toBeNull();
-    expect(defaults["voice.holdToDictate"]).toEqual({ ctrl: true, shift: true, code: "Space" });
-    expect(getDefaultShortcuts(true)["voice.holdToDictate"]).toEqual({ alt: true, code: "Space" });
+    expect(defaults["voice.holdToDictate"]).toBeNull();
   });
 });
 
