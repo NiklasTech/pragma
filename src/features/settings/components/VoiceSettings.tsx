@@ -13,10 +13,17 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
-import { useSettingsStore } from "@/shared/stores/settings";
+import { useSettingsStore, type VoiceEngine } from "@/shared/stores/settings";
 
+import { ParakeetSetup } from "./ParakeetSetup";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
+
+const ENGINE_LABELS: Record<VoiceEngine, string> = {
+  "web-speech": "Web Speech",
+  whisper: "Whisper (local)",
+  parakeet: "Parakeet (local)",
+};
 
 interface SttStatus {
   supported: boolean;
@@ -56,7 +63,7 @@ export function VoiceSettings() {
   }, [refreshWhisperStatus]);
 
   const setEngine = (value: string | null) => {
-    if (value === "web-speech" || value === "whisper") {
+    if (value === "web-speech" || value === "whisper" || value === "parakeet") {
       settingsStore.setAISettings({ voiceEngine: value });
     }
   };
@@ -80,13 +87,12 @@ export function VoiceSettings() {
         control={
           <Select value={settingsStore.ai.voiceEngine} onValueChange={setEngine}>
             <SelectTrigger className="max-w-[200px]">
-              <SelectValue>
-                {settingsStore.ai.voiceEngine === "whisper" ? "Whisper (local)" : "Web Speech"}
-              </SelectValue>
+              <SelectValue>{ENGINE_LABELS[settingsStore.ai.voiceEngine]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="web-speech">Web Speech</SelectItem>
               <SelectItem value="whisper">Whisper (local)</SelectItem>
+              <SelectItem value="parakeet">Parakeet (local)</SelectItem>
             </SelectContent>
           </Select>
         }
@@ -95,6 +101,11 @@ export function VoiceSettings() {
         <p className="py-2.5 text-ui-xs text-fg-muted">
           Uses the free speech recognition built into the operating system. No audio leaves your
           device.
+        </p>
+      ) : settingsStore.ai.voiceEngine === "parakeet" ? (
+        <p className="py-2.5 text-ui-xs text-fg-muted">
+          Runs NVIDIA Parakeet V3 (~670 MB) on your machine, with punctuation and 25 European
+          languages. It is a speech model, not the coding LLM, and no audio leaves your device.
         </p>
       ) : (
         <p className="py-2.5 text-ui-xs text-fg-muted">
@@ -133,6 +144,7 @@ export function VoiceSettings() {
           {whisperError && <span className="text-ui-xs text-status-error">{whisperError}</span>}
         </div>
       )}
+      {settingsStore.ai.voiceEngine === "parakeet" && <ParakeetSetup />}
     </SettingSection>
   );
 }

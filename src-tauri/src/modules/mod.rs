@@ -9,6 +9,7 @@ pub mod git;
 pub mod local_history;
 pub mod lsp;
 pub mod mcp;
+pub mod parakeet;
 pub mod pty;
 pub mod run;
 pub mod stt;

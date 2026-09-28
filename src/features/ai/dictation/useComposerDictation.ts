@@ -15,6 +15,8 @@ import {
 
 export const VOICE_INPUT_WHISPER_MISSING = "Download Whisper in Settings";
 export const VOICE_INPUT_WHISPER_UNAVAILABLE = "Whisper is not available on this platform";
+export const VOICE_INPUT_PARAKEET_MISSING = "Download Parakeet in Settings";
+export const VOICE_INPUT_PARAKEET_UNAVAILABLE = "Parakeet is not available on this platform";
 export const VOICE_INPUT_NO_MIC_ACCESS = "Could not access the microphone.";
 export const VOICE_INPUT_NEEDS_APP_BUNDLE =
   "Voice input needs the installed Pragma app; development builds cannot ask for microphone access.";
@@ -23,6 +25,26 @@ export interface SttStatus {
   supported: boolean;
   installed: boolean;
 }
+
+type LocalEngine = Exclude<VoiceEngine, "web-speech">;
+
+const LOCAL_ENGINES: Record<
+  LocalEngine,
+  { status: string; transcribe: string; missing: string; unavailable: string }
+> = {
+  whisper: {
+    status: "stt_status",
+    transcribe: "stt_transcribe",
+    missing: VOICE_INPUT_WHISPER_MISSING,
+    unavailable: VOICE_INPUT_WHISPER_UNAVAILABLE,
+  },
+  parakeet: {
+    status: "parakeet_status",
+    transcribe: "parakeet_transcribe",
+    missing: VOICE_INPUT_PARAKEET_MISSING,
+    unavailable: VOICE_INPUT_PARAKEET_UNAVAILABLE,
+  },
+};
 
 export interface UseComposerDictationOptions {
   engine: VoiceEngine;
@@ -82,6 +104,7 @@ export function useComposerDictation({
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const transcribeCommandRef = useRef(LOCAL_ENGINES.whisper.transcribe);
 
   const finishRecording = useCallback(() => {
     activeRef.current = false;
@@ -117,7 +140,7 @@ export function useComposerDictation({
         await audioContext.close().catch(() => undefined);
         audioContextRef.current = null;
       }
-      const text = await invoke<string>("stt_transcribe", {
+      const text = await invoke<string>(transcribeCommandRef.current, {
         wavBase64: arrayBufferToBase64(wav),
       });
       const trimmed = text.trim();
@@ -169,63 +192,68 @@ export function useComposerDictation({
     }
   }, [finishRecording]);
 
-  const startWhisper = useCallback(async () => {
-    let whisper: SttStatus;
-    try {
-      whisper = await invoke<SttStatus>("stt_status");
-    } catch {
-      whisper = { supported: true, installed: false };
-    }
-    if (!whisper.supported) {
-      activeRef.current = false;
-      setStatus(VOICE_INPUT_WHISPER_UNAVAILABLE);
-      return;
-    }
-    if (!whisper.installed) {
-      activeRef.current = false;
-      setStatus(VOICE_INPUT_WHISPER_MISSING);
-      return;
-    }
-
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (error) {
-      activeRef.current = false;
-      setStatus(mediaErrorCopy(error));
-      return;
-    }
-    if (!activeRef.current) {
-      stream.getTracks().forEach((track) => track.stop());
-      return;
-    }
-    streamRef.current = stream;
-
-    let recorder: MediaRecorder;
-    const mimeType = pickRecorderMimeType();
-    try {
-      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-    } catch {
-      stream.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-      activeRef.current = false;
-      setStatus(VOICE_INPUT_NO_MIC_ACCESS);
-      return;
-    }
-    chunksRef.current = [];
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunksRef.current.push(event.data);
+  const startLocal = useCallback(
+    async (localEngine: LocalEngine) => {
+      const config = LOCAL_ENGINES[localEngine];
+      let engineStatus: SttStatus;
+      try {
+        engineStatus = await invoke<SttStatus>(config.status);
+      } catch {
+        engineStatus = { supported: true, installed: false };
       }
-    };
-    recorder.onstop = () => {
-      void transcribeRecording();
-    };
-    recorderRef.current = recorder;
-    setStatus(null);
-    setRecording(true);
-    recorder.start();
-  }, [transcribeRecording]);
+      if (!engineStatus.supported) {
+        activeRef.current = false;
+        setStatus(config.unavailable);
+        return;
+      }
+      if (!engineStatus.installed) {
+        activeRef.current = false;
+        setStatus(config.missing);
+        return;
+      }
+      transcribeCommandRef.current = config.transcribe;
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (error) {
+        activeRef.current = false;
+        setStatus(mediaErrorCopy(error));
+        return;
+      }
+      if (!activeRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      streamRef.current = stream;
+
+      let recorder: MediaRecorder;
+      const mimeType = pickRecorderMimeType();
+      try {
+        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      } catch {
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        activeRef.current = false;
+        setStatus(VOICE_INPUT_NO_MIC_ACCESS);
+        return;
+      }
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        void transcribeRecording();
+      };
+      recorderRef.current = recorder;
+      setStatus(null);
+      setRecording(true);
+      recorder.start();
+    },
+    [transcribeRecording],
+  );
 
   const stopRecording = useCallback(() => {
     const recognition = recognitionRef.current;
@@ -269,13 +297,14 @@ export function useComposerDictation({
         return;
       }
       if (!activeRef.current) return;
-      if (engineRef.current === "whisper") {
-        void startWhisper();
-      } else {
+      const current = engineRef.current;
+      if (current === "web-speech") {
         startWebSpeech();
+      } else {
+        void startLocal(current);
       }
     })();
-  }, [startWhisper, startWebSpeech, stopRecording]);
+  }, [startLocal, startWebSpeech, stopRecording]);
 
   useEffect(() => {
     if (activeRef.current) {
