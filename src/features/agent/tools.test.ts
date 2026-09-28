@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
+import { OPEN_BROWSER_TOOL_DEFINITION } from "./browserTool";
 import { SPAWN_SESSION_TOOL_DEFINITION } from "./spawnTool";
 import {
   AGENT_TOOL_DEFINITIONS,
@@ -31,12 +32,15 @@ describe("agent tool name resolution", () => {
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.glob)).toBe(false);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.todoWrite)).toBe(false);
     expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.taskComplete)).toBe(false);
+    expect(isDestructiveAgentTool(AGENT_TOOL_NAMES.openBrowser)).toBe(false);
   });
 
   it("provides a definition for every agent tool", () => {
-    const defined = [...AGENT_TOOL_DEFINITIONS, SPAWN_SESSION_TOOL_DEFINITION].map(
-      (def) => def.function.name,
-    );
+    const defined = [
+      ...AGENT_TOOL_DEFINITIONS,
+      SPAWN_SESSION_TOOL_DEFINITION,
+      OPEN_BROWSER_TOOL_DEFINITION,
+    ].map((def) => def.function.name);
     expect(defined.sort()).toEqual(Object.values(AGENT_TOOL_NAMES).sort());
   });
 });

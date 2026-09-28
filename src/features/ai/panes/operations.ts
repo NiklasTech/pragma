@@ -1,6 +1,7 @@
 export interface Leaf {
   id: string;
   sessionId: string | null;
+  browser?: true;
 }
 
 export interface TabsNode {
@@ -25,6 +26,7 @@ export type PaneRoot = PaneNode | null;
 export type SplitZone = "left" | "right" | "top" | "bottom";
 
 export const MAX_PANES = 8;
+export const MAX_PANES_TITLE = "8 panes is the maximum";
 
 let idCounter = 0;
 
@@ -46,6 +48,10 @@ export function distributeSizes(count: number): number[] {
 
 export function createLeaf(sessionId: string | null, id = generatePaneId("leaf")): Leaf {
   return { id, sessionId };
+}
+
+export function createBrowserLeaf(id = generatePaneId("leaf")): Leaf {
+  return { id, sessionId: null, browser: true };
 }
 
 export function createTabs(
@@ -90,6 +96,16 @@ export function findLeafBySession(root: PaneRoot, sessionId: string): Leaf | nul
   }
   for (const child of root.children) {
     const found = findLeafBySession(child, sessionId);
+    if (found) return found;
+  }
+  return null;
+}
+
+export function findBrowserLeaf(root: PaneRoot): Leaf | null {
+  if (!root) return null;
+  if (root.type === "tabs") return root.children.find((leaf) => leaf.browser) ?? null;
+  for (const child of root.children) {
+    const found = findBrowserLeaf(child);
     if (found) return found;
   }
   return null;
@@ -283,7 +299,9 @@ export function assignLeafSession(root: PaneRoot, leafId: string, sessionId: str
   return updateGroup(root, group.id, (current) => ({
     ...current,
     activeLeafId: leafId,
-    children: current.children.map((leaf) => (leaf.id === leafId ? { ...leaf, sessionId } : leaf)),
+    children: current.children.map((leaf) =>
+      leaf.id === leafId ? { id: leaf.id, sessionId } : leaf,
+    ),
   }));
 }
 
@@ -291,6 +309,7 @@ export function splitFocused(
   root: PaneRoot,
   focusedLeafId: string | null,
   direction: SplitNode["direction"],
+  newLeaf: Leaf = createLeaf(null),
 ): { root: PaneRoot; focusedLeafId: string | null } {
   if (!root || countLeaves(root) >= MAX_PANES) return { root, focusedLeafId };
 
@@ -300,12 +319,19 @@ export function splitFocused(
   const group = findLeafGroup(root, leaf.id);
   if (!group) return { root, focusedLeafId };
 
-  const newLeaf = createLeaf(null);
   const newGroup = createTabs([newLeaf], newLeaf.id);
   return {
     root: insertGroupBeside(root, group.id, newGroup, direction, true),
     focusedLeafId: leaf.id,
   };
+}
+
+/// Adds the leaf right of the focused pane, or of the first pane when none is focused.
+export function addLeafRight(root: PaneRoot, focusedLeafId: string | null, leaf: Leaf): PaneRoot {
+  if (!root) return createTabs([leaf], leaf.id);
+  const anchor = (focusedLeafId ? findLeaf(root, focusedLeafId) : null) ?? firstLeaf(root);
+  if (!anchor) return root;
+  return splitFocused(root, anchor.id, "horizontal", leaf).root;
 }
 
 export function closeLeaf(
@@ -366,8 +392,7 @@ export function splitToward(
   const direction: SplitNode["direction"] =
     zone === "left" || zone === "right" ? "horizontal" : "vertical";
   const after = zone === "right" || zone === "bottom";
-  const newLeaf = createLeaf(sourceLeaf.sessionId, sourceLeaf.id);
-  const newGroup = createTabs([newLeaf], newLeaf.id);
+  const newGroup = createTabs([sourceLeaf], sourceLeaf.id);
   return insertGroupBeside(withoutSource, targetGroup.id, newGroup, direction, after);
 }
 

@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { useBrowserHistoryStore } from "../browser/history";
 import {
+  addLeafRight,
   assignLeafSession,
   closeLeaf as closeLeafOp,
   countLeaves,
@@ -18,6 +20,7 @@ import {
   splitFocused,
   splitToward as splitTowardOp,
   updateSplitSizes,
+  type Leaf,
   type PaneRoot,
   type SplitZone,
 } from "./operations";
@@ -40,6 +43,7 @@ interface AgentsPanesState {
   splitRight: (rootPath: string) => void;
   splitDown: (rootPath: string) => void;
   closeLeaf: (rootPath: string, leafId: string) => void;
+  addPaneRight: (rootPath: string, leaf: Leaf, focus: boolean) => void;
   selectTab: (rootPath: string, groupId: string, leafId: string) => void;
   dockAsTab: (rootPath: string, sourceLeafId: string, targetLeafId: string) => void;
   splitToward: (
@@ -160,7 +164,7 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      closeLeaf: (rootPath, leafId) =>
+      closeLeaf: (rootPath, leafId) => {
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
           const result = closeLeafOp(entry.root, entry.focusedLeafId, leafId);
@@ -169,6 +173,22 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
               ...entry,
               root: result.root,
               focusedLeafId: result.focusedLeafId,
+            }),
+          };
+        });
+        useBrowserHistoryStore.getState().drop(leafId);
+      },
+
+      addPaneRight: (rootPath, leaf, focus) =>
+        set((state) => {
+          const entry = getEntry(state.trees, rootPath);
+          const root = addLeafRight(entry.root, entry.focusedLeafId, leaf);
+          if (root === entry.root) return {};
+          return {
+            trees: setEntry(state.trees, rootPath, {
+              ...entry,
+              root,
+              focusedLeafId: focus || !entry.focusedLeafId ? leaf.id : entry.focusedLeafId,
             }),
           };
         }),

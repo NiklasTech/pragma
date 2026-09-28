@@ -5,7 +5,8 @@ use std::time::Duration;
 use serde_json::{json, Value};
 
 use super::protocol::{
-    BridgeRequest, SpawnReply, MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV, TOOL_NAME,
+    BridgeRequest, SpawnReply, BROWSER_TOOL_NAME, MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV,
+    TOOL_NAME,
 };
 
 const DEFAULT_PROTOCOL_VERSION: &str = "2024-11-05";
@@ -54,7 +55,21 @@ fn tool_definition() -> Value {
     })
 }
 
-fn forward(config: &BridgeConfig, arguments: Value) -> Result<SpawnReply, String> {
+fn browser_tool_definition() -> Value {
+    json!({
+        "name": BROWSER_TOOL_NAME,
+        "description": "Show an http or https URL to the user in Pragma's browser pane, for example the local dev server after starting it. It navigates the open browser pane or opens one. It does not return the page content; fetch the URL to read it.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "url": { "type": "string", "description": "The http or https URL to open, e.g. http://localhost:5173." }
+            },
+            "required": ["url"]
+        }
+    })
+}
+
+fn forward(config: &BridgeConfig, tool: &str, arguments: Value) -> Result<SpawnReply, String> {
     let address = std::net::SocketAddr::from(([127, 0, 0, 1], config.port));
     let mut stream = TcpStream::connect_timeout(&address, CONNECT_TIMEOUT)
         .map_err(|e| format!("Pragma is not reachable: {e}"))?;
@@ -65,6 +80,7 @@ fn forward(config: &BridgeConfig, arguments: Value) -> Result<SpawnReply, String
     let request = BridgeRequest {
         token: config.token.clone(),
         session_id: config.session_id.clone(),
+        tool: tool.to_string(),
         arguments,
     };
     let mut payload =
@@ -81,14 +97,16 @@ fn forward(config: &BridgeConfig, arguments: Value) -> Result<SpawnReply, String
     serde_json::from_str(line.trim()).map_err(|e| format!("the reply was malformed: {e}"))
 }
 
-fn call_tool(params: &Value, send: &dyn Fn(Value) -> Result<SpawnReply, String>) -> Value {
+type ToolSender<'a> = &'a dyn Fn(&str, Value) -> Result<SpawnReply, String>;
+
+fn call_tool(params: &Value, send: ToolSender) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or("");
-    let reply = if name == TOOL_NAME {
+    let reply = if name == TOOL_NAME || name == BROWSER_TOOL_NAME {
         let arguments = params
             .get("arguments")
             .cloned()
             .unwrap_or_else(|| json!({}));
-        send(arguments).unwrap_or_else(|text| SpawnReply { ok: false, text })
+        send(name, arguments).unwrap_or_else(|text| SpawnReply { ok: false, text })
     } else {
         SpawnReply {
             ok: false,
@@ -102,7 +120,7 @@ fn call_tool(params: &Value, send: &dyn Fn(Value) -> Result<SpawnReply, String>)
 }
 
 /// Answers one MCP message; notifications get no answer.
-fn handle_message(line: &str, send: &dyn Fn(Value) -> Result<SpawnReply, String>) -> Option<Value> {
+fn handle_message(line: &str, send: ToolSender) -> Option<Value> {
     let message: Value = match serde_json::from_str(line) {
         Ok(message) => message,
         Err(e) => {
@@ -127,7 +145,7 @@ fn handle_message(line: &str, send: &dyn Fn(Value) -> Result<SpawnReply, String>
             "serverInfo": { "name": "pragma", "version": env!("CARGO_PKG_VERSION") },
         })),
         "ping" => Ok(json!({})),
-        "tools/list" => Ok(json!({ "tools": [tool_definition()] })),
+        "tools/list" => Ok(json!({ "tools": [tool_definition(), browser_tool_definition()] })),
         "tools/call" => Ok(call_tool(&params, send)),
         _ => Err(json!({ "code": -32601, "message": format!("Method not found: {method}") })),
     };
@@ -144,7 +162,7 @@ pub fn run() -> i32 {
         eprintln!("Pragma child session bridge: missing configuration");
         return 2;
     };
-    let send = |arguments: Value| forward(&config, arguments);
+    let send = |tool: &str, arguments: Value| forward(&config, tool, arguments);
 
     let stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
@@ -170,7 +188,7 @@ pub fn run() -> i32 {
 mod tests {
     use super::*;
 
-    fn unused(_: Value) -> Result<SpawnReply, String> {
+    fn unused(_: &str, _: Value) -> Result<SpawnReply, String> {
         Err("not called".to_string())
     }
 
@@ -195,15 +213,17 @@ mod tests {
     }
 
     #[test]
-    fn lists_the_spawn_tool() {
+    fn lists_the_spawn_and_browser_tools() {
         let response =
             handle_message(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#, &unused).unwrap();
         assert_eq!(response["result"]["tools"][0]["name"], TOOL_NAME);
+        assert_eq!(response["result"]["tools"][1]["name"], BROWSER_TOOL_NAME);
     }
 
     #[test]
     fn forwards_a_spawn_call_and_reports_its_reply() {
-        let send = |arguments: Value| {
+        let send = |tool: &str, arguments: Value| {
+            assert_eq!(tool, TOOL_NAME);
             assert_eq!(arguments["title"], "Fix tests");
             Ok(SpawnReply {
                 ok: true,
@@ -221,10 +241,38 @@ mod tests {
 
     #[test]
     fn reports_a_failed_forward_as_a_tool_error() {
-        let send = |_: Value| Err("Pragma is not reachable".to_string());
+        let send = |_: &str, _: Value| Err("Pragma is not reachable".to_string());
         let response = handle_message(
             r#"{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"agent_spawn_session","arguments":{}}}"#,
             &send,
+        )
+        .unwrap();
+        assert_eq!(response["result"]["isError"], true);
+    }
+
+    #[test]
+    fn forwards_a_browser_call_with_its_tool_name() {
+        let send = |tool: &str, arguments: Value| {
+            assert_eq!(tool, BROWSER_TOOL_NAME);
+            assert_eq!(arguments["url"], "http://localhost:5173");
+            Ok(SpawnReply {
+                ok: true,
+                text: "opened".to_string(),
+            })
+        };
+        let response = handle_message(
+            r#"{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"agent_open_browser","arguments":{"url":"http://localhost:5173"}}}"#,
+            &send,
+        )
+        .unwrap();
+        assert_eq!(response["result"]["content"][0]["text"], "opened");
+    }
+
+    #[test]
+    fn rejects_unknown_tools_without_forwarding() {
+        let response = handle_message(
+            r#"{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"other","arguments":{}}}"#,
+            &unused,
         )
         .unwrap();
         assert_eq!(response["result"]["isError"], true);
