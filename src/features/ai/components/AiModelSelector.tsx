@@ -148,17 +148,20 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
       return;
     }
     setActiveProvider(provider);
-    if (isCLIOnlyProvider(provider)) {
-      const cliProviderId =
-        CLI_PROVIDER_IDS[provider].find((id) => cliStatuses[id]?.authenticated) ?? null;
-      setActiveCLIProvider(cliProviderId);
-    } else {
-      setActiveCLIProvider(null);
-    }
+    // Without an API key, a signed-in coding CLI is the only way to reach the provider.
+    const cliProviderId =
+      isCLIOnlyProvider(provider) || apiKeyRefs[provider] === null
+        ? (CLI_PROVIDER_IDS[provider].find((id) => cliStatuses[id]?.authenticated) ?? null)
+        : null;
+    setActiveCLIProvider(cliProviderId);
     const nextModel = providers[provider].model || "";
     setActiveModel(nextModel);
     updateProviderConfig(provider, { model: nextModel });
-    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
+    settingsStore.setAISettings({
+      defaultProvider: provider,
+      defaultModel: nextModel,
+      cliProvider: cliProviderId,
+    });
   };
 
   const handleModelChange = (model: string | null) => {

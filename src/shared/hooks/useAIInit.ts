@@ -7,6 +7,7 @@ type AISettingsState = ReturnType<typeof useSettingsStore.getState>["ai"];
 const SYNCED_FIELDS = {
   defaultProvider: "activeProvider",
   defaultModel: "activeModel",
+  cliProvider: "activeCLIProvider",
   providers: "providers",
   inlineCompletion: "inlineCompletion",
   completionDebounce: "completionDebounce",

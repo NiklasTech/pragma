@@ -53,6 +53,8 @@ export type VoiceEngine = "web-speech" | "whisper" | "parakeet";
 export interface AISettings {
   defaultProvider: AIProvider;
   defaultModel: string;
+  /** Coding CLI the chat runs on, restored on startup. */
+  cliProvider: string | null;
   inlineCompletion: boolean;
   completionDebounce: number;
   terminalSuggestions: boolean;

@@ -48,6 +48,7 @@ export function CliIntegrationSection() {
       }
     } finally {
       aiStore.setActiveCLIProvider(null);
+      settingsStore.setAISettings({ cliProvider: null });
       await aiStore.loadCLIStatuses();
     }
   };
@@ -56,6 +57,7 @@ export function CliIntegrationSection() {
     const status = aiStore.cliStatuses[providerId];
     if (status?.authenticated) {
       aiStore.setActiveCLIProvider(providerId);
+      settingsStore.setAISettings({ cliProvider: providerId });
       const provider = aiProviderForCLI(providerId);
       if (provider) {
         aiStore.setActiveProvider(provider);

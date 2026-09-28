@@ -49,6 +49,7 @@ interface TerminalActions {
   setShellResolved: (resolved: boolean) => void;
   setActiveSession: (panelId: string, sessionId: string) => void;
   updateSessionCwd: (sessionId: string, cwd: string) => void;
+  moveShellSessionsToCwd: (cwd: string) => void;
   renameSession: (sessionId: string, name: string) => void;
   setDefaultShell: (shell: string) => void;
   setFontSize: (size: number) => void;
@@ -242,6 +243,21 @@ export const useTerminalStore = create<TerminalState & TerminalActions>(
       set({
         sessions: sessions.map((s) => (s.id === sessionId ? { ...s, cwd } : s)),
       });
+    },
+
+    moveShellSessionsToCwd: (cwd) => {
+      const { sessions } = get();
+      const stale = sessions.filter((s) => s.type === "shell" && !s.command && s.cwd !== cwd);
+      if (stale.length === 0) return;
+
+      // Dropping the ptyId makes TerminalSession spawn a fresh shell in the new cwd.
+      set({
+        sessions: sessions.map((s) => (stale.includes(s) ? { ...s, cwd, ptyId: undefined } : s)),
+      });
+
+      for (const session of stale) {
+        if (session.ptyId) void invoke("kill_pty", { id: session.ptyId }).catch(() => {});
+      }
     },
 
     renameSession: (sessionId, name) => {

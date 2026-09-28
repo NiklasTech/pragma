@@ -110,4 +110,28 @@ describe("useTerminalStore", () => {
 
     expect(useTerminalStore.getState().activeByPanel["panel-1"]).toBeUndefined();
   });
+
+  it("moves shell sessions to a new cwd and drops their ptyId", () => {
+    useTerminalStore.setState({ sessions: [], activeByPanel: {}, lastActiveSessionId: null });
+    const store = useTerminalStore.getState();
+
+    store.addSession({
+      id: "shell",
+      name: "Shell",
+      type: "shell",
+      cwd: "/old",
+      panelId: "panel-1",
+      isActive: true,
+    });
+    store.addRunSession("proc-1", "Run", "pnpm dev", "panel-1");
+    store.attachPty("shell", "pty-1");
+
+    store.moveShellSessionsToCwd("/new");
+
+    const sessions = useTerminalStore.getState().sessions;
+    const shell = sessions.find((s) => s.id === "shell");
+    expect(shell?.cwd).toBe("/new");
+    expect(shell?.ptyId).toBeUndefined();
+    expect(sessions.find((s) => s.type === "run")?.cwd).toBeUndefined();
+  });
 });
