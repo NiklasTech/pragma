@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-17T20:16:11.907Z",
-  "total": 75,
+  "generatedAt": "2026-09-28T16:18:52.271Z",
+  "total": 80,
   "entries": [
     {
       "name": "@types/node",
-      "version": "26.5.1",
+      "version": "26.6.2",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/node/v/26.5.1",
+      "url": "https://www.npmjs.com/package/@types/node/v/26.6.2",
       "source": "npm"
     },
     {
@@ -32,16 +32,16 @@
     },
     {
       "name": "@voidzero-dev/vite-plus-core",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@voidzero-dev/vite-plus-core/v/0.3.2",
+      "url": "https://www.npmjs.com/package/@voidzero-dev/vite-plus-core/v/0.3.3",
       "source": "npm"
     },
     {
       "name": "ai",
-      "version": "7.0.99",
+      "version": "7.0.108",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.99",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.108",
       "source": "npm"
     },
     {
@@ -206,6 +206,13 @@
       "source": "rust"
     },
     {
+      "name": "NVIDIA Parakeet TDT 0.6B v3 (ONNX int8 export by istupakov)",
+      "version": "v3",
+      "license": "CC-BY-4.0",
+      "url": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+      "source": "download"
+    },
+    {
       "name": "objc2",
       "version": "0.6.4",
       "license": "MIT",
@@ -224,6 +231,27 @@
       "version": "0.3.2",
       "license": "MIT",
       "url": "https://crates.io/crates/objc2-foundation/0.3.2",
+      "source": "rust"
+    },
+    {
+      "name": "ONNX Runtime",
+      "version": "1.28.2",
+      "license": "MIT",
+      "url": "https://github.com/microsoft/onnxruntime",
+      "source": "download"
+    },
+    {
+      "name": "OpenAI Whisper tiny (ggml)",
+      "version": "tiny",
+      "license": "MIT",
+      "url": "https://github.com/openai/whisper",
+      "source": "download"
+    },
+    {
+      "name": "ort",
+      "version": "2.0.0-rc.13",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/ort/2.0.0-rc.13",
       "source": "rust"
     },
     {
@@ -256,9 +284,9 @@
     },
     {
       "name": "react-resizable-panels",
-      "version": "4.12.4",
+      "version": "4.13.1",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.12.4",
+      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.13.1",
       "source": "npm"
     },
     {
@@ -375,9 +403,9 @@
     },
     {
       "name": "tauri",
-      "version": "2.11.5",
+      "version": "2.11.6",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri/2.11.5",
+      "url": "https://crates.io/crates/tauri/2.11.6",
       "source": "rust"
     },
     {
@@ -410,9 +438,9 @@
     },
     {
       "name": "tauri-plugin-log",
-      "version": "2.9.1",
+      "version": "2.9.2",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-log/2.9.1",
+      "url": "https://crates.io/crates/tauri-plugin-log/2.9.2",
       "source": "rust"
     },
     {
@@ -431,23 +459,23 @@
     },
     {
       "name": "tauri-plugin-single-instance",
-      "version": "2.4.4",
+      "version": "2.4.5",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-single-instance/2.4.4",
+      "url": "https://crates.io/crates/tauri-plugin-single-instance/2.4.5",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-store",
-      "version": "2.4.4",
+      "version": "2.4.5",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-store/2.4.4",
+      "url": "https://crates.io/crates/tauri-plugin-store/2.4.5",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-updater",
-      "version": "2.11.0",
+      "version": "2.12.0",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-updater/2.11.0",
+      "url": "https://crates.io/crates/tauri-plugin-updater/2.12.0",
       "source": "rust"
     },
     {
@@ -494,9 +522,9 @@
     },
     {
       "name": "vite-plus",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/vite-plus/v/0.3.2",
+      "url": "https://www.npmjs.com/package/vite-plus/v/0.3.3",
       "source": "npm"
     },
     {
@@ -505,6 +533,13 @@
       "license": "MIT",
       "url": "https://www.npmjs.com/package/vitepress/v/1.6.4",
       "source": "npm"
+    },
+    {
+      "name": "whisper.cpp",
+      "version": "1.8.7",
+      "license": "MIT",
+      "url": "https://github.com/ggml-org/whisper.cpp",
+      "source": "download"
     },
     {
       "name": "XTerm",

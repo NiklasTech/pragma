@@ -30,7 +30,7 @@ interface LicenseEntry {
   version: string;
   license: string;
   url: string;
-  source: "npm" | "rust";
+  source: "npm" | "rust" | "download";
 }
 
 interface LicensesData {
@@ -161,7 +161,8 @@ export function AboutSettings() {
         <div className="flex flex-col gap-3 py-2">
           <p className="text-ui-xs text-fg-muted">
             Pragma builds on many open-source projects. This list was generated automatically from
-            the npm and Rust dependencies.
+            the npm and Rust dependencies, plus the speech engines and models that Voice downloads
+            on demand.
           </p>
 
           {licensesLoading && (

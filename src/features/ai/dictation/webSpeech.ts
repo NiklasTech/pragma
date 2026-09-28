@@ -77,16 +77,16 @@ export function createSpeechRecognition(
   return recognition;
 }
 
-// Only final results commit text; interim results are never inserted.
-export function extractFinalTranscript(event: SpeechRecognitionResultEvent): string {
+// The whole session so far, final and interim results, so it can be shown live.
+export function extractSessionTranscript(event: SpeechRecognitionResultEvent): string {
   let transcript = "";
-  for (let i = event.resultIndex; i < event.results.length; i++) {
+  for (let i = 0; i < event.results.length; i++) {
     const result = event.results[i];
-    if (result.isFinal && result.length > 0) {
+    if (result.length > 0) {
       transcript += result[0].transcript;
     }
   }
-  return transcript;
+  return transcript.trim();
 }
 
 // Map engine error codes to one-line copy; unknown codes stay silent.

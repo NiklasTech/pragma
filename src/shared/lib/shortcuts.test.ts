@@ -139,7 +139,7 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(32);
+    expect(Object.keys(defaults)).toHaveLength(33);
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
     expect(defaults["file.openFolder"]).toBeNull();
     expect(defaults["view.commandPalette"]).toEqual({ ctrl: true, shift: true, code: "KeyP" });
@@ -160,6 +160,7 @@ describe("getDefaultShortcuts", () => {
     expect(defaults["debug.stepOut"]).toEqual({ shift: true, code: "F11" });
     expect(defaults["debug.toggleBreakpoint"]).toEqual({ code: "F9" });
     expect(defaults["agent.toggle"]).toBeNull();
+    expect(defaults["voice.holdToDictate"]).toBeNull();
   });
 });
 

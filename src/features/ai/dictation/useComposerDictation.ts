@@ -2,19 +2,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { VoiceEngine } from "@/shared/stores/settings";
-import { arrayBufferToBase64, audioBufferToWav } from "./wav";
+import {
+  LIVE_INTERVAL_MS,
+  createLocalDictation,
+  type LocalDictationSession,
+} from "./localDictation";
+import { startPcmCapture } from "./pcmCapture";
 import {
   VOICE_INPUT_DENIED,
   VOICE_INPUT_NO_MICROPHONE,
   VOICE_INPUT_UNSUPPORTED,
   createSpeechRecognition,
-  extractFinalTranscript,
+  extractSessionTranscript,
   recognitionErrorCopy,
   type SpeechRecognition,
 } from "./webSpeech";
 
 export const VOICE_INPUT_WHISPER_MISSING = "Download Whisper in Settings";
 export const VOICE_INPUT_WHISPER_UNAVAILABLE = "Whisper is not available on this platform";
+export const VOICE_INPUT_PARAKEET_MISSING = "Download Parakeet in Settings";
+export const VOICE_INPUT_PARAKEET_UNAVAILABLE = "Parakeet is not available on this platform";
 export const VOICE_INPUT_NO_MIC_ACCESS = "Could not access the microphone.";
 export const VOICE_INPUT_NEEDS_APP_BUNDLE =
   "Voice input needs the installed Pragma app; development builds cannot ask for microphone access.";
@@ -24,17 +31,51 @@ export interface SttStatus {
   installed: boolean;
 }
 
+type LocalEngine = Exclude<VoiceEngine, "web-speech">;
+
+const LOCAL_ENGINES: Record<
+  LocalEngine,
+  { status: string; transcribe: string; missing: string; unavailable: string }
+> = {
+  whisper: {
+    status: "stt_status",
+    transcribe: "stt_transcribe",
+    missing: VOICE_INPUT_WHISPER_MISSING,
+    unavailable: VOICE_INPUT_WHISPER_UNAVAILABLE,
+  },
+  parakeet: {
+    status: "parakeet_status",
+    transcribe: "parakeet_transcribe",
+    missing: VOICE_INPUT_PARAKEET_MISSING,
+    unavailable: VOICE_INPUT_PARAKEET_UNAVAILABLE,
+  },
+};
+
 export interface UseComposerDictationOptions {
   engine: VoiceEngine;
   enabled: boolean;
-  onTranscript: (text: string) => void;
+  /** The whole transcript of the current dictation; `final` marks its last update. */
+  onText: (text: string, final: boolean) => void;
 }
 
 export interface UseComposerDictationResult {
   recording: boolean;
   busy: boolean;
   status: string | null;
+  start: () => void;
+  stop: () => void;
   toggle: () => void;
+  /** Microphone level 0..1 while a local engine records; returns an unsubscribe function. */
+  subscribeLevel: (listener: LevelListener) => () => void;
+}
+
+export type LevelListener = (level: number) => void;
+
+interface LocalRecording {
+  stream: MediaStream;
+  context: AudioContext;
+  session: LocalDictationSession;
+  timer: number;
 }
 
 function mediaErrorCopy(error: unknown): string {
@@ -48,88 +89,40 @@ function mediaErrorCopy(error: unknown): string {
   return VOICE_INPUT_NO_MIC_ACCESS;
 }
 
-function pickRecorderMimeType(): string | null {
-  if (typeof MediaRecorder === "undefined") {
-    return null;
-  }
-  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
-  for (const type of candidates) {
-    if (MediaRecorder.isTypeSupported(type)) {
-      return type;
-    }
-  }
-  return null;
+function stopStream(stream: MediaStream) {
+  stream.getTracks().forEach((track) => track.stop());
 }
 
 export function useComposerDictation({
   engine,
   enabled,
-  onTranscript,
+  onText,
 }: UseComposerDictationOptions): UseComposerDictationResult {
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const onTranscriptRef = useRef(onTranscript);
-  onTranscriptRef.current = onTranscript;
+  const onTextRef = useRef(onText);
+  onTextRef.current = onText;
   const engineRef = useRef(engine);
   engineRef.current = engine;
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
   const activeRef = useRef(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const localRef = useRef<LocalRecording | null>(null);
+  const levelListenersRef = useRef(new Set<LevelListener>());
 
-  const finishRecording = useCallback(() => {
-    activeRef.current = false;
-    setRecording(false);
+  const emitLevel = useCallback((level: number) => {
+    levelListenersRef.current.forEach((listener) => listener(level));
   }, []);
 
-  const transcribeRecording = useCallback(async () => {
-    const recorder = recorderRef.current;
-    const chunks = chunksRef.current;
-    chunksRef.current = [];
-    recorderRef.current = null;
-    const stream = streamRef.current;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
-    streamRef.current = null;
-    finishRecording();
-    if (!recorder || chunks.length === 0) {
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-      const arrayBuffer = await blob.arrayBuffer();
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      let wav: ArrayBuffer;
-      try {
-        const decoded = await audioContext.decodeAudioData(arrayBuffer);
-        wav = audioBufferToWav(decoded, 16000);
-      } finally {
-        await audioContext.close().catch(() => undefined);
-        audioContextRef.current = null;
-      }
-      const text = await invoke<string>("stt_transcribe", {
-        wavBase64: arrayBufferToBase64(wav),
-      });
-      const trimmed = text.trim();
-      if (trimmed) {
-        onTranscriptRef.current(trimmed);
-      }
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
-      setBusy(false);
-    }
-  }, [finishRecording]);
+  const subscribeLevel = useCallback((listener: LevelListener) => {
+    levelListenersRef.current.add(listener);
+    return () => {
+      levelListenersRef.current.delete(listener);
+    };
+  }, []);
 
   const startWebSpeech = useCallback(() => {
     const recognition = createSpeechRecognition(navigator.language || "en-US");
@@ -139,11 +132,10 @@ export function useComposerDictation({
       return;
     }
     recognitionRef.current = recognition;
+    let transcript = "";
     recognition.onresult = (event) => {
-      const text = extractFinalTranscript(event);
-      if (text) {
-        onTranscriptRef.current(text);
-      }
+      transcript = extractSessionTranscript(event);
+      onTextRef.current(transcript, false);
     };
     recognition.onerror = (event) => {
       const copy = recognitionErrorCopy(event.error);
@@ -152,12 +144,13 @@ export function useComposerDictation({
       }
     };
     recognition.onend = () => {
+      onTextRef.current(transcript, true);
       if (recognitionRef.current === recognition) {
         recognitionRef.current = null;
-        finishRecording();
+        activeRef.current = false;
+        setRecording(false);
       }
     };
-    setStatus(null);
     setRecording(true);
     try {
       recognition.start();
@@ -167,155 +160,176 @@ export function useComposerDictation({
       setRecording(false);
       setStatus(VOICE_INPUT_UNSUPPORTED);
     }
-  }, [finishRecording]);
+  }, []);
 
-  const startWhisper = useCallback(async () => {
-    let whisper: SttStatus;
-    try {
-      whisper = await invoke<SttStatus>("stt_status");
-    } catch {
-      whisper = { supported: true, installed: false };
-    }
-    if (!whisper.supported) {
-      activeRef.current = false;
-      setStatus(VOICE_INPUT_WHISPER_UNAVAILABLE);
-      return;
-    }
-    if (!whisper.installed) {
-      activeRef.current = false;
-      setStatus(VOICE_INPUT_WHISPER_MISSING);
-      return;
-    }
+  const startLocal = useCallback(
+    async (localEngine: LocalEngine, context: AudioContext) => {
+      const config = LOCAL_ENGINES[localEngine];
+      const abort = (message: string | null) => {
+        void context.close().catch(() => undefined);
+        activeRef.current = false;
+        if (message) setStatus(message);
+      };
 
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (error) {
-      activeRef.current = false;
-      setStatus(mediaErrorCopy(error));
-      return;
-    }
-    if (!activeRef.current) {
-      stream.getTracks().forEach((track) => track.stop());
-      return;
-    }
-    streamRef.current = stream;
-
-    let recorder: MediaRecorder;
-    const mimeType = pickRecorderMimeType();
-    try {
-      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-    } catch {
-      stream.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-      activeRef.current = false;
-      setStatus(VOICE_INPUT_NO_MIC_ACCESS);
-      return;
-    }
-    chunksRef.current = [];
-    recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunksRef.current.push(event.data);
+      let engineStatus: SttStatus;
+      try {
+        engineStatus = await invoke<SttStatus>(config.status);
+      } catch {
+        engineStatus = { supported: true, installed: false };
       }
-    };
-    recorder.onstop = () => {
-      void transcribeRecording();
-    };
-    recorderRef.current = recorder;
-    setStatus(null);
-    setRecording(true);
-    recorder.start();
-  }, [transcribeRecording]);
+      if (!engineStatus.supported) {
+        abort(config.unavailable);
+        return;
+      }
+      if (!engineStatus.installed) {
+        abort(config.missing);
+        return;
+      }
 
-  const stopRecording = useCallback(() => {
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (error) {
+        abort(mediaErrorCopy(error));
+        return;
+      }
+      if (!activeRef.current) {
+        stopStream(stream);
+        abort(null);
+        return;
+      }
+
+      try {
+        await context.resume();
+        if (!activeRef.current) {
+          stopStream(stream);
+          abort(null);
+          return;
+        }
+        const capture = startPcmCapture(context, stream, emitLevel);
+        const session = createLocalDictation({
+          capture,
+          transcribe: (wavBase64) => invoke<string>(config.transcribe, { wavBase64 }),
+          onText: (text, final) => onTextRef.current(text, final),
+          onError: setStatus,
+        });
+        const timer = window.setInterval(session.tick, LIVE_INTERVAL_MS);
+        localRef.current = { stream, context, session, timer };
+        setRecording(true);
+      } catch {
+        stopStream(stream);
+        abort(VOICE_INPUT_NO_MIC_ACCESS);
+      }
+    },
+    [emitLevel],
+  );
+
+  const start = useCallback(() => {
+    if (!enabledRef.current || activeRef.current) {
+      return;
+    }
+    activeRef.current = true;
+    setStatus(null);
+    const current = engineRef.current;
+    let context: AudioContext | null = null;
+    if (current !== "web-speech") {
+      // Created inside the click or key press so the webview lets it run.
+      try {
+        context = new AudioContext();
+      } catch {
+        activeRef.current = false;
+        setStatus(VOICE_INPUT_NO_MIC_ACCESS);
+        return;
+      }
+    }
+    void (async () => {
+      const available = await invoke<boolean>("voice_input_available").catch(() => false);
+      if (!available || !activeRef.current) {
+        void context?.close().catch(() => undefined);
+        activeRef.current = false;
+        if (!available) setStatus(VOICE_INPUT_NEEDS_APP_BUNDLE);
+        return;
+      }
+      if (current === "web-speech") {
+        startWebSpeech();
+      } else if (context) {
+        await startLocal(current, context);
+      }
+    })();
+  }, [startLocal, startWebSpeech]);
+
+  const stop = useCallback(() => {
+    if (!activeRef.current) {
+      return;
+    }
+    activeRef.current = false;
     const recognition = recognitionRef.current;
     if (recognition) {
-      recognitionRef.current = null;
       try {
         recognition.stop();
       } catch {
         // The session already ended through an error event.
       }
-      finishRecording();
       return;
     }
-    const recorder = recorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    } else {
-      const stream = streamRef.current;
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-      streamRef.current = null;
-      finishRecording();
+    const local = localRef.current;
+    localRef.current = null;
+    setRecording(false);
+    if (!local) {
+      return;
     }
-  }, [finishRecording]);
+    window.clearInterval(local.timer);
+    stopStream(local.stream);
+    emitLevel(0);
+    setBusy(true);
+    void local.session.finish().finally(() => {
+      void local.context.close().catch(() => undefined);
+      setBusy(false);
+    });
+  }, [emitLevel]);
 
   const toggle = useCallback(() => {
-    if (!enabledRef.current) {
-      return;
-    }
     if (activeRef.current) {
-      stopRecording();
-      return;
+      stop();
+    } else {
+      start();
     }
-    activeRef.current = true;
-    void (async () => {
-      const available = await invoke<boolean>("voice_input_available").catch(() => false);
-      if (!available) {
-        activeRef.current = false;
-        setStatus(VOICE_INPUT_NEEDS_APP_BUNDLE);
-        return;
-      }
-      if (!activeRef.current) return;
-      if (engineRef.current === "whisper") {
-        void startWhisper();
-      } else {
-        startWebSpeech();
-      }
-    })();
-  }, [startWhisper, startWebSpeech, stopRecording]);
+  }, [start, stop]);
 
   useEffect(() => {
-    if (activeRef.current) {
-      stopRecording();
-    }
-  }, [engine, stopRecording]);
+    stop();
+  }, [engine, stop]);
 
   useEffect(() => {
-    if (!enabled && activeRef.current) {
-      stopRecording();
+    if (!enabled) {
+      stop();
     }
-  }, [enabled, stopRecording]);
+  }, [enabled, stop]);
 
   useEffect(
     () => () => {
+      activeRef.current = false;
       const recognition = recognitionRef.current;
+      recognitionRef.current = null;
       if (recognition) {
+        recognition.onend = null;
         try {
           recognition.abort();
         } catch {
           // Nothing left to cancel.
         }
       }
-      recognitionRef.current = null;
-      const recorder = recorderRef.current;
-      if (recorder && recorder.state !== "inactive") {
-        recorder.onstop = null;
-        recorder.stop();
+      const local = localRef.current;
+      localRef.current = null;
+      if (local) {
+        window.clearInterval(local.timer);
+        local.session.cancel();
+        stopStream(local.stream);
+        void local.context.close().catch(() => undefined);
       }
-      recorderRef.current = null;
-      const stream = streamRef.current;
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-      streamRef.current = null;
-      void audioContextRef.current?.close().catch(() => undefined);
-      audioContextRef.current = null;
     },
     [],
   );
 
-  return { recording, busy, status, toggle };
+  return { recording, busy, status, start, stop, toggle, subscribeLevel };
 }

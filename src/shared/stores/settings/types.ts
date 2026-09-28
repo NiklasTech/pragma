@@ -48,7 +48,7 @@ export interface ProviderSettings {
   baseUrl?: string;
 }
 
-export type VoiceEngine = "web-speech" | "whisper";
+export type VoiceEngine = "web-speech" | "whisper" | "parakeet";
 
 export interface AISettings {
   defaultProvider: AIProvider;

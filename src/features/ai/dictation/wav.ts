@@ -57,22 +57,6 @@ export function resampleToRate(
   return out;
 }
 
-export function audioBufferToWav(buffer: AudioBuffer, targetRate: number): ArrayBuffer {
-  const first = buffer.getChannelData(0);
-  let mono: Float32Array = first;
-  if (buffer.numberOfChannels > 1) {
-    mono = new Float32Array(first.length);
-    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-      const data = buffer.getChannelData(channel);
-      for (let i = 0; i < mono.length; i++) {
-        mono[i] += data[i] / buffer.numberOfChannels;
-      }
-    }
-  }
-  const resampled = resampleToRate(mono, buffer.sampleRate, targetRate);
-  return pcm16ToWav(floatToPcm16(resampled), targetRate);
-}
-
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";

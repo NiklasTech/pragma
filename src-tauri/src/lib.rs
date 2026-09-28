@@ -34,6 +34,7 @@ pub fn run() {
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
+        .manage(modules::parakeet::ParakeetState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -235,6 +236,10 @@ pub fn run() {
             modules::stt::stt_status,
             modules::stt::stt_download,
             modules::stt::stt_transcribe,
+            modules::parakeet::parakeet_status,
+            modules::parakeet::parakeet_download,
+            modules::parakeet::parakeet_cancel_download,
+            modules::parakeet::parakeet_transcribe,
             modules::voice_access::voice_input_available,
             modules::extensions::extension_list,
             modules::extensions::extension_read_main,

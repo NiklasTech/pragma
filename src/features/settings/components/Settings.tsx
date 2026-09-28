@@ -33,6 +33,7 @@ import {
   BracketsAngle,
   Check,
   PuzzlePiece,
+  Microphone,
 } from "@phosphor-icons/react";
 import { AISettings } from "./AISettings";
 import { AgentSettings } from "./AgentSettings";
@@ -45,6 +46,7 @@ import { KeyboardSettings } from "./KeyboardSettings";
 import { AboutSettings } from "./AboutSettings";
 import { ExtensionSettings } from "./ExtensionSettings";
 import { LspSettings } from "./LspSettings";
+import { VoiceSettings } from "./VoiceSettings";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { exportSettings, importSettings } from "./settings-io";
 
@@ -52,6 +54,7 @@ type Category =
   | "editor"
   | "terminal"
   | "agents"
+  | "voice"
   | "theme"
   | "mcp"
   | "layout"
@@ -103,6 +106,13 @@ const CATEGORIES: CategoryDef[] = [
     icon: Robot,
     group: "Intelligence",
     description: "AI providers, models and how agents ask before they act.",
+  },
+  {
+    id: "voice",
+    label: "Voice",
+    icon: Microphone,
+    group: "Intelligence",
+    description: "Dictate into the chat by click or by holding a shortcut.",
   },
   {
     id: "mcp",
@@ -254,6 +264,12 @@ const SEARCH_ITEMS: SearchItem[] = [
     label: "Approvals",
     keywords: "agent auto approve allowed commands step limit",
     category: "agents",
+  },
+  {
+    id: "voice-input",
+    label: "Voice Input",
+    keywords: "voice dictation dictate microphone speech whisper parakeet push to talk hold",
+    category: "voice",
   },
   {
     id: "theme-mode",
@@ -527,6 +543,7 @@ export function Settings() {
                     <AgentSettings />
                   </div>
                 )}
+                {activeCategory === "voice" && <VoiceSettings />}
                 {activeCategory === "theme" && <ThemeSettings />}
                 {activeCategory === "mcp" && <McpSettings />}
                 {activeCategory === "layout" && <LayoutSettings />}

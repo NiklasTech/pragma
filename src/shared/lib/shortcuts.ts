@@ -267,6 +267,12 @@ export const SHORTCUT_ACTIONS = [
     default: (): ShortcutBinding => ({ code: "F9" }),
   },
   {
+    id: "voice.holdToDictate" as const,
+    label: "Hold to Dictate",
+    category: "chat" as const,
+    default: (): ShortcutBinding | null => null,
+  },
+  {
     id: "agent.toggle" as const,
     label: "Toggle Agent Mode",
     category: "ai" as const,

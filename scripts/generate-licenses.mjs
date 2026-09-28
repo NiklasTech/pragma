@@ -161,10 +161,42 @@ function collectRustEntries() {
   return entries;
 }
 
+// Not dependencies of the build: speech engines and models downloaded on demand from Settings > Voice.
+const DOWNLOADED_ENTRIES = [
+  {
+    name: "NVIDIA Parakeet TDT 0.6B v3 (ONNX int8 export by istupakov)",
+    version: "v3",
+    license: "CC-BY-4.0",
+    url: "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+    source: "download",
+  },
+  {
+    name: "ONNX Runtime",
+    version: "1.28.2",
+    license: "MIT",
+    url: "https://github.com/microsoft/onnxruntime",
+    source: "download",
+  },
+  {
+    name: "whisper.cpp",
+    version: "1.8.7",
+    license: "MIT",
+    url: "https://github.com/ggml-org/whisper.cpp",
+    source: "download",
+  },
+  {
+    name: "OpenAI Whisper tiny (ggml)",
+    version: "tiny",
+    license: "MIT",
+    url: "https://github.com/openai/whisper",
+    source: "download",
+  },
+];
+
 const npmEntries = collectNpmEntries();
 const rustEntries = collectRustEntries();
 
-const entries = [...npmEntries, ...rustEntries].sort((a, b) => {
+const entries = [...npmEntries, ...rustEntries, ...DOWNLOADED_ENTRIES].sort((a, b) => {
   const nameCompare = a.name.localeCompare(b.name);
   if (nameCompare !== 0) return nameCompare;
   return a.version.localeCompare(b.version);

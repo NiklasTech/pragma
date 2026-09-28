@@ -46,7 +46,7 @@ fn whisper_archive_url() -> Option<&'static str> {
     }
 }
 
-fn stt_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn stt_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(app
         .path()
         .app_data_dir()
@@ -304,21 +304,22 @@ pub async fn stt_download(app: tauri::AppHandle) -> Result<SttStatus, String> {
 }
 
 #[derive(Debug, PartialEq)]
-struct WavInfo {
-    sample_rate: u32,
-    channels: u16,
-    bits_per_sample: u16,
-    data_len: u64,
+pub(crate) struct WavInfo {
+    pub(crate) sample_rate: u32,
+    pub(crate) channels: u16,
+    pub(crate) bits_per_sample: u16,
+    pub(crate) data_offset: usize,
+    pub(crate) data_len: u64,
 }
 
-fn parse_wav(data: &[u8]) -> Result<WavInfo, String> {
+pub(crate) fn parse_wav(data: &[u8]) -> Result<WavInfo, String> {
     if data.len() < 12 || &data[0..4] != b"RIFF" || &data[8..12] != b"WAVE" {
         return Err("Invalid WAV payload: missing RIFF/WAVE header".to_string());
     }
 
     let mut offset = 12usize;
     let mut fmt: Option<(u16, u16, u32, u16)> = None;
-    let mut data_len: Option<u64> = None;
+    let mut data_chunk: Option<(usize, u64)> = None;
 
     while offset + 8 <= data.len() {
         let chunk_id = &data[offset..offset + 4];
@@ -355,14 +356,15 @@ fn parse_wav(data: &[u8]) -> Result<WavInfo, String> {
                 u16::from_le_bytes(bits_bytes),
             ));
         } else if chunk_id == b"data" {
-            data_len = Some(chunk_size as u64);
+            data_chunk = Some((body_start, chunk_size as u64));
         }
         offset = body_start + padded;
     }
 
     let (audio_format, channels, sample_rate, bits_per_sample) =
         fmt.ok_or_else(|| "Invalid WAV payload: missing fmt chunk".to_string())?;
-    let data_len = data_len.ok_or_else(|| "Invalid WAV payload: missing data chunk".to_string())?;
+    let (data_offset, data_len) =
+        data_chunk.ok_or_else(|| "Invalid WAV payload: missing data chunk".to_string())?;
 
     if audio_format != 1 {
         return Err("Invalid WAV payload: expected PCM audio".to_string());
@@ -387,6 +389,7 @@ fn parse_wav(data: &[u8]) -> Result<WavInfo, String> {
         sample_rate,
         channels,
         bits_per_sample,
+        data_offset,
         data_len,
     })
 }
@@ -496,6 +499,7 @@ mod tests {
                 sample_rate: 16000,
                 channels: 1,
                 bits_per_sample: 16,
+                data_offset: 44,
                 data_len: 32000,
             }
         );
