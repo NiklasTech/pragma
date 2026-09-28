@@ -2,191 +2,181 @@
   <img src="public/pragma_logo.svg" alt="Pragma logo" width="96">
 </p>
 
-# Pragma
-
-A lightweight, AI-native desktop IDE with an integrated terminal.
-
-Built with Tauri 2, Rust, React 19, TypeScript and CodeMirror 6.
+<h1 align="center">Pragma</h1>
 
 <p align="center">
-  <img src="public/pragma_homescreen.png" alt="Pragma IDE home screen" width="960">
+  An AI-native desktop IDE that combines an agent workspace with a full code editor.
   <br>
-  <em>The Pragma home screen with editor, terminal and sidebar.</em>
+  Built with Tauri 2, Rust, React 19, TypeScript and CodeMirror 6.
 </p>
 
 <p align="center">
-  <a href="#what-is-pragma">What is Pragma?</a> •
-  <a href="#features">Features</a> •
-  <a href="#tech-stack">Tech Stack</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#build-from-source">Build from Source</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="#license">License</a>
+  <a href="https://github.com/NiklasTech/pragma/releases">Download</a> ·
+  <a href="https://niklastech.github.io/pragma/">Documentation</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
 </p>
+
+<p align="center">
+  <img src="public/pragma_homescreen.png" alt="Pragma editor with file tree, code and terminal" width="960">
+</p>
+
+---
+
+## Contents
+
+- [What is Pragma?](#what-is-pragma)
+- [Features](#features)
+- [Installation](#installation)
+- [Build from source](#build-from-source)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Project structure](#project-structure)
+- [Tech stack](#tech-stack)
+- [Contributing](#contributing)
+- [Third-party CLI tools](#third-party-cli-tools)
+- [License](#license)
 
 ---
 
 ## What is Pragma?
 
-Pragma is a desktop code editor designed for developers who want AI assistance without the bloat of a browser-based IDE.
+Pragma is a desktop IDE with two modes in one window:
 
-Most existing tools add AI through plugins that feel bolted on or treat the terminal as a secondary panel. Pragma takes a different approach:
+- **Agents** is a workspace for directing AI. You start sessions, give them a task and review what they changed.
+- **Editor** is a complete hands-on IDE with a file tree, language servers, Git, a terminal and a debugger.
 
-- **AI-native.** AI features are integrated directly into the editor, terminal and chat panel. No separate browser window or extension required.
-- **Integrated terminal.** A full xterm.js terminal with tabs, splits and AI-driven command suggestions, built into the workflow instead of tucked away.
-- **Lightweight.** Built with Tauri 2 and Rust instead of Electron. The compressed Linux package is under 10 MB.
-- **Private by default.** API keys are stored in the operating system's keychain, not in plain text.
-- **Hackable.** VIM mode, custom themes, configurable AI provider profiles and MCP server support.
+Both modes share the same project, the same terminal and the same AI providers. You can switch between them at any time with `Cmd/Ctrl + Shift + E`.
 
-Pragma is currently in early development. The core editor, terminal, AI chat and Git panels are functional. LSP support (completion, hover, go-to-definition, references, formatting, rename, signature help, code actions, symbols) is built in, and MCP server management is available through the sidebar.
+Pragma is built with Tauri and Rust instead of Electron, stores API keys in the operating system keychain and can use your existing coding CLI subscriptions such as Claude Code, Codex or Gemini CLI.
+
+Pragma is in active development (0.x). Expect breaking changes between minor versions.
 
 ---
 
 ## Features
 
+### Agents workspace
+
+<p align="center">
+  <img src="public/pragma_agents.png" alt="Pragma Agents workspace with session list and composer" width="880">
+</p>
+
+- Sessions with a thread list, a transcript and a large composer.
+- Several session panes side by side, each with its own conversation.
+- Writing sessions can run in isolated Git worktrees so parallel work does not collide.
+- Review pane that shows the changes of the focused session next to it.
+- Named agents with a brief, their own memory and approved folders.
+- Reusable workspace skills and local tasks that start a session only when you ask.
+- Sessions can start child sessions for sub-tasks.
+- Queue a follow-up message while a run is still in progress.
+- Browser pane beside a session, for example to check a local dev server.
+- Voice dictation with Web Speech, local Whisper.cpp or local Parakeet V3.
+
 ### Editor
 
-- CodeMirror 6 with syntax highlighting for many languages.
-- Optional VIM mode.
-- Inline ghost text suggestions powered by AI.
-- AI diff/edit workflow: select code, ask for changes, review a side-by-side diff and accept or reject.
-- Configurable font, tab size, line numbers and word wrap.
+- CodeMirror 6 with syntax highlighting for many languages and optional Vim mode.
+- Built-in LSP support: completion, hover, go to definition, peek definition, references, rename, formatting, signature help, code actions, inlay hints, folding and an outline panel.
+- Find and replace in the current file and across the workspace.
+- Problems panel with diagnostics from all language servers.
+- AI inline completions and an AI edit flow with a side-by-side diff to accept or reject.
+- Debugger with breakpoints, stepping and a debug panel.
+- Run configurations for starting and restarting project processes.
 
 ### Terminal
 
-- xterm.js terminal with portable-pty backend.
-- Multiple tabs and split layouts.
+- xterm.js terminal backed by portable-pty.
+- Multiple tabs and split panes.
 - Configurable shell (zsh, bash, fish, PowerShell).
 - AI command suggestions while typing.
+- Clickable links, for example to open a local dev server in the browser.
 
-### AI Chat
-
-- Codebase-aware chat using the Vercel AI SDK.
-- Streaming responses with Markdown rendering.
-- Reference files or folders with `@filename`.
-- Support for multiple providers: OpenAI, Anthropic, Ollama, Gemini, DeepSeek, Kimi and OpenAI-compatible endpoints.
-- API keys stored in the OS keychain.
-
-### Git Integration
-
-- Visual Git graph in the sidebar.
-- Git status panel with staged and unstaged changes.
-- Inline diff previews.
-- Stage, unstage, commit, push and pull from the UI.
-
-### Docker Integration
-
-- Docker and Podman container overview in the sidebar.
-- Start, stop and restart containers.
-- Open container logs or exec a shell directly from the UI.
-- Docker Compose support: up, down, build and restart.
-- Project-aware grouping of containers based on `docker-compose.yml`.
+### Git
 
 <p align="center">
-  <img src="public/pragma_docker.png" alt="Pragma Docker panel" width="720">
-  <br>
-  <em>The Docker panel in the sidebar.</em>
+  <img src="public/pragma_git.png" alt="Pragma Git history panel next to the editor" width="880">
 </p>
 
-### MCP Support
+- Commit history with a graph in the sidebar.
+- Status panel with staged and unstaged changes and inline diffs.
+- Stage, unstage, commit, push and pull from the UI.
+- Branch switcher, stash panel, blame and a conflict editor.
 
-- Manage Model Context Protocol servers from the sidebar.
-- Configure servers in `~/.config/pragma/mcp.json`.
-- Start, stop and monitor MCP server processes.
+### AI providers
 
-### Customization
+- Built-in providers: Anthropic, OpenAI, Gemini, DeepSeek, Kimi, Grok, OpenRouter, GitHub Copilot, Ollama and OpenAI-compatible custom endpoints.
+- Coding CLIs over the Agent Client Protocol: Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, Hermes Agent and DeepSeek Harness.
+- MCP servers can be added and managed in the settings.
+- API keys are stored in the OS keychain.
 
-- Built-in themes plus user-loadable JSON themes.
-- Configurable keyboard shortcuts.
-- Resizable and collapsible panels.
-- Native floating windows for detaching panels.
+### More
 
----
-
-## Tech Stack
-
-| Layer              | Technology                               |
-| ------------------ | ---------------------------------------- |
-| Frontend framework | React 19                                 |
-| Language           | TypeScript                               |
-| Styling            | Tailwind CSS v4, shadcn/ui               |
-| State management   | Zustand                                  |
-| Build tool         | Vite+ (`vp dev`, `vp build`, `vp check`) |
-| Editor             | CodeMirror 6                             |
-| Terminal           | xterm.js                                 |
-| Desktop framework  | Tauri 2                                  |
-| Backend language   | Rust                                     |
-| AI SDK             | Vercel AI SDK                            |
-| Package manager    | pnpm 11.5.0                              |
+- Docker and Podman container overview with start, stop, logs, exec and Compose actions.
+- Extensions with a workspace, file and editor API.
+- Built-in themes plus importable custom themes.
+- Configurable keyboard shortcuts and a command palette.
+- Resizable panels and native floating windows for detached panels.
 
 ---
 
 ## Installation
 
-### Download a release
-
 Pre-built installers for Windows, macOS and Linux are available on the [Releases](https://github.com/NiklasTech/pragma/releases) page.
 
-> **Note:** The first release is distributed **without code signing**. Windows may show a SmartScreen warning, and macOS may require you to right-click the app and select **Open** the first time you run it. The macOS build is compiled automatically in CI but has **not been tested on Apple hardware**.
+> [!NOTE]
+> The installers are not code-signed yet. Windows may show a SmartScreen warning, and macOS may ask you to confirm the first launch.
 
-#### Windows
+### Windows
 
-1. Download `pragma_<version>_x64-setup.exe` or `pragma_<version>_x64_en-US.msi` from the latest release.
-2. Run the installer and follow the setup steps.
-3. Launch Pragma from the Start menu or desktop shortcut.
+1. Download `Pragma_<version>_x64-setup.exe` or `Pragma_<version>_x64_en-US.msi`.
+2. Run the installer.
+3. Start Pragma from the Start menu.
 
-#### macOS
+### macOS
 
-1. Download `pragma_<version>_x64.dmg` (Intel) or `pragma_<version>_aarch64.dmg` (Apple Silicon) from the latest release.
-2. Open the DMG and drag **Pragma** into your Applications folder.
-3. On first launch, right-click the app and choose **Open** if Gatekeeper blocks it.
+1. Download `Pragma_<version>_universal.dmg`. It runs on Apple Silicon and Intel.
+2. Open the DMG and drag Pragma into the Applications folder.
+3. If Gatekeeper blocks the first launch, right-click the app and choose **Open**.
 
-> The macOS build is produced automatically by CI and has not been verified on physical Apple hardware.
-
-#### Linux
+### Linux
 
 1. Download the package for your distribution:
-   - Debian/Ubuntu: `pragma_<version>_amd64.deb`
-   - Fedora/openSUSE: `pragma-<version>-1.x86_64.rpm`
-   - Distribution-agnostic: `pragma_<version>_amd64.AppImage`
-2. Install the package or make the AppImage executable (`chmod +x pragma_*.AppImage`).
-3. Launch Pragma from your applications menu or by running the AppImage.
+   - Debian and Ubuntu: `Pragma_<version>_amd64.deb`
+   - Fedora and openSUSE: `Pragma-<version>-1.x86_64.rpm`
+   - Any distribution: `Pragma_<version>_amd64.AppImage`
+2. Install the package, or make the AppImage executable with `chmod +x Pragma_*.AppImage`.
+3. Start Pragma from your application menu or by running the AppImage.
+
+Installed versions check for updates and can update themselves.
 
 ---
 
-## Build from Source
+## Build from source
 
 ### Prerequisites
-
-You need the following tools installed:
 
 - [Node.js](https://nodejs.org/) 24 or later
 - [pnpm](https://pnpm.io/) 11.5.0 or later
 - [Rust](https://www.rust-lang.org/tools/install) stable toolchain
-- Tauri system dependencies for your operating system
+- The Tauri system dependencies for your operating system
 
-#### macOS
-
-Install Xcode Command Line Tools:
+**macOS**
 
 ```bash
 xcode-select --install
 ```
 
-#### Windows
+**Windows**
 
-Install the [Microsoft C++ Build Tools](https://docs.microsoft.com/en-us/windows/dev-environment/rust/setup) and enable the Windows SDK.
+Install the [Microsoft C++ Build Tools](https://learn.microsoft.com/en-us/windows/dev-environment/rust/setup) with the Windows SDK.
 
-#### Linux (Debian/Ubuntu)
+**Linux (Debian and Ubuntu)**
 
 ```bash
 sudo apt update
 sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev librsvg2-dev patchelf
 ```
 
-#### Linux (Arch / CachyOS)
+**Linux (Arch and CachyOS)**
 
 ```bash
 sudo pacman -S webkit2gtk-4.1 gtk3 libappindicator librsvg patchelf
@@ -194,193 +184,151 @@ sudo pacman -S webkit2gtk-4.1 gtk3 libappindicator librsvg patchelf
 
 For other distributions, see the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/).
 
-### Clone and install
+### Clone and run
 
 ```bash
 git clone https://github.com/NiklasTech/pragma.git
 cd pragma
-
-# Install dependencies
 pnpm install
-
-# Start the frontend development server
-pnpm exec vp dev
-
-# Start the full Tauri desktop app
-pnpm exec vp run tauri dev
+pnpm run dev:desktop
 ```
 
-If you have the Vite+ CLI installed globally, you can also use `vp install`, `vp dev` and `vp run tauri dev` without the `pnpm exec` prefix.
+### Scripts
 
-> **Shortcut:** All commands above are also available as `pnpm run` scripts:
->
-> ```bash
-> pnpm run dev          # frontend dev server
-> pnpm run dev:desktop  # full Tauri desktop app
-> pnpm run build        # frontend production build
-> pnpm run build:desktop # Tauri release build
-> pnpm run check        # lint + format + type check
-> pnpm run test         # run tests once
-> ```
+| Command                  | Purpose                             |
+| ------------------------ | ----------------------------------- |
+| `pnpm run dev`           | Frontend dev server only            |
+| `pnpm run dev:desktop`   | Full desktop app in development     |
+| `pnpm run build`         | Frontend production build           |
+| `pnpm run build:desktop` | Desktop release build               |
+| `pnpm run check`         | Lint, format check and type check   |
+| `pnpm run test`          | Frontend tests                      |
+| `cargo test`             | Rust tests (run inside `src-tauri`) |
 
-### Build a release binary
+Pragma uses [Vite+](https://viteplus.dev/) as its toolchain. The scripts above call `vp` through `pnpm exec`, so no global install is needed.
 
-```bash
-# Build the frontend and the Tauri application
-pnpm exec vp run tauri build
-```
-
-> **Note on `vp`:** Pragma uses [Vite+](https://viteplus.dev/) as its build toolchain. The `vp` command is available through `pnpm exec vp ...` after running `pnpm install`, or by installing Vite+ globally with `pnpm add -g vite-plus`.
-
-The resulting bundles are written to `src-tauri/target/release/bundle/`.
-
-To build only specific package formats, for example `.deb` and `.rpm` on Linux:
+Release bundles are written to `src-tauri/target/release/bundle/`. To build only specific formats, pass them to Tauri, for example:
 
 ```bash
 pnpm exec vp run tauri build --bundles deb,rpm
 ```
 
-### Run checks
-
-Before committing, run the full check suite:
-
-```bash
-pnpm exec vp check
-pnpm exec vp test
-cd src-tauri && cargo test
-```
-
 ---
 
-## Quick Start
+## Quick start
 
-1. Start Pragma and complete the onboarding dialog.
-2. Select a theme and configure your preferred AI provider.
-3. Open a project folder using the file explorer in the sidebar.
-4. Open any file in the editor.
-5. Open the AI chat panel with `Cmd/Ctrl + Shift + A`.
-6. Reference a file by typing `@filename` in the chat input.
-7. Toggle the terminal with `Cmd/Ctrl + J`.
+1. Start Pragma and complete the onboarding.
+2. Choose a theme and connect an AI provider, either with an API key or by signing in to a coding CLI.
+3. Open a project folder.
+4. In **Agents**, describe a task in the composer and start a session.
+5. Switch to **Editor** with `Cmd/Ctrl + Shift + E` to work on the code yourself.
+
+Useful default shortcuts (`Cmd` on macOS, `Ctrl` on Windows and Linux):
+
+| Shortcut               | Action                   |
+| ---------------------- | ------------------------ |
+| `Cmd/Ctrl + P`         | Go to file               |
+| `Cmd/Ctrl + Shift + P` | Command palette          |
+| `Cmd/Ctrl + Shift + E` | Switch Agents and Editor |
+| `Cmd/Ctrl + Shift + A` | Toggle AI chat           |
+| `Cmd/Ctrl + Shift + T` | Toggle terminal          |
+| `Cmd/Ctrl + ,`         | Open settings            |
+
+All shortcuts can be changed in **Settings > Keyboard**.
 
 ---
 
 ## Configuration
 
-Pragma stores user configuration in the Tauri store and in config files under `~/.config/pragma/`.
+Everything is configured in the settings panel (`Cmd/Ctrl + ,`). Settings can be exported and imported as a file.
 
 <p align="center">
-  <img src="public/pragma_settings.png" alt="Pragma settings panel" width="720">
-  <br>
-  <em>The settings panel for configuring editor, terminal and AI options.</em>
+  <img src="public/pragma_settings.png" alt="Pragma settings with the coding CLI integrations" width="880">
 </p>
 
 ### AI providers
 
-Add provider API keys through the Settings panel. Supported providers include:
+In **Settings > Agents** you can:
 
-- OpenAI
-- Anthropic
-- Ollama
-- Gemini
-- DeepSeek
-- Kimi
-- OpenAI-compatible custom endpoints
-
-API keys are stored in the OS keychain.
-
-### Themes
-
-Built-in themes can be selected in the settings panel. Custom themes can be added as JSON files in:
-
-```
-~/.config/pragma/themes/
-```
-
-Each theme file defines colors, fonts and UI tokens using the `--pragma-*` CSS variable namespace.
+- Save an API key for a built-in provider. Keys are stored in the OS keychain.
+- Install and sign in to a coding CLI and select it with **Use This**. The CLI then runs your sessions with your existing subscription.
 
 ### MCP servers
 
-Configure MCP servers in:
+MCP servers are added and started in **Settings > MCP**. The configuration is stored as `mcp.json` in the app configuration folder:
+
+- macOS: `~/Library/Application Support/dev.pragma.ide/`
+- Linux: `~/.config/dev.pragma.ide/`
+- Windows: `%APPDATA%\dev.pragma.ide\`
+
+### Themes
+
+Built-in themes are selected in **Settings > Theme**, where you can also import your own themes.
+
+More details are in the [documentation](https://niklastech.github.io/pragma/).
+
+---
+
+## Project structure
 
 ```
-~/.config/pragma/mcp.json
-```
-
-Example:
-
-```json
-{
-  "servers": [
-    {
-      "name": "filesystem",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/projects"],
-      "autostart": true
-    }
-  ]
-}
+.
+├── src/                 React frontend
+│   ├── app/             Application entry
+│   ├── components/      Shared UI such as onboarding
+│   ├── features/        Feature modules (ai, editor, terminal, sidebar, debug, ...)
+│   ├── shared/          Hooks, stores, UI components and utilities
+│   ├── shell/           Window chrome and layout
+│   └── theme/           Theme system
+├── src-tauri/           Rust backend (Tauri commands, PTY, AI, Git, LSP, MCP)
+├── docs/                Developer documentation
+├── docs-site/           User documentation (VitePress)
+├── branding/            Logo and brand assets
+├── public/              Static assets
+└── scripts/             Build and asset scripts
 ```
 
 ---
 
-## Project Structure
+## Tech stack
 
-```
-.
-├── src/                  # React frontend
-│   ├── app/              # Application shell
-│   ├── components/       # Shared UI components
-│   ├── features/         # Feature modules (editor, terminal, AI, git, ...)
-│   ├── shared/           # Shared hooks, stores and utilities
-│   ├── shell/            # Window chrome and layout
-│   └── theme/            # Theme system
-├── src-tauri/            # Rust / Tauri backend
-│   ├── src/              # Rust source code
-│   └── Cargo.toml        # Rust dependencies
-├── docs/                 # Project documentation
-├── public/               # Static assets
-└── dist/                 # Built frontend output
-```
+| Layer             | Technology                                |
+| ----------------- | ----------------------------------------- |
+| Desktop framework | Tauri 2                                   |
+| Backend           | Rust, portable-pty                        |
+| Frontend          | React 19, TypeScript                      |
+| Styling           | Tailwind CSS v4, shadcn/ui                |
+| State             | Zustand                                   |
+| Editor            | CodeMirror 6                              |
+| Terminal          | xterm.js                                  |
+| AI                | Vercel AI SDK, MCP, Agent Client Protocol |
+| Toolchain         | Vite+, pnpm                               |
 
 ---
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for:
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the development setup, branching model, commit conventions and pull request process.
 
-- Development setup
-- Branching model
-- Commit conventions
-- Pull request process
-- Code style guidelines
-
-For security-related reports, see [SECURITY.md](SECURITY.md).
+Please report security issues privately as described in [SECURITY.md](SECURITY.md), not as a public issue.
 
 ---
 
-## Security
+## Third-party CLI tools
 
-If you discover a security vulnerability, please report it privately to the address listed in [SECURITY.md](SECURITY.md). Do not open a public issue for security-sensitive bugs.
+Pragma can work with official coding CLIs that are installed and run locally on your machine, such as Claude Code, OpenAI Codex, Gemini CLI or Kimi Code. When you use this integration:
+
+- Pragma does not provide models, API access, accounts or credentials.
+- The official CLI is downloaded from the provider's public package registry and installed on your system.
+- Sign-in, billing and data processing happen directly between you and the provider.
+- Pragma only starts the locally installed CLI and shows its output.
+
+Each CLI is subject to its provider's license, terms and policies. Pragma is not affiliated with any of these providers.
 
 ---
-
-## Third-Party CLI Tools
-
-Pragma can optionally integrate with official AI provider CLI tools that are installed and run locally on the user's machine (currently Kimi Code CLI). When this integration is used:
-
-- Pragma does **not** provide models, API access, accounts, login flows, OAuth links, or credentials.
-- The official CLI is downloaded from the provider's public package registry and installed globally on the user's system.
-- Authentication, billing, and data processing happen entirely between the user and the provider's CLI / service.
-- Pragma only invokes the locally installed CLI binary and renders its output in the UI.
-
-Kimi Code CLI is an open-source project published by Moonshot AI under the MIT License. Its use is subject to Moonshot AI's applicable terms and policies. Pragma is not affiliated with Moonshot AI.
 
 ## License
 
 Pragma is licensed under the [Apache License 2.0](LICENSE).
 
----
-
-## Acknowledgements
-
-Pragma is built on top of many excellent open-source projects, including Tauri, CodeMirror, xterm.js, React and the Vercel AI SDK.
+Pragma builds on many open-source projects, including Tauri, CodeMirror, xterm.js, React and the Vercel AI SDK. The full list of third-party licenses is shown in **Settings > About**.
