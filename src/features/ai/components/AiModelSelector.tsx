@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/
 import { Input } from "@/shared/components/ui/input";
 import { CaretDown, Check, Robot, Warning } from "@phosphor-icons/react";
 
+import { usePinnedChatEngine } from "./usePinnedChatEngine";
+
 export type AiModelSelectorVariant = "default" | "pill" | "icon" | "compact";
 
 function isCLIAuthenticated(
@@ -48,8 +50,8 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
   const [open, setOpen] = useState(false);
   const [customModel, setCustomModel] = useState("");
   const {
-    activeProvider,
-    activeModel,
+    activeProvider: globalProvider,
+    activeModel: globalModel,
     providers,
     apiKeyRefs,
     activeCLIProvider,
@@ -61,6 +63,9 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     updateProviderConfig,
   } = useAIStore();
   const settingsStore = useSettingsStore();
+  const pinned = usePinnedChatEngine();
+  const activeProvider = pinned?.provider ?? globalProvider;
+  const activeModel = pinned ? pinned.model : globalModel;
   const showUnavailable = settingsStore.ai.showUnavailableProviders;
 
   const {
@@ -87,7 +92,9 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
 
   const visibleProviders = useMemo(() => {
     const all = Object.keys(PROVIDER_LABELS) as AIProvider[];
-    const filtered = showUnavailable ? all : all.filter((p) => availableMap[p]);
+    // A pinned chat stays on a built-in provider; coding CLIs start their own sessions.
+    const selectable = pinned ? all.filter((p) => !isCLIOnlyProvider(p)) : all;
+    const filtered = showUnavailable ? selectable : selectable.filter((p) => availableMap[p]);
     // Always keep the active provider selectable, even when hidden.
     if (!filtered.includes(activeProvider)) {
       return [...filtered, activeProvider].sort((a, b) =>
@@ -95,7 +102,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
       );
     }
     return filtered;
-  }, [availableMap, showUnavailable, activeProvider]);
+  }, [availableMap, showUnavailable, activeProvider, pinned]);
 
   const isAvailable = availableMap[activeProvider];
 
@@ -113,6 +120,10 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     if (!availableModels.length) return;
     const first = availableModels[0].id;
     if (!first) return;
+    if (pinned) {
+      pinned.setModel(first);
+      return;
+    }
     setActiveModel(first);
     updateProviderConfig(activeProvider, { model: first });
     settingsStore.setAISettings({ defaultModel: first });
@@ -123,6 +134,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     setActiveModel,
     updateProviderConfig,
     settingsStore,
+    pinned,
   ]);
 
   // Keep the custom input in sync with the active model.
@@ -131,6 +143,10 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
   }, [activeModel, open]);
 
   const handleProviderChange = (provider: AIProvider) => {
+    if (pinned) {
+      pinned.setProvider(provider, providers[provider].model || "");
+      return;
+    }
     setActiveProvider(provider);
     if (isCLIOnlyProvider(provider)) {
       const cliProviderId =
@@ -147,6 +163,11 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
 
   const handleModelChange = (model: string | null) => {
     if (!model) return;
+    if (pinned) {
+      pinned.setModel(model);
+      setOpen(false);
+      return;
+    }
     setActiveModel(model);
     updateProviderConfig(activeProvider, { model });
     settingsStore.setAISettings({ defaultModel: model });

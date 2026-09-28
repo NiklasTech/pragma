@@ -52,7 +52,8 @@ export async function draftAgent(request: DraftAgentRequest): Promise<AgentDraft
         { role: "user", content: request.description },
       ],
       temperature: 0.4,
-      max_tokens: 600,
+      // Reasoning models spend part of this budget thinking before they answer.
+      max_tokens: 4096,
     },
   });
 

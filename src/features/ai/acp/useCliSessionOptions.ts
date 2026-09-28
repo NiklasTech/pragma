@@ -3,6 +3,7 @@ import { useEffect } from "react";
 
 import { sessionCwd } from "@/features/ai/worktree/cwd";
 import { isAcpActive } from "@/shared/lib/ai/acp";
+import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -25,15 +26,24 @@ export interface CliSessionOptions {
 
 /// Options of the active coding CLI session, or null when the chat does not run over ACP.
 export function useCliSessionOptions(): CliSessionOptions | null {
-  const activeCLIProvider = useAIStore((state) => state.activeCLIProvider);
+  const globalCLIProvider = useAIStore((state) => state.activeCLIProvider);
+  const activeProvider = useAIStore((state) => state.activeProvider);
+  const activeModel = useAIStore((state) => state.activeModel);
+  const providers = useAIStore((state) => state.providers);
   const cliManifests = useAIStore((state) => state.cliManifests);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
 
-  const acpActive = isAcpActive(cliManifests, activeCLIProvider, experimentalAcp);
   const session = chatSessions.find((item) => item.id === activeChatSessionId);
+  const activeCLIProvider = resolveEffectiveEngine(pinnedSessionEngine(session), {
+    activeCLIProvider: globalCLIProvider,
+    activeProvider,
+    activeModel,
+    providers,
+  }).cliProviderId;
+  const acpActive = isAcpActive(cliManifests, activeCLIProvider, experimentalAcp);
   const cwd = rootPath ? sessionCwd(session, rootPath) : null;
 
   const options = useAcpSessionOptionsStore((state) =>

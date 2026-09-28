@@ -1,0 +1,45 @@
+import { useCallback } from "react";
+
+import { useAIStore, type AgentEngine, type AIProvider } from "@/shared/stores/ai";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+
+export interface PinnedChatEngine {
+  provider: AIProvider;
+  model: string;
+  setProvider: (provider: AIProvider, model: string) => void;
+  setModel: (model: string) => void;
+}
+
+/// The built-in provider and model pinned on the active chat, which win over the global selection.
+export function usePinnedChatEngine(): PinnedChatEngine | null {
+  const session = useAIStore((state) =>
+    state.chatSessions.find((item) => item.id === state.activeChatSessionId),
+  );
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const engine = session?.agentEngine;
+
+  const save = useCallback(
+    (next: AgentEngine) => {
+      if (!session) return;
+      void useAIStore
+        .getState()
+        .updateChatSession(rootPath ?? "default", { ...session, agentEngine: next });
+    },
+    [rootPath, session],
+  );
+
+  const setProvider = useCallback(
+    (provider: AIProvider, model: string) => save({ kind: "builtin", provider, model }),
+    [save],
+  );
+
+  const setModel = useCallback(
+    (model: string) => {
+      if (engine) save({ ...engine, model });
+    },
+    [engine, save],
+  );
+
+  if (engine?.kind !== "builtin" || !engine.provider) return null;
+  return { provider: engine.provider, model: engine.model ?? "", setProvider, setModel };
+}
