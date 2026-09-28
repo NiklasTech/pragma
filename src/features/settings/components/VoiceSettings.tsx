@@ -106,6 +106,7 @@ export function VoiceSettings() {
         <p className="py-2.5 text-ui-xs text-fg-muted">
           Runs NVIDIA Parakeet V3 (~670 MB) on your machine, with punctuation and 25 European
           languages. It is a speech model, not the coding LLM, and no audio leaves your device.
+          Model by NVIDIA, licensed under CC-BY-4.0.
         </p>
       ) : (
         <p className="py-2.5 text-ui-xs text-fg-muted">
