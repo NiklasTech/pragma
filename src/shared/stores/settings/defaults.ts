@@ -28,6 +28,7 @@ export const defaultSettings: SettingsState = {
   ai: {
     defaultProvider: "anthropic",
     defaultModel: "",
+    cliProvider: null,
     inlineCompletion: true,
     completionDebounce: 500,
     terminalSuggestions: true,

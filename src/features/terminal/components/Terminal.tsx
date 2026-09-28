@@ -35,6 +35,7 @@ export function Terminal({ panelId }: TerminalProps) {
   const addSession = useTerminalStore((s) => s.addSession);
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const prevDefaultShellRef = useRef(defaultShell);
+  const prevRootPathRef = useRef(rootPath);
 
   // Orphan sessions without a panelId are shown in the first terminal panel.
   const layoutRoot = useLayoutStore((s) => s.root);
@@ -60,6 +61,15 @@ export function Terminal({ panelId }: TerminalProps) {
       isActive: true,
     });
   }, [panelSessions.length, shellResolved, defaultShell, rootPath, panelId]);
+
+  useEffect(() => {
+    const previous = prevRootPathRef.current;
+    prevRootPathRef.current = rootPath;
+
+    if (rootPath && rootPath !== previous) {
+      useTerminalStore.getState().moveShellSessionsToCwd(rootPath);
+    }
+  }, [rootPath]);
 
   useEffect(() => {
     const previous = prevDefaultShellRef.current;
