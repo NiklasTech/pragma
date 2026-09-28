@@ -1,8 +1,6 @@
 import { useCallback } from "react";
 
-import { aiProviderForCLI } from "@/shared/lib/ai-providers";
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
-import { useSettingsStore } from "@/shared/stores/settings";
 import { findLeaf } from "../panes/operations";
 import { useAgentsPanesStore } from "../panes/store";
 import { createSessionForChoice } from "../worktree/create";
@@ -15,17 +13,6 @@ export interface NewSessionActions {
   startAgentWorktree: () => Promise<void>;
   startTerminal: (manifest: CLIManifest) => Promise<void>;
   startConversation: (manifest: CLIManifest) => Promise<void>;
-}
-
-function activateCLIProvider(providerId: string): void {
-  const { cliStatuses, setActiveCLIProvider, setActiveProvider } = useAIStore.getState();
-  if (cliStatuses[providerId]?.authenticated !== true) return;
-  setActiveCLIProvider(providerId);
-  const provider = aiProviderForCLI(providerId);
-  if (provider) {
-    setActiveProvider(provider);
-    useSettingsStore.getState().setAISettings({ defaultProvider: provider });
-  }
 }
 
 export function useNewSessionActions(
@@ -95,8 +82,8 @@ export function useNewSessionActions(
         kind: "agent",
         environment: "checkout",
         cliProviderId: manifest.id,
+        agentEngine: { kind: "cli", cliProviderId: manifest.id },
       });
-      activateCLIProvider(manifest.id);
       place(session.id);
     },
     [place, rootPath],
