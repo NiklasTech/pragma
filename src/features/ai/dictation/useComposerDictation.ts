@@ -65,7 +65,11 @@ export interface UseComposerDictationResult {
   start: () => void;
   stop: () => void;
   toggle: () => void;
+  /** Microphone level 0..1 while a local engine records; returns an unsubscribe function. */
+  subscribeLevel: (listener: LevelListener) => () => void;
 }
+
+export type LevelListener = (level: number) => void;
 
 interface LocalRecording {
   stream: MediaStream;
@@ -107,6 +111,18 @@ export function useComposerDictation({
   const activeRef = useRef(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const localRef = useRef<LocalRecording | null>(null);
+  const levelListenersRef = useRef(new Set<LevelListener>());
+
+  const emitLevel = useCallback((level: number) => {
+    levelListenersRef.current.forEach((listener) => listener(level));
+  }, []);
+
+  const subscribeLevel = useCallback((listener: LevelListener) => {
+    levelListenersRef.current.add(listener);
+    return () => {
+      levelListenersRef.current.delete(listener);
+    };
+  }, []);
 
   const startWebSpeech = useCallback(() => {
     const recognition = createSpeechRecognition(navigator.language || "en-US");
@@ -146,64 +162,67 @@ export function useComposerDictation({
     }
   }, []);
 
-  const startLocal = useCallback(async (localEngine: LocalEngine, context: AudioContext) => {
-    const config = LOCAL_ENGINES[localEngine];
-    const abort = (message: string | null) => {
-      void context.close().catch(() => undefined);
-      activeRef.current = false;
-      if (message) setStatus(message);
-    };
+  const startLocal = useCallback(
+    async (localEngine: LocalEngine, context: AudioContext) => {
+      const config = LOCAL_ENGINES[localEngine];
+      const abort = (message: string | null) => {
+        void context.close().catch(() => undefined);
+        activeRef.current = false;
+        if (message) setStatus(message);
+      };
 
-    let engineStatus: SttStatus;
-    try {
-      engineStatus = await invoke<SttStatus>(config.status);
-    } catch {
-      engineStatus = { supported: true, installed: false };
-    }
-    if (!engineStatus.supported) {
-      abort(config.unavailable);
-      return;
-    }
-    if (!engineStatus.installed) {
-      abort(config.missing);
-      return;
-    }
+      let engineStatus: SttStatus;
+      try {
+        engineStatus = await invoke<SttStatus>(config.status);
+      } catch {
+        engineStatus = { supported: true, installed: false };
+      }
+      if (!engineStatus.supported) {
+        abort(config.unavailable);
+        return;
+      }
+      if (!engineStatus.installed) {
+        abort(config.missing);
+        return;
+      }
 
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (error) {
-      abort(mediaErrorCopy(error));
-      return;
-    }
-    if (!activeRef.current) {
-      stopStream(stream);
-      abort(null);
-      return;
-    }
-
-    try {
-      await context.resume();
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (error) {
+        abort(mediaErrorCopy(error));
+        return;
+      }
       if (!activeRef.current) {
         stopStream(stream);
         abort(null);
         return;
       }
-      const capture = startPcmCapture(context, stream);
-      const session = createLocalDictation({
-        capture,
-        transcribe: (wavBase64) => invoke<string>(config.transcribe, { wavBase64 }),
-        onText: (text, final) => onTextRef.current(text, final),
-        onError: setStatus,
-      });
-      const timer = window.setInterval(session.tick, LIVE_INTERVAL_MS);
-      localRef.current = { stream, context, session, timer };
-      setRecording(true);
-    } catch {
-      stopStream(stream);
-      abort(VOICE_INPUT_NO_MIC_ACCESS);
-    }
-  }, []);
+
+      try {
+        await context.resume();
+        if (!activeRef.current) {
+          stopStream(stream);
+          abort(null);
+          return;
+        }
+        const capture = startPcmCapture(context, stream, emitLevel);
+        const session = createLocalDictation({
+          capture,
+          transcribe: (wavBase64) => invoke<string>(config.transcribe, { wavBase64 }),
+          onText: (text, final) => onTextRef.current(text, final),
+          onError: setStatus,
+        });
+        const timer = window.setInterval(session.tick, LIVE_INTERVAL_MS);
+        localRef.current = { stream, context, session, timer };
+        setRecording(true);
+      } catch {
+        stopStream(stream);
+        abort(VOICE_INPUT_NO_MIC_ACCESS);
+      }
+    },
+    [emitLevel],
+  );
 
   const start = useCallback(() => {
     if (!enabledRef.current || activeRef.current) {
@@ -261,12 +280,13 @@ export function useComposerDictation({
     }
     window.clearInterval(local.timer);
     stopStream(local.stream);
+    emitLevel(0);
     setBusy(true);
     void local.session.finish().finally(() => {
       void local.context.close().catch(() => undefined);
       setBusy(false);
     });
-  }, []);
+  }, [emitLevel]);
 
   const toggle = useCallback(() => {
     if (activeRef.current) {
@@ -311,5 +331,5 @@ export function useComposerDictation({
     [],
   );
 
-  return { recording, busy, status, start, stop, toggle };
+  return { recording, busy, status, start, stop, toggle, subscribeLevel };
 }
