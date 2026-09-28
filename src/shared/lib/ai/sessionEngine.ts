@@ -1,4 +1,4 @@
-import type { AgentEngine, AIProvider, ProviderConfig } from "@/shared/stores/ai";
+import type { AgentEngine, AIProvider, ChatSession, ProviderConfig } from "@/shared/stores/ai";
 
 export interface EngineDefaults {
   activeCLIProvider: string | null;
@@ -33,4 +33,16 @@ export function resolveEffectiveEngine(
       ? pinned.baseUrl
       : defaults.providers[provider].baseUrl;
   return { cliProviderId, provider, model, baseUrl };
+}
+
+/// A coding CLI conversation started before engines were pinned still runs on its own CLI.
+export function pinnedSessionEngine(
+  session: Pick<ChatSession, "kind" | "agentEngine" | "cliProviderId"> | undefined,
+): AgentEngine | null {
+  if (!session) return null;
+  if (session.agentEngine) return session.agentEngine;
+  if (session.kind !== "terminal" && session.cliProviderId) {
+    return { kind: "cli", cliProviderId: session.cliProviderId };
+  }
+  return null;
 }

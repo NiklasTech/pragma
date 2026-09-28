@@ -74,8 +74,8 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       }
       setName(drafted.name);
       setBrief(drafted.brief);
-    } catch {
-      toast.error("Could not draft the agent");
+    } catch (err) {
+      toast.error("Could not draft the agent", { description: String(err) });
     } finally {
       setDrafting(false);
     }

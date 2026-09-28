@@ -28,7 +28,7 @@ import {
 import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import { callMcpTool } from "@/shared/lib/ai/mcpTools";
-import { resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
+import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import {
   getMessageText,
   getToolInvocation,
@@ -113,7 +113,7 @@ export function useAI() {
     provider: effectiveProvider,
     model: effectiveModel,
     baseUrl: effectiveBaseUrl,
-  } = resolveEffectiveEngine(activeSession?.agentEngine ?? null, {
+  } = resolveEffectiveEngine(pinnedSessionEngine(activeSession), {
     activeCLIProvider,
     activeProvider,
     activeModel,

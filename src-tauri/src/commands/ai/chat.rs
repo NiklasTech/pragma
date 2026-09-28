@@ -26,7 +26,7 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
     let config = ProviderConfig {
         base_url: req.base_url.unwrap_or_default(),
         model: req.model,
-        timeout_seconds: 60,
+        timeout_seconds: 180,
         api_key: None,
         extra_headers: None,
     };
