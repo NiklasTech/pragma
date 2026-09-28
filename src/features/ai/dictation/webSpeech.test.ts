@@ -6,7 +6,7 @@ import {
   VOICE_INPUT_NO_SPEECH,
   VOICE_INPUT_UNSUPPORTED,
   createSpeechRecognition,
-  extractFinalTranscript,
+  extractSessionTranscript,
   getSpeechRecognitionCtor,
   isSpeechRecognitionSupported,
   recognitionErrorCopy,
@@ -67,18 +67,17 @@ describe("webSpeech support", () => {
     expect(recognitionErrorCopy("language-not-supported")).toBeNull();
   });
 
-  it("extracts only final transcripts from the result event", () => {
+  it("joins final and interim results of the whole session", () => {
     const event = resultEvent([
-      { text: "ignored", isFinal: true },
-      { text: " hello", isFinal: true },
-      { text: "partial", isFinal: false },
+      { text: "Hello", isFinal: true },
       { text: " world", isFinal: true },
+      { text: " still talking", isFinal: false },
     ]);
-    expect(extractFinalTranscript(event)).toBe(" hello world");
+    expect(extractSessionTranscript(event)).toBe("Hello world still talking");
   });
 
-  it("skips interim-only events", () => {
-    const event = resultEvent([{ text: "still thinking", isFinal: false }]);
-    expect(extractFinalTranscript(event)).toBe("");
+  it("shows interim-only events live", () => {
+    const event = resultEvent([{ text: " still thinking ", isFinal: false }]);
+    expect(extractSessionTranscript(event)).toBe("still thinking");
   });
 });

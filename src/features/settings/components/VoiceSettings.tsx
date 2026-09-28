@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { CheckCircle, DownloadSimple } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
+import { Kbd } from "@/shared/components/ui/kbd";
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
+import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { useSettingsStore, type VoiceEngine } from "@/shared/stores/settings";
 
 import { ParakeetSetup } from "./ParakeetSetup";
@@ -79,6 +81,13 @@ export function VoiceSettings() {
             onCheckedChange={(v) => settingsStore.setAISettings({ voiceInput: v })}
             aria-label="Enable voice input"
           />
+        }
+      />
+      <SettingRow
+        label="Hold to dictate"
+        description="Hold the shortcut to record and release it to insert the text. Change it under Keyboard."
+        control={
+          <Kbd>{formatShortcut(settingsStore.shortcuts["voice.holdToDictate"], getIsMac())}</Kbd>
         }
       />
       <SettingRow

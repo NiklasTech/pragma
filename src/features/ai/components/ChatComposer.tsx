@@ -11,6 +11,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout/store";
 import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
 import { useComposerDictation } from "@/features/ai/dictation/useComposerDictation";
+import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
 
 import { CliSessionOptionsMenu } from "@/features/ai/acp/CliSessionOptionsMenu";
 import { useCliSessionOptions } from "@/features/ai/acp/useCliSessionOptions";
@@ -48,6 +49,7 @@ export function ChatComposer({
   const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
   const cliSession = useCliSessionOptions();
   const voiceEngine = useSettingsStore((state) => state.ai.voiceEngine);
+  const holdToDictate = useSettingsStore((state) => state.shortcuts["voice.holdToDictate"]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contextPickerRef = useRef<ContextPickerRef>(null);
   const inputRef = useRef(input);
@@ -136,20 +138,28 @@ export function ChatComposer({
     });
   }, [input, moveCursor, onInputChange]);
 
-  const handleDictationTranscript = useCallback(
-    (text: string) => {
-      const value = inputRef.current;
-      const position = Math.min(cursorRef.current, value.length);
-      const result = insertAtCursor(value, text, position);
-      if (result.value === value) {
-        return;
+  // Live dictation rewrites the text between the cursor at start and the text after it.
+  const dictationBaseRef = useRef<{ value: string; position: number } | null>(null);
+
+  const handleDictationText = useCallback(
+    (text: string, final: boolean) => {
+      if (!dictationBaseRef.current) {
+        const value = inputRef.current;
+        dictationBaseRef.current = { value, position: Math.min(cursorRef.current, value.length) };
       }
-      onInputChange(result.value);
+      const base = dictationBaseRef.current;
+      if (final) {
+        dictationBaseRef.current = null;
+      }
+      const result = insertAtCursor(base.value, text, base.position);
+      if (result.value !== inputRef.current) {
+        onInputChange(result.value);
+      }
       moveCursor(result.cursor);
       requestAnimationFrame(() => {
         const textarea = textareaRef.current;
         if (textarea) {
-          textarea.focus();
+          if (final) textarea.focus();
           textarea.setSelectionRange(result.cursor, result.cursor);
         }
       });
@@ -160,7 +170,14 @@ export function ChatComposer({
   const dictation = useComposerDictation({
     engine: voiceEngine,
     enabled: voiceInput,
-    onTranscript: handleDictationTranscript,
+    onText: handleDictationText,
+  });
+
+  const claimPushToTalk = usePushToTalk({
+    enabled: voiceInput,
+    binding: holdToDictate,
+    start: dictation.start,
+    stop: dictation.stop,
   });
 
   return (
@@ -194,6 +211,7 @@ export function ChatComposer({
             onKeyUp={updateCursorPosition}
             onClick={updateCursorPosition}
             onSelect={updateCursorPosition}
+            onFocus={claimPushToTalk}
             placeholder="Ask Pragma anything. Type @ to add files."
             className="max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent"
           />

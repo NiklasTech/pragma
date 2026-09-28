@@ -25,7 +25,6 @@ import type { ApiKeySaveStatus, ConnectionTestStatus } from "./ai/types";
 import { ChatContextSettings } from "./ChatContextSettings";
 import { ProjectRulesSettings } from "./ProjectRulesSettings";
 import { SkillsSettings } from "./SkillsSettings";
-import { VoiceSettings } from "./VoiceSettings";
 
 function isProviderConfigured(
   provider: AIProvider,
@@ -242,8 +241,6 @@ export function AISettings() {
       <ProjectRulesSettings />
 
       <SkillsSettings />
-
-      <VoiceSettings />
     </div>
   );
 }
