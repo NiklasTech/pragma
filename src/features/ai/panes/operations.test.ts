@@ -2,14 +2,17 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   MAX_PANES,
+  addLeafRight,
   closeLeaf,
   countLeaves,
+  createBrowserLeaf,
   createLeaf,
   createSplit,
   createTabs,
   distributeSizes,
   dockAsTab,
   dropMissingSessions,
+  findBrowserLeaf,
   findLeaf,
   findLeafBySession,
   focusLeaf,
@@ -337,5 +340,38 @@ describe("updateSplitSizes", () => {
 
     const inner = next?.type === "split" ? next.children[0] : null;
     expect(inner?.type === "split" ? inner.sizes : null).toEqual([30, 70]);
+  });
+});
+
+describe("browser leaves", () => {
+  it("adds a leaf right of the focused pane, or as the first pane", () => {
+    const browser = createBrowserLeaf("browser");
+    const first = addLeafRight(null, null, browser);
+    expect(first?.type).toBe("tabs");
+    expect(findBrowserLeaf(first)?.id).toBe("browser");
+
+    const root = tabs([leaf("a", "a")], "t1");
+    const next = addLeafRight(root, "a", browser);
+    expect(next?.type).toBe("split");
+    expect(findBrowserLeaf(next)?.id).toBe("browser");
+    expect(addLeafRight(fullTree(), "leaf-0", browser)).toEqual(fullTree());
+  });
+
+  it("stays a browser leaf when dragged into a split", () => {
+    const root = tabs([leaf("a", "a"), createBrowserLeaf("browser")], "t1");
+    const next = splitToward(root, "browser", "a", "right");
+    expect(findBrowserLeaf(next)?.id).toBe("browser");
+  });
+
+  it("stops being a browser leaf when a session is assigned", () => {
+    const root = tabs([createBrowserLeaf("browser")], "t1");
+    const next = assignLeafSession(root, "browser", "s1");
+    expect(findBrowserLeaf(next)).toBeNull();
+    expect(findLeaf(next, "browser")?.sessionId).toBe("s1");
+  });
+
+  it("survives dropping missing sessions", () => {
+    const root = tabs([leaf("a", "a"), createBrowserLeaf("browser")], "t1");
+    expect(findBrowserLeaf(dropMissingSessions(root, []))?.id).toBe("browser");
   });
 });

@@ -13,11 +13,13 @@ use tokio::time::timeout;
 use crate::ai::acp::types::{McpEnvVar, McpServer};
 
 use super::protocol::{
-    BridgeRequest, SpawnReply, MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV,
+    BridgeRequest, SpawnReply, BROWSER_TOOL_NAME, MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV,
+    TOOL_NAME,
 };
 use super::BRIDGE_FLAG;
 
 const SPAWN_REQUEST_EVENT: &str = "child_session_spawn_request";
+const BROWSER_REQUEST_EVENT: &str = "browser_open_request";
 const READ_TIMEOUT: Duration = Duration::from_secs(10);
 // The user decides in the approval card, so the answer can take a while.
 const REPLY_TIMEOUT: Duration = Duration::from_secs(15 * 60);
@@ -164,6 +166,16 @@ async fn handle_connection(
 }
 
 async fn forward(app: &AppHandle, pending: &Pending, req: BridgeRequest) -> SpawnReply {
+    let event_name = match req.tool.as_str() {
+        TOOL_NAME => SPAWN_REQUEST_EVENT,
+        BROWSER_TOOL_NAME => BROWSER_REQUEST_EVENT,
+        other => {
+            return SpawnReply {
+                ok: false,
+                text: format!("Unknown tool: {other}"),
+            }
+        }
+    };
     let request_id = uuid::Uuid::new_v4().to_string();
     let (tx, rx) = oneshot::channel();
     pending.lock().await.insert(request_id.clone(), tx);
@@ -173,7 +185,7 @@ async fn forward(app: &AppHandle, pending: &Pending, req: BridgeRequest) -> Spaw
         chat_session_id: req.session_id,
         arguments: req.arguments,
     };
-    if let Err(e) = app.emit(SPAWN_REQUEST_EVENT, event) {
+    if let Err(e) = app.emit(event_name, event) {
         pending.lock().await.remove(&request_id);
         return SpawnReply {
             ok: false,
@@ -187,7 +199,7 @@ async fn forward(app: &AppHandle, pending: &Pending, req: BridgeRequest) -> Spaw
             pending.lock().await.remove(&request_id);
             SpawnReply {
                 ok: false,
-                text: "Nobody answered the request to start a child session".to_string(),
+                text: "Nobody answered the request".to_string(),
             }
         }
     }

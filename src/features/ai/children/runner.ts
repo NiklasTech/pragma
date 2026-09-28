@@ -9,6 +9,7 @@ import {
 } from "@/features/agent/loop";
 import { loadProjectRules } from "@/features/agent/rules";
 import type { AgentRunContext } from "@/features/agent/runContext";
+import { OPEN_BROWSER_TOOL_DEFINITION } from "@/features/agent/browserTool";
 import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
 import { writeAgentFileEdit } from "@/features/agent/applyEdit";
 import {
@@ -185,6 +186,7 @@ export async function startChildRun(
         ...mcpTools.map(mcpToolDefinition),
         ...AGENT_TOOL_DEFINITIONS,
         SPAWN_SESSION_TOOL_DEFINITION,
+        OPEN_BROWSER_TOOL_DEFINITION,
       ];
 
   const transport = createStreamTransport(
