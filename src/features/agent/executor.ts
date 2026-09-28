@@ -9,6 +9,7 @@ import {
   type AgentAccess,
 } from "@/features/ai/named-agents/folders";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import { runOpenBrowserTool } from "@/features/ai/browser/agentTool";
 import { runSpawnTool } from "@/features/ai/children/spawn";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
@@ -124,6 +125,8 @@ export function stepLabel(toolName: string, input: unknown): { label: string; de
       return { label: "Remember" };
     case AGENT_TOOL_NAMES.spawnSession:
       return { label: "Start child session", detail: readStringInput(input, "title") };
+    case AGENT_TOOL_NAMES.openBrowser:
+      return { label: "Open in browser", detail: readStringInput(input, "url") };
     default:
       return { label: toolName };
   }
@@ -263,6 +266,8 @@ async function dispatchTool(
       if (!result.ok) throw new Error(result.error);
       return { output: "Remembered." };
     }
+    case AGENT_TOOL_NAMES.openBrowser:
+      return { output: runOpenBrowserTool(input) };
     case AGENT_TOOL_NAMES.taskComplete: {
       const summary = readStringInput(input, "summary");
       context.finishTask(summary);

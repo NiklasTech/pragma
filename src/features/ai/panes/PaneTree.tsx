@@ -36,6 +36,8 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 
+import { BrowserPane } from "../browser/BrowserPane";
+import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { ChatPanel } from "../components/ChatPanel";
 import { NewSessionButton } from "../threads/NewSessionButton";
 import { TerminalPane } from "../terminal/TerminalPane";
@@ -49,6 +51,7 @@ import { SessionTab } from "./SessionTab";
 import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
 import {
   MAX_PANES,
+  MAX_PANES_TITLE,
   type Leaf,
   type PaneNode,
   type SplitNode,
@@ -59,7 +62,6 @@ import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
 
 const PANE_MIME = "application/x-pragma-pane";
 const MIN_PANE_SIZE = `${240}px`;
-const MAX_PANES_TITLE = "8 panes is the maximum";
 const PANE_CHIP =
   "flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-2 text-ui-2xs font-medium text-fg-muted";
 const PANE_ICON_BUTTON =
@@ -151,6 +153,7 @@ function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
     leaf.sessionId ? isRunLive(state.runs[leaf.sessionId]) : false,
   );
 
+  if (leaf.browser) return <BrowserPane leafId={leaf.id} />;
   if (leaf.sessionId === null) return <EmptyLeafView leafId={leaf.id} />;
   if (session?.kind === "terminal") {
     return <TerminalPane session={session} workspaceRoot={rootPath} />;
@@ -179,6 +182,7 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
 
   const titleFor = useCallback(
     (leaf: Leaf): string => {
+      if (leaf.browser) return "Browser";
       if (!leaf.sessionId) return "Open a session";
       const session = chatSessions.find((item) => item.id === leaf.sessionId);
       return session?.title ?? "New thread";
@@ -343,7 +347,7 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
                 {terminalLabel}
               </span>
             </>
-          ) : (
+          ) : activeLeaf.browser ? null : (
             <>
               {activeBranch && (
                 <span
@@ -415,6 +419,9 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
                   <Broom size={13} />
                 </button>
               </>
+            )}
+            {activeSession && (
+              <OpenInBrowserButton session={activeSession} className={PANE_ICON_BUTTON} />
             )}
             <button
               type="button"

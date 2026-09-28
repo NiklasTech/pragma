@@ -46,6 +46,7 @@ import {
   isAgentTool,
 } from "@/features/agent/tools";
 import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
+import { OPEN_BROWSER_TOOL_DEFINITION } from "@/features/agent/browserTool";
 import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import {
@@ -143,7 +144,7 @@ export function useAI() {
     if (!agentActive) return [];
     return activeSessionKind === "ask"
       ? AGENT_TOOL_DEFINITIONS
-      : [...AGENT_TOOL_DEFINITIONS, SPAWN_SESSION_TOOL_DEFINITION];
+      : [...AGENT_TOOL_DEFINITIONS, SPAWN_SESSION_TOOL_DEFINITION, OPEN_BROWSER_TOOL_DEFINITION];
   }, [agentActive, activeSessionKind]);
 
   const projectRules = useAgentStore((state) => state.rules);

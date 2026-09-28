@@ -13,6 +13,7 @@ export const AGENT_TOOL_NAMES = {
   taskComplete: "agent_task_complete",
   remember: "agent_remember",
   spawnSession: "agent_spawn_session",
+  openBrowser: "agent_open_browser",
 } as const;
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[keyof typeof AGENT_TOOL_NAMES];

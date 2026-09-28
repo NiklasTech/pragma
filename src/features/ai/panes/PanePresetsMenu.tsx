@@ -7,16 +7,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
-import { selectRoot, useAgentsPanesStore } from "./store";
+import { openBrowserPane } from "../browser/open";
+import { MAX_PANES, MAX_PANES_TITLE } from "./operations";
+import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
 
 export function PanePresetsMenu() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const hasPanes = useAgentsPanesStore((state) => selectRoot(state, rootPath) !== null);
+  const atCap = useAgentsPanesStore((state) => selectLeafCount(state, rootPath) >= MAX_PANES);
   const applyPreset = useAgentsPanesStore((state) => state.applyPreset);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
@@ -46,6 +50,14 @@ export function PanePresetsMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => applyPreset(rootPath, "grid", sessionIds)}>
           Grid
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => openBrowserPane(rootPath)}
+          disabled={atCap}
+          title={atCap ? MAX_PANES_TITLE : undefined}
+        >
+          Open browser
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

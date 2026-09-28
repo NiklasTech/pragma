@@ -5,13 +5,15 @@ pub const PORT_ENV: &str = "PRAGMA_CHILD_SESSIONS_PORT";
 pub const TOKEN_ENV: &str = "PRAGMA_CHILD_SESSIONS_TOKEN";
 pub const SESSION_ENV: &str = "PRAGMA_CHILD_SESSIONS_PARENT";
 pub const TOOL_NAME: &str = "agent_spawn_session";
+pub const BROWSER_TOOL_NAME: &str = "agent_open_browser";
 pub const MAX_LINE_BYTES: u64 = 1024 * 1024;
 
-/// One spawn request from the bridge process to the app.
+/// One tool call from the bridge process to the app.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BridgeRequest {
     pub token: String,
     pub session_id: String,
+    pub tool: String,
     pub arguments: Value,
 }
 

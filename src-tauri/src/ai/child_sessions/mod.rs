@@ -1,8 +1,9 @@
-//! Lets ACP agents start Pragma child sessions through a small MCP server.
+//! Lets ACP agents start Pragma child sessions and open the browser pane
+//! through a small MCP server.
 //!
 //! The agent launches the Pragma binary with [`BRIDGE_FLAG`] as a stdio MCP
 //! server. That process forwards each tool call over loopback TCP to the
-//! running app, which asks the user and creates the session in the frontend.
+//! running app, which handles it in the frontend.
 
 pub mod bridge;
 mod protocol;
