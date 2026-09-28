@@ -26,6 +26,7 @@ import {
   TERMINAL_COPY_OUTPUT_EVENT,
 } from "@/shared/lib/terminal-events";
 import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
+import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { AISuggestionsOverlay } from "./ai-suggestions";
 import { ArrowDown } from "@phosphor-icons/react";
 
@@ -68,6 +69,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let da1Handler: { dispose: () => void } | null = null;
     let scrollHandler: { dispose: () => void } | null = null;
+    let removeDeadKeyFix: (() => void) | null = null;
 
     async function setup() {
       if (!containerRef.current) return;
@@ -98,6 +100,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         }),
       );
       t.open(containerRef.current);
+      removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
       termRef.current = t;
       setTermState(t);
       ptyIdRef.current = session.ptyId ?? null;
@@ -119,15 +122,23 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         setShowScrollDown(t.buffer.active.viewportY < t.buffer.active.baseY);
       });
 
+      const writeOutput = (data: string) => {
+        t.write(data);
+        lastOutputRef.current = (lastOutputRef.current + data).slice(-1000);
+        const now = Date.now();
+        if (now - lastActivityMarkRef.current > 500) {
+          lastActivityMarkRef.current = now;
+          useTerminalStore.getState().markActivity(session.id);
+        }
+      };
+
+      // The shell can print its prompt before create_pty resolves, so hold output until the id is known.
+      let earlyOutput: PtyOutputEvent[] | null = session.ptyId ? null : [];
       const unlisten = await listen<PtyOutputEvent>("pty_output", (event) => {
         if (event.payload.id === ptyIdRef.current) {
-          t.write(event.payload.data);
-          lastOutputRef.current = (lastOutputRef.current + event.payload.data).slice(-1000);
-          const now = Date.now();
-          if (now - lastActivityMarkRef.current > 500) {
-            lastActivityMarkRef.current = now;
-            useTerminalStore.getState().markActivity(session.id);
-          }
+          writeOutput(event.payload.data);
+        } else if (earlyOutput && earlyOutput.length < 500) {
+          earlyOutput.push(event.payload);
         }
       });
       unlistenFn = unlisten;
@@ -170,6 +181,10 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
             return;
           }
           ptyIdRef.current = ptyId;
+          for (const event of earlyOutput ?? []) {
+            if (event.id === ptyId) writeOutput(event.data);
+          }
+          earlyOutput = null;
           useTerminalStore.getState().attachPty(session.id, ptyId);
 
           if (pendingDa1Ref.current) {
@@ -240,6 +255,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       resizeObserver?.disconnect();
       da1Handler?.dispose();
       scrollHandler?.dispose();
+      removeDeadKeyFix?.();
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;

@@ -36,4 +36,13 @@ describe("syncAIStore", () => {
 
     expect(useAIStore.getState().activeModel).toBe("picked-in-chat");
   });
+
+  it("restores the saved coding CLI", () => {
+    const ai = useSettingsStore.getState().ai;
+    useAIStore.setState({ activeCLIProvider: null });
+
+    syncAIStore({ ...ai, cliProvider: "anthropic-claude" });
+
+    expect(useAIStore.getState().activeCLIProvider).toBe("anthropic-claude");
+  });
 });

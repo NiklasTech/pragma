@@ -78,15 +78,16 @@ export function AISettings() {
     if (!settingsStore.ai.providers[provider]) {
       settingsStore.updateProvider(provider, { model: nextModel });
     }
-    settingsStore.setAISettings({ defaultProvider: provider, defaultModel: nextModel });
+    const cliProviderId = isCLIOnlyProvider(provider)
+      ? (CLI_PROVIDER_IDS[provider].find((id) => aiStore.cliStatuses[id]?.authenticated) ?? null)
+      : null;
+    settingsStore.setAISettings({
+      defaultProvider: provider,
+      defaultModel: nextModel,
+      cliProvider: cliProviderId,
+    });
     aiStore.setActiveProvider(provider);
-    if (isCLIOnlyProvider(provider)) {
-      const cliProviderId =
-        CLI_PROVIDER_IDS[provider].find((id) => aiStore.cliStatuses[id]?.authenticated) ?? null;
-      aiStore.setActiveCLIProvider(cliProviderId);
-    } else {
-      aiStore.setActiveCLIProvider(null);
-    }
+    aiStore.setActiveCLIProvider(cliProviderId);
     aiStore.setActiveModel(nextModel);
     aiStore.updateProviderConfig(provider, { model: nextModel });
     setKeyInput("");
