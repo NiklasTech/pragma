@@ -201,6 +201,22 @@ const fileExplorerStoreCreator: StateCreator<FileExplorerState & FileExplorerAct
   markHydrated: () => set({ _hasHydrated: true }),
 });
 
+/// A window without saved state (e.g. a new workspace window) hydrates with undefined.
+export function mergePersistedFileExplorer<T extends FileExplorerState>(
+  persistedState: unknown,
+  currentState: T,
+): T {
+  const persisted = (persistedState ?? {}) as Partial<FileExplorerState>;
+  return {
+    ...currentState,
+    ...persisted,
+    expandedDirs: new Set(persisted.expandedDirs ?? []),
+    tree: [],
+    isLoading: false,
+    _hasHydrated: false,
+  };
+}
+
 export const useFileExplorerStore = create<FileExplorerState & FileExplorerActions>()(
   persist(fileExplorerStoreCreator, {
     name: STORAGE_KEY,
@@ -213,16 +229,6 @@ export const useFileExplorerStore = create<FileExplorerState & FileExplorerActio
       if (!state) return;
       state.markHydrated();
     },
-    merge: (persistedState, currentState) => {
-      const persisted = persistedState as Partial<FileExplorerState>;
-      return {
-        ...currentState,
-        ...persisted,
-        expandedDirs: new Set(persisted.expandedDirs ?? []),
-        tree: [],
-        isLoading: false,
-        _hasHydrated: false,
-      };
-    },
+    merge: mergePersistedFileExplorer,
   }),
 );

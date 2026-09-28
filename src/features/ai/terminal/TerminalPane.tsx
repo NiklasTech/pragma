@@ -7,6 +7,7 @@ import "@xterm/xterm/css/xterm.css";
 
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
+import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -69,6 +70,7 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
       }),
     );
     term.open(container);
+    const removeDeadKeyFix = fixWebKitDeadKeys(term, container);
     termRef.current = term;
 
     const replayBase = getTerminalBuffer(session.id);
@@ -133,6 +135,7 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
       unsubOutput();
       unregisterView();
       dataDisposable.dispose();
+      removeDeadKeyFix();
       term.dispose();
       termRef.current = null;
     };

@@ -26,6 +26,7 @@ import {
   TERMINAL_COPY_OUTPUT_EVENT,
 } from "@/shared/lib/terminal-events";
 import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
+import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { AISuggestionsOverlay } from "./ai-suggestions";
 import { ArrowDown } from "@phosphor-icons/react";
 
@@ -68,6 +69,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let da1Handler: { dispose: () => void } | null = null;
     let scrollHandler: { dispose: () => void } | null = null;
+    let removeDeadKeyFix: (() => void) | null = null;
 
     async function setup() {
       if (!containerRef.current) return;
@@ -98,6 +100,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
         }),
       );
       t.open(containerRef.current);
+      removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
       termRef.current = t;
       setTermState(t);
       ptyIdRef.current = session.ptyId ?? null;
@@ -252,6 +255,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
       resizeObserver?.disconnect();
       da1Handler?.dispose();
       scrollHandler?.dispose();
+      removeDeadKeyFix?.();
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;
