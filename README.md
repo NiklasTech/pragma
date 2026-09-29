@@ -13,7 +13,8 @@
 <p align="center">
   <a href="https://github.com/NiklasTech/pragma/releases">Download</a> ·
   <a href="https://niklastech.github.io/pragma/">Documentation</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="https://discord.gg/VYBaBvcpGp">Discord</a>
 </p>
 
 <p align="center">
@@ -309,6 +310,8 @@ More details are in the [documentation](https://niklastech.github.io/pragma/).
 ## Contributing
 
 Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the development setup, branching model, commit conventions and pull request process.
+
+Questions, ideas or just want to chat? Join the [Pragma Discord](https://discord.gg/VYBaBvcpGp).
 
 Please report security issues privately as described in [SECURITY.md](SECURITY.md), not as a public issue.
 
