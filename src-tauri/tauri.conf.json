@@ -36,7 +36,9 @@
     "shortDescription": "A lightweight, AI-native desktop IDE",
     "longDescription": "Pragma is a desktop code editor designed for developers who want AI assistance without the bloat of a browser-based IDE.",
     "macOS": {
-      "bundleName": "Pragma"
+      "bundleName": "Pragma",
+      "signingIdentity": "-",
+      "entitlements": "Entitlements.plist"
     },
     "icon": [
       "icons/32x32.png",
