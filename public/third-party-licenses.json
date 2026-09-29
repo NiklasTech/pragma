@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T16:24:29.104Z",
+  "generatedAt": "2026-09-29T19:18:13.756Z",
   "total": 80,
   "entries": [
     {
@@ -39,9 +39,9 @@
     },
     {
       "name": "ai",
-      "version": "7.0.108",
+      "version": "7.0.114",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.108",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.114",
       "source": "npm"
     },
     {
@@ -284,9 +284,9 @@
     },
     {
       "name": "react-resizable-panels",
-      "version": "4.13.1",
+      "version": "4.13.3",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.13.1",
+      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.13.3",
       "source": "npm"
     },
     {
