@@ -22,6 +22,7 @@ export interface StoredSessionMetadata {
   archived?: boolean;
   agent_engine?: AgentEngine | null;
   parent_id?: string | null;
+  category?: string | null;
 }
 
 export interface StoredChatMessage {
@@ -46,6 +47,7 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
   if (session.archived) stored.archived = true;
   if (session.agentEngine) stored.agent_engine = session.agentEngine;
   if (session.parentId) stored.parent_id = session.parentId;
+  if (session.category) stored.category = session.category;
   if (session.worktree === null) {
     stored.worktree = null;
   } else if (session.worktree) {
@@ -80,6 +82,7 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
   if (session.archived) restored.archived = true;
   if (session.agent_engine) restored.agentEngine = session.agent_engine;
   if (session.parent_id) restored.parentId = session.parent_id;
+  if (session.category) restored.category = session.category;
   if (session.worktree) {
     restored.worktree = {
       branch: session.worktree.branch,

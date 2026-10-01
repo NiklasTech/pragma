@@ -34,6 +34,7 @@ export function mergeSessionsWithStored(
       if (memorySession.archived !== undefined) merged.archived = memorySession.archived;
       if (memorySession.agentEngine !== undefined) merged.agentEngine = memorySession.agentEngine;
       if (memorySession.parentId !== undefined) merged.parentId = memorySession.parentId;
+      if (memorySession.category !== undefined) merged.category = memorySession.category;
 
       return merged;
     })
@@ -131,6 +132,7 @@ export const createSessionsSlice: AISlice<
     if (init?.agentId !== undefined) session.agentId = init.agentId;
     if (init?.agentEngine !== undefined) session.agentEngine = init.agentEngine;
     if (init?.parentId !== undefined) session.parentId = init.parentId;
+    if (init?.category !== undefined) session.category = init.category;
 
     await saveStoredSession(rootPath, session);
     if (options?.activate === false) {

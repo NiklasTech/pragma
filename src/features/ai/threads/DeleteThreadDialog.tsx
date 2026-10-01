@@ -18,45 +18,64 @@ import {
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
-import { childSessions } from "../children/limits";
-import { releaseChildren, stopSession } from "../children/release";
+import { outsideChildren, releaseChildren, stopSession } from "../children/release";
 
 interface DeleteThreadDialogProps {
-  session: ChatSession | null;
+  sessions: ChatSession[];
   rootPath: string;
   onOpenChange: (open: boolean) => void;
+  onDeleted?: () => void;
 }
 
-export function DeleteThreadDialog({ session, rootPath, onOpenChange }: DeleteThreadDialogProps) {
+export function DeleteThreadDialog({
+  sessions,
+  rootPath,
+  onOpenChange,
+  onDeleted,
+}: DeleteThreadDialogProps) {
   const chatSessions = useAIStore((state) => state.chatSessions);
   const deleteSession = useAIStore((state) => state.deleteSession);
   const [archiveChildren, setArchiveChildren] = useState(true);
 
-  const sessionId = session?.id ?? null;
+  const sessionIds = useMemo(() => sessions.map((session) => session.id), [sessions]);
   const childCount = useMemo(
-    () => (sessionId ? childSessions(chatSessions, sessionId).length : 0),
-    [chatSessions, sessionId],
+    () => outsideChildren(chatSessions, sessionIds).length,
+    [chatSessions, sessionIds],
   );
+  const isOpen = sessions.length > 0;
+  const isBulk = sessions.length > 1;
 
   useEffect(() => {
-    if (sessionId) setArchiveChildren(true);
-  }, [sessionId]);
+    if (isOpen) setArchiveChildren(true);
+  }, [isOpen]);
 
   const handleConfirm = useCallback(async () => {
-    if (!sessionId) return;
+    if (sessionIds.length === 0) return;
     try {
-      if (childCount > 0) await releaseChildren(rootPath, [sessionId], archiveChildren);
-      stopSession(rootPath, sessionId);
-      await deleteSession(rootPath, sessionId);
+      if (childCount > 0) await releaseChildren(rootPath, sessionIds, archiveChildren);
+      for (const sessionId of sessionIds) {
+        stopSession(rootPath, sessionId);
+        await deleteSession(rootPath, sessionId);
+      }
       onOpenChange(false);
+      onDeleted?.();
     } catch {
-      toast.error("Failed to delete thread");
+      toast.error(isBulk ? "Failed to delete threads" : "Failed to delete thread");
     }
-  }, [archiveChildren, childCount, deleteSession, onOpenChange, rootPath, sessionId]);
+  }, [
+    archiveChildren,
+    childCount,
+    deleteSession,
+    isBulk,
+    onDeleted,
+    onOpenChange,
+    rootPath,
+    sessionIds,
+  ]);
 
   return (
     <AlertDialog
-      open={session !== null}
+      open={isOpen}
       onOpenChange={(open) => {
         if (!open) onOpenChange(false);
       }}
@@ -66,10 +85,14 @@ export function DeleteThreadDialog({ session, rootPath, onOpenChange }: DeleteTh
           <AlertDialogMedia>
             <Warning size={20} className="text-status-warning" />
           </AlertDialogMedia>
-          <AlertDialogTitle>Delete thread?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {isBulk ? `Delete ${sessions.length} threads?` : "Delete thread?"}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &quot;{session?.title ?? ""}&quot;? This action cannot
-            be undone.
+            {isBulk
+              ? `Are you sure you want to delete ${sessions.length} threads?`
+              : `Are you sure you want to delete "${sessions[0]?.title ?? ""}"?`}{" "}
+            This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {childCount > 0 && (
