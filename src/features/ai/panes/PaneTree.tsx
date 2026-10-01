@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
   Broom,
   ChatCircle,
@@ -39,7 +40,6 @@ import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 import { BrowserPane } from "../browser/BrowserPane";
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { ChatPanel } from "../components/ChatPanel";
-import { NewSessionButton } from "../threads/NewSessionButton";
 import { TerminalPane } from "../terminal/TerminalPane";
 import { getTerminalEntryStatus, requestTerminalStop } from "../terminal/runner";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
@@ -47,6 +47,8 @@ import { clearTerminalView, copyTerminalView } from "../terminal/view";
 import { ChildRunView } from "../children/ChildRunView";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { ChatTranscript } from "./ChatTranscript";
+import { EmptyLeafView } from "./EmptyLeafView";
+import { splitTerminal } from "./launch";
 import { SessionTab } from "./SessionTab";
 import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
 import {
@@ -68,7 +70,7 @@ import {
 } from "./paneDrag";
 import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
 
-const MIN_PANE_SIZE = `${240}px`;
+const MIN_PANE_SIZE = `${160}px`;
 const PANE_CHIP =
   "flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-2 text-ui-2xs font-medium text-fg-muted";
 const PANE_ICON_BUTTON =
@@ -104,37 +106,6 @@ function PaneDropOverlay({ zone }: { zone: DropZone }) {
   };
 
   return <div className={cn(base, placement[zone])} aria-hidden="true" />;
-}
-
-function EmptyLeafView({ leafId }: { leafId: string }) {
-  const chatSessions = useAIStore((state) => state.chatSessions);
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const assignSession = useAgentsPanesStore((state) => state.assignSession);
-
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 overflow-y-auto p-6">
-      <div className="flex flex-col items-center gap-1 text-center">
-        <p className="text-ui-sm font-medium text-fg-default">Empty pane</p>
-        <p className="text-ui-xs text-fg-subtle">Start something new or show an existing thread.</p>
-      </div>
-      <NewSessionButton targetLeafId={leafId} variant="outline" size="sm" />
-      {chatSessions.length > 0 && (
-        <div className="flex w-full max-w-[300px] flex-col gap-0.5 rounded-xl border border-border-subtle bg-bg-surface p-1">
-          {chatSessions.map((session) => (
-            <button
-              key={session.id}
-              type="button"
-              onClick={() => assignSession(rootPath, leafId, session.id)}
-              className="flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            >
-              <ChatCircle size={13} className="shrink-0 text-fg-subtle" />
-              <span className="truncate">{session.title}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
@@ -317,6 +288,19 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
 
   if (!activeLeaf) return null;
 
+  const splitHint = terminalManifest ? ` with a new ${terminalManifest.name}` : "";
+  const handleSplit = (direction: SplitNode["direction"]) => {
+    if (terminalManifest) {
+      void splitTerminal(rootPath, activeLeaf.id, direction, terminalManifest).catch(() =>
+        toast.error(`Could not start ${terminalManifest.name}`),
+      );
+      return;
+    }
+    focusLeaf(rootPath, activeLeaf.id);
+    if (direction === "horizontal") splitRight(rootPath);
+    else splitDown(rootPath);
+  };
+
   const isRunOwner = activeLeaf.sessionId !== null && activeLeaf.sessionId === runSessionId;
   const isFocused = focusedLeafId === activeLeaf.id;
   const status: AgentStatus =
@@ -469,26 +453,20 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
             )}
             <button
               type="button"
-              onClick={() => {
-                focusLeaf(rootPath, activeLeaf.id);
-                splitRight(rootPath);
-              }}
+              onClick={() => handleSplit("horizontal")}
               disabled={atCap}
               aria-label="Split right"
-              title={atCap ? MAX_PANES_TITLE : "Split right"}
+              title={atCap ? MAX_PANES_TITLE : `Split right${splitHint}`}
               className={PANE_ICON_BUTTON}
             >
               <Columns size={13} />
             </button>
             <button
               type="button"
-              onClick={() => {
-                focusLeaf(rootPath, activeLeaf.id);
-                splitDown(rootPath);
-              }}
+              onClick={() => handleSplit("vertical")}
               disabled={atCap}
               aria-label="Split down"
-              title={atCap ? MAX_PANES_TITLE : "Split down"}
+              title={atCap ? MAX_PANES_TITLE : `Split down${splitHint}`}
               className={PANE_ICON_BUTTON}
             >
               <Rows size={13} />
