@@ -9,6 +9,7 @@ const ai = vi.hoisted(() => ({
       messages: unknown[];
       createdAt: number;
       updatedAt: number;
+      category?: string;
     }>,
     activeChatSessionId: null as string | null,
     cliManifests: [] as unknown[],
@@ -101,5 +102,25 @@ describe("ThreadList", () => {
     );
     const longList = renderToStaticMarkup(<ThreadList />);
     expect(longList).toContain('aria-label="Search threads"');
+  });
+
+  it("groups categorized threads into their own sections", () => {
+    ai.state.chatSessions = [
+      { ...session("a", "Session A", Date.now()), category: "Research" },
+      session("b", "Session B", Date.now()),
+    ];
+
+    const html = renderToStaticMarkup(<ThreadList />);
+
+    expect(html).toContain('aria-label="Research"');
+    expect(html).toContain('aria-expanded="true"');
+    expect(html.indexOf("Session A")).toBeLessThan(html.indexOf("Session B"));
+  });
+
+  it("offers a selection toggle once threads exist", () => {
+    expect(renderToStaticMarkup(<ThreadList />)).not.toContain('aria-label="Select threads"');
+
+    ai.state.chatSessions = [session("a", "Session A", 1)];
+    expect(renderToStaticMarkup(<ThreadList />)).toContain('aria-label="Select threads"');
   });
 });
