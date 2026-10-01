@@ -10,15 +10,16 @@ import { useNewSessionActions } from "../threads/useNewSessionActions";
 
 interface CliQuickStartProps {
   rootPath: string;
+  targetLeafId?: string;
 }
 
 /// One-click entry into the coding CLIs installed on this machine.
-export function CliQuickStart({ rootPath }: CliQuickStartProps) {
+export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
   const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
-  const actions = useNewSessionActions(rootPath);
+  const actions = useNewSessionActions(rootPath, targetLeafId);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
