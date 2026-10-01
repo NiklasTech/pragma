@@ -250,17 +250,41 @@ describe("presets", () => {
 });
 
 describe("drag operations", () => {
+  function tabIds(root: PaneRoot): string[] {
+    return root?.type === "tabs" ? root.children.map((child) => child.id) : [];
+  }
+
   it("docks a leaf as a tab in the target group", () => {
     const root = split(
       "horizontal",
       [tabs([leaf("a", "a")], "t1"), tabs([leaf("b", "b")], "t2")],
       "sp1",
     );
-    const next = dockAsTab(root, "b", "a");
+    const next = dockAsTab(root, "b", "t1");
 
     expect(next?.type).toBe("tabs");
     expect(countLeaves(next)).toBe(2);
     expect(next?.type === "tabs" ? next.activeLeafId : null).toBe("b");
+  });
+
+  it("docks a leaf at the dropped tab position", () => {
+    const root = split(
+      "horizontal",
+      [tabs([leaf("a", "a"), leaf("c", "c")], "t1"), tabs([leaf("b", "b")], "t2")],
+      "sp1",
+    );
+    expect(tabIds(dockAsTab(root, "b", "t1", 1))).toEqual(["a", "b", "c"]);
+    expect(tabIds(dockAsTab(root, "b", "t1", 0))).toEqual(["b", "a", "c"]);
+  });
+
+  it("reorders tabs within the same group", () => {
+    const root = tabs([leaf("a", "a"), leaf("b", "b"), leaf("c", "c")], "t1");
+
+    expect(tabIds(dockAsTab(root, "a", "t1", 3))).toEqual(["b", "c", "a"]);
+    expect(tabIds(dockAsTab(root, "c", "t1", 0))).toEqual(["c", "a", "b"]);
+    expect(tabIds(dockAsTab(root, "a", "t1", 2))).toEqual(["b", "a", "c"]);
+    expect(dockAsTab(root, "b", "t1", 1)).toBe(root);
+    expect(dockAsTab(root, "b", "t1", 2)).toBe(root);
   });
 
   it("splits toward the dropped edge", () => {
@@ -269,7 +293,7 @@ describe("drag operations", () => {
       [tabs([leaf("a", "a")], "t1"), tabs([leaf("b", "b")], "t2")],
       "sp1",
     );
-    const next = splitToward(root, "b", "a", "right");
+    const next = splitToward(root, "b", "t1", "right");
 
     expect(next?.type).toBe("split");
     if (next?.type === "split") {
@@ -280,11 +304,33 @@ describe("drag operations", () => {
     }
   });
 
-  it("refuses an edge split at the cap", () => {
-    const root = fullTree();
-    const next = splitToward(root, "leaf-0", "leaf-1", "left");
+  it("splits a tab out of its own group", () => {
+    const root = tabs([leaf("a", "a"), leaf("b", "b")], "t1");
+    const next = splitToward(root, "b", "t1", "bottom");
 
-    expect(next).toBe(root);
+    expect(next?.type).toBe("split");
+    if (next?.type === "split") {
+      expect(next.direction).toBe("vertical");
+      expect(tabIds(next.children[0])).toEqual(["a"]);
+      expect(tabIds(next.children[1])).toEqual(["b"]);
+    }
+  });
+
+  it("ignores splitting a single tab beside itself", () => {
+    const root = split(
+      "horizontal",
+      [tabs([leaf("a", "a")], "t1"), tabs([leaf("b", "b")], "t2")],
+      "sp1",
+    );
+    expect(splitToward(root, "a", "t1", "right")).toBe(root);
+  });
+
+  it("moves a leaf at the cap because the pane count stays the same", () => {
+    const root = fullTree();
+    const next = splitToward(root, "leaf-0", "tabs-full", "left");
+
+    expect(countLeaves(next)).toBe(MAX_PANES);
+    expect(next?.type === "split" ? tabIds(next.children[0]) : []).toEqual(["leaf-0"]);
   });
 });
 
@@ -359,7 +405,7 @@ describe("browser leaves", () => {
 
   it("stays a browser leaf when dragged into a split", () => {
     const root = tabs([leaf("a", "a"), createBrowserLeaf("browser")], "t1");
-    const next = splitToward(root, "browser", "a", "right");
+    const next = splitToward(root, "browser", "t1", "right");
     expect(findBrowserLeaf(next)?.id).toBe("browser");
   });
 

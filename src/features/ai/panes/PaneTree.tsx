@@ -58,9 +58,16 @@ import {
   type SplitZone,
   type TabsNode,
 } from "./operations";
+import {
+  PANE_MIME,
+  isPointerOutside,
+  resolveDropZone,
+  resolveTabIndex,
+  usePaneDragStore,
+  type DropZone,
+} from "./paneDrag";
 import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
 
-const PANE_MIME = "application/x-pragma-pane";
 const MIN_PANE_SIZE = `${240}px`;
 const PANE_CHIP =
   "flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-2 text-ui-2xs font-medium text-fg-muted";
@@ -84,19 +91,6 @@ const STATUS_DOTS: Record<AgentStatus, string> = {
   error: "bg-status-error",
   cancelled: "bg-fg-subtle",
 };
-
-type DropZone = SplitZone | "center";
-
-function resolveDropZone(event: React.DragEvent<HTMLElement>): DropZone {
-  const rect = event.currentTarget.getBoundingClientRect();
-  const x = (event.clientX - rect.left) / rect.width;
-  const y = (event.clientY - rect.top) / rect.height;
-  if (x < 0.25) return "left";
-  if (x > 0.75) return "right";
-  if (y < 0.25) return "top";
-  if (y > 0.75) return "bottom";
-  return "center";
-}
 
 function PaneDropOverlay({ zone }: { zone: DropZone }) {
   const base = "pointer-events-none absolute z-20 border-2 border-primary bg-primary/10";
@@ -190,7 +184,12 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
     [chatSessions],
   );
 
-  const [dropZone, setDropZone] = useState<DropZone | null>(null);
+  const sourceLeafId = usePaneDragStore((state) => state.sourceLeafId);
+  const dropTarget = usePaneDragStore((state) =>
+    state.target?.groupId === node.id ? state.target : null,
+  );
+  const beginDrag = usePaneDragStore((state) => state.begin);
+  const endDrag = usePaneDragStore((state) => state.end);
   const [pendingClose, setPendingClose] = useState<{
     leafIds: string[];
     confirm: CloseConfirm;
@@ -219,37 +218,67 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
           ? `exited (${terminalStatus.exitCode})`
           : "exited";
 
-  const handleDragOver = useCallback(
+  const handleTabsDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
-      if (!event.dataTransfer.types.includes(PANE_MIME)) return;
+      const { sourceLeafId: source, setTarget } = usePaneDragStore.getState();
+      if (!source) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
-      const zone = resolveDropZone(event);
-      setDropZone(atCap && zone !== "center" ? "center" : zone);
+      const tabs = Array.from(
+        event.currentTarget.querySelectorAll<HTMLElement>("[data-session-tab]"),
+      );
+      setTarget({ groupId: node.id, kind: "tab", index: resolveTabIndex(tabs, event.clientX) });
     },
-    [atCap],
+    [node.id],
   );
 
-  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-    setDropZone(null);
-  }, []);
+  const handleContentDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      const { sourceLeafId: source, setTarget } = usePaneDragStore.getState();
+      if (!source) return;
+      const zone = resolveDropZone(
+        event.currentTarget.getBoundingClientRect(),
+        event.clientX,
+        event.clientY,
+      );
+      const ownGroup = node.children.some((leaf) => leaf.id === source);
+      if (ownGroup && (zone === "center" || node.children.length === 1)) {
+        event.dataTransfer.dropEffect = "none";
+        setTarget(null);
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setTarget({ groupId: node.id, kind: "zone", zone });
+    },
+    [node.children, node.id],
+  );
+
+  const handleDragLeave = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (!isPointerOutside(event.currentTarget, event.clientX, event.clientY)) return;
+      const { target, setTarget } = usePaneDragStore.getState();
+      if (target?.groupId === node.id) setTarget(null);
+    },
+    [node.id],
+  );
 
   const handleDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
+      const { sourceLeafId: source, target, end } = usePaneDragStore.getState();
+      if (!source) return;
       event.preventDefault();
-      const sourceLeafId = event.dataTransfer.getData(PANE_MIME);
-      const zone = dropZone;
-      setDropZone(null);
-      if (!sourceLeafId || !zone || !activeLeaf) return;
-      if (sourceLeafId === activeLeaf.id) return;
-      if (zone === "center") {
-        dockAsTab(rootPath, sourceLeafId, activeLeaf.id);
+      end();
+      if (target?.groupId !== node.id) return;
+      if (target.kind === "tab") {
+        dockAsTab(rootPath, source, node.id, target.index);
+      } else if (target.zone === "center") {
+        dockAsTab(rootPath, source, node.id);
       } else {
-        splitToward(rootPath, sourceLeafId, activeLeaf.id, zone);
+        splitToward(rootPath, source, node.id, target.zone);
       }
     },
-    [activeLeaf, dockAsTab, dropZone, rootPath, splitToward],
+    [dockAsTab, node.id, rootPath, splitToward],
   );
 
   const requestClose = useCallback(
@@ -299,11 +328,13 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       data-pane-status={status}
       data-pane-focused={focused ? "true" : undefined}
       className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg-root"
-      onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="@container/pane-header flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle px-1.5">
+      <div
+        className="@container/pane-header flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle px-1.5"
+        onDragOver={handleTabsDragOver}
+      >
         <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
           {node.children.map((leaf, index) => {
             const isActive = leaf.id === activeLeaf.id;
@@ -325,10 +356,23 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
                 onCloseToRight={() =>
                   requestClose(node.children.slice(index + 1).map((child) => child.id))
                 }
+                isDragging={leaf.id === sourceLeafId}
+                dropIndicator={
+                  dropTarget?.kind !== "tab"
+                    ? null
+                    : dropTarget.index === index
+                      ? "before"
+                      : dropTarget.index === node.children.length &&
+                          index === node.children.length - 1
+                        ? "after"
+                        : null
+                }
                 onDragStart={(event) => {
                   event.dataTransfer.setData(PANE_MIME, leaf.id);
                   event.dataTransfer.effectAllowed = "move";
+                  beginDrag(leaf.id);
                 }}
+                onDragEnd={endDrag}
               />
             );
           })}
@@ -462,11 +506,17 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         </div>
       </div>
 
-      <div className="min-h-0 flex-1" onClick={() => focusLeaf(rootPath, activeLeaf.id)}>
+      <div className="relative min-h-0 flex-1" onClick={() => focusLeaf(rootPath, activeLeaf.id)}>
         <LeafContent leaf={activeLeaf} focused={focusedLeafId === activeLeaf.id} />
+        {sourceLeafId && (
+          <div
+            className="absolute inset-0 z-20"
+            onDragOver={handleContentDragOver}
+            aria-hidden="true"
+          />
+        )}
+        {dropTarget?.kind === "zone" && <PaneDropOverlay zone={dropTarget.zone} />}
       </div>
-
-      {dropZone && <PaneDropOverlay zone={dropZone} />}
 
       <AlertDialog
         open={pendingClose !== null}
