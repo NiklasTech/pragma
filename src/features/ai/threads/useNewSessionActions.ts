@@ -1,11 +1,11 @@
 import { useCallback } from "react";
 
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
+import { createTerminalSession } from "../panes/launch";
 import { findLeaf } from "../panes/operations";
 import { useAgentsPanesStore } from "../panes/store";
 import { createSessionForChoice } from "../worktree/create";
 import { useWorktreeChoiceStore } from "../worktree/remember";
-import { terminalSessionTitle } from "../terminal/title";
 
 export interface NewSessionActions {
   startAsk: () => Promise<void>;
@@ -64,12 +64,7 @@ export function useNewSessionActions(
   const startTerminal = useCallback(
     async (manifest: CLIManifest) => {
       if (!rootPath) return;
-      const session = await useAIStore.getState().createChatSession(rootPath, {
-        kind: "terminal",
-        environment: "checkout",
-        cliProviderId: manifest.id,
-        title: terminalSessionTitle(manifest.name),
-      });
+      const session = await createTerminalSession(rootPath, manifest);
       place(session.id);
     },
     [place, rootPath],
