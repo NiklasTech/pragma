@@ -65,6 +65,38 @@ describe("agents panes store", () => {
     expect(sessionsInOrder(entry().root)).toEqual(["c", "b", "a", null]);
   });
 
+  it("splits a pane with a new session and focuses it", () => {
+    const store = useAgentsPanesStore.getState();
+    store.openSession(ROOT, "a");
+    const sourceLeafId = entry().focusedLeafId ?? "";
+    store.splitWithSession(ROOT, sourceLeafId, "horizontal", "b");
+
+    expect(sessionsInOrder(entry().root)).toEqual(["a", "b"]);
+    expect(findLeaf(entry().root, entry().focusedLeafId ?? "")?.sessionId).toBe("b");
+    expect(entry().focusOrder[0]).toBe("b");
+  });
+
+  it("replaces the layout with the launched sessions", () => {
+    const store = useAgentsPanesStore.getState();
+    store.openSession(ROOT, "old");
+    store.replaceLayout(ROOT, ["a", "b", "c", "d"], "grid");
+
+    expect(sessionsInOrder(entry().root)).toEqual(["a", "b", "c", "d"]);
+    expect(findLeaf(entry().root, entry().focusedLeafId ?? "")?.sessionId).toBe("a");
+    expect(entry().focusOrder).toEqual(["a", "b", "c", "d", "old"]);
+  });
+
+  it("arranges open tabs into separate panes", () => {
+    const store = useAgentsPanesStore.getState();
+    store.openSession(ROOT, "a");
+    store.openSession(ROOT, "b");
+    store.arrange(ROOT, "columns");
+
+    const root = entry().root;
+    expect(root?.type).toBe("split");
+    expect(sessionsInOrder(root)).toEqual(["a", "b"]);
+  });
+
   it("swaps the tree when the folder changes", () => {
     const store = useAgentsPanesStore.getState();
     store.openSession("/one", "a");

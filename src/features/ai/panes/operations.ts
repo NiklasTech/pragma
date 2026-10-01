@@ -347,53 +347,70 @@ export function closeLeaf(
   return { root: result.root, focusedLeafId: nextFocused };
 }
 
-export function dockAsTab(root: PaneRoot, sourceLeafId: string, targetLeafId: string): PaneRoot {
-  if (!root || sourceLeafId === targetLeafId) return root;
+/// Moves a leaf into a group before `index`, or to the end; reorders within the same group.
+export function dockAsTab(
+  root: PaneRoot,
+  sourceLeafId: string,
+  targetGroupId: string,
+  index?: number,
+): PaneRoot {
+  if (!root) return root;
 
   const sourceLeaf = findLeaf(root, sourceLeafId);
-  if (!sourceLeaf) return root;
-
   const sourceGroup = findLeafGroup(root, sourceLeafId);
-  const targetGroup = findLeafGroup(root, targetLeafId);
-  if (!sourceGroup || !targetGroup || sourceGroup.id === targetGroup.id) return root;
+  const targetGroup = findGroup(root, targetGroupId);
+  if (!sourceLeaf || !sourceGroup || !targetGroup) return root;
+
+  const insertAt = Math.min(
+    Math.max(index ?? targetGroup.children.length, 0),
+    targetGroup.children.length,
+  );
+
+  if (sourceGroup.id === targetGroup.id) {
+    const from = targetGroup.children.findIndex((leaf) => leaf.id === sourceLeafId);
+    const to = insertAt > from ? insertAt - 1 : insertAt;
+    if (to === from) return root;
+    const children = targetGroup.children.filter((leaf) => leaf.id !== sourceLeafId);
+    children.splice(to, 0, sourceLeaf);
+    return updateGroup(root, targetGroup.id, (current) => ({
+      ...current,
+      children,
+      activeLeafId: sourceLeaf.id,
+    }));
+  }
 
   const { root: withoutSource } = removeLeaf(root, sourceLeafId);
-  if (!withoutSource) return root;
+  if (!withoutSource || !findGroup(withoutSource, targetGroupId)) return root;
 
-  const group = findLeafGroup(withoutSource, targetLeafId);
-  if (!group) return root;
-
-  return updateGroup(withoutSource, group.id, (current) => ({
-    ...current,
-    children: [...current.children, sourceLeaf],
-    activeLeafId: sourceLeaf.id,
-  }));
+  return updateGroup(withoutSource, targetGroupId, (current) => {
+    const children = [...current.children];
+    children.splice(insertAt, 0, sourceLeaf);
+    return { ...current, children, activeLeafId: sourceLeaf.id };
+  });
 }
 
 export function splitToward(
   root: PaneRoot,
   sourceLeafId: string,
-  targetLeafId: string,
+  targetGroupId: string,
   zone: SplitZone,
 ): PaneRoot {
-  if (!root || sourceLeafId === targetLeafId || countLeaves(root) >= MAX_PANES) return root;
+  if (!root) return root;
 
   const sourceLeaf = findLeaf(root, sourceLeafId);
-  if (!sourceLeaf) return root;
-
   const sourceGroup = findLeafGroup(root, sourceLeafId);
-  const targetGroup = findLeafGroup(root, targetLeafId);
-  if (!sourceGroup || !targetGroup || sourceGroup.id === targetGroup.id) return root;
+  const targetGroup = findGroup(root, targetGroupId);
+  if (!sourceLeaf || !sourceGroup || !targetGroup) return root;
+  if (sourceGroup.id === targetGroup.id && targetGroup.children.length === 1) return root;
 
   const { root: withoutSource } = removeLeaf(root, sourceLeafId);
-  if (!withoutSource) return root;
-  if (!findLeaf(withoutSource, targetLeafId)) return root;
+  if (!withoutSource || !findGroup(withoutSource, targetGroupId)) return root;
 
   const direction: SplitNode["direction"] =
     zone === "left" || zone === "right" ? "horizontal" : "vertical";
   const after = zone === "right" || zone === "bottom";
   const newGroup = createTabs([sourceLeaf], sourceLeaf.id);
-  return insertGroupBeside(withoutSource, targetGroup.id, newGroup, direction, after);
+  return insertGroupBeside(withoutSource, targetGroupId, newGroup, direction, after);
 }
 
 export function dropMissingSessions(root: PaneRoot, sessionIds: string[]): PaneRoot {

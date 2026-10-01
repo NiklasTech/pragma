@@ -17,7 +17,10 @@ interface SessionTabProps {
   onClose: () => void;
   onCloseOthers: () => void;
   onCloseToRight: () => void;
+  isDragging: boolean;
+  dropIndicator: "before" | "after" | null;
   onDragStart: (event: React.DragEvent<HTMLElement>) => void;
+  onDragEnd: () => void;
 }
 
 export function SessionTab({
@@ -29,7 +32,10 @@ export function SessionTab({
   onClose,
   onCloseOthers,
   onCloseToRight,
+  isDragging,
+  dropIndicator,
   onDragStart,
+  onDragEnd,
 }: SessionTabProps) {
   return (
     <ContextMenu>
@@ -40,6 +46,7 @@ export function SessionTab({
             type="button"
             draggable
             onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
             onClick={onSelect}
             onAuxClick={(event) => {
               props.onAuxClick?.(event);
@@ -50,7 +57,16 @@ export function SessionTab({
             }}
             title={title}
             data-active={isActive}
-            className={cn(props.className, "pragma-pill-tab max-w-[180px] shrink-0 px-2.5")}
+            data-session-tab=""
+            className={cn(
+              props.className,
+              "pragma-pill-tab relative max-w-[180px] shrink-0 px-2.5",
+              isDragging && "opacity-50",
+              dropIndicator === "before" &&
+                "before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-primary",
+              dropIndicator === "after" &&
+                "after:absolute after:inset-y-1 after:right-0 after:w-0.5 after:rounded-full after:bg-primary",
+            )}
           >
             <span className="truncate">{title}</span>
           </button>

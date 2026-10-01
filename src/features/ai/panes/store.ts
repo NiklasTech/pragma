@@ -7,6 +7,7 @@ import {
   assignLeafSession,
   closeLeaf as closeLeafOp,
   countLeaves,
+  createLeaf,
   dockAsTab as dockAsTabOp,
   dropMissingSessions,
   findLeaf,
@@ -24,6 +25,7 @@ import {
   type PaneRoot,
   type SplitZone,
 } from "./operations";
+import { arrangeLeaves, buildLayout, type PaneArrangement } from "./layout";
 
 export const AGENTS_PANES_STORAGE_KEY = "pragma.agents.panes.v1";
 
@@ -42,14 +44,27 @@ interface AgentsPanesState {
   focusLeaf: (rootPath: string, leafId: string) => void;
   splitRight: (rootPath: string) => void;
   splitDown: (rootPath: string) => void;
+  splitWithSession: (
+    rootPath: string,
+    leafId: string,
+    direction: "horizontal" | "vertical",
+    sessionId: string,
+  ) => void;
+  arrange: (rootPath: string, arrangement: PaneArrangement) => void;
+  replaceLayout: (rootPath: string, sessionIds: string[], arrangement: PaneArrangement) => void;
   closeLeaf: (rootPath: string, leafId: string) => void;
   addPaneRight: (rootPath: string, leaf: Leaf, focus: boolean) => void;
   selectTab: (rootPath: string, groupId: string, leafId: string) => void;
-  dockAsTab: (rootPath: string, sourceLeafId: string, targetLeafId: string) => void;
+  dockAsTab: (
+    rootPath: string,
+    sourceLeafId: string,
+    targetGroupId: string,
+    index?: number,
+  ) => void;
   splitToward: (
     rootPath: string,
     sourceLeafId: string,
-    targetLeafId: string,
+    targetGroupId: string,
     zone: SplitZone,
   ) => void;
   applyPreset: (rootPath: string, preset: PanePreset, sessionIds: string[]) => void;
@@ -164,6 +179,52 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
+      splitWithSession: (rootPath, leafId, direction, sessionId) =>
+        set((state) => {
+          const entry = getEntry(state.trees, rootPath);
+          const leaf = createLeaf(sessionId);
+          const result = splitFocused(entry.root, leafId, direction, leaf);
+          if (result.root === entry.root) return {};
+          return {
+            trees: setEntry(state.trees, rootPath, {
+              root: result.root,
+              focusedLeafId: leaf.id,
+              focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
+            }),
+          };
+        }),
+
+      arrange: (rootPath, arrangement) =>
+        set((state) => {
+          const entry = getEntry(state.trees, rootPath);
+          if (!entry.root) return {};
+          return {
+            trees: setEntry(state.trees, rootPath, {
+              ...entry,
+              root: arrangeLeaves(entry.root, arrangement),
+            }),
+          };
+        }),
+
+      replaceLayout: (rootPath, sessionIds, arrangement) =>
+        set((state) => {
+          const entry = getEntry(state.trees, rootPath);
+          const root = buildLayout(
+            sessionIds.map((sessionId) => createLeaf(sessionId)),
+            arrangement,
+          );
+          return {
+            trees: setEntry(state.trees, rootPath, {
+              root,
+              focusedLeafId: firstLeaf(root)?.id ?? null,
+              focusOrder: [
+                ...sessionIds,
+                ...entry.focusOrder.filter((id) => !sessionIds.includes(id)),
+              ],
+            }),
+          };
+        }),
+
       closeLeaf: (rootPath, leafId) => {
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
@@ -217,10 +278,10 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      dockAsTab: (rootPath, sourceLeafId, targetLeafId) =>
+      dockAsTab: (rootPath, sourceLeafId, targetGroupId, index) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = dockAsTabOp(entry.root, sourceLeafId, targetLeafId);
+          const root = dockAsTabOp(entry.root, sourceLeafId, targetGroupId, index);
           if (root === entry.root) return {};
           return {
             trees: setEntry(state.trees, rootPath, {
@@ -231,10 +292,10 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      splitToward: (rootPath, sourceLeafId, targetLeafId, zone) =>
+      splitToward: (rootPath, sourceLeafId, targetGroupId, zone) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = splitTowardOp(entry.root, sourceLeafId, targetLeafId, zone);
+          const root = splitTowardOp(entry.root, sourceLeafId, targetGroupId, zone);
           if (root === entry.root) return {};
           return {
             trees: setEntry(state.trees, rootPath, {
