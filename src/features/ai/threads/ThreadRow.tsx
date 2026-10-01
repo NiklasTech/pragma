@@ -4,7 +4,10 @@ import { useCallback, useState } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
   ChatCircle,
+  CheckSquare,
+  Copy,
   DotsThree,
+  FolderSimple,
   GitBranch,
   PencilSimple,
   Robot,
@@ -12,17 +15,22 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Input } from "@/shared/components/ui/input";
 import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
 
+import { CategoryMenuItems } from "./CategoryMenuItems";
 import { formatRelativeTime, type ThreadStatus } from "./helpers";
 
 const STATUS_STYLES: Record<ThreadStatus, string> = {
@@ -60,8 +68,15 @@ interface ThreadRowProps {
   status: ThreadStatus;
   depth?: number;
   runningChildren?: number;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  categories?: string[];
   onSelect: (sessionId: string) => void;
+  onToggleSelect?: (sessionId: string, extend: boolean) => void;
   onRename: (sessionId: string, title: string) => void;
+  onDuplicate?: (sessionId: string) => void;
+  onMoveToCategory?: (sessionId: string, category: string | null) => void;
+  onNewCategory?: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
   onDiscard: (sessionId: string) => void;
 }
@@ -72,8 +87,15 @@ export function ThreadRow({
   status,
   depth = 0,
   runningChildren = 0,
+  selectionMode = false,
+  isSelected = false,
+  categories = [],
   onSelect,
+  onToggleSelect,
   onRename,
+  onDuplicate,
+  onMoveToCategory,
+  onNewCategory,
   onDelete,
   onDiscard,
 }: ThreadRowProps) {
@@ -98,9 +120,11 @@ export function ThreadRow({
       className={cn(
         "group relative flex items-center gap-2.5 rounded-lg py-1.5 pr-1 pl-2 transition-colors",
         DEPTH_INDENT[Math.min(depth, DEPTH_INDENT.length - 1)],
-        isActive
-          ? "bg-bg-root shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
-          : "hover:bg-bg-hover",
+        isSelected
+          ? "bg-accent-subtle"
+          : isActive && !selectionMode
+            ? "bg-bg-root shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
+            : "hover:bg-bg-hover",
       )}
       data-thread-status={status}
     >
@@ -110,7 +134,15 @@ export function ThreadRow({
           isActive ? "bg-accent-subtle text-primary" : "bg-bg-hover text-fg-muted",
         )}
       >
-        <KindIcon size={14} weight={isActive ? "fill" : "regular"} />
+        {selectionMode ? (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect?.(session.id, false)}
+            aria-label={`Select ${session.title}`}
+          />
+        ) : (
+          <KindIcon size={14} weight={isActive ? "fill" : "regular"} />
+        )}
         {status !== "idle" && (
           <span
             className={cn(
@@ -149,9 +181,17 @@ export function ThreadRow({
       ) : (
         <button
           type="button"
-          onClick={() => onSelect(session.id)}
-          onDoubleClick={startRename}
+          onClick={(event) => {
+            const modified = event.metaKey || event.ctrlKey || event.shiftKey;
+            if (onToggleSelect && (selectionMode || modified)) {
+              onToggleSelect(session.id, event.shiftKey);
+            } else {
+              onSelect(session.id);
+            }
+          }}
+          onDoubleClick={selectionMode ? undefined : startRename}
           aria-current={isActive ? "true" : undefined}
+          aria-pressed={selectionMode ? isSelected : undefined}
           className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <span
@@ -198,37 +238,68 @@ export function ThreadRow({
         </button>
       )}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <button
-              type="button"
-              aria-label="Thread actions"
-              title="Thread actions"
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 transition-colors outline-none group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-default focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:opacity-100"
-            >
-              <DotsThree size={15} weight="bold" />
-            </button>
-          }
-        />
-        <DropdownMenuContent align="end" className="min-w-[180px]">
-          <DropdownMenuItem onClick={startRename}>
-            <PencilSimple size={14} />
-            Rename
-          </DropdownMenuItem>
-          {session.worktree && (
-            <DropdownMenuItem onClick={() => onDiscard(session.id)}>
-              <GitBranch size={14} />
-              Discard worktree
+      {!selectionMode && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                aria-label="Thread actions"
+                title="Thread actions"
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 transition-colors outline-none group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-default focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:opacity-100"
+              >
+                <DotsThree size={15} weight="bold" />
+              </button>
+            }
+          />
+          <DropdownMenuContent align="end" className="min-w-[180px]">
+            <DropdownMenuItem onClick={startRename}>
+              <PencilSimple size={14} />
+              Rename
             </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onClick={() => onDelete(session.id)}>
-            <Trash size={14} />
-            Delete thread
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            {onDuplicate && (
+              <DropdownMenuItem onClick={() => onDuplicate(session.id)}>
+                <Copy size={14} />
+                Duplicate
+              </DropdownMenuItem>
+            )}
+            {onMoveToCategory && onNewCategory && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <FolderSimple size={14} />
+                  Move to category
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="min-w-[180px]">
+                  <CategoryMenuItems
+                    categories={categories}
+                    current={session.category ?? null}
+                    canRemove={Boolean(session.category)}
+                    onMove={(category) => onMoveToCategory(session.id, category)}
+                    onNew={() => onNewCategory(session.id)}
+                  />
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+            {onToggleSelect && (
+              <DropdownMenuItem onClick={() => onToggleSelect(session.id, false)}>
+                <CheckSquare size={14} />
+                Select
+              </DropdownMenuItem>
+            )}
+            {session.worktree && (
+              <DropdownMenuItem onClick={() => onDiscard(session.id)}>
+                <GitBranch size={14} />
+                Discard worktree
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => onDelete(session.id)}>
+              <Trash size={14} />
+              Delete thread
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
