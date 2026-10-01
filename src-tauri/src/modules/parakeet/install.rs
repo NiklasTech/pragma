@@ -7,13 +7,15 @@ use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
 const MODEL_BASE_URL: &str =
-    "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce";
+    "https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-smoothquant-onnx/resolve/c6c57a8654c6f10d2f48f26adb05228984a7013b";
 const PROGRESS_INTERVAL: Duration = Duration::from_millis(150);
 
 pub const CANCELLED: &str = "Download cancelled";
 
 pub struct PinnedFile {
     pub name: &'static str,
+    /// Path of the file inside the model repository.
+    pub remote: &'static str,
     pub size: u64,
     pub sha256: &'static str,
 }
@@ -21,23 +23,27 @@ pub struct PinnedFile {
 pub const MODEL_FILES: [PinnedFile; 4] = [
     PinnedFile {
         name: "nemo128.onnx",
+        remote: "nemo128.onnx",
         size: 139_764,
         sha256: "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f",
     },
     PinnedFile {
         name: "vocab.txt",
+        remote: "vocab.txt",
         size: 93_939,
         sha256: "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
     },
     PinnedFile {
         name: "decoder_joint-model.int8.onnx",
-        size: 18_202_004,
-        sha256: "eea7483ee3d1a30375daedc8ed83e3960c91b098812127a0d99d1c8977667a70",
+        remote: "int8/decoder_joint-model.int8.onnx",
+        size: 18_203_490,
+        sha256: "63a6cd892244e5dbdd8b41541514f2643c7d3c7c454f9adcdf99ca31acb802d0",
     },
     PinnedFile {
         name: "encoder-model.int8.onnx",
-        size: 652_183_999,
-        sha256: "6139d2fa7e1b086097b277c7149725edbab89cc7c7ae64b23c741be4055aff09",
+        remote: "int8/encoder-model.int8.onnx",
+        size: 649_524_002,
+        sha256: "019f798a42be5eee029d8591116308df8e8adf1f55a6292c15f1bd5583f04af4",
     },
 ];
 
@@ -122,7 +128,7 @@ pub async fn download_all(
     let _ = tokio::fs::remove_file(&archive).await;
 
     for file in &MODEL_FILES {
-        let url = format!("{MODEL_BASE_URL}/{}", file.name);
+        let url = format!("{MODEL_BASE_URL}/{}", file.remote);
         download_verified(
             &client,
             &url,
@@ -258,7 +264,7 @@ mod tests {
 
     #[test]
     fn downloads_are_pinned() {
-        assert!(MODEL_BASE_URL.contains("/resolve/8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce"));
+        assert!(MODEL_BASE_URL.contains("/resolve/c6c57a8654c6f10d2f48f26adb05228984a7013b"));
         for file in &MODEL_FILES {
             assert_eq!(file.sha256.len(), 64);
         }

@@ -164,7 +164,7 @@ function collectRustEntries() {
 // Not dependencies of the build: speech engines and models downloaded on demand from Settings > Voice.
 const DOWNLOADED_ENTRIES = [
   {
-    name: "NVIDIA Parakeet TDT 0.6B v3 (ONNX int8 export by istupakov)",
+    name: "NVIDIA Parakeet TDT 0.6B v3 (ONNX int8 export by Olicorne)",
     version: "v3",
     license: "CC-BY-4.0",
     url: "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",

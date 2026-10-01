@@ -52,11 +52,13 @@ fn staging_dir(root: &Path) -> PathBuf {
     root.join("parakeet.partial")
 }
 
+/// Checks pinned sizes too, so an install of a previously pinned model counts as missing.
 fn is_installed(dir: &Path, runtime: &install::Runtime) -> bool {
     dir.join(runtime.file_name).is_file()
-        && install::MODEL_FILES
-            .iter()
-            .all(|file| dir.join(file.name).is_file())
+        && install::MODEL_FILES.iter().all(|file| {
+            std::fs::metadata(dir.join(file.name))
+                .is_ok_and(|meta| meta.is_file() && meta.len() == file.size)
+        })
 }
 
 fn current_status(app: &tauri::AppHandle, state: &ParakeetState) -> ParakeetStatus {
@@ -290,10 +292,29 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         assert!(!is_installed(dir.path(), &runtime));
         for file in &install::MODEL_FILES {
-            std::fs::write(dir.path().join(file.name), b"x").unwrap();
+            std::fs::File::create(dir.path().join(file.name))
+                .unwrap()
+                .set_len(file.size)
+                .unwrap();
         }
         assert!(!is_installed(dir.path(), &runtime));
         std::fs::write(dir.path().join(runtime.file_name), b"x").unwrap();
         assert!(is_installed(dir.path(), &runtime));
+    }
+
+    #[test]
+    fn outdated_model_files_are_not_installed() {
+        let Some(runtime) = install::runtime() else {
+            return;
+        };
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(runtime.file_name), b"x").unwrap();
+        for file in &install::MODEL_FILES {
+            std::fs::File::create(dir.path().join(file.name))
+                .unwrap()
+                .set_len(file.size + 1)
+                .unwrap();
+        }
+        assert!(!is_installed(dir.path(), &runtime));
     }
 }
