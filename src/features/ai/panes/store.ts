@@ -55,11 +55,16 @@ interface AgentsPanesState {
   closeLeaf: (rootPath: string, leafId: string) => void;
   addPaneRight: (rootPath: string, leaf: Leaf, focus: boolean) => void;
   selectTab: (rootPath: string, groupId: string, leafId: string) => void;
-  dockAsTab: (rootPath: string, sourceLeafId: string, targetLeafId: string) => void;
+  dockAsTab: (
+    rootPath: string,
+    sourceLeafId: string,
+    targetGroupId: string,
+    index?: number,
+  ) => void;
   splitToward: (
     rootPath: string,
     sourceLeafId: string,
-    targetLeafId: string,
+    targetGroupId: string,
     zone: SplitZone,
   ) => void;
   applyPreset: (rootPath: string, preset: PanePreset, sessionIds: string[]) => void;
@@ -273,10 +278,10 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      dockAsTab: (rootPath, sourceLeafId, targetLeafId) =>
+      dockAsTab: (rootPath, sourceLeafId, targetGroupId, index) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = dockAsTabOp(entry.root, sourceLeafId, targetLeafId);
+          const root = dockAsTabOp(entry.root, sourceLeafId, targetGroupId, index);
           if (root === entry.root) return {};
           return {
             trees: setEntry(state.trees, rootPath, {
@@ -287,10 +292,10 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      splitToward: (rootPath, sourceLeafId, targetLeafId, zone) =>
+      splitToward: (rootPath, sourceLeafId, targetGroupId, zone) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = splitTowardOp(entry.root, sourceLeafId, targetLeafId, zone);
+          const root = splitTowardOp(entry.root, sourceLeafId, targetGroupId, zone);
           if (root === entry.root) return {};
           return {
             trees: setEntry(state.trees, rootPath, {
