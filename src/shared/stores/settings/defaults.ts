@@ -40,6 +40,8 @@ export const defaultSettings: SettingsState = {
     migrationRevision: 1,
     voiceInput: true,
     voiceEngine: "web-speech",
+    parakeetModel: "parakeet-v3",
+    whisperModel: "large-v3-turbo-q5_0",
     providers: {
       openai: { model: "" },
       anthropic: { model: "" },

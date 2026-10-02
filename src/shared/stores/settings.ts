@@ -20,6 +20,7 @@ export type {
   LspSettings,
   McpServerConfig,
   McpSettings,
+  ParakeetModel,
   ProviderSettings,
   SettingsState,
   StatusbarItem,
@@ -27,6 +28,7 @@ export type {
   TerminalSettings,
   ThemeMode,
   VoiceEngine,
+  WhisperModel,
   WorkspaceSettings,
 } from "./settings/types";
 

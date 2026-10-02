@@ -53,6 +53,8 @@ const LOCAL_ENGINES: Record<
 
 export interface UseComposerDictationOptions {
   engine: VoiceEngine;
+  /** Catalog id of the model the local engine runs. */
+  model: string;
   enabled: boolean;
   /** The whole transcript of the current dictation; `final` marks its last update. */
   onText: (text: string, final: boolean) => void;
@@ -95,6 +97,7 @@ function stopStream(stream: MediaStream) {
 
 export function useComposerDictation({
   engine,
+  model,
   enabled,
   onText,
 }: UseComposerDictationOptions): UseComposerDictationResult {
@@ -106,6 +109,8 @@ export function useComposerDictation({
   onTextRef.current = onText;
   const engineRef = useRef(engine);
   engineRef.current = engine;
+  const modelRef = useRef(model);
+  modelRef.current = model;
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
   const activeRef = useRef(false);
@@ -163,7 +168,7 @@ export function useComposerDictation({
   }, []);
 
   const startLocal = useCallback(
-    async (localEngine: LocalEngine, context: AudioContext) => {
+    async (localEngine: LocalEngine, model: string, context: AudioContext) => {
       const config = LOCAL_ENGINES[localEngine];
       const abort = (message: string | null) => {
         void context.close().catch(() => undefined);
@@ -173,7 +178,7 @@ export function useComposerDictation({
 
       let engineStatus: SttStatus;
       try {
-        engineStatus = await invoke<SttStatus>(config.status);
+        engineStatus = await invoke<SttStatus>(config.status, { model });
       } catch {
         engineStatus = { supported: true, installed: false };
       }
@@ -209,7 +214,7 @@ export function useComposerDictation({
         const capture = startPcmCapture(context, stream, emitLevel);
         const session = createLocalDictation({
           capture,
-          transcribe: (wavBase64) => invoke<string>(config.transcribe, { wavBase64 }),
+          transcribe: (wavBase64) => invoke<string>(config.transcribe, { wavBase64, model }),
           onText: (text, final) => onTextRef.current(text, final),
           onError: setStatus,
         });
@@ -231,6 +236,7 @@ export function useComposerDictation({
     activeRef.current = true;
     setStatus(null);
     const current = engineRef.current;
+    const currentModel = modelRef.current;
     let context: AudioContext | null = null;
     if (current !== "web-speech") {
       // Created inside the click or key press so the webview lets it run.
@@ -253,7 +259,7 @@ export function useComposerDictation({
       if (current === "web-speech") {
         startWebSpeech();
       } else if (context) {
-        await startLocal(current, context);
+        await startLocal(current, currentModel, context);
       }
     })();
   }, [startLocal, startWebSpeech]);
@@ -298,7 +304,7 @@ export function useComposerDictation({
 
   useEffect(() => {
     stop();
-  }, [engine, stop]);
+  }, [engine, model, stop]);
 
   useEffect(() => {
     if (!enabled) {

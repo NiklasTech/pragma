@@ -14,4 +14,6 @@ pub mod pty;
 pub mod run;
 pub mod stt;
 pub mod voice_access;
+pub mod voice_hardware;
+pub mod whisper_models;
 pub mod workspace;

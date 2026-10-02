@@ -1,16 +1,18 @@
 //! Local speech-to-text for composer dictation: a pinned whisper.cpp sidecar
-//! plus the ggml-tiny model, managed under `<app_data>/stt`.
+//! plus a catalog ggml model, managed under `<app_data>/stt`.
 
 use base64::Engine;
 use serde::Serialize;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 use std::io;
 use std::path::{Path, PathBuf};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+use tokio_util::sync::CancellationToken;
 
-const MODEL_URL: &str = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin";
+use crate::modules::whisper_models::{self, ActiveDownload, WhisperModelSpec, WhisperState};
+
 const MAX_ARCHIVE_BYTES: u64 = 60 * 1024 * 1024;
-const MAX_MODEL_BYTES: u64 = 100 * 1024 * 1024;
+const PROGRESS_EVENT: &str = "stt-download-progress";
 const MAX_WAV_DATA_BYTES: u64 = 8 * 1024 * 1024;
 const TRANSCRIBE_TIMEOUT_SECS: u64 = 300;
 
@@ -19,6 +21,16 @@ const TRANSCRIBE_TIMEOUT_SECS: u64 = 300;
 pub struct SttStatus {
     pub supported: bool,
     pub installed: bool,
+    pub downloading: bool,
+    /// Bytes of the model still to download; the small engine archive is not counted.
+    pub download_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DownloadProgress {
+    received: u64,
+    total: u64,
 }
 
 fn binary_name() -> &'static str {
@@ -58,10 +70,6 @@ fn whisper_dir(root: &Path) -> PathBuf {
     root.join("whisper")
 }
 
-fn model_path(root: &Path) -> PathBuf {
-    root.join("models").join("ggml-tiny.bin")
-}
-
 fn find_binary(dir: &Path) -> Option<PathBuf> {
     let mut found = None;
     let mut stack = vec![dir.to_path_buf()];
@@ -81,25 +89,40 @@ fn find_binary(dir: &Path) -> Option<PathBuf> {
     found
 }
 
-fn current_status(app: &tauri::AppHandle) -> SttStatus {
-    if !platform_supported() {
-        return SttStatus {
-            supported: false,
-            installed: false,
-        };
-    }
-    let installed = stt_root(app)
-        .map(|root| find_binary(&whisper_dir(&root)).is_some() && model_path(&root).is_file())
-        .unwrap_or(false);
+fn current_status(
+    app: &tauri::AppHandle,
+    state: &WhisperState,
+    spec: &WhisperModelSpec,
+) -> SttStatus {
+    let downloading = state.downloading_model() == Some(spec.id);
+    let root = match stt_root(app) {
+        Ok(root) if platform_supported() => root,
+        _ => {
+            return SttStatus {
+                supported: platform_supported(),
+                installed: false,
+                downloading,
+                download_bytes: 0,
+            }
+        }
+    };
+    let has_model = whisper_models::model_installed(&root, spec);
     SttStatus {
         supported: true,
-        installed,
+        installed: has_model && find_binary(&whisper_dir(&root)).is_some(),
+        downloading,
+        download_bytes: if has_model { 0 } else { spec.size },
     }
 }
 
 #[tauri::command]
-pub async fn stt_status(app: tauri::AppHandle) -> Result<SttStatus, String> {
-    Ok(current_status(&app))
+pub async fn stt_status(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, WhisperState>,
+    model: String,
+) -> Result<SttStatus, String> {
+    let spec = whisper_models::model(&model)?;
+    Ok(current_status(&app, &state, spec))
 }
 
 async fn download_to_file(url: &str, dest: &Path, cap: u64) -> Result<(), String> {
@@ -241,19 +264,67 @@ fn extract_archive(archive: &Path, dest_dir: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn stt_download(app: tauri::AppHandle) -> Result<SttStatus, String> {
+pub async fn stt_download(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, WhisperState>,
+    model: String,
+) -> Result<SttStatus, String> {
+    let spec = whisper_models::model(&model)?;
     let Some(archive_url) = whisper_archive_url() else {
         return Err("Whisper is not available on this platform".to_string());
     };
-    let root = stt_root(&app)?;
+    let cancel = {
+        let mut download = state
+            .download
+            .lock()
+            .map_err(|_| "Whisper download state is unavailable".to_string())?;
+        if download.is_some() {
+            return Err("Another Whisper download is running".to_string());
+        }
+        let token = CancellationToken::new();
+        *download = Some(ActiveDownload {
+            model: spec.id,
+            cancel: token.clone(),
+        });
+        token
+    };
+
+    let result = install(&app, archive_url, spec, &cancel).await;
+    if let Ok(mut download) = state.download.lock() {
+        *download = None;
+    }
+    result?;
+    Ok(current_status(&app, &state, spec))
+}
+
+async fn install(
+    app: &tauri::AppHandle,
+    archive_url: &str,
+    spec: &WhisperModelSpec,
+    cancel: &CancellationToken,
+) -> Result<(), String> {
+    let root = stt_root(app)?;
     tokio::fs::create_dir_all(&root)
         .await
         .map_err(|e| format!("Cannot create {}: {e}", root.display()))?;
+    if find_binary(&whisper_dir(&root)).is_none() {
+        install_binary(&root, archive_url).await?;
+    }
+    if whisper_models::model_installed(&root, spec) {
+        return Ok(());
+    }
+    let total = spec.size;
+    let mut on_progress = |received: u64| {
+        let _ = app.emit(PROGRESS_EVENT, DownloadProgress { received, total });
+    };
+    whisper_models::download_model(&root, spec, cancel, &mut on_progress).await
+}
 
+async fn install_binary(root: &Path, archive_url: &str) -> Result<(), String> {
     let archive = root.join("whisper-download.bin");
     download_to_file(archive_url, &archive, MAX_ARCHIVE_BYTES).await?;
 
-    let dir = whisper_dir(&root);
+    let dir = whisper_dir(root);
     if dir.exists() {
         tokio::fs::remove_dir_all(&dir)
             .await
@@ -291,16 +362,36 @@ pub async fn stt_download(app: tauri::AppHandle) -> Result<SttStatus, String> {
             .map_err(|e| format!("Cannot chmod {}: {e}", binary.display()))?;
     }
     let _ = binary;
+    Ok(())
+}
 
-    let dest = model_path(&root);
-    if dest.exists() {
-        tokio::fs::remove_file(&dest)
-            .await
-            .map_err(|e| format!("Cannot clean model file: {e}"))?;
+#[tauri::command]
+pub async fn stt_cancel_download(state: tauri::State<'_, WhisperState>) -> Result<(), String> {
+    if let Ok(download) = state.download.lock() {
+        if let Some(active) = download.as_ref() {
+            active.cancel.cancel();
+        }
     }
-    download_to_file(MODEL_URL, &dest, MAX_MODEL_BYTES).await?;
+    Ok(())
+}
 
-    Ok(current_status(&app))
+#[tauri::command]
+pub async fn stt_remove(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, WhisperState>,
+    model: String,
+) -> Result<SttStatus, String> {
+    let spec = whisper_models::model(&model)?;
+    if state.downloading_model() == Some(spec.id) {
+        return Err("Cancel the download before removing the model".to_string());
+    }
+    let path = whisper_models::model_path(&stt_root(&app)?, spec);
+    if path.exists() {
+        tokio::fs::remove_file(&path)
+            .await
+            .map_err(|e| format!("Cannot remove {}: {e}", path.display()))?;
+    }
+    Ok(current_status(&app, &state, spec))
 }
 
 #[derive(Debug, PartialEq)]
@@ -395,8 +486,14 @@ pub(crate) fn parse_wav(data: &[u8]) -> Result<WavInfo, String> {
 }
 
 #[tauri::command]
-pub async fn stt_transcribe(app: tauri::AppHandle, wav_base64: String) -> Result<String, String> {
-    let status = current_status(&app);
+pub async fn stt_transcribe(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, WhisperState>,
+    wav_base64: String,
+    model: String,
+) -> Result<String, String> {
+    let spec = whisper_models::model(&model)?;
+    let status = current_status(&app, &state, spec);
     if !status.supported {
         return Err("Whisper is not available on this platform".to_string());
     }
@@ -423,7 +520,9 @@ pub async fn stt_transcribe(app: tauri::AppHandle, wav_base64: String) -> Result
         find_binary(&whisper_dir(&root)).ok_or_else(|| "Whisper binary is missing".to_string())?;
     let args: Vec<String> = vec![
         "-m".into(),
-        model_path(&root).to_string_lossy().into_owned(),
+        whisper_models::model_path(&root, spec)
+            .to_string_lossy()
+            .into_owned(),
         "-f".into(),
         input_path.to_string_lossy().into_owned(),
         "-nt".into(),
