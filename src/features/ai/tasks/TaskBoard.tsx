@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, X } from "@phosphor-icons/react";
+import { Kanban, Plus, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
@@ -20,6 +20,13 @@ import { TaskDialog } from "./TaskDialog";
 import type { Task, TaskStatus } from "./types";
 import { useTasksUiStore } from "./ui";
 import { TASK_COLUMNS } from "./validation";
+
+const COLUMN_DOTS: Record<TaskStatus, string> = {
+  todo: "bg-fg-subtle",
+  in_progress: "bg-primary",
+  in_review: "bg-status-warning",
+  done: "bg-status-success",
+};
 
 export function TaskBoard() {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
@@ -66,15 +73,17 @@ export function TaskBoard() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle px-3">
+        <Kanban size={15} weight="fill" className="text-status-warning" />
         <h2 className="text-ui-sm font-semibold text-fg-default">Tasks</h2>
         {tasks.length > 0 && (
-          <span className="text-ui-xs text-fg-subtle tabular-nums">{tasks.length}</span>
+          <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-muted tabular-nums">
+            {tasks.length}
+          </span>
         )}
         <span className="flex-1" />
         <Button
           type="button"
           size="sm"
-          variant="outline"
           disabled={!rootPath || !loaded}
           onClick={() => openDialog(null)}
         >
@@ -97,7 +106,7 @@ export function TaskBoard() {
           {rootPath ? "Could not load the tasks." : "Open a folder to keep tasks."}
         </p>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-4 gap-2 p-3">
+        <div className="grid min-h-0 flex-1 animate-in grid-cols-4 gap-2 p-3 duration-200 fade-in-0">
           {TASK_COLUMNS.map((column) => {
             const items = tasks.filter((task) => task.status === column.status);
             return (
@@ -121,9 +130,15 @@ export function TaskBoard() {
                   dropTarget === column.status && "bg-accent-subtle ring-1 ring-primary/40",
                 )}
               >
-                <h3 className="flex shrink-0 items-center gap-1.5 px-2.5 pt-2 pb-1.5 text-ui-xs font-medium text-fg-muted">
+                <h3 className="flex shrink-0 items-center gap-1.5 px-2.5 pt-2 pb-1.5 text-ui-xs font-semibold text-fg-muted">
+                  <span
+                    className={cn("size-2 shrink-0 rounded-full", COLUMN_DOTS[column.status])}
+                    aria-hidden="true"
+                  />
                   {column.label}
-                  <span className="text-fg-subtle tabular-nums">{items.length}</span>
+                  <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-subtle tabular-nums">
+                    {items.length}
+                  </span>
                 </h3>
                 <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-1.5 pb-1.5">
                   {items.map((task) => (

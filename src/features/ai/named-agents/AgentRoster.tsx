@@ -2,10 +2,12 @@
 
 import { Plus, Robot } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import type { AgentStatus } from "@/features/agent/store";
 
+import { seededAccent } from "../panes/providerAccent";
 import { engineLabel } from "./AgentEnginePicker";
 import type { Agent } from "./types";
 
@@ -44,19 +46,20 @@ export function AgentRoster({
 
   return (
     <div className="flex flex-col gap-1">
-      <button
+      <Button
         type="button"
         onClick={onNewAgent}
-        className="flex h-8 w-full items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3.5 text-ui-sm text-fg-default transition-colors hover:bg-bg-hover"
+        className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm shadow-[0_6px_18px_-10px_var(--color-accent-glow)]"
       >
-        <Plus size={14} weight="bold" />
+        <Plus size={13} weight="bold" />
         New agent
-      </button>
+      </Button>
 
       <div className="flex flex-col gap-0.5 pt-1">
         {agents.map((agent) => {
           const isActive = agent.id === selectedAgentId;
           const isRunning = agentHasActiveChat(agent, chatSessions, agentStatus, runSessionId);
+          const accent = seededAccent(agent.id);
           return (
             <button
               key={agent.id}
@@ -72,11 +75,12 @@ export function AgentRoster({
             >
               <span
                 className={cn(
-                  "relative flex size-7 shrink-0 items-center justify-center rounded-md",
-                  isActive ? "bg-accent-subtle text-primary" : "bg-bg-hover text-fg-muted",
+                  "relative flex size-7 shrink-0 items-center justify-center rounded-md transition-transform group-hover:scale-105",
+                  accent.soft,
+                  accent.text,
                 )}
               >
-                <Robot size={14} weight={isActive ? "fill" : "regular"} />
+                <Robot size={14} weight="fill" />
                 {isRunning && (
                   <span
                     className={cn(

@@ -30,15 +30,17 @@ import type { AgentStatus } from "@/features/agent/store";
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { ComposerMicButton } from "../components/ComposerMicButton";
 import { isGeneratedTerminalTitle } from "../terminal/title";
+import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { usePaneHeaderDrag } from "./paneDrag";
+import { providerAccent } from "./providerAccent";
 import { ProviderLogo } from "./ProviderLogo";
 
 const PANE_ICON_BUTTON =
-  "flex size-6 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
+  "flex size-6 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-[color,background-color,transform] duration-150 enabled:hover:bg-bg-hover enabled:hover:text-fg-default enabled:active:scale-90 disabled:opacity-40";
 
 const STATUS_LABELS: Record<AgentStatus, string> = {
   idle: "Idle",
@@ -68,6 +70,7 @@ function identify(
   leaf: Leaf,
   session: ChatSession | undefined,
   manifest: CLIManifest | undefined,
+  accentText: string,
 ): PaneIdentity {
   if (leaf.browser) {
     return { title: "Browser", icon: <Browser size={14} className="shrink-0" />, showTitle: true };
@@ -79,7 +82,7 @@ function identify(
       providerId={session.cliProviderId}
       name={manifest?.name ?? "Terminal"}
       size={14}
-      className="text-fg-muted"
+      className={accentText}
     />
   ) : null;
 
@@ -92,9 +95,9 @@ function identify(
   const icon =
     logo ??
     (session.kind === "ask" ? (
-      <ChatCircle size={14} className="shrink-0 text-fg-muted" />
+      <ChatCircle size={14} weight="fill" className={cn("shrink-0", accentText)} />
     ) : (
-      <Robot size={14} className="shrink-0 text-fg-muted" />
+      <Robot size={14} weight="fill" className={cn("shrink-0", accentText)} />
     ));
   return { title: session.title, icon, showTitle: true };
 }
@@ -111,32 +114,33 @@ function startLike(
   else void actions.startAgentCheckout();
 }
 
-function TerminalStatusDot({ sessionId }: { sessionId: string }) {
-  const { status, exitCode } = useTerminalStatus(sessionId);
-  const label =
-    status === "running"
-      ? "Running"
-      : status === "cancelled"
-        ? "Cancelled"
-        : exitCode !== null
-          ? `Exited (${exitCode})`
-          : "Exited";
-  const dot =
-    status === "running"
-      ? "bg-status-success"
-      : exitCode !== null && exitCode !== 0
-        ? "bg-status-error"
-        : "bg-fg-subtle";
-
+function StatusDot({ color, live, label }: { color: string; live: boolean; label: string }) {
   return (
-    <span
-      className={cn("size-1.5 shrink-0 rounded-full", dot)}
-      title={label}
-      role="img"
-      aria-label={label}
-      data-terminal-status={status}
-    />
+    <span className="relative flex size-2 shrink-0 items-center justify-center" title={label}>
+      {live && (
+        <span
+          className={cn("absolute inset-0 animate-ping rounded-full opacity-60", color)}
+          aria-hidden="true"
+        />
+      )}
+      <span className={cn("relative size-1.5 rounded-full", color)} role="img" aria-label={label} />
+    </span>
   );
+}
+
+function terminalStatusLook(
+  status: "running" | "exited" | "cancelled",
+  exitCode: number | null,
+  active: boolean,
+): { color: string; label: string } {
+  if (status === "running") {
+    return { color: "bg-status-success", label: active ? "Working" : "Running" };
+  }
+  if (status === "cancelled") return { color: "bg-fg-subtle", label: "Cancelled" };
+  if (exitCode !== null && exitCode !== 0) {
+    return { color: "bg-status-error", label: `Exited (${exitCode})` };
+  }
+  return { color: "bg-fg-subtle", label: exitCode !== null ? `Exited (${exitCode})` : "Exited" };
 }
 
 function TerminalMic({ sessionId }: { sessionId: string }) {
@@ -191,8 +195,17 @@ export function PaneHeader({
   const drag = usePaneHeaderDrag(leaf.id, onDropOn);
   const [renaming, setRenaming] = useState(false);
 
-  const identity = identify(leaf, session, manifest);
+  const accent = providerAccent(session);
+  const identity = identify(leaf, session, manifest, accent.text);
   const terminal = session?.kind === "terminal" ? session : null;
+  const terminalStatus = useTerminalStatus(terminal?.id ?? null);
+  const terminalActive = useTerminalActivity(terminal?.id ?? null);
+  const working = terminal
+    ? terminalActive && terminalStatus.status === "running"
+    : status === "running";
+  const look = terminal
+    ? terminalStatusLook(terminalStatus.status, terminalStatus.exitCode, terminalActive)
+    : { color: STATUS_DOTS[status], label: STATUS_LABELS[status] };
   const branch = session?.worktree?.branch ?? null;
   const maximizeLabel = maximized ? "Restore" : "Maximize";
   const newLabel = terminal && manifest ? `New ${manifest.name}` : "New session";
@@ -201,7 +214,10 @@ export function PaneHeader({
   return (
     <>
       <div
-        className="@container/pane-header flex h-8 shrink-0 cursor-grab touch-none items-center gap-1.5 border-b border-border-subtle pr-1 pl-2.5 select-none active:cursor-grabbing"
+        className={cn(
+          "@container/pane-header relative flex h-8 shrink-0 cursor-grab touch-none items-center gap-1.5 border-b border-border-subtle bg-linear-to-r to-transparent to-60% pr-1 pl-2.5 select-none active:cursor-grabbing",
+          accent.tint,
+        )}
         onDoubleClick={(event) => {
           const target = event.target;
           if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
@@ -210,16 +226,7 @@ export function PaneHeader({
         }}
         {...drag}
       >
-        {terminal ? (
-          <TerminalStatusDot sessionId={terminal.id} />
-        ) : (
-          <span
-            className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOTS[status])}
-            title={STATUS_LABELS[status]}
-            role="img"
-            aria-label={STATUS_LABELS[status]}
-          />
-        )}
+        <StatusDot color={look.color} live={working} label={look.label} />
         <span
           className="flex min-w-0 items-center gap-1.5"
           title={identity.title}
@@ -227,7 +234,12 @@ export function PaneHeader({
         >
           {identity.icon}
           {identity.showTitle && (
-            <span className="truncate text-ui-xs font-semibold text-fg-default">
+            <span
+              className={cn(
+                "truncate text-ui-xs font-semibold transition-colors",
+                focused ? "text-fg-default" : "text-fg-muted",
+              )}
+            >
               {identity.title}
             </span>
           )}
@@ -244,7 +256,13 @@ export function PaneHeader({
 
         <span className="flex-1" />
 
-        <div className="flex shrink-0 items-center gap-0.5" data-pane-actions="">
+        <div
+          className={cn(
+            "flex shrink-0 items-center gap-0.5 transition-opacity duration-150 group-hover/pane:opacity-100",
+            focused ? "opacity-100" : "opacity-60",
+          )}
+          data-pane-actions=""
+        >
           {terminal && focused && <TerminalMic sessionId={terminal.id} />}
           {session && <OpenInBrowserButton session={session} className={PANE_ICON_BUTTON} />}
           <DropdownMenu>
@@ -322,6 +340,20 @@ export function PaneHeader({
             <X size={13} />
           </button>
         </div>
+
+        {working && (
+          <span
+            className="pointer-events-none absolute inset-x-0 -bottom-px h-0.5 overflow-hidden"
+            aria-hidden="true"
+          >
+            <span
+              className={cn(
+                "pragma-pane-sweep block h-full w-1/2 bg-linear-to-r from-transparent to-transparent",
+                accent.sweep,
+              )}
+            />
+          </span>
+        )}
       </div>
 
       {session && rootPath && (

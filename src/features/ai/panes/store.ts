@@ -15,6 +15,7 @@ import {
   type PaneRoot,
 } from "./operations";
 import { autoLayout, collectLeaves, swapLeaves } from "./layout";
+import { animatePanes } from "./transition";
 
 export const AGENTS_PANES_STORAGE_KEY = "pragma.agents.panes.v1";
 
@@ -69,26 +70,31 @@ function orderedSessions(focusOrder: string[], sessionIds: string[]): string[] {
 
 export const useAgentsPanesStore = create<AgentsPanesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       trees: {},
 
-      openSession: (rootPath, sessionId) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const existing = findLeafBySession(entry.root, sessionId);
-          if (!existing && countLeaves(entry.root) >= MAX_PANES) return {};
+      openSession: (rootPath, sessionId) => {
+        const opens = !findLeafBySession(getEntry(get().trees, rootPath).root, sessionId);
+        const update = () =>
+          set((state) => {
+            const entry = getEntry(state.trees, rootPath);
+            const existing = findLeafBySession(entry.root, sessionId);
+            if (!existing && countLeaves(entry.root) >= MAX_PANES) return {};
 
-          const leaf = existing ?? createLeaf(sessionId);
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              root: existing
-                ? entry.root
-                : autoLayout([...collectLeaves(entry.root), leaf], entry.root),
-              focusedLeafId: leaf.id,
-              focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
-            }),
-          };
-        }),
+            const leaf = existing ?? createLeaf(sessionId);
+            return {
+              trees: setEntry(state.trees, rootPath, {
+                root: existing
+                  ? entry.root
+                  : autoLayout([...collectLeaves(entry.root), leaf], entry.root),
+                focusedLeafId: leaf.id,
+                focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
+              }),
+            };
+          });
+        if (opens) animatePanes(update);
+        else update();
+      },
 
       assignSession: (rootPath, leafId, sessionId) =>
         set((state) => {
@@ -119,83 +125,97 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         }),
 
       replaceLayout: (rootPath, sessionIds) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const root = autoLayout(sessionIds.map((sessionId) => createLeaf(sessionId)));
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              root,
-              focusedLeafId: firstLeaf(root)?.id ?? null,
-              focusOrder: [
-                ...sessionIds,
-                ...entry.focusOrder.filter((id) => !sessionIds.includes(id)),
-              ],
-            }),
-          };
-        }),
+        animatePanes(() =>
+          set((state) => {
+            const entry = getEntry(state.trees, rootPath);
+            const root = autoLayout(sessionIds.map((sessionId) => createLeaf(sessionId)));
+            return {
+              trees: setEntry(state.trees, rootPath, {
+                root,
+                focusedLeafId: firstLeaf(root)?.id ?? null,
+                focusOrder: [
+                  ...sessionIds,
+                  ...entry.focusOrder.filter((id) => !sessionIds.includes(id)),
+                ],
+              }),
+            };
+          }),
+        ),
 
       closeLeaf: (rootPath, leafId) => {
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const leaves = collectLeaves(entry.root);
-          const index = leaves.findIndex((leaf) => leaf.id === leafId);
-          if (index === -1) return {};
+        animatePanes(() =>
+          set((state) => {
+            const entry = getEntry(state.trees, rootPath);
+            const leaves = collectLeaves(entry.root);
+            const index = leaves.findIndex((leaf) => leaf.id === leafId);
+            if (index === -1) return {};
 
-          const remaining = leaves.filter((leaf) => leaf.id !== leafId);
-          const focusedLeafId =
-            entry.focusedLeafId === leafId
-              ? (remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
-              : entry.focusedLeafId;
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root: autoLayout(remaining, entry.root),
-              focusedLeafId,
-            }),
-          };
-        });
+            const remaining = leaves.filter((leaf) => leaf.id !== leafId);
+            const focusedLeafId =
+              entry.focusedLeafId === leafId
+                ? (remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
+                : entry.focusedLeafId;
+            return {
+              trees: setEntry(state.trees, rootPath, {
+                ...entry,
+                root: autoLayout(remaining, entry.root),
+                focusedLeafId,
+              }),
+            };
+          }),
+        );
         useBrowserHistoryStore.getState().drop(leafId);
       },
 
       addPane: (rootPath, leaf, focus) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          if (countLeaves(entry.root) >= MAX_PANES) return {};
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root: autoLayout([...collectLeaves(entry.root), leaf], entry.root),
-              focusedLeafId: focus || !entry.focusedLeafId ? leaf.id : entry.focusedLeafId,
-            }),
-          };
-        }),
+        animatePanes(() =>
+          set((state) => {
+            const entry = getEntry(state.trees, rootPath);
+            if (countLeaves(entry.root) >= MAX_PANES) return {};
+            return {
+              trees: setEntry(state.trees, rootPath, {
+                ...entry,
+                root: autoLayout([...collectLeaves(entry.root), leaf], entry.root),
+                focusedLeafId: focus || !entry.focusedLeafId ? leaf.id : entry.focusedLeafId,
+              }),
+            };
+          }),
+        ),
 
       swapPanes: (rootPath, sourceLeafId, targetLeafId) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const root = swapLeaves(entry.root, sourceLeafId, targetLeafId);
-          if (root === entry.root) return {};
-          return {
-            trees: setEntry(state.trees, rootPath, { ...entry, root, focusedLeafId: sourceLeafId }),
-          };
-        }),
+        animatePanes(() =>
+          set((state) => {
+            const entry = getEntry(state.trees, rootPath);
+            const root = swapLeaves(entry.root, sourceLeafId, targetLeafId);
+            if (root === entry.root) return {};
+            return {
+              trees: setEntry(state.trees, rootPath, {
+                ...entry,
+                root,
+                focusedLeafId: sourceLeafId,
+              }),
+            };
+          }),
+        ),
 
       applyPreset: (rootPath, preset, sessionIds) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const ordered = orderedSessions(entry.focusOrder, sessionIds);
-          const leaves = Array.from({ length: PRESET_SIZES[preset] }, (_, index) =>
-            createLeaf(ordered[index] ?? null),
-          );
-          const root = autoLayout(leaves);
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              root,
-              focusedLeafId: firstLeaf(root)?.id ?? null,
-              focusOrder: ordered,
-            }),
-          };
-        }),
+        animatePanes(() =>
+          set((state) => {
+            const entry = getEntry(state.trees, rootPath);
+            const ordered = orderedSessions(entry.focusOrder, sessionIds);
+            const leaves = Array.from({ length: PRESET_SIZES[preset] }, (_, index) =>
+              createLeaf(ordered[index] ?? null),
+            );
+            const root = autoLayout(leaves);
+            return {
+              trees: setEntry(state.trees, rootPath, {
+                root,
+                focusedLeafId: firstLeaf(root)?.id ?? null,
+                focusOrder: ordered,
+              }),
+            };
+          }),
+        ),
 
       syncSessions: (rootPath, sessionIds) =>
         set((state) => {

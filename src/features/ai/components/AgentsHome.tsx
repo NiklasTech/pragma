@@ -132,9 +132,15 @@ export function AgentsHome() {
 
   return (
     <div className="flex h-full w-full items-center justify-center overflow-y-auto px-6 py-10">
-      <div className="flex w-full max-w-[680px] flex-col items-center gap-6">
+      <div className="flex w-full max-w-[680px] animate-in flex-col items-center gap-6 duration-300 fade-in-0 slide-in-from-bottom-2">
         <div className="flex flex-col items-center gap-3 text-center">
-          <PragmaMark className="size-9 text-fg-default opacity-90" />
+          <span className="relative flex items-center justify-center">
+            <span
+              className="absolute size-16 rounded-full bg-linear-to-br from-brand-from/25 to-brand-to/10 blur-xl"
+              aria-hidden="true"
+            />
+            <PragmaMark animation="intro" className="relative size-9 text-fg-default" />
+          </span>
           <h1 className="text-xl font-semibold tracking-tight text-fg-default">
             Ask Pragma to work in this folder
           </h1>
