@@ -37,7 +37,7 @@ pub struct DirEntry {
 
 const MAX_FILE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     let path_ref = validate_path(&path)?;
 
@@ -82,7 +82,7 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> Result<(), String> {
     let path_ref = validate_path(&path)?;
 
@@ -101,7 +101,7 @@ pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> 
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
     let path_ref = validate_path(&path)?;
 
@@ -142,7 +142,7 @@ pub fn list_directory(path: String) -> Result<Vec<DirEntry>, String> {
     Ok(entries)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_directory_recursive(path: String) -> Result<Vec<DirEntry>, String> {
     let path_ref = validate_path(&path)?;
 
@@ -207,7 +207,7 @@ fn collect_entries_recursive(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_file(path: String) -> Result<(), String> {
     let path_ref = validate_path(&path)?;
 
@@ -218,7 +218,7 @@ pub fn create_file(path: String) -> Result<(), String> {
     fs::write(path_ref, "").map_err(|e| format!("Failed to create file: {}", e))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_directory(path: String) -> Result<(), String> {
     let path_ref = validate_path(&path)?;
 
@@ -229,7 +229,7 @@ pub fn create_directory(path: String) -> Result<(), String> {
     fs::create_dir_all(path_ref).map_err(|e| format!("Failed to create directory: {}", e))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
     let old_ref = validate_path(&old_path)?;
     let new_ref = validate_path(&new_path)?;
@@ -245,7 +245,7 @@ pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
     fs::rename(old_ref, new_ref).map_err(|e| format!("Failed to rename: {}", e))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn delete_file(path: String) -> Result<(), String> {
     let path_ref = validate_path(&path)?;
 

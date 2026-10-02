@@ -22,6 +22,13 @@ export function storeChannel(storeName: string, scope: string | null): string {
 
 const registrationPromises: Promise<unknown>[] = [];
 
+let hasScopedPeers: () => boolean = () => true;
+
+/// Lets a workspace window skip broadcasting its scoped stores while no floating window listens.
+export function setScopedPeerProbe(probe: () => boolean): void {
+  hasScopedPeers = probe;
+}
+
 /// Resolves once all store event listeners registered so far are active.
 /// Floating windows must await this before announcing readiness, otherwise
 /// the parent's snapshot can be emitted before their listeners exist.
@@ -100,7 +107,8 @@ export function crossWindowSync<T extends object>(storeName: string, scope?: str
         }
         const diff = shallowDiff(lastState, newState);
         lastState = newState;
-        if (diff) {
+        // Floating windows receive a full snapshot when they open, so skipped diffs are not lost.
+        if (diff && (resolvedScope === null || !isWorkspaceWindow() || hasScopedPeers())) {
           void emit(channel, { source: currentLabel, partial: diff });
         }
       });

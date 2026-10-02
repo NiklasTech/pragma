@@ -22,7 +22,7 @@ use super::process::{
 };
 use super::types::{RunConfig, RunConfigFile, RunStatus};
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn run_list_configs(workspace_root: String) -> Result<Vec<RunConfig>, String> {
     let config_path = Path::new(&workspace_root).join(".pragma").join("run.json");
 
@@ -54,7 +54,7 @@ pub fn run_list_configs(workspace_root: String) -> Result<Vec<RunConfig>, String
     Ok(config_file.configurations)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn run_detect_configs(workspace_root: String) -> Result<Vec<RunConfig>, String> {
     let root = Path::new(&workspace_root);
     if !root.exists() || !root.is_dir() {
@@ -77,7 +77,7 @@ pub fn run_detect_configs(workspace_root: String) -> Result<Vec<RunConfig>, Stri
     Ok(suggestions)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn run_save_configs(workspace_root: String, mut configs: Vec<RunConfig>) -> Result<(), String> {
     let pragma_dir = Path::new(&workspace_root).join(".pragma");
     if !pragma_dir.exists() {
@@ -104,12 +104,12 @@ pub fn run_save_configs(workspace_root: String, mut configs: Vec<RunConfig>) -> 
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn check_port_in_use(port: u16) -> Result<bool, String> {
     Ok(crate::platform::check_port_in_use(port))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn kill_process_by_port(port: u16) -> Result<(), String> {
     crate::platform::kill_process_by_port(port)
 }

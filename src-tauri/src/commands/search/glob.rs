@@ -13,7 +13,7 @@ pub struct GlobWorkspaceRequest {
     pub path: Option<String>,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn glob_workspace(req: GlobWorkspaceRequest) -> Result<Vec<String>, String> {
     let workspace_root = validate_workspace_root(&req.workspace_root)?;
     let pattern = req.pattern.trim();

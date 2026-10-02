@@ -7,7 +7,9 @@ import { Terminal } from "@/features/terminal/components";
 import { createFloating, createPanel } from "../tree/operations";
 
 export function TerminalFloatingHost() {
-  const { terminal, setTerminalMode, setTerminalFloating } = useLayoutStore();
+  const terminal = useLayoutStore((s) => s.terminal);
+  const setTerminalMode = useLayoutStore((s) => s.setTerminalMode);
+  const setTerminalFloating = useLayoutStore((s) => s.setTerminalFloating);
 
   const handleMove = useCallback(
     (x: number, y: number) => {

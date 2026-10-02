@@ -43,7 +43,10 @@ function ResizeHandle({
 /// The AI panel is an optional editor dock. Floating and bottom-sheet modes are
 /// no longer first-class, so any stored placement renders as the right drawer.
 export function AIChatHost() {
-  const { ai, root, floating, setAISize } = useLayoutStore();
+  const ai = useLayoutStore((s) => s.ai);
+  const root = useLayoutStore((s) => s.root);
+  const floating = useLayoutStore((s) => s.floating);
+  const setAISize = useLayoutStore((s) => s.setAISize);
 
   // The AI panel is already docked, floated or tabbed, so the host must not render ChatPanel again.
   if (hasMountedAIPanel({ root, floating })) return null;

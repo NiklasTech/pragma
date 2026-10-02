@@ -59,16 +59,29 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     lastAttachments,
     lastContextTruncated,
   } = useAI();
-  const { cliStatuses, chatSessions, activeChatSessionId } = useAIStore();
+  const cliStatuses = useAIStore((state) => state.cliStatuses);
+  const chatSessions = useAIStore((state) => state.chatSessions);
+  const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const activeSession = chatSessions.find((session) => session.id === activeChatSessionId);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const setupLog =
     activeSession?.worktree?.status === "error" ? activeSession.worktree.setupLog : null;
-  const { edit, receiveProposal, cancelEdit } = useAIEditStore();
+  const edit = useAIEditStore((state) => state.edit);
+  const receiveProposal = useAIEditStore((state) => state.receiveProposal);
+  const cancelEdit = useAIEditStore((state) => state.cancelEdit);
   const openDiff = useEditorStore((state) => state.openDiff);
-  const editorTabs = useEditorStore((state) => state.tabs);
-  const activeTabId = useEditorStore((state) => state.activeTabId);
+  // Keyed on tab identity only; applyChatCodeBlock reads live content, so typing skips chat renders.
+  const openFilesKey = useEditorStore((state) =>
+    state.tabs
+      .filter((tab) => tab.kind === "file")
+      .map((tab) => `${tab.id}\0${tab.path}\0${tab.name}`)
+      .join("\n"),
+  );
+  const activePath = useEditorStore((state) => {
+    const active = state.tabs.find((tab) => tab.id === state.activeTabId);
+    return active && active.kind === "file" ? active.path : null;
+  });
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
@@ -116,16 +129,12 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
   const openFiles = useMemo(
     () =>
-      editorTabs
-        .filter((tab): tab is FileTab => tab.kind === "file")
+      useEditorStore
+        .getState()
+        .tabs.filter((tab): tab is FileTab => tab.kind === "file")
         .map((tab) => ({ id: tab.id, path: tab.path, name: tab.name, content: tab.content })),
-    [editorTabs],
+    [openFilesKey],
   );
-
-  const activePath = useMemo(() => {
-    const active = editorTabs.find((tab) => tab.id === activeTabId);
-    return active && active.kind === "file" ? active.path : null;
-  }, [editorTabs, activeTabId]);
 
   const previousStatusRef = useRef(status);
 
