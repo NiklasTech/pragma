@@ -20,7 +20,8 @@ function sessionIcon(session: TerminalSession): Icon {
 }
 
 export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTabsProps) {
-  const { killSession, renameSession } = useTerminalStore();
+  const killSession = useTerminalStore((s) => s.killSession);
+  const renameSession = useTerminalStore((s) => s.renameSession);
   const activity = useTerminalStore((s) => s.activity);
   const [now, setNow] = useState(() => Date.now());
   const [editingId, setEditingId] = useState<string | null>(null);

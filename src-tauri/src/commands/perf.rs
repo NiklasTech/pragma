@@ -7,7 +7,7 @@ pub struct MemoryStats {
     pub resident_set_size_bytes: u64,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn memory_stats() -> Result<MemoryStats, String> {
     let current_pid = std::process::id();
     let pid = Pid::from_u32(current_pid);

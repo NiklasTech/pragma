@@ -17,9 +17,10 @@ interface EditorBreadcrumbProps {
 }
 
 export function EditorBreadcrumb({ panelId }: EditorBreadcrumbProps) {
-  const { tabs, getPanelActiveTabId } = useEditorStore();
-  const activeTabId = getPanelActiveTabId(panelId ?? null);
-  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activeTab = useEditorStore((s) => {
+    const activeTabId = s.getPanelActiveTabId(panelId ?? null);
+    return s.tabs.find((t) => t.id === activeTabId);
+  });
   const rootPath = useFileExplorerStore((s) => s.rootPath);
 
   if (!activeTab) return null;

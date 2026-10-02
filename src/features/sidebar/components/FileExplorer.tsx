@@ -29,19 +29,13 @@ const ROW_HEIGHT = 26;
 const OVERSCAN = 12;
 
 export function FileExplorer() {
-  const {
-    rootPath,
-    tree,
-    expandedDirs,
-    selectedPath,
-    isLoading,
-    selectRoot,
-    toggleDirectory,
-    openFileByPath,
-    createNode,
-    renameNode,
-    deleteNode,
-  } = useFileExplorer();
+  const { selectRoot, toggleDirectory, openFileByPath, createNode, renameNode, deleteNode } =
+    useFileExplorer();
+  const rootPath = useFileExplorerStore((s) => s.rootPath);
+  const tree = useFileExplorerStore((s) => s.tree);
+  const expandedDirs = useFileExplorerStore((s) => s.expandedDirs);
+  const selectedPath = useFileExplorerStore((s) => s.selectedPath);
+  const isLoading = useFileExplorerStore((s) => s.isLoading);
 
   const showTreeLoading = useDelayedLoading(isLoading);
 

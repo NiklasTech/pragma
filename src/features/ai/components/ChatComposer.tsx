@@ -63,7 +63,8 @@ export function ChatComposer({
 
   const isInFlight = inFlight ?? (isLoading || isStreaming);
 
-  const { prefillPrompt, consumePrefill } = useAIEditStore();
+  const prefillPrompt = useAIEditStore((state) => state.prefillPrompt);
+  const consumePrefill = useAIEditStore((state) => state.consumePrefill);
 
   useEffect(() => {
     if (!prefillPrompt) return;

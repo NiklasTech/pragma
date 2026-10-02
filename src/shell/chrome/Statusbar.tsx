@@ -38,10 +38,14 @@ function StatusChip({
 
 /// Workspace-level status. Editor details (cursor, encoding, …) live in the editor card.
 export function Statusbar() {
-  const { statusbar, theme } = useSettingsStore();
-  const { snapshot } = useGitStore();
-  const { activeProvider, activeModel, activeCLIProvider, activeChatSessionId, cliManifests } =
-    useAIStore();
+  const statusbar = useSettingsStore((state) => state.statusbar);
+  const theme = useSettingsStore((state) => state.theme);
+  const snapshot = useGitStore((state) => state.snapshot);
+  const activeProvider = useAIStore((state) => state.activeProvider);
+  const activeModel = useAIStore((state) => state.activeModel);
+  const activeCLIProvider = useAIStore((state) => state.activeCLIProvider);
+  const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
+  const cliManifests = useAIStore((state) => state.cliManifests);
   const cliOptions = useAcpSessionOptionsStore((state) =>
     activeChatSessionId ? state.bySession[activeChatSessionId] : undefined,
   );
@@ -49,7 +53,7 @@ export function Statusbar() {
   const aiLabel = cliName
     ? [cliName, cliOptions ? currentModelName(cliOptions) : null].filter(Boolean).join(" · ")
     : [activeProvider, activeModel].filter(Boolean).join(" · ");
-  const { problems } = useProblemsStore();
+  const problems = useProblemsStore((state) => state.problems);
 
   if (!statusbar.visible) return null;
 

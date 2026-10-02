@@ -29,7 +29,7 @@ pub struct ReadChatContextResult {
 
 // ─── Public Command ──────────────────────────────────────────────────────────
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_chat_context(req: ReadChatContextRequest) -> Result<ReadChatContextResult, String> {
     if req.root_path.is_empty() {
         return Err("root_path is required".to_string());

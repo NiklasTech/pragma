@@ -41,7 +41,7 @@ pub struct ReplaceResult {
     pub replacement_count: usize,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn replace_workspace(req: ReplaceWorkspaceRequest) -> Result<ReplaceResult, String> {
     let workspace_root = validate_workspace_root(&req.workspace_root)?;
     let query = validate_query(&req.query)?;

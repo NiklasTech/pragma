@@ -7,7 +7,8 @@ const COMMAND_PALETTE_ACTION_ID = "view.commandPalette";
 
 export function useCommandPaletteCommands(): void {
   const actions = useAppShortcutActions();
-  const { registerCommand, unregisterCommand } = useCommandPaletteStore();
+  const registerCommand = useCommandPaletteStore((state) => state.registerCommand);
+  const unregisterCommand = useCommandPaletteStore((state) => state.unregisterCommand);
 
   const commands = useMemo<CommandPaletteItem[]>(() => {
     const actionMap = new Map(SHORTCUT_ACTIONS.map((action) => [action.id, action]));

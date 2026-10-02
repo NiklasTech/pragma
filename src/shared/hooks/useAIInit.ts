@@ -35,7 +35,6 @@ export function syncAIStore(ai: AISettingsState, previous?: AISettingsState): vo
  * never opens the Settings page.
  */
 export function useAIInit() {
-  const { loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus } = useAIStore();
   const statusesLoaded = useRef(false);
 
   useEffect(() => {
@@ -51,6 +50,9 @@ export function useAIInit() {
 
       if (statusesLoaded.current) return;
       statusesLoaded.current = true;
+
+      const { loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus } =
+        useAIStore.getState();
 
       // Load CLI manifests and statuses on app start
       void loadCLIManifests();
@@ -75,5 +77,5 @@ export function useAIInit() {
       unsubscribeHydration();
       unsubscribeSettings?.();
     };
-  }, [loadCLIStatuses, loadCLIManifests, loadKeyStatus, loadCopilotAuthStatus]);
+  }, []);
 }

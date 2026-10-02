@@ -12,10 +12,12 @@ interface EditorProps {
 }
 
 export function Editor({ panelId }: EditorProps) {
-  const { tabs, getPanelActiveTabId, updateFileContent, closeTab } = useEditorStore();
+  const tabs = useEditorStore((s) => s.tabs);
+  const activeTabId = useEditorStore((s) => s.getPanelActiveTabId(panelId ?? null));
+  const updateFileContent = useEditorStore((s) => s.updateFileContent);
+  const closeTab = useEditorStore((s) => s.closeTab);
   const vimEnabled = useSettingsStore((state) => state.editor.vimMode);
 
-  const activeTabId = getPanelActiveTabId(panelId ?? null);
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
 
   if (!activeTab) {

@@ -35,83 +35,70 @@ function entryToNode(entry: DirEntry): FileSystemNode {
   };
 }
 
+/// Explorer actions only; components that render tree state select it from the store themselves.
 export function useFileExplorer() {
-  const store = useFileExplorerStore();
-  const { openFile } = useEditorStore();
+  const rootPath = useFileExplorerStore((s) => s.rootPath);
   const editorPanelId = useEditorPanelId();
-  const { setWorkspaceRoot, loadConfigs, detectConfigs } = useRunConfigStore();
-  const { setRepoPath } = useGitStore();
-  const { setWorkspaceRoot: setDockerWorkspaceRoot } = useDockerStore();
-  const { addRecentFolder, addRecentFile } = useSettingsStore();
 
   useEffect(() => {
     // Keep the Rust folder-dedup registry in sync so a second instance
     // opening the same folder focuses this window instead of duplicating it.
     if (isWorkspaceWindow()) {
-      void invoke("update_window_folder", { folder: store.rootPath });
+      void invoke("update_window_folder", { folder: rootPath });
     }
-    if (store.rootPath) {
-      setWorkspaceRoot(store.rootPath);
-      setRepoPath(store.rootPath);
-      setDockerWorkspaceRoot(store.rootPath);
-      void loadConfigs();
-      void detectConfigs();
+    if (rootPath) {
+      const runConfig = useRunConfigStore.getState();
+      runConfig.setWorkspaceRoot(rootPath);
+      useGitStore.getState().setRepoPath(rootPath);
+      useDockerStore.getState().setWorkspaceRoot(rootPath);
+      void runConfig.loadConfigs();
+      void runConfig.detectConfigs();
     }
-  }, [
-    store.rootPath,
-    setWorkspaceRoot,
-    setRepoPath,
-    setDockerWorkspaceRoot,
-    loadConfigs,
-    detectConfigs,
-  ]);
+  }, [rootPath]);
 
-  const selectRoot = useCallback(
-    async (targetPath?: string) => {
-      let path: string | null = targetPath ?? null;
-      if (!path) {
-        try {
-          path = await open({ multiple: false, directory: true });
-        } catch (err) {
-          toast.error(`Failed to open dialog: ${String(err)}`);
-          return false;
-        }
-      }
-      if (typeof path !== "string" || path.length === 0) return false;
-      store.setRootPath(path);
-      addRecentFolder(path);
-      store.setIsLoading(true);
+  const selectRoot = useCallback(async (targetPath?: string) => {
+    let path: string | null = targetPath ?? null;
+    if (!path) {
       try {
-        const entries = await invoke<DirEntry[]>("list_directory", { path });
-        store.setTree(entries.map(entryToNode));
-        return true;
+        path = await open({ multiple: false, directory: true });
       } catch (err) {
-        toast.error(String(err));
+        toast.error(`Failed to open dialog: ${String(err)}`);
         return false;
-      } finally {
-        store.setIsLoading(false);
       }
-    },
-    [store],
-  );
+    }
+    if (typeof path !== "string" || path.length === 0) return false;
+    const store = useFileExplorerStore.getState();
+    store.setRootPath(path);
+    useSettingsStore.getState().addRecentFolder(path);
+    store.setIsLoading(true);
+    try {
+      const entries = await invoke<DirEntry[]>("list_directory", { path });
+      store.setTree(entries.map(entryToNode));
+      return true;
+    } catch (err) {
+      toast.error(String(err));
+      return false;
+    } finally {
+      store.setIsLoading(false);
+    }
+  }, []);
 
-  const loadDirectory = useCallback(
-    async (path: string) => {
-      store.setDirLoading(path, true);
-      try {
-        const entries = await invoke<DirEntry[]>("list_directory", { path });
-        const children = entries.map(entryToNode);
-        store.setDirChildren(path, children);
-      } catch (err) {
-        store.setDirError(path, String(err));
-        toast.error(String(err));
-      }
-    },
-    [store],
-  );
+  const loadDirectory = useCallback(async (path: string) => {
+    const store = useFileExplorerStore.getState();
+    store.setDirLoading(path, true);
+    try {
+      const entries = await invoke<DirEntry[]>("list_directory", { path });
+      const children = entries.map(entryToNode);
+      store.setDirChildren(path, children);
+    } catch (err) {
+      store.setDirError(path, String(err));
+      toast.error(String(err));
+    }
+  }, []);
 
   const toggleDirectory = useCallback(
     async (path: string) => {
+      const store = useFileExplorerStore.getState();
       const isExpanded = store.expandedDirs.has(path);
       if (isExpanded) {
         store.collapseDir(path);
@@ -123,14 +110,14 @@ export function useFileExplorer() {
         await loadDirectory(path);
       }
     },
-    [store, loadDirectory],
+    [loadDirectory],
   );
 
   const openFileByPath = useCallback(
     async (path: string) => {
       try {
         const result = await invoke<FileReadResult>("read_text_file", { path });
-        openFile(
+        useEditorStore.getState().openFile(
           {
             id: result.path,
             path: result.path,
@@ -142,13 +129,13 @@ export function useFileExplorer() {
           },
           editorPanelId,
         );
-        store.setSelectedPath(path);
-        addRecentFile(path);
+        useFileExplorerStore.getState().setSelectedPath(path);
+        useSettingsStore.getState().addRecentFile(path);
       } catch (err) {
         toast.error(String(err));
       }
     },
-    [openFile, store, editorPanelId],
+    [editorPanelId],
   );
 
   const createNode = useCallback(
@@ -168,6 +155,7 @@ export function useFileExplorer() {
           isFile: !isDirectory,
           children: isDirectory ? [] : undefined,
         };
+        const store = useFileExplorerStore.getState();
         store.addNode(parentPath, node);
         if (isDirectory) {
           store.expandDir(path);
@@ -177,45 +165,34 @@ export function useFileExplorer() {
         toast.error(String(err));
       }
     },
-    [store, loadDirectory],
+    [loadDirectory],
   );
 
-  const renameNode = useCallback(
-    async (oldPath: string, newName: string) => {
-      const parent = oldPath.substring(
-        0,
-        Math.max(oldPath.lastIndexOf("/"), oldPath.lastIndexOf("\\")),
-      );
-      const separator = oldPath.includes("/") && !oldPath.includes("\\") ? "/" : "\\";
-      const newPath = `${parent}${separator}${newName}`;
-      try {
-        await invoke("rename_file", { oldPath, newPath });
-        store.renameNode(oldPath, newPath, newName);
-      } catch (err) {
-        toast.error(String(err));
-      }
-    },
-    [store],
-  );
+  const renameNode = useCallback(async (oldPath: string, newName: string) => {
+    const parent = oldPath.substring(
+      0,
+      Math.max(oldPath.lastIndexOf("/"), oldPath.lastIndexOf("\\")),
+    );
+    const separator = oldPath.includes("/") && !oldPath.includes("\\") ? "/" : "\\";
+    const newPath = `${parent}${separator}${newName}`;
+    try {
+      await invoke("rename_file", { oldPath, newPath });
+      useFileExplorerStore.getState().renameNode(oldPath, newPath, newName);
+    } catch (err) {
+      toast.error(String(err));
+    }
+  }, []);
 
-  const deleteNode = useCallback(
-    async (path: string) => {
-      try {
-        await invoke("delete_file", { path });
-        store.removeNode(path);
-      } catch (err) {
-        toast.error(String(err));
-      }
-    },
-    [store],
-  );
+  const deleteNode = useCallback(async (path: string) => {
+    try {
+      await invoke("delete_file", { path });
+      useFileExplorerStore.getState().removeNode(path);
+    } catch (err) {
+      toast.error(String(err));
+    }
+  }, []);
 
   return {
-    rootPath: store.rootPath,
-    tree: store.tree,
-    expandedDirs: store.expandedDirs,
-    selectedPath: store.selectedPath,
-    isLoading: store.isLoading,
     selectRoot,
     loadDirectory,
     toggleDirectory,
@@ -223,7 +200,6 @@ export function useFileExplorer() {
     createNode,
     renameNode,
     deleteNode,
-    setSelectedPath: store.setSelectedPath,
   };
 }
 

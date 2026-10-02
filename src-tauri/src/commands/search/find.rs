@@ -32,7 +32,7 @@ pub struct SearchMatch {
     pub match_text: String,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>, String> {
     let workspace_root = validate_workspace_root(&req.workspace_root)?;
     let query = validate_query(&req.query)?;

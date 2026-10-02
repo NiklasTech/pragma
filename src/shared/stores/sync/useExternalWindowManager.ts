@@ -9,7 +9,7 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { getWindowScope, isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
-import { storeChannel } from "./crossWindowSync";
+import { setScopedPeerProbe, storeChannel } from "./crossWindowSync";
 
 interface ExternalWindowReadyPayload {
   label: string;
@@ -54,6 +54,8 @@ async function sendSnapshot() {
 export function useExternalWindowManager(): void {
   useEffect(() => {
     if (!isWorkspaceWindow()) return;
+
+    setScopedPeerProbe(() => useLayoutStore.getState().floating.some((f) => Boolean(f.external)));
 
     // Clean up stale external-window entries: if the store says a panel is
     // hosted in an external window but that Tauri window no longer exists,
@@ -103,6 +105,7 @@ export function useExternalWindowManager(): void {
     void setup();
 
     return () => {
+      setScopedPeerProbe(() => true);
       void unlistenQuietly(unlistenReady);
       void unlistenQuietly(unlistenClose);
     };

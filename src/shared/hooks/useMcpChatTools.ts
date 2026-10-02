@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
@@ -18,6 +18,15 @@ export interface McpServerState {
 }
 
 export type { McpChatTool };
+
+// Status events drive updates; the poll only catches servers added or removed by a config reload.
+const POLL_INTERVAL_MS = 5000;
+
+function sameTools(prev: Record<string, McpTool[]>, next: Record<string, McpTool[]>): boolean {
+  const prevIds = Object.keys(prev);
+  if (prevIds.length !== Object.keys(next).length) return false;
+  return prevIds.every((id) => JSON.stringify(prev[id]) === JSON.stringify(next[id]));
+}
 
 export function useMcpChatTools() {
   const serversRef = useRef<Record<string, McpServerState["status"]>>({});
@@ -44,7 +53,7 @@ export function useMcpChatTools() {
       for (const id of serverIds) {
         next[id] = fetched[id] ?? prev[id] ?? [];
       }
-      return next;
+      return sameTools(prev, next) ? prev : next;
     });
   }, []);
 
@@ -64,7 +73,7 @@ export function useMcpChatTools() {
 
   useEffect(() => {
     void loadServers();
-    const interval = setInterval(() => void loadServers(), 500);
+    const interval = setInterval(() => void loadServers(), POLL_INTERVAL_MS);
 
     let unlisten: (() => void) | undefined;
     let active = true;
@@ -93,14 +102,18 @@ export function useMcpChatTools() {
     };
   }, [loadServers, fetchTools]);
 
-  const chatTools: McpChatTool[] = Object.entries(toolsByServer).flatMap(([serverId, tools]) =>
-    tools.map((tool) => ({
-      serverId,
-      toolName: tool.name,
-      displayName: toolDisplayName(serverId, tool.name),
-      description: tool.description,
-      parameters: tool.inputSchema ?? {},
-    })),
+  const chatTools = useMemo<McpChatTool[]>(
+    () =>
+      Object.entries(toolsByServer).flatMap(([serverId, tools]) =>
+        tools.map((tool) => ({
+          serverId,
+          toolName: tool.name,
+          displayName: toolDisplayName(serverId, tool.name),
+          description: tool.description,
+          parameters: tool.inputSchema ?? {},
+        })),
+      ),
+    [toolsByServer],
   );
 
   const resolveTool = useCallback(
@@ -110,14 +123,18 @@ export function useMcpChatTools() {
     [chatTools],
   );
 
-  const toolDefinitions = chatTools.map((tool) => ({
-    type: "function" as const,
-    function: {
-      name: tool.displayName,
-      description: tool.description,
-      parameters: tool.parameters,
-    },
-  }));
+  const toolDefinitions = useMemo(
+    () =>
+      chatTools.map((tool) => ({
+        type: "function" as const,
+        function: {
+          name: tool.displayName,
+          description: tool.description,
+          parameters: tool.parameters,
+        },
+      })),
+    [chatTools],
+  );
 
   return {
     chatTools,

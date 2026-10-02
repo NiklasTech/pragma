@@ -61,24 +61,22 @@ import { useSkillsStore } from "@/features/ai/skills/store";
 export { getMessageText };
 
 export function useAI() {
-  const {
-    activeProvider,
-    activeModel,
-    providers,
-    activeCLIProvider,
-    cliManifests,
-    cliStatuses,
-    apiKeyRefs,
-    copilotAuth,
-    activeChatSessionId,
-    chatSessions,
-    createChatSession,
-    loadSessions,
-    loadSessionMessages,
-    updateChatSessionMessages,
-    saveSessionMessages,
-    saveSession,
-  } = useAIStore();
+  const activeProvider = useAIStore((state) => state.activeProvider);
+  const activeModel = useAIStore((state) => state.activeModel);
+  const providers = useAIStore((state) => state.providers);
+  const activeCLIProvider = useAIStore((state) => state.activeCLIProvider);
+  const cliManifests = useAIStore((state) => state.cliManifests);
+  const cliStatuses = useAIStore((state) => state.cliStatuses);
+  const apiKeyRefs = useAIStore((state) => state.apiKeyRefs);
+  const copilotAuth = useAIStore((state) => state.copilotAuth);
+  const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
+  const chatSessions = useAIStore((state) => state.chatSessions);
+  const createChatSession = useAIStore((state) => state.createChatSession);
+  const loadSessions = useAIStore((state) => state.loadSessions);
+  const loadSessionMessages = useAIStore((state) => state.loadSessionMessages);
+  const updateChatSessionMessages = useAIStore((state) => state.updateChatSessionMessages);
+  const saveSessionMessages = useAIStore((state) => state.saveSessionMessages);
+  const saveSession = useAIStore((state) => state.saveSession);
 
   const {
     toolDefinitions,

@@ -50,7 +50,11 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const [termState, setTermState] = useState<XTerm | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const lastActivityMarkRef = useRef(0);
-  const { fontSize, fontFamily, fontId, scrollback, aiSuggestions } = useTerminalStore();
+  const fontSize = useTerminalStore((s) => s.fontSize);
+  const fontFamily = useTerminalStore((s) => s.fontFamily);
+  const fontId = useTerminalStore((s) => s.fontId);
+  const scrollback = useTerminalStore((s) => s.scrollback);
+  const aiSuggestions = useTerminalStore((s) => s.aiSuggestions);
   const terminalFontFamily = fontId || fontFamily;
   const { themeId, resolvedMode } = useTheme();
 

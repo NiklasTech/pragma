@@ -29,15 +29,17 @@ function entryToNode(entry: DirEntry) {
 }
 
 export function useWorkspaceRestore(): void {
-  const fileExplorer = useFileExplorerStore();
-  const editor = useEditorStore();
+  const fileExplorerHydrated = useFileExplorerStore((s) => s._hasHydrated);
+  const editorHydrated = useEditorStore((s) => s._hasHydrated);
   const { selectRoot } = useFileExplorer();
   const didRun = useRef(false);
 
   useEffect(() => {
     if (didRun.current) return;
-    if (!fileExplorer._hasHydrated || !editor._hasHydrated) return;
+    if (!fileExplorerHydrated || !editorHydrated) return;
     didRun.current = true;
+    const fileExplorer = useFileExplorerStore.getState();
+    const editor = useEditorStore.getState();
 
     async function restore() {
       const folderParam = new URLSearchParams(window.location.search).get("folder");
@@ -105,5 +107,5 @@ export function useWorkspaceRestore(): void {
     }
 
     void restore();
-  }, [fileExplorer._hasHydrated, editor._hasHydrated, fileExplorer.rootPath, selectRoot]);
+  }, [fileExplorerHydrated, editorHydrated, selectRoot]);
 }

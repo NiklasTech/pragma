@@ -32,7 +32,10 @@ interface TerminalPaneProps {
 export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
-  const { fontSize, fontFamily, fontId, scrollback } = useTerminalStore();
+  const fontSize = useTerminalStore((s) => s.fontSize);
+  const fontFamily = useTerminalStore((s) => s.fontFamily);
+  const fontId = useTerminalStore((s) => s.fontId);
+  const scrollback = useTerminalStore((s) => s.scrollback);
   const terminalFontFamily = fontId || fontFamily;
   const { themeId, resolvedMode } = useTheme();
   const cliManifests = useAIStore((state) => state.cliManifests);

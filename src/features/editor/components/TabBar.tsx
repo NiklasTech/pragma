@@ -18,9 +18,12 @@ interface TabBarProps {
 }
 
 export function TabBar({ panelId, onClosePanel }: TabBarProps) {
-  const { tabs, getPanelActiveTabId, setActiveTab, setPanelActiveTab, closeTab, reorderTabs } =
-    useEditorStore();
-  const activeTabId = getPanelActiveTabId(panelId ?? null);
+  const tabs = useEditorStore((s) => s.tabs);
+  const activeTabId = useEditorStore((s) => s.getPanelActiveTabId(panelId ?? null));
+  const setActiveTab = useEditorStore((s) => s.setActiveTab);
+  const setPanelActiveTab = useEditorStore((s) => s.setPanelActiveTab);
+  const closeTab = useEditorStore((s) => s.closeTab);
+  const reorderTabs = useEditorStore((s) => s.reorderTabs);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
