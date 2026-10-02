@@ -26,12 +26,13 @@ describe("agents panes store", () => {
     useAgentsPanesStore.setState({ trees: {} });
   });
 
-  it("opens sessions as tabs in the focused group", () => {
+  it("opens each session in its own pane", () => {
     const store = useAgentsPanesStore.getState();
     store.openSession(ROOT, "a");
     store.openSession(ROOT, "b");
 
     expect(countLeaves(entry().root)).toBe(2);
+    expect(entry().root?.type).toBe("split");
     expect(findLeafBySession(entry().root, "b")).not.toBeNull();
   });
 

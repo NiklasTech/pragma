@@ -2,7 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 import { appendTerminalBuffer } from "./buffer";
-import { decideTerminalStop } from "./stop";
 
 interface PtyOutputEvent {
   id: string;
@@ -24,7 +23,6 @@ interface TerminalEntry {
   buffer: string;
   status: TerminalStatus;
   exitCode: number | null;
-  lastInterruptAt: number | null;
 }
 
 export interface StartTerminalOptions {
@@ -114,12 +112,6 @@ export function getTerminalBuffer(sessionId: string): string {
   return entries.get(sessionId)?.buffer ?? "";
 }
 
-export function resetTerminalBuffer(sessionId: string): void {
-  const entry = entries.get(sessionId);
-  if (!entry) return;
-  entry.buffer = "";
-}
-
 export function getTerminalStatus(sessionId: string): {
   status: TerminalStatus;
   exitCode: number | null;
@@ -193,7 +185,6 @@ export async function ensureTerminal(
       buffer: "",
       status: "running",
       exitCode: null,
-      lastInterruptAt: null,
     };
     entries.set(sessionId, entry);
   }
@@ -256,19 +247,6 @@ export async function ensureTerminal(
       unclaimedExit.clear();
     }
   }
-}
-
-export function requestTerminalStop(sessionId: string, now: number = Date.now()): void {
-  const entry = entries.get(sessionId);
-  if (!entry || entry.status !== "running") return;
-
-  if (decideTerminalStop(entry.lastInterruptAt, now) === "kill") {
-    cancelTerminal(sessionId);
-    return;
-  }
-
-  entry.lastInterruptAt = now;
-  void writeTerminal(sessionId, "\x03");
 }
 
 export function cancelTerminal(sessionId: string): void {

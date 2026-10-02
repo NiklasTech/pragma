@@ -121,6 +121,17 @@ export function findGroup(root: PaneRoot, groupId: string): TabsNode | null {
   return null;
 }
 
+export function findNode(root: PaneRoot, id: string): PaneNode | null {
+  if (!root) return null;
+  if (root.id === id) return root;
+  if (root.type === "tabs") return null;
+  for (const child of root.children) {
+    const found = findNode(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function findLeafGroup(root: PaneRoot, leafId: string): TabsNode | null {
   if (!root) return null;
   if (root.type === "tabs") {
@@ -166,7 +177,10 @@ function updateGroup(
   };
 }
 
-function findParentOfNode(root: PaneNode, id: string): { split: SplitNode; index: number } | null {
+export function findParentOfNode(
+  root: PaneNode,
+  id: string,
+): { split: SplitNode; index: number } | null {
   if (root.type !== "split") return null;
   for (let index = 0; index < root.children.length; index += 1) {
     if (root.children[index].id === id) return { split: root, index };
@@ -176,17 +190,18 @@ function findParentOfNode(root: PaneNode, id: string): { split: SplitNode; index
   return null;
 }
 
-function insertGroupBeside(
+/// Places `node` beside the node `targetId`, joining a parent or target split of the same direction.
+export function insertBeside(
   root: PaneNode,
-  groupId: string,
+  targetId: string,
   node: PaneNode,
   direction: SplitNode["direction"],
   after: boolean,
 ): PaneNode {
-  const group = findGroup(root, groupId);
-  if (!group) return root;
+  const target = findNode(root, targetId);
+  if (!target) return root;
 
-  const parent = findParentOfNode(root, groupId);
+  const parent = findParentOfNode(root, targetId);
   if (parent && parent.split.direction === direction) {
     const children = [...parent.split.children];
     children.splice(after ? parent.index + 1 : parent.index, 0, node);
@@ -197,8 +212,17 @@ function insertGroupBeside(
     });
   }
 
-  const newSplit = createSplit(direction, after ? [group, node] : [node, group], [50, 50]);
-  return replaceNode(root, groupId, newSplit);
+  if (target.type === "split" && target.direction === direction) {
+    const children = after ? [...target.children, node] : [node, ...target.children];
+    return replaceNode(root, targetId, {
+      ...target,
+      children,
+      sizes: distributeSizes(children.length),
+    });
+  }
+
+  const newSplit = createSplit(direction, after ? [target, node] : [node, target], [50, 50]);
+  return replaceNode(root, targetId, newSplit);
 }
 
 export function removeLeaf(
@@ -249,46 +273,13 @@ export function setActiveTab(root: PaneRoot, groupId: string, leafId: string): P
   return updateGroup(root, groupId, (current) => ({ ...current, activeLeafId: leafId }));
 }
 
-function firstGroup(root: PaneNode): TabsNode | null {
+export function firstGroup(root: PaneNode): TabsNode | null {
   if (root.type === "tabs") return root;
   for (const child of root.children) {
     const found = firstGroup(child);
     if (found) return found;
   }
   return null;
-}
-
-export function openSession(
-  root: PaneRoot,
-  focusedLeafId: string | null,
-  sessionId: string,
-): { root: PaneRoot; focusedLeafId: string | null } {
-  const existing = findLeafBySession(root, sessionId);
-  if (existing) {
-    return { root: focusLeaf(root, existing.id), focusedLeafId: existing.id };
-  }
-
-  if (countLeaves(root) >= MAX_PANES) {
-    return { root, focusedLeafId };
-  }
-
-  const leaf = createLeaf(sessionId);
-  if (!root) {
-    return { root: createTabs([leaf], leaf.id), focusedLeafId: leaf.id };
-  }
-
-  const group = (focusedLeafId ? findLeafGroup(root, focusedLeafId) : null) ?? firstGroup(root);
-  if (!group) {
-    return { root: createTabs([leaf], leaf.id), focusedLeafId: leaf.id };
-  }
-
-  const nextRoot = updateGroup(root, group.id, (current) => ({
-    ...current,
-    children: [...current.children, leaf],
-    activeLeafId: leaf.id,
-  }));
-
-  return { root: nextRoot, focusedLeafId: leaf.id };
 }
 
 export function assignLeafSession(root: PaneRoot, leafId: string, sessionId: string): PaneRoot {
@@ -321,7 +312,7 @@ export function splitFocused(
 
   const newGroup = createTabs([newLeaf], newLeaf.id);
   return {
-    root: insertGroupBeside(root, group.id, newGroup, direction, true),
+    root: insertBeside(root, group.id, newGroup, direction, true),
     focusedLeafId: leaf.id,
   };
 }
@@ -410,7 +401,7 @@ export function splitToward(
     zone === "left" || zone === "right" ? "horizontal" : "vertical";
   const after = zone === "right" || zone === "bottom";
   const newGroup = createTabs([sourceLeaf], sourceLeaf.id);
-  return insertGroupBeside(withoutSource, targetGroupId, newGroup, direction, after);
+  return insertBeside(withoutSource, targetGroupId, newGroup, direction, after);
 }
 
 export function dropMissingSessions(root: PaneRoot, sessionIds: string[]): PaneRoot {
@@ -448,6 +439,7 @@ export function updateSplitSizes(root: PaneRoot, splitId: string, sizes: number[
   if (root.type === "tabs") return root;
   if (root.id === splitId) {
     if (sizes.length !== root.children.length) return root;
+    if (sizes.every((size, index) => Math.abs(size - root.sizes[index]) < 0.01)) return root;
     return { ...root, sizes };
   }
   const children: PaneNode[] = [];

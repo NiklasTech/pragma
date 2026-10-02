@@ -5,11 +5,12 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
 
-import { copyToClipboard } from "@/shared/lib/clipboard";
 import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
+import { matchShortcut } from "@/shared/lib/shortcuts";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useTheme } from "@/theme";
 
@@ -18,12 +19,10 @@ import { quoteShellPath } from "./buffer";
 import {
   ensureTerminal,
   getTerminalBuffer,
-  resetTerminalBuffer,
   resizeTerminal,
   subscribeTerminalOutput,
   writeTerminal,
 } from "./runner";
-import { registerTerminalView } from "./view";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -43,6 +42,11 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
   const command = manifest?.command ?? "";
   const cwd = sessionCwd(session, workspaceRoot);
   const [dropActive, setDropActive] = useState(false);
+  const dictateBinding = useSettingsStore((state) =>
+    state.ai.voiceInput ? state.shortcuts["voice.holdToDictate"] : null,
+  );
+  const dictateBindingRef = useRef(dictateBinding);
+  dictateBindingRef.current = dictateBinding;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -71,6 +75,8 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
     );
     term.open(container);
     const removeDeadKeyFix = fixWebKitDeadKeys(term, container);
+    // The hold-to-dictate key belongs to dictation, so xterm must not type it.
+    term.attachCustomKeyEventHandler((event) => !matchShortcut(event, dictateBindingRef.current));
     termRef.current = term;
 
     const replayBase = getTerminalBuffer(session.id);
@@ -80,21 +86,6 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
     const replayNow = getTerminalBuffer(session.id);
     const replay = replayNow.startsWith(replayBase) ? replayNow : replayBase;
     if (replay) term.write(replay);
-    const unregisterView = registerTerminalView(session.id, {
-      clear: () => {
-        resetTerminalBuffer(session.id);
-        term.clear();
-      },
-      copy: () => {
-        const buffer = term.buffer.active;
-        const lines: string[] = [];
-        for (let i = 0; i < buffer.length; i++) {
-          lines.push(buffer.getLine(i)?.translateToString(true) ?? "");
-        }
-        const text = lines.join("\n").trimEnd();
-        if (text) void copyToClipboard(text);
-      },
-    });
     const dataDisposable = term.onData((data) => {
       void writeTerminal(session.id, data);
     });
@@ -133,7 +124,6 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeObserver?.disconnect();
       unsubOutput();
-      unregisterView();
       dataDisposable.dispose();
       removeDeadKeyFix();
       term.dispose();

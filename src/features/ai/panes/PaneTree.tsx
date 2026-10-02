@@ -1,20 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  Broom,
-  ChatCircle,
-  Columns,
-  Copy,
-  GitBranch,
-  Robot,
-  Rows,
-  Stop,
-  TerminalWindow,
-  Warning,
-  X,
-} from "@phosphor-icons/react";
+import { Warning } from "@phosphor-icons/react";
 
 import {
   AlertDialog,
@@ -38,61 +26,31 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 
 import { BrowserPane } from "../browser/BrowserPane";
-import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { ChatPanel } from "../components/ChatPanel";
 import { TerminalPane } from "../terminal/TerminalPane";
-import { getTerminalEntryStatus, requestTerminalStop } from "../terminal/runner";
-import { useTerminalStatus } from "../terminal/useTerminalStatus";
-import { clearTerminalView, copyTerminalView } from "../terminal/view";
+import { getTerminalEntryStatus } from "../terminal/runner";
 import { ChildRunView } from "../children/ChildRunView";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { ChatTranscript } from "./ChatTranscript";
 import { EmptyLeafView } from "./EmptyLeafView";
 import { splitTerminal } from "./launch";
-import { SessionTab } from "./SessionTab";
+import { usePaneMaximizeStore } from "./maximize";
+import { PaneHeader } from "./PaneHeader";
 import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
 import {
+  findGroup,
+  findLeafGroup,
   MAX_PANES,
-  MAX_PANES_TITLE,
   type Leaf,
   type PaneNode,
   type SplitNode,
   type SplitZone,
   type TabsNode,
 } from "./operations";
-import {
-  PANE_MIME,
-  isPointerOutside,
-  resolveDropZone,
-  resolveTabIndex,
-  usePaneDragStore,
-  type DropZone,
-} from "./paneDrag";
+import { isPointerOutside, resolveDropZone, usePaneDragStore, type DropZone } from "./paneDrag";
 import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
 
 const MIN_PANE_SIZE = `${160}px`;
-const PANE_CHIP =
-  "flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-2 text-ui-2xs font-medium text-fg-muted";
-const PANE_ICON_BUTTON =
-  "flex size-6 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
-
-const STATUS_LABELS: Record<AgentStatus, string> = {
-  idle: "Idle",
-  running: "Running",
-  "waiting-approval": "Waiting",
-  done: "Done",
-  error: "Error",
-  cancelled: "Cancelled",
-};
-
-const STATUS_DOTS: Record<AgentStatus, string> = {
-  idle: "bg-fg-subtle",
-  running: "bg-linear-to-r from-brand-from to-brand-to animate-pulse",
-  "waiting-approval": "bg-status-warning",
-  done: "bg-status-success",
-  error: "bg-status-error",
-  cancelled: "bg-fg-subtle",
-};
 
 function PaneDropOverlay({ zone }: { zone: DropZone }) {
   const base = "pointer-events-none absolute z-20 border-2 border-primary bg-primary/10";
@@ -140,27 +98,17 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const splitDown = useAgentsPanesStore((state) => state.splitDown);
   const dockAsTab = useAgentsPanesStore((state) => state.dockAsTab);
   const splitToward = useAgentsPanesStore((state) => state.splitToward);
-  const modeActive = useAgentStore((state) => state.modeActive);
+  const maximized = usePaneMaximizeStore((state) => state.maximized[rootPath] === node.id);
+  const toggleMaximize = usePaneMaximizeStore((state) => state.toggle);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
-
-  const titleFor = useCallback(
-    (leaf: Leaf): string => {
-      if (leaf.browser) return "Browser";
-      if (!leaf.sessionId) return "Open a session";
-      const session = chatSessions.find((item) => item.id === leaf.sessionId);
-      return session?.title ?? "New thread";
-    },
-    [chatSessions],
-  );
+  const cliManifests = useAIStore((state) => state.cliManifests);
 
   const sourceLeafId = usePaneDragStore((state) => state.sourceLeafId);
   const dropTarget = usePaneDragStore((state) =>
     state.target?.groupId === node.id ? state.target : null,
   );
-  const beginDrag = usePaneDragStore((state) => state.begin);
-  const endDrag = usePaneDragStore((state) => state.end);
   const [pendingClose, setPendingClose] = useState<{
     leafIds: string[];
     confirm: CloseConfirm;
@@ -173,35 +121,10 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const activeSession = activeLeaf?.sessionId
     ? chatSessions.find((item) => item.id === activeLeaf.sessionId)
     : undefined;
-  const activeBranch = activeSession?.worktree?.branch ?? null;
-  const cliManifests = useAIStore((state) => state.cliManifests);
-  const terminalSession = activeSession?.kind === "terminal" ? activeSession : null;
-  const terminalStatus = useTerminalStatus(terminalSession?.id ?? null);
-  const terminalManifest = terminalSession?.cliProviderId
-    ? cliManifests.find((item) => item.id === terminalSession.cliProviderId)
-    : undefined;
-  const terminalLabel =
-    terminalStatus.status === "running"
-      ? "running"
-      : terminalStatus.status === "cancelled"
-        ? "cancelled"
-        : terminalStatus.exitCode !== null
-          ? `exited (${terminalStatus.exitCode})`
-          : "exited";
-
-  const handleTabsDragOver = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      const { sourceLeafId: source, setTarget } = usePaneDragStore.getState();
-      if (!source) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      const tabs = Array.from(
-        event.currentTarget.querySelectorAll<HTMLElement>("[data-session-tab]"),
-      );
-      setTarget({ groupId: node.id, kind: "tab", index: resolveTabIndex(tabs, event.clientX) });
-    },
-    [node.id],
-  );
+  const terminalManifest =
+    activeSession?.kind === "terminal" && activeSession.cliProviderId
+      ? cliManifests.find((item) => item.id === activeSession.cliProviderId)
+      : undefined;
 
   const handleContentDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -311,178 +234,30 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       data-pane-group={node.id}
       data-pane-status={status}
       data-pane-focused={focused ? "true" : undefined}
-      className="relative flex h-full min-h-0 flex-col overflow-hidden bg-bg-root"
+      data-pane-maximized={maximized ? "true" : undefined}
+      className={cn(
+        "flex min-h-0 flex-col overflow-hidden bg-bg-root",
+        maximized ? "absolute inset-0 z-30" : "relative h-full",
+      )}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div
-        className="@container/pane-header flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle px-1.5"
-        onDragOver={handleTabsDragOver}
-      >
-        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
-          {node.children.map((leaf, index) => {
-            const isActive = leaf.id === activeLeaf.id;
-            const title = titleFor(leaf);
-            return (
-              <SessionTab
-                key={leaf.id}
-                title={title}
-                isActive={isActive}
-                canCloseOthers={node.children.length > 1}
-                canCloseToRight={index < node.children.length - 1}
-                onSelect={() => selectTab(rootPath, node.id, leaf.id)}
-                onClose={() => requestClose([leaf.id])}
-                onCloseOthers={() =>
-                  requestClose(
-                    node.children.filter((child) => child.id !== leaf.id).map((child) => child.id),
-                  )
-                }
-                onCloseToRight={() =>
-                  requestClose(node.children.slice(index + 1).map((child) => child.id))
-                }
-                isDragging={leaf.id === sourceLeafId}
-                dropIndicator={
-                  dropTarget?.kind !== "tab"
-                    ? null
-                    : dropTarget.index === index
-                      ? "before"
-                      : dropTarget.index === node.children.length &&
-                          index === node.children.length - 1
-                        ? "after"
-                        : null
-                }
-                onDragStart={(event) => {
-                  event.dataTransfer.setData(PANE_MIME, leaf.id);
-                  event.dataTransfer.effectAllowed = "move";
-                  beginDrag(leaf.id);
-                }}
-                onDragEnd={endDrag}
-              />
-            );
-          })}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          {terminalSession ? (
-            <>
-              <span className={PANE_CHIP} title={terminalManifest?.name ?? "Terminal"}>
-                <TerminalWindow size={12} className="shrink-0" />
-                <span className="@max-[520px]/pane-header:hidden">
-                  {terminalManifest?.name ?? "Terminal"}
-                </span>
-              </span>
-              <span className={PANE_CHIP} data-terminal-status={terminalStatus.status}>
-                {terminalLabel}
-              </span>
-            </>
-          ) : activeLeaf.browser ? null : (
-            <>
-              {activeBranch && (
-                <span
-                  className={PANE_CHIP}
-                  title={
-                    activeSession?.worktree
-                      ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
-                      : activeBranch
-                  }
-                >
-                  <GitBranch size={12} className="shrink-0" />
-                  <span className="max-w-[140px] truncate @max-[560px]/pane-header:hidden">
-                    {activeBranch}
-                  </span>
-                </span>
-              )}
-              <span className={PANE_CHIP} title={`Mode: ${modeActive ? "Agent" : "Ask"}`}>
-                {modeActive ? (
-                  <Robot size={12} className="shrink-0" />
-                ) : (
-                  <ChatCircle size={12} className="shrink-0" />
-                )}
-                <span className="@max-[460px]/pane-header:hidden">
-                  {modeActive ? "Agent" : "Ask"}
-                </span>
-              </span>
-              <span
-                className={cn(PANE_CHIP, status === "running" && "text-primary")}
-                title={STATUS_LABELS[status]}
-              >
-                <span
-                  className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOTS[status])}
-                  aria-hidden="true"
-                />
-                <span className="@max-[380px]/pane-header:hidden">{STATUS_LABELS[status]}</span>
-              </span>
-            </>
-          )}
-
-          <div className="flex items-center gap-0.5 rounded-full border border-border-subtle p-0.5">
-            {terminalSession && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => requestTerminalStop(terminalSession.id)}
-                  disabled={terminalStatus.status !== "running"}
-                  aria-label="Stop"
-                  title="Stop"
-                  className={cn(PANE_ICON_BUTTON, "enabled:hover:text-status-error")}
-                >
-                  <Stop size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => copyTerminalView(terminalSession.id)}
-                  aria-label="Copy output"
-                  title="Copy output"
-                  className={PANE_ICON_BUTTON}
-                >
-                  <Copy size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => clearTerminalView(terminalSession.id)}
-                  aria-label="Clear terminal"
-                  title="Clear terminal"
-                  className={PANE_ICON_BUTTON}
-                >
-                  <Broom size={13} />
-                </button>
-              </>
-            )}
-            {activeSession && (
-              <OpenInBrowserButton session={activeSession} className={PANE_ICON_BUTTON} />
-            )}
-            <button
-              type="button"
-              onClick={() => handleSplit("horizontal")}
-              disabled={atCap}
-              aria-label="Split right"
-              title={atCap ? MAX_PANES_TITLE : `Split right${splitHint}`}
-              className={PANE_ICON_BUTTON}
-            >
-              <Columns size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSplit("vertical")}
-              disabled={atCap}
-              aria-label="Split down"
-              title={atCap ? MAX_PANES_TITLE : `Split down${splitHint}`}
-              className={PANE_ICON_BUTTON}
-            >
-              <Rows size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={() => requestClose([activeLeaf.id])}
-              aria-label="Close pane"
-              title="Close pane"
-              className={PANE_ICON_BUTTON}
-            >
-              <X size={13} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <PaneHeader
+        node={node}
+        activeLeaf={activeLeaf}
+        focused={focused}
+        status={status}
+        atCap={atCap}
+        maximized={maximized}
+        splitHint={splitHint}
+        onSelectTab={(leafId) => selectTab(rootPath, node.id, leafId)}
+        onRequestClose={requestClose}
+        onSplit={handleSplit}
+        onToggleMaximize={() => {
+          focusLeaf(rootPath, activeLeaf.id);
+          toggleMaximize(rootPath, node.id);
+        }}
+      />
 
       <div className="relative min-h-0 flex-1" onClick={() => focusLeaf(rootPath, activeLeaf.id)}>
         <LeafContent leaf={activeLeaf} focused={focusedLeafId === activeLeaf.id} />
@@ -523,14 +298,23 @@ function TabsView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
 function SplitView({ node, totalLeaves }: { node: SplitNode; totalLeaves: number }) {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const setSplitSizes = useAgentsPanesStore((state) => state.setSplitSizes);
+  const paneMaximized = usePaneMaximizeStore((state) => rootPath in state.maximized);
   const orientation = node.direction === "horizontal" ? "horizontal" : "vertical";
+  const childKey = node.children.map((child) => child.id).join("|");
+  // Panels re-register when defaultSize changes, so it only follows the store when children change.
+  const [initial, setInitial] = useState({ key: childKey, sizes: node.sizes });
+  if (initial.key !== childKey) setInitial({ key: childKey, sizes: node.sizes });
+  const defaultSizes = initial.key === childKey ? initial.sizes : node.sizes;
 
   return (
     <ResizablePanelGroup
       id={node.id}
       orientation={orientation}
       className="h-full w-full"
-      onLayoutChanged={(layout) => {
+      disabled={paneMaximized}
+      resizeTargetMinimumSize={{ fine: 12, coarse: 24 }}
+      onLayoutChanged={(layout, meta) => {
+        if (!meta.isUserInteraction) return;
         const sizes = node.children.map((child) => layout[child.id] ?? 100 / node.children.length);
         setSplitSizes(rootPath, node.id, sizes);
       }}
@@ -539,7 +323,7 @@ function SplitView({ node, totalLeaves }: { node: SplitNode; totalLeaves: number
         <ResizablePanel
           key={child.id}
           id={child.id}
-          defaultSize={`${node.sizes[index] ?? 100 / node.children.length}%`}
+          defaultSize={`${defaultSizes[index] ?? 100 / node.children.length}%`}
           minSize={MIN_PANE_SIZE}
         >
           <PaneNodeView node={child} totalLeaves={totalLeaves} />
@@ -560,12 +344,50 @@ function PaneNodeView({ node, totalLeaves }: { node: PaneNode; totalLeaves: numb
   return <TabsView node={node} totalLeaves={totalLeaves} />;
 }
 
+function isTextEntry(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target.closest("input, textarea, select, .xterm, [role='menu'], [role='dialog']") !== null
+  );
+}
+
 export function PaneTree() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
   const totalLeaves = useAgentsPanesStore((state) => selectLeafCount(state, rootPath));
+  const focusedLeafId = useAgentsPanesStore(
+    (state) => state.trees[rootPath]?.focusedLeafId ?? null,
+  );
+  const maximizedGroupId = usePaneMaximizeStore((state) => state.maximized[rootPath] ?? null);
+  const restore = usePaneMaximizeStore((state) => state.restore);
+
+  const focusedGroupId = focusedLeafId ? (findLeafGroup(root, focusedLeafId)?.id ?? null) : null;
+  const maximizedExists = maximizedGroupId !== null && findGroup(root, maximizedGroupId) !== null;
+
+  useEffect(() => {
+    if (!maximizedGroupId) return;
+    // A closed pane, a new pane or focus elsewhere brings the full layout back.
+    if (!maximizedExists || (focusedGroupId !== null && focusedGroupId !== maximizedGroupId)) {
+      restore(rootPath);
+    }
+  }, [focusedGroupId, maximizedExists, maximizedGroupId, restore, rootPath]);
+
+  useEffect(() => {
+    if (!maximizedGroupId) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || isTextEntry(event.target)) return;
+      restore(rootPath);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [maximizedGroupId, restore, rootPath]);
 
   if (!root) return null;
 
-  return <PaneNodeView node={root} totalLeaves={totalLeaves} />;
+  return (
+    <div data-pane-tree="" className="relative min-h-0 flex-1">
+      <PaneNodeView node={root} totalLeaves={totalLeaves} />
+    </div>
+  );
 }

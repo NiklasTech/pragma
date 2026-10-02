@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
@@ -58,8 +58,16 @@ export function AgentsWorkspace() {
     useAgentStore.getState().setModeActive(true);
   }, []);
 
+  // Sessions of the previous folder stay in the store until the new folder has loaded.
+  const [loadedRoot, setLoadedRoot] = useState<string | null>(null);
   useEffect(() => {
-    void loadSessions(rootPath);
+    let current = true;
+    void loadSessions(rootPath).then(() => {
+      if (current) setLoadedRoot(rootPath);
+    });
+    return () => {
+      current = false;
+    };
   }, [loadSessions, rootPath]);
 
   useEffect(() => {
@@ -77,9 +85,9 @@ export function AgentsWorkspace() {
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
 
   useEffect(() => {
-    if (sessionIds.length === 0) return;
+    if (sessionIds.length === 0 || loadedRoot !== rootPath) return;
     syncSessions(rootPath, sessionIds);
-  }, [rootPath, sessionIds, syncSessions]);
+  }, [loadedRoot, rootPath, sessionIds, syncSessions]);
 
   useEffect(() => {
     if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;
