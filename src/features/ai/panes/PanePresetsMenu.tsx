@@ -26,7 +26,6 @@ export function PanePresetsMenu() {
   const hasPanes = useAgentsPanesStore((state) => selectRoot(state, rootPath) !== null);
   const atCap = useAgentsPanesStore((state) => selectLeafCount(state, rootPath) >= MAX_PANES);
   const applyPreset = useAgentsPanesStore((state) => state.applyPreset);
-  const arrange = useAgentsPanesStore((state) => state.arrange);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
   const [launchOpen, setLaunchOpen] = useState(false);
@@ -52,15 +51,6 @@ export function PanePresetsMenu() {
           </DropdownMenuItem>
           {hasPanes && (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Arrange open panes</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => arrange(rootPath, "grid")}>Grid</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => arrange(rootPath, "columns")}>
-                  Columns
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => arrange(rootPath, "rows")}>Rows</DropdownMenuItem>
-              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Recent threads</DropdownMenuLabel>

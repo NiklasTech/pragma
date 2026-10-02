@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback } from "react";
+import { useState } from "react";
 import {
   ArrowsInSimple,
   ArrowsOutSimple,
+  Browser,
   ChatCircle,
-  Columns,
   DotsThree,
   GitBranch,
+  PencilSimple,
+  Plus,
   Robot,
-  Rows,
   X,
 } from "@phosphor-icons/react";
 
@@ -17,26 +18,27 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
-import { useAgentStore, type AgentStatus } from "@/features/agent/store";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import type { AgentStatus } from "@/features/agent/store";
 
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { ComposerMicButton } from "../components/ComposerMicButton";
 import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
-import { MAX_PANES_TITLE, type Leaf, type SplitNode, type TabsNode } from "./operations";
-import { PANE_MIME, resolveTabIndex, usePaneDragStore } from "./paneDrag";
+import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
+import { MAX_PANES_TITLE, type Leaf } from "./operations";
+import { usePaneHeaderDrag } from "./paneDrag";
 import { ProviderLogo } from "./ProviderLogo";
-import { SessionTab } from "./SessionTab";
 
-const PANE_CHIP =
-  "flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-2 text-ui-2xs font-medium text-fg-muted";
 const PANE_ICON_BUTTON =
-  "flex size-6 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
+  "flex size-6 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
 
 const STATUS_LABELS: Record<AgentStatus, string> = {
   idle: "Idle",
@@ -56,42 +58,69 @@ const STATUS_DOTS: Record<AgentStatus, string> = {
   cancelled: "bg-fg-subtle",
 };
 
-interface TabPresentation {
+interface PaneIdentity {
   title: string;
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
   showTitle: boolean;
 }
 
-function presentTab(
+function identify(
   leaf: Leaf,
   session: ChatSession | undefined,
-  manifests: CLIManifest[],
-): TabPresentation {
-  if (leaf.browser) return { title: "Browser", showTitle: true };
-  if (!leaf.sessionId) return { title: "Open a session", showTitle: true };
-  if (session?.kind !== "terminal")
-    return { title: session?.title ?? "New thread", showTitle: true };
+  manifest: CLIManifest | undefined,
+): PaneIdentity {
+  if (leaf.browser) {
+    return { title: "Browser", icon: <Browser size={14} className="shrink-0" />, showTitle: true };
+  }
+  if (!session) return { title: "Empty pane", icon: null, showTitle: true };
 
-  const manifest = manifests.find((item) => item.id === session.cliProviderId);
-  const name = manifest?.name ?? "Terminal";
-  const named = !isGeneratedTerminalTitle(session.title, name);
-  return {
-    title: named ? session.title : name,
-    icon: <ProviderLogo providerId={session.cliProviderId} name={name} size={14} />,
-    showTitle: named,
-  };
+  const logo = session.cliProviderId ? (
+    <ProviderLogo
+      providerId={session.cliProviderId}
+      name={manifest?.name ?? "Terminal"}
+      size={14}
+      className="text-fg-muted"
+    />
+  ) : null;
+
+  if (session.kind === "terminal") {
+    const name = manifest?.name ?? "Terminal";
+    const named = !isGeneratedTerminalTitle(session.title, name);
+    return { title: named ? session.title : name, icon: logo, showTitle: named };
+  }
+
+  const icon =
+    logo ??
+    (session.kind === "ask" ? (
+      <ChatCircle size={14} className="shrink-0 text-fg-muted" />
+    ) : (
+      <Robot size={14} className="shrink-0 text-fg-muted" />
+    ));
+  return { title: session.title, icon, showTitle: true };
 }
 
-function TerminalStatusChip({ sessionId }: { sessionId: string }) {
+function startLike(
+  session: ChatSession,
+  manifest: CLIManifest | undefined,
+  actions: NewSessionActions,
+): void {
+  if (session.kind === "terminal" && manifest) void actions.startTerminal(manifest);
+  else if (session.agentEngine?.kind === "cli" && manifest)
+    void actions.startConversation(manifest);
+  else if (session.kind === "ask") void actions.startAsk();
+  else void actions.startAgentCheckout();
+}
+
+function TerminalStatusDot({ sessionId }: { sessionId: string }) {
   const { status, exitCode } = useTerminalStatus(sessionId);
   const label =
     status === "running"
-      ? "running"
+      ? "Running"
       : status === "cancelled"
-        ? "cancelled"
+        ? "Cancelled"
         : exitCode !== null
-          ? `exited (${exitCode})`
-          : "exited";
+          ? `Exited (${exitCode})`
+          : "Exited";
   const dot =
     status === "running"
       ? "bg-status-success"
@@ -100,10 +129,13 @@ function TerminalStatusChip({ sessionId }: { sessionId: string }) {
         : "bg-fg-subtle";
 
   return (
-    <span className={PANE_CHIP} title={label} data-terminal-status={status}>
-      <span className={cn("size-1.5 shrink-0 rounded-full", dot)} aria-hidden="true" />
-      <span className="@max-[380px]/pane-header:hidden">{label}</span>
-    </span>
+    <span
+      className={cn("size-1.5 shrink-0 rounded-full", dot)}
+      title={label}
+      role="img"
+      aria-label={label}
+      data-terminal-status={status}
+    />
   );
 }
 
@@ -121,240 +153,168 @@ function TerminalMic({ sessionId }: { sessionId: string }) {
 }
 
 interface PaneHeaderProps {
-  node: TabsNode;
-  activeLeaf: Leaf;
+  leaf: Leaf;
   focused: boolean;
   status: AgentStatus;
   atCap: boolean;
   maximized: boolean;
-  splitHint: string;
-  onSelectTab: (leafId: string) => void;
-  onRequestClose: (leafIds: string[]) => void;
-  onSplit: (direction: SplitNode["direction"]) => void;
+  hasOtherPanes: boolean;
+  onClose: () => void;
+  onCloseOthers: () => void;
   onToggleMaximize: () => void;
+  onDropOn: (targetLeafId: string) => void;
 }
 
 export function PaneHeader({
-  node,
-  activeLeaf,
+  leaf,
   focused,
   status,
   atCap,
   maximized,
-  splitHint,
-  onSelectTab,
-  onRequestClose,
-  onSplit,
+  hasOtherPanes,
+  onClose,
+  onCloseOthers,
   onToggleMaximize,
+  onDropOn,
 }: PaneHeaderProps) {
-  const chatSessions = useAIStore((state) => state.chatSessions);
-  const cliManifests = useAIStore((state) => state.cliManifests);
-  const modeActive = useAgentStore((state) => state.modeActive);
-  const sourceLeafId = usePaneDragStore((state) => state.sourceLeafId);
-  const dropTarget = usePaneDragStore((state) =>
-    state.target?.groupId === node.id ? state.target : null,
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const session = useAIStore((state) =>
+    leaf.sessionId ? state.chatSessions.find((item) => item.id === leaf.sessionId) : undefined,
   );
-  const beginDrag = usePaneDragStore((state) => state.begin);
-  const endDrag = usePaneDragStore((state) => state.end);
+  const manifest = useAIStore((state) =>
+    session?.cliProviderId
+      ? state.cliManifests.find((item) => item.id === session.cliProviderId)
+      : undefined,
+  );
+  const renameChatSession = useAIStore((state) => state.renameChatSession);
+  const actions = useNewSessionActions(rootPath);
+  const drag = usePaneHeaderDrag(leaf.id, onDropOn);
+  const [renaming, setRenaming] = useState(false);
 
-  const activeSession = activeLeaf.sessionId
-    ? chatSessions.find((item) => item.id === activeLeaf.sessionId)
-    : undefined;
-  const activeBranch = activeSession?.worktree?.branch ?? null;
-  const terminalSession = activeSession?.kind === "terminal" ? activeSession : null;
+  const identity = identify(leaf, session, manifest);
+  const terminal = session?.kind === "terminal" ? session : null;
+  const branch = session?.worktree?.branch ?? null;
   const maximizeLabel = maximized ? "Restore" : "Maximize";
-  const splitRightTitle = atCap ? MAX_PANES_TITLE : `Split right${splitHint}`;
-  const splitDownTitle = atCap ? MAX_PANES_TITLE : `Split down${splitHint}`;
-
-  const handleTabsDragOver = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      const { sourceLeafId: source, setTarget } = usePaneDragStore.getState();
-      if (!source) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      const tabs = Array.from(
-        event.currentTarget.querySelectorAll<HTMLElement>("[data-session-tab]"),
-      );
-      setTarget({ groupId: node.id, kind: "tab", index: resolveTabIndex(tabs, event.clientX) });
-    },
-    [node.id],
-  );
+  const newLabel = terminal && manifest ? `New ${manifest.name}` : "New session";
+  const canStartLike = session !== undefined && rootPath !== null;
 
   return (
-    <div
-      className="@container/pane-header flex h-tab shrink-0 items-center gap-2 border-b border-border-subtle px-1.5"
-      onDragOver={handleTabsDragOver}
-      onDoubleClick={(event) => {
-        if (event.target instanceof Element && event.target.closest("[data-pane-actions]")) return;
-        onToggleMaximize();
-      }}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
-        {node.children.map((leaf, index) => {
-          const session = leaf.sessionId
-            ? chatSessions.find((item) => item.id === leaf.sessionId)
-            : undefined;
-          const tab = presentTab(leaf, session, cliManifests);
-          return (
-            <SessionTab
-              key={leaf.id}
-              title={tab.title}
-              icon={tab.icon}
-              showTitle={tab.showTitle}
-              isActive={leaf.id === activeLeaf.id}
-              canCloseOthers={node.children.length > 1}
-              canCloseToRight={index < node.children.length - 1}
-              onSelect={() => onSelectTab(leaf.id)}
-              onClose={() => onRequestClose([leaf.id])}
-              onCloseOthers={() =>
-                onRequestClose(
-                  node.children.filter((child) => child.id !== leaf.id).map((child) => child.id),
-                )
-              }
-              onCloseToRight={() =>
-                onRequestClose(node.children.slice(index + 1).map((child) => child.id))
-              }
-              isDragging={leaf.id === sourceLeafId}
-              dropIndicator={
-                dropTarget?.kind !== "tab"
-                  ? null
-                  : dropTarget.index === index
-                    ? "before"
-                    : dropTarget.index === node.children.length &&
-                        index === node.children.length - 1
-                      ? "after"
-                      : null
-              }
-              onDragStart={(event) => {
-                event.dataTransfer.setData(PANE_MIME, leaf.id);
-                event.dataTransfer.effectAllowed = "move";
-                beginDrag(leaf.id);
-              }}
-              onDragEnd={endDrag}
-            />
-          );
-        })}
-      </div>
-
-      <div className="flex shrink-0 items-center gap-1.5" data-pane-actions="">
-        {terminalSession ? (
-          <TerminalStatusChip sessionId={terminalSession.id} />
-        ) : activeLeaf.browser ? null : (
-          <>
-            {activeBranch && (
-              <span
-                className={PANE_CHIP}
-                title={
-                  activeSession?.worktree
-                    ? `${activeSession.worktree.branch} ${activeSession.worktree.path}`
-                    : activeBranch
-                }
-              >
-                <GitBranch size={12} className="shrink-0" />
-                <span className="max-w-[140px] truncate @max-[560px]/pane-header:hidden">
-                  {activeBranch}
-                </span>
-              </span>
-            )}
-            <span className={PANE_CHIP} title={`Mode: ${modeActive ? "Agent" : "Ask"}`}>
-              {modeActive ? (
-                <Robot size={12} className="shrink-0" />
-              ) : (
-                <ChatCircle size={12} className="shrink-0" />
-              )}
-              <span className="@max-[460px]/pane-header:hidden">
-                {modeActive ? "Agent" : "Ask"}
-              </span>
+    <>
+      <div
+        className="@container/pane-header flex h-8 shrink-0 cursor-grab touch-none items-center gap-1.5 border-b border-border-subtle pr-1 pl-2.5 select-none active:cursor-grabbing"
+        onDoubleClick={(event) => {
+          const target = event.target;
+          if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
+          if (target.closest("[data-pane-actions]")) return;
+          onToggleMaximize();
+        }}
+        {...drag}
+      >
+        {terminal ? (
+          <TerminalStatusDot sessionId={terminal.id} />
+        ) : (
+          <span
+            className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOTS[status])}
+            title={STATUS_LABELS[status]}
+            role="img"
+            aria-label={STATUS_LABELS[status]}
+          />
+        )}
+        <span
+          className="flex min-w-0 items-center gap-1.5"
+          title={identity.title}
+          aria-label={identity.showTitle ? undefined : identity.title}
+        >
+          {identity.icon}
+          {identity.showTitle && (
+            <span className="truncate text-ui-xs font-semibold text-fg-default">
+              {identity.title}
             </span>
-            <span
-              className={cn(PANE_CHIP, status === "running" && "text-primary")}
-              title={STATUS_LABELS[status]}
-            >
-              <span
-                className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOTS[status])}
-                aria-hidden="true"
-              />
-              <span className="@max-[380px]/pane-header:hidden">{STATUS_LABELS[status]}</span>
-            </span>
-          </>
+          )}
+        </span>
+        {branch && (
+          <span
+            className="flex min-w-0 shrink items-center gap-1 text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"
+            title={session?.worktree ? `${branch} ${session.worktree.path}` : branch}
+          >
+            <GitBranch size={11} className="shrink-0" />
+            <span className="truncate">{branch}</span>
+          </span>
         )}
 
-        {terminalSession && focused && <TerminalMic sessionId={terminalSession.id} />}
+        <span className="flex-1" />
 
-        <div className="flex items-center gap-0.5 rounded-full border border-border-subtle p-0.5">
-          {activeSession && (
-            <OpenInBrowserButton session={activeSession} className={PANE_ICON_BUTTON} />
-          )}
-          <div className="flex items-center gap-0.5 @max-[340px]/pane-header:hidden">
-            <button
-              type="button"
-              onClick={onToggleMaximize}
-              aria-label={maximizeLabel}
-              title={maximizeLabel}
-              className={PANE_ICON_BUTTON}
-            >
-              {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => onSplit("horizontal")}
-              disabled={atCap}
-              aria-label="Split right"
-              title={splitRightTitle}
-              className={PANE_ICON_BUTTON}
-            >
-              <Columns size={13} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onSplit("vertical")}
-              disabled={atCap}
-              aria-label="Split down"
-              title={splitDownTitle}
-              className={PANE_ICON_BUTTON}
-            >
-              <Rows size={13} />
-            </button>
-          </div>
+        <div className="flex shrink-0 items-center gap-0.5" data-pane-actions="">
+          {terminal && focused && <TerminalMic sessionId={terminal.id} />}
+          {session && <OpenInBrowserButton session={session} className={PANE_ICON_BUTTON} />}
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
                 <button
                   type="button"
-                  aria-label="More pane actions"
-                  title="More pane actions"
-                  className={cn(PANE_ICON_BUTTON, "hidden @max-[340px]/pane-header:flex")}
+                  aria-label="Pane actions"
+                  title="Pane actions"
+                  className={PANE_ICON_BUTTON}
                 >
-                  <DotsThree size={13} weight="bold" />
+                  <DotsThree size={14} weight="bold" />
                 </button>
               }
             />
-            <DropdownMenuContent align="end" className="min-w-[160px]">
+            <DropdownMenuContent align="end" className="min-w-[180px]">
+              {session && (
+                <DropdownMenuItem onClick={() => setRenaming(true)}>
+                  <PencilSimple size={13} />
+                  <span>Rename</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={onToggleMaximize}>
                 {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
                 <span>{maximizeLabel}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onSplit("horizontal")}
-                disabled={atCap}
-                title={splitRightTitle}
-              >
-                <Columns size={13} />
-                <span>Split right</span>
+              {canStartLike && (
+                <DropdownMenuItem
+                  disabled={atCap}
+                  title={atCap ? MAX_PANES_TITLE : undefined}
+                  onClick={() => startLike(session, manifest, actions)}
+                >
+                  <Plus size={13} />
+                  <span>{newLabel}</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled={!hasOtherPanes} onClick={onCloseOthers}>
+                <span>Close other panes</span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onSplit("vertical")}
-                disabled={atCap}
-                title={splitDownTitle}
-              >
-                <Rows size={13} />
-                <span>Split down</span>
+              <DropdownMenuItem onClick={onClose}>
+                <X size={13} />
+                <span>Close pane</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <button
             type="button"
-            onClick={() => onRequestClose([activeLeaf.id])}
+            onClick={onToggleMaximize}
+            aria-label={maximizeLabel}
+            title={maximizeLabel}
+            className={cn(PANE_ICON_BUTTON, "@max-[240px]/pane-header:hidden")}
+          >
+            {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
+          </button>
+          {canStartLike && (
+            <button
+              type="button"
+              onClick={() => startLike(session, manifest, actions)}
+              disabled={atCap}
+              aria-label={newLabel}
+              title={atCap ? MAX_PANES_TITLE : newLabel}
+              className={cn(PANE_ICON_BUTTON, "@max-[240px]/pane-header:hidden")}
+            >
+              <Plus size={13} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
             aria-label="Close pane"
             title="Close pane"
             className={PANE_ICON_BUTTON}
@@ -363,6 +323,18 @@ export function PaneHeader({
           </button>
         </div>
       </div>
-    </div>
+
+      {session && rootPath && (
+        <InputDialog
+          open={renaming}
+          onOpenChange={setRenaming}
+          title="Rename session"
+          label="Name"
+          defaultValue={identity.showTitle ? session.title : ""}
+          confirmLabel="Rename"
+          onConfirm={(value) => void renameChatSession(rootPath, session.id, value)}
+        />
+      )}
+    </>
   );
 }

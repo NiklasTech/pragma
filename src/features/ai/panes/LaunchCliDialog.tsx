@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Columns, GridFour, Rows } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
@@ -21,12 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useAIStore } from "@/shared/stores/ai";
 
 import { buildSessionMenuCliRows } from "../threads/session-menu";
 import { launchTerminals } from "./launch";
-import type { PaneArrangement } from "./layout";
 import { MAX_PANES } from "./operations";
 
 const COUNTS = Array.from({ length: MAX_PANES }, (_, index) => index + 1);
@@ -44,7 +41,6 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
   const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
   const [manifestId, setManifestId] = useState<string | null>(null);
   const [count, setCount] = useState(4);
-  const [arrangement, setArrangement] = useState<PaneArrangement>("grid");
   const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
@@ -63,7 +59,7 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
     if (!selected || launching) return;
     setLaunching(true);
     try {
-      await launchTerminals(rootPath, selected, count, arrangement);
+      await launchTerminals(rootPath, selected, count);
       onOpenChange(false);
     } catch {
       toast.error(`Could not start ${selected.name}`);
@@ -121,29 +117,6 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
                 </Button>
               ))}
             </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label>Arrangement</Label>
-            <Tabs
-              value={arrangement}
-              onValueChange={(value: PaneArrangement) => setArrangement(value)}
-            >
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="grid">
-                  <GridFour size={13} />
-                  Grid
-                </TabsTrigger>
-                <TabsTrigger value="columns">
-                  <Columns size={13} />
-                  Columns
-                </TabsTrigger>
-                <TabsTrigger value="rows">
-                  <Rows size={13} />
-                  Rows
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
         </div>
 

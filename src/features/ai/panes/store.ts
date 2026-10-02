@@ -3,33 +3,24 @@ import { persist } from "zustand/middleware";
 
 import { useBrowserHistoryStore } from "../browser/history";
 import {
-  addLeafRight,
   assignLeafSession,
-  closeLeaf as closeLeafOp,
   countLeaves,
   createLeaf,
-  dockAsTab as dockAsTabOp,
-  dropMissingSessions,
   findLeaf,
+  findLeafBySession,
   firstLeaf,
-  focusLeaf as focusLeafOp,
-  focusPreset,
-  gridPreset,
-  pairPreset,
-  setActiveTab as setActiveTabOp,
-  splitFocused,
-  splitToward as splitTowardOp,
+  MAX_PANES,
   updateSplitSizes,
   type Leaf,
   type PaneRoot,
-  type SplitZone,
 } from "./operations";
-import { arrangeLeaves, buildLayout, type PaneArrangement } from "./layout";
-import { measurePaneAspect, openSession as openSessionOp } from "./placement";
+import { autoLayout, collectLeaves, swapLeaves } from "./layout";
 
 export const AGENTS_PANES_STORAGE_KEY = "pragma.agents.panes.v1";
 
 export type PanePreset = "focus" | "pair" | "grid";
+
+const PRESET_SIZES: Record<PanePreset, number> = { focus: 1, pair: 2, grid: 4 };
 
 export interface PaneTreeEntry {
   root: PaneRoot;
@@ -42,31 +33,10 @@ interface AgentsPanesState {
   openSession: (rootPath: string, sessionId: string) => void;
   assignSession: (rootPath: string, leafId: string, sessionId: string) => void;
   focusLeaf: (rootPath: string, leafId: string) => void;
-  splitRight: (rootPath: string) => void;
-  splitDown: (rootPath: string) => void;
-  splitWithSession: (
-    rootPath: string,
-    leafId: string,
-    direction: "horizontal" | "vertical",
-    sessionId: string,
-  ) => void;
-  arrange: (rootPath: string, arrangement: PaneArrangement) => void;
-  replaceLayout: (rootPath: string, sessionIds: string[], arrangement: PaneArrangement) => void;
+  replaceLayout: (rootPath: string, sessionIds: string[]) => void;
   closeLeaf: (rootPath: string, leafId: string) => void;
-  addPaneRight: (rootPath: string, leaf: Leaf, focus: boolean) => void;
-  selectTab: (rootPath: string, groupId: string, leafId: string) => void;
-  dockAsTab: (
-    rootPath: string,
-    sourceLeafId: string,
-    targetGroupId: string,
-    index?: number,
-  ) => void;
-  splitToward: (
-    rootPath: string,
-    sourceLeafId: string,
-    targetGroupId: string,
-    zone: SplitZone,
-  ) => void;
+  addPane: (rootPath: string, leaf: Leaf, focus: boolean) => void;
+  swapPanes: (rootPath: string, sourceLeafId: string, targetLeafId: string) => void;
   applyPreset: (rootPath: string, preset: PanePreset, sessionIds: string[]) => void;
   syncSessions: (rootPath: string, sessionIds: string[]) => void;
   setSplitSizes: (rootPath: string, splitId: string, sizes: number[]) => void;
@@ -105,16 +75,16 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
       openSession: (rootPath, sessionId) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const result = openSessionOp(
-            entry.root,
-            entry.focusedLeafId,
-            sessionId,
-            measurePaneAspect(),
-          );
+          const existing = findLeafBySession(entry.root, sessionId);
+          if (!existing && countLeaves(entry.root) >= MAX_PANES) return {};
+
+          const leaf = existing ?? createLeaf(sessionId);
           return {
             trees: setEntry(state.trees, rootPath, {
-              root: result.root,
-              focusedLeafId: result.focusedLeafId,
+              root: existing
+                ? entry.root
+                : autoLayout([...collectLeaves(entry.root), leaf], entry.root),
+              focusedLeafId: leaf.id,
               focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
             }),
           };
@@ -138,86 +108,20 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
           const leaf = findLeaf(entry.root, leafId);
-          const root = focusLeafOp(entry.root, leafId);
-          const focusOrder = leaf?.sessionId
+          if (!leaf) return {};
+          const focusOrder = leaf.sessionId
             ? promoteFocusOrder(entry.focusOrder, leaf.sessionId)
             : entry.focusOrder;
-          if (
-            root === entry.root &&
-            leafId === entry.focusedLeafId &&
-            focusOrder === entry.focusOrder
-          ) {
-            return {};
-          }
+          if (leafId === entry.focusedLeafId && focusOrder === entry.focusOrder) return {};
           return {
-            trees: setEntry(state.trees, rootPath, {
-              root,
-              focusedLeafId: leafId,
-              focusOrder,
-            }),
+            trees: setEntry(state.trees, rootPath, { ...entry, focusedLeafId: leafId, focusOrder }),
           };
         }),
 
-      splitRight: (rootPath) =>
+      replaceLayout: (rootPath, sessionIds) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const result = splitFocused(entry.root, entry.focusedLeafId, "horizontal");
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root: result.root,
-              focusedLeafId: result.focusedLeafId,
-            }),
-          };
-        }),
-
-      splitDown: (rootPath) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const result = splitFocused(entry.root, entry.focusedLeafId, "vertical");
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root: result.root,
-              focusedLeafId: result.focusedLeafId,
-            }),
-          };
-        }),
-
-      splitWithSession: (rootPath, leafId, direction, sessionId) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const leaf = createLeaf(sessionId);
-          const result = splitFocused(entry.root, leafId, direction, leaf);
-          if (result.root === entry.root) return {};
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              root: result.root,
-              focusedLeafId: leaf.id,
-              focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
-            }),
-          };
-        }),
-
-      arrange: (rootPath, arrangement) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          if (!entry.root) return {};
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root: arrangeLeaves(entry.root, arrangement),
-            }),
-          };
-        }),
-
-      replaceLayout: (rootPath, sessionIds, arrangement) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const root = buildLayout(
-            sessionIds.map((sessionId) => createLeaf(sessionId)),
-            arrangement,
-          );
+          const root = autoLayout(sessionIds.map((sessionId) => createLeaf(sessionId)));
           return {
             trees: setEntry(state.trees, rootPath, {
               root,
@@ -233,81 +137,46 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
       closeLeaf: (rootPath, leafId) => {
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const result = closeLeafOp(entry.root, entry.focusedLeafId, leafId);
+          const leaves = collectLeaves(entry.root);
+          const index = leaves.findIndex((leaf) => leaf.id === leafId);
+          if (index === -1) return {};
+
+          const remaining = leaves.filter((leaf) => leaf.id !== leafId);
+          const focusedLeafId =
+            entry.focusedLeafId === leafId
+              ? (remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
+              : entry.focusedLeafId;
           return {
             trees: setEntry(state.trees, rootPath, {
               ...entry,
-              root: result.root,
-              focusedLeafId: result.focusedLeafId,
+              root: autoLayout(remaining, entry.root),
+              focusedLeafId,
             }),
           };
         });
         useBrowserHistoryStore.getState().drop(leafId);
       },
 
-      addPaneRight: (rootPath, leaf, focus) =>
+      addPane: (rootPath, leaf, focus) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = addLeafRight(entry.root, entry.focusedLeafId, leaf);
-          if (root === entry.root) return {};
+          if (countLeaves(entry.root) >= MAX_PANES) return {};
           return {
             trees: setEntry(state.trees, rootPath, {
               ...entry,
-              root,
+              root: autoLayout([...collectLeaves(entry.root), leaf], entry.root),
               focusedLeafId: focus || !entry.focusedLeafId ? leaf.id : entry.focusedLeafId,
             }),
           };
         }),
 
-      selectTab: (rootPath, groupId, leafId) =>
+      swapPanes: (rootPath, sourceLeafId, targetLeafId) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = setActiveTabOp(entry.root, groupId, leafId);
-          const leaf = findLeaf(root, leafId);
-          const focusOrder = leaf?.sessionId
-            ? promoteFocusOrder(entry.focusOrder, leaf.sessionId)
-            : entry.focusOrder;
-          if (
-            root === entry.root &&
-            leafId === entry.focusedLeafId &&
-            focusOrder === entry.focusOrder
-          ) {
-            return {};
-          }
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              root,
-              focusedLeafId: leafId,
-              focusOrder,
-            }),
-          };
-        }),
-
-      dockAsTab: (rootPath, sourceLeafId, targetGroupId, index) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const root = dockAsTabOp(entry.root, sourceLeafId, targetGroupId, index);
+          const root = swapLeaves(entry.root, sourceLeafId, targetLeafId);
           if (root === entry.root) return {};
           return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root,
-              focusedLeafId: sourceLeafId,
-            }),
-          };
-        }),
-
-      splitToward: (rootPath, sourceLeafId, targetGroupId, zone) =>
-        set((state) => {
-          const entry = getEntry(state.trees, rootPath);
-          const root = splitTowardOp(entry.root, sourceLeafId, targetGroupId, zone);
-          if (root === entry.root) return {};
-          return {
-            trees: setEntry(state.trees, rootPath, {
-              ...entry,
-              root,
-              focusedLeafId: sourceLeafId,
-            }),
+            trees: setEntry(state.trees, rootPath, { ...entry, root, focusedLeafId: sourceLeafId }),
           };
         }),
 
@@ -315,12 +184,10 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
           const ordered = orderedSessions(entry.focusOrder, sessionIds);
-          const root =
-            preset === "focus"
-              ? focusPreset(ordered)
-              : preset === "pair"
-                ? pairPreset(ordered)
-                : gridPreset(ordered);
+          const leaves = Array.from({ length: PRESET_SIZES[preset] }, (_, index) =>
+            createLeaf(ordered[index] ?? null),
+          );
+          const root = autoLayout(leaves);
           return {
             trees: setEntry(state.trees, rootPath, {
               root,
@@ -333,21 +200,20 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
       syncSessions: (rootPath, sessionIds) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const root = dropMissingSessions(entry.root, sessionIds);
+          const leaves = collectLeaves(entry.root);
+          const kept = leaves.filter(
+            (leaf) => leaf.sessionId === null || sessionIds.includes(leaf.sessionId),
+          );
           const focusOrder = entry.focusOrder.filter((id) => sessionIds.includes(id));
+          if (kept.length === leaves.length && focusOrder.length === entry.focusOrder.length) {
+            return {};
+          }
+
+          const root = kept.length === leaves.length ? entry.root : autoLayout(kept, entry.root);
           const focusedLeafId =
             entry.focusedLeafId && findLeaf(root, entry.focusedLeafId)
               ? entry.focusedLeafId
               : (firstLeaf(root)?.id ?? null);
-
-          if (
-            root === entry.root &&
-            focusedLeafId === entry.focusedLeafId &&
-            focusOrder.length === entry.focusOrder.length
-          ) {
-            return {};
-          }
-
           return {
             trees: setEntry(state.trees, rootPath, { root, focusedLeafId, focusOrder }),
           };
@@ -365,7 +231,17 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
     }),
     {
       name: AGENTS_PANES_STORAGE_KEY,
+      version: 1,
       partialize: (state) => ({ trees: state.trees }),
+      // Version 0 stored free splits and tab groups; every pane now sits in the automatic grid.
+      migrate: (persisted) => {
+        const trees = (persisted as { trees?: Record<string, PaneTreeEntry> } | null)?.trees ?? {};
+        const migrated: Record<string, PaneTreeEntry> = {};
+        for (const [rootPath, entry] of Object.entries(trees)) {
+          migrated[rootPath] = { ...entry, root: autoLayout(collectLeaves(entry.root)) };
+        }
+        return { trees: migrated };
+      },
     },
   ),
 );

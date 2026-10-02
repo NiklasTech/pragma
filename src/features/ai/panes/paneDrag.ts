@@ -1,63 +1,82 @@
+import { useCallback, useRef } from "react";
 import { create } from "zustand";
 
-import type { SplitZone } from "./operations";
-
-export const PANE_MIME = "application/x-pragma-pane";
-
-export type DropZone = SplitZone | "center";
-
-export type PaneDropTarget =
-  | { groupId: string; kind: "zone"; zone: DropZone }
-  | { groupId: string; kind: "tab"; index: number };
+/// Pointer travel before a press on a pane header becomes a drag.
+const DRAG_THRESHOLD_PX = 5;
 
 interface PaneDragState {
   sourceLeafId: string | null;
-  target: PaneDropTarget | null;
+  targetLeafId: string | null;
   begin: (leafId: string) => void;
-  setTarget: (target: PaneDropTarget | null) => void;
+  setTarget: (leafId: string | null) => void;
   end: () => void;
-}
-
-function sameTarget(a: PaneDropTarget | null, b: PaneDropTarget | null): boolean {
-  if (a === null || b === null) return a === b;
-  if (a.groupId !== b.groupId) return false;
-  if (a.kind === "zone" && b.kind === "zone") return a.zone === b.zone;
-  if (a.kind === "tab" && b.kind === "tab") return a.index === b.index;
-  return false;
 }
 
 export const usePaneDragStore = create<PaneDragState>((set, get) => ({
   sourceLeafId: null,
-  target: null,
-  begin: (leafId) => set({ sourceLeafId: leafId, target: null }),
-  setTarget: (target) => {
-    if (!sameTarget(get().target, target)) set({ target });
+  targetLeafId: null,
+  begin: (leafId) => set({ sourceLeafId: leafId, targetLeafId: null }),
+  setTarget: (leafId) => {
+    if (get().targetLeafId !== leafId) set({ targetLeafId: leafId });
   },
-  end: () => set({ sourceLeafId: null, target: null }),
+  end: () => set({ sourceLeafId: null, targetLeafId: null }),
 }));
 
-export function resolveDropZone(rect: DOMRect, clientX: number, clientY: number): DropZone {
-  const x = (clientX - rect.left) / rect.width;
-  const y = (clientY - rect.top) / rect.height;
-  if (x < 0.25) return "left";
-  if (x > 0.75) return "right";
-  if (y < 0.25) return "top";
-  if (y > 0.75) return "bottom";
-  return "center";
+/// The pane leaf under the pointer, read from the `data-pane-leaf` attribute of its card.
+export function paneLeafAt(clientX: number, clientY: number): string | null {
+  const element = document.elementFromPoint(clientX, clientY);
+  return element?.closest<HTMLElement>("[data-pane-leaf]")?.dataset.paneLeaf ?? null;
 }
 
-/// Index of the first tab whose horizontal midpoint lies right of the pointer.
-export function resolveTabIndex(tabs: HTMLElement[], clientX: number): number {
-  const index = tabs.findIndex((tab) => {
-    const rect = tab.getBoundingClientRect();
-    return clientX < rect.left + rect.width / 2;
-  });
-  return index === -1 ? tabs.length : index;
-}
+/// Pointer handlers that drag a pane by its header and drop it onto another pane.
+export function usePaneHeaderDrag(leafId: string, onDrop: (targetLeafId: string) => void) {
+  const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
 
-export function isPointerOutside(element: HTMLElement, clientX: number, clientY: number): boolean {
-  const rect = element.getBoundingClientRect();
-  return (
-    clientX <= rect.left || clientX >= rect.right || clientY <= rect.top || clientY >= rect.bottom
+  const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    // Portaled menus and dialogs bubble through React but sit outside the header in the DOM.
+    if (event.button !== 0 || !(event.target instanceof Element)) return;
+    if (!event.currentTarget.contains(event.target)) return;
+    if (event.target.closest("button, [data-pane-actions]")) return;
+    startRef.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+    // Capture keeps the moves coming while the pointer crosses terminals and browser frames.
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const start = startRef.current;
+      if (!start || start.pointerId !== event.pointerId) return;
+      const drag = usePaneDragStore.getState();
+      if (drag.sourceLeafId !== leafId) {
+        const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+        if (distance < DRAG_THRESHOLD_PX) return;
+        drag.begin(leafId);
+      }
+      const target = paneLeafAt(event.clientX, event.clientY);
+      usePaneDragStore.getState().setTarget(target === leafId ? null : target);
+    },
+    [leafId],
   );
+
+  const finish = useCallback(
+    (event: React.PointerEvent<HTMLElement>, drop: boolean) => {
+      const start = startRef.current;
+      if (!start || start.pointerId !== event.pointerId) return;
+      startRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      const { sourceLeafId, targetLeafId, end } = usePaneDragStore.getState();
+      end();
+      if (drop && sourceLeafId === leafId && targetLeafId) onDrop(targetLeafId);
+    },
+    [leafId, onDrop],
+  );
+
+  return {
+    onPointerDown,
+    onPointerMove,
+    onPointerUp: (event: React.PointerEvent<HTMLElement>) => finish(event, true),
+    onPointerCancel: (event: React.PointerEvent<HTMLElement>) => finish(event, false),
+  };
 }
