@@ -50,6 +50,10 @@ export interface ProviderSettings {
 
 export type VoiceEngine = "web-speech" | "whisper" | "parakeet";
 
+export type ParakeetModel = "parakeet-v3" | "parakeet-v3-compact";
+
+export type WhisperModel = "large-v3-turbo-q5_0";
+
 export interface AISettings {
   defaultProvider: AIProvider;
   defaultModel: string;
@@ -65,6 +69,8 @@ export interface AISettings {
   showUnavailableProviders: boolean;
   voiceInput: boolean;
   voiceEngine: VoiceEngine;
+  parakeetModel: ParakeetModel;
+  whisperModel: WhisperModel;
   providers: Record<AIProvider, ProviderSettings>;
   /** Internal marker for one-time default migrations. */
   migrationRevision?: number;

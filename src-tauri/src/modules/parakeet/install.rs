@@ -20,32 +20,73 @@ pub struct PinnedFile {
     pub sha256: &'static str,
 }
 
-pub const MODEL_FILES: [PinnedFile; 4] = [
-    PinnedFile {
-        name: "nemo128.onnx",
-        remote: "nemo128.onnx",
-        size: 139_764,
-        sha256: "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f",
+pub const PREPROCESSOR_FILE: &str = "nemo128.onnx";
+pub const VOCAB_FILE: &str = "vocab.txt";
+pub const ENCODER_FILE: &str = "encoder.onnx";
+pub const DECODER_FILE: &str = "decoder_joint.onnx";
+
+const PREPROCESSOR: PinnedFile = PinnedFile {
+    name: PREPROCESSOR_FILE,
+    remote: "nemo128.onnx",
+    size: 139_764,
+    sha256: "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f",
+};
+const VOCAB: PinnedFile = PinnedFile {
+    name: VOCAB_FILE,
+    remote: "vocab.txt",
+    size: 93_939,
+    sha256: "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+};
+const DECODER_INT8: PinnedFile = PinnedFile {
+    name: DECODER_FILE,
+    remote: "int8/decoder_joint-model.int8.onnx",
+    size: 18_203_490,
+    sha256: "63a6cd892244e5dbdd8b41541514f2643c7d3c7c454f9adcdf99ca31acb802d0",
+};
+
+pub struct ModelSpec {
+    pub id: &'static str,
+    pub files: [PinnedFile; 4],
+}
+
+pub const MODELS: [ModelSpec; 2] = [
+    ModelSpec {
+        id: "parakeet-v3",
+        files: [
+            PREPROCESSOR,
+            VOCAB,
+            DECODER_INT8,
+            PinnedFile {
+                name: ENCODER_FILE,
+                remote: "int8/encoder-model.int8.onnx",
+                size: 649_524_002,
+                sha256: "019f798a42be5eee029d8591116308df8e8adf1f55a6292c15f1bd5583f04af4",
+            },
+        ],
     },
-    PinnedFile {
-        name: "vocab.txt",
-        remote: "vocab.txt",
-        size: 93_939,
-        sha256: "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
-    },
-    PinnedFile {
-        name: "decoder_joint-model.int8.onnx",
-        remote: "int8/decoder_joint-model.int8.onnx",
-        size: 18_203_490,
-        sha256: "63a6cd892244e5dbdd8b41541514f2643c7d3c7c454f9adcdf99ca31acb802d0",
-    },
-    PinnedFile {
-        name: "encoder-model.int8.onnx",
-        remote: "int8/encoder-model.int8.onnx",
-        size: 649_524_002,
-        sha256: "019f798a42be5eee029d8591116308df8e8adf1f55a6292c15f1bd5583f04af4",
+    ModelSpec {
+        id: "parakeet-v3-compact",
+        files: [
+            PREPROCESSOR,
+            VOCAB,
+            DECODER_INT8,
+            PinnedFile {
+                name: ENCODER_FILE,
+                remote: "w4a8/encoder-model.w4a8.onnx",
+                size: 383_447_892,
+                sha256: "cd781436af52495000415e30b2cbbc0b7a089b6cdb451c20d3f941695751ce07",
+            },
+        ],
     },
 ];
+
+/// Looks up a catalog model; ids come from the frontend, so unknown ones are rejected.
+pub fn model(id: &str) -> Result<&'static ModelSpec, String> {
+    MODELS
+        .iter()
+        .find(|spec| spec.id == id)
+        .ok_or_else(|| format!("Unknown Parakeet model: {id}"))
+}
 
 pub struct Runtime {
     pub url: &'static str,
@@ -87,12 +128,12 @@ pub fn runtime() -> Option<Runtime> {
     }
 }
 
-pub fn total_download_bytes(runtime: &Runtime) -> u64 {
-    runtime.size + MODEL_FILES.iter().map(|file| file.size).sum::<u64>()
+pub fn model_bytes(spec: &ModelSpec) -> u64 {
+    spec.files.iter().map(|file| file.size).sum()
 }
 
-/// Downloads every pinned file into `staging`. The caller removes `staging` on error.
-pub async fn download_all(
+/// Downloads the runtime library into `staging`. The caller removes `staging` on error.
+pub async fn download_runtime(
     runtime: &Runtime,
     staging: &Path,
     cancel: &CancellationToken,
@@ -101,21 +142,17 @@ pub async fn download_all(
     tokio::fs::create_dir_all(staging)
         .await
         .map_err(|e| format!("Cannot create {}: {e}", staging.display()))?;
-    let client = reqwest::Client::new();
-    let mut done: u64 = 0;
-
     let archive = staging.join("runtime-download.bin");
     download_verified(
-        &client,
+        &reqwest::Client::new(),
         runtime.url,
         &archive,
         runtime.size,
         runtime.sha256,
         cancel,
-        &mut |received| on_progress(done + received),
+        on_progress,
     )
     .await?;
-    done += runtime.size;
 
     let library = staging.join(runtime.file_name);
     let member = runtime.member;
@@ -126,8 +163,22 @@ pub async fn download_all(
     .await
     .map_err(|e| format!("Extraction failed: {e}"))??;
     let _ = tokio::fs::remove_file(&archive).await;
+    Ok(())
+}
 
-    for file in &MODEL_FILES {
+/// Downloads every file of `spec` into `staging`. The caller removes `staging` on error.
+pub async fn download_model(
+    spec: &ModelSpec,
+    staging: &Path,
+    cancel: &CancellationToken,
+    on_progress: &mut impl FnMut(u64),
+) -> Result<(), String> {
+    tokio::fs::create_dir_all(staging)
+        .await
+        .map_err(|e| format!("Cannot create {}: {e}", staging.display()))?;
+    let client = reqwest::Client::new();
+    let mut done: u64 = 0;
+    for file in &spec.files {
         let url = format!("{MODEL_BASE_URL}/{}", file.remote);
         download_verified(
             &client,
@@ -144,7 +195,7 @@ pub async fn download_all(
     Ok(())
 }
 
-async fn download_verified(
+pub(crate) async fn download_verified(
     client: &reqwest::Client,
     url: &str,
     dest: &Path,
@@ -265,16 +316,29 @@ mod tests {
     #[test]
     fn downloads_are_pinned() {
         assert!(MODEL_BASE_URL.contains("/resolve/c6c57a8654c6f10d2f48f26adb05228984a7013b"));
-        for file in &MODEL_FILES {
-            assert_eq!(file.sha256.len(), 64);
+        for spec in &MODELS {
+            for file in &spec.files {
+                assert_eq!(file.sha256.len(), 64);
+            }
         }
         if let Some(runtime) = runtime() {
             assert!(runtime.url.starts_with(
                 "https://github.com/microsoft/onnxruntime/releases/download/v1.28.2/"
             ));
             assert_eq!(runtime.sha256.len(), 64);
-            assert!(total_download_bytes(&runtime) > 670_000_000);
         }
+    }
+
+    #[test]
+    fn catalog_models_have_distinct_ids_and_every_local_file() {
+        for (index, spec) in MODELS.iter().enumerate() {
+            assert!(MODELS[..index].iter().all(|other| other.id != spec.id));
+            for name in [PREPROCESSOR_FILE, VOCAB_FILE, ENCODER_FILE, DECODER_FILE] {
+                assert!(spec.files.iter().any(|file| file.name == name));
+            }
+        }
+        assert!(model("parakeet-v3").is_ok());
+        assert!(model("../parakeet-v3").is_err());
     }
 
     #[cfg(not(target_os = "windows"))]

@@ -206,7 +206,7 @@
       "source": "rust"
     },
     {
-      "name": "NVIDIA Parakeet TDT 0.6B v3 (ONNX int8 export by Olicorne)",
+      "name": "NVIDIA Parakeet TDT 0.6B v3 (ONNX int8 and w4a8 exports by Olicorne)",
       "version": "v3",
       "license": "CC-BY-4.0",
       "url": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
@@ -241,8 +241,8 @@
       "source": "download"
     },
     {
-      "name": "OpenAI Whisper tiny (ggml)",
-      "version": "tiny",
+      "name": "OpenAI Whisper Large V3 Turbo (ggml)",
+      "version": "large-v3-turbo",
       "license": "MIT",
       "url": "https://github.com/openai/whisper",
       "source": "download"

@@ -50,6 +50,9 @@ export function ChatComposer({
   const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
   const cliSession = useCliSessionOptions();
   const voiceEngine = useSettingsStore((state) => state.ai.voiceEngine);
+  const voiceModel = useSettingsStore((state) =>
+    state.ai.voiceEngine === "whisper" ? state.ai.whisperModel : state.ai.parakeetModel,
+  );
   const holdToDictate = useSettingsStore((state) => state.shortcuts["voice.holdToDictate"]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contextPickerRef = useRef<ContextPickerRef>(null);
@@ -172,6 +175,7 @@ export function ChatComposer({
 
   const dictation = useComposerDictation({
     engine: voiceEngine,
+    model: voiceModel,
     enabled: voiceInput,
     onText: handleDictationText,
   });

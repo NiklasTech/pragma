@@ -1,6 +1,7 @@
 //! Parakeet TDT inference: NeMo mel preprocessor, Conformer encoder and a
 //! greedy token-and-duration transducer decode, all through ONNX Runtime.
 
+use super::install::{DECODER_FILE, ENCODER_FILE, PREPROCESSOR_FILE, VOCAB_FILE};
 use ort::session::Session;
 use ort::value::Tensor;
 use std::path::Path;
@@ -72,7 +73,7 @@ fn join_tokens(pieces: &[&str]) -> String {
 
 impl ParakeetModel {
     pub fn load(dir: &Path) -> Result<Self, String> {
-        let vocab_text = std::fs::read_to_string(dir.join("vocab.txt"))
+        let vocab_text = std::fs::read_to_string(dir.join(VOCAB_FILE))
             .map_err(|e| format!("Cannot read Parakeet vocabulary: {e}"))?;
         let vocab = parse_vocab(&vocab_text)?;
         let blank = vocab
@@ -80,9 +81,9 @@ impl ParakeetModel {
             .position(|token| token == "<blk>")
             .ok_or_else(|| "Parakeet vocabulary has no blank token".to_string())?;
         Ok(Self {
-            preprocessor: session(&dir.join("nemo128.onnx"))?,
-            encoder: session(&dir.join("encoder-model.int8.onnx"))?,
-            decoder_joint: session(&dir.join("decoder_joint-model.int8.onnx"))?,
+            preprocessor: session(&dir.join(PREPROCESSOR_FILE))?,
+            encoder: session(&dir.join(ENCODER_FILE))?,
+            decoder_joint: session(&dir.join(DECODER_FILE))?,
             vocab,
             blank,
         })
