@@ -15,7 +15,6 @@ import {
   focusLeaf as focusLeafOp,
   focusPreset,
   gridPreset,
-  openSession as openSessionOp,
   pairPreset,
   setActiveTab as setActiveTabOp,
   splitFocused,
@@ -26,6 +25,7 @@ import {
   type SplitZone,
 } from "./operations";
 import { arrangeLeaves, buildLayout, type PaneArrangement } from "./layout";
+import { measurePaneAspect, openSession as openSessionOp } from "./placement";
 
 export const AGENTS_PANES_STORAGE_KEY = "pragma.agents.panes.v1";
 
@@ -105,7 +105,12 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
       openSession: (rootPath, sessionId) =>
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
-          const result = openSessionOp(entry.root, entry.focusedLeafId, sessionId);
+          const result = openSessionOp(
+            entry.root,
+            entry.focusedLeafId,
+            sessionId,
+            measurePaneAspect(),
+          );
           return {
             trees: setEntry(state.trees, rootPath, {
               root: result.root,

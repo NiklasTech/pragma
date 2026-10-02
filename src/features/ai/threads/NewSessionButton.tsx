@@ -6,6 +6,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
+import { MAX_PANES, MAX_PANES_TITLE } from "../panes/operations";
+import { selectLeafCount, useAgentsPanesStore } from "../panes/store";
 import { defaultEnvironment } from "../worktree/choice";
 import { useWorktreeChoiceStore } from "../worktree/remember";
 
@@ -37,6 +39,9 @@ export function NewSessionButton({
     rootPath ? state.choices[rootPath] : undefined,
   );
   const actions = useNewSessionActions(rootPath, targetLeafId);
+  const atCap = useAgentsPanesStore(
+    (state) => selectLeafCount(state, rootPath ?? "default") >= MAX_PANES,
+  );
   const [repoCheck, setRepoCheck] = useState<RepoCheckResult | null>(null);
 
   useEffect(() => {
@@ -63,6 +68,7 @@ export function NewSessionButton({
       isRepo={repoCheck?.is_repo === true}
       defaultChoice={defaultEnvironment(chatSessions, rememberedChoice)}
       actions={actions}
+      disabledReason={atCap && !targetLeafId ? MAX_PANES_TITLE : undefined}
       className={className}
       variant={variant}
       size={size}

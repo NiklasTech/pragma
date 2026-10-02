@@ -48,6 +48,8 @@ interface NewSessionMenuProps {
   isRepo: boolean;
   defaultChoice: "checkout" | "worktree";
   actions: NewSessionActions;
+  /** Disables the button and explains why in its tooltip. */
+  disabledReason?: string;
   className?: string;
   variant?: "default" | "outline" | "secondary";
   size?: "default" | "sm";
@@ -58,6 +60,7 @@ export function NewSessionMenu({
   isRepo,
   defaultChoice,
   actions,
+  disabledReason,
   className,
   variant = "default",
   size = "default",
@@ -96,7 +99,13 @@ export function NewSessionMenu({
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger
         render={
-          <Button variant={variant} size={size} disabled={!rootPath} className={className}>
+          <Button
+            variant={variant}
+            size={size}
+            disabled={!rootPath || disabledReason !== undefined}
+            title={disabledReason}
+            className={className}
+          >
             <Plus size={13} weight="bold" />
             New session
           </Button>

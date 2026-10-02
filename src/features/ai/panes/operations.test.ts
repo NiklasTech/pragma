@@ -14,12 +14,10 @@ import {
   dropMissingSessions,
   findBrowserLeaf,
   findLeaf,
-  findLeafBySession,
   focusLeaf,
   focusPreset,
   gridPreset,
   assignLeafSession,
-  openSession,
   pairPreset,
   setActiveTab,
   splitFocused,
@@ -79,47 +77,6 @@ describe("countLeaves", () => {
     );
 
     expect(countLeaves(root)).toBe(3);
-  });
-});
-
-describe("openSession", () => {
-  it("turns a null root into one tab and focuses the leaf", () => {
-    const result = openSession(null, null, "a");
-
-    expect(result.root?.type).toBe("tabs");
-    expect(countLeaves(result.root)).toBe(1);
-    expect(result.focusedLeafId).toBe(findLeafBySession(result.root, "a")?.id ?? null);
-  });
-
-  it("focuses an already open session without adding a leaf", () => {
-    const root = tabs([leaf("a", "a"), leaf("b", "b")], "t1", "a");
-    const result = openSession(root, "a", "b");
-
-    expect(countLeaves(result.root)).toBe(2);
-    expect(result.focusedLeafId).toBe("b");
-    expect(findLeaf(result.root, "b")).not.toBeNull();
-  });
-
-  it("adds a tab to the focused group", () => {
-    const root = split(
-      "horizontal",
-      [tabs([leaf("a", "a")], "t1"), tabs([leaf("b", "b")], "t2")],
-      "sp1",
-    );
-    const result = openSession(root, "b", "c");
-
-    const group = result.root?.type === "split" ? result.root.children[1] : null;
-    expect(group?.type).toBe("tabs");
-    expect(countLeaves(result.root)).toBe(3);
-    expect(result.focusedLeafId).toBe(findLeafBySession(result.root, "c")?.id ?? null);
-  });
-
-  it("refuses a new session at the cap", () => {
-    const root = fullTree();
-    const result = openSession(root, "leaf-0", "extra");
-
-    expect(result.root).toBe(root);
-    expect(countLeaves(result.root)).toBe(MAX_PANES);
   });
 });
 
@@ -386,6 +343,17 @@ describe("updateSplitSizes", () => {
 
     const inner = next?.type === "split" ? next.children[0] : null;
     expect(inner?.type === "split" ? inner.sizes : null).toEqual([30, 70]);
+  });
+
+  it("keeps the same tree when the sizes did not change", () => {
+    const root = split(
+      "horizontal",
+      [tabs([leaf("a", "a")], "t1"), tabs([leaf("b", "b")], "t2")],
+      "sp1",
+      [40, 60],
+    );
+
+    expect(updateSplitSizes(root, "sp1", [40.001, 59.999])).toBe(root);
   });
 });
 
