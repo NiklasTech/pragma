@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { TerminalWindow } from "@phosphor-icons/react";
 
+import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
 
+import { providerAccentById } from "../panes/providerAccent";
+import { ProviderLogo } from "../panes/ProviderLogo";
 import { buildSessionMenuCliRows } from "../threads/session-menu";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
 
@@ -43,9 +45,17 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
             const manifest = manifests.find((item) => item.id === row.manifestId);
             if (manifest) void actions.startTerminal(manifest);
           }}
-          className="flex items-center gap-1.5 rounded-full border border-border-subtle px-3 py-1.5 text-ui-xs font-medium text-fg-muted transition-colors hover:border-border hover:bg-bg-hover hover:text-fg-default"
+          className="group flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-3 py-1.5 text-ui-xs font-medium text-fg-muted transition-[color,border-color,background-color,translate] duration-150 hover:-translate-y-px hover:border-border hover:bg-bg-hover hover:text-fg-default active:translate-y-0"
         >
-          <TerminalWindow size={13} className="shrink-0" />
+          <ProviderLogo
+            providerId={row.manifestId}
+            name={row.name}
+            size={13}
+            className={cn(
+              providerAccentById(row.manifestId).text,
+              "transition-transform group-hover:scale-110",
+            )}
+          />
           {row.name}
         </button>
       ))}

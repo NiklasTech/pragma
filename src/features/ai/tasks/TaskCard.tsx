@@ -17,6 +17,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { cn } from "@/shared/lib/utils";
+
+import { seededAccent } from "../panes/providerAccent";
 
 import type { TaskActionState } from "./actionState";
 import type { Task } from "./types";
@@ -51,7 +54,7 @@ export function TaskCard({
         event.dataTransfer.setData(TASK_MIME, task.id);
         event.dataTransfer.effectAllowed = "move";
       }}
-      className="group flex items-start gap-1 rounded-lg border border-border-subtle bg-bg-surface py-2 pr-1 pl-2.5 shadow-[var(--shadow-sm)] transition-colors hover:border-border"
+      className="group flex animate-in cursor-grab items-start gap-1 rounded-lg border border-border-subtle bg-bg-surface py-2 pr-1 pl-2.5 shadow-[var(--shadow-sm)] transition-[border-color,translate] duration-150 fade-in-0 hover:-translate-y-px hover:border-border active:cursor-grabbing"
     >
       <button
         type="button"
@@ -61,9 +64,9 @@ export function TaskCard({
         <span className="line-clamp-3 text-ui-sm text-fg-default wrap-break-word">
           {task.title}
         </span>
-        {agentName && (
+        {agentName && task.agentId && (
           <span className="flex items-center gap-1 text-ui-2xs text-fg-subtle">
-            <Robot size={11} />
+            <Robot size={11} weight="fill" className={cn(seededAccent(task.agentId).text)} />
             <span className="truncate">{agentName}</span>
           </span>
         )}

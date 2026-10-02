@@ -1,11 +1,12 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { CheckSquare, MagnifyingGlass } from "@phosphor-icons/react";
+import { ChatsCircle, CheckSquare, MagnifyingGlass, Robot } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Input } from "@/shared/components/ui/input";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
@@ -14,13 +15,13 @@ import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDia
 import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
 import { AgentRoster } from "@/features/ai/named-agents/AgentRoster";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
-import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
+import { useNamedAgentsUiStore, type NamedAgentsView } from "@/features/ai/named-agents/ui";
 import { TasksEntry } from "@/features/ai/tasks/TasksEntry";
 import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { buildSessionTree } from "@/features/ai/children/limits";
 import { childThreadStatus, isChildRunning } from "@/features/ai/children/status";
 import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
-import { cn } from "@/shared/lib/utils";
+import { useStaleTerminalIds } from "@/features/ai/terminal/useStaleTerminals";
 
 import { CategoryHeader } from "./CategoryHeader";
 import { buildThreadSections, listCategories, normalizeCategory } from "./categories";
@@ -58,9 +59,10 @@ export function ThreadList() {
   const [categoryTargets, setCategoryTargets] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
 
+  const staleTerminals = useStaleTerminalIds(chatSessions, rootPath ?? "default");
   const sessions = useMemo(
-    () => chatSessions.filter((session) => !session.archived),
-    [chatSessions],
+    () => chatSessions.filter((session) => !session.archived && !staleTerminals.has(session.id)),
+    [chatSessions, staleTerminals],
   );
 
   const sortedSessions = useMemo(
@@ -252,44 +254,28 @@ export function ThreadList() {
       }}
     >
       <div className="flex shrink-0 flex-col gap-2 pb-1">
-        <div className="flex items-center gap-1 rounded-md bg-bg-hover p-[3px]">
-          <button
-            type="button"
-            aria-pressed={view === "sessions"}
-            onClick={() => setView("sessions")}
-            className={cn(
-              "h-6 flex-1 rounded-[4px] text-ui-xs font-medium transition-colors",
-              view === "sessions"
-                ? "bg-bg-elevated text-fg-default shadow-sm"
-                : "text-fg-muted hover:text-fg-default",
-            )}
-          >
-            Sessions
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === "agents"}
-            onClick={() => {
-              selection.exit();
-              setView("agents");
-            }}
-            className={cn(
-              "h-6 flex-1 rounded-[4px] text-ui-xs font-medium transition-colors",
-              view === "agents"
-                ? "bg-bg-elevated text-fg-default shadow-sm"
-                : "text-fg-muted hover:text-fg-default",
-            )}
-          >
-            Agents
-          </button>
-        </div>
+        <Tabs
+          value={view}
+          onValueChange={(value: NamedAgentsView) => {
+            if (value === "agents") selection.exit();
+            setView(value);
+          }}
+        >
+          <TabsList className="w-full">
+            <TabsTrigger value="sessions" className="data-active:[&_svg]:text-primary">
+              <ChatsCircle weight={view === "sessions" ? "fill" : "regular"} />
+              Sessions
+            </TabsTrigger>
+            <TabsTrigger value="agents" className="data-active:[&_svg]:text-primary">
+              <Robot weight={view === "agents" ? "fill" : "regular"} />
+              Agents
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {view === "sessions" ? (
           <>
-            <NewSessionButton
-              variant="secondary"
-              className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm"
-            />
+            <NewSessionButton className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm shadow-[0_6px_18px_-10px_var(--color-accent-glow)]" />
             <TasksEntry />
           </>
         ) : (
@@ -326,7 +312,9 @@ export function ThreadList() {
               {view === "sessions" ? "Threads" : "Agents"}
             </span>
             {view === "sessions" && sessions.length > 0 && (
-              <span className="text-ui-xs text-fg-subtle tabular-nums">{sessions.length}</span>
+              <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-muted tabular-nums">
+                {sessions.length}
+              </span>
             )}
             <span className="flex-1" />
             {view === "sessions" && sessions.length > 0 && (
@@ -386,7 +374,7 @@ export function ThreadList() {
                         onToggle={() => toggleCollapsed(section.key)}
                       />
                     ) : (
-                      <h3 className="px-2 pb-0.5 text-ui-2xs font-medium text-fg-subtle">
+                      <h3 className="px-2 pb-0.5 text-ui-2xs font-semibold tracking-wide text-fg-subtle uppercase">
                         {section.label}
                       </h3>
                     )}

@@ -20,6 +20,7 @@ import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { AgentsContextPane } from "./AgentsContextPane";
 import { AgentsHome } from "./AgentsHome";
 import { PaneTree } from "../panes/PaneTree";
+import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { shouldAutoOpenContextPane, useAgentsUiStore } from "../store/agentsUi";
 
@@ -88,6 +89,12 @@ export function AgentsWorkspace() {
     if (sessionIds.length === 0 || loadedRoot !== rootPath) return;
     syncSessions(rootPath, sessionIds);
   }, [loadedRoot, rootPath, sessionIds, syncSessions]);
+
+  // Terminals from an earlier run cannot be resumed, so the folder drops them once loaded.
+  useEffect(() => {
+    if (loadedRoot !== rootPath) return;
+    void purgeStaleTerminals(rootPath).catch(() => {});
+  }, [loadedRoot, rootPath]);
 
   useEffect(() => {
     if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;

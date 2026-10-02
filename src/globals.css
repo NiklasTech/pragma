@@ -655,3 +655,26 @@ button:disabled,
     animation: none;
   }
 }
+
+/* ============================================================================
+   AGENT PANES — activity sweep
+   ============================================================================ */
+
+@keyframes pragma-pane-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.pragma-pane-sweep {
+  animation: pragma-pane-sweep 1.4s var(--motion-ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pragma-pane-sweep {
+    animation: none;
+  }
+}

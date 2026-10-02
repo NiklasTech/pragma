@@ -23,6 +23,7 @@ interface TerminalEntry {
   buffer: string;
   status: TerminalStatus;
   exitCode: number | null;
+  lastInputAt: number;
 }
 
 export interface StartTerminalOptions {
@@ -147,9 +148,15 @@ export function subscribeTerminalStatus(sessionId: string, listener: () => void)
   };
 }
 
+/// When the user last typed into the terminal, so the echo of typing is not read as agent work.
+export function getTerminalLastInputAt(sessionId: string): number {
+  return entries.get(sessionId)?.lastInputAt ?? 0;
+}
+
 export async function writeTerminal(sessionId: string, data: string): Promise<void> {
   const entry = entries.get(sessionId);
   if (!entry?.ptyId) return;
+  entry.lastInputAt = Date.now();
   try {
     await invoke("write_pty", { id: entry.ptyId, data });
   } catch {
@@ -185,6 +192,7 @@ export async function ensureTerminal(
       buffer: "",
       status: "running",
       exitCode: null,
+      lastInputAt: 0,
     };
     entries.set(sessionId, entry);
   }

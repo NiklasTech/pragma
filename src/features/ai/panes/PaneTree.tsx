@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Warning } from "@phosphor-icons/react";
 
 import {
@@ -28,6 +28,7 @@ import { BrowserPane } from "../browser/BrowserPane";
 import { ChatPanel } from "../components/ChatPanel";
 import { TerminalPane } from "../terminal/TerminalPane";
 import { getTerminalEntryStatus } from "../terminal/runner";
+import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { ChildRunView } from "../children/ChildRunView";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { ChatTranscript } from "./ChatTranscript";
@@ -35,6 +36,7 @@ import { EmptyLeafView } from "./EmptyLeafView";
 import { collectLeaves } from "./layout";
 import { usePaneMaximizeStore } from "./maximize";
 import { PaneHeader } from "./PaneHeader";
+import { animatePanes, animateRestore } from "./transition";
 import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
 import {
   findGroup,
@@ -91,6 +93,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const dropTarget = usePaneDragStore(
     (state) => leaf !== undefined && state.targetLeafId === leaf.id,
   );
+  const cardRef = useRef<HTMLDivElement>(null);
   const [pendingClose, setPendingClose] = useState<{
     leafIds: string[];
     confirm: CloseConfirm;
@@ -118,6 +121,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       const confirm = buildCloseConfirm(targets, agentStatus, runSessionId);
       if (!confirm) {
         for (const leafId of leafIds) closeLeaf(rootPath, leafId);
+        void purgeStaleTerminals(rootPath).catch(() => {});
         return;
       }
       setPendingClose({ leafIds, confirm });
@@ -128,6 +132,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const handleConfirmClose = useCallback(() => {
     if (!pendingClose) return;
     for (const leafId of pendingClose.leafIds) closeLeaf(rootPath, leafId);
+    void purgeStaleTerminals(rootPath).catch(() => {});
     setPendingClose(null);
   }, [closeLeaf, pendingClose, rootPath]);
 
@@ -148,11 +153,14 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       data-pane-status={status}
       data-pane-focused={focused ? "true" : undefined}
       data-pane-maximized={maximized ? "true" : undefined}
+      ref={cardRef}
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden rounded-lg border bg-bg-root transition-[border-color,opacity]",
-        focused ? "border-border-focus" : "border-border",
-        dragging && "opacity-60",
-        maximized ? "absolute inset-0 z-30" : "relative h-full",
+        "group/pane flex min-h-0 flex-col overflow-hidden rounded-lg border bg-bg-root transition-[border-color,box-shadow,opacity,scale] duration-200 ease-(--motion-ease-out)",
+        focused
+          ? "border-border-focus shadow-[0_0_0_1px_var(--color-accent-subtle),0_12px_32px_-20px_var(--color-accent-glow)]"
+          : "border-border hover:border-fg-subtle/40",
+        dragging && "scale-[0.98] opacity-50",
+        maximized ? "absolute inset-0 z-30 shadow-[var(--shadow-md)]" : "relative h-full",
       )}
     >
       <PaneHeader
@@ -165,19 +173,28 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         onClose={() => requestClose([leaf.id])}
         onCloseOthers={() => requestClose(otherLeafIds)}
         onToggleMaximize={() => {
-          focusLeaf(rootPath, leaf.id);
-          toggleMaximize(rootPath, node.id);
+          if (maximized) {
+            animateRestore(cardRef.current, () => toggleMaximize(rootPath, node.id));
+            return;
+          }
+          animatePanes(() => {
+            focusLeaf(rootPath, leaf.id);
+            toggleMaximize(rootPath, node.id);
+          });
         }}
         onDropOn={(targetLeafId) => swapPanes(rootPath, leaf.id, targetLeafId)}
       />
 
       <div className="relative min-h-0 flex-1" onPointerDown={() => focusLeaf(rootPath, leaf.id)}>
-        <LeafContent leaf={leaf} focused={focused} />
+        {/* Insets give the content a definite height in WebKit, so terminals can refit smaller. */}
+        <div className="absolute inset-0">
+          <LeafContent leaf={leaf} focused={focused} />
+        </div>
       </div>
 
       {dropTarget && (
         <div
-          className="pointer-events-none absolute inset-0 z-20 rounded-lg border-2 border-primary bg-primary/10"
+          className="pointer-events-none absolute inset-0 z-20 animate-in rounded-lg border-2 border-primary bg-primary/10 duration-150 fade-in-0"
           aria-hidden="true"
         />
       )}
@@ -290,7 +307,8 @@ export function PaneTree() {
     if (!maximizedGroupId) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented || isTextEntry(event.target)) return;
-      restore(rootPath);
+      const card = document.querySelector<HTMLElement>("[data-pane-maximized='true']");
+      animateRestore(card, () => restore(rootPath));
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);

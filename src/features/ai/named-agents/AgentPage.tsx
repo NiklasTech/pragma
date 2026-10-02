@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { ChatCircle, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { ChatCircle, PencilSimple, Plus, Robot, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { outsideChildren, releaseChildren } from "@/features/ai/children/release";
 
+import { seededAccent } from "../panes/providerAccent";
 import { AgentFoldersTab } from "./AgentFoldersTab";
 import { AgentMemoryTab } from "./AgentMemoryTab";
 import { AgentSkillsTab } from "./AgentSkillsTab";
@@ -35,6 +38,7 @@ interface AgentPageProps {
 
 export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProps) {
   const [tab, setTab] = useState<AgentTab>("brief");
+  const accent = seededAccent(agent.id);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const saveAgent = useNamedAgentsStore((state) => state.saveAgent);
   const deleteAgent = useNamedAgentsStore((state) => state.deleteAgent);
@@ -66,8 +70,22 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 flex-col gap-2 border-b border-border-subtle px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div
+        className={cn(
+          "flex shrink-0 animate-in flex-col gap-2 border-b border-border-subtle bg-linear-to-r to-transparent to-50% px-4 py-3 duration-200 fade-in-0",
+          accent.tint,
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-lg",
+              accent.soft,
+              accent.text,
+            )}
+          >
+            <Robot size={18} weight="fill" />
+          </span>
           <div className="flex min-w-0 flex-col">
             <h2 className="truncate text-ui-md font-semibold text-fg-default">{agent.name}</h2>
             <span className="truncate text-ui-xs text-fg-subtle">
@@ -94,19 +112,15 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           </Button>
         </div>
 
-        <div className="flex items-center gap-1">
-          {TABS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={tab === item.id}
-              onClick={() => setTab(item.id)}
-              className="h-6 rounded-md px-2.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={tab} onValueChange={(value: AgentTab) => setTab(value)}>
+          <TabsList variant="line">
+            {TABS.map((item) => (
+              <TabsTrigger key={item.id} value={item.id} className="px-2.5">
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

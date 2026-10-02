@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { CaretDoubleRight, MagicWand } from "@phosphor-icons/react";
+import type { Icon } from "@phosphor-icons/react";
+import { CaretDoubleRight, Files, ListChecks, MagicWand } from "@phosphor-icons/react";
 
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useAgentStore } from "@/features/agent/store";
@@ -21,9 +23,9 @@ import { useAgentsUiStore } from "../store/agentsUi";
 
 type ContextTab = "review" | "files";
 
-const TABS: Array<{ id: ContextTab; label: string }> = [
-  { id: "review", label: "Review" },
-  { id: "files", label: "Files" },
+const TABS: Array<{ id: ContextTab; label: string; icon: Icon }> = [
+  { id: "review", label: "Review", icon: ListChecks },
+  { id: "files", label: "Files", icon: Files },
 ];
 
 function ContextResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
@@ -100,25 +102,20 @@ export function AgentsContextPane() {
       <ContextResizeHandle onResize={(delta) => setWidth(width - delta)} />
 
       <div className="flex h-tab shrink-0 items-center gap-1 border-b border-border-subtle px-1.5">
-        {TABS.map((item) => {
-          const isActive = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={isActive}
-              onClick={() => setTab(item.id)}
-              className={cn(
-                "h-7 rounded-md px-2.5 text-ui-xs font-medium transition-colors",
-                isActive
-                  ? "bg-bg-surface text-fg-default ring-1 ring-border"
-                  : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-              )}
-            >
-              {item.label}
-            </button>
-          );
-        })}
+        <Tabs value={tab} onValueChange={(value: ContextTab) => setTab(value)}>
+          <TabsList>
+            {TABS.map((item) => (
+              <TabsTrigger
+                key={item.id}
+                value={item.id}
+                className="px-2.5 data-active:[&_svg]:text-primary"
+              >
+                <item.icon weight={tab === item.id ? "fill" : "regular"} />
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <button
           type="button"
           onClick={() => setCollapsed(true)}

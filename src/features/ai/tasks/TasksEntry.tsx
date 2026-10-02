@@ -20,16 +20,22 @@ export function TasksEntry() {
       onClick={openBoard}
       aria-current={boardOpen ? "page" : undefined}
       className={cn(
-        "flex h-8 w-full items-center gap-2 rounded-lg px-3.5 text-ui-sm transition-colors",
+        "group flex h-8 w-full items-center gap-2 rounded-lg px-3.5 text-ui-sm transition-colors",
         boardOpen
           ? "bg-bg-root font-medium text-fg-default shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
           : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
       )}
     >
-      <Kanban size={14} weight={boardOpen ? "fill" : "regular"} />
+      <Kanban
+        size={14}
+        weight={boardOpen ? "fill" : "regular"}
+        className="text-status-warning transition-transform group-hover:scale-110"
+      />
       Tasks
       {openCount > 0 && (
-        <span className="ml-auto text-ui-xs text-fg-subtle tabular-nums">{openCount}</span>
+        <span className="ml-auto rounded-full bg-status-warning/12 px-1.5 text-ui-2xs font-medium text-status-warning tabular-nums">
+          {openCount}
+        </span>
       )}
     </button>
   );

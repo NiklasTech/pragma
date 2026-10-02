@@ -30,6 +30,9 @@ import { Input } from "@/shared/components/ui/input";
 import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
 
+import { providerAccent } from "../panes/providerAccent";
+import { ProviderLogo } from "../panes/ProviderLogo";
+import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { CategoryMenuItems } from "./CategoryMenuItems";
 import { formatRelativeTime, type ThreadStatus } from "./helpers";
 
@@ -113,7 +116,10 @@ export function ThreadRow({
   }, [draft, onRename, session.id]);
 
   const KindIcon = KIND_ICONS[session.kind ?? "agent"];
-  const statusText = STATUS_TEXT[status];
+  const accent = providerAccent(session);
+  const terminalActive = useTerminalActivity(session.kind === "terminal" ? session.id : null);
+  const shownStatus: ThreadStatus = status === "idle" && terminalActive ? "running" : status;
+  const statusText = STATUS_TEXT[shownStatus];
 
   return (
     <div
@@ -126,12 +132,13 @@ export function ThreadRow({
             ? "bg-bg-root shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
             : "hover:bg-bg-hover",
       )}
-      data-thread-status={status}
+      data-thread-status={shownStatus}
     >
       <span
         className={cn(
-          "relative flex size-7 shrink-0 items-center justify-center rounded-md",
-          isActive ? "bg-accent-subtle text-primary" : "bg-bg-hover text-fg-muted",
+          "relative flex size-7 shrink-0 items-center justify-center rounded-md transition-colors",
+          accent.soft,
+          accent.text,
         )}
       >
         {selectionMode ? (
@@ -140,17 +147,19 @@ export function ThreadRow({
             onCheckedChange={() => onToggleSelect?.(session.id, false)}
             aria-label={`Select ${session.title}`}
           />
+        ) : session.cliProviderId ? (
+          <ProviderLogo providerId={session.cliProviderId} name={session.title} size={14} />
         ) : (
           <KindIcon size={14} weight={isActive ? "fill" : "regular"} />
         )}
-        {status !== "idle" && (
+        {shownStatus !== "idle" && (
           <span
             className={cn(
               "absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-bg-chrome",
-              STATUS_STYLES[status],
+              STATUS_STYLES[shownStatus],
             )}
-            title={STATUS_LABELS[status]}
-            aria-label={`Status: ${STATUS_LABELS[status]}`}
+            title={STATUS_LABELS[shownStatus]}
+            aria-label={`Status: ${STATUS_LABELS[shownStatus]}`}
           />
         )}
       </span>
@@ -210,9 +219,9 @@ export function ThreadRow({
               <span
                 className={cn(
                   "truncate",
-                  status === "running" && "text-primary",
-                  status === "waiting-approval" && "text-status-warning",
-                  status === "error" && "text-status-error",
+                  shownStatus === "running" && "text-primary",
+                  shownStatus === "waiting-approval" && "text-status-warning",
+                  shownStatus === "error" && "text-status-error",
                 )}
               >
                 {statusText}
