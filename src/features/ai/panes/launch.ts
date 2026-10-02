@@ -1,7 +1,6 @@
 import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
 
 import { terminalSessionTitle } from "../terminal/title";
-import type { PaneArrangement } from "./layout";
 import { MAX_PANES } from "./operations";
 import { useAgentsPanesStore } from "./store";
 
@@ -22,12 +21,11 @@ export function createTerminalSession(
   );
 }
 
-/// Starts `count` new terminals of one CLI and shows exactly them in the chosen layout.
+/// Starts `count` new terminals of one CLI and shows exactly them in the grid.
 export async function launchTerminals(
   rootPath: string,
   manifest: CLIManifest,
   count: number,
-  arrangement: PaneArrangement,
 ): Promise<void> {
   const total = Math.min(Math.max(Math.round(count), 1), MAX_PANES);
   const baseTitle = terminalSessionTitle(manifest.name);
@@ -39,15 +37,5 @@ export async function launchTerminals(
     });
     sessionIds.push(session.id);
   }
-  useAgentsPanesStore.getState().replaceLayout(rootPath, sessionIds, arrangement);
-}
-
-export async function splitTerminal(
-  rootPath: string,
-  leafId: string,
-  direction: "horizontal" | "vertical",
-  manifest: CLIManifest,
-): Promise<void> {
-  const session = await createTerminalSession(rootPath, manifest, { activate: false });
-  useAgentsPanesStore.getState().splitWithSession(rootPath, leafId, direction, session.id);
+  useAgentsPanesStore.getState().replaceLayout(rootPath, sessionIds);
 }
