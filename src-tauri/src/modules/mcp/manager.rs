@@ -1,7 +1,10 @@
 use crate::modules::mcp::client::{McpClient, McpClientConfig, Notification};
 use crate::modules::mcp::error::McpError;
 use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
-use crate::modules::mcp::{config_path, load_tools_cache, save_tools_cache, McpServerConfig};
+use crate::modules::mcp::{
+    config_path, load_tools_cache, save_tools_cache, secrets, write_config_file, McpServerConfig,
+    CONFIG_VERSION,
+};
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
 use serde_json::Value;
@@ -136,13 +139,21 @@ impl McpManager {
             String::new()
         };
 
-        let file: crate::modules::mcp::McpConfigFile = if content.trim().is_empty() {
+        let mut file: crate::modules::mcp::McpConfigFile = if content.trim().is_empty() {
             crate::modules::mcp::McpConfigFile {
+                version: CONFIG_VERSION,
                 servers: Vec::new(),
             }
         } else {
             serde_json::from_str(&content).map_err(|e| McpError::Config(e.to_string()))?
         };
+
+        if file.version < CONFIG_VERSION {
+            secrets::migrate_plain_secrets(&mut file.servers);
+            write_config_file(&path, file.servers.clone())
+                .await
+                .map_err(McpError::Config)?;
+        }
 
         self.apply_config(file.servers).await;
         Ok(())
@@ -258,7 +269,7 @@ impl McpManager {
         let client_config = McpClientConfig {
             command: config.command.clone(),
             args: config.args.clone(),
-            env: config.env.clone(),
+            env: secrets::resolve_env(config)?,
             request_timeout_ms: None,
         };
 

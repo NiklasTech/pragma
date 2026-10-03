@@ -39,6 +39,7 @@ mod tests {
             command: "node".to_string(),
             args: vec!["index.js".to_string()],
             env,
+            secret_env: Vec::new(),
             autostart: true,
         };
 

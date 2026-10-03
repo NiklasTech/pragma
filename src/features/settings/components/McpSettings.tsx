@@ -23,12 +23,15 @@ import { SettingSection } from "./ui/SettingSection";
 import { useMcpServers, type McpServerStatus } from "../hooks/useMcpServers";
 import { McpServerLogSheet, LogButton } from "./McpServerLogSheet";
 import { McpServerTools } from "./McpServerTools";
+import { McpEnvFields, parseEnv, type SecretEnvEntry } from "./McpEnvFields";
+import { useMissingMcpSecrets } from "../hooks/useMissingMcpSecrets";
 
 interface EditForm {
   name: string;
   command: string;
   argsText: string;
   envText: string;
+  secrets: SecretEnvEntry[];
   autostart: boolean;
 }
 
@@ -42,6 +45,7 @@ function serverToForm(server?: McpServerConfig): EditForm {
           .map(([k, v]) => `${k}=${v}`)
           .join("\n")
       : "",
+    secrets: server?.secretEnv.map((key) => ({ key, value: "" })) ?? [],
     autostart: server?.autostart ?? false,
   };
 }
@@ -64,20 +68,6 @@ function parseArgs(text: string): string[] {
       return trimmed.trim();
     })
     .filter(Boolean);
-}
-
-function parseEnv(text: string): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const line of text.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const value = trimmed.slice(eq + 1).trim();
-    if (key) env[key] = value;
-  }
-  return env;
 }
 
 function statusColor(status: McpServerStatus): string {
@@ -130,6 +120,10 @@ export function McpSettings() {
   const [form, setForm] = React.useState<EditForm>(serverToForm());
   const [loading, setLoading] = React.useState(false);
   const [logServerId, setLogServerId] = React.useState<string | null>(null);
+  const [saveError, setSaveError] = React.useState<string | null>(null);
+  const { missing: missingSecrets, refresh: refreshMissingSecrets } = useMissingMcpSecrets(
+    mcp.servers,
+  );
 
   const loadConfig = React.useCallback(async () => {
     // Don't overwrite the form while the user is editing.
@@ -167,40 +161,72 @@ export function McpSettings() {
   const handleAdd = () => {
     setEditingId("new");
     setForm(serverToForm());
+    setSaveError(null);
   };
 
   const handleEdit = (server: McpServerConfig) => {
     setEditingId(server.id);
     setForm(serverToForm(server));
+    setSaveError(null);
   };
 
   const handleCancel = () => {
     setEditingId(null);
     setForm(serverToForm());
+    setSaveError(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const secrets = form.secrets
+      .map((entry) => ({ key: entry.key.trim(), value: entry.value }))
+      .filter((entry) => entry.key);
+    const secretEnv = [...new Set(secrets.map((entry) => entry.key))];
+    const env = parseEnv(form.envText);
+    for (const key of secretEnv) delete env[key];
+
     const serverData = {
       name: form.name.trim(),
       command: form.command.trim(),
       args: parseArgs(form.argsText),
-      env: parseEnv(form.envText),
+      env,
+      secretEnv,
       autostart: form.autostart,
     };
 
     if (!serverData.name || !serverData.command) return;
 
+    let id: string;
     if (editingId === "new") {
-      addMcpServer(serverData);
+      id = addMcpServer(serverData);
     } else if (editingId) {
+      id = editingId;
       updateMcpServer(editingId, serverData);
     } else {
       return;
     }
 
-    void persist(useSettingsStore.getState().mcp.servers);
+    // Secrets go to the keychain before the config, which may autostart the server.
+    let error: string | null = null;
+    for (const { key, value } of secrets) {
+      if (!value) continue;
+      try {
+        await invoke("mcp_set_secret", { serverId: id, key, value });
+      } catch (e) {
+        error = `Could not store ${key} in the keychain: ${String(e)}`;
+      }
+    }
+
+    await persist(useSettingsStore.getState().mcp.servers);
+    refreshMissingSecrets();
+
+    if (error) {
+      setEditingId(id);
+      setSaveError(error);
+      return;
+    }
     setEditingId(null);
     setForm(serverToForm());
+    setSaveError(null);
   };
 
   const handleDelete = (id: string) => {
@@ -261,15 +287,12 @@ export function McpSettings() {
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label>Environment (KEY=VALUE per line)</Label>
-              <Textarea
-                value={form.envText}
-                onChange={(e) => setForm((f) => ({ ...f, envText: e.target.value }))}
-                placeholder="GITHUB_TOKEN=..."
-                className="min-h-20 font-mono"
-              />
-            </div>
+            <McpEnvFields
+              value={{ envText: form.envText, secrets: form.secrets }}
+              savedKeys={mcp.servers.find((s) => s.id === editingId)?.secretEnv ?? []}
+              missingKeys={editingId ? (missingSecrets[editingId] ?? []) : []}
+              onChange={(env) => setForm((f) => ({ ...f, ...env }))}
+            />
 
             <div className="flex items-center justify-between">
               <Label className="cursor-pointer" htmlFor="mcp-autostart">
@@ -282,12 +305,14 @@ export function McpSettings() {
               />
             </div>
 
+            {saveError && <p className="text-ui-xs text-status-error">{saveError}</p>}
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="xs" onClick={handleCancel}>
                 <X size={14} className="mr-1" />
                 Cancel
               </Button>
-              <Button size="xs" onClick={handleSave}>
+              <Button size="xs" onClick={() => void handleSave()}>
                 <FloppyDisk size={14} className="mr-1" />
                 Save
               </Button>
@@ -325,6 +350,14 @@ export function McpSettings() {
                       {server.autostart && (
                         <span className="rounded-full border border-border/30 px-1.5 py-0.5 text-ui-xs text-fg-muted">
                           autostart
+                        </span>
+                      )}
+                      {missingSecrets[server.id] && (
+                        <span
+                          className="rounded-full border border-status-warning/40 px-1.5 py-0.5 text-ui-xs text-status-warning"
+                          title={`Edit the server to enter ${missingSecrets[server.id]?.join(", ")}`}
+                        >
+                          missing secrets
                         </span>
                       )}
                     </div>

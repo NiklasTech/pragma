@@ -211,6 +211,8 @@ pub fn run() {
             modules::dap::dap_evaluate,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
+            modules::mcp::secrets::mcp_set_secret,
+            modules::mcp::secrets::mcp_missing_secrets,
             modules::mcp::mcp_list_servers,
             modules::mcp::mcp_start_server,
             modules::mcp::mcp_stop_server,

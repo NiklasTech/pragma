@@ -1,4 +1,5 @@
-import type { AISettings, SettingsActions, SettingsState } from "./types";
+import { extractSecretLikeEnv, withoutSecretValues } from "@/shared/lib/mcpSecretEnv";
+import type { AISettings, McpSettings, SettingsActions, SettingsState } from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
   if (!partial || typeof partial !== "object") {
@@ -69,6 +70,20 @@ export function migrateAISettings(
   return updated;
 }
 
+const MCP_SECRETS_REVISION = 1;
+
+export function migrateMcpSettings(mcp: McpSettings): McpSettings {
+  // Revision 1 moves secret-like env values to the keychain; the backend migrates mcp.json.
+  const migrate = (mcp.migrationRevision ?? 0) < MCP_SECRETS_REVISION;
+  return {
+    ...mcp,
+    servers: mcp.servers.map((server) =>
+      migrate ? extractSecretLikeEnv(server).server : withoutSecretValues(server),
+    ),
+    migrationRevision: MCP_SECRETS_REVISION,
+  };
+}
+
 export function mergeWithDefaults(
   persisted: unknown,
   defaults: SettingsState & SettingsActions,
@@ -93,7 +108,7 @@ export function mergeWithDefaults(
     layout: mergePartial(defaults.layout, partial.layout),
     workspace: mergePartial(defaults.workspace, partial.workspace),
     statusbar: mergePartial(defaults.statusbar, partial.statusbar),
-    mcp: mergePartial(defaults.mcp, partial.mcp),
+    mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
     lsp: mergePartial(defaults.lsp, partial.lsp),
     experimental: mergePartial(defaults.experimental, partial.experimental),
     agent: mergePartial(defaults.agent, partial.agent),
