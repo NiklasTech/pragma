@@ -20,6 +20,7 @@ export type {
   LspSettings,
   McpServerConfig,
   McpSettings,
+  McpTransport,
   ParakeetModel,
   ProviderSettings,
   SettingsState,

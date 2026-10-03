@@ -15,6 +15,8 @@ import { useComposerDictation } from "@/features/ai/dictation/useComposerDictati
 import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
 
 import { CliSessionOptionsMenu } from "@/features/ai/acp/CliSessionOptionsMenu";
+import { McpServersMenu } from "@/features/ai/mcp/McpServersMenu";
+import { PromptPicker, type PromptPickerRef } from "@/features/ai/mcp/PromptPicker";
 import { useCliSessionOptions } from "@/features/ai/acp/useCliSessionOptions";
 
 import { AiModelSelector } from "./AiModelSelector";
@@ -56,6 +58,7 @@ export function ChatComposer({
   const holdToDictate = useSettingsStore((state) => state.shortcuts["voice.holdToDictate"]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contextPickerRef = useRef<ContextPickerRef>(null);
+  const promptPickerRef = useRef<PromptPickerRef>(null);
   const inputRef = useRef(input);
   inputRef.current = input;
   const cursorRef = useRef(0);
@@ -102,6 +105,9 @@ export function ChatComposer({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (contextPickerRef.current?.handleKeyDown(e)) {
+        return;
+      }
+      if (promptPickerRef.current?.handleKeyDown(e)) {
         return;
       }
 
@@ -233,6 +239,12 @@ export function ChatComposer({
             rootPath={rootPath}
             onSelect={handleContextSelect}
           />
+          <PromptPicker
+            ref={promptPickerRef}
+            input={input}
+            cursorPosition={cursorPosition}
+            onSelect={handleContextSelect}
+          />
         </div>
         <div className="flex flex-nowrap items-center gap-1 px-2 pb-2">
           <button
@@ -250,6 +262,7 @@ export function ChatComposer({
             <AiModelSelector variant="compact" />
           )}
           <ChatToolbar />
+          <McpServersMenu />
           <div className="ml-auto flex items-center gap-1">
             {voiceInput && (
               <ComposerMicButton

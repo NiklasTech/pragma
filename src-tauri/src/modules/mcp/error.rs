@@ -74,6 +74,10 @@ pub enum McpError {
     AlreadyRunning(String),
     ToolCallFailed(String),
     ToolNotFound(String),
+    Http(String),
+    /// The server answered 401; holds its `WWW-Authenticate` header.
+    AuthRequired(String),
+    OAuth(String),
 }
 
 impl McpError {
@@ -103,6 +107,14 @@ impl fmt::Display for McpError {
             McpError::AlreadyRunning(id) => write!(f, "MCP server already running: {id}"),
             McpError::ToolCallFailed(msg) => write!(f, "MCP tool call failed: {msg}"),
             McpError::ToolNotFound(name) => write!(f, "MCP tool not found: {name}"),
+            McpError::Http(msg) => write!(f, "MCP HTTP error: {msg}"),
+            McpError::AuthRequired(_) => {
+                write!(
+                    f,
+                    "MCP server requires authorization; sign in from Settings > MCP"
+                )
+            }
+            McpError::OAuth(msg) => write!(f, "MCP authorization failed: {msg}"),
         }
     }
 }

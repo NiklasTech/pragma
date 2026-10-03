@@ -35,6 +35,9 @@ pub struct ChatSessionMetadata {
     pub parent_id: Option<String>,
     #[serde(default)]
     pub category: Option<String>,
+    /// MCP server ids the session uses; absent means the agent's or all servers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_servers: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

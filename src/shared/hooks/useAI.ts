@@ -36,6 +36,9 @@ import {
   uiMessageToStored,
 } from "@/shared/lib/ai/protocol";
 import { useMcpChatTools } from "./useMcpChatTools";
+import { mcpSelectionKey, resolveMcpServerIds } from "@/features/ai/mcp/selection";
+import { expandPromptCommand } from "@/features/ai/mcp/prompts";
+import { parseResourceMention, readResourceContext } from "@/features/ai/mcp/resources";
 import { useAgent } from "@/features/agent/useAgent";
 import { executeAgentToolCall } from "@/features/agent/executor";
 import { shouldAgentContinue } from "@/features/agent/loop";
@@ -78,13 +81,29 @@ export function useAI() {
   const saveSessionMessages = useAIStore((state) => state.saveSessionMessages);
   const saveSession = useAIStore((state) => state.saveSession);
 
+  const sessionId = activeChatSessionId ?? "default";
+  const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const cwd = sessionCwd(activeSession, rootPath);
+
+  const agents = useNamedAgentsStore((state) => state.agents);
+  const activeAgent = activeSession?.agentId
+    ? (agents.find((agent) => agent.id === activeSession.agentId) ?? null)
+    : null;
+
+  const mcpKey = mcpSelectionKey(resolveMcpServerIds(activeSession, activeAgent));
+  const mcpServerIds = useMemo(
+    () => (mcpKey === "*" ? null : mcpKey.split("\n").filter(Boolean)),
+    [mcpKey],
+  );
+
   const {
     toolDefinitions,
     resolveTool,
     ready: mcpReady,
     loaded: mcpLoaded,
     serverCount: mcpServerCount,
-  } = useMcpChatTools();
+  } = useMcpChatTools(mcpServerIds);
 
   const mcpReadyRef = useRef(mcpReady);
   const mcpServerCountRef = useRef(mcpServerCount);
@@ -96,16 +115,6 @@ export function useAI() {
   useEffect(() => {
     mcpServerCountRef.current = mcpServerCount;
   }, [mcpServerCount]);
-
-  const sessionId = activeChatSessionId ?? "default";
-  const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const cwd = sessionCwd(activeSession, rootPath);
-
-  const agents = useNamedAgentsStore((state) => state.agents);
-  const activeAgent = activeSession?.agentId
-    ? (agents.find((agent) => agent.id === activeSession.agentId) ?? null)
-    : null;
 
   const {
     cliProviderId: effectiveCLIProvider,
@@ -217,6 +226,7 @@ export function useAI() {
           return pending;
         },
         activeSessionKind !== "ask",
+        mcpServerIds,
       ),
     [
       effectiveProvider,
@@ -232,6 +242,7 @@ export function useAI() {
       systemPrompt,
       leadingSystemMessage,
       activeSessionKind,
+      mcpServerIds,
     ],
   );
 
@@ -402,14 +413,23 @@ export function useAI() {
         return false;
       }
 
+      try {
+        raw = await expandPromptCommand(raw, mcpServerIds);
+      } catch (err) {
+        toast.error(`Could not load the MCP prompt: ${String(err)}`);
+        return false;
+      }
+
       const mentions = parseMentions(raw);
+      const resourceMentions = mentions.filter((mention) => parseResourceMention(mention));
+      const fileMentions = mentions.filter((mention) => !parseResourceMention(mention));
       let question = raw.trim();
       const contextParts: string[] = [];
 
-      if (rootPath && mentions.length > 0) {
+      if (rootPath && fileMentions.length > 0) {
         try {
           const result = await invoke<ChatContextResult>("read_chat_context", {
-            req: { root_path: rootPath, paths: mentions },
+            req: { root_path: rootPath, paths: fileMentions },
           });
 
           if (result.content) {
@@ -417,6 +437,19 @@ export function useAI() {
             contextParts.push(result.content);
           }
         } catch {}
+      }
+
+      if (resourceMentions.length > 0) {
+        try {
+          const resources = await readResourceContext(resourceMentions);
+          if (resources) {
+            question = stripMentions(raw);
+            contextParts.push(resources);
+          }
+        } catch (err) {
+          toast.error(`Could not read the MCP resource: ${String(err)}`);
+          return false;
+        }
       }
 
       try {
@@ -464,7 +497,16 @@ export function useAI() {
       void chat.sendMessage({ text: messageText });
       return true;
     },
-    [chat, rootPath, mcpServerCount, mcpLoaded, agentActive, isCLIActive, activeSession],
+    [
+      chat,
+      rootPath,
+      mcpServerCount,
+      mcpLoaded,
+      agentActive,
+      isCLIActive,
+      activeSession,
+      mcpServerIds,
+    ],
   );
 
   const handleSubmit = useCallback(

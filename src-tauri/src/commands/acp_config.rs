@@ -14,6 +14,9 @@ pub struct AcpSessionConfigRequest {
     pub cwd: String,
     #[serde(default)]
     pub allow_child_sessions: bool,
+    /// MCP servers the session may use; absent means all configured servers.
+    #[serde(default)]
+    pub mcp_server_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,6 +51,7 @@ pub async fn cli_acp_session_config(
                 &req.cwd,
                 &req.chat_session_id,
                 req.allow_child_sessions,
+                req.mcp_server_ids.as_deref(),
             )
             .await
             .map_err(|e| e.to_string())?;

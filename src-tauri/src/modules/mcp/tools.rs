@@ -1,4 +1,5 @@
-use crate::modules::mcp::client::{McpClient, RequestOptions};
+use crate::modules::mcp::client::RequestOptions;
+use crate::modules::mcp::connection::McpConnection;
 use crate::modules::mcp::error::{McpError, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -16,7 +17,7 @@ struct ToolListResult {
     tools: Vec<McpTool>,
 }
 
-pub async fn list_tools(client: &McpClient) -> Result<Vec<McpTool>> {
+pub async fn list_tools(client: &McpConnection) -> Result<Vec<McpTool>> {
     let response = client
         .request("tools/list", None, RequestOptions::default())
         .await?;
@@ -35,7 +36,7 @@ pub struct McpToolCallResult {
 }
 
 pub async fn call_tool(
-    client: &McpClient,
+    client: &McpConnection,
     tool_name: &str,
     arguments: Option<Value>,
 ) -> Result<McpToolCallResult> {

@@ -53,6 +53,9 @@ pub struct Agent {
     pub memory: Vec<AgentMemory>,
     #[serde(default)]
     pub skills: Vec<String>,
+    /// MCP server ids the agent uses; absent means all configured servers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_servers: Option<Vec<String>>,
     pub created_at: i64,
     pub updated_at: i64,
 }

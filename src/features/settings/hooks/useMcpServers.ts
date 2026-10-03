@@ -17,6 +17,8 @@ export interface McpStatusChangedEvent {
   server_id: string;
   status: McpServerStatus;
   error?: string;
+  /** The remote server answered that it needs an OAuth sign-in. */
+  auth_required?: boolean;
 }
 
 export interface McpLogEvent {
@@ -57,6 +59,7 @@ export function useMcpServers() {
   const [statuses, setStatuses] = useState<Record<string, McpServerStatus>>({});
   const [tools, setTools] = useState<Record<string, McpTool[]>>({});
   const [logs, setLogs] = useState<Record<string, McpLogEvent[]>>({});
+  const [authRequired, setAuthRequired] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -122,6 +125,10 @@ export function useMcpServers() {
         setStatuses((prev) => ({
           ...prev,
           [event.payload.server_id]: event.payload.status,
+        }));
+        setAuthRequired((prev) => ({
+          ...prev,
+          [event.payload.server_id]: event.payload.auth_required ?? false,
         }));
       });
       if (!active) {
@@ -189,6 +196,7 @@ export function useMcpServers() {
     statuses,
     tools,
     logs,
+    authRequired,
     loading,
     load,
     loadTools,

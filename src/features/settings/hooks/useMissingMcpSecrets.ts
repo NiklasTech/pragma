@@ -2,31 +2,44 @@ import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { McpServerConfig } from "@/shared/stores/settings";
 
-type SecretQuery = [serverId: string, keys: string[]];
+type SecretKind = "env" | "header";
+type SecretQuery = [serverId: string, keys: string[], kind: SecretKind];
 
-/** Secret env names per server that have no value in the keychain. */
+/** Secret env and header names per server that have no value in the keychain. */
 export function useMissingMcpSecrets(servers: McpServerConfig[]) {
   const [missing, setMissing] = useState<Record<string, string[]>>({});
   const [revision, setRevision] = useState(0);
   const signature = JSON.stringify(
-    servers
-      .filter((server) => server.secretEnv.length > 0)
-      .map((server): SecretQuery => [server.id, server.secretEnv]),
+    servers.flatMap((server): SecretQuery[] => [
+      ...(server.secretEnv.length > 0 ? [[server.id, server.secretEnv, "env"] as SecretQuery] : []),
+      ...(server.secretHeaders?.length
+        ? [[server.id, server.secretHeaders, "header"] as SecretQuery]
+        : []),
+    ]),
   );
 
   useEffect(() => {
     let active = true;
     const queries = JSON.parse(signature) as SecretQuery[];
     void Promise.all(
-      queries.map(async ([serverId, keys]): Promise<SecretQuery> => {
+      queries.map(async ([serverId, keys, kind]): Promise<SecretQuery> => {
         try {
-          return [serverId, await invoke<string[]>("mcp_missing_secrets", { serverId, keys })];
+          return [
+            serverId,
+            await invoke<string[]>("mcp_missing_secrets", { serverId, keys, kind }),
+            kind,
+          ];
         } catch {
-          return [serverId, []];
+          return [serverId, [], kind];
         }
       }),
     ).then((results) => {
-      if (active) setMissing(Object.fromEntries(results.filter(([, keys]) => keys.length > 0)));
+      if (!active) return;
+      const merged: Record<string, string[]> = {};
+      for (const [serverId, keys] of results) {
+        if (keys.length > 0) merged[serverId] = [...(merged[serverId] ?? []), ...keys];
+      }
+      setMissing(merged);
     });
     return () => {
       active = false;

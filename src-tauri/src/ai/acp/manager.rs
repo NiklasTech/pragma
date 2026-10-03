@@ -77,6 +77,7 @@ impl AcpSessionManager {
         cwd: &str,
         chat_session_id: &str,
         allow_child_sessions: bool,
+        mcp_server_ids: Option<&[String]>,
     ) -> Result<String> {
         let manifest = get_manifest(provider_id)
             .ok_or_else(|| AcpError::Spawn(format!("unknown provider: {provider_id}")))?;
@@ -129,7 +130,7 @@ impl AcpSessionManager {
             )
             .await?;
 
-        let mut mcp_servers = self.load_mcp_servers().await;
+        let mut mcp_servers = self.load_mcp_servers(mcp_server_ids).await;
         if allow_child_sessions {
             if let Some(server) = self
                 .app_handle
@@ -334,19 +335,37 @@ impl AcpSessionManager {
         self.approval_bridge.respond(tool_call_id, approved).await
     }
 
-    async fn load_mcp_servers(&self) -> Vec<super::types::McpServer> {
-        let configs = self
+    /// The configured servers the session may use; `None` allows all of them.
+    async fn load_mcp_servers(&self, allowed: Option<&[String]>) -> Vec<super::types::McpServer> {
+        use crate::modules::mcp::{oauth, secrets, McpServerConfig};
+
+        let servers = self
             .app_handle
             .state::<crate::modules::mcp::McpManager>()
             .list_servers()
-            .await
-            .into_iter()
-            .filter_map(|s| {
-                // A server whose secrets are missing from the keychain cannot start.
-                let env = crate::modules::mcp::secrets::resolve_env(&s.config).ok()?;
-                Some(crate::modules::mcp::McpServerConfig { env, ..s.config })
-            })
-            .collect();
+            .await;
+        let mut configs = Vec::new();
+        for state in servers {
+            let config = state.config;
+            if allowed.is_some_and(|ids| !ids.contains(&config.id)) {
+                continue;
+            }
+            // A server whose secrets are missing from the keychain cannot start.
+            let (Ok(env), Ok(mut headers)) = (
+                secrets::resolve_env(&config),
+                secrets::resolve_headers(&config),
+            ) else {
+                continue;
+            };
+            if let Ok(Some(token)) = oauth::access_token(&config.id).await {
+                headers.insert("Authorization".to_string(), format!("Bearer {token}"));
+            }
+            configs.push(McpServerConfig {
+                env,
+                headers,
+                ..config
+            });
+        }
 
         configs_to_acp_servers(configs)
     }

@@ -29,6 +29,7 @@ import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 
+import { isMcpServerAllowed, sessionMcpServerIds } from "../mcp/selection";
 import { sessionCwd } from "../worktree/cwd";
 import {
   getChildRun,
@@ -167,7 +168,12 @@ export async function startChildRun(
     error: null,
   });
 
-  const mcpTools = isCLI ? [] : await loadMcpChatTools().catch(() => []);
+  const mcpServerIds = sessionMcpServerIds(sessionId);
+  const mcpTools = isCLI
+    ? []
+    : (await loadMcpChatTools().catch(() => [])).filter((tool) =>
+        isMcpServerAllowed(mcpServerIds, tool.serverId),
+      );
   let systemPrompt: string | undefined;
   if (!isCLI) {
     const rules = settings.agent.useProjectRules ? await loadProjectRules(cwd) : null;
@@ -203,6 +209,7 @@ export async function startChildRun(
     null,
     () => null,
     true,
+    mcpServerIds,
   );
 
   const context = createContext(sessionId);

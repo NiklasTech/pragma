@@ -52,6 +52,8 @@ export interface AcpChatRequest {
   cwd: string;
   messages: CLIChatMessage[];
   allow_child_sessions: boolean;
+  /** MCP servers the session may use; absent allows all. */
+  mcp_server_ids?: string[];
 }
 
 export interface StreamChunk {

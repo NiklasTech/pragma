@@ -107,14 +107,23 @@ export interface StatusbarSettings {
 
 export type ThemeMode = "dark" | "light" | "system";
 
+export type McpTransport = "stdio" | "http";
+
 export interface McpServerConfig {
   id: string;
   name: string;
+  /** Missing in configs written before remote servers; means stdio. */
+  transport?: McpTransport;
   command: string;
   args: string[];
   env: Record<string, string>;
   /** Env names whose values live in the OS keychain, never in `env`. */
   secretEnv: string[];
+  /** Streamable HTTP endpoint of a remote server. */
+  url?: string;
+  headers?: Record<string, string>;
+  /** Header names whose values live in the OS keychain, never in `headers`. */
+  secretHeaders?: string[];
   autostart: boolean;
 }
 

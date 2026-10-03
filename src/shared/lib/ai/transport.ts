@@ -27,6 +27,7 @@ export function createStreamTransport(
   leadingSystemMessage?: string | null,
   consumePendingContext: () => string | null = () => null,
   allowChildSessions = false,
+  mcpServerIds: string[] | null = null,
 ): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages, abortSignal }) {
@@ -180,6 +181,7 @@ export function createStreamTransport(
                   cwd: rootPath,
                   messages: cliMessages(),
                   allow_child_sessions: allowChildSessions,
+                  ...(mcpServerIds ? { mcp_server_ids: mcpServerIds } : {}),
                 };
                 await invoke("cli_acp_chat_stream", { req, channel });
               } else if (isCLIActive && activeCLIProvider) {
