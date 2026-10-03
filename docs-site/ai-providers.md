@@ -76,4 +76,4 @@ Supported CLI providers include Codex CLI (OpenAI), Claude Code (Anthropic), Gem
 
 - **Inline completion** shows AI ghost-text suggestions in the editor, with a configurable debounce.
 - **Command suggestions** show AI-powered suggestions while typing in the terminal.
-- Voice input can use the browser/web speech engine or Whisper.
+- Voice input can use Web Speech or the local Whisper and Parakeet engines. See [Voice Dictation](./agents/voice-dictation.md).

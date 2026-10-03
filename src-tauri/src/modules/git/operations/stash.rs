@@ -77,7 +77,9 @@ fn run_stash_ref_command(
     }
 
     let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
-    if stderr.contains("conflict") || stderr.contains("merge conflict") {
+    // Git reports merge conflicts on stdout.
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if stderr.contains("conflict") || stdout.contains("CONFLICT (") {
         return Err(GitError::command(
             context,
             "conflicts detected while applying stash",
@@ -133,14 +135,13 @@ pub fn smart_checkout(repo_root: &str, branch_name: &str) -> Result<SmartCheckou
     };
 
     let stash_ref = if has_changes {
-        let msg = format!("pragma-smart-checkout-{branch_name}");
-        let stash_ref = stash_push(&repo_root.to_string_lossy(), &msg)?;
-        result.stashed = true;
-        result.stash_ref = Some(stash_ref.clone());
-        stash_ref
+        stash_for_checkout(&repo_root.to_string_lossy(), branch_name)?
     } else {
-        String::new()
+        None
     };
+    result.stashed = stash_ref.is_some();
+    result.stash_ref = stash_ref.clone();
+    let stash_ref = stash_ref.unwrap_or_default();
 
     match checkout_branch(&repo_root.to_string_lossy(), branch_name) {
         Ok(()) => result.checkout_ok = true,
@@ -169,10 +170,203 @@ pub fn smart_checkout(repo_root: &str, branch_name: &str) -> Result<SmartCheckou
     Ok(result)
 }
 
+/// Returns the `stash@{n}` selector of the new entry; `git stash pop` rejects the SHA `stash_push` returns.
+fn stash_for_checkout(repo_root: &str, branch_name: &str) -> Result<Option<String>> {
+    let previous_top =
+        git_stdout_line_opt(repo_root, ["rev-parse", "-q", "--verify", "refs/stash"])?;
+    let pushed = stash_push(repo_root, &format!("pragma-smart-checkout-{branch_name}"))?;
+    // Untracked-only changes are not stashed, so the top entry stays the same.
+    if previous_top.as_deref() == Some(pushed.as_str()) {
+        return Ok(None);
+    }
+    let lines = git_stdout_lines(repo_root, ["stash", "list", "--format=%H %gd"])?;
+    Ok(lines.iter().find_map(|line| {
+        let (sha, selector) = line.split_once(' ')?;
+        (sha == pushed).then(|| selector.to_string())
+    }))
+}
+
 fn is_safe_stash_ref(stash_ref: &str) -> bool {
     !stash_ref.is_empty()
         && stash_ref.len() <= 64
         && stash_ref
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '{' || c == '}' || c == '@' || c == '_')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::git::operations::test_support::TestRepo;
+
+    #[test]
+    fn stash_ref_validation() {
+        assert!(is_safe_stash_ref("stash@{0}"));
+        assert!(is_safe_stash_ref(&"a".repeat(40)));
+        assert!(!is_safe_stash_ref(""));
+        assert!(!is_safe_stash_ref("stash@{0}; rm -rf /"));
+        assert!(!is_safe_stash_ref("--index"));
+        assert!(!is_safe_stash_ref(&"a".repeat(65)));
+    }
+
+    #[test]
+    fn stash_push_and_pop_round_trip() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "changed\n");
+
+        stash_push(&repo.root, "  work in progress  ").unwrap();
+
+        assert_eq!(repo.read("file.txt"), "base\n");
+        let entries = stash_list(&repo.root).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].index, 0);
+        assert_eq!(entries[0].ref_name, "stash@{0}");
+        assert!(entries[0].message.ends_with("work in progress"));
+        assert!(entries[0].timestamp_secs > 0);
+
+        stash_pop(&repo.root, "stash@{0}").unwrap();
+
+        assert_eq!(repo.read("file.txt"), "changed\n");
+        assert!(stash_list(&repo.root).unwrap().is_empty());
+    }
+
+    #[test]
+    fn stash_apply_keeps_the_entry_and_drop_removes_it() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "changed\n");
+        stash_push(&repo.root, "").unwrap();
+
+        stash_apply(&repo.root, "stash@{0}").unwrap();
+        assert_eq!(repo.read("file.txt"), "changed\n");
+        assert_eq!(stash_list(&repo.root).unwrap().len(), 1);
+
+        stash_drop(&repo.root, "stash@{0}").unwrap();
+        assert!(stash_list(&repo.root).unwrap().is_empty());
+    }
+
+    #[test]
+    fn stash_commands_reject_empty_and_unsafe_refs() {
+        let repo = TestRepo::new();
+        assert!(stash_pop(&repo.root, "").is_err());
+        assert!(stash_apply(&repo.root, "stash@{0} --index").is_err());
+        assert!(stash_drop(&repo.root, "../stash").is_err());
+    }
+
+    #[test]
+    fn stash_pop_fails_without_a_stash() {
+        let repo = TestRepo::new();
+        assert!(stash_pop(&repo.root, "stash@{0}").is_err());
+    }
+
+    #[test]
+    fn stash_pop_reports_conflicts() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "stashed\n");
+        stash_push(&repo.root, "").unwrap();
+        repo.write("file.txt", "committed\n");
+        repo.commit_all("diverge");
+
+        let err = stash_pop(&repo.root, "stash@{0}").unwrap_err();
+
+        assert!(err.to_string().contains("conflicts"), "{err}");
+    }
+
+    #[test]
+    fn smart_checkout_without_changes_only_switches() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "feature"]);
+
+        let result = smart_checkout(&repo.root, "feature").unwrap();
+
+        assert!(result.checkout_ok);
+        assert!(!result.stashed);
+        assert_eq!(repo.git(&["branch", "--show-current"]), "feature");
+    }
+
+    #[test]
+    fn smart_checkout_carries_changes_to_the_target_branch() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "feature"]);
+        repo.write("file.txt", "changed\n");
+
+        let result = smart_checkout(&repo.root, "feature").unwrap();
+
+        assert!(result.checkout_ok);
+        assert!(result.stashed);
+        assert!(result.pop_ok);
+        assert!(!result.pop_conflict);
+        assert_eq!(repo.git(&["branch", "--show-current"]), "feature");
+        assert_eq!(repo.read("file.txt"), "changed\n");
+        assert!(stash_list(&repo.root).unwrap().is_empty());
+    }
+
+    #[test]
+    fn smart_checkout_pops_its_own_entry_when_older_stashes_exist() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "feature"]);
+        repo.write("other.txt", "older\n");
+        repo.git(&["add", "other.txt"]);
+        stash_push(&repo.root, "older").unwrap();
+        repo.write("file.txt", "changed\n");
+
+        let result = smart_checkout(&repo.root, "feature").unwrap();
+
+        assert!(result.pop_ok);
+        assert_eq!(repo.read("file.txt"), "changed\n");
+        let entries = stash_list(&repo.root).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].message.ends_with("older"));
+    }
+
+    #[test]
+    fn smart_checkout_does_not_pop_unrelated_stashes_for_untracked_changes() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "feature"]);
+        repo.write("file.txt", "older\n");
+        stash_push(&repo.root, "older").unwrap();
+        repo.write("untracked.txt", "new\n");
+
+        let result = smart_checkout(&repo.root, "feature").unwrap();
+
+        assert!(result.checkout_ok);
+        assert!(!result.stashed);
+        assert_eq!(repo.read("file.txt"), "base\n");
+        assert_eq!(stash_list(&repo.root).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn smart_checkout_reports_pop_conflicts() {
+        let repo = TestRepo::new();
+        repo.git(&["checkout", "-q", "-b", "feature"]);
+        repo.write("file.txt", "feature\n");
+        repo.commit_all("feature change");
+        repo.git(&["checkout", "-q", "main"]);
+        repo.write("file.txt", "local\n");
+
+        let result = smart_checkout(&repo.root, "feature").unwrap();
+
+        assert!(result.checkout_ok);
+        assert!(result.stashed);
+        assert!(!result.pop_ok);
+        assert!(result.pop_conflict);
+        assert_eq!(stash_list(&repo.root).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn smart_checkout_restores_changes_when_checkout_fails() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "changed\n");
+
+        assert!(smart_checkout(&repo.root, "missing").is_err());
+
+        assert_eq!(repo.git(&["branch", "--show-current"]), "main");
+        assert_eq!(repo.read("file.txt"), "changed\n");
+        assert!(stash_list(&repo.root).unwrap().is_empty());
+    }
+
+    #[test]
+    fn smart_checkout_rejects_empty_branch_name() {
+        let repo = TestRepo::new();
+        assert!(smart_checkout(&repo.root, "").is_err());
+    }
 }

@@ -14,6 +14,7 @@ export default defineConfig({
     logo: { light: "/logo-light.svg", dark: "/logo-dark.svg", alt: "Pragma" },
     nav: [
       { text: "Guide", link: "/getting-started" },
+      { text: "Agents", link: "/agents/" },
       { text: "Customization", link: "/theming" },
       { text: "Help", link: "/troubleshooting" },
     ],
@@ -28,10 +29,35 @@ export default defineConfig({
         ],
       },
       {
+        text: "Agents",
+        items: [
+          { text: "Agents Workspace", link: "/agents/" },
+          { text: "Worktrees", link: "/agents/worktrees" },
+          { text: "Named Agents", link: "/agents/named-agents" },
+          { text: "Workspace Skills", link: "/agents/skills" },
+          { text: "Local Tasks", link: "/agents/tasks" },
+          { text: "Child Sessions", link: "/agents/child-sessions" },
+          { text: "Follow-ups and Steering", link: "/agents/follow-ups" },
+          { text: "Review Pane", link: "/agents/review-pane" },
+          { text: "Coding CLIs", link: "/agents/coding-clis" },
+          { text: "Browser Pane", link: "/agents/browser-pane" },
+          { text: "Voice Dictation", link: "/agents/voice-dictation" },
+          { text: "Tool Approvals", link: "/agents/tool-approvals" },
+        ],
+      },
+      {
+        text: "Run and Debug",
+        items: [
+          { text: "Run Configurations", link: "/run-configurations" },
+          { text: "Debugging", link: "/debugging" },
+        ],
+      },
+      {
         text: "Customization",
         items: [
           { text: "Theming Guide", link: "/theming" },
           { text: "Keyboard Shortcuts", link: "/keyboard-shortcuts" },
+          { text: "Extensions", link: "/extensions" },
         ],
       },
       {

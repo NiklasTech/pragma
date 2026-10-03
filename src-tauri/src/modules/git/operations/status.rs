@@ -97,3 +97,103 @@ fn status_inner(repo_root: &Path) -> Result<GitStatusSnapshot> {
         behind: parsed.behind,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::git::operations::test_support::TestRepo;
+
+    #[test]
+    fn resolve_repo_returns_none_outside_a_repository() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(resolve_repo(&dir.path().to_string_lossy())
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn resolve_repo_rejects_missing_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let missing = dir.path().join("missing");
+        assert!(matches!(
+            resolve_repo(&missing.to_string_lossy()),
+            Err(GitError::NotADirectory(_))
+        ));
+    }
+
+    #[test]
+    fn resolve_repo_reports_branch_from_a_subdirectory() {
+        let repo = TestRepo::new();
+        repo.write("nested/inner.txt", "inner\n");
+
+        let info = resolve_repo(&repo.path("nested").to_string_lossy())
+            .unwrap()
+            .unwrap();
+
+        let canonical_root = std::fs::canonicalize(&repo.root).unwrap();
+        assert_eq!(info.repo_root, canonical_root.to_string_lossy());
+        assert_eq!(info.branch, "main");
+        assert_eq!(info.upstream, None);
+        assert!(!info.is_detached);
+    }
+
+    #[test]
+    fn resolve_repo_detects_detached_head() {
+        let repo = TestRepo::new();
+        repo.git(&["checkout", "-q", "--detach"]);
+
+        let info = resolve_repo(&repo.root).unwrap().unwrap();
+
+        assert!(info.is_detached);
+    }
+
+    #[test]
+    fn status_lists_modified_staged_and_untracked_files() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "changed\n");
+        repo.write("staged.txt", "staged\n");
+        repo.git(&["add", "staged.txt"]);
+        repo.write("untracked.txt", "new\n");
+
+        let snapshot = status(&repo.root).unwrap();
+        let entry = |path: &str| {
+            snapshot
+                .changed_files
+                .iter()
+                .find(|f| f.path == path)
+                .unwrap_or_else(|| panic!("{path} missing from status"))
+        };
+
+        assert_eq!(snapshot.repo.branch, "main");
+        assert_eq!(snapshot.changed_files.len(), 3);
+        assert!(entry("file.txt").is_unstaged);
+        assert!(!entry("file.txt").is_staged);
+        assert!(entry("staged.txt").is_staged);
+        assert_eq!(entry("untracked.txt").status_code, "?");
+    }
+
+    #[test]
+    fn status_of_a_clean_repository_is_empty() {
+        let repo = TestRepo::new();
+        assert!(status(&repo.root).unwrap().changed_files.is_empty());
+    }
+
+    #[test]
+    fn status_rejects_a_file_as_repository_root() {
+        let repo = TestRepo::new();
+        assert!(matches!(
+            status(&repo.path("file.txt").to_string_lossy()),
+            Err(GitError::NotADirectory(_))
+        ));
+    }
+
+    #[test]
+    fn conflicted_files_lists_unmerged_paths() {
+        let repo = TestRepo::new();
+        assert!(conflicted_files(&repo.root).unwrap().is_empty());
+
+        repo.create_merge_conflict();
+
+        assert_eq!(conflicted_files(&repo.root).unwrap(), vec!["file.txt"]);
+    }
+}

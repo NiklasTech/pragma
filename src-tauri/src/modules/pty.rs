@@ -382,3 +382,110 @@ pub fn create_pty_command(
 
     Ok(id)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsString;
+
+    #[test]
+    fn resolve_shell_falls_back_to_the_default_shell() {
+        assert_eq!(resolve_shell(None), default_shell());
+        assert_eq!(resolve_shell(Some(String::new())), default_shell());
+        assert_eq!(resolve_shell(Some("/bin/custom".into())), "/bin/custom");
+        assert!(!default_shell().is_empty());
+    }
+
+    #[test]
+    fn resolve_terminal_shell_rejects_missing_executables() {
+        let dir = tempfile::tempdir().unwrap();
+        let missing = dir.path().join("missing-shell");
+        let existing = dir.path().join("shell");
+        std::fs::write(&existing, "").unwrap();
+        let existing = existing.to_string_lossy().into_owned();
+
+        assert_eq!(
+            resolve_terminal_shell(Some(missing.to_string_lossy().into_owned())).unwrap(),
+            default_shell()
+        );
+        assert_eq!(
+            resolve_terminal_shell(Some(existing.clone())).unwrap(),
+            existing
+        );
+    }
+
+    #[test]
+    fn build_command_uses_an_existing_cwd_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let cwd = dir.path().to_string_lossy().into_owned();
+        let missing = dir.path().join("missing").to_string_lossy().into_owned();
+
+        let with_cwd = build_command("/bin/sh", Some(&cwd));
+        let with_missing = build_command("/bin/sh", Some(&missing));
+
+        assert_eq!(with_cwd.get_cwd(), Some(&OsString::from(&cwd)));
+        assert_eq!(with_missing.get_cwd(), None);
+    }
+
+    #[test]
+    fn build_command_adds_powershell_flags() {
+        let pwsh = build_command(r"C:\Program Files\PowerShell\7\PWSH.EXE", None);
+        let sh = build_command("/bin/sh", None);
+
+        assert_eq!(
+            pwsh.get_argv()[1..],
+            [
+                OsString::from("-NoLogo"),
+                OsString::from("-NoExit"),
+                OsString::from("-NoProfile")
+            ]
+        );
+        assert_eq!(sh.get_argv().len(), 1);
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn build_command_sets_terminal_capabilities() {
+        let cmd = build_command("/bin/sh", None);
+
+        assert_eq!(
+            cmd.get_env("TERM"),
+            Some(std::ffi::OsStr::new("xterm-256color"))
+        );
+        assert_eq!(
+            cmd.get_env("COLORTERM"),
+            Some(std::ffi::OsStr::new("truecolor"))
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn kill_all_terminates_running_ptys() {
+        let pair = NativePtySystem::default()
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .unwrap();
+        let mut cmd = CommandBuilder::new("sleep");
+        cmd.arg("30");
+        let mut child = pair.slave.spawn_command(cmd).unwrap();
+        drop(pair.slave);
+        let manager = PtyManager::new();
+        manager.ptys.lock().unwrap().insert(
+            "pty".to_string(),
+            PtyInstance {
+                writer: Arc::new(Mutex::new(pair.master.take_writer().unwrap())),
+                killer: Arc::new(Mutex::new(child.clone_killer())),
+                master: Arc::new(Mutex::new(pair.master)),
+            },
+        );
+
+        manager.kill_all();
+
+        assert!(!child.wait().unwrap().success());
+        assert!(manager.ptys.lock().unwrap().is_empty());
+    }
+}

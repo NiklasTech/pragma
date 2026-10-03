@@ -352,6 +352,229 @@ pub fn delete_file(path: String) -> Result<(), String> {
 mod tests {
     use super::*;
 
+    fn path_string(path: &Path) -> String {
+        path.to_string_lossy().into_owned()
+    }
+
+    #[test]
+    fn validate_path_rejects_relative_paths() {
+        assert_eq!(
+            validate_path("relative/file.txt").err().as_deref(),
+            Some("Path must be absolute")
+        );
+    }
+
+    #[test]
+    fn validate_path_rejects_parent_components() {
+        let dir = tempfile::tempdir().unwrap();
+        let escaping = dir.path().join("..").join("file.txt");
+
+        assert_eq!(
+            validate_path(&path_string(&escaping)).err().as_deref(),
+            Some("Path traversal is not allowed")
+        );
+    }
+
+    #[test]
+    fn validate_path_accepts_absolute_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = path_string(&dir.path().join("file.txt"));
+
+        assert!(validate_path(&path).is_ok());
+    }
+
+    #[test]
+    fn read_text_file_returns_name_and_content() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("notes.md");
+        fs::write(&path, "# Notes\n").unwrap();
+
+        let result = read_text_file(path_string(&path)).unwrap();
+
+        assert_eq!(result.name, "notes.md");
+        assert_eq!(result.content, "# Notes\n");
+        assert_eq!(result.path, path_string(&path));
+    }
+
+    #[test]
+    fn read_text_file_rejects_missing_files_and_directories() {
+        let dir = tempfile::tempdir().unwrap();
+
+        let missing = read_text_file(path_string(&dir.path().join("missing.txt")));
+        let directory = read_text_file(path_string(dir.path()));
+
+        assert!(missing.err().unwrap().starts_with("File not found"));
+        assert!(directory.err().unwrap().starts_with("Not a file"));
+    }
+
+    #[test]
+    fn read_text_file_rejects_binary_and_invalid_utf8() {
+        let dir = tempfile::tempdir().unwrap();
+        let binary = dir.path().join("image.bin");
+        let latin1 = dir.path().join("latin1.txt");
+        fs::write(&binary, [b'a', 0, b'b']).unwrap();
+        fs::write(&latin1, [0xe4, 0xf6, 0xfc]).unwrap();
+
+        assert_eq!(
+            read_text_file(path_string(&binary)).err().as_deref(),
+            Some("Binary files are not supported")
+        );
+        assert!(read_text_file(path_string(&latin1))
+            .err()
+            .unwrap()
+            .starts_with("File is not valid UTF-8"));
+    }
+
+    #[test]
+    fn read_text_file_rejects_files_above_the_size_limit() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("large.txt");
+        let file = fs::File::create(&path).unwrap();
+        file.set_len(MAX_FILE_SIZE_BYTES + 1).unwrap();
+
+        assert!(read_text_file(path_string(&path))
+            .err()
+            .unwrap()
+            .starts_with("File is too large"));
+    }
+
+    #[test]
+    fn list_directory_sorts_directories_first_then_by_name() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("b.txt"), "").unwrap();
+        fs::write(dir.path().join("A.txt"), "").unwrap();
+        fs::create_dir(dir.path().join("zeta")).unwrap();
+
+        let entries = list_directory(path_string(dir.path())).unwrap();
+        let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+
+        assert_eq!(names, vec!["zeta", "A.txt", "b.txt"]);
+        assert!(entries[0].is_directory);
+        assert!(entries[1].is_file);
+    }
+
+    #[test]
+    fn list_directory_rejects_files_and_missing_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("file.txt");
+        fs::write(&file, "").unwrap();
+
+        assert!(list_directory(path_string(&file))
+            .err()
+            .unwrap()
+            .starts_with("Not a directory"));
+        assert!(list_directory(path_string(&dir.path().join("missing")))
+            .err()
+            .unwrap()
+            .starts_with("Path not found"));
+    }
+
+    #[test]
+    fn list_directory_recursive_skips_hidden_and_build_directories() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("src/nested")).unwrap();
+        fs::write(dir.path().join("src/nested/lib.rs"), "").unwrap();
+        for skipped in [".git", "node_modules", "target"] {
+            fs::create_dir(dir.path().join(skipped)).unwrap();
+            fs::write(dir.path().join(skipped).join("file"), "").unwrap();
+        }
+        fs::write(dir.path().join(".env"), "").unwrap();
+
+        let entries = list_directory_recursive(path_string(dir.path())).unwrap();
+        let mut names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+        names.sort_unstable();
+
+        assert_eq!(names, vec!["lib.rs", "nested", "src"]);
+    }
+
+    #[test]
+    fn list_directory_recursive_stops_at_the_depth_limit() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut deep = dir.path().to_path_buf();
+        for level in 0..12 {
+            deep = deep.join(format!("d{level}"));
+        }
+        fs::create_dir_all(&deep).unwrap();
+
+        let entries = list_directory_recursive(path_string(dir.path())).unwrap();
+
+        assert_eq!(entries.len(), 9);
+    }
+
+    #[test]
+    fn create_file_and_directory_refuse_existing_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = path_string(&dir.path().join("new.txt"));
+        let nested = path_string(&dir.path().join("a/b/c"));
+
+        create_file(file.clone()).unwrap();
+        create_directory(nested.clone()).unwrap();
+
+        assert_eq!(fs::read_to_string(&file).unwrap(), "");
+        assert!(Path::new(&nested).is_dir());
+        assert!(create_file(file)
+            .err()
+            .unwrap()
+            .starts_with("Already exists"));
+        assert!(create_directory(nested)
+            .err()
+            .unwrap()
+            .starts_with("Already exists"));
+    }
+
+    #[test]
+    fn create_file_rejects_traversal() {
+        let dir = tempfile::tempdir().unwrap();
+        let escaping = dir.path().join("sub").join("..").join("evil.txt");
+
+        assert!(create_file(path_string(&escaping)).is_err());
+        assert!(!dir.path().join("evil.txt").exists());
+    }
+
+    #[test]
+    fn rename_file_moves_and_refuses_to_overwrite() {
+        let dir = tempfile::tempdir().unwrap();
+        let old = dir.path().join("old.txt");
+        let new = dir.path().join("new.txt");
+        let taken = dir.path().join("taken.txt");
+        fs::write(&old, "content").unwrap();
+        fs::write(&taken, "keep").unwrap();
+
+        assert!(rename_file(path_string(&old), path_string(&taken))
+            .err()
+            .unwrap()
+            .starts_with("Destination already exists"));
+        rename_file(path_string(&old), path_string(&new)).unwrap();
+
+        assert!(!old.exists());
+        assert_eq!(fs::read_to_string(&new).unwrap(), "content");
+        assert_eq!(fs::read_to_string(&taken).unwrap(), "keep");
+        assert!(rename_file(path_string(&old), path_string(&new))
+            .err()
+            .unwrap()
+            .starts_with("Source not found"));
+    }
+
+    #[test]
+    fn delete_file_removes_files_and_directory_trees() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("file.txt");
+        let tree = dir.path().join("tree");
+        fs::write(&file, "").unwrap();
+        fs::create_dir_all(tree.join("nested")).unwrap();
+        fs::write(tree.join("nested/inner.txt"), "").unwrap();
+
+        delete_file(path_string(&file)).unwrap();
+        delete_file(path_string(&tree)).unwrap();
+
+        assert!(!file.exists());
+        assert!(!tree.exists());
+        assert!(delete_file(path_string(&file))
+            .err()
+            .unwrap()
+            .starts_with("Not found"));
+    }
+
     #[test]
     fn write_atomic_replaces_content_and_leaves_no_temp_file() {
         let dir = tempfile::tempdir().unwrap();

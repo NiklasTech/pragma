@@ -88,3 +88,105 @@ fn resolve_pathspecs(repo_root: &Path, paths: &[String]) -> Result<Vec<String>> 
     }
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::git::errors::GitError;
+    use crate::modules::git::operations::status;
+    use crate::modules::git::operations::test_support::TestRepo;
+
+    fn paths(items: &[&str]) -> Vec<String> {
+        items.iter().map(|item| item.to_string()).collect()
+    }
+
+    fn is_staged(repo: &TestRepo, path: &str) -> bool {
+        status(&repo.root)
+            .unwrap()
+            .changed_files
+            .iter()
+            .any(|f| f.path == path && f.is_staged)
+    }
+
+    #[test]
+    fn stage_and_unstage_round_trip() {
+        let repo = TestRepo::new();
+        repo.write("new.txt", "new\n");
+
+        stage(&repo.root, &paths(&["new.txt"])).unwrap();
+        assert!(is_staged(&repo, "new.txt"));
+
+        unstage(&repo.root, &paths(&["new.txt"])).unwrap();
+        assert!(!is_staged(&repo, "new.txt"));
+    }
+
+    #[test]
+    fn stage_accepts_dot_slash_prefixed_paths() {
+        let repo = TestRepo::new();
+        repo.write("dir/new.txt", "new\n");
+
+        stage(&repo.root, &paths(&["./dir/new.txt"])).unwrap();
+
+        assert!(is_staged(&repo, "dir/new.txt"));
+    }
+
+    #[test]
+    fn empty_path_lists_are_a_no_op() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "changed\n");
+
+        stage(&repo.root, &[]).unwrap();
+        unstage(&repo.root, &[]).unwrap();
+        discard(&repo.root, &[]).unwrap();
+
+        assert_eq!(repo.read("file.txt"), "changed\n");
+    }
+
+    #[test]
+    fn stage_rejects_paths_outside_the_repository() {
+        let repo = TestRepo::new();
+        std::fs::write(repo.outside_path("outside.txt"), "secret\n").unwrap();
+
+        let result = stage(&repo.root, &paths(&["../outside.txt"]));
+
+        assert!(matches!(result, Err(GitError::PathOutsideWorkspace(_))));
+    }
+
+    #[test]
+    fn stage_fails_for_unknown_paths() {
+        let repo = TestRepo::new();
+        assert!(stage(&repo.root, &paths(&["missing.txt"])).is_err());
+    }
+
+    #[test]
+    fn discard_restores_a_tracked_file() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "changed\n");
+
+        discard(&repo.root, &paths(&["file.txt"])).unwrap();
+
+        assert_eq!(repo.read("file.txt"), "base\n");
+    }
+
+    #[test]
+    fn discard_removes_an_untracked_file() {
+        let repo = TestRepo::new();
+        repo.write("untracked.txt", "new\n");
+
+        discard(&repo.root, &paths(&["untracked.txt"])).unwrap();
+
+        assert!(!repo.path("untracked.txt").exists());
+    }
+
+    #[test]
+    fn discard_keeps_staged_content() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "staged\n");
+        repo.git(&["add", "file.txt"]);
+        repo.write("file.txt", "unstaged\n");
+
+        discard(&repo.root, &paths(&["file.txt"])).unwrap();
+
+        assert_eq!(repo.read("file.txt"), "staged\n");
+    }
+}

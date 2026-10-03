@@ -218,4 +218,158 @@ mod tests {
         assert_eq!(result.matches.len(), MAX_TOTAL_MATCHES);
         assert!(result.truncated);
     }
+
+    fn search(dir: &Path, configure: impl FnOnce(&mut SearchWorkspaceRequest)) -> Vec<SearchMatch> {
+        let mut req = default_request(&dir.to_string_lossy());
+        configure(&mut req);
+        search_workspace(req).unwrap().matches
+    }
+
+    fn file_names(matches: &[SearchMatch]) -> Vec<String> {
+        let mut names: Vec<_> = matches
+            .iter()
+            .map(|m| {
+                Path::new(&m.path)
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned()
+            })
+            .collect();
+        names.sort();
+        names.dedup();
+        names
+    }
+
+    #[test]
+    fn reports_line_column_and_absolute_path() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("a.txt"), "one\n  call foo()\n").unwrap();
+
+        let matches = search(dir.path(), |_| {});
+
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].line, 2);
+        assert_eq!(matches[0].column, 8);
+        assert_eq!(matches[0].match_text, "foo");
+        assert_eq!(matches[0].preview, "  call foo()");
+        assert!(Path::new(&matches[0].path).is_absolute());
+    }
+
+    #[test]
+    fn respects_case_sensitivity() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("a.txt"), "Foo foo FOO").unwrap();
+
+        assert_eq!(search(dir.path(), |_| {}).len(), 3);
+        assert_eq!(search(dir.path(), |r| r.case_sensitive = true).len(), 1);
+    }
+
+    #[test]
+    fn whole_word_skips_partial_matches() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("a.txt"), "foo food foobar foo").unwrap();
+
+        assert_eq!(search(dir.path(), |r| r.whole_word = true).len(), 2);
+    }
+
+    #[test]
+    fn plain_queries_escape_regex_syntax() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("a.txt"), "a.b axb").unwrap();
+
+        let plain = search(dir.path(), |r| r.query = "a.b".into());
+        let regex = search(dir.path(), |r| {
+            r.query = "a.b".into();
+            r.use_regex = true;
+        });
+
+        assert_eq!(plain.len(), 1);
+        assert_eq!(regex.len(), 2);
+    }
+
+    #[test]
+    fn rejects_invalid_input() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_string_lossy().into_owned();
+        let with = |configure: fn(&mut SearchWorkspaceRequest)| {
+            let mut req = default_request(&root);
+            configure(&mut req);
+            search_workspace(req).unwrap_err()
+        };
+
+        assert_eq!(with(|r| r.query = "   ".into()), "query is required");
+        assert_eq!(
+            with(|r| r.workspace_root.clear()),
+            "workspace_root is required"
+        );
+        assert!(with(|r| r.workspace_root.push_str("/missing"))
+            .starts_with("Workspace root does not exist"));
+        assert!(with(|r| {
+            r.query = "(".into();
+            r.use_regex = true;
+        })
+        .starts_with("Invalid search pattern"));
+    }
+
+    #[test]
+    fn applies_include_and_exclude_globs() {
+        let dir = tempdir().unwrap();
+        fs::create_dir(dir.path().join("src")).unwrap();
+        fs::write(dir.path().join("src/a.rs"), "foo").unwrap();
+        fs::write(dir.path().join("src/b.ts"), "foo").unwrap();
+        fs::write(dir.path().join("c.rs"), "foo").unwrap();
+
+        let included = search(dir.path(), |r| r.include_globs = vec!["*.rs".into()]);
+        let excluded = search(dir.path(), |r| r.exclude_globs = vec!["src/**".into()]);
+
+        assert_eq!(file_names(&included), vec!["a.rs", "c.rs"]);
+        assert_eq!(file_names(&excluded), vec!["c.rs"]);
+    }
+
+    #[test]
+    fn skips_ignored_binary_and_oversized_files() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join(".ignore"), "ignored.txt\n").unwrap();
+        fs::write(dir.path().join("ignored.txt"), "foo").unwrap();
+        fs::write(dir.path().join("binary.bin"), b"foo\0").unwrap();
+        fs::write(
+            dir.path().join("large.txt"),
+            "foo".repeat(MAX_FILE_SIZE_BYTES as usize),
+        )
+        .unwrap();
+        fs::write(dir.path().join("kept.txt"), "foo").unwrap();
+
+        let matches = search(dir.path(), |_| {});
+
+        assert_eq!(file_names(&matches), vec!["kept.txt"]);
+    }
+
+    #[test]
+    fn previews_long_lines_around_the_match() {
+        let line = format!("{}foo{}", "a".repeat(200), "b".repeat(200));
+
+        let preview = build_preview(&line, 200, 203);
+
+        assert!(preview.starts_with('…'));
+        assert!(preview.ends_with('…'));
+        assert!(preview.contains("foo"));
+        assert_eq!(preview.chars().count(), 2 + 80 + 3 + 80);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn does_not_follow_symlinks_out_of_the_workspace() {
+        let outside = tempdir().unwrap();
+        fs::write(outside.path().join("secret.txt"), "foo").unwrap();
+        let dir = tempdir().unwrap();
+        std::os::unix::fs::symlink(
+            outside.path().join("secret.txt"),
+            dir.path().join("link.txt"),
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(outside.path(), dir.path().join("linked-dir")).unwrap();
+
+        assert!(search(dir.path(), |_| {}).is_empty());
+    }
 }
