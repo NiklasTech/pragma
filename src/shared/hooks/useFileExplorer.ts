@@ -12,7 +12,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 
-interface DirEntry {
+export interface DirEntry {
   path: string;
   name: string;
   is_directory: boolean;
@@ -25,7 +25,7 @@ interface FileReadResult {
   content: string;
 }
 
-function entryToNode(entry: DirEntry): FileSystemNode {
+export function entryToNode(entry: DirEntry): FileSystemNode {
   return {
     path: entry.path,
     name: entry.name,
@@ -203,7 +203,7 @@ export function useFileExplorer() {
   };
 }
 
-function findNode(nodes: FileSystemNode[], path: string): FileSystemNode | null {
+export function findNode(nodes: FileSystemNode[], path: string): FileSystemNode | null {
   for (const n of nodes) {
     if (n.path === path) return n;
     if (n.children) {

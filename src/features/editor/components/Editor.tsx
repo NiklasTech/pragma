@@ -6,6 +6,7 @@ import { EditorEmptyState } from "./EditorEmptyState";
 import { ReferencesView } from "./ReferencesView";
 import { InlineDiff } from "./InlineDiff";
 import { FileEditor } from "./FileEditor";
+import { DiskChangeNotice } from "./DiskChangeNotice";
 
 interface EditorProps {
   panelId?: string;
@@ -72,14 +73,19 @@ export function Editor({ panelId }: EditorProps) {
   }
 
   return (
-    <FileEditor
-      content={activeTab.content}
-      fileName={activeTab.name}
-      filePath={activeTab.path}
-      tabId={activeTab.id}
-      isModified={activeTab.isModified}
-      onChange={(value) => updateFileContent(activeTab.id, value)}
-      vimEnabled={vimEnabled}
-    />
+    <div className="flex h-full w-full flex-col">
+      <DiskChangeNotice tabId={activeTab.id} path={activeTab.path} name={activeTab.name} />
+      <div className="min-h-0 flex-1">
+        <FileEditor
+          content={activeTab.content}
+          fileName={activeTab.name}
+          filePath={activeTab.path}
+          tabId={activeTab.id}
+          isModified={activeTab.isModified}
+          onChange={(value) => updateFileContent(activeTab.id, value)}
+          vimEnabled={vimEnabled}
+        />
+      </div>
+    </div>
   );
 }

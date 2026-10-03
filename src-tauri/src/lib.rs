@@ -34,6 +34,7 @@ pub fn run() {
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
+        .manage(modules::fs_watcher::WorkspaceWatchers::default())
         .manage(modules::parakeet::ParakeetState::default())
         .manage(modules::whisper_models::WhisperState::default())
         .plugin(tauri_plugin_dialog::init())
@@ -102,10 +103,14 @@ pub fn run() {
             app_menu::handle_menu_event(app, event.id().as_ref());
         })
         .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                if let Some(watchers) = window.try_state::<modules::fs_watcher::WorkspaceWatchers>()
+                {
+                    watchers.remove_window(window.label());
+                }
+            }
             #[cfg(target_os = "macos")]
             crate::macos_chrome::on_window_event(window, event);
-            #[cfg(not(target_os = "macos"))]
-            let _ = (window, event);
         })
         .invoke_handler(tauri::generate_handler![
             modules::fonts::get_app_data_dir,
@@ -121,6 +126,8 @@ pub fn run() {
             modules::fs::create_directory,
             modules::fs::rename_file,
             modules::fs::delete_file,
+            modules::fs_watcher::workspace_watch,
+            modules::fs_watcher::workspace_unwatch,
             modules::pty::create_pty,
             modules::pty::create_pty_command,
             modules::pty::resolve_terminal_shell,

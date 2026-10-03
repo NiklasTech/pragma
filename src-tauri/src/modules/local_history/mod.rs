@@ -2,7 +2,6 @@ pub mod commands;
 pub mod config;
 pub mod diff_engine;
 pub mod storage;
-pub mod watcher;
 
 use tauri::Manager;
 
