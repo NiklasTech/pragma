@@ -7,6 +7,7 @@ import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
 import { setDiskBaseline } from "@/features/editor/diskSync";
 import { isChangedOnDiskError, sha256Hex } from "@/shared/lib/fileDisk";
+import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
 
 interface SaveFileOptions {
   /// Autosave skips the conflict toast; the editor notice already shows the conflict.
@@ -19,6 +20,7 @@ function conflictMessage(name: string): string {
 
 export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
   return useCallback(async () => {
+    flushPendingDocChanges();
     const { tabs, activeTabId } = useEditorStore.getState();
     const tab = tabs.find((candidate) => candidate.id === activeTabId);
     if (!tab || tab.kind !== "file") return;

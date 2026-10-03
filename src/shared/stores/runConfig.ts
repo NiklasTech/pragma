@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { crossWindowSync } from "./sync/crossWindowSync";
+import { appendCapped, createRunOutputBatcher } from "./runOutput";
 import { getWindowScope, isWorkspaceWindow } from "@/shared/lib/windowScope";
 
 export interface RunConfig {
@@ -55,7 +56,7 @@ interface RunConfigActions {
   stopProcess: (processId: string) => Promise<void>;
   restartProcess: (processId: string) => Promise<void>;
   setActiveProcess: (processId: string | null) => void;
-  appendOutput: (processId: string, data: string) => void;
+  appendOutput: (processId: string, lines: string[]) => void;
   setProcessStatus: (processId: string, status: RunStatus, exitCode: number | null) => void;
   removeProcess: (processId: string) => void;
 }
@@ -300,10 +301,10 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
 
     setActiveProcess: (processId) => set({ activeProcessId: processId }),
 
-    appendOutput: (processId, data) => {
+    appendOutput: (processId, lines) => {
       set({
         processes: get().processes.map((p) =>
-          p.id === processId ? { ...p, output: [...p.output, data] } : p,
+          p.id === processId ? { ...p, output: appendCapped(p.output, lines) } : p,
         ),
       });
     },
@@ -338,8 +339,12 @@ export function initRunConfigListeners() {
   // the resulting state via cross-window store sync.
   if (!isWorkspaceWindow()) return;
 
+  const queueOutput = createRunOutputBatcher((processId, lines) => {
+    useRunConfigStore.getState().appendOutput(processId, lines);
+  });
+
   void listen<{ process_id: string; data: string }>("run_output", (event) => {
-    useRunConfigStore.getState().appendOutput(event.payload.process_id, event.payload.data);
+    queueOutput(event.payload.process_id, event.payload.data);
   });
 
   void listen<{

@@ -317,6 +317,7 @@ pub fn run() {
             commands::docker::docker_compose_up_build,
             commands::perf::memory_stats,
             commands::search::search_workspace,
+            commands::search::cancel_workspace_search,
             commands::search::replace_workspace,
             commands::search::glob_workspace,
             cli::get_cli_project_path,

@@ -21,6 +21,7 @@ import {
 } from "@/features/editor/components/extensions/ghost-text";
 import { insertTabBinding } from "@/features/editor/components/extensions/tab-keymap";
 import { searchExtension } from "@/features/editor/components/extensions/search";
+import { docSyncExtension } from "@/features/editor/components/extensions/doc-sync";
 import {
   languageCompartment,
   ghostTextCompartment,
@@ -30,7 +31,6 @@ import {
   tabSizeCompartment,
   indentUnitCompartment,
   blameCompartment,
-  externalUpdate,
 } from "@/features/editor/compartments";
 
 export interface EditorExtensionsContext {
@@ -120,14 +120,9 @@ export function useEditorExtensions({
         editorBaseTheme,
         fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
         wordWrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
+        docSyncExtension(onChangeValue),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            const isExternal = update.transactions.some((tr) =>
-              tr.effects.some((e) => e.is(externalUpdate)),
-            );
-            if (!isExternal) {
-              onChangeValue(update.state.doc.toString());
-            }
             const debugStore = useDebugStore.getState();
             const breakpointLines = getBreakpointLines(update.state);
             if (!sameLines(breakpointLines, debugStore.breakpoints[filePathRef.current] ?? [])) {

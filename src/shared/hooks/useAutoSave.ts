@@ -43,10 +43,11 @@ export function useAutoSave() {
   }, [content, isModified, autoSave, autoSaveDelay, saveFile]);
 
   const handleBlur = useCallback(() => {
-    if (autoSave === "onFocusChange" && isModified) {
+    // saveFile flushes pending edits first and skips tabs without changes.
+    if (autoSave === "onFocusChange") {
       void saveFile();
     }
-  }, [autoSave, isModified, saveFile]);
+  }, [autoSave, saveFile]);
 
   return { handleBlur };
 }

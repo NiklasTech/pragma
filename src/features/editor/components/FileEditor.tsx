@@ -64,6 +64,7 @@ export function FileEditor({
   const viewRef = useRef<EditorView | null>(null);
   const filePathRef = useRef(filePath);
   filePathRef.current = filePath;
+  const syncedContentRef = useRef(content);
   const breakpointCompartmentRef = useRef(new Compartment());
   const diagnosticsCompartmentRef = useRef(new Compartment());
   const lspCompletionCompartmentRef = useRef(new Compartment());
@@ -152,7 +153,10 @@ export function FileEditor({
     containerRef,
     viewRef,
     content,
-    onChange,
+    onChange: (value) => {
+      syncedContentRef.current = value;
+      onChange(value);
+    },
     vimEnabled,
     filePath,
     createExtensions,
@@ -246,7 +250,9 @@ export function FileEditor({
   }, [captureActiveSelection, handleEditWithAI, fontSize, shortcuts]);
 
   useEffect(() => {
-    if (!viewRef.current) return;
+    // Content the editor just reported back needs no comparison against the document.
+    if (!viewRef.current || content === syncedContentRef.current) return;
+    syncedContentRef.current = content;
 
     const current = viewRef.current.state.doc.toString();
     if (current !== content) {

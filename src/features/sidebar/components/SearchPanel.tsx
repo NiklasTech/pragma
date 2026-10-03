@@ -35,6 +35,7 @@ import {
   parsePatterns,
   type SearchQueryState,
   type SearchResult,
+  type SearchWorkspaceResult,
 } from "@/features/sidebar/lib/searchReplace";
 import { cn } from "@/shared/lib/utils";
 import { SearchResultGroupView } from "./SearchResultGroup";
@@ -54,6 +55,7 @@ export function SearchPanel() {
   const [includePatterns, setIncludePatterns] = useState("");
   const [excludePatterns, setExcludePatterns] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replaceAllOpen, setReplaceAllOpen] = useState(false);
@@ -97,6 +99,7 @@ export function SearchPanel() {
   useEffect(() => {
     if (!rootPath) {
       setResults([]);
+      setTruncated(false);
       setError(null);
       return;
     }
@@ -104,17 +107,21 @@ export function SearchPanel() {
     const trimmedQuery = query.trim();
     if (trimmedQuery.length === 0) {
       setResults([]);
+      setTruncated(false);
       setError(null);
       return;
     }
 
     const controller = new AbortController();
+    let runningSearchId: string | null = null;
     setLoading(true);
     setError(null);
 
     const timeoutId = window.setTimeout(async () => {
+      const searchId = crypto.randomUUID();
+      runningSearchId = searchId;
       try {
-        const matches = await invoke<SearchResult[]>("search_workspace", {
+        const result = await invoke<SearchWorkspaceResult>("search_workspace", {
           req: {
             workspaceRoot: rootPath,
             query: trimmedQuery,
@@ -123,17 +130,21 @@ export function SearchPanel() {
             useRegex,
             includeGlobs: parsePatterns(includePatterns),
             excludeGlobs: parsePatterns(excludePatterns),
+            searchId,
           },
         });
         if (!controller.signal.aborted) {
-          setResults(matches);
+          setResults(result.matches);
+          setTruncated(result.truncated);
         }
       } catch (err) {
         if (!controller.signal.aborted) {
           setError(String(err));
           setResults([]);
+          setTruncated(false);
         }
       } finally {
+        runningSearchId = null;
         if (!controller.signal.aborted) {
           setLoading(false);
         }
@@ -143,6 +154,9 @@ export function SearchPanel() {
     return () => {
       controller.abort();
       window.clearTimeout(timeoutId);
+      if (runningSearchId) {
+        void invoke("cancel_workspace_search", { searchId: runningSearchId }).catch(() => {});
+      }
     };
   }, [
     query,
@@ -279,10 +293,20 @@ export function SearchPanel() {
           />
           {results.length > 0 && (
             <span className="ml-auto truncate pl-2 text-ui-2xs text-fg-subtle tabular-nums">
-              {results.length} in {grouped.length} file{grouped.length === 1 ? "" : "s"}
+              {results.length}
+              {truncated ? "+" : ""} in {grouped.length} file{grouped.length === 1 ? "" : "s"}
             </span>
           )}
         </div>
+
+        {truncated && (
+          <Alert>
+            <Warning size={16} />
+            <AlertDescription className="text-ui-xs">
+              Not all matches are shown. Narrow the query or filters to see the rest.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {error && (
           <Alert variant="destructive">

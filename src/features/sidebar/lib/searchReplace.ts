@@ -28,6 +28,11 @@ export interface SearchResult {
   matchText: string;
 }
 
+export interface SearchWorkspaceResult {
+  matches: SearchResult[];
+  truncated: boolean;
+}
+
 export interface SearchResultGroup {
   path: string;
   relativePath: string;
