@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { EditorView } from "@codemirror/view";
 import { Compartment } from "@codemirror/state";
 import { externalUpdate } from "@/features/editor/compartments";
+import { minimalChange } from "@/shared/lib/editor/minimalChange";
 import { useLspDiagnostics } from "@/shared/hooks/useLspDiagnostics";
 import { useLspDocumentSync } from "@/shared/hooks/useLspDocumentSync";
 import { useLspStatus } from "@/shared/hooks/useLspStatus";
@@ -250,7 +251,7 @@ export function FileEditor({
     const current = viewRef.current.state.doc.toString();
     if (current !== content) {
       viewRef.current.dispatch({
-        changes: { from: 0, to: viewRef.current.state.doc.length, insert: content },
+        changes: minimalChange(current, content),
         effects: externalUpdate.of(),
       });
     }

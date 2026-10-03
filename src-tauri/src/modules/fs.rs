@@ -1,6 +1,9 @@
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::fs;
+use std::io::{self, Write};
 use std::path::{Component, Path};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::local_history;
 
@@ -82,15 +85,29 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     })
 }
 
+/// Returned when `expected_hash` no longer matches the file on disk; the frontend matches on it.
+pub const CHANGED_ON_DISK_ERROR: &str = "File changed on disk since it was loaded";
+
+static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
+
 #[tauri::command(async)]
-pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> Result<(), String> {
+pub fn write_text_file(
+    app: tauri::AppHandle,
+    path: String,
+    content: String,
+    expected_hash: Option<String>,
+) -> Result<(), String> {
     let path_ref = validate_path(&path)?;
 
     if path_ref.exists() && !path_ref.is_file() {
         return Err(format!("Not a file: {}", path));
     }
 
-    fs::write(path_ref, &content).map_err(|e| format!("Failed to write file: {}", e))?;
+    if let Some(expected) = expected_hash.as_deref() {
+        ensure_unchanged_on_disk(path_ref, expected)?;
+    }
+
+    write_atomic(path_ref, content.as_bytes())?;
 
     let repo_path = path_ref
         .parent()
@@ -98,6 +115,75 @@ pub fn write_text_file(app: tauri::AppHandle, path: String, content: String) -> 
         .unwrap_or_default();
     let _ = local_history::on_file_saved(&app, &repo_path, &path, &content);
 
+    Ok(())
+}
+
+fn content_hash(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    format!("{:x}", hasher.finalize())
+}
+
+fn ensure_unchanged_on_disk(path: &Path, expected_hash: &str) -> Result<(), String> {
+    let bytes = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(format!("Failed to read file: {}", e)),
+    };
+
+    if content_hash(&bytes) == expected_hash {
+        Ok(())
+    } else {
+        Err(CHANGED_ON_DISK_ERROR.to_string())
+    }
+}
+
+/// Writes to a temp file next to the target and renames it over the target,
+/// so a crash or full disk never leaves a truncated file behind.
+fn write_atomic(path: &Path, content: &[u8]) -> Result<(), String> {
+    // Resolve symlinks so the rename replaces the link target, not the link.
+    let target = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let file_name = target
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| format!("Invalid file path: {}", target.display()))?;
+    let nonce = TEMP_FILE_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let temp_path =
+        target.with_file_name(format!(".{file_name}.{}.{nonce}.tmp", std::process::id()));
+    let permissions = fs::metadata(&target).ok().map(|m| m.permissions());
+
+    if let Err(e) = write_temp_file(&temp_path, content, permissions) {
+        let _ = fs::remove_file(&temp_path);
+        return Err(format!("Failed to write file: {}", e));
+    }
+
+    if let Err(e) = fs::rename(&temp_path, &target) {
+        let _ = fs::remove_file(&temp_path);
+        // Windows refuses to replace a file that another process holds open.
+        if cfg!(windows) && target.is_file() {
+            log::warn!(
+                "atomic replace of {} failed ({e}), writing in place",
+                target.display()
+            );
+            return fs::write(&target, content).map_err(|e| format!("Failed to write file: {}", e));
+        }
+        return Err(format!("Failed to write file: {}", e));
+    }
+
+    Ok(())
+}
+
+fn write_temp_file(
+    path: &Path,
+    content: &[u8],
+    permissions: Option<fs::Permissions>,
+) -> io::Result<()> {
+    let mut file = fs::File::create(path)?;
+    file.write_all(content)?;
+    file.sync_all()?;
+    if let Some(permissions) = permissions {
+        fs::set_permissions(path, permissions)?;
+    }
     Ok(())
 }
 
@@ -259,5 +345,95 @@ pub fn delete_file(path: String) -> Result<(), String> {
         fs::remove_dir_all(path_ref).map_err(|e| format!("Failed to delete directory: {}", e))
     } else {
         Err(format!("Not a file or directory: {}", path))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_atomic_replaces_content_and_leaves_no_temp_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("file.txt");
+        fs::write(&path, "old content").unwrap();
+
+        write_atomic(&path, b"new").unwrap();
+
+        assert_eq!(fs::read_to_string(&path).unwrap(), "new");
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn write_atomic_creates_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("new.txt");
+
+        write_atomic(&path, b"hello").unwrap();
+
+        assert_eq!(fs::read_to_string(&path).unwrap(), "hello");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_keeps_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("script.sh");
+        fs::write(&path, "echo old").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+
+        write_atomic(&path, b"echo new").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o755);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_writes_through_symlinks() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.txt");
+        let link = dir.path().join("link.txt");
+        fs::write(&target, "old").unwrap();
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        write_atomic(&link, b"new").unwrap();
+
+        assert!(fs::symlink_metadata(&link)
+            .unwrap()
+            .file_type()
+            .is_symlink());
+        assert_eq!(fs::read_to_string(&target).unwrap(), "new");
+    }
+
+    #[test]
+    fn unchanged_check_accepts_matching_hash() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("file.txt");
+        fs::write(&path, "content").unwrap();
+
+        assert!(ensure_unchanged_on_disk(&path, &content_hash(b"content")).is_ok());
+    }
+
+    #[test]
+    fn unchanged_check_rejects_external_change() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("file.txt");
+        fs::write(&path, "changed by an agent").unwrap();
+
+        assert_eq!(
+            ensure_unchanged_on_disk(&path, &content_hash(b"content")),
+            Err(CHANGED_ON_DISK_ERROR.to_string())
+        );
+    }
+
+    #[test]
+    fn unchanged_check_allows_missing_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("deleted.txt");
+
+        assert!(ensure_unchanged_on_disk(&path, &content_hash(b"content")).is_ok());
     }
 }

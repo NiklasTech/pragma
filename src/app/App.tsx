@@ -16,6 +16,7 @@ import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindowManager";
 import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
+import { useWorkspaceWatcher } from "@/shared/hooks/useWorkspaceWatcher";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { useExtensions } from "@/features/extensions/useExtensions";
@@ -38,6 +39,7 @@ export default function App() {
   useExternalWindowManager();
   useDisableBrowserBehaviors();
   useWorkspaceRestore();
+  useWorkspaceWatcher();
   useDiagnosticsCleanup();
   useTerminalShellResolver();
   useExtensions();

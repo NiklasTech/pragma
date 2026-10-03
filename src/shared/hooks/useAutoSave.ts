@@ -4,7 +4,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useEditorStore } from "@/shared/stores/editor";
 
 export function useAutoSave() {
-  const saveFile = useSaveFile();
+  const saveFile = useSaveFile({ auto: true });
   const autoSave = useSettingsStore((state) => state.editor.autoSave);
   const autoSaveDelay = useSettingsStore((state) => state.editor.autoSaveDelay);
   const activeTabId = useEditorStore((state) => state.activeTabId);

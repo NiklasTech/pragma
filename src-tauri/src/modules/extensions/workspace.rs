@@ -68,7 +68,7 @@ pub fn extension_workspace_write_file(
     content: String,
 ) -> Result<(), String> {
     let resolved = resolve_workspace_path(&workspace_root, &path)?;
-    fs_commands::write_text_file(app, resolved.to_string_lossy().into_owned(), content)
+    fs_commands::write_text_file(app, resolved.to_string_lossy().into_owned(), content, None)
 }
 
 #[tauri::command]
