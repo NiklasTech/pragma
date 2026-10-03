@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "vp dev",
-    "dev:desktop": "vp run tauri dev",
+    "dev:desktop": "vp run tauri dev --config src-tauri/tauri.dev.conf.json",
     "build": "tsc && vp build",
     "build:desktop": "vp run tauri build",
+    "install:local": "node scripts/install-local.mjs",
     "preview": "vp preview",
     "check": "vp check",
     "test": "vp test --run",

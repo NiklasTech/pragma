@@ -110,6 +110,9 @@ impl McpManager {
 
         let path = config_path(&app_handle).map_err(McpError::Config)?;
         if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| McpError::Config(format!("Failed to create config directory: {e}")))?;
             let mut watcher = manager.watcher.lock().await;
             watcher
                 .watch(parent, RecursiveMode::NonRecursive)

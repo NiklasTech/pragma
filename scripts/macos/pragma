@@ -1,0 +1,25 @@
+#!/bin/sh
+# Installed by `pnpm run install:local` (pragma-cli-shim). Delete this file to remove the command.
+
+APP="/Applications/Pragma.app"
+
+for arg do
+  case "$arg" in
+    -v | --version | -h | --help) exec "$APP/Contents/MacOS/pragma" "$@" ;;
+  esac
+done
+
+# Processes started through `open` run with / as their working directory.
+for arg do
+  shift
+  case "$arg" in
+    -* | /*) ;;
+    *) arg="$PWD/$arg" ;;
+  esac
+  set -- "$@" "$arg"
+done
+
+if [ "$#" -eq 0 ]; then
+  exec open -n -a "$APP"
+fi
+exec open -n -a "$APP" --args "$@"
