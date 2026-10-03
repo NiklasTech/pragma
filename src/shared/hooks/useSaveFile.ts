@@ -8,6 +8,7 @@ import { useSkillsStore } from "@/features/ai/skills/store";
 import { setDiskBaseline } from "@/features/editor/diskSync";
 import { isChangedOnDiskError, sha256Hex } from "@/shared/lib/fileDisk";
 import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
+import { notifyFileSaved } from "@/features/extensions/events";
 
 interface SaveFileOptions {
   /// Autosave skips the conflict toast; the editor notice already shows the conflict.
@@ -43,6 +44,7 @@ export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
       setDiskBaseline(tab.id, content);
       diskState.clearStatus(tab.path);
       if (isSkillPath(tab.path)) void useSkillsStore.getState().reloadSkills();
+      notifyFileSaved(tab.path, tab.language ?? null);
       toast.success(`Saved ${tab.name}`);
     } catch (err) {
       if (isChangedOnDiskError(err)) {

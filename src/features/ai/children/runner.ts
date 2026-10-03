@@ -19,6 +19,13 @@ import {
   isAgentTool,
 } from "@/features/agent/tools";
 import { composeAgentSystemPrompt } from "@/features/ai/named-agents/prompt";
+import {
+  extensionToolDefinitions,
+  isExtensionTool,
+  runExtensionTool,
+} from "@/features/extensions/agentTools";
+import { notifySessionFinished } from "@/features/extensions/events";
+import { useExtensionsStore } from "@/features/extensions/store";
 import { formatSkillCatalog, selectCatalogSkills } from "@/features/ai/skills/catalog";
 import { useSkillsStore } from "@/features/ai/skills/store";
 import { isAcpActive } from "@/shared/lib/ai/acp";
@@ -105,6 +112,11 @@ function settle(rootPath: string, sessionId: string, status: ChildRunStatus, err
   if (!live) return;
   liveRuns.delete(sessionId);
   persist(rootPath, sessionId, live.state.messages);
+  if (status === "done" || status === "error" || status === "cancelled") {
+    const title =
+      useAIStore.getState().chatSessions.find((session) => session.id === sessionId)?.title ?? "";
+    notifySessionFinished({ sessionId, title, status });
+  }
 }
 
 function persist(rootPath: string, sessionId: string, messages: UIMessage[]): void {
@@ -193,6 +205,7 @@ export async function startChildRun(
         ...AGENT_TOOL_DEFINITIONS,
         SPAWN_SESSION_TOOL_DEFINITION,
         OPEN_BROWSER_TOOL_DEFINITION,
+        ...extensionToolDefinitions(useExtensionsStore.getState().agentTools),
       ];
 
   const transport = createStreamTransport(
@@ -282,9 +295,11 @@ export async function startChildRun(
       const tool = mcpTools.find((item) => item.displayName === toolCall.toolName);
       const result = isAgentTool(toolCall.toolName)
         ? await executeAgentTool(call, cwd, null, context)
-        : tool
-          ? await callMcpTool(tool, toolCall.input)
-          : { errorText: `Tool ${toolCall.toolName} is not available` };
+        : isExtensionTool(toolCall.toolName)
+          ? await runExtensionTool(call, context)
+          : tool
+            ? await callMcpTool(tool, toolCall.input)
+            : { errorText: `Tool ${toolCall.toolName} is not available` };
       // Awaiting the output here would deadlock: the chat queues it behind the running request.
       const added =
         "errorText" in result

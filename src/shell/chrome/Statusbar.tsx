@@ -5,6 +5,8 @@ import { currentModelName, useAcpSessionOptionsStore } from "@/features/ai/acp/s
 import { useAIStore } from "@/shared/stores/ai";
 import { useProblemsStore } from "@/shared/stores/problems";
 import { useLayoutStore } from "@/shell/layout/store";
+import { ExtensionStatusItems } from "@/features/extensions/components/ExtensionStatusItems";
+import { useExtensionsStore } from "@/features/extensions/store";
 import { cn } from "@/shared/lib/utils";
 
 const LEADING_ITEMS = new Set<StatusbarItem>(["gitBranch", "gitSync", "problems"]);
@@ -54,6 +56,7 @@ export function Statusbar() {
     ? [cliName, cliOptions ? currentModelName(cliOptions) : null].filter(Boolean).join(" · ")
     : [activeProvider, activeModel].filter(Boolean).join(" · ");
   const problems = useProblemsStore((state) => state.problems);
+  const extensionItemCount = useExtensionsStore((state) => state.statusBarItems.length);
 
   if (!statusbar.visible) return null;
 
@@ -149,12 +152,18 @@ export function Statusbar() {
   const leading = statusbar.items.filter((item) => LEADING_ITEMS.has(item)).map(renderItem);
   const trailing = statusbar.items.filter((item) => !LEADING_ITEMS.has(item)).map(renderItem);
 
-  if (!leading.some(Boolean) && !trailing.some(Boolean)) return null;
+  if (!leading.some(Boolean) && !trailing.some(Boolean) && extensionItemCount === 0) return null;
 
   return (
     <div className="flex h-statusbar shrink-0 items-center justify-between gap-2 bg-bg-chrome px-2 select-none">
-      <div className="flex min-w-0 items-center gap-0.5">{leading}</div>
-      <div className="flex min-w-0 items-center gap-0.5">{trailing}</div>
+      <div className="flex min-w-0 items-center gap-0.5">
+        {leading}
+        <ExtensionStatusItems alignment="left" />
+      </div>
+      <div className="flex min-w-0 items-center gap-0.5">
+        <ExtensionStatusItems alignment="right" />
+        {trailing}
+      </div>
     </div>
   );
 }

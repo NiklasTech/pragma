@@ -13,6 +13,12 @@ export interface ExtensionPanelContribution {
   html?: string;
 }
 
+export interface ExtensionKeybindingContribution {
+  command: string;
+  key: string;
+  mac?: string;
+}
+
 export interface ExtensionThemePathContribution {
   path: string;
 }
@@ -23,6 +29,7 @@ export interface ExtensionContributes {
   commands?: ExtensionCommandContribution[];
   themes?: ExtensionThemeContribution[];
   panels?: ExtensionPanelContribution[];
+  keybindings?: ExtensionKeybindingContribution[];
 }
 
 export interface ExtensionManifest {

@@ -13,6 +13,8 @@ import {
   setActiveEditorText,
   writeWorkspaceFile,
 } from "./workspaceApi";
+import { handleContributionRequest } from "./bridgeContributions";
+import { asRecord, requireParams, requireString, requireText } from "./params";
 import type { BridgeRequest } from "./types";
 
 export interface BridgeContext {
@@ -34,38 +36,11 @@ export function parseBridgeRequest(data: unknown): BridgeRequest | null {
   return request;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
-}
-
-function requireString(obj: Record<string, unknown>, key: string): string {
-  const value = obj[key];
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`"${key}" must be a non-empty string`);
-  }
-  return value;
-}
-
-function requireText(obj: Record<string, unknown>, key: string): string {
-  const value = obj[key];
-  if (typeof value !== "string") {
-    throw new Error(`"${key}" must be a string`);
-  }
-  return value;
-}
-
 function requireWorkspaceRoot(ctx: BridgeContext): string {
   if (!ctx.workspaceRoot) {
     throw new Error("No workspace is open");
   }
   return ctx.workspaceRoot;
-}
-
-function requireParams(params: unknown): Record<string, unknown> {
-  const record = asRecord(params);
-  if (!record) throw new Error("params must be an object");
-  return record;
 }
 
 export function prefixedCommandId(extensionId: string, commandId: string): string {
@@ -249,6 +224,6 @@ export async function handleBridgeRequest(
     case "workspace.list":
       return workspaceList(ctx, request.params);
     default:
-      throw new Error(`Unknown method: ${request.method}`);
+      return handleContributionRequest(ctx, request);
   }
 }

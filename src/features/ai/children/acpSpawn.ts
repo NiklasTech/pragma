@@ -31,7 +31,7 @@ interface SpawnApprovalsState {
 
 export const useSpawnApprovalsStore = create<SpawnApprovalsState>()(() => ({ bySession: {} }));
 
-function requestSpawnApproval(
+export function requestSpawnApproval(
   sessionId: string,
   approval: Omit<AgentApproval, "resolve">,
 ): Promise<boolean> {

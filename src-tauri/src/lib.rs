@@ -308,6 +308,7 @@ pub fn run() {
             commands::cli::cli_chat_stream,
             commands::cli::cli_acp_chat_stream,
             ai::child_sessions::server::child_session_spawn_reply,
+            ai::child_sessions::server::extension_tools_sync,
             commands::cli::cli_acp_cancel,
             commands::cli::cli_acp_approve,
             commands::acp_config::cli_acp_session_config,

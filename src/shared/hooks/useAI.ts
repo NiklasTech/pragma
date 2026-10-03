@@ -41,7 +41,15 @@ import { expandPromptCommand } from "@/features/ai/mcp/prompts";
 import { parseResourceMention, readResourceContext } from "@/features/ai/mcp/resources";
 import { useAgent } from "@/features/agent/useAgent";
 import { executeAgentToolCall } from "@/features/agent/executor";
-import { shouldAgentContinue } from "@/features/agent/loop";
+import { lastStepHasToolCalls, shouldAgentContinue } from "@/features/agent/loop";
+import { foregroundRunContext } from "@/features/agent/runContext";
+import {
+  extensionToolDefinitions,
+  isExtensionTool,
+  runExtensionTool,
+} from "@/features/extensions/agentTools";
+import { notifySessionFinished } from "@/features/extensions/events";
+import { useExtensionsStore } from "@/features/extensions/store";
 import { useAgentStore } from "@/features/agent/store";
 import {
   AGENT_TOOL_DEFINITIONS,
@@ -147,12 +155,19 @@ export function useAI() {
   const agentActive = agentModeActive;
 
   const activeSessionKind = activeSession?.kind;
+  const extensionTools = useExtensionsStore((state) => state.agentTools);
   const agentToolDefinitions = useMemo(() => {
     if (!agentActive) return [];
+    const extensionDefinitions = extensionToolDefinitions(extensionTools);
     return activeSessionKind === "ask"
-      ? AGENT_TOOL_DEFINITIONS
-      : [...AGENT_TOOL_DEFINITIONS, SPAWN_SESSION_TOOL_DEFINITION, OPEN_BROWSER_TOOL_DEFINITION];
-  }, [agentActive, activeSessionKind]);
+      ? [...AGENT_TOOL_DEFINITIONS, ...extensionDefinitions]
+      : [
+          ...AGENT_TOOL_DEFINITIONS,
+          SPAWN_SESSION_TOOL_DEFINITION,
+          OPEN_BROWSER_TOOL_DEFINITION,
+          ...extensionDefinitions,
+        ];
+  }, [agentActive, activeSessionKind, extensionTools]);
 
   const projectRules = useAgentStore((state) => state.rules);
 
@@ -273,6 +288,25 @@ export function useAI() {
 
       if (isAgentTool(toolCall.toolName)) {
         await executeAgentToolCall(chat, cwd, toolCall, agentAccess);
+        return;
+      }
+
+      if (isExtensionTool(toolCall.toolName)) {
+        const result = await runExtensionTool(toolCall, foregroundRunContext);
+        if ("errorText" in result) {
+          chat.addToolOutput({
+            tool: toolCall.toolName,
+            toolCallId: toolCall.toolCallId,
+            state: "output-error",
+            errorText: result.errorText,
+          });
+        } else {
+          chat.addToolOutput({
+            tool: toolCall.toolName,
+            toolCallId: toolCall.toolCallId,
+            output: result.output,
+          });
+        }
         return;
       }
 
@@ -585,7 +619,25 @@ export function useAI() {
     if (wasStreaming && isReady) {
       void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
     }
-  }, [chat.status, activeChatSessionId, rootPath, chatSessions, saveSession, saveSessionMessages]);
+    // Agent Mode runs report their end through the agent store; tool steps continue on their own.
+    const finished = isReady || chat.status === "error";
+    const messages = chatRef.current?.messages ?? [];
+    if (wasStreaming && finished && !agentActive && !lastStepHasToolCalls(messages)) {
+      notifySessionFinished({
+        sessionId: activeChatSessionId,
+        title: session.title,
+        status: isReady ? "done" : "error",
+      });
+    }
+  }, [
+    chat.status,
+    activeChatSessionId,
+    rootPath,
+    chatSessions,
+    saveSession,
+    saveSessionMessages,
+    agentActive,
+  ]);
 
   // Debounced persist of messages while typing/streaming.
   const debouncedSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);

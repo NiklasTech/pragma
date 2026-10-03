@@ -40,7 +40,8 @@ and pressing "Reload".
         "icon": "puzzle-piece",
         "html": "<p>Hello from an extension panel.</p>"
       }
-    ]
+    ],
+    "keybindings": [{ "command": "hello", "key": "ctrl+alt+h", "mac": "cmd+alt+h" }]
   }
 }
 ```
@@ -57,6 +58,8 @@ and pressing "Reload".
   `star`, `heart`, `lightning`, `terminal`, `git-branch`, `calendar-blank`.
   `html` is rendered in a sandboxed iframe with the current theme CSS variables
   available (e.g. `var(--bg-root)`, `var(--fg-default)`).
+- `contributes.keybindings`: runs a command of the extension. See
+  [Keybindings](#keybindings) for the key format.
 
 ## Runtime API
 
@@ -102,7 +105,116 @@ const entries = await pragma.workspace.list("notes");
 // -> [{ path, name, isDirectory }]
 ```
 
-All `pragma.*` methods return promises and time out after 5 seconds.
+All `pragma.*` methods return promises and time out after 5 seconds
+(`terminal.sendText` waits up to 15 seconds for a new shell to start).
+
+### Events
+
+`pragma.on(event, handler)` subscribes to editor and workspace events and returns
+a function that unsubscribes.
+
+| Event               | Data                                         | When                                                    |
+| ------------------- | -------------------------------------------- | ------------------------------------------------------- |
+| `workspaceOpened`   | `{ root }`                                   | Once after the extension starts                         |
+| `activeFileChanged` | `{ path, name, language, cursor }` or `null` | The active editor tab changes                           |
+| `fileSaved`         | `{ path, language }`                         | A file is saved from the editor                         |
+| `sessionFinished`   | `{ sessionId, title, status }`               | A chat or agent run ends (`done`, `error`, `cancelled`) |
+
+```js
+pragma.on("fileSaved", ({ path }) => pragma.notifications.show(`Saved ${path}`));
+```
+
+### Status bar items
+
+```js
+await pragma.statusBar.set({
+  id: "words",
+  text: "120 words",
+  tooltip: "Words in the active file",
+  command: "count-words", // optional, runs on click
+  alignment: "right", // or "left"
+});
+await pragma.statusBar.remove("words");
+```
+
+Setting an item with an existing id replaces it. An extension can show up to 10
+items.
+
+### Keybindings
+
+```js
+await pragma.keybindings.register({ command: "count-words", key: "ctrl+alt+w", mac: "cmd+alt+w" });
+```
+
+Keys are `+`-separated: modifiers `ctrl`, `alt`, `shift`, `cmd`/`meta` and `mod`
+(Cmd on macOS, Ctrl elsewhere), then a letter, digit, punctuation, `enter`,
+`escape`, `tab`, `space`, arrow keys or `f1`-`f12`. A binding needs `ctrl`,
+`alt` or `cmd` unless it is a function key. Pragma's own shortcuts win: a binding
+that conflicts with one of them (Settings > Keyboard) is ignored.
+
+### Diagnostics and completions
+
+Providers are registered per Pragma language id (`typescript`, `python`,
+`markdown`, ...) or `"*"` for every language. Both return a function that
+unregisters the provider.
+
+```js
+await pragma.languages.registerDiagnosticsProvider("markdown", (document) =>
+  document.text.includes("TODO")
+    ? [{ line: 1, column: 1, message: "Contains a TODO", severity: "info" }]
+    : [],
+);
+
+await pragma.languages.registerCompletionProvider(
+  "markdown",
+  ({ prefix }) => [{ label: "pragma", detail: "Pragma IDE", kind: "keyword" }],
+  { triggerCharacters: [":"] },
+);
+```
+
+Diagnostics run when the active file changes, while it is edited (debounced)
+and after it is saved. They appear in the editor and the Problems panel with the
+source `ext:<id>`. Completions join the language server's completions. A
+provider must answer within 5 seconds (diagnostics) or 1.5 seconds
+(completions); a slow or failing provider is skipped.
+
+### Agent tools
+
+```js
+await pragma.agent.registerTool(
+  {
+    name: "count_words",
+    description: "Count the words of a workspace file",
+    inputSchema: {
+      type: "object",
+      properties: { path: { type: "string" } },
+      required: ["path"],
+    },
+    readOnly: true,
+  },
+  async ({ path }) => {
+    const file = await pragma.workspace.readFile(path);
+    return { words: file.content.split(/\s+/).filter(Boolean).length };
+  },
+);
+```
+
+Agents see the tool as `ext__<extension id>__<name>` (at most 64 characters).
+Built-in agents in Agent Mode and child sessions offer it, and coding CLIs that
+use ACP get it through Pragma's MCP bridge. Tools that are not `readOnly` follow
+the same approval rules as Pragma's own tools: they ask for approval unless
+Auto-approve is on or the agent settings approve all actions. The handler has 60
+seconds; its return value (a string or JSON) becomes the tool result.
+
+### Terminal
+
+```js
+const terminal = await pragma.terminal.create({ name: "Build", cwd: "packages/app" });
+await pragma.terminal.sendText(terminal.id, "pnpm build");
+```
+
+`cwd` is relative to the workspace root. An extension can only write to
+terminals it created.
 
 ### Workspace file access (v2)
 
@@ -124,8 +236,11 @@ a selection range, so `getSelection` reports the cursor anchor only.
 
 - Extension to host: `{ kind: "request", id, method, params }`, answered with
   `{ kind: "response", id, ok, result | error }`.
-- Host to extension: `{ kind: "event", event, data }` (currently only the
-  `command` event).
+- Host to extension: `{ kind: "event", event, data }` for commands and the
+  events above, and `{ kind: "call", id, method, params }` when the host needs an
+  answer (diagnostics, completions, agent tool calls). The extension replies with
+  `{ kind: "result", id, ok, result | error }`; the SDK does this for registered
+  providers and tools.
 - Every message is validated before acting; requests from unknown sources are
   ignored.
 
@@ -134,4 +249,5 @@ a selection range, so `getSelection` reports the cursor anchor only.
 Per-extension state is persisted under the `extensions` key of the settings
 store (`pragma.settings.v1`): `Record<extensionId, { enabled, settings }>`.
 Disabling an extension tears down its iframe and unregisters all of its
-commands and panels; contributed themes stay installed.
+commands, panels, status bar items, keybindings, providers, diagnostics and agent
+tools; contributed themes stay installed.

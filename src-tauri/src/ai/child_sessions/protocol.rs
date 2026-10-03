@@ -6,6 +6,10 @@ pub const TOKEN_ENV: &str = "PRAGMA_CHILD_SESSIONS_TOKEN";
 pub const SESSION_ENV: &str = "PRAGMA_CHILD_SESSIONS_PARENT";
 pub const TOOL_NAME: &str = "agent_spawn_session";
 pub const BROWSER_TOOL_NAME: &str = "agent_open_browser";
+/// Internal request of the bridge for the current extension tools; never offered as a tool.
+pub const LIST_EXTENSION_TOOLS: &str = "pragma_list_extension_tools";
+/// Extension tools are named `ext__<extension id>__<tool name>`.
+pub const EXTENSION_TOOL_PREFIX: &str = "ext__";
 pub const MAX_LINE_BYTES: u64 = 1024 * 1024;
 
 /// One tool call from the bridge process to the app.
