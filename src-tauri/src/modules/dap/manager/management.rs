@@ -5,12 +5,41 @@ use std::time::Duration;
 use tauri::AppHandle;
 
 use super::adapters::{
-    adapter_for_language, adapters_dir, check_adapter_available, stderr_tail, ADAPTERS,
+    adapter_for_language, adapters_dir, check_adapter_available, stderr_tail, AdapterEntry,
+    ADAPTERS,
 };
+use super::go::managed_go_bin_dir;
+use super::java::{java_adapter_dir, jdtls_available};
 use super::python::python_with_module;
 use super::DapManager;
 
 const INSTALL_TIMEOUT: Duration = Duration::from_secs(180);
+
+/// Reports the outcome of a download-style install through progress events.
+fn finish_install(
+    app: &AppHandle,
+    entry: &AdapterEntry,
+    result: Result<String, String>,
+) -> DapInstallResult {
+    match result {
+        Ok(stdout) => {
+            install::emit_progress(app, entry.id, InstallStage::Done, None, "Installed");
+            DapInstallResult {
+                stdout,
+                stderr: String::new(),
+                exit_code: 0,
+            }
+        }
+        Err(e) => {
+            install::emit_progress(app, entry.id, InstallStage::Error, None, &e);
+            DapInstallResult {
+                stdout: String::new(),
+                stderr: e,
+                exit_code: -1,
+            }
+        }
+    }
+}
 
 impl DapManager {
     pub async fn list_adapters(app: &AppHandle) -> Vec<DapAdapterInfo> {
@@ -82,6 +111,70 @@ impl DapManager {
                         })
                     }
                 }
+            }
+            InstallSpec::MavenJar {
+                group_path,
+                artifact,
+                version,
+                sha256,
+            } => {
+                // The plugin only runs inside jdtls, so a missing jdtls fails before the download.
+                if !jdtls_available() {
+                    let hint = entry.install_hint.unwrap_or_default();
+                    return Ok(finish_install(
+                        app,
+                        entry,
+                        Err(format!("Cannot find 'jdtls' in PATH. {hint}")),
+                    ));
+                }
+                let dir = java_adapter_dir(&adapters_dir(app)?);
+                let result = install::install_maven_jar(
+                    app, entry.id, group_path, artifact, version, sha256, &dir,
+                )
+                .await
+                .map(|path| format!("Installed '{}' to {}", entry.label, path.display()));
+                Ok(finish_install(app, entry, result))
+            }
+            InstallSpec::GoInstall { package, version } => {
+                let go = resolve_program("go")
+                    .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?;
+                let bin_dir = managed_go_bin_dir(&adapters_dir(app)?);
+                let args = install::go_install_args(package, version);
+                install::emit_progress(
+                    app,
+                    entry.id,
+                    InstallStage::Installing,
+                    None,
+                    format!("Running go {}", args.join(" ")),
+                );
+                let output = tokio::time::timeout(
+                    INSTALL_TIMEOUT,
+                    crate::platform::new_tokio_command(&go)
+                        .args(&args)
+                        .env("GOBIN", &bin_dir)
+                        .output(),
+                )
+                .await
+                .map_err(|_| {
+                    format!(
+                        "Install of '{}' timed out after {}s",
+                        entry.label,
+                        INSTALL_TIMEOUT.as_secs()
+                    )
+                })?
+                .map_err(|e| format!("Failed to run 'go': {e}"))?;
+                let result = if output.status.success() {
+                    Ok(format!(
+                        "Installed '{}' to {}",
+                        entry.label,
+                        bin_dir.display()
+                    ))
+                } else {
+                    Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+                };
+                let mut reported = finish_install(app, entry, result);
+                reported.exit_code = output.status.code().unwrap_or(-1);
+                Ok(reported)
             }
             spec => {
                 let (program, args) = install::spec_command(&spec)

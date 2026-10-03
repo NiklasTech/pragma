@@ -26,8 +26,13 @@ describe("debugTargetForLanguage", () => {
     expect(debugTargetForLanguage("rust")).toEqual({ adapter: "lldb", runtime: "" });
   });
 
+  it("maps go to delve through go run and java to the java adapter", () => {
+    expect(debugTargetForLanguage("go")).toEqual({ adapter: "go", runtime: "go run" });
+    expect(debugTargetForLanguage("java")).toEqual({ adapter: "java", runtime: "" });
+  });
+
   it("returns null for unsupported languages", () => {
-    expect(debugTargetForLanguage("go")).toBeNull();
+    expect(debugTargetForLanguage("ruby")).toBeNull();
     expect(debugTargetForLanguage(undefined)).toBeNull();
   });
 });

@@ -4,6 +4,11 @@ use crate::platform::resolve_program;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
+use super::go::{go_available, resolve_go, DELVE_PACKAGE, DELVE_VERSION};
+use super::java::{
+    java_available, resolve_java, JAVA_DEBUG_ARTIFACT, JAVA_DEBUG_GROUP_PATH, JAVA_DEBUG_SHA256,
+    JAVA_DEBUG_VERSION,
+};
 use super::python::{python_with_debugpy, python_with_module};
 
 // Pinned CodeLLDB release; bump deliberately, never "latest".
@@ -49,6 +54,32 @@ pub(super) const ADAPTERS: &[AdapterEntry] = &[
             asset_prefix: "codelldb",
         }),
     },
+    AdapterEntry {
+        id: "go",
+        label: "Go (Delve)",
+        dap_id: "go",
+        languages: &["go"],
+        install_hint: Some("Installed with 'go install github.com/go-delve/delve/cmd/dlv'"),
+        install: Some(InstallSpec::GoInstall {
+            package: DELVE_PACKAGE,
+            version: DELVE_VERSION,
+        }),
+    },
+    AdapterEntry {
+        id: "java",
+        label: "Java (java-debug)",
+        dap_id: "java",
+        languages: &["java"],
+        install_hint: Some(
+            "Requires jdtls on PATH (e.g. 'brew install jdtls'); the java-debug plugin is downloaded automatically",
+        ),
+        install: Some(InstallSpec::MavenJar {
+            group_path: JAVA_DEBUG_GROUP_PATH,
+            artifact: JAVA_DEBUG_ARTIFACT,
+            version: JAVA_DEBUG_VERSION,
+            sha256: JAVA_DEBUG_SHA256,
+        }),
+    },
 ];
 
 /// Resolve a language id (or an adapter id directly) to its adapter.
@@ -84,7 +115,12 @@ fn managed_lldb_binary(adapters_dir: &Path) -> PathBuf {
 /// Python: `python -m debugpy.adapter` from the `debugpy` package.
 /// CodeLLDB: `PRAGMA_CODELLDB_PATH` or a `codelldb` on PATH win over the
 /// managed copy under the adapters dir; it speaks DAP over TCP (`--port`).
-pub(super) fn resolve_adapter(id: &str, adapters_dir: Option<&Path>) -> Option<DapAdapterConfig> {
+/// Go and Java: see `go.rs` and `java.rs`.
+pub(super) fn resolve_adapter(
+    id: &str,
+    adapters_dir: Option<&Path>,
+    workspace_root: &str,
+) -> Option<DapAdapterConfig> {
     match id {
         "node" => {
             if let Ok(path) = std::env::var("PRAGMA_JS_DEBUG_PATH") {
@@ -147,6 +183,8 @@ pub(super) fn resolve_adapter(id: &str, adapters_dir: Option<&Path>) -> Option<D
                 transport: DapTransport::Tcp,
             })
         }
+        "go" => Some(resolve_go(adapters_dir)),
+        "java" => resolve_java(adapters_dir, workspace_root),
         _ => None,
     }
 }
@@ -174,6 +212,8 @@ pub(super) async fn check_adapter_available(id: &str, adapters_dir: Option<&Path
                     .map(|dir| managed_lldb_binary(dir).is_file())
                     .unwrap_or(false)
         }
+        "go" => go_available(adapters_dir),
+        "java" => java_available(adapters_dir),
         _ => false,
     }
 }
@@ -214,6 +254,8 @@ mod tests {
         assert_eq!(adapter_for_language("rust").unwrap().id, "lldb");
         assert_eq!(adapter_for_language("c").unwrap().id, "lldb");
         assert_eq!(adapter_for_language("cpp").unwrap().id, "lldb");
+        assert_eq!(adapter_for_language("go").unwrap().id, "go");
+        assert_eq!(adapter_for_language("java").unwrap().id, "java");
     }
 
     #[test]
@@ -262,9 +304,33 @@ mod tests {
 
     #[test]
     fn lldb_resolves_to_tcp_transport_with_port_placeholder() {
-        let config = resolve_adapter("lldb", None).unwrap();
+        let config = resolve_adapter("lldb", None, "/ws").unwrap();
         assert_eq!(config.transport, DapTransport::Tcp);
         assert!(config.args.iter().any(|a| a == "{port}"));
+    }
+
+    #[test]
+    fn go_install_is_a_pinned_go_install() {
+        let entry = ADAPTERS.iter().find(|a| a.id == "go").unwrap();
+        match entry.install {
+            Some(InstallSpec::GoInstall { package, version }) => {
+                assert_eq!(package, "github.com/go-delve/delve/cmd/dlv");
+                assert!(version.starts_with('v'), "version must be pinned");
+            }
+            other => panic!("go install spec must be a go install, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn java_install_is_a_checksummed_maven_jar() {
+        let entry = ADAPTERS.iter().find(|a| a.id == "java").unwrap();
+        assert!(matches!(
+            entry.install,
+            Some(InstallSpec::MavenJar {
+                artifact: "com.microsoft.java.debug.plugin",
+                ..
+            })
+        ));
     }
 
     #[test]

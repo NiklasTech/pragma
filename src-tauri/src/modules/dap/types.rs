@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum DapTransport {
     #[default]
     Stdio,
     /// DAP over TCP; the adapter is spawned with `--port` (see client.rs).
     Tcp,
+    /// jdtls with the java-debug `bundle`, which opens a DAP port on request.
+    Jdtls { bundle: String, root: String },
 }
 
 #[derive(Debug, Clone, Default)]
@@ -199,6 +201,8 @@ pub fn build_launch_arguments(
         "node" => Ok(build_node_arguments(request, name, program, args, cwd, env)),
         "python" => build_python_arguments(request, name, args, cwd, env),
         "lldb" => build_lldb_arguments(request, name, program, args, cwd, env),
+        "go" => super::launch_args::build_go_arguments(request, name, program, args, cwd, env),
+        "java" => super::launch_args::build_java_arguments(request, name, program, args, cwd, env),
         _ => Err(format!("No debug adapter registered for '{adapter_id}'")),
     }
 }
