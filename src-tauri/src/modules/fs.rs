@@ -113,7 +113,7 @@ pub fn write_text_file(
         .parent()
         .map(|p| p.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let _ = local_history::on_file_saved(&app, &repo_path, &path, &content);
+    local_history::queue::queue_snapshot(app, repo_path, path, content);
 
     Ok(())
 }

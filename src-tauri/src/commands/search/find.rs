@@ -1,3 +1,4 @@
+use super::cancel::SearchToken;
 use super::{
     build_gitignore, build_matcher, is_within_workspace, matches_globs, validate_query,
     validate_workspace_root, MAX_FILE_SIZE_BYTES,
@@ -20,6 +21,8 @@ pub struct SearchWorkspaceRequest {
     pub use_regex: bool,
     pub include_globs: Vec<String>,
     pub exclude_globs: Vec<String>,
+    #[serde(default)]
+    pub search_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -32,8 +35,16 @@ pub struct SearchMatch {
     pub match_text: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchWorkspaceResult {
+    pub matches: Vec<SearchMatch>,
+    pub truncated: bool,
+}
+
 #[tauri::command(async)]
-pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>, String> {
+pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<SearchWorkspaceResult, String> {
+    let token = SearchToken::register(req.search_id.as_deref())?;
     let workspace_root = validate_workspace_root(&req.workspace_root)?;
     let query = validate_query(&req.query)?;
     let matcher = build_matcher(&query, req.case_sensitive, req.whole_word, req.use_regex)?;
@@ -41,6 +52,7 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>,
     let exclude_globs = build_gitignore(&workspace_root, &req.exclude_globs)?;
 
     let mut matches = Vec::new();
+    let mut truncated = false;
 
     let mut builder = ignore::WalkBuilder::new(&workspace_root);
     builder.git_ignore(true);
@@ -50,7 +62,10 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>,
     builder.hidden(false);
 
     for entry in builder.build() {
-        if matches.len() >= MAX_TOTAL_MATCHES {
+        if token.is_cancelled() {
+            return Err("Search was cancelled".to_string());
+        }
+        if truncated {
             break;
         }
 
@@ -77,13 +92,15 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>,
             continue;
         }
 
-        let file_matches = match search_file(path, &matcher) {
+        let (file_matches, file_truncated) = match search_file(path, &matcher) {
             Ok(m) => m,
             Err(_) => continue,
         };
+        truncated |= file_truncated;
 
         for mut m in file_matches {
             if matches.len() >= MAX_TOTAL_MATCHES {
+                truncated = true;
                 break;
             }
             m.path = path.to_string_lossy().to_string();
@@ -91,18 +108,19 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<Vec<SearchMatch>,
         }
     }
 
-    Ok(matches)
+    Ok(SearchWorkspaceResult { matches, truncated })
 }
 
-fn search_file(path: &Path, matcher: &Regex) -> Result<Vec<SearchMatch>, String> {
+/// Returns the matches of one file and whether more matches were left out.
+fn search_file(path: &Path, matcher: &Regex) -> Result<(Vec<SearchMatch>, bool), String> {
     let metadata = std::fs::metadata(path).map_err(|e| format!("Failed to read metadata: {e}"))?;
     if metadata.len() > MAX_FILE_SIZE_BYTES {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), false));
     }
 
     let bytes = std::fs::read(path).map_err(|e| format!("Failed to read file: {e}"))?;
     if bytes.contains(&0) {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), false));
     }
 
     let text = String::from_utf8(bytes).map_err(|e| format!("File is not valid UTF-8: {e}"))?;
@@ -111,7 +129,7 @@ fn search_file(path: &Path, matcher: &Regex) -> Result<Vec<SearchMatch>, String>
     for (line_index, line) in text.lines().enumerate() {
         for m in matcher.find_iter(line) {
             if matches.len() >= MAX_MATCHES_PER_FILE {
-                return Ok(matches);
+                return Ok((matches, true));
             }
             let start = m.start();
             let end = m.end();
@@ -127,7 +145,7 @@ fn search_file(path: &Path, matcher: &Regex) -> Result<Vec<SearchMatch>, String>
         }
     }
 
-    Ok(matches)
+    Ok((matches, false))
 }
 
 fn build_preview(line: &str, start: usize, end: usize) -> String {
@@ -142,4 +160,62 @@ fn build_preview(line: &str, start: usize, end: usize) -> String {
         preview.push('…');
     }
     preview
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn default_request(workspace_root: &str) -> SearchWorkspaceRequest {
+        SearchWorkspaceRequest {
+            workspace_root: workspace_root.to_string(),
+            query: "foo".to_string(),
+            case_sensitive: false,
+            whole_word: false,
+            use_regex: false,
+            include_globs: Vec::new(),
+            exclude_globs: Vec::new(),
+            search_id: None,
+        }
+    }
+
+    #[test]
+    fn reports_complete_results_as_not_truncated() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("a.txt"), "foo\nbar\nfoo").unwrap();
+
+        let result = search_workspace(default_request(&dir.path().to_string_lossy())).unwrap();
+
+        assert_eq!(result.matches.len(), 2);
+        assert!(!result.truncated);
+    }
+
+    #[test]
+    fn reports_truncation_at_the_per_file_limit() {
+        let dir = tempdir().unwrap();
+        let content = "foo\n".repeat(MAX_MATCHES_PER_FILE + 1);
+        fs::write(dir.path().join("a.txt"), content).unwrap();
+
+        let result = search_workspace(default_request(&dir.path().to_string_lossy())).unwrap();
+
+        assert_eq!(result.matches.len(), MAX_MATCHES_PER_FILE);
+        assert!(result.truncated);
+    }
+
+    #[test]
+    fn reports_truncation_at_the_total_limit() {
+        let dir = tempdir().unwrap();
+        let files = MAX_TOTAL_MATCHES / MAX_MATCHES_PER_FILE + 1;
+        for index in 0..files {
+            let content = "foo\n".repeat(MAX_MATCHES_PER_FILE);
+            fs::write(dir.path().join(format!("{index}.txt")), content).unwrap();
+        }
+
+        let result = search_workspace(default_request(&dir.path().to_string_lossy())).unwrap();
+
+        assert_eq!(result.matches.len(), MAX_TOTAL_MATCHES);
+        assert!(result.truncated);
+    }
 }

@@ -1,6 +1,7 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import { crossWindowSync } from "./sync/crossWindowSync";
+import { createThrottledJSONStorage } from "./throttledStorage";
 import { getWindowScope } from "@/shared/lib/windowScope";
 
 export interface CursorPosition {
@@ -89,6 +90,7 @@ interface EditorActions {
 }
 
 const STORAGE_KEY = `pragma.editor.v1.${getWindowScope()}`;
+const PERSIST_INTERVAL_MS = 500;
 
 const initialState: EditorState = {
   tabs: [],
@@ -325,6 +327,7 @@ export const useEditorStore = create<EditorState & EditorActions>()(
     crossWindowSync<EditorState & EditorActions>("editor", getWindowScope())(editorStoreCreator),
     {
       name: STORAGE_KEY,
+      storage: createThrottledJSONStorage(PERSIST_INTERVAL_MS),
       partialize: (state) => ({
         tabs: stripFileContent(state.tabs),
         tabStates: state.tabStates,

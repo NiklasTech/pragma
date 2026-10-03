@@ -43,6 +43,11 @@ interface SearchMatch {
   matchText: string;
 }
 
+interface SearchWorkspaceResult {
+  matches: SearchMatch[];
+  truncated: boolean;
+}
+
 interface AgentCommandResult {
   stdout: string;
   stderr: string;
@@ -195,7 +200,7 @@ async function dispatchTool(
     case AGENT_TOOL_NAMES.grep: {
       const path = resolveWorkspacePath(rootPath, readStringInput(input, "path") || rootPath);
       const glob = readStringInput(input, "glob");
-      const matches = await invoke<SearchMatch[]>("search_workspace", {
+      const { matches, truncated } = await invoke<SearchWorkspaceResult>("search_workspace", {
         req: {
           workspaceRoot: path,
           query: readStringInput(input, "query"),
@@ -211,7 +216,7 @@ async function dispatchTool(
         output:
           limited.map((m) => `${m.path}:${m.line}:${m.column}: ${m.preview}`).join("\n") ||
           "No matches found.",
-        detail: `${matches.length} matches`,
+        detail: `${matches.length}${truncated ? "+" : ""} matches`,
       };
     }
     case AGENT_TOOL_NAMES.glob: {

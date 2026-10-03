@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useEditorStore, type EditorTab, type FileTab } from "@/shared/stores/editor";
 import { useDiskStateStore } from "@/shared/stores/diskState";
 import { isMissingFileError, isSameOrInside } from "@/shared/lib/fileDisk";
+import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
 
 interface FileReadResult {
   content: string;
@@ -56,6 +57,8 @@ async function syncTab(tabId: string): Promise<void> {
     return;
   }
 
+  // Edits still being debounced count as unsaved, so a reload must not drop them.
+  flushPendingDocChanges();
   const tab = findFileTab(tabId);
   if (!tab) return;
   const diskState = useDiskStateStore.getState();
@@ -111,6 +114,7 @@ export async function keepLocalVersion(tabId: string): Promise<void> {
 }
 
 export async function compareWithDisk(tabId: string): Promise<void> {
+  flushPendingDocChanges();
   const tab = findFileTab(tabId);
   if (!tab) return;
   try {
