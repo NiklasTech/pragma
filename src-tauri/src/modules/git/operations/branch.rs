@@ -85,3 +85,90 @@ pub fn has_uncommitted_changes(repo_root: &str) -> Result<bool> {
     let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
     Ok(stdout.trim().lines().next().is_some())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::git::operations::test_support::TestRepo;
+
+    fn branch_names(repo: &TestRepo) -> Vec<String> {
+        get_branches(&repo.root)
+            .unwrap()
+            .into_iter()
+            .map(|b| b.name)
+            .collect()
+    }
+
+    #[test]
+    fn get_branches_marks_the_current_branch() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "other"]);
+
+        let branches = get_branches(&repo.root).unwrap();
+
+        assert_eq!(branches.len(), 2);
+        let head: Vec<_> = branches.iter().filter(|b| b.is_head).collect();
+        assert_eq!(head.len(), 1);
+        assert_eq!(head[0].name, "main");
+    }
+
+    #[test]
+    fn create_branch_with_checkout_switches_head() {
+        let repo = TestRepo::new();
+
+        create_branch(&repo.root, "feature", true).unwrap();
+
+        assert_eq!(repo.git(&["branch", "--show-current"]), "feature");
+    }
+
+    #[test]
+    fn create_branch_without_checkout_keeps_head() {
+        let repo = TestRepo::new();
+
+        create_branch(&repo.root, "feature", false).unwrap();
+
+        assert_eq!(repo.git(&["branch", "--show-current"]), "main");
+        assert!(branch_names(&repo).contains(&"feature".to_string()));
+    }
+
+    #[test]
+    fn create_branch_rejects_existing_and_invalid_names() {
+        let repo = TestRepo::new();
+        assert!(create_branch(&repo.root, "main", false).is_err());
+        assert!(create_branch(&repo.root, "bad..name", false).is_err());
+    }
+
+    #[test]
+    fn checkout_branch_fails_for_unknown_branch() {
+        let repo = TestRepo::new();
+        assert!(checkout_branch(&repo.root, "missing").is_err());
+        assert_eq!(repo.git(&["branch", "--show-current"]), "main");
+    }
+
+    #[test]
+    fn delete_branch_removes_the_branch() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "old"]);
+
+        delete_branch(&repo.root, "old").unwrap();
+
+        assert_eq!(branch_names(&repo), vec!["main"]);
+    }
+
+    #[test]
+    fn delete_branch_refuses_the_current_branch() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "other"]);
+        assert!(delete_branch(&repo.root, "main").is_err());
+    }
+
+    #[test]
+    fn has_uncommitted_changes_detects_edits_and_new_files() {
+        let repo = TestRepo::new();
+        assert!(!has_uncommitted_changes(&repo.root).unwrap());
+
+        repo.write("new.txt", "new\n");
+
+        assert!(has_uncommitted_changes(&repo.root).unwrap());
+    }
+}

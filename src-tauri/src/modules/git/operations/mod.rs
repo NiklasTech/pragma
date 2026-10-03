@@ -9,6 +9,8 @@ mod remote;
 mod stage;
 mod stash;
 mod status;
+#[cfg(test)]
+mod test_support;
 
 pub use blame::blame;
 pub use branch::{

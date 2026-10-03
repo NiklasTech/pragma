@@ -578,3 +578,138 @@ fn spawn_reverse_rpc_handler(
 pub struct AcpSessionHandle {
     pub acp_session_id: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn chunk(update: Value) -> StreamChunk {
+        session_update_to_chunk(serde_json::from_value(update).unwrap())
+    }
+
+    fn is_empty(chunk: &StreamChunk) -> bool {
+        chunk.text.is_none()
+            && chunk.error.is_none()
+            && !chunk.done
+            && chunk.reasoning.is_none()
+            && chunk.tool_calls.is_none()
+            && chunk.tool_results.is_none()
+    }
+
+    #[test]
+    fn message_and_thought_chunks_stream_text() {
+        let message = chunk(json!({
+            "sessionUpdate": "agent_message_chunk",
+            "content": { "type": "text", "text": "hello" }
+        }));
+        let thought = chunk(json!({
+            "sessionUpdate": "agent_thought_chunk",
+            "content": { "type": "text", "text": "thinking" }
+        }));
+
+        assert_eq!(message.text.as_deref(), Some("hello"));
+        assert!(!message.done);
+        assert_eq!(thought.reasoning.as_deref(), Some("thinking"));
+        assert!(thought.text.is_none());
+    }
+
+    #[test]
+    fn non_text_content_becomes_empty_text() {
+        let image = chunk(json!({
+            "sessionUpdate": "agent_message_chunk",
+            "content": { "type": "image", "data": "AAAA", "mime_type": "image/png" }
+        }));
+        let resource = chunk(json!({
+            "sessionUpdate": "agent_message_chunk",
+            "content": { "type": "resource", "uri": "file:///a", "content": "body" }
+        }));
+
+        assert_eq!(image.text.as_deref(), Some(""));
+        assert_eq!(resource.text.as_deref(), Some("body"));
+    }
+
+    #[test]
+    fn tool_calls_carry_raw_input_or_first_text_content() {
+        let with_input = chunk(json!({
+            "sessionUpdate": "tool_call",
+            "toolCallId": "call-1",
+            "title": "Read file",
+            "rawInput": { "path": "src/main.rs" }
+        }));
+        let with_content = chunk(json!({
+            "sessionUpdate": "tool_call",
+            "toolCallId": "call-2",
+            "title": "Run",
+            "content": [
+                { "type": "diff", "path": "a.rs" },
+                { "type": "content", "content": { "type": "text", "text": "ls -la" } }
+            ]
+        }));
+
+        let call = &with_input.tool_calls.unwrap()[0];
+        assert_eq!(call.id, "call-1");
+        assert_eq!(call.function.name, "Read file");
+        assert_eq!(call.function.arguments, r#"{"path":"src/main.rs"}"#);
+        assert_eq!(
+            with_content.tool_calls.unwrap()[0].function.arguments,
+            "ls -la"
+        );
+    }
+
+    #[test]
+    fn finished_tool_call_updates_become_results() {
+        let completed = chunk(json!({
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "call-1",
+            "status": "completed",
+            "rawOutput": "done"
+        }));
+        let failed = chunk(json!({
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "call-2",
+            "status": "failed",
+            "content": [{ "type": "content", "content": { "type": "text", "text": "boom" } }]
+        }));
+
+        let result = &completed.tool_results.unwrap()[0];
+        assert_eq!(result.tool_call_id, "call-1");
+        assert_eq!(result.output, "done");
+        assert!(!result.is_error);
+        let result = &failed.tool_results.unwrap()[0];
+        assert_eq!(result.output, "boom");
+        assert!(result.is_error);
+    }
+
+    #[test]
+    fn in_progress_tool_call_updates_are_ignored() {
+        let update = chunk(json!({
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "call-1",
+            "status": "in_progress",
+            "rawInput": { "partial": true }
+        }));
+
+        assert!(is_empty(&update));
+    }
+
+    #[test]
+    fn turn_end_and_errors_finish_the_stream() {
+        let ended = chunk(json!({ "sessionUpdate": "turn_ended", "stop_reason": "end_turn" }));
+        let error = chunk(json!({ "sessionUpdate": "error", "message": "rate limited" }));
+
+        assert!(ended.done);
+        assert!(ended.error.is_none());
+        assert!(error.done);
+        assert_eq!(error.error.as_deref(), Some("rate limited"));
+    }
+
+    #[test]
+    fn unknown_and_config_updates_produce_empty_chunks() {
+        let unknown = chunk(json!({ "sessionUpdate": "plan", "entries": [] }));
+        let config = chunk(json!({ "sessionUpdate": "config_option_update", "configOptions": [] }));
+
+        assert!(is_empty(&unknown));
+        assert!(is_empty(&config));
+    }
+}

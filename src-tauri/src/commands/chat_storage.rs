@@ -1,5 +1,5 @@
 use super::agents::AgentEngine;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
@@ -100,7 +100,20 @@ fn sessions_dir(app: &AppHandle, root_path: &str) -> Result<PathBuf, String> {
     Ok(base.join("pragma").join("sessions").join(hash))
 }
 
+fn validate_session_id(session_id: &str) -> Result<(), String> {
+    let mut components = Path::new(session_id).components();
+    match (components.next(), components.next()) {
+        (Some(Component::Normal(name)), None)
+            if name == session_id && !session_id.contains('\\') =>
+        {
+            Ok(())
+        }
+        _ => Err(format!("invalid session id: {session_id:?}")),
+    }
+}
+
 fn session_dir(app: &AppHandle, root_path: &str, session_id: &str) -> Result<PathBuf, String> {
+    validate_session_id(session_id)?;
     Ok(sessions_dir(app, root_path)?.join(session_id))
 }
 
@@ -116,12 +129,16 @@ pub async fn ai_load_sessions(
     req: LoadSessionsRequest,
 ) -> Result<Vec<ChatSessionMetadata>, String> {
     let dir = sessions_dir(&app, &req.root_path)?;
+    load_sessions(&dir).await
+}
+
+async fn load_sessions(dir: &Path) -> Result<Vec<ChatSessionMetadata>, String> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
 
     let mut sessions = Vec::new();
-    let mut entries = tokio::fs::read_dir(&dir)
+    let mut entries = tokio::fs::read_dir(dir)
         .await
         .map_err(|e| format!("failed to read sessions dir: {e}"))?;
 
@@ -165,11 +182,15 @@ pub async fn ai_load_session_messages(
     req: LoadMessagesRequest,
 ) -> Result<Vec<ChatMessage>, String> {
     let path = context_path(&app, &req.root_path, &req.session_id)?;
+    load_messages(&path).await
+}
+
+async fn load_messages(path: &Path) -> Result<Vec<ChatMessage>, String> {
     if !path.exists() {
         return Ok(Vec::new());
     }
 
-    let content = tokio::fs::read_to_string(&path)
+    let content = tokio::fs::read_to_string(path)
         .await
         .map_err(|e| format!("failed to read context file: {e}"))?;
 
@@ -187,7 +208,7 @@ pub async fn ai_load_session_messages(
     Ok(messages)
 }
 
-async fn write_file(path: &std::path::Path, content: &[u8]) -> Result<(), String> {
+async fn write_file(path: &Path, content: &[u8]) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent)
             .await
@@ -218,12 +239,13 @@ async fn write_file(path: &std::path::Path, content: &[u8]) -> Result<(), String
 pub async fn ai_save_session(app: AppHandle, req: SaveSessionRequest) -> Result<(), String> {
     let _guard = SESSION_IO_LOCK.lock().await;
     let dir = session_dir(&app, &req.root_path, &req.session.id)?;
-    let path = dir.join("state.json");
-    let content = serde_json::to_string_pretty(&req.session)
-        .map_err(|e| format!("failed to serialize session: {e}"))?;
-    write_file(&path, content.as_bytes()).await?;
+    save_session(&dir, &req.session).await
+}
 
-    Ok(())
+async fn save_session(dir: &Path, session: &ChatSessionMetadata) -> Result<(), String> {
+    let content = serde_json::to_string_pretty(session)
+        .map_err(|e| format!("failed to serialize session: {e}"))?;
+    write_file(&dir.join("state.json"), content.as_bytes()).await
 }
 
 #[tauri::command]
@@ -232,11 +254,13 @@ pub async fn ai_save_session_messages(
     req: SaveMessagesRequest,
 ) -> Result<(), String> {
     let _guard = SESSION_IO_LOCK.lock().await;
-    let dir = session_dir(&app, &req.root_path, &req.session_id)?;
-    let path = dir.join("context.jsonl");
+    let path = context_path(&app, &req.root_path, &req.session_id)?;
+    save_messages(&path, req.messages).await
+}
 
-    if req.messages.is_empty() {
-        if let Ok(existing) = tokio::fs::read_to_string(&path).await {
+async fn save_messages(path: &Path, messages: Vec<ChatMessage>) -> Result<(), String> {
+    if messages.is_empty() {
+        if let Ok(existing) = tokio::fs::read_to_string(path).await {
             if !existing.trim().is_empty() {
                 return Ok(());
             }
@@ -244,26 +268,185 @@ pub async fn ai_save_session_messages(
     }
 
     let mut lines = String::new();
-    for message in req.messages {
+    for message in messages {
         let line = serde_json::to_string(&message)
             .map_err(|e| format!("failed to serialize message: {e}"))?;
         lines.push_str(&line);
         lines.push('\n');
     }
 
-    write_file(&path, lines.as_bytes()).await?;
-
-    Ok(())
+    write_file(path, lines.as_bytes()).await
 }
 
 #[tauri::command]
 pub async fn ai_delete_session(app: AppHandle, req: DeleteSessionRequest) -> Result<(), String> {
     let _guard = SESSION_IO_LOCK.lock().await;
     let dir = session_dir(&app, &req.root_path, &req.session_id)?;
+    delete_session_dir(&dir).await
+}
+
+async fn delete_session_dir(dir: &Path) -> Result<(), String> {
     if dir.exists() {
-        tokio::fs::remove_dir_all(&dir)
+        tokio::fs::remove_dir_all(dir)
             .await
             .map_err(|e| format!("failed to delete session dir: {e}"))?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn session(id: &str, updated_at: i64) -> ChatSessionMetadata {
+        serde_json::from_value(serde_json::json!({
+            "id": id,
+            "title": format!("Session {id}"),
+            "created_at": 1,
+            "updated_at": updated_at,
+        }))
+        .unwrap()
+    }
+
+    fn message(id: &str, content: &str) -> ChatMessage {
+        ChatMessage {
+            id: id.to_string(),
+            role: "user".to_string(),
+            content: content.to_string(),
+            timestamp: 1,
+        }
+    }
+
+    #[test]
+    fn session_ids_must_be_a_single_path_component() {
+        assert!(validate_session_id("6f1c2a9e-1111-4c2d-9a7b-0123456789ab").is_ok());
+        assert!(validate_session_id("legacy_session-1").is_ok());
+
+        for invalid in ["", ".", "..", "../other", "a/b", "a\\b", "/abs", "a/"] {
+            assert!(validate_session_id(invalid).is_err(), "{invalid:?}");
+        }
+    }
+
+    #[test]
+    fn workspace_hash_is_stable_per_root() {
+        assert_eq!(workspace_hash("/repo"), workspace_hash("/repo"));
+        assert_ne!(workspace_hash("/repo"), workspace_hash("/other"));
+        assert_eq!(workspace_hash("/repo").len(), 64);
+    }
+
+    #[tokio::test]
+    async fn load_sessions_returns_empty_for_a_missing_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let sessions = load_sessions(&dir.path().join("missing")).await.unwrap();
+        assert!(sessions.is_empty());
+    }
+
+    #[tokio::test]
+    async fn saved_sessions_load_newest_first() {
+        let dir = tempfile::tempdir().unwrap();
+        save_session(&dir.path().join("old"), &session("old", 10))
+            .await
+            .unwrap();
+        save_session(&dir.path().join("new"), &session("new", 20))
+            .await
+            .unwrap();
+
+        let sessions = load_sessions(dir.path()).await.unwrap();
+        let ids: Vec<_> = sessions.iter().map(|s| s.id.as_str()).collect();
+
+        assert_eq!(ids, vec!["new", "old"]);
+        assert_eq!(sessions[0].title, "Session new");
+        assert!(!sessions[0].archived);
+    }
+
+    #[tokio::test]
+    async fn load_sessions_skips_broken_and_unrelated_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        save_session(&dir.path().join("good"), &session("good", 1))
+            .await
+            .unwrap();
+        for (name, content) in [("empty", "  "), ("corrupt", "{not json")] {
+            std::fs::create_dir(dir.path().join(name)).unwrap();
+            std::fs::write(dir.path().join(name).join("state.json"), content).unwrap();
+        }
+        std::fs::create_dir(dir.path().join("no-state")).unwrap();
+        std::fs::write(dir.path().join("stray.json"), "{}").unwrap();
+
+        let sessions = load_sessions(dir.path()).await.unwrap();
+
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].id, "good");
+    }
+
+    #[tokio::test]
+    async fn messages_round_trip_as_json_lines() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("session").join("context.jsonl");
+        let messages = vec![message("1", "hello"), message("2", "multi\nline")];
+
+        save_messages(&path, messages).await.unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert_eq!(content.lines().count(), 2);
+        let loaded = load_messages(&path).await.unwrap();
+        assert_eq!(loaded.len(), 2);
+        assert_eq!(loaded[1].content, "multi\nline");
+    }
+
+    #[tokio::test]
+    async fn saving_no_messages_keeps_existing_history() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("context.jsonl");
+        save_messages(&path, vec![message("1", "keep")])
+            .await
+            .unwrap();
+
+        save_messages(&path, Vec::new()).await.unwrap();
+
+        assert_eq!(load_messages(&path).await.unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn load_messages_handles_missing_and_corrupt_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("context.jsonl");
+        assert!(load_messages(&path).await.unwrap().is_empty());
+
+        std::fs::write(&path, "\n{broken\n").unwrap();
+
+        assert!(load_messages(&path)
+            .await
+            .unwrap_err()
+            .starts_with("failed to parse context line"));
+    }
+
+    #[tokio::test]
+    async fn write_file_replaces_content_without_leaving_temp_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+
+        write_file(&path, b"first").await.unwrap();
+        write_file(&path, b"second").await.unwrap();
+
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "second");
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[tokio::test]
+    async fn delete_session_dir_removes_the_session_and_ignores_missing_ones() {
+        let dir = tempfile::tempdir().unwrap();
+        let session_dir = dir.path().join("session");
+        save_session(&session_dir, &session("session", 1))
+            .await
+            .unwrap();
+        save_messages(&session_dir.join("context.jsonl"), vec![message("1", "x")])
+            .await
+            .unwrap();
+
+        delete_session_dir(&session_dir).await.unwrap();
+        delete_session_dir(&session_dir).await.unwrap();
+
+        assert!(!session_dir.exists());
+        assert!(dir.path().exists());
+    }
 }
