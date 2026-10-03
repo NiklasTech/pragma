@@ -6,6 +6,7 @@ import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useDiskStateStore } from "@/shared/stores/diskState";
 import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { getWindowScope, isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
@@ -44,6 +45,10 @@ async function sendSnapshot() {
   await emit(`${storeChannel("editor", scope)}:snapshot`, {
     source,
     state: useEditorStore.getState(),
+  });
+  await emit(`${storeChannel("diskState", scope)}:snapshot`, {
+    source,
+    state: useDiskStateStore.getState(),
   });
   await emit(`${storeChannel("runConfig", scope)}:snapshot`, {
     source,
