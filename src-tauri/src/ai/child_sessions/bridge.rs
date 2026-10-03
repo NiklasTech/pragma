@@ -5,8 +5,8 @@ use std::time::Duration;
 use serde_json::{json, Value};
 
 use super::protocol::{
-    BridgeRequest, SpawnReply, BROWSER_TOOL_NAME, MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV,
-    TOOL_NAME,
+    BridgeRequest, SpawnReply, BROWSER_TOOL_NAME, EXTENSION_TOOL_PREFIX, LIST_EXTENSION_TOOLS,
+    MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV, TOOL_NAME,
 };
 
 const DEFAULT_PROTOCOL_VERSION: &str = "2024-11-05";
@@ -99,9 +99,22 @@ fn forward(config: &BridgeConfig, tool: &str, arguments: Value) -> Result<SpawnR
 
 type ToolSender<'a> = &'a dyn Fn(&str, Value) -> Result<SpawnReply, String>;
 
+/// Pragma's own tools plus the tools extensions currently register.
+fn list_tools(send: ToolSender) -> Value {
+    let mut tools = vec![tool_definition(), browser_tool_definition()];
+    if let Ok(reply) = send(LIST_EXTENSION_TOOLS, json!({})) {
+        if let Ok(Value::Array(extension_tools)) = serde_json::from_str::<Value>(&reply.text) {
+            tools.extend(extension_tools);
+        }
+    }
+    json!({ "tools": tools })
+}
+
 fn call_tool(params: &Value, send: ToolSender) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or("");
-    let reply = if name == TOOL_NAME || name == BROWSER_TOOL_NAME {
+    let forwarded =
+        name == TOOL_NAME || name == BROWSER_TOOL_NAME || name.starts_with(EXTENSION_TOOL_PREFIX);
+    let reply = if forwarded {
         let arguments = params
             .get("arguments")
             .cloned()
@@ -145,7 +158,7 @@ fn handle_message(line: &str, send: ToolSender) -> Option<Value> {
             "serverInfo": { "name": "pragma", "version": env!("CARGO_PKG_VERSION") },
         })),
         "ping" => Ok(json!({})),
-        "tools/list" => Ok(json!({ "tools": [tool_definition(), browser_tool_definition()] })),
+        "tools/list" => Ok(list_tools(send)),
         "tools/call" => Ok(call_tool(&params, send)),
         _ => Err(json!({ "code": -32601, "message": format!("Method not found: {method}") })),
     };
@@ -218,6 +231,42 @@ mod tests {
             handle_message(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#, &unused).unwrap();
         assert_eq!(response["result"]["tools"][0]["name"], TOOL_NAME);
         assert_eq!(response["result"]["tools"][1]["name"], BROWSER_TOOL_NAME);
+        assert_eq!(response["result"]["tools"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn lists_extension_tools_from_the_app() {
+        let send = |tool: &str, _: Value| {
+            assert_eq!(tool, LIST_EXTENSION_TOOLS);
+            Ok(SpawnReply {
+                ok: true,
+                text: r#"[{"name":"ext__word-count__count","description":"Count","inputSchema":{"type":"object"}}]"#.to_string(),
+            })
+        };
+        let response =
+            handle_message(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#, &send).unwrap();
+        assert_eq!(
+            response["result"]["tools"][2]["name"],
+            "ext__word-count__count"
+        );
+    }
+
+    #[test]
+    fn forwards_extension_tool_calls() {
+        let send = |tool: &str, arguments: Value| {
+            assert_eq!(tool, "ext__word-count__count");
+            assert_eq!(arguments["text"], "a b");
+            Ok(SpawnReply {
+                ok: true,
+                text: "2".to_string(),
+            })
+        };
+        let response = handle_message(
+            r#"{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"ext__word-count__count","arguments":{"text":"a b"}}}"#,
+            &send,
+        )
+        .unwrap();
+        assert_eq!(response["result"]["content"][0]["text"], "2");
     }
 
     #[test]

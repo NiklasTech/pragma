@@ -1,7 +1,8 @@
-//! Adapter installation: install specs (pip/npm/GitHub release) and the
-//! download + extraction of release assets into the managed adapters dir.
+//! Adapter installation: install specs (pip/npm/go/GitHub release/Maven) and
+//! the download + extraction of release assets into the managed adapters dir.
 
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -20,6 +21,18 @@ pub enum InstallSpec {
         repo: &'static str,
         tag: &'static str,
         asset_prefix: &'static str,
+    },
+    /// `go install <package>@<version>` into the managed adapters dir (`GOBIN`).
+    GoInstall {
+        package: &'static str,
+        version: &'static str,
+    },
+    /// Download a pinned jar from Maven Central and verify its SHA-256.
+    MavenJar {
+        group_path: &'static str,
+        artifact: &'static str,
+        version: &'static str,
+        sha256: &'static str,
     },
 }
 
@@ -90,8 +103,77 @@ pub fn spec_command(spec: &InstallSpec) -> Option<(&'static str, Vec<String>)> {
             "npm",
             vec!["install".to_string(), "-g".to_string(), package.to_string()],
         )),
-        InstallSpec::GitHubRelease { .. } => None,
+        InstallSpec::GitHubRelease { .. }
+        | InstallSpec::GoInstall { .. }
+        | InstallSpec::MavenJar { .. } => None,
     }
+}
+
+/// The `go install` arguments for a pinned module version.
+pub fn go_install_args(package: &str, version: &str) -> Vec<String> {
+    vec!["install".to_string(), format!("{package}@{version}")]
+}
+
+pub fn maven_jar_name(artifact: &str, version: &str) -> String {
+    format!("{artifact}-{version}.jar")
+}
+
+pub fn maven_jar_url(group_path: &str, artifact: &str, version: &str) -> String {
+    format!(
+        "https://repo1.maven.org/maven2/{group_path}/{artifact}/{version}/{}",
+        maven_jar_name(artifact, version)
+    )
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+/// Download a pinned jar into `dest_dir`; a checksum mismatch deletes the file.
+pub async fn install_maven_jar(
+    app: &AppHandle,
+    adapter_id: &str,
+    group_path: &str,
+    artifact: &str,
+    version: &str,
+    sha256: &str,
+    dest_dir: &Path,
+) -> Result<PathBuf, String> {
+    let url = maven_jar_url(group_path, artifact, version);
+    let dest = dest_dir.join(maven_jar_name(artifact, version));
+    let partial = dest.with_extension("jar.part");
+
+    emit_progress(
+        app,
+        adapter_id,
+        InstallStage::Downloading,
+        Some(0),
+        format!("Downloading {artifact} {version}"),
+    );
+    tokio::time::timeout(
+        DOWNLOAD_TIMEOUT,
+        download_file(app, adapter_id, &url, &partial),
+    )
+    .await
+    .map_err(|_| format!("Download timed out after {}s", DOWNLOAD_TIMEOUT.as_secs()))??;
+
+    let bytes = tokio::fs::read(&partial)
+        .await
+        .map_err(|e| format!("Cannot read {}: {e}", partial.display()))?;
+    let actual = sha256_hex(&bytes);
+    if actual != sha256 {
+        let _ = tokio::fs::remove_file(&partial).await;
+        return Err(format!(
+            "Checksum mismatch for {artifact} {version}: expected {sha256}, got {actual}"
+        ));
+    }
+    tokio::fs::rename(&partial, &dest)
+        .await
+        .map_err(|e| format!("Cannot write {}: {e}", dest.display()))?;
+    Ok(dest)
 }
 
 /// Platform triple used in CodeLLDB asset names, e.g. `win32-x64`.
@@ -326,6 +408,46 @@ mod tests {
             asset_prefix: "codelldb",
         };
         assert!(spec_command(&spec).is_none());
+    }
+
+    #[test]
+    fn go_and_maven_specs_have_no_command() {
+        let go = InstallSpec::GoInstall {
+            package: "github.com/go-delve/delve/cmd/dlv",
+            version: "v1.27.2",
+        };
+        let maven = InstallSpec::MavenJar {
+            group_path: "com/microsoft/java",
+            artifact: "com.microsoft.java.debug.plugin",
+            version: "0.53.1",
+            sha256: "00",
+        };
+        assert!(spec_command(&go).is_none());
+        assert!(spec_command(&maven).is_none());
+    }
+
+    #[test]
+    fn go_install_pins_the_version() {
+        assert_eq!(
+            go_install_args("github.com/go-delve/delve/cmd/dlv", "v1.27.2"),
+            ["install", "github.com/go-delve/delve/cmd/dlv@v1.27.2"]
+        );
+    }
+
+    #[test]
+    fn maven_url_follows_the_repository_layout() {
+        assert_eq!(
+            maven_jar_url("com/microsoft/java", "com.microsoft.java.debug.plugin", "0.53.1"),
+            "https://repo1.maven.org/maven2/com/microsoft/java/com.microsoft.java.debug.plugin/0.53.1/com.microsoft.java.debug.plugin-0.53.1.jar"
+        );
+    }
+
+    #[test]
+    fn sha256_hex_matches_a_known_digest() {
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
     }
 
     #[test]

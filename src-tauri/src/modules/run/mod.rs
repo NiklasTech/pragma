@@ -1,6 +1,7 @@
 mod cmdline;
 mod commands;
 mod detection;
+mod detection_tools;
 mod manager;
 mod process;
 mod types;

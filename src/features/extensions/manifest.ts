@@ -1,6 +1,7 @@
 import {
   EXTENSION_FORMAT,
   type ExtensionCommandContribution,
+  type ExtensionKeybindingContribution,
   type ExtensionManifest,
   type ExtensionPanelContribution,
 } from "./types";
@@ -79,6 +80,35 @@ function parsePanels(value: unknown, errors: string[]): ExtensionPanelContributi
   return panels;
 }
 
+function parseKeybindings(
+  value: unknown,
+  errors: string[],
+): ExtensionKeybindingContribution[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) {
+    errors.push("contributes.keybindings: must be an array");
+    return undefined;
+  }
+  const keybindings: ExtensionKeybindingContribution[] = [];
+  value.forEach((entry, index) => {
+    const path = `contributes.keybindings[${index}]`;
+    if (!isRecord(entry) || typeof entry.command !== "string" || typeof entry.key !== "string") {
+      errors.push(`${path}: requires string "command" and "key"`);
+      return;
+    }
+    const keybinding: ExtensionKeybindingContribution = { command: entry.command, key: entry.key };
+    if (entry.mac !== undefined) {
+      if (typeof entry.mac !== "string") {
+        errors.push(`${path}.mac: must be a string`);
+        return;
+      }
+      keybinding.mac = entry.mac;
+    }
+    keybindings.push(keybinding);
+  });
+  return keybindings;
+}
+
 function parseThemes(value: unknown, errors: string[]): unknown[] | undefined {
   if (value === undefined) return undefined;
   if (!Array.isArray(value)) {
@@ -153,10 +183,12 @@ export function validateExtensionManifest(input: unknown): ManifestValidationRes
       const commands = parseCommands(input.contributes.commands, errors);
       const themes = parseThemes(input.contributes.themes, errors);
       const panels = parsePanels(input.contributes.panels, errors);
+      const keybindings = parseKeybindings(input.contributes.keybindings, errors);
       manifest.contributes = {};
       if (commands && commands.length > 0) manifest.contributes.commands = commands;
       if (themes && themes.length > 0) manifest.contributes.themes = themes;
       if (panels && panels.length > 0) manifest.contributes.panels = panels;
+      if (keybindings && keybindings.length > 0) manifest.contributes.keybindings = keybindings;
     }
   }
 

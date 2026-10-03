@@ -18,6 +18,10 @@ export function debugTargetForLanguage(language: string | undefined): DebugFileT
       return { adapter: "node", runtime: "node" };
     case "rust":
       return { adapter: "lldb", runtime: "" };
+    case "go":
+      return { adapter: "go", runtime: "go run" };
+    case "java":
+      return { adapter: "java", runtime: "" };
     default:
       return null;
   }
@@ -41,6 +45,13 @@ export async function debugCurrentFile(): Promise<void> {
   if (language === "rust") {
     toast.info(
       "Rust requires a compiled binary — use a run config with debug adapter 'lldb' and the binary as command (e.g. target/debug/myapp.exe)",
+    );
+    return;
+  }
+
+  if (language === "java") {
+    toast.info(
+      "Java requires compiled classes — use a run config with debug adapter 'java' and a command like 'java -cp target/classes com.example.Main'",
     );
     return;
   }

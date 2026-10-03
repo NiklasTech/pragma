@@ -73,6 +73,8 @@ export interface ChatSession {
   agentEngine?: AgentEngine;
   parentId?: string;
   category?: string;
+  /** MCP servers this session uses; unset falls back to the agent, then to all servers. */
+  mcpServers?: string[];
 }
 
 export interface CreateChatSessionInit {

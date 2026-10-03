@@ -1,5 +1,7 @@
-use crate::modules::mcp::client::{McpClient, McpClientConfig, Notification};
+use crate::modules::mcp::client::Notification;
+use crate::modules::mcp::connection::{McpConnection, McpServerCapabilities};
 use crate::modules::mcp::error::McpError;
+use crate::modules::mcp::start::connect;
 use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
 use crate::modules::mcp::{
     config_path, load_tools_cache, save_tools_cache, secrets, write_config_file, McpServerConfig,
@@ -38,6 +40,24 @@ struct McpStatusEvent {
     status: McpServerStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    auth_required: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct McpListChangedEvent {
+    server_id: String,
+    kind: &'static str,
+}
+
+/// The list a `notifications/*/list_changed` method refers to.
+fn list_changed_kind(method: &str) -> Option<&'static str> {
+    match method {
+        "notifications/tools/list_changed" => Some("tools"),
+        "notifications/resources/list_changed" => Some("resources"),
+        "notifications/prompts/list_changed" => Some("prompts"),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -56,16 +76,11 @@ struct McpLogEvent {
 }
 
 struct RunningServer {
-    #[allow(dead_code)]
-    client: McpClient,
-    child: Arc<Mutex<Child>>,
+    client: McpConnection,
+    child: Option<Arc<Mutex<Child>>>,
     status: Arc<Mutex<McpServerStatus>>,
-    #[allow(dead_code)]
-    notification_handle: tokio::task::JoinHandle<()>,
-    #[allow(dead_code)]
-    supervisor_handle: tokio::task::JoinHandle<()>,
-    #[allow(dead_code)]
-    log_handle: tokio::task::JoinHandle<()>,
+    capabilities: McpServerCapabilities,
+    tasks: Vec<tokio::task::JoinHandle<()>>,
 }
 
 pub struct McpManager {
@@ -269,47 +284,56 @@ impl McpManager {
             }
         }
 
-        let client_config = McpClientConfig {
-            command: config.command.clone(),
-            args: config.args.clone(),
-            env: secrets::resolve_env(config)?,
-            request_timeout_ms: None,
-        };
-
         self.emit_status(&config.id, McpServerStatus::Starting, None);
 
-        let (client, child, notifications, stderr_lines) = McpClient::start(client_config).await?;
-        let child = Arc::new(Mutex::new(child));
-        let status = Arc::new(Mutex::new(McpServerStatus::Running));
+        let connected = match connect(config).await {
+            Ok(connected) => connected,
+            Err(err) => {
+                let auth_required = matches!(err, McpError::AuthRequired(_));
+                self.emit(
+                    &config.id,
+                    McpServerStatus::Error,
+                    Some(err.to_string()),
+                    auth_required,
+                );
+                return Err(err);
+            }
+        };
 
-        let notification_handle = tokio::spawn(Self::forward_notifications(
+        let status = Arc::new(Mutex::new(McpServerStatus::Running));
+        let mut tasks = vec![tokio::spawn(Self::forward_notifications(
             self.app_handle.clone(),
             config.id.clone(),
-            notifications,
-        ));
-        let supervisor_handle = tokio::spawn(Self::supervise(
-            self.app_handle.clone(),
-            config.id.clone(),
-            Arc::clone(&child),
-            Arc::clone(&status),
-        ));
-        let log_handle = tokio::spawn(Self::forward_logs(
-            self.app_handle.clone(),
-            config.id.clone(),
-            stderr_lines,
-        ));
+            connected.notifications,
+        ))];
+        let child = connected.child.map(|child| Arc::new(Mutex::new(child)));
+        if let Some(child) = &child {
+            tasks.push(tokio::spawn(Self::supervise(
+                self.app_handle.clone(),
+                config.id.clone(),
+                Arc::clone(child),
+                Arc::clone(&status),
+            )));
+        }
+        if let Some(stderr) = connected.stderr {
+            tasks.push(tokio::spawn(Self::forward_logs(
+                self.app_handle.clone(),
+                config.id.clone(),
+                stderr,
+            )));
+        }
+        tasks.extend(connected.event_stream);
 
         {
             let mut servers = self.servers.lock().await;
             servers.insert(
                 config.id.clone(),
                 RunningServer {
-                    client,
+                    client: connected.connection,
                     child,
                     status,
-                    notification_handle,
-                    supervisor_handle,
-                    log_handle,
+                    capabilities: connected.capabilities,
+                    tasks,
                 },
             );
         }
@@ -317,6 +341,32 @@ impl McpManager {
         self.refresh_tools(&config.id).await;
         self.emit_status(&config.id, McpServerStatus::Running, None);
         Ok(())
+    }
+
+    /// The live connection of a running server.
+    pub(super) async fn connection(
+        &self,
+        id: &str,
+    ) -> crate::modules::mcp::error::Result<McpConnection> {
+        let servers = self.servers.lock().await;
+        servers
+            .get(id)
+            .map(|server| server.client.clone())
+            .ok_or_else(|| McpError::ServerNotFound(id.to_string()))
+    }
+
+    pub async fn capabilities(&self, id: &str) -> Option<McpServerCapabilities> {
+        let servers = self.servers.lock().await;
+        servers.get(id).map(|server| server.capabilities.clone())
+    }
+
+    pub async fn config_for(&self, id: &str) -> Option<McpServerConfig> {
+        self.config
+            .lock()
+            .await
+            .iter()
+            .find(|c| c.id == id)
+            .cloned()
     }
 
     pub async fn get_tools(&self, id: &str) -> Vec<McpTool> {
@@ -380,13 +430,16 @@ impl McpManager {
     }
 
     async fn stop_running_server(server: RunningServer) {
-        {
-            let mut child = server.child.lock().await;
+        if let Some(child) = &server.child {
+            let mut child = child.lock().await;
             let _ = child.kill().await;
         }
-        server.notification_handle.abort();
-        server.supervisor_handle.abort();
-        server.log_handle.abort();
+        if let McpConnection::Http(client) = &server.client {
+            client.close().await;
+        }
+        for task in server.tasks {
+            task.abort();
+        }
     }
 
     async fn supervise(
@@ -423,6 +476,7 @@ impl McpManager {
                 server_id: id,
                 status: new_status,
                 error,
+                auth_required: false,
             },
         );
     }
@@ -433,6 +487,20 @@ impl McpManager {
         mut rx: mpsc::UnboundedReceiver<Notification>,
     ) {
         while let Some(notification) = rx.recv().await {
+            if let Some(kind) = list_changed_kind(&notification.method) {
+                if kind == "tools" {
+                    if let Some(manager) = app_handle.try_state::<McpManager>() {
+                        manager.refresh_tools(&id).await;
+                    }
+                }
+                let _ = app_handle.emit(
+                    "mcp_list_changed",
+                    McpListChangedEvent {
+                        server_id: id.clone(),
+                        kind,
+                    },
+                );
+            }
             let event = McpNotificationEvent {
                 server_id: id.clone(),
                 method: notification.method,
@@ -458,12 +526,17 @@ impl McpManager {
     }
 
     fn emit_status(&self, id: &str, status: McpServerStatus, error: Option<String>) {
+        self.emit(id, status, error, false);
+    }
+
+    fn emit(&self, id: &str, status: McpServerStatus, error: Option<String>, auth_required: bool) {
         let _ = self.app_handle.emit(
             "mcp_status_changed",
             McpStatusEvent {
                 server_id: id.to_string(),
                 status,
                 error,
+                auth_required,
             },
         );
     }
@@ -503,5 +576,18 @@ mod tests {
             serde_json::to_string(&McpServerStatus::Error).unwrap(),
             "\"error\""
         );
+    }
+
+    #[test]
+    fn list_changed_methods_map_to_their_list() {
+        assert_eq!(
+            list_changed_kind("notifications/tools/list_changed"),
+            Some("tools")
+        );
+        assert_eq!(
+            list_changed_kind("notifications/prompts/list_changed"),
+            Some("prompts")
+        );
+        assert_eq!(list_changed_kind("notifications/message"), None);
     }
 }

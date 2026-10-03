@@ -18,6 +18,7 @@ use app_lib::ai::{
     providers::{anthropic::AnthropicProvider, openai::OpenAIProvider},
 };
 use app_lib::modules::mcp::client::{McpClient, McpClientConfig};
+use app_lib::modules::mcp::connection::{initialize, McpConnection};
 use app_lib::modules::mcp::tools::{call_tool, list_tools};
 
 fn echo_tool() -> ToolDefinition {
@@ -168,7 +169,11 @@ async fn spawn_mock_anthropic_server() -> SocketAddr {
     addr
 }
 
-async fn start_echo_mcp_server() -> (McpClient, tokio::process::Child, Arc<Mutex<Vec<String>>>) {
+async fn start_echo_mcp_server() -> (
+    McpConnection,
+    tokio::process::Child,
+    Arc<Mutex<Vec<String>>>,
+) {
     let binary = PathBuf::from(env!("CARGO_BIN_EXE_echo-mcp-server"));
 
     let config = McpClientConfig {
@@ -188,7 +193,9 @@ async fn start_echo_mcp_server() -> (McpClient, tokio::process::Child, Arc<Mutex
         }
     });
 
-    (client, child, stderr_log)
+    let connection = McpConnection::Stdio(client);
+    initialize(&connection).await.unwrap();
+    (connection, child, stderr_log)
 }
 
 async fn stderr_lines(log: &Arc<Mutex<Vec<String>>>) -> Vec<String> {

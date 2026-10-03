@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { sessionMcpServerIds } from "@/features/ai/mcp/selection";
+
 export interface AcpConfigValue {
   value: string;
   name: string;
@@ -120,6 +122,7 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
           chat_session_id: chatSessionId,
           cwd,
           allow_child_sessions: allowChildSessions,
+          mcp_server_ids: sessionMcpServerIds(chatSessionId) ?? undefined,
         },
       });
       const preferred = useAcpPreferenceStore.getState().preferred[providerId];

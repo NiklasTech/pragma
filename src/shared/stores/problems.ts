@@ -2,6 +2,13 @@ import { create } from "zustand";
 
 export type ProblemSeverity = "error" | "warning" | "info";
 
+/// Problems from extensions carry `ext:<extensionId>` as their source.
+export const EXTENSION_SOURCE_PREFIX = "ext:";
+
+function keepsAcrossLspUpdates(problem: Problem): boolean {
+  return problem.source === "pragma" || problem.source.startsWith(EXTENSION_SOURCE_PREFIX);
+}
+
 export interface Problem {
   id: string;
   severity: ProblemSeverity;
@@ -24,6 +31,9 @@ interface ProblemsActions {
   setProblems: (problems: Problem[]) => void;
   setPragmaDiagnostics: (diagnostics: Problem[]) => void;
   setFileDiagnostics: (filePath: string, diagnostics: Problem[]) => void;
+  /** Replaces the problems of one source for one file, leaving other sources alone. */
+  setSourceDiagnostics: (filePath: string, source: string, diagnostics: Problem[]) => void;
+  clearSourceDiagnostics: (source: string) => void;
   clearFileDiagnostics: (filePath: string) => void;
   clearProblems: () => void;
   setLoading: (isLoading: boolean) => void;
@@ -48,9 +58,20 @@ export const useProblemsStore = create<ProblemsState & ProblemsActions>((set, ge
 
   setFileDiagnostics: (filePath, diagnostics) =>
     set((state) => {
-      const others = state.problems.filter((p) => p.filePath !== filePath || p.source === "pragma");
+      const others = state.problems.filter(
+        (p) => p.filePath !== filePath || keepsAcrossLspUpdates(p),
+      );
       return { problems: [...others, ...diagnostics], error: null };
     }),
+
+  setSourceDiagnostics: (filePath, source, diagnostics) =>
+    set((state) => {
+      const others = state.problems.filter((p) => p.filePath !== filePath || p.source !== source);
+      return { problems: [...others, ...diagnostics], error: null };
+    }),
+
+  clearSourceDiagnostics: (source) =>
+    set((state) => ({ problems: state.problems.filter((p) => p.source !== source) })),
 
   clearFileDiagnostics: (filePath) =>
     set((state) => ({

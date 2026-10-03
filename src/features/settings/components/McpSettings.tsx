@@ -5,10 +5,22 @@ import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { useSettingsStore, type McpServerConfig } from "@/shared/stores/settings";
 import {
+  useSettingsStore,
+  type McpServerConfig,
+  type McpTransport,
+} from "@/shared/stores/settings";
+import {
+  DownloadSimple,
   Plus,
   PencilSimple,
   Trash,
@@ -24,10 +36,17 @@ import { useMcpServers, type McpServerStatus } from "../hooks/useMcpServers";
 import { McpServerLogSheet, LogButton } from "./McpServerLogSheet";
 import { McpServerTools } from "./McpServerTools";
 import { McpEnvFields, parseEnv, type SecretEnvEntry } from "./McpEnvFields";
+import { McpImportDialog } from "./McpImportDialog";
+import { McpRemoteFields, formatHeaders, parseHeaders } from "./McpRemoteFields";
+import { McpSignInButton } from "./McpSignInButton";
 import { useMissingMcpSecrets } from "../hooks/useMissingMcpSecrets";
 
 interface EditForm {
   name: string;
+  transport: McpTransport;
+  url: string;
+  headersText: string;
+  secretHeaders: SecretEnvEntry[];
   command: string;
   argsText: string;
   envText: string;
@@ -38,6 +57,10 @@ interface EditForm {
 function serverToForm(server?: McpServerConfig): EditForm {
   return {
     name: server?.name ?? "",
+    transport: server?.transport ?? "stdio",
+    url: server?.url ?? "",
+    headersText: formatHeaders(server?.headers),
+    secretHeaders: server?.secretHeaders?.map((key) => ({ key, value: "" })) ?? [],
     command: server?.command ?? "",
     argsText: server?.args.join("\n") ?? "",
     envText: server
@@ -109,6 +132,7 @@ export function McpSettings() {
     statuses,
     tools,
     logs,
+    authRequired,
     loading: statusLoading,
     load,
     startServer,
@@ -121,6 +145,7 @@ export function McpSettings() {
   const [loading, setLoading] = React.useState(false);
   const [logServerId, setLogServerId] = React.useState<string | null>(null);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [importOpen, setImportOpen] = React.useState(false);
   const { missing: missingSecrets, refresh: refreshMissingSecrets } = useMissingMcpSecrets(
     mcp.servers,
   );
@@ -184,16 +209,28 @@ export function McpSettings() {
     const env = parseEnv(form.envText);
     for (const key of secretEnv) delete env[key];
 
+    const headerSecrets = form.secretHeaders
+      .map((entry) => ({ key: entry.key.trim(), value: entry.value }))
+      .filter((entry) => entry.key);
+    const secretHeaders = [...new Set(headerSecrets.map((entry) => entry.key))];
+    const headers = parseHeaders(form.headersText);
+    for (const key of secretHeaders) delete headers[key];
+    const remote = form.transport === "http";
+
     const serverData = {
       name: form.name.trim(),
-      command: form.command.trim(),
-      args: parseArgs(form.argsText),
-      env,
-      secretEnv,
+      transport: form.transport,
+      command: remote ? "" : form.command.trim(),
+      args: remote ? [] : parseArgs(form.argsText),
+      env: remote ? {} : env,
+      secretEnv: remote ? [] : secretEnv,
+      url: remote ? form.url.trim() : undefined,
+      headers: remote ? headers : {},
+      secretHeaders: remote ? secretHeaders : [],
       autostart: form.autostart,
     };
 
-    if (!serverData.name || !serverData.command) return;
+    if (!serverData.name || (remote ? !serverData.url : !serverData.command)) return;
 
     let id: string;
     if (editingId === "new") {
@@ -207,10 +244,13 @@ export function McpSettings() {
 
     // Secrets go to the keychain before the config, which may autostart the server.
     let error: string | null = null;
-    for (const { key, value } of secrets) {
+    const pending = remote
+      ? headerSecrets.map((entry) => ({ ...entry, kind: "header" }))
+      : secrets.map((entry) => ({ ...entry, kind: "env" }));
+    for (const { key, value, kind } of pending) {
       if (!value) continue;
       try {
-        await invoke("mcp_set_secret", { serverId: id, key, value });
+        await invoke("mcp_set_secret", { serverId: id, key, value, kind });
       } catch (e) {
         error = `Could not store ${key} in the keychain: ${String(e)}`;
       }
@@ -243,16 +283,28 @@ export function McpSettings() {
       <SettingSection
         title="Servers"
         action={
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={handleAdd}
-            disabled={editingId !== null}
-            className="gap-1"
-          >
-            <Plus size={12} />
-            Add Server
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              disabled={editingId !== null}
+              className="gap-1"
+            >
+              <DownloadSimple size={12} />
+              Import
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleAdd}
+              disabled={editingId !== null}
+              className="gap-1"
+            >
+              <Plus size={12} />
+              Add Server
+            </Button>
+          </div>
         }
       >
         {(loading || statusLoading) && <p className="py-3 text-ui-xs text-fg-muted">Loading...</p>}
@@ -269,30 +321,67 @@ export function McpSettings() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label>Command</Label>
-              <Input
-                value={form.command}
-                onChange={(e) => setForm((f) => ({ ...f, command: e.target.value }))}
-                placeholder="e.g. npm"
-              />
+              <Label>Transport</Label>
+              <Select
+                value={form.transport}
+                onValueChange={(value) =>
+                  setForm((f) => ({ ...f, transport: value as McpTransport }))
+                }
+              >
+                <SelectTrigger className="max-w-[260px]">
+                  <SelectValue>
+                    {form.transport === "http"
+                      ? "Remote (Streamable HTTP)"
+                      : "Local process (stdio)"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="stdio">Local process (stdio)</SelectItem>
+                  <SelectItem value="http">Remote (Streamable HTTP)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label>Arguments (one per line or whitespace separated)</Label>
-              <Textarea
-                value={form.argsText}
-                onChange={(e) => setForm((f) => ({ ...f, argsText: e.target.value }))}
-                placeholder="exec&#10;--yes&#10;@modelcontextprotocol/server-filesystem&#10;/home/user"
-                className="min-h-20 font-mono"
+            {form.transport === "http" ? (
+              <McpRemoteFields
+                value={{
+                  url: form.url,
+                  headersText: form.headersText,
+                  secretHeaders: form.secretHeaders,
+                }}
+                savedKeys={mcp.servers.find((s) => s.id === editingId)?.secretHeaders ?? []}
+                missingKeys={editingId ? (missingSecrets[editingId] ?? []) : []}
+                onChange={(remote) => setForm((f) => ({ ...f, ...remote }))}
               />
-            </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Command</Label>
+                  <Input
+                    value={form.command}
+                    onChange={(e) => setForm((f) => ({ ...f, command: e.target.value }))}
+                    placeholder="e.g. npm"
+                  />
+                </div>
 
-            <McpEnvFields
-              value={{ envText: form.envText, secrets: form.secrets }}
-              savedKeys={mcp.servers.find((s) => s.id === editingId)?.secretEnv ?? []}
-              missingKeys={editingId ? (missingSecrets[editingId] ?? []) : []}
-              onChange={(env) => setForm((f) => ({ ...f, ...env }))}
-            />
+                <div className="flex flex-col gap-1.5">
+                  <Label>Arguments (one per line or whitespace separated)</Label>
+                  <Textarea
+                    value={form.argsText}
+                    onChange={(e) => setForm((f) => ({ ...f, argsText: e.target.value }))}
+                    placeholder="exec&#10;--yes&#10;@modelcontextprotocol/server-filesystem&#10;/home/user"
+                    className="min-h-20 font-mono"
+                  />
+                </div>
+
+                <McpEnvFields
+                  value={{ envText: form.envText, secrets: form.secrets }}
+                  savedKeys={mcp.servers.find((s) => s.id === editingId)?.secretEnv ?? []}
+                  missingKeys={editingId ? (missingSecrets[editingId] ?? []) : []}
+                  onChange={(env) => setForm((f) => ({ ...f, ...env }))}
+                />
+              </>
+            )}
 
             <div className="flex items-center justify-between">
               <Label className="cursor-pointer" htmlFor="mcp-autostart">
@@ -362,13 +451,22 @@ export function McpSettings() {
                       )}
                     </div>
                     <code className="truncate text-ui-xs text-fg-muted">
-                      {server.command} {server.args.join(" ")}
+                      {server.transport === "http"
+                        ? server.url
+                        : `${server.command} ${server.args.join(" ")}`}
                     </code>
                     <McpServerTools tools={tools[server.id] ?? []} />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {server.transport === "http" && (
+                    <McpSignInButton
+                      serverId={server.id}
+                      serverName={server.name}
+                      authRequired={authRequired[server.id] ?? false}
+                    />
+                  )}
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -414,6 +512,16 @@ export function McpSettings() {
           })}
         </div>
       </SettingSection>
+
+      <McpImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => {
+          void loadConfig();
+          void load();
+          refreshMissingSecrets();
+        }}
+      />
 
       {activeLogServer && (
         <McpServerLogSheet

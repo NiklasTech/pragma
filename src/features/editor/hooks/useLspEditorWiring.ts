@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { RefObject } from "react";
+import { autocompletion } from "@codemirror/autocomplete";
 import type { Compartment } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
@@ -23,6 +24,8 @@ import { signatureHelpExtension } from "@/features/editor/lsp/signatureHelp";
 import { lspInlayHintsExtension } from "@/features/editor/lsp/inlayHints";
 import { setLspFeatureFlags } from "@/features/editor/lsp/lspFlags";
 import { useEditorStore } from "@/shared/stores/editor";
+import { extensionCompletionSource } from "@/features/extensions/completion";
+import { providersFor, useExtensionsStore } from "@/features/extensions/store";
 import {
   EDITOR_CHECK_DEFINITION_EVENT,
   EDITOR_CODE_ACTION_EVENT,
@@ -72,13 +75,25 @@ export function useLspEditorWiring({
   lspDocumentSymbolsCompartmentRef,
   lspInlayHintsCompartmentRef,
 }: LspEditorWiringContext): void {
+  const extensionCompletion = useExtensionsStore(
+    (state) => providersFor(state.completionProviders, language).length > 0,
+  );
+
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
 
+    // CodeMirror allows one completion override, so extension sources join the LSP one.
+    const extensionSources =
+      extensionCompletion && language ? [extensionCompletionSource(language, filePath)] : [];
+    const extensionOnly =
+      extensionSources.length > 0
+        ? autocompletion({ override: extensionSources, activateOnTyping: true })
+        : [];
+
     view.dispatch({
       effects: [
-        lspCompletionCompartmentRef.current.reconfigure([]),
+        lspCompletionCompartmentRef.current.reconfigure(extensionOnly),
         lspHoverCompartmentRef.current.reconfigure([]),
         lspSignatureHelpCompartmentRef.current.reconfigure([]),
         lspInlayHintsCompartmentRef.current.reconfigure([]),
@@ -97,8 +112,8 @@ export function useLspEditorWiring({
         if (cancelled || !viewRef.current) return;
         setLspFeatureFlags(filePath, flags);
         const extension = flags.completion
-          ? lspCompletionExtension(resolvedLanguage, filePath, flags)
-          : [];
+          ? lspCompletionExtension(resolvedLanguage, filePath, flags, extensionSources)
+          : extensionOnly;
         const hoverExtension = flags.hover ? lspHoverExtension(resolvedLanguage, filePath) : [];
         const signatureHelp = flags.signatureHelp
           ? signatureHelpExtension(resolvedLanguage, filePath, flags.signatureHelpTriggerCharacters)
@@ -121,7 +136,14 @@ export function useLspEditorWiring({
     return () => {
       cancelled = true;
     };
-  }, [language, filePath, experimentalLsp, lspEnabledForLanguage, inlayHintsEnabled]);
+  }, [
+    language,
+    filePath,
+    experimentalLsp,
+    lspEnabledForLanguage,
+    inlayHintsEnabled,
+    extensionCompletion,
+  ]);
 
   useEffect(() => {
     const view = viewRef.current;

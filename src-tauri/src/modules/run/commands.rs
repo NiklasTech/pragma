@@ -13,6 +13,10 @@ use super::detection::{
     detect_package_json_suggestions, detect_python_suggestion, detect_tauri_suggestion,
     detect_vite_suggestion,
 };
+use super::detection_tools::{
+    detect_cargo_suggestions, detect_compose_suggestions, detect_go_suggestions,
+    detect_just_suggestions, detect_make_suggestions,
+};
 use super::manager::{RunInstance, RunManager};
 #[cfg(unix)]
 use super::process::set_process_group;
@@ -73,6 +77,11 @@ pub fn run_detect_configs(workspace_root: String) -> Result<Vec<RunConfig>, Stri
     if let Some(s) = detect_python_suggestion(&workspace_root) {
         suggestions.push(s);
     }
+    suggestions.extend(detect_cargo_suggestions(&workspace_root));
+    suggestions.extend(detect_go_suggestions(&workspace_root));
+    suggestions.extend(detect_make_suggestions(&workspace_root));
+    suggestions.extend(detect_just_suggestions(&workspace_root));
+    suggestions.extend(detect_compose_suggestions(&workspace_root));
 
     Ok(suggestions)
 }

@@ -73,7 +73,7 @@ impl DapManager {
             .ok_or_else(|| format!("No debug adapter registered for '{adapter}'"))?;
 
         let adapters_dir = adapters_dir(&self.app_handle).ok();
-        let config = resolve_adapter(adapter, adapters_dir.as_deref())
+        let config = resolve_adapter(adapter, adapters_dir.as_deref(), &params.workspace_root)
             .ok_or_else(|| format!("No debug adapter registered for '{adapter}'"))?;
 
         if !check_adapter_available(adapter, adapters_dir.as_deref()).await {

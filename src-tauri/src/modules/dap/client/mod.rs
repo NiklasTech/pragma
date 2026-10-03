@@ -1,6 +1,7 @@
 mod connection;
 mod error;
 mod framing;
+mod jdtls;
 mod protocol;
 mod request;
 mod transport;

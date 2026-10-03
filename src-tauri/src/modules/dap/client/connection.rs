@@ -55,6 +55,7 @@ impl DapClient {
         match config.transport {
             DapTransport::Stdio => Self::start_stdio(config).await,
             DapTransport::Tcp => Self::start_tcp(config).await,
+            DapTransport::Jdtls { .. } => super::jdtls::start(config).await,
         }
     }
 
@@ -137,7 +138,7 @@ impl DapClient {
         Ok((client, child, events, stderr_lines))
     }
 
-    async fn with_io<R, W>(
+    pub(super) async fn with_io<R, W>(
         reader: R,
         writer: W,
         request_timeout_ms: u64,

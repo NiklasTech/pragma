@@ -11,6 +11,7 @@ import { useAIStore } from "@/shared/stores/ai";
 
 import { AgentEnginePicker } from "./AgentEnginePicker";
 import { AgentFoldersTab } from "./AgentFoldersTab";
+import { AgentMcpServersField } from "./AgentMcpServersField";
 import { draftAgent } from "./draft";
 import { useNamedAgentsStore } from "./store";
 import type { Agent, AgentEngine } from "./types";
@@ -40,6 +41,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
   const [name, setName] = useState(agent?.name ?? "");
   const [brief, setBrief] = useState(agent?.brief ?? "");
   const [folders, setFolders] = useState<string[]>(agent?.folders ?? []);
+  const [mcpServers, setMcpServers] = useState<string[] | undefined>(agent?.mcpServers);
   const [saving, setSaving] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +114,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       createdAt: agent?.createdAt ?? now,
       updatedAt: now,
     };
+    if (mcpServers) saved.mcpServers = mcpServers;
 
     try {
       await saveAgent(saved);
@@ -121,7 +124,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
     } finally {
       setSaving(false);
     }
-  }, [agent, agents, brief, engine, folders, name, onSaved, saveAgent]);
+  }, [agent, agents, brief, engine, folders, mcpServers, name, onSaved, saveAgent]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -197,6 +200,13 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
             <span className="text-ui-xs font-medium text-fg-muted">Folders</span>
             <div className="rounded-md border border-border-subtle">
               <AgentFoldersTab folders={folders} onChange={setFolders} />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-ui-xs font-medium text-fg-muted">MCP servers</span>
+            <div className="rounded-md border border-border-subtle">
+              <AgentMcpServersField value={mcpServers} onChange={setMcpServers} />
             </div>
           </div>
 

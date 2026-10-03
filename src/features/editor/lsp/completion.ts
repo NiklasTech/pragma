@@ -135,9 +135,10 @@ export function lspCompletionExtension(
   language: string,
   filePath: string,
   flags: LspFeatureFlags,
+  extraSources: CompletionSource[] = [],
 ): Extension {
   return autocompletion({
-    override: [createLspCompletionSource(language, filePath, flags)],
+    override: [createLspCompletionSource(language, filePath, flags), ...extraSources],
     activateOnTyping: true,
     maxRenderedOptions: 100,
   });

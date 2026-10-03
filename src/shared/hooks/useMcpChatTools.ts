@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { toolDisplayName, type McpChatTool } from "@/shared/lib/ai/mcpTools";
+import { isMcpServerAllowed, mcpSelectionKey } from "@/features/ai/mcp/selection";
 
 export interface McpTool {
   name: string;
@@ -28,9 +29,10 @@ function sameTools(prev: Record<string, McpTool[]>, next: Record<string, McpTool
   return prevIds.every((id) => JSON.stringify(prev[id]) === JSON.stringify(next[id]));
 }
 
-export function useMcpChatTools() {
+/// Tools of the running MCP servers; `allowedServerIds` limits them to a session's selection.
+export function useMcpChatTools(allowedServerIds: string[] | null = null) {
   const serversRef = useRef<Record<string, McpServerState["status"]>>({});
-  const [serverCount, setServerCount] = useState(0);
+  const [serverIds, setServerIds] = useState<string[]>([]);
   const [toolsByServer, setToolsByServer] = useState<Record<string, McpTool[]>>({});
   const [loaded, setLoaded] = useState(false);
 
@@ -65,7 +67,7 @@ export function useMcpChatTools() {
         next[server.config.id] = server.status;
       }
       serversRef.current = next;
-      setServerCount(result.length);
+      setServerIds(result.map((server) => server.config.id));
       await fetchTools(next);
       setLoaded(true);
     } catch {}
@@ -76,6 +78,7 @@ export function useMcpChatTools() {
     const interval = setInterval(() => void loadServers(), POLL_INTERVAL_MS);
 
     let unlisten: (() => void) | undefined;
+    let unlistenListChanged: (() => void) | undefined;
     let active = true;
 
     void (async () => {
@@ -89,9 +92,17 @@ export function useMcpChatTools() {
           void fetchTools(serversRef.current).finally(() => setLoaded(true));
         },
       );
+      unlistenListChanged = await listen<{ server_id: string; kind: string }>(
+        "mcp_list_changed",
+        (event) => {
+          if (event.payload.kind === "tools") void fetchTools(serversRef.current);
+        },
+      );
       if (!active) {
         void unlistenQuietly(unlisten);
+        void unlistenQuietly(unlistenListChanged);
         unlisten = undefined;
+        unlistenListChanged = undefined;
       }
     })();
 
@@ -99,21 +110,30 @@ export function useMcpChatTools() {
       active = false;
       clearInterval(interval);
       void unlistenQuietly(unlisten);
+      void unlistenQuietly(unlistenListChanged);
     };
   }, [loadServers, fetchTools]);
 
+  const allowedKey = mcpSelectionKey(allowedServerIds);
+  const allowed = useMemo(
+    () => (allowedKey === "*" ? null : allowedKey.split("\n").filter(Boolean)),
+    [allowedKey],
+  );
+
   const chatTools = useMemo<McpChatTool[]>(
     () =>
-      Object.entries(toolsByServer).flatMap(([serverId, tools]) =>
-        tools.map((tool) => ({
-          serverId,
-          toolName: tool.name,
-          displayName: toolDisplayName(serverId, tool.name),
-          description: tool.description,
-          parameters: tool.inputSchema ?? {},
-        })),
-      ),
-    [toolsByServer],
+      Object.entries(toolsByServer)
+        .filter(([serverId]) => isMcpServerAllowed(allowed, serverId))
+        .flatMap(([serverId, tools]) =>
+          tools.map((tool) => ({
+            serverId,
+            toolName: tool.name,
+            displayName: toolDisplayName(serverId, tool.name),
+            description: tool.description,
+            parameters: tool.inputSchema ?? {},
+          })),
+        ),
+    [toolsByServer, allowed],
   );
 
   const resolveTool = useCallback(
@@ -142,7 +162,7 @@ export function useMcpChatTools() {
     resolveTool,
     ready: chatTools.length > 0,
     loaded,
-    serverCount,
+    serverCount: serverIds.filter((id) => isMcpServerAllowed(allowed, id)).length,
     refresh: loadServers,
   };
 }

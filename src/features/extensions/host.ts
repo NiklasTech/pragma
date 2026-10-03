@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
+import { useProblemsStore } from "@/shared/stores/problems";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { validateTheme } from "@/theme/validateTheme";
 import type { Theme, ThemeInput } from "@/theme/types";
@@ -9,9 +10,13 @@ import {
   prefixedCommandId,
   prefixedThemeId,
 } from "./bridge";
+import { validateKeybinding } from "./bridgeContributions";
+import { handleCallResult, rejectCallsFor, setCallPoster } from "./calls";
+import { extensionSource } from "./diagnostics";
 import { validateExtensionManifest } from "./manifest";
 import { buildExtensionSrcDoc } from "./sdkBootstrap";
-import { useExtensionsStore, type RegisteredPanel } from "./store";
+import { useExtensionsStore, type RegisteredKeybinding, type RegisteredPanel } from "./store";
+import { forgetExtensionTerminals } from "./terminalApi";
 import type { BridgeResponse, ExtensionManifest, ExtensionSummary } from "./types";
 
 const running = new Map<string, HTMLIFrameElement>();
@@ -27,6 +32,24 @@ function sendResponse(extensionId: string, response: BridgeResponse): void {
   iframe?.contentWindow?.postMessage(response, "*");
 }
 
+setCallPoster((extensionId, message) => {
+  const target = running.get(extensionId)?.contentWindow;
+  if (!target) return false;
+  target.postMessage(message, "*");
+  return true;
+});
+
+/// Sends an event to every running extension.
+export function broadcastEvent(event: string, data?: unknown): void {
+  for (const id of running.keys()) {
+    sendEvent(id, event, data);
+  }
+}
+
+export function sendExtensionCommand(extensionId: string, commandId: string): void {
+  sendEvent(extensionId, "command", { commandId });
+}
+
 function findExtensionBySource(source: MessageEventSource | null): string | null {
   for (const [id, iframe] of running) {
     if (iframe.contentWindow === source) return id;
@@ -37,6 +60,7 @@ function findExtensionBySource(source: MessageEventSource | null): string | null
 function onMessage(event: MessageEvent): void {
   const extensionId = findExtensionBySource(event.source);
   if (!extensionId) return;
+  if (handleCallResult(extensionId, event.data)) return;
 
   const request = parseBridgeRequest(event.data);
   if (!request) return;
@@ -131,6 +155,13 @@ function registerManifestContributions(manifest: ExtensionManifest): void {
   if (panels.length > 0) {
     useExtensionsStore.getState().setPanelsFor(manifest.id, panels);
   }
+
+  const keybindings: RegisteredKeybinding[] = (manifest.contributes?.keybindings ?? []).map(
+    (binding) => validateKeybinding(manifest.id, { ...binding }),
+  );
+  if (keybindings.length > 0) {
+    useExtensionsStore.getState().setContributionsFor("keybindings", manifest.id, keybindings);
+  }
 }
 
 function unregisterExtensionContributions(extensionId: string): void {
@@ -142,6 +173,10 @@ function unregisterExtensionContributions(extensionId: string): void {
     }
   }
   useExtensionsStore.getState().setPanelsFor(extensionId, []);
+  useExtensionsStore.getState().clearContributionsFor(extensionId);
+  useProblemsStore.getState().clearSourceDiagnostics(extensionSource(extensionId));
+  rejectCallsFor(extensionId);
+  forgetExtensionTerminals(extensionId);
 }
 
 export function stopExtension(extensionId: string): void {
@@ -189,6 +224,10 @@ export async function startExtension(
     iframe.setAttribute("aria-hidden", "true");
     iframe.style.display = "none";
     iframe.srcdoc = buildExtensionSrcDoc(mainSource);
+    // main.js has run and subscribed to events once the frame has loaded.
+    iframe.addEventListener("load", () => {
+      sendEvent(manifest.id, "workspaceOpened", { root: workspaceRoot });
+    });
     document.body.appendChild(iframe);
     running.set(manifest.id, iframe);
 
