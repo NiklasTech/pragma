@@ -4,13 +4,19 @@ import { AGENT_TOOL_NAMES, isDestructiveAgentTool } from "./tools";
 
 export type AgentApprovalDecision = "auto" | "required";
 
+// Control operators, pipes, redirects, substitutions and newlines let a
+// command run more than the allowlisted program under `sh -c`.
+const SHELL_OPERATOR_PATTERN = /[;&|<>`\n\r]|\$\(/;
+
 // A pattern matches when it equals the command, when the command extends it
 // with arguments ("pnpm test" allows "pnpm test --run"), or when it ends in
-// "*", acting as a plain prefix ("cargo *" allows "cargo check").
+// "*", acting as a plain prefix ("cargo *" allows "cargo check"). Commands
+// containing shell operators never match.
 export function matchesCommandPattern(command: string, pattern: string): boolean {
   const cmd = command.trim();
   const pat = pattern.trim();
   if (!cmd || !pat) return false;
+  if (SHELL_OPERATOR_PATTERN.test(cmd)) return false;
 
   if (pat.endsWith("*")) {
     const prefix = pat.slice(0, -1).trimEnd();

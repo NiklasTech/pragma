@@ -45,7 +45,7 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   test: {
-    exclude: [...defaultExclude, "**/.kimi/**"],
+    exclude: [...defaultExclude, "**/.kimi/**", "**/.claude/**"],
   },
   fmt: {},
   lint: {
