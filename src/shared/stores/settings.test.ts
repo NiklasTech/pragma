@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
-import { migrateAISettings, useSettingsStore } from "./settings";
+import { migrateAISettings, migrateMcpSettings, useSettingsStore } from "./settings";
 
 describe("migrateAISettings", () => {
   const currentAI = useSettingsStore.getState().ai;
@@ -26,6 +26,32 @@ describe("migrateAISettings", () => {
 
   it("leaves profiles without providers untouched", () => {
     expect(migrateAISettings({ showThinking: true })).toEqual({ showThinking: true });
+  });
+});
+
+describe("migrateMcpSettings", () => {
+  const server = {
+    id: "mcp-1",
+    name: "GitHub",
+    command: "npx",
+    args: [],
+    env: { GITHUB_TOKEN: "ghp_x", NODE_ENV: "production" },
+    secretEnv: [],
+    autostart: false,
+  };
+
+  it("drops secret-like values from profiles written before the revision marker", () => {
+    const migrated = migrateMcpSettings({ servers: [server] });
+
+    expect(migrated.servers[0]?.env).toEqual({ NODE_ENV: "production" });
+    expect(migrated.servers[0]?.secretEnv).toEqual(["GITHUB_TOKEN"]);
+    expect(migrated.migrationRevision).toBe(1);
+  });
+
+  it("keeps a value the user left in plain text after the migration", () => {
+    const migrated = migrateMcpSettings({ servers: [server], migrationRevision: 1 });
+
+    expect(migrated.servers[0]?.env.GITHUB_TOKEN).toBe("ghp_x");
   });
 });
 

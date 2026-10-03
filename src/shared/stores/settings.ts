@@ -32,7 +32,7 @@ export type {
   WorkspaceSettings,
 } from "./settings/types";
 
-export { migrateAISettings } from "./settings/migrations";
+export { migrateAISettings, migrateMcpSettings } from "./settings/migrations";
 
 const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = crossWindowSync<
   SettingsState & SettingsActions
@@ -122,16 +122,16 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 
   setAgentSettings: (settings) => set((state) => ({ agent: { ...state.agent, ...settings } })),
 
-  addMcpServer: (server) =>
+  addMcpServer: (server) => {
+    const id = `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => ({
       mcp: {
         ...state.mcp,
-        servers: [
-          ...state.mcp.servers,
-          { ...server, id: `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` },
-        ],
+        servers: [...state.mcp.servers, { ...server, id }],
       },
-    })),
+    }));
+    return id;
+  },
 
   updateMcpServer: (id, server) =>
     set((state) => ({

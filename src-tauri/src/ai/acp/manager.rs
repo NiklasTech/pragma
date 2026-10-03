@@ -341,7 +341,11 @@ impl AcpSessionManager {
             .list_servers()
             .await
             .into_iter()
-            .map(|s| s.config)
+            .filter_map(|s| {
+                // A server whose secrets are missing from the keychain cannot start.
+                let env = crate::modules::mcp::secrets::resolve_env(&s.config).ok()?;
+                Some(crate::modules::mcp::McpServerConfig { env, ..s.config })
+            })
             .collect();
 
         configs_to_acp_servers(configs)

@@ -113,11 +113,15 @@ export interface McpServerConfig {
   command: string;
   args: string[];
   env: Record<string, string>;
+  /** Env names whose values live in the OS keychain, never in `env`. */
+  secretEnv: string[];
   autostart: boolean;
 }
 
 export interface McpSettings {
   servers: McpServerConfig[];
+  /** Internal marker for one-time migrations. */
+  migrationRevision?: number;
 }
 
 export interface LspSettings {
@@ -186,7 +190,7 @@ export interface SettingsActions {
   setLspEnabled: (language: string, enabled: boolean) => void;
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
   setAgentSettings: (settings: Partial<AgentSettings>) => void;
-  addMcpServer: (server: Omit<McpServerConfig, "id">) => void;
+  addMcpServer: (server: Omit<McpServerConfig, "id">) => string;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;
   addCustomTheme: (theme: Theme) => void;

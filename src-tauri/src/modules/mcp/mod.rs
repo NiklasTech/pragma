@@ -1,12 +1,13 @@
 pub mod client;
 pub mod error;
 pub mod manager;
+pub mod secrets;
 pub mod tools;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, State};
 
 pub use manager::{McpManager, McpServerState, McpServerStatus};
@@ -14,8 +15,11 @@ pub use tools::{McpTool, McpToolCallResult};
 
 const CONFIG_FILE: &str = "mcp.json";
 const TOOLS_CACHE_FILE: &str = "mcp-tools-cache.json";
+/// Version 1 keeps secret env values in the keychain instead of the file.
+pub const CONFIG_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct McpServerConfig {
     pub id: String,
     pub name: String,
@@ -24,12 +28,17 @@ pub struct McpServerConfig {
     pub args: Vec<String>,
     #[serde(default)]
     pub env: HashMap<String, String>,
+    /// Env names whose values live in the OS keychain.
+    #[serde(default)]
+    pub secret_env: Vec<String>,
     #[serde(default)]
     pub autostart: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct McpConfigFile {
+    #[serde(default)]
+    pub version: u32,
     pub servers: Vec<McpServerConfig>,
 }
 
@@ -78,41 +87,68 @@ pub async fn save_tools_cache(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn mcp_load_config(app: AppHandle) -> Result<Vec<McpServerConfig>, String> {
-    let path = config_path(&app)?;
-
+async fn read_config_file(path: &Path) -> Result<Option<McpConfigFile>, String> {
     if !path.exists() {
-        return Ok(Vec::new());
+        return Ok(None);
     }
 
-    let content = tokio::fs::read_to_string(&path)
+    let content = tokio::fs::read_to_string(path)
         .await
         .map_err(|e| format!("Failed to read MCP config: {e}"))?;
 
-    let file: McpConfigFile =
-        serde_json::from_str(&content).map_err(|e| format!("Failed to parse MCP config: {e}"))?;
+    if content.trim().is_empty() {
+        return Ok(None);
+    }
 
-    Ok(file.servers)
+    serde_json::from_str(&content)
+        .map(Some)
+        .map_err(|e| format!("Failed to parse MCP config: {e}"))
 }
 
-#[tauri::command]
-pub async fn mcp_save_config(app: AppHandle, servers: Vec<McpServerConfig>) -> Result<(), String> {
-    let path = config_path(&app)?;
-
+pub async fn write_config_file(path: &Path, servers: Vec<McpServerConfig>) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent)
             .await
             .map_err(|e| format!("Failed to create config directory: {e}"))?;
     }
 
-    let file = McpConfigFile { servers };
+    let file = McpConfigFile {
+        version: CONFIG_VERSION,
+        servers,
+    };
     let content = serde_json::to_string_pretty(&file)
         .map_err(|e| format!("Failed to serialize MCP config: {e}"))?;
 
-    tokio::fs::write(&path, content)
+    tokio::fs::write(path, content)
         .await
-        .map_err(|e| format!("Failed to write MCP config: {e}"))?;
+        .map_err(|e| format!("Failed to write MCP config: {e}"))
+}
+
+#[tauri::command]
+pub async fn mcp_load_config(app: AppHandle) -> Result<Vec<McpServerConfig>, String> {
+    let path = config_path(&app)?;
+    Ok(read_config_file(&path)
+        .await?
+        .map(|file| file.servers)
+        .unwrap_or_default())
+}
+
+#[tauri::command]
+pub async fn mcp_save_config(
+    app: AppHandle,
+    mut servers: Vec<McpServerConfig>,
+) -> Result<(), String> {
+    let path = config_path(&app)?;
+    let previous = read_config_file(&path)
+        .await
+        .ok()
+        .flatten()
+        .map(|file| file.servers)
+        .unwrap_or_default();
+
+    servers.iter_mut().for_each(secrets::sanitize);
+    write_config_file(&path, servers.clone()).await?;
+    secrets::delete_orphaned(&previous, &servers);
 
     Ok(())
 }
