@@ -194,6 +194,8 @@ pnpm install
 pnpm run dev:desktop
 ```
 
+The dev build runs as **Pragma Dev** with the identifier `dev.pragma.ide.dev`. It starts next to an installed Pragma, keeps its own settings and app data and shows its own onboarding. API keys in the OS keychain are shared with the installed app.
+
 ### Scripts
 
 | Command                  | Purpose                             |
@@ -202,6 +204,7 @@ pnpm run dev:desktop
 | `pnpm run dev:desktop`   | Full desktop app in development     |
 | `pnpm run build`         | Frontend production build           |
 | `pnpm run build:desktop` | Desktop release build               |
+| `pnpm run install:local` | Build and install the app (macOS)   |
 | `pnpm run check`         | Lint, format check and type check   |
 | `pnpm run test`          | Frontend tests                      |
 | `cargo test`             | Rust tests (run inside `src-tauri`) |
@@ -214,13 +217,29 @@ Release bundles are written to `src-tauri/target/release/bundle/`. To build only
 pnpm exec vp run tauri build --bundles deb,rpm
 ```
 
+`pnpm run build:desktop` also creates signed updater artifacts. Without the release key it fails after bundling with `A public key has been found, but no private key. Make sure to set TAURI_SIGNING_PRIVATE_KEY environment variable.` To build locally without them:
+
+```bash
+pnpm exec vp run tauri build --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
+```
+
+### Install a local build (macOS)
+
+```bash
+pnpm run install:local
+```
+
+This builds the app bundle without updater artifacts, replaces `/Applications/Pragma.app` and installs the `pragma` command into `~/.local/bin`. It also works from a terminal inside a running Pragma; restart Pragma afterwards. An existing `~/.local/bin/pragma` that `install:local` did not create is left untouched. Other platforms are not supported yet.
+
+A local build keeps the version from `package.json`. Once a newer release exists, the updater offers it, and installing it replaces the local build.
+
 ---
 
 ## Quick start
 
 1. Start Pragma and complete the onboarding.
 2. Choose a theme and connect an AI provider, either with an API key or by signing in to a coding CLI.
-3. Open a project folder.
+3. Open a project folder. On macOS you can also run `pragma .` in a terminal after `pnpm run install:local`, see [Install a local build](#install-a-local-build-macos).
 4. In **Agents**, describe a task in the composer and start a session.
 5. Switch to **Editor** with `Cmd/Ctrl + Shift + E` to work on the code yourself.
 
