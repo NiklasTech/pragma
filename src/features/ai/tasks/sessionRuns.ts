@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 
+import { reportSessionOutcome } from "../notifications/outcomes";
 import { useTasksStore } from "./store";
 
 export type SessionRunOutcome = "done" | "error" | "cancelled" | "idle";
@@ -157,6 +158,7 @@ export function useSessionRunReporter({
     if (outcome === "done") {
       useTasksStore.getState().handleSessionDone(sessionId, usesAgentRun ? agent.summary : null);
     }
+    if (outcome === "done" || outcome === "error") reportSessionOutcome(sessionId, outcome);
   }, [sessionId, inFlight, chatFailed, isCLIActive, reportedStop]);
 
   useEffect(

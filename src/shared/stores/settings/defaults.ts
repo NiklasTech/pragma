@@ -114,6 +114,13 @@ export const defaultSettings: SettingsState = {
     useProjectRules: true,
     stepLimit: null,
   },
+  notifications: {
+    sessionFinished: true,
+    sessionFailed: true,
+    approvalNeeded: true,
+    badge: true,
+    statusSummary: true,
+  },
   customThemes: {},
   extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),

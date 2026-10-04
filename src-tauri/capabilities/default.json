@@ -21,6 +21,7 @@
     "opener:default",
     "store:default",
     "log:default",
+    "notification:default",
     "updater:default",
     "process:allow-restart",
     "clipboard-manager:allow-read-text",

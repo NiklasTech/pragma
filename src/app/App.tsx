@@ -22,6 +22,7 @@ import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolve
 import { useExtensions } from "@/features/extensions/useExtensions";
 import { useAcpBrowserRequests } from "@/features/ai/browser/acpBrowser";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
+import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
@@ -45,6 +46,7 @@ export default function App() {
   useExtensions();
   useAcpSpawnRequests();
   useAcpBrowserRequests();
+  useSessionNotifications();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useGuardedShortcutActions(useAppShortcutActions());

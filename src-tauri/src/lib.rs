@@ -34,6 +34,7 @@ pub fn run() {
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
+        .manage(modules::attention_badge::AttentionBadges::default())
         .manage(modules::fs_watcher::WorkspaceWatchers::default())
         .manage(modules::parakeet::ParakeetState::default())
         .manage(modules::whisper_models::WhisperState::default())
@@ -41,6 +42,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::default()
@@ -107,6 +109,11 @@ pub fn run() {
                 if let Some(watchers) = window.try_state::<modules::fs_watcher::WorkspaceWatchers>()
                 {
                     watchers.remove_window(window.label());
+                }
+                if let Some(badges) =
+                    window.try_state::<modules::attention_badge::AttentionBadges>()
+                {
+                    badges.remove_window(window.app_handle(), window.label());
                 }
             }
             #[cfg(target_os = "macos")]
@@ -243,6 +250,7 @@ pub fn run() {
             modules::workspace::workspace_delete,
             modules::app_state::get_onboarding_completed,
             modules::app_state::set_onboarding_completed,
+            modules::attention_badge::set_attention_badge,
             modules::run::run_list_configs,
             modules::run::run_detect_configs,
             modules::run::run_save_configs,

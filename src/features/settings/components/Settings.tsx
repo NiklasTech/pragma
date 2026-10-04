@@ -37,6 +37,7 @@ import {
 } from "@phosphor-icons/react";
 import { AISettings } from "./AISettings";
 import { AgentSettings } from "./AgentSettings";
+import { NotificationSettings } from "./NotificationSettings";
 import { EditorSettings } from "./EditorSettings";
 import { TerminalSettings } from "./TerminalSettings";
 import { ThemeSettings } from "./ThemeSettings";
@@ -263,6 +264,12 @@ const SEARCH_ITEMS: SearchItem[] = [
     id: "agent-mode",
     label: "Approvals",
     keywords: "agent auto approve allowed commands step limit",
+    category: "agents",
+  },
+  {
+    id: "agent-notifications",
+    label: "Notifications",
+    keywords: "notifications notify badge dock taskbar session finished failed approval status",
     category: "agents",
   },
   {
@@ -541,6 +548,7 @@ export function Settings() {
                   <div className="flex flex-col gap-8">
                     <AISettings />
                     <AgentSettings />
+                    <NotificationSettings />
                   </div>
                 )}
                 {activeCategory === "voice" && <VoiceSettings />}

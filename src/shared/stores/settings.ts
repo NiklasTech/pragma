@@ -21,6 +21,7 @@ export type {
   McpServerConfig,
   McpSettings,
   McpTransport,
+  NotificationSettings,
   ParakeetModel,
   ProviderSettings,
   SettingsState,
@@ -123,6 +124,9 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
 
   setAgentSettings: (settings) => set((state) => ({ agent: { ...state.agent, ...settings } })),
 
+  setNotificationSettings: (settings) =>
+    set((state) => ({ notifications: { ...state.notifications, ...settings } })),
+
   addMcpServer: (server) => {
     const id = `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => ({
@@ -194,6 +198,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       lsp: mergePartial(defaultSettings.lsp, partial.lsp),
       experimental: mergePartial(defaultSettings.experimental, partial.experimental),
       agent: mergePartial(defaultSettings.agent, partial.agent),
+      notifications: mergePartial(defaultSettings.notifications, partial.notifications),
       customThemes: { ...state.customThemes, ...partial.customThemes },
       extensions: { ...state.extensions, ...partial.extensions },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },

@@ -1,5 +1,6 @@
 pub mod agent;
 pub mod app_state;
+pub mod attention_badge;
 pub mod dap;
 pub mod env_loader;
 pub mod extensions;

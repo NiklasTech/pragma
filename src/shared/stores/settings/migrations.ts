@@ -112,6 +112,7 @@ export function mergeWithDefaults(
     lsp: mergePartial(defaults.lsp, partial.lsp),
     experimental: mergePartial(defaults.experimental, partial.experimental),
     agent: mergePartial(defaults.agent, partial.agent),
+    notifications: mergePartial(defaults.notifications, partial.notifications),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
     extensions: { ...defaults.extensions, ...partial.extensions },
     shortcuts: { ...defaults.shortcuts, ...partial.shortcuts },
