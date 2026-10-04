@@ -36,11 +36,18 @@ export interface ModelListCache {
   error?: string | null;
 }
 
+/** An image attached to a message, as base64 data without a data URL prefix. */
+export interface ChatImage {
+  mediaType: string;
+  data: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: number;
+  images?: ChatImage[];
 }
 
 export interface SessionWorktree {

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::ai::image::ImageContent;
 use crate::ai::provider::{ToolCall, ToolDefinition, Usage};
 
 #[derive(Debug, Deserialize)]
@@ -23,6 +24,8 @@ pub struct ChatMessageInput {
     pub tool_calls: Option<Vec<ToolCall>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_call_id: Option<String>,
+    #[serde(default)]
+    pub images: Vec<ImageContent>,
 }
 
 #[derive(Debug, Serialize)]

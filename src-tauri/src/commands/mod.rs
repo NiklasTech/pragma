@@ -5,6 +5,7 @@ pub mod chat_storage;
 pub mod cli;
 pub mod context;
 pub mod docker;
+pub mod image_files;
 pub mod perf;
 pub mod search;
 pub mod tasks;

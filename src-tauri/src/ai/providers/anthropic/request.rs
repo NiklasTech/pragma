@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::ai::image::ImageContent;
 use crate::ai::provider::{Message, Role, ToolDefinition};
 
 #[derive(Debug, Serialize)]
@@ -86,8 +87,71 @@ impl From<Message> for AnthropicMessage {
                     Role::Tool => "user",
                 }
                 .to_string(),
-                content: serde_json::Value::String(msg.content),
+                content: message_content(msg.content, &msg.images),
             },
         }
+    }
+}
+
+fn message_content(text: String, images: &[ImageContent]) -> serde_json::Value {
+    if images.is_empty() {
+        return serde_json::Value::String(text);
+    }
+    let mut blocks: Vec<serde_json::Value> = images
+        .iter()
+        .map(|image| {
+            serde_json::json!({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": image.media_type,
+                    "data": image.data,
+                },
+            })
+        })
+        .collect();
+    if !text.is_empty() {
+        blocks.push(serde_json::json!({ "type": "text", "text": text }));
+    }
+    serde_json::Value::Array(blocks)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn user_message(content: &str, images: Vec<ImageContent>) -> Message {
+        Message {
+            role: Role::User,
+            content: content.to_string(),
+            tool_calls: None,
+            tool_call_id: None,
+            images,
+        }
+    }
+
+    #[test]
+    fn text_only_messages_keep_string_content() {
+        let message = AnthropicMessage::from(user_message("hello", Vec::new()));
+        assert_eq!(message.content, serde_json::json!("hello"));
+    }
+
+    #[test]
+    fn images_become_base64_blocks_before_the_text() {
+        let image = ImageContent {
+            media_type: "image/png".to_string(),
+            data: "aGk=".to_string(),
+        };
+        let message = AnthropicMessage::from(user_message("what is this?", vec![image]));
+        assert_eq!(
+            message.content,
+            serde_json::json!([
+                {
+                    "type": "image",
+                    "source": { "type": "base64", "media_type": "image/png", "data": "aGk=" },
+                },
+                { "type": "text", "text": "what is this?" },
+            ])
+        );
     }
 }

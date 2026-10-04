@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { withPendingContext, type APIChatRequest, type CLIChatMessage } from "./protocol";
+import type { UIMessage } from "ai";
+
+import {
+  storedMessagesToUI,
+  uiMessageToBackendMessages,
+  uiMessageToStored,
+  withPendingContext,
+  type APIChatRequest,
+  type CLIChatMessage,
+} from "./protocol";
 
 type BackendMessages = APIChatRequest["messages"];
 
@@ -66,6 +75,50 @@ describe("withPendingContext", () => {
       { role: "user", content: "first question" },
       { role: "assistant", content: "answer" },
       { role: "user", content: "CTX\n\nsecond question" },
+    ]);
+  });
+});
+
+describe("message images", () => {
+  const userWithImage: UIMessage = {
+    id: "m1",
+    role: "user",
+    parts: [
+      { type: "file", mediaType: "image/png", url: "data:image/png;base64,aGk=" },
+      { type: "file", mediaType: "image/png", url: "https://example.com/remote.png" },
+      { type: "text", text: "what is this?" },
+    ],
+  };
+
+  it("sends inline images of a user message to the backend", () => {
+    expect(uiMessageToBackendMessages(userWithImage)).toEqual([
+      {
+        role: "user",
+        content: "what is this?",
+        images: [{ media_type: "image/png", data: "aGk=" }],
+      },
+    ]);
+  });
+
+  it("leaves text-only messages without images", () => {
+    const message: UIMessage = { id: "m2", role: "user", parts: [{ type: "text", text: "hi" }] };
+    expect(uiMessageToBackendMessages(message)).toEqual([{ role: "user", content: "hi" }]);
+  });
+
+  it("keeps the images when the pending context is prepended", () => {
+    const [message] = withPendingContext(uiMessageToBackendMessages(userWithImage), "CTX");
+    expect(message.content).toBe("CTX\n\nwhat is this?");
+    expect(message.images).toEqual([{ media_type: "image/png", data: "aGk=" }]);
+  });
+
+  it("round-trips images through the stored transcript", () => {
+    const stored = uiMessageToStored(userWithImage);
+    expect(stored.images).toEqual([{ mediaType: "image/png", data: "aGk=" }]);
+
+    const [restored] = storedMessagesToUI([stored]);
+    expect(restored.parts).toEqual([
+      { type: "file", mediaType: "image/png", url: "data:image/png;base64,aGk=" },
+      { type: "text", text: "what is this?" },
     ]);
   });
 });

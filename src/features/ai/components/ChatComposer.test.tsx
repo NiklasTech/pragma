@@ -17,6 +17,9 @@ describe("ChatComposer", () => {
     canChat: true,
     mcpLoaded: true,
     onStop: noop,
+    images: [],
+    onAddImages: noop,
+    onRemoveImage: noop,
   };
 
   beforeEach(() => {

@@ -13,6 +13,7 @@ export type {
   AgentEngine,
   AgentEngineKind,
   AIProvider,
+  ChatImage,
   ChatMessage,
   ChatSession,
   CLIManifest,

@@ -3,6 +3,8 @@ import { getToolName, isToolUIPart, type DynamicToolUIPart, type UIMessage } fro
 import { buildContextUserMessage } from "@/shared/lib/chat-context";
 import type { ChatMessage } from "@/shared/stores/ai";
 
+import { getMessageImages, imageToFilePart, toBackendImage, type BackendImage } from "./images";
+
 export interface BackendToolCall {
   id: string;
   type: "function";
@@ -30,6 +32,7 @@ export interface APIChatRequest {
     content: string;
     tool_calls?: BackendToolCall[];
     tool_call_id?: string;
+    images?: BackendImage[];
   }>;
   stream_id?: string;
   tools?: BackendToolDefinition[];
@@ -54,6 +57,8 @@ export interface AcpChatRequest {
   allow_child_sessions: boolean;
   /** MCP servers the session may use; absent allows all. */
   mcp_server_ids?: string[];
+  /** Images of the new prompt. */
+  images?: BackendImage[];
 }
 
 /** Token counts of one model response, or the context fill an ACP agent reports. */
@@ -223,6 +228,10 @@ export function uiMessageToBackendMessages(msg: UIMessage): APIChatRequest["mess
     return messages;
   }
 
+  const images = getMessageImages(msg);
+  if (images.length > 0) {
+    return [{ role: msg.role, content: text, images: images.map(toBackendImage) }];
+  }
   return [{ role: msg.role, content: text }];
 }
 
@@ -250,18 +259,21 @@ export function withPendingContext(
 }
 
 export function uiMessageToStored(msg: UIMessage): ChatMessage {
-  return {
+  const stored: ChatMessage = {
     id: msg.id,
     role: msg.role,
     content: getMessageText(msg),
     timestamp: Date.now(),
   };
+  const images = getMessageImages(msg);
+  if (images.length > 0) stored.images = images;
+  return stored;
 }
 
 export function storedMessagesToUI(messages: ChatMessage[]): UIMessage[] {
   return messages.map((m): UIMessage => ({
     id: m.id,
     role: m.role,
-    parts: [{ type: "text", text: m.content }],
+    parts: [...(m.images ?? []).map(imageToFilePart), { type: "text", text: m.content }],
   }));
 }

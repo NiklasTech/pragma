@@ -84,12 +84,14 @@ pub async fn ai_terminal_suggestion(
             content: system_message,
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         },
         Message {
             role: Role::User,
             content: user_message,
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         },
     ];
 

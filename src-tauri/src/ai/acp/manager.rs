@@ -45,6 +45,7 @@ pub struct AcpSession {
     #[allow(dead_code)]
     cwd: String,
     acp_session_id: String,
+    accepts_images: bool,
     current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
     config_options: SharedConfigOptions,
     _notification_handle: JoinHandle<()>,
@@ -114,7 +115,7 @@ impl AcpSessionManager {
 
         let (client, child, notifications, reverse_requests) = AcpClient::start(config).await?;
 
-        let _init_response = client
+        let init_response = client
             .request(
                 "initialize",
                 Some(serde_json::to_value(InitializeRequest {
@@ -130,6 +131,10 @@ impl AcpSessionManager {
                 Default::default(),
             )
             .await?;
+        let accepts_images = init_response
+            .pointer("/agentCapabilities/promptCapabilities/image")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
 
         let mut mcp_servers = self.load_mcp_servers(mcp_server_ids).await;
         if allow_child_sessions {
@@ -190,6 +195,7 @@ impl AcpSessionManager {
             _child: child,
             cwd,
             acp_session_id: acp_session_id.clone(),
+            accepts_images,
             current_chunk_tx,
             config_options,
             _notification_handle: notification_handle,
@@ -202,6 +208,14 @@ impl AcpSessionManager {
         }
 
         Ok(acp_session_id)
+    }
+
+    /// Whether the agent advertised image prompts; `None` until its session started.
+    pub async fn accepts_images(&self, chat_session_id: &str) -> Option<bool> {
+        let sessions = self.sessions.lock().await;
+        sessions
+            .get(chat_session_id)
+            .map(|session| session.accepts_images)
     }
 
     pub async fn send_prompt(

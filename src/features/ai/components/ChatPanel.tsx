@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import { Warning, Terminal, Robot, ArrowCounterClockwise } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -23,6 +24,8 @@ import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
 import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
 import { SpawnApprovals } from "@/features/ai/children/SpawnApprovals";
 import { ChildSessionCards, inlineChildIds } from "@/features/ai/children/ChildSessionCards";
+import { MessageImages } from "@/features/ai/images/MessageImages";
+import { useComposerImages } from "@/features/ai/images/useComposerImages";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -96,6 +99,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   >([]);
 
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
+  const composerImages = useComposerImages();
 
   const ownsRun =
     activeChatSessionId !== null &&
@@ -226,16 +230,23 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   const handleComposerSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      const { images, clear: clearImages } = composerImages;
       if (inFlight) {
+        if (images.length > 0) {
+          toast.info("Images can be sent once the current response has finished.");
+          return;
+        }
         const result = enqueue(input);
         if (result.accepted) setInput(result.restore ?? "");
         return;
       }
-      void submitText(input).then((sent) => {
-        if (sent) setInput("");
+      void submitText(input, images).then((sent) => {
+        if (!sent) return;
+        setInput("");
+        clearImages();
       });
     },
-    [enqueue, inFlight, input, setInput, submitText],
+    [composerImages, enqueue, inFlight, input, setInput, submitText],
   );
 
   const streamingMessageId =
@@ -285,7 +296,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                 return (
                   <Message key={msg.id} from="user">
                     <MessageContent>
-                      <p className="whitespace-pre-wrap wrap-break-word">{rawText}</p>
+                      <MessageImages message={msg} />
+                      {rawText && <p className="whitespace-pre-wrap wrap-break-word">{rawText}</p>}
                     </MessageContent>
                   </Message>
                 );
@@ -425,6 +437,9 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           canChat={canChat}
           mcpLoaded={mcpLoaded}
           onStop={stopRun}
+          images={composerImages.images}
+          onAddImages={composerImages.addFiles}
+          onRemoveImage={composerImages.remove}
         />
       </div>
     </div>

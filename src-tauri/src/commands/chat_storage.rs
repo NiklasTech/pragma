@@ -1,4 +1,5 @@
 use super::agents::AgentEngine;
+use crate::ai::image::{validate_image, ImageContent};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -75,6 +76,8 @@ pub struct ChatMessage {
     pub role: String,
     pub content: String,
     pub timestamp: i64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<ImageContent>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -277,6 +280,9 @@ pub async fn ai_save_session_messages(
     app: AppHandle,
     req: SaveMessagesRequest,
 ) -> Result<(), String> {
+    for image in req.messages.iter().flat_map(|message| &message.images) {
+        validate_image(image)?;
+    }
     let _guard = SESSION_IO_LOCK.lock().await;
     let path = context_path(&app, &req.root_path, &req.session_id)?;
     save_messages(&path, req.messages).await
@@ -338,6 +344,7 @@ mod tests {
             role: "user".to_string(),
             content: content.to_string(),
             timestamp: 1,
+            images: Vec::new(),
         }
     }
 
@@ -443,6 +450,30 @@ mod tests {
         let loaded = load_messages(&path).await.unwrap();
         assert_eq!(loaded.len(), 2);
         assert_eq!(loaded[1].content, "multi\nline");
+    }
+
+    #[tokio::test]
+    async fn message_images_round_trip_and_stay_optional() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("context.jsonl");
+        let image = ImageContent {
+            media_type: "image/png".to_string(),
+            data: "aGk=".to_string(),
+        };
+        let with_image = ChatMessage {
+            images: vec![image.clone()],
+            ..message("1", "look")
+        };
+
+        save_messages(&path, vec![with_image, message("2", "plain")])
+            .await
+            .unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(!content.lines().nth(1).unwrap().contains("images"));
+        let loaded = load_messages(&path).await.unwrap();
+        assert_eq!(loaded[0].images, vec![image]);
+        assert!(loaded[1].images.is_empty());
     }
 
     #[tokio::test]
