@@ -216,12 +216,28 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
+    run_program(OsStr::new("git"), repo_root, args, &[], timeout_secs)
+}
+
+/// Runs `program` with the non-interactive git environment, a timeout and capped output.
+pub fn run_program<I, S>(
+    program: &OsStr,
+    repo_root: Option<&str>,
+    args: I,
+    envs: &[(&str, &str)],
+    timeout_secs: u64,
+) -> Result<GitOutput>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
     let dur = Duration::from_secs(timeout_secs.clamp(1, MAX_TIMEOUT_SECS));
     let args: Vec<OsString> = args
         .into_iter()
         .map(|arg| arg.as_ref().to_os_string())
         .collect();
-    let mut cmd = build_git_command(repo_root, &args)?;
+    let mut cmd = build_command(program, repo_root, &args)?;
+    cmd.envs(envs.iter().copied());
     cmd.env("GIT_TERMINAL_PROMPT", "0")
         .env("GIT_ASKPASS", "")
         .env("SSH_ASKPASS", "")
@@ -275,8 +291,8 @@ where
     })
 }
 
-fn build_git_command(repo_root: Option<&str>, args: &[OsString]) -> Result<Command> {
-    let mut cmd = new_std_command("git");
+fn build_command(program: &OsStr, repo_root: Option<&str>, args: &[OsString]) -> Result<Command> {
+    let mut cmd = new_std_command(program);
     if let Some(cwd) = repo_root {
         cmd.current_dir(cwd);
     }
