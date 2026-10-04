@@ -20,6 +20,11 @@ pub struct AcpSessionConfigRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct AcpSessionRequest {
+    pub chat_session_id: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct AcpSetConfigOptionRequest {
     pub chat_session_id: String,
     pub config_id: String,
@@ -83,4 +88,16 @@ pub async fn cli_acp_set_config_option(
         .set_config_option(&req.chat_session_id, &req.config_id, &req.value)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Whether the coding CLI accepts images in prompts; null while its session has not started.
+#[tauri::command]
+pub async fn cli_acp_accepts_images(
+    req: AcpSessionRequest,
+    state: State<'_, AcpSessionManager>,
+) -> Result<Option<bool>, String> {
+    if req.chat_session_id.is_empty() {
+        return Err("chat_session_id is required".to_string());
+    }
+    Ok(state.accepts_images(&req.chat_session_id).await)
 }

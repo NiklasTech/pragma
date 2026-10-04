@@ -4,6 +4,7 @@ pub mod child_sessions;
 pub mod cli;
 pub mod config;
 pub mod error;
+pub mod image;
 pub mod keychain;
 pub mod provider;
 pub mod providers;

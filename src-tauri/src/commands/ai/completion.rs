@@ -52,12 +52,14 @@ pub async fn ai_inline_completion(
             content: "You are a concise code completion assistant.".to_string(),
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         },
         Message {
             role: Role::User,
             content: prompt,
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         },
     ];
 

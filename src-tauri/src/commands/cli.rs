@@ -4,6 +4,7 @@ use tauri::State;
 
 use crate::ai::acp::{AcpSessionManager, PromptContent};
 use crate::ai::cli::{built_in_manifests, CLIChatMessage, CLIChatRequest, CLIManager, CLIStatus};
+use crate::ai::image::{validate_images, ImageContent};
 use crate::commands::ai::StreamChunk;
 
 // ─── Request / Response Types ────────────────────────────────────────────────
@@ -31,6 +32,9 @@ pub struct AcpChatCommandRequest {
     /// MCP servers the session may use; absent means all configured servers.
     #[serde(default)]
     pub mcp_server_ids: Option<Vec<String>>,
+    /// Images of the new prompt; sent only when the agent advertises image prompts.
+    #[serde(default)]
+    pub images: Vec<ImageContent>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -245,8 +249,9 @@ pub async fn cli_acp_chat_stream(
     if req.messages.is_empty() {
         return Err("messages are required".to_string());
     }
+    validate_images(&req.images)?;
 
-    let prompt_contents: Vec<PromptContent> = req
+    let mut prompt_contents: Vec<PromptContent> = req
         .messages
         .into_iter()
         .map(|m| PromptContent::Text { text: m.content })
@@ -264,6 +269,16 @@ pub async fn cli_acp_chat_stream(
             )
             .await
             .map_err(|e| e.to_string())?;
+    }
+
+    if !req.images.is_empty() {
+        if state.accepts_images(&req.chat_session_id).await != Some(true) {
+            return Err("This coding CLI does not accept images.".to_string());
+        }
+        prompt_contents.extend(req.images.into_iter().map(|image| PromptContent::Image {
+            data: image.data,
+            mime_type: image.media_type,
+        }));
     }
 
     let mut rx = state

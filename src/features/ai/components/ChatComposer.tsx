@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PaperPlaneRight, Plug, Plus, Stop } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 import { Textarea } from "@/shared/components/ui/textarea";
 import { cn } from "@/shared/lib/utils";
@@ -19,6 +20,12 @@ import { McpServersMenu } from "@/features/ai/mcp/McpServersMenu";
 import { PromptPicker, type PromptPickerRef } from "@/features/ai/mcp/PromptPicker";
 import { useCliSessionOptions } from "@/features/ai/acp/useCliSessionOptions";
 import { ContextMeter } from "@/features/ai/usage/ContextMeter";
+import { ComposerImageButton } from "@/features/ai/images/ComposerImageButton";
+import { ComposerImages } from "@/features/ai/images/ComposerImages";
+import { isAcceptedImage } from "@/features/ai/images/readImage";
+import type { ComposerImage } from "@/features/ai/images/useComposerImages";
+import { useImageFileDrop } from "@/features/ai/images/useImageFileDrop";
+import { useImageInputSupport } from "@/features/ai/images/useImageInputSupport";
 
 import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
@@ -35,6 +42,9 @@ interface ChatComposerProps {
   canChat: boolean;
   mcpLoaded: boolean;
   onStop: () => void;
+  images: ComposerImage[];
+  onAddImages: (files: File[]) => void;
+  onRemoveImage: (id: string) => void;
 }
 
 export function ChatComposer({
@@ -47,6 +57,9 @@ export function ChatComposer({
   canChat,
   mcpLoaded,
   onStop,
+  images,
+  onAddImages,
+  onRemoveImage,
 }: ChatComposerProps) {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const sendShortcut = useSettingsStore((state) => state.shortcuts["chat.send"]);
@@ -66,6 +79,34 @@ export function ChatComposer({
   const [cursorPosition, setCursorPosition] = useState(0);
 
   const isInFlight = inFlight ?? (isLoading || isStreaming);
+  const hasContent = input.trim().length > 0 || images.length > 0;
+  const imageSupport = useImageInputSupport();
+  const unsupportedReason = imageSupport.supported ? null : imageSupport.reason;
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const attachImages = useCallback(
+    (files: File[]) => {
+      if (unsupportedReason) {
+        toast.error(unsupportedReason);
+        return;
+      }
+      onAddImages(files);
+    },
+    [onAddImages, unsupportedReason],
+  );
+
+  const dropActive = useImageFileDrop(formRef, attachImages);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const files = Array.from(e.clipboardData.files).filter(isAcceptedImage);
+      if (files.length === 0) return;
+      // Plain screenshots carry no text; keep the text paste when the clipboard has both.
+      if (!e.clipboardData.getData("text/plain")) e.preventDefault();
+      attachImages(files);
+    },
+    [attachImages],
+  );
 
   const prefillPrompt = useAIEditStore((state) => state.prefillPrompt);
   const consumePrefill = useAIEditStore((state) => state.consumePrefill);
@@ -114,12 +155,12 @@ export function ChatComposer({
 
       if (matchShortcut(e, sendShortcut)) {
         e.preventDefault();
-        if (input.trim()) {
+        if (hasContent) {
           onSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
         }
       }
     },
-    [input, onSubmit, sendShortcut],
+    [hasContent, onSubmit, sendShortcut],
   );
 
   const handleContextSelect = useCallback(
@@ -213,9 +254,18 @@ export function ChatComposer({
         </div>
       )}
       <form
+        ref={formRef}
         onSubmit={onSubmit}
-        className="flex flex-col gap-1 rounded-2xl border border-border bg-bg-surface shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_var(--color-accent-subtle)]"
+        className={cn(
+          "flex flex-col gap-1 rounded-2xl border border-border bg-bg-surface shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_var(--color-accent-subtle)]",
+          dropActive && "border-primary shadow-[0_0_0_3px_var(--color-accent-subtle)]",
+        )}
       >
+        <ComposerImages
+          images={images}
+          onRemove={onRemoveImage}
+          unsupportedReason={unsupportedReason}
+        />
         <div className="relative px-3.5 pt-3">
           <Textarea
             ref={textareaRef}
@@ -227,6 +277,7 @@ export function ChatComposer({
             onClick={updateCursorPosition}
             onSelect={updateCursorPosition}
             onFocus={claimPushToTalk}
+            onPaste={handlePaste}
             placeholder="Ask Pragma anything. Type @ to add files."
             className={cn(
               "max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors duration-300 focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent",
@@ -257,6 +308,7 @@ export function ChatComposer({
           >
             <Plus size={13} weight="bold" />
           </button>
+          <ComposerImageButton support={imageSupport} onPick={attachImages} />
           {cliSession ? (
             <CliSessionOptionsMenu session={cliSession} />
           ) : (
@@ -284,12 +336,17 @@ export function ChatComposer({
                 <Stop size={12} weight="fill" />
               </button>
             )}
-            {(!isInFlight || input.trim()) && (
+            {(!isInFlight || hasContent) && (
               <button
                 type="submit"
                 aria-label="Send"
                 title="Send"
-                disabled={!input.trim() || !canChat || !mcpLoaded}
+                disabled={
+                  !hasContent ||
+                  !canChat ||
+                  !mcpLoaded ||
+                  (images.length > 0 && unsupportedReason !== null)
+                }
                 className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fg-default text-bg-root transition-colors hover:bg-fg-default/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:bg-bg-hover disabled:text-fg-subtle"
               >
                 <PaperPlaneRight size={13} weight="bold" />

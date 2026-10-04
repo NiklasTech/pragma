@@ -8,6 +8,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::ai::{
     config::ProviderConfig,
+    image::validate_images,
     provider::{AIProvider, CompletionRequest, Message, Role},
     providers::{
         anthropic::AnthropicProvider, copilot::CopilotProvider, custom::CustomProvider,
@@ -55,6 +56,7 @@ pub async fn ai_chat_stream(req: ChatRequest, channel: Channel<StreamChunk>) -> 
     if req.messages.is_empty() {
         return Err("messages are required".to_string());
     }
+    validate_images(req.messages.iter().flat_map(|m| &m.images))?;
 
     let config = ProviderConfig {
         base_url: req.base_url.unwrap_or_default(),
@@ -82,6 +84,7 @@ When showing file contents, preserve the full code and include the language tag.
             content: m.content,
             tool_calls: m.tool_calls,
             tool_call_id: m.tool_call_id,
+            images: m.images,
         })
         .collect();
 
@@ -91,6 +94,7 @@ When showing file contents, preserve the full code and include the language tag.
         content: SYSTEM_PROMPT.to_string(),
         tool_calls: None,
         tool_call_id: None,
+        images: Vec::new(),
     });
     messages_with_system.extend(messages);
 

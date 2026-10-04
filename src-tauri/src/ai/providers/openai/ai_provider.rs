@@ -60,13 +60,15 @@ impl AIProvider for OpenAIProvider {
                 .and_then(|d| d.as_array())
                 .unwrap_or(&vec![])
                 .iter()
-                .filter_map(|m| m.get("id").and_then(|id| id.as_str()))
-                .map(|id| ModelInfo {
-                    id: id.to_string(),
-                    name: id.to_string(),
-                    context_window: None,
-                    supports_streaming: true,
-                    supports_vision: false,
+                .filter_map(|m| {
+                    let id = m.get("id").and_then(|id| id.as_str())?;
+                    Some(ModelInfo {
+                        id: id.to_string(),
+                        name: id.to_string(),
+                        context_window: None,
+                        supports_streaming: true,
+                        supports_vision: accepts_image_input(m),
+                    })
                 })
                 .collect();
 
@@ -419,5 +421,33 @@ impl AIProvider for OpenAIProvider {
 
             Ok(rx)
         })
+    }
+}
+
+/// OpenRouter lists the input modalities of each model; plain OpenAI lists none.
+fn accepts_image_input(model: &serde_json::Value) -> bool {
+    model
+        .pointer("/architecture/input_modalities")
+        .and_then(|modalities| modalities.as_array())
+        .is_some_and(|modalities| modalities.iter().any(|m| m.as_str() == Some("image")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::accepts_image_input;
+
+    #[test]
+    fn reads_image_input_from_openrouter_modalities() {
+        let vision = serde_json::json!({
+            "id": "openai/gpt-4o",
+            "architecture": { "input_modalities": ["text", "image"] },
+        });
+        let text_only = serde_json::json!({
+            "id": "deepseek/deepseek-chat",
+            "architecture": { "input_modalities": ["text"] },
+        });
+        assert!(accepts_image_input(&vision));
+        assert!(!accepts_image_input(&text_only));
+        assert!(!accepts_image_input(&serde_json::json!({ "id": "gpt-4o" })));
     }
 }

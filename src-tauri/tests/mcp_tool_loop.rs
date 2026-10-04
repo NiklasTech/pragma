@@ -45,6 +45,7 @@ fn chat_request() -> CompletionRequest {
             content: "Call the echo tool with message hi".to_string(),
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         }],
         temperature: None,
         max_tokens: None,

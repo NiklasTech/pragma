@@ -44,6 +44,7 @@ pub async fn ai_chat(req: ChatRequest) -> Result<ChatResponse, String> {
             content: m.content,
             tool_calls: m.tool_calls,
             tool_call_id: m.tool_call_id,
+            images: Vec::new(),
         })
         .collect();
 
@@ -165,6 +166,7 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
             content: m.content,
             tool_calls: m.tool_calls,
             tool_call_id: m.tool_call_id,
+            images: Vec::new(),
         })
         .collect();
 
@@ -175,6 +177,7 @@ pub async fn ai_test_connection(req: ChatRequest) -> Result<TestConnectionRespon
             content: "hi".to_string(),
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         }]
     } else {
         messages
@@ -388,12 +391,14 @@ pub async fn ai_generate_chat_title(
             content: system_message,
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         },
         Message {
             role: Role::User,
             content: user_message,
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         },
     ];
 

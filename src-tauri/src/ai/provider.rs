@@ -7,6 +7,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::config::ProviderConfig;
 use super::error::AIError;
+use super::image::ImageContent;
 
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
@@ -53,6 +54,9 @@ pub struct Message {
     pub tool_calls: Option<Vec<ToolCall>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_call_id: Option<String>,
+    /// Images of a user message, sent as image parts to vision models.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<ImageContent>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -129,6 +133,7 @@ pub fn coalesce_system_messages(messages: Vec<Message>) -> Vec<Message> {
             content: system_contents.join("\n\n"),
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         });
     }
     coalesced.extend(rest);
@@ -229,6 +234,7 @@ mod tests {
             content: content.to_string(),
             tool_calls: None,
             tool_call_id: None,
+            images: Vec::new(),
         }
     }
 

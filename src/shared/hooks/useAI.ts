@@ -19,6 +19,8 @@ import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import { getMessageText, storedMessagesToUI } from "@/shared/lib/ai/protocol";
+import { imageToFilePart } from "@/shared/lib/ai/images";
+import type { ChatImage } from "@/shared/stores/ai";
 import { useMcpChatTools } from "./useMcpChatTools";
 import { useChatPrompt } from "./useChatPrompt";
 import { useChatSessionLoading, useChatSessionPersistence } from "./useChatSessionSync";
@@ -234,8 +236,9 @@ export function useAI() {
   }, []);
 
   const submitText = useCallback(
-    async (raw: string) => {
-      if (!raw.trim() || chat.status === "submitted" || chat.status === "streaming") return false;
+    async (raw: string, images: ChatImage[] = []) => {
+      if (!raw.trim() && images.length === 0) return false;
+      if (chat.status === "submitted" || chat.status === "streaming") return false;
 
       if (agentActive && activeSession?.worktree?.status === "error") {
         toast.error("This thread has no working worktree. Check the setup log before starting.");
@@ -295,7 +298,7 @@ export function useAI() {
       }
 
       pendingContextRef.current = contextParts.length > 0 ? contextParts.join("\n\n") : null;
-      void chat.sendMessage({ text: messageText });
+      void chat.sendMessage({ text: messageText, files: images.map(imageToFilePart) });
       return true;
     },
     [

@@ -37,11 +37,17 @@ export interface StoredSessionMetadata {
   usage?: StoredSessionUsage | null;
 }
 
+export interface StoredImage {
+  media_type: string;
+  data: string;
+}
+
 export interface StoredChatMessage {
   id: string;
   role: string;
   content: string;
   timestamp: number;
+  images?: StoredImage[];
 }
 
 function toStoredUsage(usage: SessionUsage): StoredSessionUsage {
@@ -138,21 +144,35 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
 }
 
 function toStoredMessage(message: ChatMessage): StoredChatMessage {
-  return {
+  const stored: StoredChatMessage = {
     id: message.id,
     role: message.role,
     content: message.content,
     timestamp: message.timestamp,
   };
+  if (message.images?.length) {
+    stored.images = message.images.map((image) => ({
+      media_type: image.mediaType,
+      data: image.data,
+    }));
+  }
+  return stored;
 }
 
 function fromStoredMessage(message: StoredChatMessage): ChatMessage {
-  return {
+  const restored: ChatMessage = {
     id: message.id,
     role: message.role as ChatMessage["role"],
     content: message.content,
     timestamp: message.timestamp,
   };
+  if (message.images?.length) {
+    restored.images = message.images.map((image) => ({
+      mediaType: image.media_type,
+      data: image.data,
+    }));
+  }
+  return restored;
 }
 
 export async function loadSessions(rootPath: string): Promise<ChatSession[]> {

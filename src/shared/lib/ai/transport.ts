@@ -2,6 +2,7 @@ import { type ChatTransport, type UIMessage, type UIMessageChunk } from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 import { generateId } from "./id";
+import { getMessageImages, toBackendImage } from "./images";
 import {
   getMessageText,
   uiMessageToBackendMessages,
@@ -179,6 +180,8 @@ export function createStreamTransport(
                   : base;
               };
               if (isAcpActive && activeChatSessionId && activeCLIProvider) {
+                const lastUser = [...messages].reverse().find((m: UIMessage) => m.role === "user");
+                const images = lastUser ? getMessageImages(lastUser).map(toBackendImage) : [];
                 const req: AcpChatRequest = {
                   provider_id: activeCLIProvider,
                   chat_session_id: activeChatSessionId,
@@ -186,6 +189,7 @@ export function createStreamTransport(
                   messages: cliMessages(),
                   allow_child_sessions: allowChildSessions,
                   ...(mcpServerIds ? { mcp_server_ids: mcpServerIds } : {}),
+                  ...(images.length > 0 ? { images } : {}),
                 };
                 await invoke("cli_acp_chat_stream", { req, channel });
               } else if (isCLIActive && activeCLIProvider) {

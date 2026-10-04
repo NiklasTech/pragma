@@ -179,7 +179,11 @@ pub enum PromptContent {
     #[serde(rename = "text")]
     Text { text: String },
     #[serde(rename = "image")]
-    Image { data: String, mime_type: String },
+    Image {
+        data: String,
+        #[serde(rename = "mimeType")]
+        mime_type: String,
+    },
     #[serde(rename = "resource")]
     Resource { uri: String, content: String },
 }
@@ -403,4 +407,21 @@ pub enum PermissionOutcome {
         option_id: String,
     },
     Cancelled,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn image_prompt_content_uses_the_acp_field_names() {
+        let image = PromptContent::Image {
+            data: "aGk=".to_string(),
+            mime_type: "image/png".to_string(),
+        };
+        assert_eq!(
+            serde_json::to_value(image).unwrap(),
+            serde_json::json!({ "type": "image", "data": "aGk=", "mimeType": "image/png" })
+        );
+    }
 }

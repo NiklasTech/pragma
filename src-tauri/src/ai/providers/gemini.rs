@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::ai::{
     config::ProviderConfig,
     error::AIError,
+    image::ImageContent,
     keychain,
     provider::{
         AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse, Message,
@@ -215,7 +216,12 @@ impl AIProvider for GeminiProvider {
                 .into_iter()
                 .next()
                 .and_then(|c| c.content)
-                .map(|c| c.parts.into_iter().map(|p| p.text).collect::<String>())
+                .map(|c| {
+                    c.parts
+                        .into_iter()
+                        .filter_map(|p| p.text)
+                        .collect::<String>()
+                })
                 .unwrap_or_default();
 
             Ok(CompletionResponse {
@@ -433,7 +439,7 @@ impl GeminiRequestBody {
     ) -> Self {
         let system_instruction = system.map(|text| GeminiContent {
             role: None,
-            parts: vec![GeminiPart { text }],
+            parts: vec![GeminiPart::text(text)],
         });
 
         let generation_config = if temperature.is_some() || max_output_tokens.is_some() {
@@ -472,14 +478,54 @@ impl From<Message> for GeminiContent {
                 }
                 .to_string(),
             ),
-            parts: vec![GeminiPart { text: msg.content }],
+            parts: message_parts(msg.content, &msg.images),
+        }
+    }
+}
+
+fn message_parts(text: String, images: &[ImageContent]) -> Vec<GeminiPart> {
+    let mut parts: Vec<GeminiPart> = images
+        .iter()
+        .map(|image| GeminiPart {
+            text: None,
+            inline_data: Some(GeminiInlineData {
+                mime_type: image.media_type.clone(),
+                data: image.data.clone(),
+            }),
+        })
+        .collect();
+    if parts.is_empty() || !text.is_empty() {
+        parts.push(GeminiPart::text(text));
+    }
+    parts
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct GeminiPart {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
+    #[serde(
+        default,
+        rename = "inlineData",
+        skip_serializing_if = "Option::is_none"
+    )]
+    inline_data: Option<GeminiInlineData>,
+}
+
+impl GeminiPart {
+    fn text(text: String) -> Self {
+        Self {
+            text: Some(text),
+            inline_data: None,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct GeminiPart {
-    text: String,
+#[serde(rename_all = "camelCase")]
+struct GeminiInlineData {
+    mime_type: String,
+    data: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -553,7 +599,12 @@ impl GeminiStreamEvent {
             .as_ref()
             .and_then(|c| c.first())
             .and_then(|c| c.content.as_ref())
-            .map(|c| c.parts.iter().map(|p| &p.text).cloned().collect::<String>())
+            .map(|c| {
+                c.parts
+                    .iter()
+                    .filter_map(|p| p.text.as_deref())
+                    .collect::<String>()
+            })
             .filter(|s| !s.is_empty())
     }
 
@@ -579,4 +630,56 @@ fn merge_consecutive_contents(contents: Vec<GeminiContent>) -> Vec<GeminiContent
     }
 
     merged
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn user_message(content: &str, images: Vec<ImageContent>) -> Message {
+        Message {
+            role: Role::User,
+            content: content.to_string(),
+            tool_calls: None,
+            tool_call_id: None,
+            images,
+        }
+    }
+
+    #[test]
+    fn text_only_messages_serialize_one_text_part() {
+        let content = GeminiContent::from(user_message("hello", Vec::new()));
+        assert_eq!(
+            serde_json::to_value(content).unwrap(),
+            serde_json::json!({ "role": "user", "parts": [{ "text": "hello" }] })
+        );
+    }
+
+    #[test]
+    fn images_become_inline_data_parts_before_the_text() {
+        let image = ImageContent {
+            media_type: "image/png".to_string(),
+            data: "aGk=".to_string(),
+        };
+        let content = GeminiContent::from(user_message("what is this?", vec![image]));
+        assert_eq!(
+            serde_json::to_value(content).unwrap(),
+            serde_json::json!({
+                "role": "user",
+                "parts": [
+                    { "inlineData": { "mimeType": "image/png", "data": "aGk=" } },
+                    { "text": "what is this?" },
+                ],
+            })
+        );
+    }
+
+    #[test]
+    fn response_parts_without_text_still_parse() {
+        let event: GeminiStreamEvent = serde_json::from_value(serde_json::json!({
+            "candidates": [{ "content": { "parts": [{ "functionCall": {} }, { "text": "hi" }] } }],
+        }))
+        .unwrap();
+        assert_eq!(event.delta_text().as_deref(), Some("hi"));
+    }
 }
