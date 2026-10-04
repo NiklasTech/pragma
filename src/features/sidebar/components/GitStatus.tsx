@@ -5,6 +5,7 @@ import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { openGitDiffInSplit } from "../lib/gitDiffSplit";
 import { GitToolbar } from "./git-status/GitToolbar";
+import { PullRequestSection } from "./git-status/PullRequestSection";
 import { BranchHeader } from "./git-status/BranchHeader";
 import { GitStatusList } from "./git-status/GitStatusList";
 import { ROW_HEIGHTS, buildRows, type GitRow } from "./git-status/rows";
@@ -235,6 +236,8 @@ export function GitStatus() {
         isFetchBusy={actionBusy === "fetch"}
         isRefreshBusy={isLoading}
       />
+
+      <PullRequestSection />
 
       <StashPanel />
 
