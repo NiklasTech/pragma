@@ -5,7 +5,7 @@ use crate::ai::{
     error::AIError,
     provider::{
         AIProvider, BoxFuture, CompletionChunk, CompletionRequest, CompletionResponse,
-        FunctionCall, ModelInfo, ToolCall, Usage,
+        FunctionCall, ModelInfo, ToolCall,
     },
 };
 
@@ -132,13 +132,7 @@ impl AIProvider for AnthropicProvider {
             Ok(CompletionResponse {
                 content,
                 model: anthropic_resp.model,
-                usage: anthropic_resp.usage.map(|u| Usage {
-                    prompt_tokens: u.input_tokens,
-                    completion_tokens: u.output_tokens,
-                    total_tokens: u.input_tokens + u.output_tokens,
-                    cache_read_tokens: None,
-                    cache_write_tokens: None,
-                }),
+                usage: anthropic_resp.usage.map(|u| u.to_usage()),
                 tool_calls: if tool_calls.is_empty() {
                     None
                 } else {
