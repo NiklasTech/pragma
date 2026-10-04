@@ -29,6 +29,8 @@ export interface DiffTab {
   modified: string;
   patchText: string;
   staged: boolean;
+  /** Set for a working tree diff of `path` in this repository, which supports hunk actions. */
+  repoPath?: string;
   sourceTabId?: string;
   agentReviewId?: string;
   agentApplied?: boolean;

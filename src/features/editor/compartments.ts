@@ -8,6 +8,7 @@ const wordWrapCompartment = new Compartment();
 const tabSizeCompartment = new Compartment();
 const indentUnitCompartment = new Compartment();
 const blameCompartment = new Compartment();
+const gitChangeCompartment = new Compartment();
 const externalUpdate = StateEffect.define<void>();
 
 export {
@@ -19,5 +20,6 @@ export {
   tabSizeCompartment,
   indentUnitCompartment,
   blameCompartment,
+  gitChangeCompartment,
   externalUpdate,
 };

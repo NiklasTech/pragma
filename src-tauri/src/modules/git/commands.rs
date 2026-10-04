@@ -144,6 +144,28 @@ pub async fn git_discard(repo_path: String, paths: Vec<String>) -> Result<(), St
 }
 
 #[tauri::command]
+pub async fn git_apply_lines(
+    repo_path: String,
+    path: String,
+    action: operations::LineAction,
+    selection: operations::LineSelection,
+) -> Result<(), String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if path.is_empty() {
+        return Err("File path is required".to_string());
+    }
+    if selection.old_lines.is_empty() && selection.new_lines.is_empty() {
+        return Err("At least one changed line is required".to_string());
+    }
+    blocking(move || {
+        operations::apply_lines(&repo_path, &path, action, &selection).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
 pub async fn git_diff(
     repo_path: String,
     path: Option<String>,
@@ -171,6 +193,17 @@ pub async fn git_diff_content(
             .map_err(Into::into)
     })
     .await
+}
+
+#[tauri::command]
+pub async fn git_index_content(repo_path: String, path: String) -> Result<Option<String>, String> {
+    if repo_path.is_empty() {
+        return Err("Repository path is required".to_string());
+    }
+    if path.is_empty() {
+        return Err("File path is required".to_string());
+    }
+    blocking(move || operations::index_content(&repo_path, &path).map_err(Into::into)).await
 }
 
 #[tauri::command]

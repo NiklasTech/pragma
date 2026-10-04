@@ -93,7 +93,7 @@ const MERGE_VIEW_THEME = EditorView.theme({
   },
 });
 
-const SplitDiffView = memo(function SplitDiffView({
+export const SplitDiffView = memo(function SplitDiffView({
   original,
   modified,
   filePath,
