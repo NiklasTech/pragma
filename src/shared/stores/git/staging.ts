@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { GitActions, GitSlice } from "./types";
 
 export const createStagingSlice: GitSlice<
-  Pick<GitActions, "stageFiles" | "unstageFiles" | "discardFiles" | "commit">
+  Pick<GitActions, "stageFiles" | "unstageFiles" | "discardFiles" | "applyLines" | "commit">
 > = (set, get) => ({
   stageFiles: async (paths: string[]) => {
     const { repoPath } = get();
@@ -44,6 +44,23 @@ export const createStagingSlice: GitSlice<
       await get().loadStatus();
     } catch (err) {
       set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  applyLines: async (path, action, selection) => {
+    const { repoPath } = get();
+    if (!repoPath) return false;
+
+    set({ actionBusy: action });
+    try {
+      await invoke("git_apply_lines", { repoPath, path, action, selection });
+      await get().loadStatus();
+      return true;
+    } catch (err) {
+      set({ error: String(err) });
+      return false;
     } finally {
       set({ actionBusy: null });
     }

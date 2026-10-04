@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 use std::path::Path;
 
-use crate::modules::git::errors::Result;
+use crate::modules::git::errors::{GitError, Result};
 use crate::modules::git::process::{
     ensure_git_available, ensure_success, git_show_text, read_text_file, run_git,
 };
@@ -91,6 +91,29 @@ pub fn diff_content(
     })
 }
 
+/// The staged content of `path`, or `None` when the file is not in the index or is binary.
+pub fn index_content(repo_root: &str, path: &str) -> Result<Option<String>> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    let rel_path = pathspec_from_input(&repo_root, path)?;
+    let output = run_git(
+        Some(&repo_root.to_string_lossy()),
+        [
+            OsString::from("show"),
+            OsString::from("--no-textconv"),
+            OsString::from(format!(":{rel_path}")),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    if output.timed_out {
+        return Err(GitError::TimedOut("git show"));
+    }
+    if output.exit_code != Some(0) || output.truncated || output.stdout.contains(&0) {
+        return Ok(None);
+    }
+    Ok(Some(String::from_utf8_lossy(&output.stdout).into_owned()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,6 +169,27 @@ mod tests {
             diff(&repo.root, Some("../outside.txt"), false),
             Err(GitError::PathOutsideWorkspace(_))
         ));
+    }
+
+    #[test]
+    fn index_content_returns_the_staged_text() {
+        let repo = TestRepo::new();
+        repo.write("file.txt", "staged\n");
+        repo.git(&["add", "file.txt"]);
+        repo.write("file.txt", "unstaged\n");
+
+        assert_eq!(
+            index_content(&repo.root, "file.txt").unwrap().as_deref(),
+            Some("staged\n")
+        );
+    }
+
+    #[test]
+    fn index_content_is_none_for_untracked_files() {
+        let repo = TestRepo::new();
+        repo.write("new.txt", "new\n");
+
+        assert_eq!(index_content(&repo.root, "new.txt").unwrap(), None);
     }
 
     #[test]

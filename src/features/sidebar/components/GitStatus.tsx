@@ -141,6 +141,7 @@ export function GitStatus() {
         modified,
         patchText: content,
         staged,
+        repoPath: repoPath ?? undefined,
       });
     } catch {
       // Error is handled by the store

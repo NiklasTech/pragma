@@ -142,6 +142,14 @@ export interface GitProgress {
 
 export type CheckState = "checked" | "indeterminate" | "unchecked";
 
+export type GitLineAction = "stage" | "unstage" | "discard";
+
+/** Changed lines of one file: removed lines by old line number, added lines by new line number. */
+export interface GitLineSelection {
+  old_lines: number[];
+  new_lines: number[];
+}
+
 export interface GitState {
   repoPath: string | null;
   snapshot: GitStatusSnapshot | null;
@@ -182,6 +190,11 @@ export interface GitActions {
   stageFiles: (paths: string[]) => Promise<void>;
   unstageFiles: (paths: string[]) => Promise<void>;
   discardFiles: (paths: string[]) => Promise<void>;
+  applyLines: (
+    path: string,
+    action: GitLineAction,
+    selection: GitLineSelection,
+  ) => Promise<boolean>;
   commit: () => Promise<void>;
   loadFileDiff: (path: string, staged: boolean) => Promise<string>;
   clearDiff: () => void;

@@ -1,5 +1,5 @@
 use std::ffi::{OsStr, OsString};
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -219,12 +219,48 @@ where
     run_program(OsStr::new("git"), repo_root, args, &[], timeout_secs)
 }
 
+/// Runs git like `run_git`, writing `input` to its stdin.
+pub fn run_git_with_input<I, S>(
+    repo_root: &str,
+    args: I,
+    input: &[u8],
+    timeout_secs: u64,
+) -> Result<GitOutput>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    spawn_and_collect(
+        OsStr::new("git"),
+        Some(repo_root),
+        args,
+        &[],
+        Some(input),
+        timeout_secs,
+    )
+}
+
 /// Runs `program` with the non-interactive git environment, a timeout and capped output.
 pub fn run_program<I, S>(
     program: &OsStr,
     repo_root: Option<&str>,
     args: I,
     envs: &[(&str, &str)],
+    timeout_secs: u64,
+) -> Result<GitOutput>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    spawn_and_collect(program, repo_root, args, envs, None, timeout_secs)
+}
+
+fn spawn_and_collect<I, S>(
+    program: &OsStr,
+    repo_root: Option<&str>,
+    args: I,
+    envs: &[(&str, &str)],
+    input: Option<&[u8]>,
     timeout_secs: u64,
 ) -> Result<GitOutput>
 where
@@ -245,7 +281,11 @@ where
         .env("GCM_INTERACTIVE", "Never")
         .env("GCM_PROVIDER", "")
         .env("LC_ALL", "C")
-        .stdin(Stdio::null())
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
@@ -256,6 +296,17 @@ where
     let mut stderr_pipe = child
         .take_stderr()
         .ok_or_else(|| GitError::Spawn("no stderr pipe".into()))?;
+
+    if let Some(bytes) = input {
+        let mut stdin_pipe = child
+            .take_stdin()
+            .ok_or_else(|| GitError::Spawn("no stdin pipe".into()))?;
+        let bytes = bytes.to_vec();
+        // Dropping the pipe after writing closes stdin so git sees EOF.
+        thread::spawn(move || {
+            let _ = stdin_pipe.write_all(&bytes);
+        });
+    }
 
     let stdout_handle = thread::spawn(move || drain(&mut stdout_pipe, 64 * 1024));
     let stderr_handle = thread::spawn(move || drain(&mut stderr_pipe, 4 * 1024));

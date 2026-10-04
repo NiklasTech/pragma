@@ -24,6 +24,8 @@ export type {
   GitGraphData,
   GitGraphEdge,
   GitGraphNode,
+  GitLineAction,
+  GitLineSelection,
   GitProgress,
   GitRemote,
   GitRemoteBranch,

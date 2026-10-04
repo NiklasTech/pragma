@@ -5,6 +5,7 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { ReferencesView } from "./ReferencesView";
 import { InlineDiff } from "./InlineDiff";
+import { GitDiffTabView } from "./GitDiffTabView";
 import { FileEditor } from "./FileEditor";
 import { DiskChangeNotice } from "./DiskChangeNotice";
 
@@ -23,6 +24,10 @@ export function Editor({ panelId }: EditorProps) {
 
   if (!activeTab) {
     return <EditorEmptyState />;
+  }
+
+  if (activeTab.kind === "diff" && activeTab.repoPath) {
+    return <GitDiffTabView key={activeTab.id} tab={activeTab} repoPath={activeTab.repoPath} />;
   }
 
   if (activeTab.kind === "diff") {

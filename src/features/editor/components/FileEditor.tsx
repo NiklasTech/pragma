@@ -28,6 +28,7 @@ import { useLspEditorWiring } from "@/features/editor/hooks/useLspEditorWiring";
 import { useEditorSearchEvents } from "@/features/editor/hooks/useEditorSearchEvents";
 import { useEditorLanguageSync } from "@/features/editor/hooks/useEditorLanguageSync";
 import { useBlameGutter } from "@/features/editor/hooks/useBlameGutter";
+import { useGitChangeGutter } from "@/features/editor/hooks/useGitChangeGutter";
 
 export function FileEditor({
   content,
@@ -311,6 +312,8 @@ export function FileEditor({
     filePath,
     tabId,
   });
+
+  useGitChangeGutter({ view: editorView, filePath, tabId });
 
   return (
     <div className="flex h-full w-full flex-col">

@@ -31,6 +31,7 @@ import {
   tabSizeCompartment,
   indentUnitCompartment,
   blameCompartment,
+  gitChangeCompartment,
 } from "@/features/editor/compartments";
 
 export interface EditorExtensionsContext {
@@ -110,6 +111,7 @@ export function useEditorExtensions({
         lintGutter(),
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),
         blameCompartment.of([]),
+        gitChangeCompartment.of([]),
         history(),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
         keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding, ...foldKeymap]),

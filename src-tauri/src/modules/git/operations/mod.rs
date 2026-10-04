@@ -4,6 +4,7 @@ mod commit;
 mod compose;
 mod conflict;
 mod diff;
+mod hunk;
 mod log;
 mod remote;
 mod stage;
@@ -22,7 +23,8 @@ pub use commit::{
 };
 pub use compose::compose_file_changed_between_branches;
 pub use conflict::{conflict_sides, resolve_conflict};
-pub use diff::{diff, diff_content};
+pub use diff::{diff, diff_content, index_content};
+pub use hunk::{apply_lines, LineAction, LineSelection};
 pub use log::{file_history, log};
 pub use remote::{fetch, list_remote_branches, list_remotes, pull_ff_only, push, remote_url};
 pub use stage::{discard, stage, unstage};
