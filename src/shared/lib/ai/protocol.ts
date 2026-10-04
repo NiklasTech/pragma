@@ -56,6 +56,17 @@ export interface AcpChatRequest {
   mcp_server_ids?: string[];
 }
 
+/** Token counts of one model response, or the context fill an ACP agent reports. */
+export interface StreamUsage {
+  /** The whole input, including the cached part. */
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_tokens?: number;
+  cache_write_tokens?: number;
+  context_used?: number;
+  context_size?: number;
+}
+
 export interface StreamChunk {
   text?: string;
   error?: string;
@@ -63,6 +74,7 @@ export interface StreamChunk {
   reasoning?: string;
   tool_calls?: BackendToolCall[];
   tool_results?: { tool_call_id: string; output: string; is_error: boolean }[];
+  usage?: StreamUsage;
 }
 
 interface ToolInvocationPart {

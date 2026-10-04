@@ -21,6 +21,7 @@ use super::types::{
     ClientCapabilities, ContentBlock, FsCapabilities, InitializeRequest, NewSessionRequest,
     PromptContent, PromptRequest, SessionUpdate, SessionUpdateDetail, ToolCallContent,
 };
+use super::usage::{context_usage, prompt_usage};
 use crate::ai::child_sessions::ChildSessionServer;
 use crate::ai::cli::{enriched_path, get_manifest};
 use crate::commands::ai::StreamChunk;
@@ -240,6 +241,7 @@ impl AcpSessionManager {
             }
             // Signal stream end once the prompt RPC completes. Turn-ended notifications
             // may arrive earlier; the frontend ignores chunks after the first done.
+            let usage = result.as_ref().ok().and_then(prompt_usage);
             let _ = tx
                 .send(StreamChunk {
                     text: None,
@@ -248,6 +250,7 @@ impl AcpSessionManager {
                     reasoning: None,
                     tool_calls: None,
                     tool_results: None,
+                    usage,
                 })
                 .await;
         });
@@ -440,6 +443,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             reasoning: None,
             tool_calls: None,
             tool_results: None,
+            usage: None,
         },
         SessionUpdateDetail::AgentThoughtChunk { content } => StreamChunk {
             text: None,
@@ -448,6 +452,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             reasoning: Some(extract_text(content)),
             tool_calls: None,
             tool_results: None,
+            usage: None,
         },
         SessionUpdateDetail::ToolCall {
             tool_call_id,
@@ -478,6 +483,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                     },
                 }]),
                 tool_results: None,
+                usage: None,
             }
         }
         SessionUpdateDetail::ToolCallUpdate {
@@ -508,6 +514,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                         output: output_text,
                         is_error: is_failed,
                     }]),
+                    usage: None,
                 }
             } else {
                 // Ignore intermediate tool_call_update chunks that only stream input.
@@ -519,9 +526,19 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                     reasoning: None,
                     tool_calls: None,
                     tool_results: None,
+                    usage: None,
                 }
             }
         }
+        SessionUpdateDetail::UsageUpdate { used, size } => StreamChunk {
+            text: None,
+            error: None,
+            done: false,
+            reasoning: None,
+            tool_calls: None,
+            tool_results: None,
+            usage: context_usage(used, size),
+        },
         SessionUpdateDetail::TurnEnded { .. } => StreamChunk {
             text: None,
             error: None,
@@ -529,6 +546,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             reasoning: None,
             tool_calls: None,
             tool_results: None,
+            usage: None,
         },
         SessionUpdateDetail::Error { message } => StreamChunk {
             text: None,
@@ -537,6 +555,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             reasoning: None,
             tool_calls: None,
             tool_results: None,
+            usage: None,
         },
         SessionUpdateDetail::ConfigOptionUpdate { .. } | SessionUpdateDetail::Other => {
             StreamChunk {
@@ -546,6 +565,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
                 reasoning: None,
                 tool_calls: None,
                 tool_results: None,
+                usage: None,
             }
         }
     }
@@ -614,6 +634,18 @@ mod tests {
             && chunk.reasoning.is_none()
             && chunk.tool_calls.is_none()
             && chunk.tool_results.is_none()
+            && chunk.usage.is_none()
+    }
+
+    #[test]
+    fn usage_updates_report_the_context_fill() {
+        let update =
+            chunk(json!({ "sessionUpdate": "usage_update", "used": 64000, "size": 200000 }));
+
+        let usage = update.usage.expect("usage");
+        assert_eq!(usage.context_used, Some(64000));
+        assert_eq!(usage.context_size, Some(200000));
+        assert!(!update.done);
     }
 
     #[test]

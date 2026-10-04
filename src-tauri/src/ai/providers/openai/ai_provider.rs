@@ -13,7 +13,7 @@ use crate::ai::{
 
 use super::error::{map_openai_error, map_reqwest_error};
 use super::provider::{OpenAIProvider, COMPLETIONS_PATH, MODELS_PATH};
-use super::request::OpenAIRequestBody;
+use super::request::{OpenAIRequestBody, OpenAIStreamOptions};
 use super::response::OpenAIResponse;
 use super::stream::{
     build_stream_chunk, parse_stream_event, ParseOutcome, DATA_PREFIX, DONE_EVENT,
@@ -150,6 +150,8 @@ impl AIProvider for OpenAIProvider {
                     prompt_tokens: u.prompt_tokens,
                     completion_tokens: u.completion_tokens,
                     total_tokens: u.total_tokens,
+                    cache_read_tokens: None,
+                    cache_write_tokens: None,
                 }),
                 tool_calls,
                 finish_reason: choice.finish_reason,
@@ -211,6 +213,7 @@ impl AIProvider for OpenAIProvider {
                                 content,
                                 finish_reason,
                                 tool_calls: None,
+                                usage: None,
                             });
                         }
                     }
@@ -240,6 +243,11 @@ impl AIProvider for OpenAIProvider {
 
             let mut body = OpenAIRequestBody::from_completion_request(&self.config.model, req);
             body.stream = Some(true);
+            if self.request_stream_usage {
+                body.stream_options = Some(OpenAIStreamOptions {
+                    include_usage: true,
+                });
+            }
 
             let url = format!("{}{}", self.base_url(), COMPLETIONS_PATH);
 
@@ -306,7 +314,7 @@ impl AIProvider for OpenAIProvider {
                                             continue;
                                         }
 
-                                        let event = match parse_stream_event(data) {
+                                        let mut event = match parse_stream_event(data) {
                                             Ok(ParseOutcome::Event(event)) => event,
                                             Ok(ParseOutcome::Skip) => continue,
                                             Err(e) => {
@@ -314,6 +322,17 @@ impl AIProvider for OpenAIProvider {
                                                 continue;
                                             }
                                         };
+
+                                        if let Some(usage) = event.usage.take() {
+                                            let _ = tx
+                                                .send(Ok(CompletionChunk {
+                                                    content: String::new(),
+                                                    finish_reason: None,
+                                                    tool_calls: None,
+                                                    usage: Some(usage.to_usage()),
+                                                }))
+                                                .await;
+                                        }
 
                                         if let Some(mut choice) = event.choices.into_iter().next() {
                                             let tool_call_deltas = choice.delta.tool_calls.take();
@@ -328,6 +347,7 @@ impl AIProvider for OpenAIProvider {
                                                         content: chunk,
                                                         finish_reason: finish_reason.clone(),
                                                         tool_calls: None,
+                                                        usage: None,
                                                     }))
                                                     .await
                                                     .is_err()

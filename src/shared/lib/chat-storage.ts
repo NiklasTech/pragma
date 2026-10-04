@@ -1,12 +1,22 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import type { AgentEngine, ChatMessage, ChatSession } from "@/shared/stores/ai";
+import type { AgentEngine, ChatMessage, ChatSession, SessionUsage } from "@/shared/stores/ai";
 
 export interface StoredWorktree {
   branch: string;
   path: string;
   setup_log: string;
   status: "ready" | "error";
+}
+
+export interface StoredSessionUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  responses: number;
+  context_tokens?: number | null;
+  context_window?: number | null;
 }
 
 export interface StoredSessionMetadata {
@@ -24,6 +34,7 @@ export interface StoredSessionMetadata {
   parent_id?: string | null;
   category?: string | null;
   mcp_servers?: string[] | null;
+  usage?: StoredSessionUsage | null;
 }
 
 export interface StoredChatMessage {
@@ -31,6 +42,32 @@ export interface StoredChatMessage {
   role: string;
   content: string;
   timestamp: number;
+}
+
+function toStoredUsage(usage: SessionUsage): StoredSessionUsage {
+  const stored: StoredSessionUsage = {
+    input_tokens: usage.inputTokens,
+    output_tokens: usage.outputTokens,
+    cache_read_tokens: usage.cacheReadTokens,
+    cache_write_tokens: usage.cacheWriteTokens,
+    responses: usage.responses,
+  };
+  if (usage.contextTokens !== undefined) stored.context_tokens = usage.contextTokens;
+  if (usage.contextWindow !== undefined) stored.context_window = usage.contextWindow;
+  return stored;
+}
+
+function fromStoredUsage(usage: StoredSessionUsage): SessionUsage {
+  const restored: SessionUsage = {
+    inputTokens: usage.input_tokens,
+    outputTokens: usage.output_tokens,
+    cacheReadTokens: usage.cache_read_tokens,
+    cacheWriteTokens: usage.cache_write_tokens,
+    responses: usage.responses,
+  };
+  if (usage.context_tokens != null) restored.contextTokens = usage.context_tokens;
+  if (usage.context_window != null) restored.contextWindow = usage.context_window;
+  return restored;
 }
 
 function toStoredSession(session: ChatSession): StoredSessionMetadata {
@@ -50,6 +87,7 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
   if (session.parentId) stored.parent_id = session.parentId;
   if (session.category) stored.category = session.category;
   if (session.mcpServers) stored.mcp_servers = session.mcpServers;
+  if (session.usage) stored.usage = toStoredUsage(session.usage);
   if (session.worktree === null) {
     stored.worktree = null;
   } else if (session.worktree) {
@@ -86,6 +124,7 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
   if (session.parent_id) restored.parentId = session.parent_id;
   if (session.category) restored.category = session.category;
   if (session.mcp_servers) restored.mcpServers = session.mcp_servers;
+  if (session.usage) restored.usage = fromStoredUsage(session.usage);
   if (session.worktree) {
     restored.worktree = {
       branch: session.worktree.branch,

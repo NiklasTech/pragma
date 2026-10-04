@@ -35,6 +35,7 @@ export function mergeSessionsWithStored(
       if (memorySession.agentEngine !== undefined) merged.agentEngine = memorySession.agentEngine;
       if (memorySession.parentId !== undefined) merged.parentId = memorySession.parentId;
       if (memorySession.category !== undefined) merged.category = memorySession.category;
+      if (memorySession.usage !== undefined) merged.usage = memorySession.usage;
 
       return merged;
     })

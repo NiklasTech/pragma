@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::ai::error::AIError;
+use crate::ai::{error::AIError, provider::Usage};
 
 pub(super) const DATA_PREFIX: &str = "data: ";
 pub(super) const DONE_EVENT: &str = "[DONE]";
@@ -12,7 +12,8 @@ pub(super) enum ParseOutcome {
 }
 
 /// Parses one SSE `data:` payload. Providers emit events without `choices`
-/// (usage, citations, metadata); those are skipped instead of failing the stream.
+/// (usage, citations, metadata); those are skipped instead of failing the stream,
+/// except when they carry usage.
 pub(super) fn parse_stream_event(data: &str) -> Result<ParseOutcome, AIError> {
     let event: OpenAIStreamEvent = serde_json::from_str(data)
         .map_err(|e| AIError::Stream(format!("invalid sse event: {e}")))?;
@@ -23,7 +24,9 @@ pub(super) fn parse_stream_event(data: &str) -> Result<ParseOutcome, AIError> {
                 error.message.unwrap_or_else(|| "unknown error".to_string()),
             ));
         }
-        return Ok(ParseOutcome::Skip);
+        if event.usage.is_none() {
+            return Ok(ParseOutcome::Skip);
+        }
     }
 
     Ok(ParseOutcome::Event(event))
@@ -67,6 +70,42 @@ pub(super) struct OpenAIStreamEvent {
     #[serde(default)]
     pub(super) choices: Vec<OpenAIStreamChoice>,
     pub(super) error: Option<OpenAIStreamError>,
+    #[serde(default)]
+    pub(super) usage: Option<OpenAIStreamUsage>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct OpenAIStreamUsage {
+    #[serde(default)]
+    prompt_tokens: u32,
+    #[serde(default)]
+    completion_tokens: u32,
+    #[serde(default)]
+    prompt_tokens_details: Option<OpenAIPromptTokensDetails>,
+    /// DeepSeek reports cache hits outside `prompt_tokens_details`.
+    #[serde(default)]
+    prompt_cache_hit_tokens: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpenAIPromptTokensDetails {
+    #[serde(default)]
+    cached_tokens: Option<u32>,
+}
+
+impl OpenAIStreamUsage {
+    pub(super) fn to_usage(&self) -> Usage {
+        let cached = self
+            .prompt_tokens_details
+            .as_ref()
+            .and_then(|details| details.cached_tokens)
+            .or(self.prompt_cache_hit_tokens)
+            .filter(|tokens| *tokens > 0);
+        Usage {
+            cache_read_tokens: cached,
+            ..Usage::new(self.prompt_tokens, self.completion_tokens)
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -138,10 +177,26 @@ mod tests {
     }
 
     #[test]
-    fn skips_event_without_choices_field() {
-        let data =
-            r#"{"id":"c1","usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}"#;
+    fn skips_event_without_choices_or_usage() {
+        let data = r#"{"id":"c1","citations":["https://example.com"]}"#;
         assert!(matches!(parse_stream_event(data), Ok(ParseOutcome::Skip)));
+    }
+
+    #[test]
+    fn keeps_usage_event_without_choices() {
+        let data = r#"{"id":"c1","choices":[],"usage":{"prompt_tokens":120,"completion_tokens":8,"total_tokens":128,"prompt_tokens_details":{"cached_tokens":100}}}"#;
+        let usage = parse_event(data).usage.expect("expected usage").to_usage();
+        assert_eq!(usage.prompt_tokens, 120);
+        assert_eq!(usage.completion_tokens, 8);
+        assert_eq!(usage.total_tokens, 128);
+        assert_eq!(usage.cache_read_tokens, Some(100));
+    }
+
+    #[test]
+    fn reads_deepseek_cache_hits() {
+        let data = r#"{"choices":[],"usage":{"prompt_tokens":50,"completion_tokens":5,"prompt_cache_hit_tokens":32,"prompt_cache_miss_tokens":18}}"#;
+        let usage = parse_event(data).usage.expect("expected usage").to_usage();
+        assert_eq!(usage.cache_read_tokens, Some(32));
     }
 
     #[test]

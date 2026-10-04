@@ -9,6 +9,8 @@ pub(super) const MODELS_PATH: &str = "/models";
 pub struct OpenAIProvider {
     pub(super) config: ProviderConfig,
     pub(super) client: reqwest::Client,
+    /// Hosted APIs accept `stream_options`; custom servers may reject unknown fields.
+    pub(super) request_stream_usage: bool,
 }
 
 impl OpenAIProvider {
@@ -65,7 +67,11 @@ impl OpenAIProvider {
             .build()
             .map_err(|e| AIError::Network(e.to_string()))?;
 
-        Ok(Self { config, client })
+        Ok(Self {
+            config,
+            client,
+            request_stream_usage: !is_key_optional,
+        })
     }
 
     pub(super) fn base_url(&self) -> String {

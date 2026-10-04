@@ -4,6 +4,7 @@ mod copilot;
 mod external;
 mod keys;
 mod stream;
+mod stream_relay;
 mod terminal;
 mod types;
 

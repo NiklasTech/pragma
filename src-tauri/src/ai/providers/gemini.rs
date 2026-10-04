@@ -225,6 +225,8 @@ impl AIProvider for GeminiProvider {
                     prompt_tokens: u.prompt_token_count,
                     completion_tokens: u.candidates_token_count,
                     total_tokens: u.total_token_count,
+                    cache_read_tokens: None,
+                    cache_write_tokens: None,
                 }),
                 tool_calls: None,
                 finish_reason: None,
@@ -281,6 +283,7 @@ impl AIProvider for GeminiProvider {
                                 content,
                                 finish_reason: event.finish_reason(),
                                 tool_calls: None,
+                                usage: None,
                             });
                         }
                     }
@@ -347,9 +350,21 @@ impl AIProvider for GeminiProvider {
                                                             content,
                                                             finish_reason: event.finish_reason(),
                                                             tool_calls: None,
+                                                            usage: None,
                                                         }))
                                                         .await;
                                                 }
+                                            }
+                                            // Every event repeats the running totals; the last one wins.
+                                            if let Some(usage) = &event.usage_metadata {
+                                                let _ = tx
+                                                    .send(Ok(CompletionChunk {
+                                                        content: String::new(),
+                                                        finish_reason: None,
+                                                        tool_calls: None,
+                                                        usage: Some(usage.to_usage()),
+                                                    }))
+                                                    .await;
                                             }
                                         }
                                         Err(e) => {
@@ -502,6 +517,34 @@ struct GeminiUsageMetadata {
 #[derive(Debug, Deserialize)]
 struct GeminiStreamEvent {
     candidates: Option<Vec<GeminiCandidate>>,
+    #[serde(default, rename = "usageMetadata")]
+    usage_metadata: Option<GeminiStreamUsage>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GeminiStreamUsage {
+    #[serde(default)]
+    prompt_token_count: u32,
+    #[serde(default)]
+    candidates_token_count: u32,
+    #[serde(default)]
+    thoughts_token_count: u32,
+    #[serde(default)]
+    cached_content_token_count: Option<u32>,
+}
+
+impl GeminiStreamUsage {
+    fn to_usage(&self) -> Usage {
+        Usage {
+            cache_read_tokens: self.cached_content_token_count.filter(|tokens| *tokens > 0),
+            ..Usage::new(
+                self.prompt_token_count,
+                self.candidates_token_count
+                    .saturating_add(self.thoughts_token_count),
+            )
+        }
+    }
 }
 
 impl GeminiStreamEvent {

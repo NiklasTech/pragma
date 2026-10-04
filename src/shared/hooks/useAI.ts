@@ -131,6 +131,11 @@ export function useAI() {
         },
         activeSessionKind !== "ask",
         mcpServerIds,
+        (usage) => {
+          if (activeChatSessionId) {
+            useAIStore.getState().recordSessionUsage(activeChatSessionId, usage);
+          }
+        },
       ),
     [
       effectiveProvider,

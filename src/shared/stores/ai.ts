@@ -6,6 +6,7 @@ import { createKeysSlice } from "./ai/keys";
 import { createMessagesSlice } from "./ai/messages";
 import { createModelsSlice } from "./ai/models";
 import { createSessionsSlice } from "./ai/sessions";
+import { createUsageSlice } from "./ai/usage";
 import type { AIProvider, AIState, AIStore, ProviderConfig } from "./ai/types";
 
 export type {
@@ -20,6 +21,7 @@ export type {
   ModelInfo,
   ModelListCache,
   ProviderConfig,
+  SessionUsage,
   SessionWorktree,
 } from "./ai/types";
 export { mergeSessionsWithStored } from "./ai/sessions";
@@ -83,6 +85,7 @@ export const useAIStore = create<AIStore>()((...a) => ({
   ...createCoreSlice(...a),
   ...createSessionsSlice(...a),
   ...createMessagesSlice(...a),
+  ...createUsageSlice(...a),
   ...createKeysSlice(...a),
   ...createModelsSlice(...a),
   ...createCLISlice(...a),

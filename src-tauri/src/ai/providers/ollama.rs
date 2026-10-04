@@ -147,6 +147,8 @@ impl AIProvider for OllamaProvider {
                         prompt_tokens: prompt_tokens as u32,
                         completion_tokens: completion_tokens as u32,
                         total_tokens: (prompt_tokens + completion_tokens) as u32,
+                        cache_read_tokens: None,
+                        cache_write_tokens: None,
                     }),
                 tool_calls: None,
                 finish_reason: None,
@@ -205,6 +207,7 @@ impl AIProvider for OllamaProvider {
                             None
                         },
                         tool_calls: None,
+                        usage: None,
                     });
                 }
             }
@@ -261,6 +264,21 @@ impl AIProvider for OllamaProvider {
 
                                 match serde_json::from_str::<OllamaStreamEvent>(line) {
                                     Ok(event) => {
+                                        if let (Some(prompt), Some(output)) =
+                                            (event.prompt_eval_count, event.eval_count)
+                                        {
+                                            let _ = tx
+                                                .send(Ok(CompletionChunk {
+                                                    content: String::new(),
+                                                    finish_reason: None,
+                                                    tool_calls: None,
+                                                    usage: Some(Usage::new(
+                                                        u32::try_from(prompt).unwrap_or(u32::MAX),
+                                                        u32::try_from(output).unwrap_or(u32::MAX),
+                                                    )),
+                                                }))
+                                                .await;
+                                        }
                                         if !event.message.content.is_empty() {
                                             let _ = tx
                                                 .send(Ok(CompletionChunk {
@@ -271,6 +289,7 @@ impl AIProvider for OllamaProvider {
                                                         None
                                                     },
                                                     tool_calls: None,
+                                                    usage: None,
                                                 }))
                                                 .await;
                                         }
@@ -376,4 +395,9 @@ struct OllamaStreamEvent {
     model: String,
     message: OllamaMessage,
     done: bool,
+    /// Only the final event carries the counts.
+    #[serde(default)]
+    prompt_eval_count: Option<usize>,
+    #[serde(default)]
+    eval_count: Option<usize>,
 }

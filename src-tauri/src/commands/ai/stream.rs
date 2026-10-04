@@ -8,13 +8,14 @@ use tokio_util::sync::CancellationToken;
 
 use crate::ai::{
     config::ProviderConfig,
-    provider::{AIProvider, CompletionChunk, CompletionRequest, Message, Role},
+    provider::{AIProvider, CompletionRequest, Message, Role},
     providers::{
         anthropic::AnthropicProvider, copilot::CopilotProvider, custom::CustomProvider,
         gemini::GeminiProvider, ollama::OllamaProvider, openai::OpenAIProvider,
     },
 };
 
+use super::stream_relay::StreamRelay;
 use super::types::{ChatRequest, StreamChunk};
 
 static ACTIVE_STREAM_CANCELLATIONS: Mutex<Option<HashMap<String, CancellationToken>>> =
@@ -126,37 +127,22 @@ When showing file contents, preserve the full code and include the language tag.
             .await
             .map_err(|e| e.to_string())?;
 
+        let mut relay = StreamRelay::default();
+        let mut failed = false;
         while let Some(result) = rx.recv().await {
             if cancel_token.as_ref().is_some_and(|t| t.is_cancelled()) {
-                break;
+                return Ok(());
             }
             match result {
-                Ok(CompletionChunk {
-                    content,
-                    finish_reason,
-                    tool_calls,
-                }) => {
-                    let done = finish_reason.as_deref() == Some("stop");
-                    let text = if content.is_empty() && !done {
-                        None
-                    } else {
-                        Some(content)
-                    };
-                    let chunk = StreamChunk {
-                        text,
-                        error: None,
-                        done,
-                        reasoning: None,
-                        tool_calls,
-                        tool_results: None,
-                    };
-                    if channel.send(chunk).is_err() {
-                        break;
-                    }
-                    if done || finish_reason.as_deref() == Some("tool_calls") {
-                        break;
+                Ok(chunk) => {
+                    if let Some(forward) = relay.accept(chunk) {
+                        if channel.send(forward).is_err() {
+                            return Ok(());
+                        }
                     }
                 }
+                // Errors after the response finished only cut off trailing usage.
+                Err(_) if relay.finished() => break,
                 Err(e) => {
                     let _ = channel.send(StreamChunk {
                         text: None,
@@ -165,9 +151,17 @@ When showing file contents, preserve the full code and include the language tag.
                         reasoning: None,
                         tool_calls: None,
                         tool_results: None,
+                        usage: None,
                     });
+                    failed = true;
                     break;
                 }
+            }
+        }
+
+        if !failed {
+            if let Some(last) = relay.into_final_chunk() {
+                let _ = channel.send(last);
             }
         }
 

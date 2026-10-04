@@ -18,6 +18,7 @@ import { CliSessionOptionsMenu } from "@/features/ai/acp/CliSessionOptionsMenu";
 import { McpServersMenu } from "@/features/ai/mcp/McpServersMenu";
 import { PromptPicker, type PromptPickerRef } from "@/features/ai/mcp/PromptPicker";
 import { useCliSessionOptions } from "@/features/ai/acp/useCliSessionOptions";
+import { ContextMeter } from "@/features/ai/usage/ContextMeter";
 
 import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
@@ -264,6 +265,7 @@ export function ChatComposer({
           <ChatToolbar />
           <McpServersMenu />
           <div className="ml-auto flex items-center gap-1">
+            <ContextMeter />
             {voiceInput && (
               <ComposerMicButton
                 recording={dictation.recording}

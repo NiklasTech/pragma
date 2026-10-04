@@ -33,6 +33,7 @@ import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
+import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { usePaneHeaderDrag } from "./paneDrag";
@@ -255,6 +256,10 @@ export function PaneHeader({
         )}
 
         <span className="flex-1" />
+
+        <span data-pane-actions="">
+          <SessionUsageBadge usage={session?.usage} className="@max-[300px]/pane-header:hidden" />
+        </span>
 
         <div
           className={cn(
