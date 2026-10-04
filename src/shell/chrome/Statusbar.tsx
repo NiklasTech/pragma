@@ -1,4 +1,12 @@
-import { ArrowDown, ArrowUp, GitBranch, Warning, XCircle, Palette } from "@phosphor-icons/react";
+import {
+  ArrowDown,
+  ArrowUp,
+  GitBranch,
+  Warning,
+  XCircle,
+  Palette,
+  Robot,
+} from "@phosphor-icons/react";
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
 import { useGitStore } from "@/shared/stores/git";
 import { currentModelName, useAcpSessionOptionsStore } from "@/features/ai/acp/sessionOptions";
@@ -7,6 +15,9 @@ import { useProblemsStore } from "@/shared/stores/problems";
 import { useLayoutStore } from "@/shell/layout/store";
 import { ExtensionStatusItems } from "@/features/extensions/components/ExtensionStatusItems";
 import { useExtensionsStore } from "@/features/extensions/store";
+import { formatActivitySummary } from "@/features/ai/notifications/activity";
+import { focusAttentionSession } from "@/features/ai/notifications/focusSession";
+import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
 import { cn } from "@/shared/lib/utils";
 
 const LEADING_ITEMS = new Set<StatusbarItem>(["gitBranch", "gitSync", "problems"]);
@@ -57,6 +68,8 @@ export function Statusbar() {
     : [activeProvider, activeModel].filter(Boolean).join(" · ");
   const problems = useProblemsStore((state) => state.problems);
   const extensionItemCount = useExtensionsStore((state) => state.statusBarItems.length);
+  const showSessionSummary = useSettingsStore((state) => state.notifications.statusSummary);
+  const activity = useSessionActivity();
 
   if (!statusbar.visible) return null;
 
@@ -149,14 +162,39 @@ export function Statusbar() {
     }
   };
 
+  const summaryTarget = activity.waiting[0] ?? activity.running[0];
+  const sessionSummary =
+    showSessionSummary && summaryTarget ? (
+      <StatusChip
+        key="sessions"
+        label={
+          activity.waiting.length > 0
+            ? "Open the session waiting for approval"
+            : "Open the running session"
+        }
+        onClick={() => focusAttentionSession(summaryTarget)}
+      >
+        <Robot size={12} className={cn(activity.waiting.length > 0 && "text-status-warning")} />
+        <span>{formatActivitySummary(activity)}</span>
+      </StatusChip>
+    ) : null;
+
   const leading = statusbar.items.filter((item) => LEADING_ITEMS.has(item)).map(renderItem);
   const trailing = statusbar.items.filter((item) => !LEADING_ITEMS.has(item)).map(renderItem);
 
-  if (!leading.some(Boolean) && !trailing.some(Boolean) && extensionItemCount === 0) return null;
+  if (
+    !sessionSummary &&
+    !leading.some(Boolean) &&
+    !trailing.some(Boolean) &&
+    extensionItemCount === 0
+  ) {
+    return null;
+  }
 
   return (
     <div className="flex h-statusbar shrink-0 items-center justify-between gap-2 bg-bg-chrome px-2 select-none">
       <div className="flex min-w-0 items-center gap-0.5">
+        {sessionSummary}
         {leading}
         <ExtensionStatusItems alignment="left" />
       </div>

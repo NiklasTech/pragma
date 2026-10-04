@@ -152,6 +152,14 @@ export interface AgentSettings {
   stepLimit: number | null;
 }
 
+export interface NotificationSettings {
+  sessionFinished: boolean;
+  sessionFailed: boolean;
+  approvalNeeded: boolean;
+  badge: boolean;
+  statusSummary: boolean;
+}
+
 export interface ExtensionSettings {
   enabled: boolean;
   settings: unknown;
@@ -171,6 +179,7 @@ export interface SettingsState {
   lsp: LspSettings;
   experimental: ExperimentalSettings;
   agent: AgentSettings;
+  notifications: NotificationSettings;
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
@@ -199,6 +208,7 @@ export interface SettingsActions {
   setLspEnabled: (language: string, enabled: boolean) => void;
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
   setAgentSettings: (settings: Partial<AgentSettings>) => void;
+  setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => string;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;
