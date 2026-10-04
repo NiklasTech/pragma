@@ -243,6 +243,13 @@ pub enum SessionUpdateDetail {
         #[serde(default, rename = "configOptions")]
         config_options: Value,
     },
+    #[serde(rename = "usage_update")]
+    UsageUpdate {
+        #[serde(default)]
+        used: Option<u64>,
+        #[serde(default)]
+        size: Option<u64>,
+    },
     #[serde(rename = "turn_ended")]
     TurnEnded {
         #[serde(default)]

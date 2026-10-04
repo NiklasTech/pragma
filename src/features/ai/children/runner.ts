@@ -223,6 +223,7 @@ export async function startChildRun(
     () => null,
     true,
     mcpServerIds,
+    (usage) => useAIStore.getState().recordSessionUsage(sessionId, usage),
   );
 
   const context = createContext(sessionId);

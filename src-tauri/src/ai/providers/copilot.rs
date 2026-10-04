@@ -171,6 +171,8 @@ impl AIProvider for CopilotProvider {
                     prompt_tokens: u.prompt_tokens,
                     completion_tokens: u.completion_tokens,
                     total_tokens: u.total_tokens,
+                    cache_read_tokens: None,
+                    cache_write_tokens: None,
                 }),
                 tool_calls: None,
                 finish_reason: None,
@@ -228,6 +230,7 @@ impl AIProvider for CopilotProvider {
                                 content,
                                 finish_reason: choice.finish_reason,
                                 tool_calls: None,
+                                usage: None,
                             });
                         }
                     }
@@ -304,6 +307,7 @@ impl AIProvider for CopilotProvider {
                                                                         finish_reason: choice
                                                                             .finish_reason,
                                                                         tool_calls: None,
+                                                                        usage: None,
                                                                     }))
                                                                     .await;
                                                             }

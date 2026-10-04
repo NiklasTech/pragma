@@ -83,6 +83,7 @@ pub(super) async fn send_tool_call_chunk(
                 content: String::new(),
                 finish_reason: Some("tool_calls".to_string()),
                 tool_calls: Some(calls),
+                usage: None,
             }))
             .await;
     }

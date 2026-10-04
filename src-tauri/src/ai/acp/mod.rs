@@ -7,6 +7,7 @@ pub mod manager;
 pub mod mcp_bridge;
 pub mod tools_bridge;
 pub mod types;
+pub mod usage;
 
 pub use approval_bridge::ApprovalBridge;
 pub use client::{AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest};

@@ -15,7 +15,7 @@ use super::request::AnthropicRequestBody;
 use super::response::{AnthropicContent, AnthropicResponse};
 use super::stream::{
     send_tool_call_chunk, AnthropicContentBlock, AnthropicCurrentBlock, AnthropicDelta,
-    AnthropicStreamEvent,
+    AnthropicStreamEvent, AnthropicStreamUsage,
 };
 
 impl AIProvider for AnthropicProvider {
@@ -136,6 +136,8 @@ impl AIProvider for AnthropicProvider {
                     prompt_tokens: u.input_tokens,
                     completion_tokens: u.output_tokens,
                     total_tokens: u.input_tokens + u.output_tokens,
+                    cache_read_tokens: None,
+                    cache_write_tokens: None,
                 }),
                 tool_calls: if tool_calls.is_empty() {
                     None
@@ -223,6 +225,7 @@ impl AIProvider for AnthropicProvider {
                                         content: text,
                                         finish_reason: None,
                                         tool_calls: None,
+                                        usage: None,
                                     });
                                 }
                             }
@@ -249,6 +252,7 @@ impl AIProvider for AnthropicProvider {
                                             arguments: input,
                                         },
                                     }]),
+                                    usage: None,
                                 });
                             }
                         }
@@ -308,6 +312,7 @@ impl AIProvider for AnthropicProvider {
                 let mut buffer = String::new();
                 let mut event_data: Vec<String> = Vec::new();
                 let mut current_block: Option<AnthropicCurrentBlock> = None;
+                let mut usage = AnthropicStreamUsage::default();
 
                 while let Some(result) = stream.next().await {
                     match result {
@@ -325,71 +330,78 @@ impl AIProvider for AnthropicProvider {
                                         }
 
                                         match serde_json::from_str::<AnthropicStreamEvent>(data) {
-                                            Ok(event) => {
-                                                match event {
-                                                    AnthropicStreamEvent::ContentBlockStart {
-                                                        content_block,
-                                                    } => {
-                                                        current_block = Some(match content_block {
-                                                            AnthropicContentBlock::Text => {
-                                                                AnthropicCurrentBlock::Text
-                                                            }
-                                                            AnthropicContentBlock::ToolUse {
-                                                                id,
-                                                                name,
-                                                            } => AnthropicCurrentBlock::ToolUse {
-                                                                id,
-                                                                name,
-                                                                input: String::new(),
-                                                            },
-                                                        });
-                                                    }
-                                                    AnthropicStreamEvent::ContentBlockDelta {
-                                                        delta,
-                                                    } => {
-                                                        match delta {
-                                                            AnthropicDelta::TextDelta { text } => {
-                                                                if !text.is_empty() {
-                                                                    let _ = tx
-                                                                        .send(Ok(CompletionChunk {
-                                                                            content: text,
-                                                                            finish_reason: None,
-                                                                            tool_calls: None,
-                                                                        }))
-                                                                        .await;
-                                                                }
-                                                            }
-                                                            AnthropicDelta::InputJsonDelta {
-                                                                partial_json,
-                                                            } => {
-                                                                if let Some(AnthropicCurrentBlock::ToolUse { input, .. }) = &mut current_block {
-                                                                    input.push_str(&partial_json);
-                                                                }
-                                                            }
+                                            Ok(event) => match event {
+                                                AnthropicStreamEvent::ContentBlockStart {
+                                                    content_block,
+                                                } => {
+                                                    current_block = Some(match content_block {
+                                                        AnthropicContentBlock::Text => {
+                                                            AnthropicCurrentBlock::Text
                                                         }
-                                                    }
-                                                    AnthropicStreamEvent::ContentBlockStop => {
-                                                        if let Some(block) = current_block.take() {
-                                                            send_tool_call_chunk(block, &tx).await;
-                                                        }
-                                                    }
-                                                    AnthropicStreamEvent::MessageDelta {
-                                                        usage,
-                                                        ..
-                                                    } if usage.is_some() => {
-                                                        let _ = tx
-                                                            .send(Ok(CompletionChunk {
-                                                                content: String::new(),
-                                                                finish_reason: Some(
-                                                                    "stop".to_string(),
-                                                                ),
-                                                                tool_calls: None,
-                                                            }))
-                                                            .await;
-                                                    }
-                                                    _ => {}
+                                                        AnthropicContentBlock::ToolUse {
+                                                            id,
+                                                            name,
+                                                        } => AnthropicCurrentBlock::ToolUse {
+                                                            id,
+                                                            name,
+                                                            input: String::new(),
+                                                        },
+                                                    });
                                                 }
-                                            }
+                                                AnthropicStreamEvent::ContentBlockDelta {
+                                                    delta,
+                                                } => match delta {
+                                                    AnthropicDelta::TextDelta { text } => {
+                                                        if !text.is_empty() {
+                                                            let _ = tx
+                                                                .send(Ok(CompletionChunk {
+                                                                    content: text,
+                                                                    finish_reason: None,
+                                                                    tool_calls: None,
+                                                                    usage: None,
+                                                                }))
+                                                                .await;
+                                                        }
+                                                    }
+                                                    AnthropicDelta::InputJsonDelta {
+                                                        partial_json,
+                                                    } => {
+                                                        if let Some(
+                                                            AnthropicCurrentBlock::ToolUse {
+                                                                input,
+                                                                ..
+                                                            },
+                                                        ) = &mut current_block
+                                                        {
+                                                            input.push_str(&partial_json);
+                                                        }
+                                                    }
+                                                },
+                                                AnthropicStreamEvent::ContentBlockStop => {
+                                                    if let Some(block) = current_block.take() {
+                                                        send_tool_call_chunk(block, &tx).await;
+                                                    }
+                                                }
+                                                AnthropicStreamEvent::MessageStart { message } => {
+                                                    if let Some(start) = message.usage {
+                                                        usage.merge(start);
+                                                    }
+                                                }
+                                                AnthropicStreamEvent::MessageDelta {
+                                                    usage: Some(delta),
+                                                } => {
+                                                    usage.merge(delta);
+                                                    let _ = tx
+                                                        .send(Ok(CompletionChunk {
+                                                            content: String::new(),
+                                                            finish_reason: Some("stop".to_string()),
+                                                            tool_calls: None,
+                                                            usage: Some(usage.to_usage()),
+                                                        }))
+                                                        .await;
+                                                }
+                                                _ => {}
+                                            },
                                             Err(e) => {
                                                 let _ = tx
                                                     .send(Err(AIError::Stream(format!(

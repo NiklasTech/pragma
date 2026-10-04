@@ -11,6 +11,7 @@ import {
   type BackendToolDefinition,
   type CLIChatRequest,
   type StreamChunk,
+  type StreamUsage,
 } from "./protocol";
 
 export function createStreamTransport(
@@ -28,6 +29,7 @@ export function createStreamTransport(
   consumePendingContext: () => string | null = () => null,
   allowChildSessions = false,
   mcpServerIds: string[] | null = null,
+  onUsage: (usage: StreamUsage) => void = () => {},
 ): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages, abortSignal }) {
@@ -71,6 +73,8 @@ export function createStreamTransport(
           const channel = new Channel<StreamChunk>();
 
           channel.onmessage = (chunk) => {
+            // ACP agents report usage with the prompt response, which can follow the turn end.
+            if (chunk.usage) onUsage(chunk.usage);
             if (closed) return;
 
             if (chunk.error) {

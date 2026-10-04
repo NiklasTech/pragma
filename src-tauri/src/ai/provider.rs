@@ -152,13 +152,33 @@ pub struct CompletionChunk {
     pub finish_reason: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ToolCall>>,
+    /// Token usage of the whole response; providers report it once, usually near the end.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<Usage>,
 }
 
+/// `prompt_tokens` counts the whole input, including the cached part reported separately.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
     pub total_tokens: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_read_tokens: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_write_tokens: Option<u32>,
+}
+
+impl Usage {
+    pub fn new(prompt_tokens: u32, completion_tokens: u32) -> Self {
+        Self {
+            prompt_tokens,
+            completion_tokens,
+            total_tokens: prompt_tokens.saturating_add(completion_tokens),
+            cache_read_tokens: None,
+            cache_write_tokens: None,
+        }
+    }
 }
 
 pub trait AIProvider: Send + Sync {

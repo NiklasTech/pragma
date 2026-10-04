@@ -17,7 +17,14 @@ pub(super) struct OpenAIRequestBody {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) stream: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) stream_options: Option<OpenAIStreamOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     tools: Option<Vec<OpenAIToolDefinition>>,
+}
+
+#[derive(Debug, Serialize)]
+pub(super) struct OpenAIStreamOptions {
+    pub(super) include_usage: bool,
 }
 
 impl OpenAIRequestBody {
@@ -37,6 +44,7 @@ impl OpenAIRequestBody {
             }),
             max_tokens: req.max_tokens.or(Some(4096)),
             stream: None,
+            stream_options: None,
             tools: req
                 .tools
                 .map(|tools| tools.into_iter().map(Into::into).collect()),

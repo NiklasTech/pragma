@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ai::provider::{ToolCall, ToolDefinition};
+use crate::ai::provider::{ToolCall, ToolDefinition, Usage};
 
 #[derive(Debug, Deserialize)]
 pub struct ChatRequest {
@@ -65,4 +65,38 @@ pub struct StreamChunk {
     pub tool_calls: Option<Vec<ToolCall>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_results: Option<Vec<ToolResult>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<StreamUsage>,
+}
+
+/// Token counts of one model response. ACP agents may instead report the
+/// context fill directly through `context_used` and `context_size`.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+pub struct StreamUsage {
+    /// The whole input, including the cached part.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_read_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_write_tokens: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_used: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_size: Option<u64>,
+}
+
+impl From<Usage> for StreamUsage {
+    fn from(usage: Usage) -> Self {
+        Self {
+            input_tokens: Some(u64::from(usage.prompt_tokens)),
+            output_tokens: Some(u64::from(usage.completion_tokens)),
+            cache_read_tokens: usage.cache_read_tokens.map(u64::from),
+            cache_write_tokens: usage.cache_write_tokens.map(u64::from),
+            context_used: None,
+            context_size: None,
+        }
+    }
 }

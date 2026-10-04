@@ -210,6 +210,7 @@ pub async fn cli_chat_stream(
                 reasoning: None,
                 tool_calls: None,
                 tool_results: None,
+                usage: None,
             })
             .is_err()
         {

@@ -38,6 +38,27 @@ pub struct ChatSessionMetadata {
     /// MCP server ids the session uses; absent means the agent's or all servers.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mcp_servers: Option<Vec<String>>,
+    /// Token totals of the session; absent until a model reported usage.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<SessionUsageMetadata>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SessionUsageMetadata {
+    #[serde(default)]
+    pub input_tokens: u64,
+    #[serde(default)]
+    pub output_tokens: u64,
+    #[serde(default)]
+    pub cache_read_tokens: u64,
+    #[serde(default)]
+    pub cache_write_tokens: u64,
+    #[serde(default)]
+    pub responses: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context_tokens: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context_window: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -318,6 +339,34 @@ mod tests {
             content: content.to_string(),
             timestamp: 1,
         }
+    }
+
+    #[test]
+    fn session_usage_round_trips_and_stays_optional() {
+        let without = session("a", 1);
+        assert!(without.usage.is_none());
+        assert!(serde_json::to_value(&without)
+            .unwrap()
+            .get("usage")
+            .is_none());
+
+        let with: ChatSessionMetadata = serde_json::from_value(serde_json::json!({
+            "id": "b",
+            "title": "Session b",
+            "created_at": 1,
+            "updated_at": 2,
+            "usage": { "input_tokens": 1200, "output_tokens": 300, "responses": 2, "context_tokens": 900 }
+        }))
+        .unwrap();
+        let usage = with.usage.clone().expect("usage");
+        assert_eq!(usage.input_tokens, 1200);
+        assert_eq!(usage.cache_read_tokens, 0);
+        assert_eq!(usage.context_tokens, Some(900));
+        assert_eq!(usage.context_window, None);
+
+        let saved = serde_json::to_value(&with).unwrap();
+        assert_eq!(saved["usage"]["output_tokens"], 300);
+        assert!(saved["usage"].get("context_window").is_none());
     }
 
     #[test]

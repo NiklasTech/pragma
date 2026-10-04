@@ -1,5 +1,7 @@
 import type { StateCreator } from "zustand";
 
+import type { StreamUsage } from "@/shared/lib/ai/protocol";
+
 export type AIProvider =
   | "openai"
   | "anthropic"
@@ -58,6 +60,21 @@ export interface AgentEngine {
   cliProviderId?: string;
 }
 
+/** Tokens a session used, summed over every model response that reported usage. */
+export interface SessionUsage {
+  /** The whole input, including the cached part. */
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  /** Model responses that reported usage. */
+  responses: number;
+  /** Tokens in the context window after the latest response. */
+  contextTokens?: number;
+  /** Context window size an ACP agent reported; wins over the model lookup. */
+  contextWindow?: number;
+}
+
 export interface ChatSession {
   id: string;
   title: string;
@@ -75,6 +92,7 @@ export interface ChatSession {
   category?: string;
   /** MCP servers this session uses; unset falls back to the agent, then to all servers. */
   mcpServers?: string[];
+  usage?: SessionUsage;
 }
 
 export interface CreateChatSessionInit {
@@ -180,6 +198,7 @@ export interface AIActions {
   ) => Promise<void>;
 
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
+  recordSessionUsage: (sessionId: string, usage: StreamUsage) => void;
 
   setApiKeyRef: (provider: AIProvider, ref: string | null) => void;
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;
