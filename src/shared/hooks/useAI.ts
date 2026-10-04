@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { useChat, type UIMessage, type UseChatHelpers } from "@ai-sdk/react";
 import { type ChatTransport } from "ai";
-import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
 import { useAIStore } from "@/shared/stores/ai";
@@ -9,16 +8,7 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { sessionCwd } from "@/features/ai/worktree/cwd";
-import {
-  shouldPersistSession,
-  type SessionPersistSnapshot,
-} from "@/shared/stores/sessionPersistence";
-import {
-  parseMentions,
-  stripMentions,
-  type AutoContextAttachment,
-  type ChatContextResult,
-} from "@/shared/lib/chat-context";
+import { type AutoContextAttachment } from "@/shared/lib/chat-context";
 import { collectLiveAutoContext } from "@/features/ai/context/liveContext";
 import { buildAutoContextPrompt } from "@/features/ai/context/autoContext";
 import {
@@ -27,47 +17,18 @@ import {
 } from "@/features/ai/home/pendingFirstMessage";
 import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
-import { callMcpTool } from "@/shared/lib/ai/mcpTools";
 import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
-import {
-  getMessageText,
-  getToolInvocation,
-  storedMessagesToUI,
-  uiMessageToStored,
-} from "@/shared/lib/ai/protocol";
+import { getMessageText, storedMessagesToUI } from "@/shared/lib/ai/protocol";
 import { useMcpChatTools } from "./useMcpChatTools";
+import { useChatPrompt } from "./useChatPrompt";
+import { useChatSessionLoading, useChatSessionPersistence } from "./useChatSessionSync";
+import { runChatToolCall, shouldAutoContinueChat } from "./chatToolCall";
+import { resolveMentionContext } from "./chatMentionContext";
 import { mcpSelectionKey, resolveMcpServerIds } from "@/features/ai/mcp/selection";
 import { expandPromptCommand } from "@/features/ai/mcp/prompts";
-import { parseResourceMention, readResourceContext } from "@/features/ai/mcp/resources";
 import { useAgent } from "@/features/agent/useAgent";
-import { executeAgentToolCall } from "@/features/agent/executor";
-import { lastStepHasToolCalls, shouldAgentContinue } from "@/features/agent/loop";
-import { foregroundRunContext } from "@/features/agent/runContext";
-import {
-  extensionToolDefinitions,
-  isExtensionTool,
-  runExtensionTool,
-} from "@/features/extensions/agentTools";
-import { notifySessionFinished } from "@/features/extensions/events";
-import { useExtensionsStore } from "@/features/extensions/store";
 import { useAgentStore } from "@/features/agent/store";
-import {
-  AGENT_TOOL_DEFINITIONS,
-  buildAgentSystemPrompt,
-  isAgentTool,
-} from "@/features/agent/tools";
-import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
-import { OPEN_BROWSER_TOOL_DEFINITION } from "@/features/agent/browserTool";
-import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
-import {
-  buildAgentContextBlock,
-  composeAgentSystemPrompt,
-} from "@/features/ai/named-agents/prompt";
-import type { AgentAccess } from "@/features/ai/named-agents/folders";
-import { formatSkillCatalog, selectCatalogSkills } from "@/features/ai/skills/catalog";
-import { skillsDir } from "@/features/ai/skills/paths";
-import { useSkillsStore } from "@/features/ai/skills/store";
 
 export { getMessageText };
 
@@ -83,11 +44,6 @@ export function useAI() {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const createChatSession = useAIStore((state) => state.createChatSession);
-  const loadSessions = useAIStore((state) => state.loadSessions);
-  const loadSessionMessages = useAIStore((state) => state.loadSessionMessages);
-  const updateChatSessionMessages = useAIStore((state) => state.updateChatSessionMessages);
-  const saveSessionMessages = useAIStore((state) => state.saveSessionMessages);
-  const saveSession = useAIStore((state) => state.saveSession);
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
@@ -150,76 +106,9 @@ export function useAI() {
   // Request-scoped context for the next API call; consumed once so continuations stay clean.
   const pendingContextRef = useRef<string | null>(null);
 
-  const useProjectRules = useSettingsStore((state) => state.agent.useProjectRules);
-  const agentModeActive = useAgentStore((state) => state.modeActive);
-  const agentActive = agentModeActive;
-
+  const { agentActive, agentToolDefinitions, systemPrompt, leadingSystemMessage, agentAccess } =
+    useChatPrompt({ activeSession, activeAgent, cwd, rootPath });
   const activeSessionKind = activeSession?.kind;
-  const extensionTools = useExtensionsStore((state) => state.agentTools);
-  const agentToolDefinitions = useMemo(() => {
-    if (!agentActive) return [];
-    const extensionDefinitions = extensionToolDefinitions(extensionTools);
-    return activeSessionKind === "ask"
-      ? [...AGENT_TOOL_DEFINITIONS, ...extensionDefinitions]
-      : [
-          ...AGENT_TOOL_DEFINITIONS,
-          SPAWN_SESSION_TOOL_DEFINITION,
-          OPEN_BROWSER_TOOL_DEFINITION,
-          ...extensionDefinitions,
-        ];
-  }, [agentActive, activeSessionKind, extensionTools]);
-
-  const projectRules = useAgentStore((state) => state.rules);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!cwd || cwd === "default") {
-      useAgentStore.getState().setRules(null);
-      return;
-    }
-    void loadProjectRules(cwd).then((loaded) => {
-      if (!cancelled) useAgentStore.getState().setRules(loaded);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [cwd]);
-
-  const workspaceSkills = useSkillsStore((state) => state.skills);
-
-  useEffect(() => {
-    void useSkillsStore.getState().loadSkills(rootPath === "default" ? null : rootPath);
-  }, [rootPath]);
-
-  const skillsBlock = useMemo(
-    () => formatSkillCatalog(selectCatalogSkills(workspaceSkills, activeAgent?.skills ?? null)),
-    [activeAgent, workspaceSkills],
-  );
-
-  const systemPrompt = useMemo(() => {
-    const rules = useProjectRules ? projectRules : null;
-    const agentBlock = activeAgent ? buildAgentContextBlock(activeAgent) : null;
-    if (agentActive) {
-      return composeAgentSystemPrompt(buildAgentSystemPrompt(cwd, rules, agentBlock), skillsBlock);
-    }
-    return composeAgentSystemPrompt(agentBlock, formatRulesForPrompt(rules), skillsBlock);
-  }, [activeAgent, agentActive, cwd, projectRules, skillsBlock, useProjectRules]);
-
-  const leadingSystemMessage = useMemo(() => {
-    if (!activeAgent) return null;
-    const rules = useProjectRules ? formatRulesForPrompt(projectRules) : null;
-    return (
-      composeAgentSystemPrompt(buildAgentContextBlock(activeAgent), rules, skillsBlock) ?? null
-    );
-  }, [activeAgent, projectRules, skillsBlock, useProjectRules]);
-
-  const agentAccess = useMemo<AgentAccess | null>(() => {
-    if (!activeAgent) return null;
-    // Skill files live in the workspace, which a worktree session's folder does not contain.
-    const folders =
-      rootPath === "default" ? activeAgent.folders : [...activeAgent.folders, skillsDir(rootPath)];
-    return { agentId: activeAgent.id, folders };
-  }, [activeAgent, rootPath]);
 
   const transport = useMemo<ChatTransport<UIMessage>>(
     () =>
@@ -280,62 +169,7 @@ export function useAI() {
     }) => {
       const chat = chatRef.current;
       if (!chat) return;
-
-      // ACP agents execute tools themselves via reverse-RPC; the frontend only displays results.
-      if (acpActive) {
-        return;
-      }
-
-      if (isAgentTool(toolCall.toolName)) {
-        await executeAgentToolCall(chat, cwd, toolCall, agentAccess);
-        return;
-      }
-
-      if (isExtensionTool(toolCall.toolName)) {
-        const result = await runExtensionTool(toolCall, foregroundRunContext);
-        if ("errorText" in result) {
-          chat.addToolOutput({
-            tool: toolCall.toolName,
-            toolCallId: toolCall.toolCallId,
-            state: "output-error",
-            errorText: result.errorText,
-          });
-        } else {
-          chat.addToolOutput({
-            tool: toolCall.toolName,
-            toolCallId: toolCall.toolCallId,
-            output: result.output,
-          });
-        }
-        return;
-      }
-
-      const tool = resolveTool(toolCall.toolName);
-      if (!tool) {
-        chat.addToolOutput({
-          tool: toolCall.toolName,
-          toolCallId: toolCall.toolCallId,
-          state: "output-error",
-          errorText: `Tool ${toolCall.toolName} is not available`,
-        });
-        return;
-      }
-
-      const result = await callMcpTool(tool, toolCall.input);
-      if ("errorText" in result) {
-        chat.addToolOutput({
-          tool: toolCall.toolName,
-          toolCallId: toolCall.toolCallId,
-          state: "output-error",
-          errorText: result.errorText,
-        });
-      } else {
-        chat.addToolOutput({
-          tool: toolCall.toolName,
-          toolCallId: toolCall.toolCallId,
-          output: result.output,
-        });
-      }
+      await runChatToolCall(chat, toolCall, { acpActive, cwd, agentAccess, resolveTool });
     },
     [resolveTool, acpActive, cwd, agentAccess],
   );
@@ -346,30 +180,7 @@ export function useAI() {
 
   const sendAutomaticallyWhen = useCallback(({ messages }: { messages: UIMessage[] }) => {
     if (cliActiveRef.current) return false;
-
-    // Agent Mode keeps iterating on tool outputs until the model calls
-    // agent_task_complete. A step limit applies only when the user set one.
-    const agentState = useAgentStore.getState();
-    if (agentState.modeActive) {
-      if (agentState.status !== "running" && agentState.status !== "waiting-approval") {
-        return false;
-      }
-      return shouldAgentContinue(messages, agentState.maxSteps);
-    }
-
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage || lastMessage.role !== "assistant") return false;
-
-    // Only auto-continue when the assistant message contains a completed tool
-    // call but has not produced an answer yet. Once the model generated text,
-    // we must not resubmit to avoid an infinite loop.
-    if (getMessageText(lastMessage).trim().length > 0) return false;
-
-    return lastMessage.parts.some((part) => {
-      const inv = getToolInvocation(part);
-      if (!inv) return false;
-      return inv.state === "output-available" || inv.state === "output-error";
-    });
+    return shouldAutoContinueChat(messages);
   }, []);
 
   const chat = useChat({
@@ -411,28 +222,7 @@ export function useAI() {
   const [lastAttachments, setLastAttachments] = useState<AutoContextAttachment[]>([]);
   const [lastContextTruncated, setLastContextTruncated] = useState(false);
 
-  // Load sessions whenever the workspace changes.
-  useEffect(() => {
-    void loadSessions(rootPath);
-  }, [rootPath, loadSessions]);
-
-  // Load messages for the active session if they are not in memory yet.
-  useEffect(() => {
-    if (!activeChatSessionId) return;
-    const session = chatSessions.find((s) => s.id === activeChatSessionId);
-    if (session && session.messages.length === 0) {
-      void loadSessionMessages(rootPath, activeChatSessionId);
-    }
-  }, [activeChatSessionId, rootPath, chatSessions, loadSessionMessages]);
-
-  // When loaded messages arrive for the active session and the chat is empty,
-  // populate the chat (e.g. on startup or session switch).
-  useEffect(() => {
-    if (!activeSession?.messages.length) return;
-    if (chat.messages.length === 0 && chat.status === "ready") {
-      chat.setMessages(storedMessagesToUI(activeSession.messages));
-    }
-  }, [activeSession?.messages, chat.messages.length, chat.status, chat.setMessages]);
+  useChatSessionLoading({ chat, rootPath, activeChatSessionId, chatSessions, activeSession });
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -454,37 +244,9 @@ export function useAI() {
         return false;
       }
 
-      const mentions = parseMentions(raw);
-      const resourceMentions = mentions.filter((mention) => parseResourceMention(mention));
-      const fileMentions = mentions.filter((mention) => !parseResourceMention(mention));
-      let question = raw.trim();
-      const contextParts: string[] = [];
-
-      if (rootPath && fileMentions.length > 0) {
-        try {
-          const result = await invoke<ChatContextResult>("read_chat_context", {
-            req: { root_path: rootPath, paths: fileMentions },
-          });
-
-          if (result.content) {
-            question = stripMentions(raw);
-            contextParts.push(result.content);
-          }
-        } catch {}
-      }
-
-      if (resourceMentions.length > 0) {
-        try {
-          const resources = await readResourceContext(resourceMentions);
-          if (resources) {
-            question = stripMentions(raw);
-            contextParts.push(resources);
-          }
-        } catch (err) {
-          toast.error(`Could not read the MCP resource: ${String(err)}`);
-          return false;
-        }
-      }
+      const mentionContext = await resolveMentionContext(raw, rootPath);
+      if (!mentionContext) return false;
+      const { question, contextParts } = mentionContext;
 
       try {
         const autoContext = await collectLiveAutoContext();
@@ -567,103 +329,14 @@ export function useAI() {
     });
   }, [activeChatSessionId, chat.status, submitText]);
 
-  // Sync chat messages into the active store session.
-  const messagesJsonRef = useRef<string>("");
-  useEffect(() => {
-    if (!activeChatSessionId) return;
-
-    const snapshot = chat.messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content: getMessageText(m),
-    }));
-    const json = JSON.stringify(snapshot);
-    if (json === messagesJsonRef.current) return;
-    messagesJsonRef.current = json;
-
-    updateChatSessionMessages(activeChatSessionId, chat.messages.map(uiMessageToStored));
-  }, [activeChatSessionId, chat.messages, updateChatSessionMessages]);
-
-  // When switching sessions, reset the cached JSON so the new session's messages
-  // are synced even if they happen to serialize to the same value.
-  useEffect(() => {
-    messagesJsonRef.current = "";
-  }, [activeChatSessionId]);
-
-  // Persist session metadata and messages to disk.
-  const previousPersistRef = useRef<SessionPersistSnapshot>({
-    sessionId: null,
-    title: null,
-    status: chat.status,
-  });
-  useEffect(() => {
-    if (!activeChatSessionId) return;
-    const session = chatSessions.find((s) => s.id === activeChatSessionId);
-    if (!session) return;
-
-    const previous = previousPersistRef.current;
-    const current: SessionPersistSnapshot = {
-      sessionId: activeChatSessionId,
-      title: session.title,
-      status: chat.status,
-    };
-    previousPersistRef.current = current;
-
-    if (shouldPersistSession(previous, current)) {
-      void saveSession(rootPath, session);
-    }
-
-    // Save messages when streaming finishes.
-    const wasStreaming = previous.status === "streaming" || previous.status === "submitted";
-    const isReady = chat.status === "ready";
-    if (wasStreaming && isReady) {
-      void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
-    }
-    // Agent Mode runs report their end through the agent store; tool steps continue on their own.
-    const finished = isReady || chat.status === "error";
-    const messages = chatRef.current?.messages ?? [];
-    if (wasStreaming && finished && !agentActive && !lastStepHasToolCalls(messages)) {
-      notifySessionFinished({
-        sessionId: activeChatSessionId,
-        title: session.title,
-        status: isReady ? "done" : "error",
-      });
-    }
-  }, [
-    chat.status,
-    activeChatSessionId,
+  useChatSessionPersistence({
+    chat,
+    chatRef,
     rootPath,
+    activeChatSessionId,
     chatSessions,
-    saveSession,
-    saveSessionMessages,
     agentActive,
-  ]);
-
-  // Debounced persist of messages while typing/streaming.
-  const debouncedSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (!activeChatSessionId) return;
-    const session = chatSessions.find((s) => s.id === activeChatSessionId);
-    if (!session) return;
-
-    if (debouncedSaveRef.current) {
-      clearTimeout(debouncedSaveRef.current);
-    }
-    debouncedSaveRef.current = setTimeout(() => {
-      // The session may have been deleted while the timeout was pending.
-      const stillExists = useAIStore
-        .getState()
-        .chatSessions.some((s) => s.id === activeChatSessionId);
-      if (!stillExists) return;
-      void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
-    }, 1000);
-
-    return () => {
-      if (debouncedSaveRef.current) {
-        clearTimeout(debouncedSaveRef.current);
-      }
-    };
-  }, [activeChatSessionId, rootPath, chatSessions, saveSessionMessages]);
+  });
 
   const canChat =
     (isCLIActive && cliAuthenticated) ||

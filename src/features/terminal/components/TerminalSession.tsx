@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-
-function safePtyInvoke<T>(promise: Promise<T>) {
-  void promise.catch((err) => {
-    // Ignore races where the PTY was destroyed between scheduling and sending.
-    if (String(err).includes("PTY not found")) return;
-  });
-}
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "@tauri-apps/api/core";
-import { unlistenQuietly } from "@/shared/lib/unlisten";
-import { listen } from "@tauri-apps/api/event";
 import "@xterm/xterm/css/xterm.css";
 import {
   useTerminalStore,
@@ -19,21 +9,13 @@ import {
 } from "@/shared/stores/terminal";
 import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
 import { useTheme } from "@/theme";
-import { useSettingsStore } from "@/shared/stores/settings";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
-import {
-  dispatchTerminalSelection,
-  TERMINAL_COPY_OUTPUT_EVENT,
-} from "@/shared/lib/terminal-events";
-import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
-import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { AISuggestionsOverlay } from "./ai-suggestions";
 import { ArrowDown } from "@phosphor-icons/react";
-
-interface PtyOutputEvent {
-  id: string;
-  data: string;
-}
+import { safePtyInvoke } from "../safePtyInvoke";
+import { useTerminalSetup } from "../hooks/useTerminalSetup";
+import { useTerminalInput } from "../hooks/useTerminalInput";
+import { useTerminalCommands, useTerminalSelection } from "../hooks/useTerminalEvents";
 
 interface TerminalSessionProps {
   session: TerminalSessionType;
@@ -66,215 +48,21 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     lastOutputRef,
   });
 
-  useEffect(() => {
-    let disposed = false;
-    let unlistenFn: (() => void) | null = null;
-    let resizeObserver: ResizeObserver | null = null;
-    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-    let da1Handler: { dispose: () => void } | null = null;
-    let scrollHandler: { dispose: () => void } | null = null;
-    let removeDeadKeyFix: (() => void) | null = null;
-
-    async function setup() {
-      if (!containerRef.current) return;
-
-      // Don't block shell spawn on font loading; cap the initial wait at 300ms.
-      const fontsReady = document.fonts?.ready;
-      if (fontsReady) {
-        await Promise.race([fontsReady, new Promise<void>((resolve) => setTimeout(resolve, 300))]);
-      }
-      if (disposed) return;
-
-      const t = new XTerm({
-        fontSize,
-        fontFamily: `${terminalFontFamily}, Consolas, Courier New, monospace`,
-        cursorBlink: true,
-        cursorStyle: "block",
-        convertEol: true,
-        scrollback,
-        theme: getXtermTheme(),
-      });
-      const fit = new FitAddon();
-      fitRef.current = fit;
-      t.loadAddon(fit);
-      t.loadAddon(
-        new WebLinksAddon((event: MouseEvent, uri: string) => {
-          event.preventDefault();
-          void invoke("open_external_url", { url: uri });
-        }),
-      );
-      t.open(containerRef.current);
-      removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
-      termRef.current = t;
-      setTermState(t);
-      ptyIdRef.current = session.ptyId ?? null;
-
-      da1Handler = t.parser.registerCsiHandler({ final: "c" }, (params) => {
-        // DA1: CSI c or CSI 0 c
-        if (params.length > 0 && params[0] !== 0) return false;
-
-        const ptyId = ptyIdRef.current;
-        if (ptyId) {
-          safePtyInvoke(invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" }));
-        } else {
-          pendingDa1Ref.current = true;
-        }
-        return true;
-      });
-
-      scrollHandler = t.onScroll(() => {
-        setShowScrollDown(t.buffer.active.viewportY < t.buffer.active.baseY);
-      });
-
-      const writeOutput = (data: string) => {
-        t.write(data);
-        lastOutputRef.current = (lastOutputRef.current + data).slice(-1000);
-        const now = Date.now();
-        if (now - lastActivityMarkRef.current > 500) {
-          lastActivityMarkRef.current = now;
-          useTerminalStore.getState().markActivity(session.id);
-        }
-      };
-
-      // The shell can print its prompt before create_pty resolves, so hold output until the id is known.
-      let earlyOutput: PtyOutputEvent[] | null = session.ptyId ? null : [];
-      const unlisten = await listen<PtyOutputEvent>("pty_output", (event) => {
-        if (event.payload.id === ptyIdRef.current) {
-          writeOutput(event.payload.data);
-        } else if (earlyOutput && earlyOutput.length < 500) {
-          earlyOutput.push(event.payload);
-        }
-      });
-      unlistenFn = unlisten;
-      if (disposed || !containerRef.current) return;
-
-      fit.fit();
-
-      // Refit once fonts have actually loaded so cell measurements are correct.
-      void fontsReady?.then(() => {
-        if (disposed || !termRef.current || !fitRef.current) return;
-        fitRef.current.fit();
-        const { cols, rows } = termRef.current;
-        if (ptyIdRef.current && cols > 0 && rows > 0) {
-          safePtyInvoke(invoke("resize_pty", { id: ptyIdRef.current, rows, cols }));
-        }
-      });
-
-      if (!session.ptyId) {
-        const { cols, rows } = t;
-        try {
-          let ptyId: string;
-          if (session.command) {
-            ptyId = await invoke<string>("create_pty_command", {
-              command: session.command,
-              cwd: session.cwd ?? null,
-              cols: Math.max(cols, 10),
-              rows: Math.max(rows, 2),
-            });
-          } else {
-            const shellArg = session.shell?.trim().length ? session.shell : undefined;
-            ptyId = await invoke<string>("create_pty", {
-              shell: shellArg,
-              cwd: session.cwd ?? null,
-              cols: Math.max(cols, 10),
-              rows: Math.max(rows, 2),
-            });
-          }
-          if (disposed) {
-            safePtyInvoke(invoke("kill_pty", { id: ptyId }));
-            return;
-          }
-          ptyIdRef.current = ptyId;
-          for (const event of earlyOutput ?? []) {
-            if (event.id === ptyId) writeOutput(event.data);
-          }
-          earlyOutput = null;
-          useTerminalStore.getState().attachPty(session.id, ptyId);
-
-          if (pendingDa1Ref.current) {
-            pendingDa1Ref.current = false;
-            safePtyInvoke(invoke("write_pty", { id: ptyId, data: "\x1b[?1;2c" }));
-          }
-        } catch (err) {
-          t.writeln(`\r\nFailed to start shell: ${String(err)}`);
-          return;
-        }
-      }
-
-      const { cols: fitCols, rows: fitRows } = t;
-      if (fitCols > 0 && fitRows > 0 && ptyIdRef.current) {
-        safePtyInvoke(
-          invoke("resize_pty", {
-            id: ptyIdRef.current,
-            rows: fitRows,
-            cols: fitCols,
-          }),
-        );
-      }
-
-      resizeObserver = new ResizeObserver(() => {
-        if (resizeTimer) clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          resizeTimer = null;
-          fit.fit();
-          const { cols: newCols, rows: newRows } = t;
-          if (newCols > 0 && newRows > 0 && ptyIdRef.current) {
-            safePtyInvoke(
-              invoke("resize_pty", {
-                id: ptyIdRef.current,
-                rows: newRows,
-                cols: newCols,
-              }),
-            );
-          }
-        }, 120);
-      });
-      if (disposed || !containerRef.current) return;
-      resizeObserver.observe(containerRef.current);
-
-      requestAnimationFrame(() => {
-        fit.fit();
-        const { cols: rafCols, rows: rafRows } = t;
-        if (rafCols > 0 && rafRows > 0 && ptyIdRef.current) {
-          safePtyInvoke(
-            invoke("resize_pty", { id: ptyIdRef.current, rows: rafRows, cols: rafCols }),
-          );
-        }
-      });
-      setTimeout(() => {
-        fit.fit();
-        const { cols: toCols, rows: toRows } = t;
-        if (toCols > 0 && toRows > 0 && ptyIdRef.current) {
-          safePtyInvoke(invoke("resize_pty", { id: ptyIdRef.current, rows: toRows, cols: toCols }));
-        }
-      }, 100);
-    }
-
-    void setup();
-
-    return () => {
-      disposed = true;
-      if (resizeTimer) clearTimeout(resizeTimer);
-      void unlistenQuietly(unlistenFn);
-      resizeObserver?.disconnect();
-      da1Handler?.dispose();
-      scrollHandler?.dispose();
-      removeDeadKeyFix?.();
-      termRef.current?.dispose();
-      termRef.current = null;
-      fitRef.current = null;
-      ptyIdRef.current = null;
-      pendingDa1Ref.current = false;
-    };
-  }, [
-    session.command,
-    session.shell,
-    session.cwd,
+  useTerminalSetup({
+    session,
+    containerRef,
+    termRef,
+    fitRef,
+    ptyIdRef,
+    pendingDa1Ref,
+    lastOutputRef,
+    lastActivityMarkRef,
+    setTermState,
+    setShowScrollDown,
     fontSize,
     terminalFontFamily,
     scrollback,
-    session.id,
-  ]);
+  });
 
   useEffect(() => {
     if (session.ptyId) {
@@ -307,152 +95,11 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     }
   }, [isActive]);
 
-  useEffect(() => {
-    if (!termState) return;
+  useTerminalSelection(termState);
 
-    const disposable = termState.onSelectionChange(() => {
-      dispatchTerminalSelection(termState.getSelection());
-    });
+  useTerminalInput({ containerRef, termRef, ptyIdRef, termState, suggestions, fontSize });
 
-    return () => {
-      disposable.dispose();
-    };
-  }, [termState]);
-
-  useEffect(() => {
-    if (!termState) return;
-
-    const handleData = suggestions.handleData;
-    const disposable = termState.onData((data) => {
-      if (data === "\t") return;
-
-      if (!handleData(data) && ptyIdRef.current) {
-        safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data }));
-      }
-    });
-
-    return () => {
-      disposable.dispose();
-    };
-  }, [termState, suggestions.handleData]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Tab") return;
-
-      const container = containerRef.current;
-      if (!container) return;
-
-      const activeElement = document.activeElement;
-      if (!activeElement || !container.contains(activeElement)) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (suggestions.visible) {
-        suggestions.accept();
-      } else if (ptyIdRef.current) {
-        safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: "\t" }));
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [suggestions.visible, suggestions.accept]);
-
-  useEffect(() => {
-    if (!termState) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!event.ctrlKey) return;
-
-      const container = containerRef.current;
-      if (!container) return;
-
-      const activeElement = document.activeElement;
-      if (!activeElement || !container.contains(activeElement)) return;
-
-      const key = event.key.toLowerCase();
-      if (key === "c") {
-        const term = termRef.current;
-        const selection = term?.getSelection();
-        if (selection) {
-          void copyToClipboard(selection);
-          term?.clearSelection();
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        // If nothing is selected, let xterm send Ctrl+C (SIGINT) to the PTY.
-      } else if (key === "v") {
-        void readFromClipboard().then((text) => {
-          if (text && ptyIdRef.current) {
-            safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: text }));
-          }
-        });
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [termState]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-
-      const container = containerRef.current;
-      if (!container) return;
-
-      const activeElement = document.activeElement;
-      if (!activeElement || !container.contains(activeElement)) return;
-
-      if (event.key === "+" || event.key === "=") {
-        event.preventDefault();
-        const next = fontSize + 1;
-        useTerminalStore.getState().setFontSize(next);
-        useSettingsStore.getState().setTerminalSettings({ fontSize: next });
-      } else if (event.key === "-") {
-        event.preventDefault();
-        const next = Math.max(8, fontSize - 1);
-        useTerminalStore.getState().setFontSize(next);
-        useSettingsStore.getState().setTerminalSettings({ fontSize: next });
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [fontSize]);
-
-  useEffect(() => {
-    const term = termRef.current;
-    if (!term) return;
-
-    const handleClear = () => {
-      if (isActive) term.clear();
-    };
-
-    window.addEventListener("pragma:terminal:clear", handleClear);
-    return () => window.removeEventListener("pragma:terminal:clear", handleClear);
-  }, [isActive]);
-
-  useEffect(() => {
-    const handleCopyOutput = () => {
-      const term = termRef.current;
-      if (!term || !isActive) return;
-      const buffer = term.buffer.active;
-      const lines: string[] = [];
-      for (let i = 0; i < buffer.length; i++) {
-        lines.push(buffer.getLine(i)?.translateToString(true) ?? "");
-      }
-      const text = lines.join("\n").trimEnd();
-      if (text) void copyToClipboard(text);
-    };
-
-    window.addEventListener(TERMINAL_COPY_OUTPUT_EVENT, handleCopyOutput);
-    return () => window.removeEventListener(TERMINAL_COPY_OUTPUT_EVENT, handleCopyOutput);
-  }, [isActive]);
+  useTerminalCommands(termRef, isActive);
 
   return (
     <div
