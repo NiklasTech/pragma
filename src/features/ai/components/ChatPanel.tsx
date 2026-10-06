@@ -5,6 +5,8 @@ import {
   Robot,
   ArrowCounterClockwise,
   ArrowsInLineVertical,
+  ClockCounterClockwise,
+  GitFork,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -30,11 +32,14 @@ import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
 import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
 import { SpawnApprovals } from "@/features/ai/children/SpawnApprovals";
 import { ChildSessionCards, inlineChildIds } from "@/features/ai/children/ChildSessionCards";
-import { MessageImages } from "@/features/ai/images/MessageImages";
 import { useComposerImages } from "@/features/ai/images/useComposerImages";
 import { CompactionMarker } from "@/features/ai/compaction/CompactionMarker";
 import { useCompactionStore } from "@/features/ai/compaction/compactSession";
 import { compactionSummary, isCompactionMessage } from "@/shared/lib/ai/compaction";
+import { EditableUserMessage } from "@/features/ai/rewind/EditableUserMessage";
+import { MessageActionBar, MessageActionButton } from "@/features/ai/rewind/MessageActionBar";
+import { RewindDialog } from "@/features/ai/rewind/RewindDialog";
+import { useMessageActions } from "@/features/ai/rewind/useMessageActions";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -63,6 +68,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     status,
     error,
     regenerate,
+    setMessages,
     stop,
     canChat,
     isCLIActive,
@@ -142,6 +148,15 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     stop: handleStop,
     submitText,
   });
+
+  const messageActions = useMessageActions({
+    sessionId: activeChatSessionId,
+    rootPath: rootPath ?? "default",
+    messages,
+    setMessages,
+    submitText,
+  });
+  const canActOnMessages = activeChatSessionId !== null && !isCLIActive && !inFlight && !compacting;
 
   const openFiles = useMemo(
     () =>
@@ -280,7 +295,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           <ConversationContent>
             {messages.length === 0 && <ChatEmptyState />}
 
-            {messages.map((msg: UIMessage) => {
+            {messages.map((msg: UIMessage, messageIndex) => {
               if (isCompactionMessage(msg)) {
                 return <CompactionMarker key={msg.id} summary={compactionSummary(msg)} />;
               }
@@ -309,12 +324,13 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
               if (msg.role === "user") {
                 return (
-                  <Message key={msg.id} from="user">
-                    <MessageContent>
-                      <MessageImages message={msg} />
-                      {rawText && <p className="whitespace-pre-wrap wrap-break-word">{rawText}</p>}
-                    </MessageContent>
-                  </Message>
+                  <EditableUserMessage
+                    key={msg.id}
+                    message={msg}
+                    text={rawText}
+                    canEdit={canActOnMessages}
+                    onResend={(next) => messageActions.resend(messageIndex, next)}
+                  />
                 );
               }
 
@@ -327,7 +343,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
               });
 
               return (
-                <Message key={msg.id} from="assistant">
+                <Message key={msg.id} from="assistant" className="flex-col gap-1">
                   <MessageContent>
                     {sourceDocuments.map((source, index) => (
                       <SourceBlock
@@ -355,6 +371,24 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                       />
                     </ChatApplyProvider>
                   </MessageContent>
+                  {canActOnMessages && (
+                    <MessageActionBar>
+                      <MessageActionButton
+                        label="Fork from here"
+                        onClick={() => messageActions.fork(messageIndex)}
+                      >
+                        <GitFork size={13} />
+                      </MessageActionButton>
+                      {messageIndex < messages.length - 1 && (
+                        <MessageActionButton
+                          label="Rewind to here"
+                          onClick={() => messageActions.requestRewind(messageIndex)}
+                        >
+                          <ClockCounterClockwise size={13} />
+                        </MessageActionButton>
+                      )}
+                    </MessageActionBar>
+                  )}
                 </Message>
               );
             })}
@@ -374,6 +408,15 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
+        <RewindDialog
+          open={messageActions.rewindIndex !== null}
+          removedMessages={messages.length - 1 - (messageActions.rewindIndex ?? 0)}
+          files={messageActions.rewindTargetFiles}
+          onOpenChange={(open) => {
+            if (!open) messageActions.cancelRewind();
+          }}
+          onConfirm={() => void messageActions.confirmRewind()}
+        />
       </div>
 
       {/* Footer */}

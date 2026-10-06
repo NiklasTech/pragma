@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { recordRewindCheckpoint } from "@/features/ai/rewind/checkpoints";
 import { useEditorStore } from "@/shared/stores/editor";
 
 import type { AgentApprovalDecision } from "./permissions";
@@ -49,7 +50,7 @@ async function writeToDisk(
   await invoke("write_text_file", { path, content });
 }
 
-function updateOpenFileTab(path: string, content: string): void {
+export function updateOpenFileTab(path: string, content: string): void {
   const editor = useEditorStore.getState();
   const open = editor.tabs.find((t) => t.kind === "file" && t.path === path);
   if (!open) return;
@@ -101,12 +102,14 @@ export async function applyAgentFileEdit(
       throw new Error("The user rejected this edit.");
     }
 
+    await recordRewindCheckpoint(edit.path);
     await writeToDisk(edit.path, edit.content);
     updateOpenFileTab(edit.path, edit.content);
     editor.closeTab(id);
     return;
   }
 
+  await recordRewindCheckpoint(edit.path);
   await writeToDisk(edit.path, edit.content);
   updateOpenFileTab(edit.path, edit.content);
   editor.openDiff({
