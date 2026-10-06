@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import type { Problem } from "@/shared/stores/problems";
 
-import { formatProblem, selectProblems } from "./problemsReport";
+import { formatProblem, formatProblemList, selectProblems } from "./problemsReport";
 
 function problem(overrides: Partial<Problem>): Problem {
   return {
@@ -40,6 +40,15 @@ describe("formatProblem", () => {
   it("prints location, severity, message and source", () => {
     expect(formatProblem(problem({ line: 4, column: 2, message: "Bad type" }))).toBe(
       "/w/a.ts:4:2: error: Bad type [ts]",
+    );
+  });
+});
+
+describe("formatProblemList", () => {
+  it("lists problems and counts the ones past the limit", () => {
+    const problems = [problem({ line: 1 }), problem({ line: 2 }), problem({ line: 3 })];
+    expect(formatProblemList(problems, 2)).toBe(
+      "/w/a.ts:1:1: error: msg [ts]\n/w/a.ts:2:1: error: msg [ts]\n... 1 more problems",
     );
   });
 });

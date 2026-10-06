@@ -21,3 +21,11 @@ export function selectProblems(
 export function formatProblem(problem: Problem): string {
   return `${problem.filePath}:${problem.line}:${problem.column}: ${problem.severity}: ${problem.message} [${problem.source}]`;
 }
+
+export function formatProblemList(problems: Problem[], maxProblems: number): string {
+  const lines = problems.slice(0, maxProblems).map(formatProblem);
+  if (problems.length > maxProblems) {
+    lines.push(`... ${problems.length - maxProblems} more problems`);
+  }
+  return lines.join("\n");
+}

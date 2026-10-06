@@ -109,7 +109,7 @@ cd src-tauri && cargo test
 3. Open a project folder using the file explorer in the sidebar.
 4. Open any file in the editor.
 5. Open the AI chat panel with `Cmd/Ctrl + Shift + A`.
-6. Reference a file by typing `@filename` in the chat input.
+6. Reference a file by typing `@filename` in the chat input. `@symbol`, `@problems`, `@diff`, `@terminal`, `@url` and `@skill` attach a symbol, diagnostics, a diff, terminal output, a web page or a skill.
 7. Toggle the terminal with `Cmd/Ctrl + Shift + T`.
 
 ## Next steps

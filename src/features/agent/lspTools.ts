@@ -72,7 +72,7 @@ function resolveLanguage(filePath: string): string {
 
 // Runs a request against the file's language server. A file the editor has not
 // opened is opened for the request and closed again afterwards.
-async function withLspDocument<T>(
+export async function withLspDocument<T>(
   filePath: string,
   run: (language: string, content: string) => Promise<T>,
 ): Promise<T> {

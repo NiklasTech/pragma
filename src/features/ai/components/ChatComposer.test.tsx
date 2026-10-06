@@ -30,7 +30,7 @@ describe("ChatComposer", () => {
 
   it("renders one input card with textarea, context add, mic and send", () => {
     const html = renderToStaticMarkup(<ChatComposer {...baseProps} />);
-    expect(html).toContain("Ask Pragma anything. Type @ to add files.");
+    expect(html).toContain("Ask Pragma anything. Type @ to add context.");
     expect(html).toContain('aria-label="Add context"');
     expect(html).toContain('aria-label="Dictate"');
     expect(html).toContain('aria-label="Send"');

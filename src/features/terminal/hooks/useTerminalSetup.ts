@@ -12,6 +12,7 @@ import {
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { safePtyInvoke } from "../safePtyInvoke";
+import { registerTerminalOutput } from "../terminalOutput";
 
 interface PtyOutputEvent {
   id: string;
@@ -58,6 +59,7 @@ export function useTerminalSetup({
     let da1Handler: { dispose: () => void } | null = null;
     let scrollHandler: { dispose: () => void } | null = null;
     let removeDeadKeyFix: (() => void) | null = null;
+    let unregisterOutput: (() => void) | null = null;
 
     async function setup() {
       if (!containerRef.current) return;
@@ -90,6 +92,7 @@ export function useTerminalSetup({
       t.open(containerRef.current);
       removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
       termRef.current = t;
+      unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);
       ptyIdRef.current = session.ptyId ?? null;
 
@@ -244,6 +247,7 @@ export function useTerminalSetup({
       da1Handler?.dispose();
       scrollHandler?.dispose();
       removeDeadKeyFix?.();
+      unregisterOutput?.();
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;
