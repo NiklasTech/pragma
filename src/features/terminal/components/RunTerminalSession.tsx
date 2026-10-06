@@ -14,6 +14,7 @@ import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { copyToClipboard } from "@/shared/lib/clipboard";
+import { registerTerminalOutput } from "../terminalOutput";
 
 interface RunOutputEvent {
   process_id: string;
@@ -49,6 +50,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
     let unlistenStatus: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let unregisterOutput: (() => void) | null = null;
 
     async function setup() {
       if (!containerRef.current) return;
@@ -78,6 +80,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       );
       t.open(containerRef.current);
       termRef.current = t;
+      unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);
 
       const processId = session.processId;
@@ -121,6 +124,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       void unlistenQuietly(unlistenOutput);
       void unlistenQuietly(unlistenStatus);
       resizeObserver?.disconnect();
+      unregisterOutput?.();
       termRef.current?.dispose();
       termRef.current = null;
       fitRef.current = null;

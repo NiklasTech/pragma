@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  Fragment,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -13,6 +14,10 @@ import { Database, FileText, Folder } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { resourceMention, type McpResource } from "@/features/ai/mcp/resources";
 import { useMcpCatalog, type McpCatalogEntry } from "@/features/ai/mcp/useMcpCatalog";
+import {
+  useContextMentionItems,
+  type MentionPickerItem,
+} from "@/features/ai/mentions/useContextMentionItems";
 
 interface DirEntry {
   path: string;
@@ -23,7 +28,8 @@ interface DirEntry {
 
 type PickerItem =
   | { kind: "file"; key: string; entry: DirEntry }
-  | { kind: "resource"; key: string; entry: McpCatalogEntry<McpResource> };
+  | { kind: "resource"; key: string; entry: McpCatalogEntry<McpResource> }
+  | { kind: "mention"; key: string; entry: MentionPickerItem };
 
 interface ActiveMention {
   query: string;
@@ -76,6 +82,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
     const listRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
     const resources = useMcpCatalog<McpResource>("resources");
+    const mentionSection = useContextMentionItems(mention?.query ?? null, rootPath);
 
     useEffect(() => {
       if (!rootPath) {
@@ -100,7 +107,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
 
     useEffect(() => {
       const active = getActiveMention(input, cursorPosition);
-      if (active && ((rootPath && entries.length > 0) || resources.length > 0)) {
+      if (active) {
         setMention(active);
         setOpen(true);
         setSelectedIndex(0);
@@ -108,10 +115,16 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
         setMention(null);
         setOpen(false);
       }
-    }, [input, cursorPosition, rootPath, entries, resources]);
+    }, [input, cursorPosition]);
 
     const filteredEntries = useMemo<PickerItem[]>(() => {
       if (!mention) return [];
+      const mentions = (mentionSection?.items ?? []).map((entry): PickerItem => ({
+        kind: "mention",
+        key: entry.key,
+        entry,
+      }));
+      if (mentionSection?.scoped) return mentions;
       const query = mention.query.toLowerCase();
 
       const files = entries
@@ -138,14 +151,16 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
           key: `${entry.serverId}:${entry.item.uri}`,
           entry,
         }));
-      return [...files, ...matchingResources];
-    }, [entries, mention, resources, rootPath]);
+      return [...mentions, ...files, ...matchingResources];
+    }, [entries, mention, mentionSection, resources, rootPath]);
 
     const selectEntry = useCallback(
       (item: PickerItem) => {
         if (!mention) return;
         let token: string;
-        if (item.kind === "resource") {
+        if (item.kind === "mention") {
+          token = item.entry.token;
+        } else if (item.kind === "resource") {
           token = resourceMention(item.entry.serverId, item.entry.item.uri);
         } else if (rootPath) {
           token = getRelativePath(rootPath, item.entry.path);
@@ -155,12 +170,15 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
 
         const before = input.slice(0, mention.start);
         const after = input.slice(cursorPosition);
-        const newValue = `${before}@${token} ${after}`;
-        const newCursorPosition = mention.start + token.length + 2;
+        const separator = item.kind === "mention" && item.entry.keepOpen ? "" : " ";
+        const newValue = `${before}@${token}${separator}${after}`;
+        const newCursorPosition = mention.start + token.length + 1 + separator.length;
 
         onSelect(newValue, newCursorPosition);
-        setOpen(false);
-        setMention(null);
+        if (separator) {
+          setOpen(false);
+          setMention(null);
+        }
       },
       [input, cursorPosition, mention, rootPath, onSelect],
     );
@@ -210,53 +228,84 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
       }
     }, [selectedIndex]);
 
-    if (!open || filteredEntries.length === 0) return null;
+    const hint = mentionSection?.hint ?? null;
+    if (!open || (filteredEntries.length === 0 && !hint)) return null;
+
+    const sectionOf = (item: PickerItem) =>
+      item.kind === "mention"
+        ? (mentionSection?.title ?? "")
+        : item.kind === "file"
+          ? "Files"
+          : "MCP resources";
+    const sectionHeader = (title: string) => (
+      <div className="px-2 pt-1.5 pb-0.5 text-ui-xs text-fg-muted select-none">{title}</div>
+    );
 
     return (
       <div
         ref={listRef}
         className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 shadow-lg"
       >
+        {filteredEntries.length === 0 && mentionSection && (
+          <>
+            {sectionHeader(mentionSection.title)}
+            <div className="px-2 py-1.5 text-ui-base text-fg-muted select-none">{hint}</div>
+          </>
+        )}
         {filteredEntries.map((item, index) => {
           const isSelected = index === selectedIndex;
+          const section = sectionOf(item);
+          const showHeader = index === 0 || sectionOf(filteredEntries[index - 1]) !== section;
           const label =
-            item.kind === "resource"
-              ? `${item.entry.serverName}: ${item.entry.item.name}`
-              : rootPath
-                ? getRelativePath(rootPath, item.entry.path)
-                : item.entry.path;
+            item.kind === "mention"
+              ? item.entry.label
+              : item.kind === "resource"
+                ? `${item.entry.serverName}: ${item.entry.item.name}`
+                : rootPath
+                  ? getRelativePath(rootPath, item.entry.path)
+                  : item.entry.path;
+          const MentionIcon = item.kind === "mention" ? item.entry.icon : null;
 
           return (
-            <button
-              key={item.key}
-              ref={(el) => {
-                itemRefs.current[index] = el;
-              }}
-              type="button"
-              onMouseDown={(event) => {
-                event.preventDefault();
-                selectEntry(item);
-              }}
-              onMouseEnter={() => setSelectedIndex(index)}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-ui-base outline-hidden select-none",
-                isSelected && "bg-bg-active text-fg-default",
-              )}
-            >
-              {item.kind === "resource" ? (
-                <Database size={14} className="shrink-0 text-fg-muted" />
-              ) : item.entry.is_directory ? (
-                <Folder size={14} className="shrink-0 text-fg-muted" />
-              ) : (
-                <FileText size={14} className="shrink-0 text-fg-muted" />
-              )}
-              <span
-                className="min-w-0 truncate"
-                title={item.kind === "resource" ? item.entry.item.uri : undefined}
+            <Fragment key={item.key}>
+              {showHeader && sectionHeader(section)}
+              <button
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  selectEntry(item);
+                }}
+                onMouseEnter={() => setSelectedIndex(index)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-ui-base outline-hidden select-none",
+                  isSelected && "bg-bg-active text-fg-default",
+                )}
               >
-                {label}
-              </span>
-            </button>
+                {MentionIcon ? (
+                  <MentionIcon size={14} className="shrink-0 text-fg-muted" />
+                ) : item.kind === "resource" ? (
+                  <Database size={14} className="shrink-0 text-fg-muted" />
+                ) : item.kind === "file" && item.entry.is_directory ? (
+                  <Folder size={14} className="shrink-0 text-fg-muted" />
+                ) : (
+                  <FileText size={14} className="shrink-0 text-fg-muted" />
+                )}
+                <span
+                  className="min-w-0 truncate"
+                  title={item.kind === "resource" ? item.entry.item.uri : undefined}
+                >
+                  {label}
+                </span>
+                {item.kind === "mention" && item.entry.detail && (
+                  <span className="ml-auto min-w-0 shrink truncate text-ui-xs text-fg-muted">
+                    {item.entry.detail}
+                  </span>
+                )}
+              </button>
+            </Fragment>
           );
         })}
       </div>

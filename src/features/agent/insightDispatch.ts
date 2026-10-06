@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { formatProblem, selectProblems } from "@/shared/lib/problemsReport";
-import { fetchUrlText } from "@/shared/lib/webFetch";
+import { formatProblemList, selectProblems } from "@/shared/lib/problemsReport";
+import { fetchUrlText, formatFetchedUrl } from "@/shared/lib/webFetch";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useProblemsStore } from "@/shared/stores/problems";
 
@@ -105,22 +105,12 @@ function getDiagnostics(input: unknown, rootPath: string) {
     return { output: `No errors or warnings.${note}`, detail };
   }
 
-  const lines = problems.slice(0, MAX_DIAGNOSTICS).map(formatProblem);
-  if (problems.length > MAX_DIAGNOSTICS) {
-    lines.push(`... ${problems.length - MAX_DIAGNOSTICS} more problems`);
-  }
-  return { output: lines.join("\n"), detail };
+  return { output: formatProblemList(problems, MAX_DIAGNOSTICS), detail };
 }
 
 async function webFetch(input: unknown) {
   const result = await fetchUrlText(readStringInput(input, "url"));
-  const truncated = result.truncated || result.text.length > MAX_FETCH_CHARS;
-  const header = `${result.url} (HTTP ${result.status}${result.contentType ? `, ${result.contentType}` : ""})`;
-  const body = result.text.slice(0, MAX_FETCH_CHARS);
-  return {
-    output: `${header}\n\n${body}${truncated ? "\n... [truncated]" : ""}`,
-    detail: `HTTP ${result.status}`,
-  };
+  return { output: formatFetchedUrl(result, MAX_FETCH_CHARS), detail: `HTTP ${result.status}` };
 }
 
 export async function dispatchInsightTool(

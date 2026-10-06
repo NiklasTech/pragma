@@ -278,7 +278,7 @@ export function ChatComposer({
             onSelect={updateCursorPosition}
             onFocus={claimPushToTalk}
             onPaste={handlePaste}
-            placeholder="Ask Pragma anything. Type @ to add files."
+            placeholder="Ask Pragma anything. Type @ to add context."
             className={cn(
               "max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors duration-300 focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent",
               dictationLive && "text-fg-muted",

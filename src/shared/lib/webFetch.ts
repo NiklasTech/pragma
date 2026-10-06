@@ -12,3 +12,10 @@ export interface FetchedUrl {
 export function fetchUrlText(url: string): Promise<FetchedUrl> {
   return invoke<FetchedUrl>("fetch_url_text", { url });
 }
+
+/** The fetched text with a status header, cut to `maxChars`. */
+export function formatFetchedUrl(result: FetchedUrl, maxChars: number): string {
+  const truncated = result.truncated || result.text.length > maxChars;
+  const header = `${result.url} (HTTP ${result.status}${result.contentType ? `, ${result.contentType}` : ""})`;
+  return `${header}\n\n${result.text.slice(0, maxChars)}${truncated ? "\n... [truncated]" : ""}`;
+}
