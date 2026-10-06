@@ -13,6 +13,7 @@ export const TERMINAL_ACCEPT_SUGGESTION_EVENT = "pragma:terminal:acceptSuggestio
 export const TERMINAL_DISMISS_SUGGESTION_EVENT = "pragma:terminal:dismissSuggestion";
 export const TERMINAL_CLEAR_EVENT = "pragma:terminal:clear";
 export const TERMINAL_COPY_OUTPUT_EVENT = "pragma:terminal:copyOutput";
+export const TERMINAL_FIND_EVENT = "pragma:terminal:find";
 
 export function dispatchTerminalSuggestion(detail: TerminalSuggestionEventDetail): void {
   window.dispatchEvent(new CustomEvent(TERMINAL_SUGGESTION_EVENT, { detail }));
@@ -36,4 +37,13 @@ export function dispatchTerminalClear(): void {
 
 export function dispatchTerminalCopyOutput(): void {
   window.dispatchEvent(new CustomEvent(TERMINAL_COPY_OUTPUT_EVENT));
+}
+
+/** True when keyboard focus is inside a terminal marked with `data-terminal-find`. */
+export function isTerminalFindFocused(): boolean {
+  return document.activeElement?.closest("[data-terminal-find]") != null;
+}
+
+export function dispatchTerminalFind(): void {
+  window.dispatchEvent(new CustomEvent(TERMINAL_FIND_EVENT));
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { invoke } from "@tauri-apps/api/core";
@@ -8,14 +8,20 @@ import {
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
 import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useTheme } from "@/theme";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { AISuggestionsOverlay } from "./ai-suggestions";
+import { TerminalFindBar } from "./TerminalFindBar";
 import { ArrowDown } from "@phosphor-icons/react";
 import { safePtyInvoke } from "../safePtyInvoke";
 import { useTerminalSetup } from "../hooks/useTerminalSetup";
 import { useTerminalInput } from "../hooks/useTerminalInput";
 import { useTerminalCommands, useTerminalSelection } from "../hooks/useTerminalEvents";
+import { useTerminalFind } from "../hooks/useTerminalFind";
+import { useCopyOnSelect, useTerminalCursor } from "../hooks/useTerminalPreferences";
+import { useTerminalFileDrop } from "../hooks/useTerminalFileDrop";
+import { quotePathsForShell } from "../shellQuote";
 
 interface TerminalSessionProps {
   session: TerminalSessionType;
@@ -23,6 +29,7 @@ interface TerminalSessionProps {
 }
 
 export function TerminalSession({ session, isActive }: TerminalSessionProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -37,6 +44,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const fontId = useTerminalStore((s) => s.fontId);
   const scrollback = useTerminalStore((s) => s.scrollback);
   const aiSuggestions = useTerminalStore((s) => s.aiSuggestions);
+  const lineHeight = useSettingsStore((s) => s.terminal.lineHeight);
   const terminalFontFamily = fontId || fontFamily;
   const { themeId, resolvedMode } = useTheme();
 
@@ -62,6 +70,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     fontSize,
     terminalFontFamily,
     scrollback,
+    lineHeight,
   });
 
   useEffect(() => {
@@ -101,11 +110,44 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
   useTerminalCommands(termRef, isActive);
 
+  useTerminalCursor(termState);
+  useCopyOnSelect(termState);
+
+  const find = useTerminalFind(termState, rootRef);
+
+  const insertPaths = useCallback(
+    (paths: string[]) => {
+      const ptyId = ptyIdRef.current;
+      if (!ptyId) return;
+      const shell = session.shell || useTerminalStore.getState().defaultShell;
+      safePtyInvoke(invoke("write_pty", { id: ptyId, data: quotePathsForShell(paths, shell) }));
+      termRef.current?.focus();
+    },
+    [session.shell],
+  );
+  const drop = useTerminalFileDrop({ targetRef: rootRef, enabled: isActive, onPaths: insertPaths });
+
   return (
     <div
+      ref={rootRef}
+      data-terminal-find
       className="relative h-full w-full bg-terminal-bg p-2"
       style={{ display: isActive ? "block" : "none" }}
+      {...drop.handlers}
     >
+      {drop.over && (
+        <div
+          className="pointer-events-none absolute inset-1 z-30 rounded-md border-2 border-primary bg-primary/10"
+          aria-hidden="true"
+        />
+      )}
+      {find.open && (
+        <TerminalFindBar
+          search={find.search}
+          focusRequest={find.focusRequest}
+          onClose={find.close}
+        />
+      )}
       <div ref={containerRef} className="relative h-full w-full overflow-hidden">
         <AISuggestionsOverlay
           suggestion={suggestions.suggestion}

@@ -13,6 +13,7 @@ import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useTheme } from "@/theme";
+import { loadRenderAddons } from "@/features/terminal/terminalAddons";
 
 import { sessionCwd } from "../worktree/cwd";
 import { quoteShellPath } from "./buffer";
@@ -67,6 +68,7 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
       convertEol: true,
       scrollback,
       theme: getXtermTheme(),
+      allowProposedApi: true,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -77,6 +79,7 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
       }),
     );
     term.open(container);
+    loadRenderAddons(term);
     const removeDeadKeyFix = fixWebKitDeadKeys(term, container);
     // The hold-to-dictate key belongs to dictation, so xterm must not type it.
     term.attachCustomKeyEventHandler((event) => !matchShortcut(event, dictateBindingRef.current));

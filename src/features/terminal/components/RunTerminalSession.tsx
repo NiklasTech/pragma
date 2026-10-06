@@ -9,12 +9,17 @@ import {
   useTerminalStore,
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useTheme } from "@/theme";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { registerTerminalOutput } from "../terminalOutput";
+import { loadRenderAddons, passFindShortcut } from "../terminalAddons";
+import { useTerminalFind } from "../hooks/useTerminalFind";
+import { useCopyOnSelect } from "../hooks/useTerminalPreferences";
+import { TerminalFindBar } from "./TerminalFindBar";
 
 interface RunOutputEvent {
   process_id: string;
@@ -33,6 +38,7 @@ interface RunTerminalSessionProps {
 }
 
 export function RunTerminalSession({ session, isActive }: RunTerminalSessionProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
@@ -41,6 +47,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
   const fontFamily = useTerminalStore((s) => s.fontFamily);
   const fontId = useTerminalStore((s) => s.fontId);
   const scrollback = useTerminalStore((s) => s.scrollback);
+  const lineHeight = useSettingsStore((s) => s.terminal.lineHeight);
   const terminalFontFamily = fontId || fontFamily;
   const { themeId, resolvedMode } = useTheme();
 
@@ -64,10 +71,12 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       const t = new XTerm({
         fontSize,
         fontFamily: `${terminalFontFamily}, Consolas, Courier New, monospace`,
+        lineHeight,
         cursorBlink: false,
         convertEol: true,
         scrollback,
         theme: getXtermTheme(),
+        allowProposedApi: true,
       });
       const fit = new FitAddon();
       fitRef.current = fit;
@@ -79,6 +88,8 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
         }),
       );
       t.open(containerRef.current);
+      loadRenderAddons(t);
+      passFindShortcut(t);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);
@@ -129,7 +140,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       termRef.current = null;
       fitRef.current = null;
     };
-  }, [session.processId, fontSize, terminalFontFamily, scrollback]);
+  }, [session.processId, fontSize, terminalFontFamily, scrollback, lineHeight]);
 
   useEffect(() => {
     if (!termRef.current) return;
@@ -181,11 +192,25 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [termState]);
 
+  useCopyOnSelect(termState);
+
+  const find = useTerminalFind(termState, rootRef);
+
   return (
     <div
-      ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
+      ref={rootRef}
+      data-terminal-find
+      className="relative h-full w-full"
       style={{ display: isActive ? "block" : "none" }}
-    />
+    >
+      {find.open && (
+        <TerminalFindBar
+          search={find.search}
+          focusRequest={find.focusRequest}
+          onClose={find.close}
+        />
+      )}
+      <div ref={containerRef} className="relative h-full w-full overflow-hidden" />
+    </div>
   );
 }

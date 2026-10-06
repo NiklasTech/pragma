@@ -27,6 +27,8 @@ export type {
   SettingsState,
   StatusbarItem,
   StatusbarSettings,
+  TerminalCursorStyle,
+  TerminalEnvVar,
   TerminalSettings,
   ThemeMode,
   VoiceEngine,

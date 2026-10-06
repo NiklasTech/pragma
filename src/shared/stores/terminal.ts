@@ -1,7 +1,9 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
 import { crossWindowSync } from "./sync/crossWindowSync";
-import { getWindowScope } from "@/shared/lib/windowScope";
+import { createThrottledJSONStorage } from "./throttledStorage";
+import { getWindowScope, isWorkspaceWindow } from "@/shared/lib/windowScope";
 
 export type TerminalSessionType = "shell" | "docker-logs" | "docker-exec" | "run";
 
@@ -60,6 +62,41 @@ interface TerminalActions {
   markActivity: (sessionId: string) => void;
 }
 
+const STORAGE_KEY = `pragma.terminal.v1.${getWindowScope()}`;
+const PERSIST_INTERVAL_MS = 1000;
+
+type RestorableTerminalState = Pick<
+  TerminalState,
+  "sessions" | "activeByPanel" | "lastActiveSessionId"
+>;
+
+/** Shell tabs survive a restart without their PTY; run, Docker and command sessions do not. */
+export function restorableTerminalState(state: TerminalState): RestorableTerminalState {
+  const sessions = state.sessions
+    .filter((s) => s.type === "shell" && !s.command)
+    .map((s): TerminalSession => ({
+      id: s.id,
+      name: s.name,
+      type: s.type,
+      panelId: s.panelId,
+      shell: s.shell,
+      cwd: s.cwd,
+      isActive: s.isActive,
+    }));
+  const ids = new Set(sessions.map((s) => s.id));
+  const activeByPanel = Object.fromEntries(
+    Object.entries(state.activeByPanel).filter(([, sessionId]) => ids.has(sessionId)),
+  );
+  return {
+    sessions,
+    activeByPanel,
+    lastActiveSessionId:
+      state.lastActiveSessionId && ids.has(state.lastActiveSessionId)
+        ? state.lastActiveSessionId
+        : null,
+  };
+}
+
 const initialState: TerminalState = {
   sessions: [],
   activeByPanel: {},
@@ -113,166 +150,178 @@ function withoutSession(state: TerminalState, sessionId: string): Partial<Termin
   };
 }
 
-export const useTerminalStore = create<TerminalState & TerminalActions>(
-  crossWindowSync<TerminalState & TerminalActions>(
-    "terminal",
-    getWindowScope(),
-  )((set, get) => ({
-    ...initialState,
+export const useTerminalStore = create<TerminalState & TerminalActions>()(
+  persist(
+    crossWindowSync<TerminalState & TerminalActions>(
+      "terminal",
+      getWindowScope(),
+    )((set, get) => ({
+      ...initialState,
 
-    addSession: (session) => {
-      const nextSession: TerminalSession = { ...session };
-      set({
-        sessions: [...get().sessions, nextSession],
-        ...activate(get(), nextSession.panelId, nextSession.id),
-      });
-    },
+      addSession: (session) => {
+        const nextSession: TerminalSession = { ...session };
+        set({
+          sessions: [...get().sessions, nextSession],
+          ...activate(get(), nextSession.panelId, nextSession.id),
+        });
+      },
 
-    addRunSession: (processId, name, command, panelId) => {
-      const { sessions } = get();
-      const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
-      if (existing) {
-        set(activate(get(), existing.panelId ?? panelId, existing.id));
-        return;
-      }
-
-      const nextSession: TerminalSession = {
-        id: crypto.randomUUID(),
-        name,
-        type: "run",
-        command,
-        processId,
-        panelId,
-        isActive: true,
-      };
-      set({
-        sessions: [...sessions, nextSession],
-        ...activate(get(), panelId, nextSession.id),
-      });
-    },
-
-    focusRunSession: (processId, panelId) => {
-      const { sessions } = get();
-      const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
-      if (existing) {
-        set(activate(get(), existing.panelId ?? panelId, existing.id));
-      }
-    },
-
-    ensureInitialSession: (session) => {
-      const { sessions } = get();
-      if (sessions.some((s) => s.panelId === session.panelId)) return;
-
-      const nextSession: TerminalSession = { ...session };
-      set({
-        sessions: [...sessions, nextSession],
-        ...activate(get(), nextSession.panelId, nextSession.id),
-      });
-    },
-
-    removeSession: (sessionId) => {
-      set((s) => withoutSession(s, sessionId));
-    },
-
-    killSession: async (sessionId) => {
-      const session = get().sessions.find((s) => s.id === sessionId);
-
-      // Remove the session from React state first so TerminalSession unmounts
-      // and disconnects its ResizeObserver before the PTY is destroyed.
-      set((s) => withoutSession(s, sessionId));
-
-      if (session?.ptyId) {
-        try {
-          await invoke("kill_pty", { id: session.ptyId });
-        } catch {
-          // ignore
+      addRunSession: (processId, name, command, panelId) => {
+        const { sessions } = get();
+        const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
+        if (existing) {
+          set(activate(get(), existing.panelId ?? panelId, existing.id));
+          return;
         }
-      }
-    },
 
-    killAllSessions: async () => {
-      const { sessions } = get();
-      // Clear first so sessions created while the kills are in flight are kept.
-      set({ sessions: [], activeByPanel: {}, lastActiveSessionId: null, activity: {} });
+        const nextSession: TerminalSession = {
+          id: crypto.randomUUID(),
+          name,
+          type: "run",
+          command,
+          processId,
+          panelId,
+          isActive: true,
+        };
+        set({
+          sessions: [...sessions, nextSession],
+          ...activate(get(), panelId, nextSession.id),
+        });
+      },
 
-      await Promise.all(
-        sessions.map(async (session) => {
-          if (session.ptyId) {
-            try {
-              await invoke("kill_pty", { id: session.ptyId });
-            } catch {
-              // ignore
-            }
+      focusRunSession: (processId, panelId) => {
+        const { sessions } = get();
+        const existing = sessions.find((s) => s.type === "run" && s.processId === processId);
+        if (existing) {
+          set(activate(get(), existing.panelId ?? panelId, existing.id));
+        }
+      },
+
+      ensureInitialSession: (session) => {
+        const { sessions } = get();
+        if (sessions.some((s) => s.panelId === session.panelId)) return;
+
+        const nextSession: TerminalSession = { ...session };
+        set({
+          sessions: [...sessions, nextSession],
+          ...activate(get(), nextSession.panelId, nextSession.id),
+        });
+      },
+
+      removeSession: (sessionId) => {
+        set((s) => withoutSession(s, sessionId));
+      },
+
+      killSession: async (sessionId) => {
+        const session = get().sessions.find((s) => s.id === sessionId);
+
+        // Remove the session from React state first so TerminalSession unmounts
+        // and disconnects its ResizeObserver before the PTY is destroyed.
+        set((s) => withoutSession(s, sessionId));
+
+        if (session?.ptyId) {
+          try {
+            await invoke("kill_pty", { id: session.ptyId });
+          } catch {
+            // ignore
           }
-        }),
-      );
-    },
-
-    reloadSession: async (sessionId, shell) => {
-      const { sessions } = get();
-      const session = sessions.find((s) => s.id === sessionId);
-      if (!session || session.command) return;
-
-      if (session.ptyId) {
-        try {
-          await invoke("kill_pty", { id: session.ptyId });
-        } catch {
-          // ignore
         }
-      }
+      },
 
-      set({
-        sessions: sessions.map((s) => (s.id === sessionId ? { ...s, shell, ptyId: undefined } : s)),
-      });
+      killAllSessions: async () => {
+        const { sessions } = get();
+        // Clear first so sessions created while the kills are in flight are kept.
+        set({ sessions: [], activeByPanel: {}, lastActiveSessionId: null, activity: {} });
+
+        await Promise.all(
+          sessions.map(async (session) => {
+            if (session.ptyId) {
+              try {
+                await invoke("kill_pty", { id: session.ptyId });
+              } catch {
+                // ignore
+              }
+            }
+          }),
+        );
+      },
+
+      reloadSession: async (sessionId, shell) => {
+        const { sessions } = get();
+        const session = sessions.find((s) => s.id === sessionId);
+        if (!session || session.command) return;
+
+        if (session.ptyId) {
+          try {
+            await invoke("kill_pty", { id: session.ptyId });
+          } catch {
+            // ignore
+          }
+        }
+
+        set({
+          sessions: sessions.map((s) =>
+            s.id === sessionId ? { ...s, shell, ptyId: undefined } : s,
+          ),
+        });
+      },
+
+      attachPty: (sessionId, ptyId) => {
+        set({
+          sessions: get().sessions.map((s) => (s.id === sessionId ? { ...s, ptyId } : s)),
+        });
+      },
+
+      setShellResolved: (resolved) => set({ shellResolved: resolved }),
+
+      setActiveSession: (panelId, sessionId) => {
+        set(activate(get(), panelId, sessionId));
+      },
+
+      updateSessionCwd: (sessionId, cwd) => {
+        const { sessions } = get();
+        set({
+          sessions: sessions.map((s) => (s.id === sessionId ? { ...s, cwd } : s)),
+        });
+      },
+
+      moveShellSessionsToCwd: (cwd) => {
+        const { sessions } = get();
+        const stale = sessions.filter((s) => s.type === "shell" && !s.command && s.cwd !== cwd);
+        if (stale.length === 0) return;
+
+        // Dropping the ptyId makes TerminalSession spawn a fresh shell in the new cwd.
+        set({
+          sessions: sessions.map((s) => (stale.includes(s) ? { ...s, cwd, ptyId: undefined } : s)),
+        });
+
+        for (const session of stale) {
+          if (session.ptyId) void invoke("kill_pty", { id: session.ptyId }).catch(() => {});
+        }
+      },
+
+      renameSession: (sessionId, name) => {
+        const { sessions } = get();
+        set({
+          sessions: sessions.map((s) => (s.id === sessionId ? { ...s, name } : s)),
+        });
+      },
+
+      setDefaultShell: (shell) => set({ defaultShell: shell, shellResolved: true }),
+      setFontSize: (size) => set({ fontSize: size }),
+      setFontFamily: (family) => set({ fontFamily: family }),
+      setFontId: (id) => set({ fontId: id }),
+      setScrollback: (lines) => set({ scrollback: lines }),
+      setAiSuggestions: (enabled) => set({ aiSuggestions: enabled }),
+      markActivity: (sessionId) =>
+        set({ activity: { ...get().activity, [sessionId]: Date.now() } }),
+    })),
+    {
+      name: STORAGE_KEY,
+      storage: createThrottledJSONStorage(PERSIST_INTERVAL_MS),
+      partialize: restorableTerminalState,
+      // Floating windows take their sessions from the parent's snapshot, never from storage.
+      skipHydration: !isWorkspaceWindow(),
     },
-
-    attachPty: (sessionId, ptyId) => {
-      set({
-        sessions: get().sessions.map((s) => (s.id === sessionId ? { ...s, ptyId } : s)),
-      });
-    },
-
-    setShellResolved: (resolved) => set({ shellResolved: resolved }),
-
-    setActiveSession: (panelId, sessionId) => {
-      set(activate(get(), panelId, sessionId));
-    },
-
-    updateSessionCwd: (sessionId, cwd) => {
-      const { sessions } = get();
-      set({
-        sessions: sessions.map((s) => (s.id === sessionId ? { ...s, cwd } : s)),
-      });
-    },
-
-    moveShellSessionsToCwd: (cwd) => {
-      const { sessions } = get();
-      const stale = sessions.filter((s) => s.type === "shell" && !s.command && s.cwd !== cwd);
-      if (stale.length === 0) return;
-
-      // Dropping the ptyId makes TerminalSession spawn a fresh shell in the new cwd.
-      set({
-        sessions: sessions.map((s) => (stale.includes(s) ? { ...s, cwd, ptyId: undefined } : s)),
-      });
-
-      for (const session of stale) {
-        if (session.ptyId) void invoke("kill_pty", { id: session.ptyId }).catch(() => {});
-      }
-    },
-
-    renameSession: (sessionId, name) => {
-      const { sessions } = get();
-      set({
-        sessions: sessions.map((s) => (s.id === sessionId ? { ...s, name } : s)),
-      });
-    },
-
-    setDefaultShell: (shell) => set({ defaultShell: shell, shellResolved: true }),
-    setFontSize: (size) => set({ fontSize: size }),
-    setFontFamily: (family) => set({ fontFamily: family }),
-    setFontId: (id) => set({ fontId: id }),
-    setScrollback: (lines) => set({ scrollback: lines }),
-    setAiSuggestions: (enabled) => set({ aiSuggestions: enabled }),
-    markActivity: (sessionId) => set({ activity: { ...get().activity, [sessionId]: Date.now() } }),
-  })),
+  ),
 );
