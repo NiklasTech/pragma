@@ -132,6 +132,7 @@ export function AgentsContextPane() {
           <EmptyReview />
         ) : tab === "review" ? (
           <SessionReview
+            sessionId={focusedSessionId}
             cwd={reviewCwd ?? ""}
             ownsRun={ownsRun}
             worktreeBranch={worktreeBranch}

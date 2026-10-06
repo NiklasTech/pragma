@@ -1,26 +1,53 @@
 import { Check, X } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { InlineDiff } from "@/features/editor/components/InlineDiff";
 import { Button } from "@/shared/components/ui/button";
 
+import { useReviewCommentsStore } from "./comments";
+import { addedFilePatch } from "./patch";
 import { RestoreFileDialog } from "./RestoreFileDialog";
+import { ReviewHunkDiff, type ReviewHunkActions } from "./ReviewHunkDiff";
 import type { ReviewDiffData } from "./useReviewDiff";
 
 export type ReviewDiffMode = "pending" | "worktree" | "checkout";
 
 interface ReviewDiffProps {
+  sessionId: string;
   path: string;
   data: ReviewDiffData;
   mode: ReviewDiffMode;
   branch?: string;
+  kept?: boolean;
+  hunkActions?: ReviewHunkActions;
   onAccept?: () => void;
   onReject?: () => void;
 }
 
-export function ReviewDiff({ path, data, mode, branch, onAccept, onReject }: ReviewDiffProps) {
+export function ReviewDiff({
+  sessionId,
+  path,
+  data,
+  mode,
+  branch,
+  kept = false,
+  hunkActions,
+  onAccept,
+  onReject,
+}: ReviewDiffProps) {
   const [confirming, setConfirming] = useState(false);
   const title = mode === "worktree" ? `Written in ${branch ?? ""}` : path;
+  const patchText =
+    mode === "pending" ? "" : data.patchText || addedFilePatch(data.original, data.modified);
+
+  const allComments = useReviewCommentsStore((state) => state.comments);
+  const addComment = useReviewCommentsStore((state) => state.addComment);
+  const updateComment = useReviewCommentsStore((state) => state.updateComment);
+  const removeComment = useReviewCommentsStore((state) => state.removeComment);
+  const comments = useMemo(
+    () => allComments.filter((comment) => comment.sessionId === sessionId && comment.path === path),
+    [allComments, sessionId, path],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -29,6 +56,7 @@ export function ReviewDiff({ path, data, mode, branch, onAccept, onReject }: Rev
           {title}
         </span>
         <div className="flex shrink-0 items-center gap-1">
+          {kept && <span className="text-ui-2xs text-git-added">Kept</span>}
           {mode === "pending" && onAccept && (
             <Button
               size="sm"
@@ -54,13 +82,24 @@ export function ReviewDiff({ path, data, mode, branch, onAccept, onReject }: Rev
           )}
         </div>
       </div>
-      <InlineDiff
-        original={data.original}
-        modified={data.modified}
-        patchText={data.patchText}
-        filePath={path}
-        className="h-auto min-h-0 flex-1"
-      />
+      {patchText ? (
+        <ReviewHunkDiff
+          patchText={patchText}
+          comments={comments}
+          hunkActions={hunkActions}
+          onAddComment={(target, body) => addComment({ sessionId, path, ...target, body })}
+          onUpdateComment={updateComment}
+          onRemoveComment={removeComment}
+        />
+      ) : (
+        <InlineDiff
+          original={data.original}
+          modified={data.modified}
+          patchText={data.patchText}
+          filePath={path}
+          className="h-auto min-h-0 flex-1"
+        />
+      )}
       {mode === "checkout" && (
         <RestoreFileDialog
           open={confirming}
