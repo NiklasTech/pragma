@@ -1,6 +1,7 @@
 import { type ChatTransport, type UIMessage, type UIMessageChunk } from "ai";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
+import { requestMessages } from "./compaction";
 import { generateId } from "./id";
 import { getMessageImages, toBackendImage } from "./images";
 import {
@@ -33,7 +34,8 @@ export function createStreamTransport(
   onUsage: (usage: StreamUsage) => void = () => {},
 ): ChatTransport<UIMessage> {
   return {
-    async sendMessages({ messages, abortSignal }) {
+    async sendMessages({ messages: transcript, abortSignal }) {
+      const messages = requestMessages(transcript);
       const chunkId = generateId();
       const streamId = generateId();
 

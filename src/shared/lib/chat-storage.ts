@@ -48,6 +48,7 @@ export interface StoredChatMessage {
   content: string;
   timestamp: number;
   images?: StoredImage[];
+  kind?: string;
 }
 
 function toStoredUsage(usage: SessionUsage): StoredSessionUsage {
@@ -156,6 +157,7 @@ function toStoredMessage(message: ChatMessage): StoredChatMessage {
       data: image.data,
     }));
   }
+  if (message.kind) stored.kind = message.kind;
   return stored;
 }
 
@@ -172,6 +174,7 @@ function fromStoredMessage(message: StoredChatMessage): ChatMessage {
       data: image.data,
     }));
   }
+  if (message.kind === "compaction") restored.kind = "compaction";
   return restored;
 }
 

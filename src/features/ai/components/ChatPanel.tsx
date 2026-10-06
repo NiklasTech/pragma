@@ -1,5 +1,11 @@
 import { useRef, useEffect, useCallback, useState, useMemo } from "react";
-import { Warning, Terminal, Robot, ArrowCounterClockwise } from "@phosphor-icons/react";
+import {
+  Warning,
+  Terminal,
+  Robot,
+  ArrowCounterClockwise,
+  ArrowsInLineVertical,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { invoke } from "@tauri-apps/api/core";
@@ -26,6 +32,9 @@ import { SpawnApprovals } from "@/features/ai/children/SpawnApprovals";
 import { ChildSessionCards, inlineChildIds } from "@/features/ai/children/ChildSessionCards";
 import { MessageImages } from "@/features/ai/images/MessageImages";
 import { useComposerImages } from "@/features/ai/images/useComposerImages";
+import { CompactionMarker } from "@/features/ai/compaction/CompactionMarker";
+import { useCompactionStore } from "@/features/ai/compaction/compactSession";
+import { compactionSummary, isCompactionMessage } from "@/shared/lib/ai/compaction";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -98,6 +107,9 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     }>
   >([]);
 
+  const compacting = useCompactionStore((state) =>
+    activeChatSessionId ? state.running[activeChatSessionId] === true : false,
+  );
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
   const composerImages = useComposerImages();
 
@@ -269,6 +281,9 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
             {messages.length === 0 && <ChatEmptyState />}
 
             {messages.map((msg: UIMessage) => {
+              if (isCompactionMessage(msg)) {
+                return <CompactionMarker key={msg.id} summary={compactionSummary(msg)} />;
+              }
               const rawText = msg.parts
                 .filter((p) => p.type === "text")
                 .map((p) => (p as { text: string }).text)
@@ -399,6 +414,13 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
+          </div>
+        )}
+
+        {compacting && (
+          <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-subtle">
+            <ArrowsInLineVertical size={12} className="animate-pulse" />
+            <span>Compacting the conversation...</span>
           </div>
         )}
 

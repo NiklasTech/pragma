@@ -8,6 +8,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { Conversation, ConversationContent } from "../components/Conversation";
 import { Message, MessageContent, MessageResponse } from "../components/Message";
 import { ChildSessionCards } from "../children/ChildSessionCards";
+import { CompactionMarker } from "../compaction/CompactionMarker";
 
 export function ChatTranscript({ sessionId }: { sessionId: string }) {
   const session = useAIStore((state) => state.chatSessions.find((item) => item.id === sessionId));
@@ -29,7 +30,9 @@ export function ChatTranscript({ sessionId }: { sessionId: string }) {
           <p className="py-8 text-center text-ui-xs text-fg-subtle">No messages yet.</p>
         ) : (
           messages.map((message) =>
-            message.role === "user" ? (
+            message.kind === "compaction" ? (
+              <CompactionMarker key={message.id} summary={message.content} />
+            ) : message.role === "user" ? (
               <Message key={message.id} from="user">
                 <MessageContent>
                   <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>

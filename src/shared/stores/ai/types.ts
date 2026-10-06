@@ -48,6 +48,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   images?: ChatImage[];
+  /** A compaction summary that stands in for the messages before it. */
+  kind?: "compaction";
 }
 
 export interface SessionWorktree {
@@ -206,6 +208,7 @@ export interface AIActions {
 
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
   recordSessionUsage: (sessionId: string, usage: StreamUsage) => void;
+  setSessionContextTokens: (sessionId: string, tokens: number) => void;
 
   setApiKeyRef: (provider: AIProvider, ref: string | null) => void;
   storeApiKey: (provider: AIProvider, key: string) => Promise<void>;

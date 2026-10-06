@@ -35,12 +35,24 @@ export function addStreamUsage(
   return next;
 }
 
-export const createUsageSlice: AISlice<Pick<AIActions, "recordSessionUsage">> = (set, get) => ({
+export const createUsageSlice: AISlice<
+  Pick<AIActions, "recordSessionUsage" | "setSessionContextTokens">
+> = (set, get) => ({
   recordSessionUsage: (sessionId, usage) => {
     set({
       chatSessions: get().chatSessions.map((session) =>
         session.id === sessionId
           ? { ...session, usage: addStreamUsage(session.usage, usage) }
+          : session,
+      ),
+    });
+  },
+
+  setSessionContextTokens: (sessionId, tokens) => {
+    set({
+      chatSessions: get().chatSessions.map((session) =>
+        session.id === sessionId && session.usage
+          ? { ...session, usage: { ...session.usage, contextTokens: tokens } }
           : session,
       ),
     });
