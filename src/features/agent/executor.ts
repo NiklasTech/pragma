@@ -20,6 +20,13 @@ import { foregroundRunContext, type AgentRunContext } from "./runContext";
 import { AGENT_TOOL_NAMES, isFileEditTool } from "./tools";
 import { applySearchReplace } from "./searchReplace";
 import { sliceFileLines } from "./readSlice";
+import { dispatchInsightTool, insightStepLabel, isInsightTool } from "./insightDispatch";
+import {
+  readBooleanInput,
+  readNumberInput,
+  readStringInput,
+  resolveWorkspacePath,
+} from "./toolInput";
 
 export interface AgentToolCall {
   toolCallId: string;
@@ -58,24 +65,6 @@ interface AgentCommandResult {
 const MAX_TOOL_OUTPUT_CHARS = 50_000;
 const MAX_SEARCH_MATCHES = 100;
 
-function readStringInput(input: unknown, key: string): string {
-  if (typeof input !== "object" || input === null) return "";
-  const value = (input as Record<string, unknown>)[key];
-  return typeof value === "string" ? value : "";
-}
-
-function readNumberInput(input: unknown, key: string): number | undefined {
-  if (typeof input !== "object" || input === null) return undefined;
-  const value = (input as Record<string, unknown>)[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function readBooleanInput(input: unknown, key: string): boolean {
-  if (typeof input !== "object" || input === null) return false;
-  const value = (input as Record<string, unknown>)[key];
-  return typeof value === "boolean" ? value : false;
-}
-
 function readTodoItems(input: unknown): AgentTodo[] {
   if (typeof input !== "object" || input === null) return [];
   const raw = (input as Record<string, unknown>).items;
@@ -93,14 +82,6 @@ function readTodoItems(input: unknown): AgentTodo[] {
     items.push({ id, content: typeof item.content === "string" ? item.content : "", status });
   }
   return items;
-}
-
-function resolveWorkspacePath(rootPath: string, path: string): string {
-  const trimmed = path.trim();
-  if (/^([a-zA-Z]:[\\/]|\\\\|\/)/.test(trimmed)) {
-    return trimmed;
-  }
-  return `${rootPath.replace(/[\\/]+$/, "")}/${trimmed.replace(/^[\\/]+/, "")}`;
 }
 
 function truncateOutput(output: string): string {
@@ -133,7 +114,7 @@ export function stepLabel(toolName: string, input: unknown): { label: string; de
     case AGENT_TOOL_NAMES.openBrowser:
       return { label: "Open in browser", detail: readStringInput(input, "url") };
     default:
-      return { label: toolName };
+      return insightStepLabel(toolName, input) ?? { label: toolName };
   }
 }
 
@@ -188,6 +169,7 @@ async function dispatchTool(
   agentAccess: AgentAccess | null,
   context: AgentRunContext,
 ): Promise<{ output: string; detail?: string }> {
+  if (isInsightTool(toolName)) return dispatchInsightTool(toolName, input, rootPath);
   switch (toolName) {
     case AGENT_TOOL_NAMES.readFile: {
       const path = resolveWorkspacePath(rootPath, readStringInput(input, "path"));

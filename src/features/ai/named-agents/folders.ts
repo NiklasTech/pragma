@@ -83,6 +83,11 @@ export function isFolderScopedTool(toolName: string): boolean {
     toolName === AGENT_TOOL_NAMES.grep ||
     toolName === AGENT_TOOL_NAMES.glob ||
     toolName === AGENT_TOOL_NAMES.searchReplace ||
-    toolName === AGENT_TOOL_NAMES.runCommand
+    toolName === AGENT_TOOL_NAMES.runCommand ||
+    toolName === AGENT_TOOL_NAMES.listDir ||
+    toolName === AGENT_TOOL_NAMES.getDiagnostics ||
+    toolName === AGENT_TOOL_NAMES.findDefinition ||
+    toolName === AGENT_TOOL_NAMES.findReferences ||
+    toolName === AGENT_TOOL_NAMES.workspaceSymbols
   );
 }

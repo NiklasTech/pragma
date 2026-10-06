@@ -81,6 +81,27 @@ describe("resolveAgentApproval", () => {
     expect(resolveAgentApproval(AGENT_TOOL_NAMES.taskComplete, {}, baseSettings, false)).toBe(
       "auto",
     );
+    for (const tool of [
+      AGENT_TOOL_NAMES.listDir,
+      AGENT_TOOL_NAMES.getDiagnostics,
+      AGENT_TOOL_NAMES.findDefinition,
+      AGENT_TOOL_NAMES.findReferences,
+      AGENT_TOOL_NAMES.workspaceSymbols,
+    ]) {
+      expect(resolveAgentApproval(tool, {}, baseSettings, false)).toBe("auto");
+    }
+  });
+
+  it("asks before fetching a URL unless everything is auto-approved", () => {
+    const edits: AgentSettings = { ...baseSettings, autoApprove: "edits" };
+    const all: AgentSettings = { ...baseSettings, autoApprove: "all" };
+    const input = { url: "https://example.com" };
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.webFetch, input, baseSettings, false)).toBe(
+      "required",
+    );
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.webFetch, input, edits, false)).toBe("required");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.webFetch, input, all, false)).toBe("auto");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.webFetch, input, baseSettings, true)).toBe("auto");
   });
 
   it("requires approval for search_replace when autoApprove is never", () => {

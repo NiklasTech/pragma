@@ -42,7 +42,8 @@ export function resolveAgentApproval(
   settings: AgentSettings,
   yoloMode: boolean,
 ): AgentApprovalDecision {
-  if (!isDestructiveAgentTool(toolName)) return "auto";
+  const needsApproval = isDestructiveAgentTool(toolName) || toolName === AGENT_TOOL_NAMES.webFetch;
+  if (!needsApproval) return "auto";
   if (yoloMode || settings.autoApprove === "all") return "auto";
 
   if (toolName === AGENT_TOOL_NAMES.runCommand) {
@@ -50,7 +51,9 @@ export function resolveAgentApproval(
       ? "auto"
       : "required";
   }
-  if (toolName === AGENT_TOOL_NAMES.spawnSession) return "required";
+  if (toolName === AGENT_TOOL_NAMES.spawnSession || toolName === AGENT_TOOL_NAMES.webFetch) {
+    return "required";
+  }
 
   return settings.autoApprove === "edits" ? "auto" : "required";
 }
