@@ -6,6 +6,7 @@ import { createCommitsSlice } from "./git/commits";
 import { createConflictsSlice } from "./git/conflicts";
 import { createDiffSlice } from "./git/diff";
 import { createGraphSlice } from "./git/graph";
+import { createLastCommitSlice } from "./git/lastCommit";
 import { createRemotesSlice } from "./git/remotes";
 import { createReposSlice } from "./git/repo";
 import { createStagingSlice } from "./git/staging";
@@ -24,6 +25,7 @@ export type {
   GitGraphData,
   GitGraphEdge,
   GitGraphNode,
+  GitLastCommit,
   GitLineAction,
   GitLineSelection,
   GitProgress,
@@ -48,6 +50,7 @@ const initialState: GitState = {
   isLoading: false,
   error: null,
   commitMessage: "",
+  commitAmend: false,
   actionBusy: null,
   actionStatus: null,
   actionProgress: null,
@@ -73,6 +76,7 @@ export const useGitStore = create<GitState & GitActions>()((...a) => ({
   ...createStagingSlice(...a),
   ...createBranchesSlice(...a),
   ...createCommitsSlice(...a),
+  ...createLastCommitSlice(...a),
   ...createGraphSlice(...a),
   ...createDiffSlice(...a),
   ...createRemotesSlice(...a),

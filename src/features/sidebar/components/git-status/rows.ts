@@ -13,7 +13,7 @@ export type GitRow =
   | { kind: "history-entry"; key: string; commit: GitCommit };
 
 export const ROW_HEIGHTS = {
-  "commit-area": 130,
+  "commit-area": 162,
   "conflict-header": 24,
   "conflict-entry": 36,
   "staged-header": 24,

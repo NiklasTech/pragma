@@ -28,6 +28,7 @@ export function GitStatus() {
     isLoading,
     error,
     commitMessage,
+    commitAmend,
     actionBusy,
     actionStatus,
     commits,
@@ -38,6 +39,7 @@ export function GitStatus() {
     stageFiles,
     unstageFiles,
     commit,
+    amendCommit,
     loadFileDiff,
     setCommitMessage,
     checkoutBranch,
@@ -97,7 +99,8 @@ export function GitStatus() {
   }, [unstagedFiles]);
 
   const stagedCount = stagedFiles.length;
-  const canCommit = stagedCount > 0 && commitMessage.trim().length > 0 && !actionBusy;
+  const canCommit =
+    (commitAmend || stagedCount > 0) && commitMessage.trim().length > 0 && !actionBusy;
 
   const hasRemote = remotes.length > 0;
   const isDetached = snapshot?.repo.is_detached ?? false;
@@ -155,7 +158,7 @@ export function GitStatus() {
 
   const handleCommit = () => {
     if (!canCommit) return;
-    void commit();
+    void (commitAmend ? amendCommit() : commit());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

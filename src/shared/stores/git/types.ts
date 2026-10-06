@@ -59,6 +59,13 @@ export interface GitCommitDetails {
   files: GitCommitFileChange[];
 }
 
+export interface GitLastCommit {
+  sha: string;
+  message: string;
+  is_pushed: boolean;
+  has_parent: boolean;
+}
+
 export interface GitDiffContentResult {
   original_content: string;
   modified_content: string;
@@ -163,6 +170,7 @@ export interface GitState {
   isLoading: boolean;
   error: string | null;
   commitMessage: string;
+  commitAmend: boolean;
   actionBusy: string | null;
   actionStatus: string | null;
   actionProgress: GitProgress | null;
@@ -196,6 +204,10 @@ export interface GitActions {
     selection: GitLineSelection,
   ) => Promise<boolean>;
   commit: () => Promise<void>;
+  loadLastCommit: () => Promise<GitLastCommit | null>;
+  setCommitAmend: (enabled: boolean) => Promise<void>;
+  amendCommit: () => Promise<void>;
+  undoLastCommit: () => Promise<void>;
   loadFileDiff: (path: string, staged: boolean) => Promise<string>;
   clearDiff: () => void;
   setCommitMessage: (value: string) => void;
