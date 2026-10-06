@@ -35,6 +35,8 @@ export function CreatePullRequestDialog({
   repoPath,
   currentBranch,
   defaultTitle,
+  defaultBody = "",
+  pushBranch,
   onCreated,
 }: {
   open: boolean;
@@ -42,6 +44,10 @@ export function CreatePullRequestDialog({
   repoPath: string;
   currentBranch: string;
   defaultTitle: string;
+  /** Placed above the repository's pull request template. */
+  defaultBody?: string;
+  /** Replaces the default push of the checkout's current branch. */
+  pushBranch?: () => Promise<void>;
   onCreated: () => void;
 }) {
   const branches = useGitStore((state) => state.branches);
@@ -58,7 +64,7 @@ export function CreatePullRequestDialog({
     let current = true;
     setOptions(null);
     setTitle(defaultTitle);
-    setBody("");
+    setBody(defaultBody);
     setBase("");
     setLabels([]);
     setDraft(false);
@@ -66,7 +72,11 @@ export function CreatePullRequestDialog({
       .then((loaded) => {
         if (!current) return;
         setOptions(loaded);
-        setBody(loaded.template ?? "");
+        setBody(
+          [defaultBody.trim(), loaded.template ?? ""]
+            .filter((part) => part.length > 0)
+            .join("\n\n"),
+        );
         setBase(loaded.default_branch ?? "");
       })
       .catch((err: unknown) => {
@@ -77,7 +87,7 @@ export function CreatePullRequestDialog({
     return () => {
       current = false;
     };
-  }, [open, repoPath, defaultTitle]);
+  }, [open, repoPath, defaultTitle, defaultBody]);
 
   const baseOptions = useMemo(() => {
     const names = [options?.default_branch, ...branches.map((branch) => branch.name)];
@@ -97,7 +107,9 @@ export function CreatePullRequestDialog({
     setSubmitting(true);
     try {
       const { snapshot, push } = useGitStore.getState();
-      if (!snapshot?.repo.upstream || snapshot.ahead > 0) {
+      if (pushBranch) {
+        await pushBranch();
+      } else if (!snapshot?.repo.upstream || snapshot.ahead > 0) {
         await push();
         const after = useGitStore.getState().snapshot;
         if (!after?.repo.upstream || after.ahead > 0) return;

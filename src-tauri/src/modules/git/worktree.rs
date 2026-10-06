@@ -431,7 +431,7 @@ pub(crate) fn branch_merged(repo_path: &str, branch: &str) -> Result<bool, Strin
     Ok(output.exit_code == Some(0))
 }
 
-fn is_pragma_branch(branch: &str) -> bool {
+pub(crate) fn is_pragma_branch(branch: &str) -> bool {
     let Some(rest) = branch.strip_prefix("pragma/") else {
         return false;
     };

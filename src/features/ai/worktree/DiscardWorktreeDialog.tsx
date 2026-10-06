@@ -17,19 +17,15 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
-import { useAgentStore } from "@/features/agent/store";
+import type { ChatSession } from "@/shared/stores/ai";
+
+import { removeSessionWorktree } from "./remove";
 
 interface DiscardWorktreeDialogProps {
   session: ChatSession | null;
   rootPath: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface TeardownResult {
-  ok: boolean;
-  log: string;
 }
 
 export function DiscardWorktreeDialog({
@@ -95,44 +91,19 @@ export function DiscardWorktreeDialog({
 
       setBusy(true);
       try {
-        const agent = useAgentStore.getState();
-        if (agent.runSessionId === session.id) agent.requestStop();
+        const branch = session.worktree.branch;
+        const removed = await removeSessionWorktree(rootPath, session, force);
 
-        const teardown = await invoke<TeardownResult>("git_session_worktree_teardown", {
-          repoPath: rootPath,
-          worktreePath: session.worktree.path,
-        });
-        if (!teardown.ok) {
-          toast.error(teardown.log || "Could not tear down the worktree");
-          onOpenChange(false);
-          return;
-        }
-
-        await invoke("git_session_worktree_remove", {
-          repoPath: rootPath,
-          worktreePath: session.worktree.path,
-          force,
-        });
-
-        if (deleteBranch) {
+        if (removed && deleteBranch) {
           const merged = await invoke<boolean>("git_session_branch_merged", {
             repoPath: rootPath,
-            branch: session.worktree.branch,
+            branch,
           });
           if (!merged) {
-            await invoke("git_session_delete_branch", {
-              repoPath: rootPath,
-              branch: session.worktree.branch,
-            });
+            await invoke("git_session_delete_branch", { repoPath: rootPath, branch });
           }
         }
 
-        await useAIStore.getState().updateChatSession(rootPath, {
-          ...session,
-          environment: "checkout",
-          worktree: null,
-          updatedAt: Date.now(),
-        });
         onOpenChange(false);
       } catch {
         toast.error("Could not remove the worktree");

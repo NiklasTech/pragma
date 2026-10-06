@@ -6,12 +6,13 @@ mod conflict;
 mod diff;
 mod hunk;
 mod log;
+mod merge;
 mod remote;
 mod stage;
 mod stash;
 mod status;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 
 pub use blame::blame;
 pub use branch::{
@@ -26,6 +27,7 @@ pub use conflict::{conflict_sides, resolve_conflict};
 pub use diff::{diff, diff_content, index_content};
 pub use hunk::{apply_lines, LineAction, LineSelection};
 pub use log::{file_history, log};
+pub use merge::{merge_branch, rebase_onto};
 pub use remote::{fetch, list_remote_branches, list_remotes, pull_ff_only, push, remote_url};
 pub use stage::{discard, stage, unstage};
 pub use stash::{smart_checkout, stash_apply, stash_drop, stash_list, stash_pop, stash_push};
