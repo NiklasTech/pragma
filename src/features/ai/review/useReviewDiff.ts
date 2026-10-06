@@ -47,7 +47,7 @@ async function loadWrittenDiff(cwd: string, row: ReviewRow): Promise<ReviewDiffD
   }
 }
 
-export function useReviewDiff(row: ReviewRow | null, cwd: string): ReviewDiffState {
+export function useReviewDiff(row: ReviewRow | null, cwd: string, revision = 0): ReviewDiffState {
   const [state, setState] = useState<ReviewDiffState>({ status: "idle" });
   const shownRowIdRef = useRef<string | null>(null);
 
@@ -89,7 +89,7 @@ export function useReviewDiff(row: ReviewRow | null, cwd: string): ReviewDiffSta
     return () => {
       cancelled = true;
     };
-  }, [row, cwd]);
+  }, [row, cwd, revision]);
 
   return state;
 }
