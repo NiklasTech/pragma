@@ -14,6 +14,12 @@ export const AGENT_TOOL_NAMES = {
   remember: "agent_remember",
   spawnSession: "agent_spawn_session",
   openBrowser: "agent_open_browser",
+  listDir: "agent_list_dir",
+  getDiagnostics: "agent_get_diagnostics",
+  findDefinition: "agent_find_definition",
+  findReferences: "agent_find_references",
+  workspaceSymbols: "agent_workspace_symbols",
+  webFetch: "agent_web_fetch",
 } as const;
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[keyof typeof AGENT_TOOL_NAMES];
@@ -247,6 +253,7 @@ export function buildAgentSystemPrompt(
     `The workspace root is: ${rootPath}`,
     "Use the agent tools to inspect files, edit code and run shell commands. Prefer small, verifiable steps: read before you write, and run builds or tests to verify your changes.",
     "Edit existing files with agent_search_replace. Use agent_grep and agent_glob to locate code, and agent_read_file with offset/limit to read large files without dumping them fully.",
+    `Use ${AGENT_TOOL_NAMES.listDir} to explore directories, ${AGENT_TOOL_NAMES.findDefinition}, ${AGENT_TOOL_NAMES.findReferences} and ${AGENT_TOOL_NAMES.workspaceSymbols} to navigate code through the language server, and ${AGENT_TOOL_NAMES.getDiagnostics} after edits to check for errors.`,
     `Keep your todo list updated with ${AGENT_TOOL_NAMES.todoWrite} as you plan and complete work.`,
     "Paths may be absolute or relative to the workspace root.",
     `Do not stop early and do not ask questions. When the task is completely finished and verified, call ${AGENT_TOOL_NAMES.taskComplete} with a summary.`,
