@@ -29,6 +29,8 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
+import type { FinishAction } from "@/features/ai/worktree/finish";
+import { FinishWorktreeMenu } from "@/features/ai/worktree/FinishWorktreeMenu";
 
 import { providerAccent } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -82,6 +84,7 @@ interface ThreadRowProps {
   onNewCategory?: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
   onDiscard: (sessionId: string) => void;
+  onFinish?: (sessionId: string, action: FinishAction) => void;
 }
 
 export function ThreadRow({
@@ -101,6 +104,7 @@ export function ThreadRow({
   onNewCategory,
   onDelete,
   onDiscard,
+  onFinish,
 }: ThreadRowProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [draft, setDraft] = useState(session.title);
@@ -294,6 +298,12 @@ export function ThreadRow({
                 <CheckSquare size={14} />
                 Select
               </DropdownMenuItem>
+            )}
+            {session.worktree && onFinish && (
+              <FinishWorktreeMenu
+                disabled={shownStatus === "running" || shownStatus === "waiting-approval"}
+                onFinish={(action) => onFinish(session.id, action)}
+              />
             )}
             {session.worktree && (
               <DropdownMenuItem onClick={() => onDiscard(session.id)}>

@@ -12,6 +12,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
+import { useFinishWorktree } from "@/features/ai/worktree/useFinishWorktree";
 import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
 import { AgentRoster } from "@/features/ai/named-agents/AgentRoster";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
@@ -58,6 +59,7 @@ export function ThreadList() {
   const [discardSessionId, setDiscardSessionId] = useState<string | null>(null);
   const [categoryTargets, setCategoryTargets] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const finishWorktree = useFinishWorktree(rootPath ?? "default");
 
   const staleTerminals = useStaleTerminalIds(chatSessions, rootPath ?? "default");
   const sessions = useMemo(
@@ -232,6 +234,7 @@ export function ThreadList() {
       onNewCategory={(sessionId) => setCategoryTargets([sessionId])}
       onDelete={(sessionId) => setSessionsToDelete([sessionId])}
       onDiscard={setDiscardSessionId}
+      onFinish={finishWorktree.finish}
     />
   );
 
@@ -430,6 +433,8 @@ export function ThreadList() {
           if (!open) setDiscardSessionId(null);
         }}
       />
+
+      {finishWorktree.dialogs}
     </div>
   );
 }

@@ -118,6 +118,12 @@ pub struct GitPullResult {
     pub had_conflicts: bool,
 }
 
+#[derive(Serialize, Debug)]
+pub struct GitMergeResult {
+    pub completed: bool,
+    pub conflicts: Vec<String>,
+}
+
 #[derive(Serialize)]
 pub struct GitRemote {
     pub name: String,
