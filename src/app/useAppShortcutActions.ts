@@ -6,6 +6,7 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
+import { dispatchTerminalFind, isTerminalFindFocused } from "@/shared/lib/terminal-events";
 import { useLayoutStore } from "@/shell/layout";
 import { resolveUiMode, useUiModeStore } from "@/shell/mode";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
@@ -106,7 +107,8 @@ export function useAppShortcutActions(): ShortcutActions {
         window.dispatchEvent(new CustomEvent("focus-search"));
       },
       "search.find": () => {
-        dispatchEditorFind();
+        if (isTerminalFindFocused()) dispatchTerminalFind();
+        else dispatchEditorFind();
       },
       "search.replace": () => {
         dispatchEditorReplace();

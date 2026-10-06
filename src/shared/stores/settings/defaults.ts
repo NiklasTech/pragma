@@ -24,6 +24,12 @@ export const defaultSettings: SettingsState = {
     fontId: "",
     aiSuggestions: true,
     scrollback: 10000,
+    cursorStyle: "block",
+    cursorBlink: true,
+    copyOnSelect: false,
+    lineHeight: 1,
+    envByWorkspace: {},
+    restoreScrollback: false,
   },
   ai: {
     defaultProvider: "anthropic",

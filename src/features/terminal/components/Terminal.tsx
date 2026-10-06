@@ -20,6 +20,7 @@ import { dispatchTerminalClear, dispatchTerminalCopyOutput } from "@/shared/lib/
 import { TerminalSession } from "./TerminalSession";
 import { RunTerminalSession } from "./RunTerminalSession";
 import { TerminalTabs } from "./TerminalTabs";
+import { retainScrollbackPersistence } from "../terminalScrollback";
 
 interface TerminalProps {
   panelId?: string;
@@ -47,6 +48,8 @@ export function Terminal({ panelId }: TerminalProps) {
     panelSessions.map((session) => session.id),
     panelId ? activeByPanel[panelId] : undefined,
   );
+
+  useEffect(() => retainScrollbackPersistence(), []);
 
   useEffect(() => {
     if (panelSessions.length > 0 || !shellResolved) return;

@@ -20,7 +20,7 @@ function toFile(image: ImageFile): File {
   return new File([bytes], image.name, { type: image.media_type });
 }
 
-function isOver(target: HTMLElement | null, position: { x: number; y: number }): boolean {
+export function isOver(target: HTMLElement | null, position: { x: number; y: number }): boolean {
   if (!target) return false;
   const ratio = window.devicePixelRatio || 1;
   const element = document.elementFromPoint(position.x / ratio, position.y / ratio);

@@ -2,11 +2,25 @@
 
 import { Input } from "@/shared/components/ui/input";
 import { Switch } from "@/shared/components/ui/switch";
-import { useSettingsStore } from "@/shared/stores/settings";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { useSettingsStore, type TerminalCursorStyle } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 import { FontSelect } from "./FontSelect";
+import { TerminalEnvSettings } from "./TerminalEnvSettings";
+
+const CURSOR_STYLE_LABELS: Record<TerminalCursorStyle, string> = {
+  block: "Block",
+  underline: "Underline",
+  bar: "Bar",
+};
 
 export function TerminalSettings() {
   const { terminal, setTerminalSettings } = useSettingsStore();
@@ -68,6 +82,20 @@ export function TerminalSettings() {
               }}
             />
           </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <span className="text-ui-sm text-fg-default">Line Height</span>
+            <Input
+              type="number"
+              min={1}
+              max={2}
+              step={0.1}
+              value={terminal.lineHeight}
+              onChange={(e) => {
+                const value = Math.min(2, Math.max(1, Number(e.target.value)));
+                update({ lineHeight: Number.isNaN(value) ? 1 : value });
+              }}
+            />
+          </div>
           <div className="col-span-full flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Font Family</span>
             <FontSelect
@@ -76,7 +104,61 @@ export function TerminalSettings() {
             />
           </div>
         </div>
+        <SettingRow
+          label="Cursor Style"
+          control={
+            <Select
+              value={terminal.cursorStyle}
+              onValueChange={(v) => update({ cursorStyle: v as TerminalCursorStyle })}
+            >
+              <SelectTrigger className="max-w-[200px]">
+                <SelectValue>{CURSOR_STYLE_LABELS[terminal.cursorStyle]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CURSOR_STYLE_LABELS) as TerminalCursorStyle[]).map((style) => (
+                  <SelectItem key={style} value={style}>
+                    {CURSOR_STYLE_LABELS[style]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
+        <SettingRow
+          label="Cursor Blink"
+          control={
+            <Switch
+              checked={terminal.cursorBlink}
+              onCheckedChange={(v) => update({ cursorBlink: v })}
+            />
+          }
+        />
       </SettingSection>
+
+      <SettingSection title="Behavior">
+        <SettingRow
+          label="Copy on Select"
+          description="Copy selected terminal text to the clipboard automatically"
+          control={
+            <Switch
+              checked={terminal.copyOnSelect}
+              onCheckedChange={(v) => update({ copyOnSelect: v })}
+            />
+          }
+        />
+        <SettingRow
+          label="Restore Scrollback"
+          description="Also restore terminal output after a restart. Tabs, splits and working directories are always restored."
+          control={
+            <Switch
+              checked={terminal.restoreScrollback}
+              onCheckedChange={(v) => update({ restoreScrollback: v })}
+            />
+          }
+        />
+      </SettingSection>
+
+      <TerminalEnvSettings />
 
       <SettingSection title="AI">
         <SettingRow

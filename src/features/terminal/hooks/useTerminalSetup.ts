@@ -9,10 +9,15 @@ import {
   useTerminalStore,
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { safePtyInvoke } from "../safePtyInvoke";
 import { registerTerminalOutput } from "../terminalOutput";
+import { loadRenderAddons, passFindShortcut } from "../terminalAddons";
+import { terminalEnvFor } from "../terminalEnv";
+import { takeTerminalScrollback } from "../terminalScrollback";
 
 interface PtyOutputEvent {
   id: string;
@@ -33,6 +38,7 @@ interface TerminalSetupOptions {
   fontSize: number;
   terminalFontFamily: string;
   scrollback: number;
+  lineHeight: number;
 }
 
 // Creates the xterm instance, spawns or attaches the PTY and keeps both sized together.
@@ -50,6 +56,7 @@ export function useTerminalSetup({
   fontSize,
   terminalFontFamily,
   scrollback,
+  lineHeight,
 }: TerminalSetupOptions) {
   useEffect(() => {
     let disposed = false;
@@ -71,14 +78,17 @@ export function useTerminalSetup({
       }
       if (disposed) return;
 
+      const { cursorStyle, cursorBlink } = useSettingsStore.getState().terminal;
       const t = new XTerm({
         fontSize,
         fontFamily: `${terminalFontFamily}, Consolas, Courier New, monospace`,
-        cursorBlink: true,
-        cursorStyle: "block",
+        lineHeight,
+        cursorBlink,
+        cursorStyle,
         convertEol: true,
         scrollback,
         theme: getXtermTheme(),
+        allowProposedApi: true,
       });
       const fit = new FitAddon();
       fitRef.current = fit;
@@ -90,11 +100,15 @@ export function useTerminalSetup({
         }),
       );
       t.open(containerRef.current);
+      loadRenderAddons(t);
+      passFindShortcut(t);
       removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);
       ptyIdRef.current = session.ptyId ?? null;
+      const restored = session.ptyId ? null : takeTerminalScrollback(session.id);
+      if (restored) t.write(`${restored}\n`);
 
       da1Handler = t.parser.registerCsiHandler({ final: "c" }, (params) => {
         // DA1: CSI c or CSI 0 c
@@ -165,6 +179,7 @@ export function useTerminalSetup({
               cwd: session.cwd ?? null,
               cols: Math.max(cols, 10),
               rows: Math.max(rows, 2),
+              env: terminalEnvFor(useFileExplorerStore.getState().rootPath),
             });
           }
           if (disposed) {
@@ -261,6 +276,7 @@ export function useTerminalSetup({
     fontSize,
     terminalFontFamily,
     scrollback,
+    lineHeight,
     session.id,
   ]);
 }

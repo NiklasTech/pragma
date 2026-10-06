@@ -157,6 +157,28 @@ fn build_command(shell: &str, cwd: Option<&str>) -> CommandBuilder {
     cmd
 }
 
+const MAX_ENV_VARS: usize = 256;
+
+fn validate_env(env: Option<HashMap<String, String>>) -> Result<Vec<(String, String)>, String> {
+    let env = env.unwrap_or_default();
+    if env.len() > MAX_ENV_VARS {
+        return Err(format!(
+            "Too many environment variables (max {MAX_ENV_VARS})"
+        ));
+    }
+    let mut vars: Vec<(String, String)> = env.into_iter().collect();
+    for (key, value) in &vars {
+        if key.is_empty() || key.contains('=') || key.contains('\0') {
+            return Err(format!("Invalid environment variable name: {key:?}"));
+        }
+        if value.contains('\0') {
+            return Err(format!("Invalid value for environment variable {key}"));
+        }
+    }
+    vars.sort();
+    Ok(vars)
+}
+
 #[tauri::command]
 pub fn resolve_terminal_shell(shell: Option<String>) -> Result<String, String> {
     let shell = shell.filter(|s| !s.is_empty());
@@ -177,7 +199,9 @@ pub fn create_pty(
     cwd: Option<String>,
     cols: u16,
     rows: u16,
+    env: Option<HashMap<String, String>>,
 ) -> Result<String, String> {
+    let env = validate_env(env)?;
     let shell = resolve_shell(shell);
     let pty_system = NativePtySystem::default();
     let pair = pty_system
@@ -189,7 +213,10 @@ pub fn create_pty(
         })
         .map_err(|e| e.to_string())?;
 
-    let cmd = build_command(&shell, cwd.as_deref());
+    let mut cmd = build_command(&shell, cwd.as_deref());
+    for (key, value) in env {
+        cmd.env(key, value);
+    }
     let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     drop(pair.slave);
 
@@ -441,6 +468,38 @@ mod tests {
             ]
         );
         assert_eq!(sh.get_argv().len(), 1);
+    }
+
+    #[test]
+    fn validate_env_accepts_valid_variables() {
+        let env = HashMap::from([
+            ("B".to_string(), "2".to_string()),
+            ("A".to_string(), "x=y".to_string()),
+        ]);
+
+        assert_eq!(
+            validate_env(Some(env)).unwrap(),
+            vec![
+                ("A".to_string(), "x=y".to_string()),
+                ("B".to_string(), "2".to_string())
+            ]
+        );
+        assert!(validate_env(None).unwrap().is_empty());
+    }
+
+    #[test]
+    fn validate_env_rejects_invalid_variables() {
+        for key in ["", "A=B", "A\0"] {
+            let env = HashMap::from([(key.to_string(), "1".to_string())]);
+            assert!(validate_env(Some(env)).is_err());
+        }
+        let env = HashMap::from([("A".to_string(), "1\0".to_string())]);
+        assert!(validate_env(Some(env)).is_err());
+
+        let too_many = (0..=MAX_ENV_VARS)
+            .map(|index| (format!("VAR_{index}"), String::new()))
+            .collect();
+        assert!(validate_env(Some(too_many)).is_err());
     }
 
     #[cfg(not(windows))]

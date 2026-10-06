@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { useTerminalStore } from "./terminal";
+import { restorableTerminalState, useTerminalStore } from "./terminal";
 
 describe("useTerminalStore", () => {
   it("adds a session without a ptyId", () => {
@@ -133,5 +133,59 @@ describe("useTerminalStore", () => {
     expect(shell?.cwd).toBe("/new");
     expect(shell?.ptyId).toBeUndefined();
     expect(sessions.find((s) => s.type === "run")?.cwd).toBeUndefined();
+  });
+});
+
+describe("restorableTerminalState", () => {
+  it("keeps shell tabs without their PTY and drops other session types", () => {
+    const state = {
+      ...useTerminalStore.getState(),
+      sessions: [
+        {
+          id: "shell",
+          name: "Shell",
+          type: "shell" as const,
+          shell: "/bin/zsh",
+          cwd: "/repo/src",
+          panelId: "panel-1",
+          isActive: true,
+          ptyId: "pty-1",
+        },
+        {
+          id: "command",
+          name: "Command",
+          type: "shell" as const,
+          command: "npm test",
+          panelId: "panel-1",
+          isActive: true,
+        },
+        {
+          id: "run",
+          name: "Run",
+          type: "run" as const,
+          processId: "proc-1",
+          panelId: "panel-2",
+          isActive: true,
+        },
+      ],
+      activeByPanel: { "panel-1": "shell", "panel-2": "run" },
+      lastActiveSessionId: "run",
+    };
+
+    expect(restorableTerminalState(state)).toEqual({
+      sessions: [
+        {
+          id: "shell",
+          name: "Shell",
+          type: "shell",
+          shell: "/bin/zsh",
+          cwd: "/repo/src",
+          panelId: "panel-1",
+          isActive: true,
+        },
+      ],
+      activeByPanel: { "panel-1": "shell" },
+      lastActiveSessionId: null,
+    });
   });
 });

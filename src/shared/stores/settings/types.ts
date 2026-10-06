@@ -19,6 +19,13 @@ export interface EditorSettings {
   inlayHints: boolean;
 }
 
+export type TerminalCursorStyle = "block" | "underline" | "bar";
+
+export interface TerminalEnvVar {
+  key: string;
+  value: string;
+}
+
 export interface TerminalSettings {
   shell: string;
   fontSize: number;
@@ -26,6 +33,13 @@ export interface TerminalSettings {
   fontId: string;
   aiSuggestions: boolean;
   scrollback: number;
+  cursorStyle: TerminalCursorStyle;
+  cursorBlink: boolean;
+  copyOnSelect: boolean;
+  lineHeight: number;
+  /** Workspace root path -> environment variables for shells started in that workspace. */
+  envByWorkspace: Record<string, TerminalEnvVar[]>;
+  restoreScrollback: boolean;
 }
 
 export type AIProvider =
