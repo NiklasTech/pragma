@@ -62,7 +62,7 @@ pub fn glob_workspace(req: GlobWorkspaceRequest) -> Result<Vec<String>, String> 
     Ok(results)
 }
 
-fn resolve_glob_path(workspace_root: &Path, raw: &str) -> Result<PathBuf, String> {
+pub(super) fn resolve_glob_path(workspace_root: &Path, raw: &str) -> Result<PathBuf, String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         return Err("path is required".to_string());

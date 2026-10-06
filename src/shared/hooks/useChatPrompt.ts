@@ -6,6 +6,7 @@ import { useAgentStore } from "@/features/agent/store";
 import { AGENT_TOOL_DEFINITIONS, buildAgentSystemPrompt } from "@/features/agent/tools";
 import { formatRulesForPrompt, loadProjectRules } from "@/features/agent/rules";
 import { OPEN_BROWSER_TOOL_DEFINITION } from "@/features/agent/browserTool";
+import { INSIGHT_TOOL_DEFINITIONS } from "@/features/agent/insightTools";
 import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
 import { extensionToolDefinitions } from "@/features/extensions/agentTools";
 import { useExtensionsStore } from "@/features/extensions/store";
@@ -37,9 +38,10 @@ export function useChatPrompt({ activeSession, activeAgent, cwd, rootPath }: Cha
     if (!agentActive) return [];
     const extensionDefinitions = extensionToolDefinitions(extensionTools);
     return activeSessionKind === "ask"
-      ? [...AGENT_TOOL_DEFINITIONS, ...extensionDefinitions]
+      ? [...AGENT_TOOL_DEFINITIONS, ...INSIGHT_TOOL_DEFINITIONS, ...extensionDefinitions]
       : [
           ...AGENT_TOOL_DEFINITIONS,
+          ...INSIGHT_TOOL_DEFINITIONS,
           SPAWN_SESSION_TOOL_DEFINITION,
           OPEN_BROWSER_TOOL_DEFINITION,
           ...extensionDefinitions,
