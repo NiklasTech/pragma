@@ -17,6 +17,7 @@ export const createReposSlice: GitSlice<
       diffContent: null,
       diffPath: null,
       commitMessage: "",
+      commitAmend: false,
       error: null,
     });
     if (path) {

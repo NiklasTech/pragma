@@ -2,6 +2,7 @@ pub mod commands;
 pub mod errors;
 pub mod github;
 pub mod graph_layout;
+pub mod last_commit;
 pub mod operations;
 pub mod parser;
 mod process;
