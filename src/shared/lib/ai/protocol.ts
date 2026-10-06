@@ -3,6 +3,7 @@ import { getToolName, isToolUIPart, type DynamicToolUIPart, type UIMessage } fro
 import { buildContextUserMessage } from "@/shared/lib/chat-context";
 import type { ChatMessage } from "@/shared/stores/ai";
 
+import { createCompactionMessage, isCompactionMessage } from "./compaction";
 import { getMessageImages, imageToFilePart, toBackendImage, type BackendImage } from "./images";
 
 export interface BackendToolCall {
@@ -99,7 +100,7 @@ interface ToolInvocationPart {
   };
 }
 
-function stripReasoningTags(text: string): string {
+export function stripReasoningTags(text: string): string {
   const tags = [
     { open: "<thinking>", close: "</thinking>" },
     { open: "<reasoning>", close: "</reasoning>" },
@@ -267,13 +268,18 @@ export function uiMessageToStored(msg: UIMessage): ChatMessage {
   };
   const images = getMessageImages(msg);
   if (images.length > 0) stored.images = images;
+  if (isCompactionMessage(msg)) stored.kind = "compaction";
   return stored;
 }
 
 export function storedMessagesToUI(messages: ChatMessage[]): UIMessage[] {
-  return messages.map((m): UIMessage => ({
-    id: m.id,
-    role: m.role,
-    parts: [...(m.images ?? []).map(imageToFilePart), { type: "text", text: m.content }],
-  }));
+  return messages.map((m): UIMessage =>
+    m.kind === "compaction"
+      ? createCompactionMessage(m.content, m.id)
+      : {
+          id: m.id,
+          role: m.role,
+          parts: [...(m.images ?? []).map(imageToFilePart), { type: "text", text: m.content }],
+        },
+  );
 }

@@ -31,6 +31,8 @@ import { expandPromptCommand } from "@/features/ai/mcp/prompts";
 import { useAgent } from "@/features/agent/useAgent";
 import { useAgentStore } from "@/features/agent/store";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import { compactIfNeeded } from "@/features/ai/compaction/compactSession";
+import { useLiveChatRegistration } from "@/features/ai/compaction/liveChat";
 
 export { getMessageText };
 
@@ -222,6 +224,7 @@ export function useAI() {
   });
 
   chatRef.current = chat;
+  useLiveChatRegistration(activeChatSessionId, chatRef);
 
   useAgent({ chatRef, chatStatus: chat.status });
 
@@ -290,6 +293,8 @@ export function useAI() {
         }
       }
 
+      if (!isCLIActive && activeChatSessionId) await compactIfNeeded(activeChatSessionId);
+
       if (agentActive && !isCLIActive) {
         useAgentStore
           .getState()
@@ -310,6 +315,7 @@ export function useAI() {
       isCLIActive,
       activeSession,
       mcpServerIds,
+      activeChatSessionId,
     ],
   );
 

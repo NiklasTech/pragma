@@ -28,6 +28,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import type { AgentStatus } from "@/features/agent/store";
 
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
+import { CompactSessionMenuItem } from "../compaction/CompactSessionMenuItem";
 import { ComposerMicButton } from "../components/ComposerMicButton";
 import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useTerminalActivity } from "../terminal/useTerminalActivity";
@@ -290,6 +291,7 @@ export function PaneHeader({
                   <span>Rename</span>
                 </DropdownMenuItem>
               )}
+              {session && <CompactSessionMenuItem session={session} />}
               <DropdownMenuItem onClick={onToggleMaximize}>
                 {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
                 <span>{maximizeLabel}</span>

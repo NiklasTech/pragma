@@ -78,6 +78,20 @@ pub struct ChatMessage {
     pub timestamp: i64,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub images: Vec<ImageContent>,
+    /// `compaction` marks a summary that replaces the messages before it in requests.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+}
+
+const MESSAGE_KINDS: &[&str] = &["compaction"];
+
+fn validate_message_kind(kind: Option<&str>) -> Result<(), String> {
+    match kind {
+        Some(kind) if !MESSAGE_KINDS.contains(&kind) => {
+            Err(format!("unknown message kind: {kind}"))
+        }
+        _ => Ok(()),
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -283,6 +297,9 @@ pub async fn ai_save_session_messages(
     for image in req.messages.iter().flat_map(|message| &message.images) {
         validate_image(image)?;
     }
+    for message in &req.messages {
+        validate_message_kind(message.kind.as_deref())?;
+    }
     let _guard = SESSION_IO_LOCK.lock().await;
     let path = context_path(&app, &req.root_path, &req.session_id)?;
     save_messages(&path, req.messages).await
@@ -345,7 +362,35 @@ mod tests {
             content: content.to_string(),
             timestamp: 1,
             images: Vec::new(),
+            kind: None,
         }
+    }
+
+    #[test]
+    fn only_known_message_kinds_are_accepted() {
+        assert!(validate_message_kind(None).is_ok());
+        assert!(validate_message_kind(Some("compaction")).is_ok());
+        assert!(validate_message_kind(Some("other")).is_err());
+    }
+
+    #[tokio::test]
+    async fn message_kind_round_trips_and_stays_optional() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("context.jsonl");
+        let summary = ChatMessage {
+            kind: Some("compaction".to_string()),
+            ..message("1", "summary")
+        };
+
+        save_messages(&path, vec![summary, message("2", "plain")])
+            .await
+            .unwrap();
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(!content.lines().nth(1).unwrap().contains("kind"));
+        let loaded = load_messages(&path).await.unwrap();
+        assert_eq!(loaded[0].kind.as_deref(), Some("compaction"));
+        assert!(loaded[1].kind.is_none());
     }
 
     #[test]
