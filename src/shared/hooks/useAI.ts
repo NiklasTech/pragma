@@ -239,7 +239,7 @@ export function useAI() {
   }, []);
 
   const submitText = useCallback(
-    async (raw: string, images: ChatImage[] = []) => {
+    async (raw: string, images: ChatImage[] = [], options: { replaceMessageId?: string } = {}) => {
       if (!raw.trim() && images.length === 0) return false;
       if (chat.status === "submitted" || chat.status === "streaming") return false;
 
@@ -293,7 +293,10 @@ export function useAI() {
         }
       }
 
-      if (!isCLIActive && activeChatSessionId) await compactIfNeeded(activeChatSessionId);
+      // An edit drops the later messages, and compaction could remove the message it replaces.
+      if (!isCLIActive && activeChatSessionId && !options.replaceMessageId) {
+        await compactIfNeeded(activeChatSessionId);
+      }
 
       if (agentActive && !isCLIActive) {
         useAgentStore
@@ -303,7 +306,11 @@ export function useAI() {
       }
 
       pendingContextRef.current = contextParts.length > 0 ? contextParts.join("\n\n") : null;
-      void chat.sendMessage({ text: messageText, files: images.map(imageToFilePart) });
+      void chat.sendMessage({
+        text: messageText,
+        files: images.map(imageToFilePart),
+        messageId: options.replaceMessageId,
+      });
       return true;
     },
     [
@@ -385,6 +392,7 @@ export function useAI() {
     status: chat.status,
     error: chat.error,
     regenerate,
+    setMessages: chat.setMessages,
     stop: chat.stop,
     canChat,
     isCLIActive,
