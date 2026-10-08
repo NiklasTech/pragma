@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::local_history;
 
-fn validate_path(path: &str) -> Result<&Path, String> {
+pub(crate) fn validate_path(path: &str) -> Result<&Path, String> {
     let parsed = Path::new(path);
 
     if !parsed.is_absolute() {

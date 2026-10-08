@@ -11,6 +11,7 @@ import { useDockerStore } from "@/shared/stores/docker";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
+import { retargetTabs } from "@/features/editor/retargetTabs";
 
 export interface DirEntry {
   path: string;
@@ -178,6 +179,7 @@ export function useFileExplorer() {
     try {
       await invoke("rename_file", { oldPath, newPath });
       useFileExplorerStore.getState().renameNode(oldPath, newPath, newName);
+      retargetTabs(oldPath, newPath);
     } catch (err) {
       toast.error(String(err));
     }

@@ -133,6 +133,8 @@ pub fn run() {
             modules::fs::create_directory,
             modules::fs::rename_file,
             modules::fs::delete_file,
+            modules::fs_ops::duplicate_path,
+            modules::fs_ops::reveal_in_file_manager,
             modules::fs_watcher::workspace_watch,
             modules::fs_watcher::workspace_unwatch,
             modules::pty::create_pty,

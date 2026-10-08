@@ -1,27 +1,13 @@
 import { useCallback, useState } from "react";
-import {
-  CaretRight,
-  CaretDown,
-  Spinner,
-  ClockCounterClockwise,
-  File,
-  FolderPlus,
-  PencilSimple,
-  Trash,
-} from "@phosphor-icons/react";
+import { CaretRight, CaretDown, Spinner } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { getFolderIconPath } from "@/shared/lib/folder-icons";
-import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
+import { parentPath } from "@/shared/lib/fileDisk";
+import { PRAGMA_PATH_MIME, PRAGMA_PATHS_MIME } from "@/shared/lib/pragma-drag";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from "@/shared/components/ui/context-menu";
+import { ContextMenu, ContextMenuTrigger } from "@/shared/components/ui/context-menu";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import {
   AlertDialog,
@@ -35,6 +21,9 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import type { FileSystemNode } from "@/shared/stores/fileExplorer";
 import type { GitDecoration, GitDecorationKind } from "@/features/sidebar/lib/gitDecorations";
+import { selectionTargets, useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
+import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
+import { FileTreeContextMenu } from "./FileTreeContextMenu";
 
 const INDENT = 12;
 
@@ -56,6 +45,8 @@ interface FileTreeNodeProps {
   onCreate: (parentPath: string, name: string, isDirectory: boolean) => void;
   onRename: (path: string, newName: string) => void;
   onDelete: (path: string) => void;
+  onMultiSelect: (path: string, mode: "toggle" | "range") => void;
+  onMove: (paths: string[], targetDir: string) => void;
   onShowLocalHistory?: (path: string) => void;
   decoration?: GitDecoration;
   hasChanges?: boolean;
@@ -71,17 +62,23 @@ export function FileTreeNode({
   onCreate,
   onRename,
   onDelete,
+  onMultiSelect,
+  onMove,
   onShowLocalHistory,
   decoration,
   hasChanges = false,
 }: FileTreeNodeProps) {
   const activeTabId = useEditorStore((s) => s.activeTabId);
+  const selection = useFileSelectionStore((s) => s.paths);
   const isExpanded = expandedDirs.has(node.path);
-  const isSelected = selectedPath === node.path;
+  const isSelected =
+    selection.length > 0 ? selection.includes(node.path) : selectedPath === node.path;
   const isActiveFile = activeTabId === node.path;
   const showDirLoading = useDelayedLoading(node.isLoading === true);
+  const targets = selectionTargets(node.path, selection);
+  const drop = useFileTreeDrop(node.isDirectory ? node.path : parentPath(node.path), onMove);
 
-  const handleClick = useCallback(() => {
+  const activate = useCallback(() => {
     if (node.isDirectory) {
       onToggleDir(node.path);
     } else {
@@ -89,12 +86,28 @@ export function FileTreeNode({
     }
   }, [node, onToggleDir, onOpenFile]);
 
+  const handleClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (event.metaKey || event.ctrlKey) {
+        onMultiSelect(node.path, "toggle");
+        return;
+      }
+      if (event.shiftKey) {
+        onMultiSelect(node.path, "range");
+        return;
+      }
+      useFileSelectionStore.getState().reset(node.path);
+      activate();
+    },
+    [node.path, onMultiSelect, activate],
+  );
+
   const [createDialog, setCreateDialog] = useState<{ open: boolean; isDirectory: boolean }>({
     open: false,
     isDirectory: false,
   });
   const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTargets, setDeleteTargets] = useState<string[] | null>(null);
 
   const handleCreateConfirm = useCallback(
     (name: string) => {
@@ -113,9 +126,11 @@ export function FileTreeNode({
   );
 
   const handleDeleteConfirm = useCallback(() => {
-    onDelete(node.path);
-    setDeleteOpen(false);
-  }, [node.path, onDelete]);
+    if (!deleteTargets) return;
+    for (const path of deleteTargets) onDelete(path);
+    if (deleteTargets.length > 1) useFileSelectionStore.getState().reset(null);
+    setDeleteTargets(null);
+  }, [deleteTargets, onDelete]);
 
   const handleShowLocalHistory = useCallback(() => {
     if (onShowLocalHistory) {
@@ -130,10 +145,13 @@ export function FileTreeNode({
       draggable
       onDragStart={(event) => {
         event.dataTransfer.setData(PRAGMA_PATH_MIME, node.path);
-        event.dataTransfer.effectAllowed = "copy";
+        event.dataTransfer.setData(PRAGMA_PATHS_MIME, JSON.stringify(targets));
+        event.dataTransfer.effectAllowed = "copyMove";
       }}
+      {...drop.handlers}
       className={cn(
         "group relative mx-1.5 my-px flex h-[calc(100%-2px)] items-center gap-1.5 rounded-md pr-2 text-ui-sm cursor-pointer select-none transition-colors",
+        drop.over && "ring-1 ring-primary ring-inset",
         isActiveFile
           ? "bg-accent-subtle text-fg-default"
           : isSelected
@@ -219,50 +237,15 @@ export function FileTreeNode({
     <div className="h-full">
       <ContextMenu>
         <ContextMenuTrigger className="block h-full">{content}</ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
-          {node.isDirectory ? (
-            <>
-              <ContextMenuItem onClick={() => setCreateDialog({ open: true, isDirectory: false })}>
-                <File size={14} />
-                <span>New File</span>
-              </ContextMenuItem>
-              <ContextMenuItem onClick={() => setCreateDialog({ open: true, isDirectory: true })}>
-                <FolderPlus size={14} />
-                <span>New Folder</span>
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => setRenameOpen(true)}>
-                <PencilSimple size={14} />
-                <span>Rename</span>
-              </ContextMenuItem>
-              <ContextMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash size={14} />
-                <span>Delete</span>
-              </ContextMenuItem>
-            </>
-          ) : (
-            <>
-              <ContextMenuItem onClick={handleClick}>
-                <File size={14} />
-                <span>Open</span>
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={handleShowLocalHistory}>
-                <ClockCounterClockwise size={14} />
-                <span>Local History</span>
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => setRenameOpen(true)}>
-                <PencilSimple size={14} />
-                <span>Rename</span>
-              </ContextMenuItem>
-              <ContextMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash size={14} />
-                <span>Delete</span>
-              </ContextMenuItem>
-            </>
-          )}
-        </ContextMenuContent>
+        <FileTreeContextMenu
+          node={node}
+          targets={targets}
+          onOpen={activate}
+          onCreate={(isDirectory) => setCreateDialog({ open: true, isDirectory })}
+          onRename={() => setRenameOpen(true)}
+          onDelete={() => setDeleteTargets(targets)}
+          onShowLocalHistory={handleShowLocalHistory}
+        />
       </ContextMenu>
 
       <InputDialog
@@ -286,12 +269,21 @@ export function FileTreeNode({
         onConfirm={handleRenameConfirm}
       />
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialog
+        open={deleteTargets !== null}
+        onOpenChange={(open) => !open && setDeleteTargets(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {node.isDirectory ? "Folder" : "File"}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteTargets && deleteTargets.length > 1
+                ? `Delete ${deleteTargets.length} Items`
+                : `Delete ${node.isDirectory ? "Folder" : "File"}`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{node.name}&quot;? This cannot be undone.
+              {deleteTargets && deleteTargets.length > 1
+                ? `Are you sure you want to delete ${deleteTargets.length} items? This cannot be undone.`
+                : `Are you sure you want to delete "${node.name}"? This cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
