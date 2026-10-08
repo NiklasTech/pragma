@@ -12,6 +12,9 @@ const MAX_TITLE_CHARS: usize = 120;
 const MAX_NOTES_CHARS: usize = 8000;
 const MAX_RESULT_CHARS: usize = 4000;
 const STATUSES: [&str; 4] = ["todo", "in_progress", "in_review", "done"];
+const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
+const MAX_LABELS: usize = 10;
+const MAX_LABEL_CHARS: usize = 32;
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -29,6 +32,13 @@ pub struct Task {
     pub session_id: Option<String>,
     #[serde(default)]
     pub result: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub priority: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub labels: Vec<String>,
+    /// Ids of tasks that must be done before this one can start.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub blocked_by: Vec<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -60,12 +70,44 @@ fn tasks_path(app: &AppHandle, root_path: &str) -> Result<PathBuf, String> {
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
+fn validate_labels(labels: &[String]) -> Result<(), String> {
+    if labels.len() > MAX_LABELS {
+        return Err(format!("A task can have at most {MAX_LABELS} labels"));
+    }
+    let mut seen = std::collections::HashSet::new();
+    for label in labels {
+        let chars = label.chars().count();
+        if label.trim() != label || chars == 0 || chars > MAX_LABEL_CHARS {
+            return Err(format!("Labels must be 1 to {MAX_LABEL_CHARS} characters"));
+        }
+        if !seen.insert(label.to_lowercase()) {
+            return Err("Labels must be unique".to_string());
+        }
+    }
+    Ok(())
+}
+
+fn validate_blockers(task: &Task, ids: &std::collections::HashSet<&str>) -> Result<(), String> {
+    let mut seen = std::collections::HashSet::new();
+    for blocker in &task.blocked_by {
+        if blocker == &task.id {
+            return Err("A task cannot block itself".to_string());
+        }
+        if !ids.contains(blocker.as_str()) || !seen.insert(blocker.as_str()) {
+            return Err("Blocking tasks must be unique and exist".to_string());
+        }
+    }
+    Ok(())
+}
+
 fn validate_tasks(tasks: &[Task]) -> Result<(), String> {
     let mut seen = std::collections::HashSet::new();
     for task in tasks {
         if task.id.trim().is_empty() || !seen.insert(task.id.as_str()) {
             return Err("Task ids must be unique".to_string());
         }
+    }
+    for task in tasks {
         let title_chars = task.title.trim().chars().count();
         if title_chars == 0 || title_chars > MAX_TITLE_CHARS {
             return Err("Title must be 1 to 120 characters".to_string());
@@ -79,6 +121,15 @@ fn validate_tasks(tasks: &[Task]) -> Result<(), String> {
         if !STATUSES.contains(&task.status.as_str()) {
             return Err("Invalid task status".to_string());
         }
+        if task
+            .priority
+            .as_deref()
+            .is_some_and(|priority| !PRIORITIES.contains(&priority))
+        {
+            return Err("Invalid task priority".to_string());
+        }
+        validate_labels(&task.labels)?;
+        validate_blockers(task, &seen)?;
     }
     Ok(())
 }
@@ -152,6 +203,9 @@ mod tests {
             agent_id: None,
             session_id: None,
             result: String::new(),
+            priority: None,
+            labels: Vec::new(),
+            blocked_by: Vec::new(),
             created_at: 1,
             updated_at: 1,
         }
@@ -185,5 +239,57 @@ mod tests {
         let mut long_result = task("a", "Fix", "todo");
         long_result.result = "x".repeat(4001);
         assert!(validate_tasks(&[long_result]).is_err());
+    }
+
+    #[test]
+    fn checks_priority_and_labels() {
+        let mut high = task("a", "Fix", "todo");
+        high.priority = Some("high".to_string());
+        high.labels = vec!["bug".to_string(), "ui".to_string()];
+        assert!(validate_tasks(&[high]).is_ok());
+
+        let mut unknown = task("a", "Fix", "todo");
+        unknown.priority = Some("urgent".to_string());
+        assert!(validate_tasks(&[unknown]).is_err());
+
+        for labels in [
+            vec![" bug".to_string()],
+            vec![String::new()],
+            vec!["x".repeat(33)],
+            vec!["Bug".to_string(), "bug".to_string()],
+            (0..11).map(|i| format!("l{i}")).collect(),
+        ] {
+            let mut bad = task("a", "Fix", "todo");
+            bad.labels = labels;
+            assert!(validate_tasks(&[bad]).is_err());
+        }
+    }
+
+    #[test]
+    fn blockers_must_point_at_other_existing_tasks() {
+        let mut blocked = task("b", "Ship", "todo");
+        blocked.blocked_by = vec!["a".to_string()];
+        assert!(validate_tasks(&[task("a", "Fix", "todo"), blocked.clone()]).is_ok());
+        assert!(validate_tasks(&[blocked]).is_err());
+
+        let mut own = task("a", "Fix", "todo");
+        own.blocked_by = vec!["a".to_string()];
+        assert!(validate_tasks(&[own]).is_err());
+
+        let mut twice = task("b", "Ship", "todo");
+        twice.blocked_by = vec!["a".to_string(), "a".to_string()];
+        assert!(validate_tasks(&[task("a", "Fix", "todo"), twice]).is_err());
+    }
+
+    #[test]
+    fn older_task_files_load_without_the_new_fields() {
+        let loaded: Task = serde_json::from_value(serde_json::json!({
+            "id": "a", "title": "Fix", "status": "todo", "createdAt": 1, "updatedAt": 1
+        }))
+        .unwrap();
+        assert!(loaded.priority.is_none());
+        assert!(loaded.labels.is_empty() && loaded.blocked_by.is_empty());
+        let saved = serde_json::to_value(&loaded).unwrap();
+        assert!(saved.get("blockedBy").is_none() && saved.get("labels").is_none());
     }
 }
