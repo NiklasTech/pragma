@@ -5,7 +5,10 @@ import {
   Cherries,
   Copy,
   GitBranch,
+  GitDiff,
   Info,
+  Tag,
+  Trash,
 } from "@phosphor-icons/react";
 import {
   ContextMenuContent,
@@ -17,6 +20,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/shared/components/ui/context-menu";
+import { useGitCompareDialog } from "../../lib/gitDialogs";
 import type { GitLogEntry } from "./types";
 
 export function CommitRowContextMenu({
@@ -28,6 +32,8 @@ export function CommitRowContextMenu({
   onCherryPick,
   onRevert,
   onReset,
+  onCreateTag,
+  onDeleteTag,
 }: {
   commit: GitLogEntry;
   onViewDetails: (sha: string) => void;
@@ -37,6 +43,8 @@ export function CommitRowContextMenu({
   onCherryPick: (sha: string) => void;
   onRevert: (sha: string) => void;
   onReset: (sha: string, mode: "soft" | "mixed" | "hard") => void;
+  onCreateTag: (sha: string) => void;
+  onDeleteTag: (tag: string) => void;
 }) {
   return (
     <ContextMenuContent align="start" alignOffset={4} side="right" sideOffset={0}>
@@ -57,6 +65,20 @@ export function CommitRowContextMenu({
         <ContextMenuItem onClick={() => onCreateBranch(commit.sha)}>
           <GitBranch weight="regular" />
           Create branch from commit
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => onCreateTag(commit.sha)}>
+          <Tag weight="regular" />
+          Create tag
+        </ContextMenuItem>
+        {commit.tags.map((tag) => (
+          <ContextMenuItem key={tag} variant="destructive" onClick={() => onDeleteTag(tag)}>
+            <Trash weight="regular" />
+            Delete tag {tag}
+          </ContextMenuItem>
+        ))}
+        <ContextMenuItem onClick={() => useGitCompareDialog.getState().show(commit.sha, "HEAD")}>
+          <GitDiff weight="regular" />
+          Compare with HEAD
         </ContextMenuItem>
       </ContextMenuGroup>
       <ContextMenuSeparator />

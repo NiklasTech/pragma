@@ -7,7 +7,7 @@ use crate::modules::git::utils::{
     authorized_repo_root, pathspec, resolve_within_repo, sha_is_safe,
 };
 
-const LOG_FORMAT: &str = "%H%x1f%an%x1f%ae%x1f%at%x1f%P%x1f%s";
+const LOG_FORMAT: &str = "%H%x1f%an%x1f%ae%x1f%at%x1f%P%x1f%D%x1f%s";
 const MAX_LOG_LIMIT: u32 = 200;
 
 pub fn log(repo_root: &str, limit: u32, before_sha: Option<&str>) -> Result<Vec<GitLogEntry>> {
@@ -109,7 +109,7 @@ fn parse_log_stdout(stdout: &str, bounded: u32) -> Vec<GitLogEntry> {
             continue;
         }
         if line.contains('\x1f') {
-            let mut fields = line.splitn(6, '\x1f');
+            let mut fields = line.splitn(7, '\x1f');
             let sha = fields.next().unwrap_or("").to_string();
             if !sha_is_safe(&sha) {
                 continue;
@@ -122,6 +122,7 @@ fn parse_log_stdout(stdout: &str, bounded: u32) -> Vec<GitLogEntry> {
                 .split_ascii_whitespace()
                 .map(|s| s.to_string())
                 .collect();
+            let tags = parse_decoration_tags(fields.next().unwrap_or(""));
             let subject = fields.next().unwrap_or("").to_string();
             let short_sha = sha.chars().take(7).collect::<String>();
             entries.push(GitLogEntry {
@@ -132,6 +133,7 @@ fn parse_log_stdout(stdout: &str, bounded: u32) -> Vec<GitLogEntry> {
                 timestamp_secs: timestamp,
                 parents,
                 subject,
+                tags,
                 files_changed: 0,
                 insertions: 0,
                 deletions: 0,
@@ -148,6 +150,14 @@ fn parse_log_stdout(stdout: &str, bounded: u32) -> Vec<GitLogEntry> {
         }
     }
     entries
+}
+
+fn parse_decoration_tags(decoration: &str) -> Vec<String> {
+    decoration
+        .split(", ")
+        .filter_map(|item| item.strip_prefix("tag: "))
+        .map(str::to_string)
+        .collect()
 }
 
 fn parse_shortstat(tail: &str) -> (u32, u32, u32) {
@@ -190,6 +200,15 @@ mod tests {
     fn parse_shortstat_handles_singular_file() {
         let line = " 1 file changed, 1 insertion(+)";
         assert_eq!(parse_shortstat(line), (1, 1, 0));
+    }
+
+    #[test]
+    fn parse_decoration_tags_keeps_only_tags() {
+        assert_eq!(
+            parse_decoration_tags("HEAD -> main, tag: v1.0, origin/main, tag: latest"),
+            vec!["v1.0".to_string(), "latest".to_string()]
+        );
+        assert!(parse_decoration_tags("").is_empty());
     }
 
     #[test]

@@ -1,9 +1,12 @@
-use crate::modules::git::errors::Result;
+use crate::modules::git::errors::{GitError, Result};
 use crate::modules::git::process::{
     ensure_git_available, ensure_success, git_stdout_line_opt, git_stdout_lines, run_git,
 };
 use crate::modules::git::types::{GitBranch, DEFAULT_TIMEOUT_SECS};
 use crate::modules::git::utils::authorized_repo_root;
+
+use super::merge::{ensure_local_branch, is_safe_branch_name};
+use super::revision::{ensure_ref_name, ref_exists};
 
 pub fn get_branches(repo_root: &str) -> Result<Vec<GitBranch>> {
     let repo_root = authorized_repo_root(repo_root)?;
@@ -69,6 +72,29 @@ pub fn delete_branch(repo_root: &str, branch_name: &str) -> Result<()> {
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git branch -D failed")
+}
+
+pub fn rename_branch(repo_root: &str, old_name: &str, new_name: &str) -> Result<()> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    let root = repo_root.to_string_lossy();
+    ensure_local_branch(&root, old_name)?;
+    if !is_safe_branch_name(new_name) {
+        return Err(GitError::command("invalid branch", new_name.to_string()));
+    }
+    ensure_ref_name(&root, "heads", new_name)?;
+    if ref_exists(&root, "heads", new_name)? {
+        return Err(GitError::command(
+            "branch already exists",
+            new_name.to_string(),
+        ));
+    }
+    let output = run_git(
+        Some(&root),
+        ["branch", "-m", old_name, new_name],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git branch -m failed")
 }
 
 pub fn has_uncommitted_changes(repo_root: &str) -> Result<bool> {
@@ -160,6 +186,27 @@ mod tests {
         let repo = TestRepo::new();
         repo.git(&["branch", "other"]);
         assert!(delete_branch(&repo.root, "main").is_err());
+    }
+
+    #[test]
+    fn rename_branch_renames_the_current_branch() {
+        let repo = TestRepo::new();
+
+        rename_branch(&repo.root, "main", "trunk").unwrap();
+
+        assert_eq!(repo.git(&["branch", "--show-current"]), "trunk");
+        assert_eq!(branch_names(&repo), vec!["trunk"]);
+    }
+
+    #[test]
+    fn rename_branch_rejects_existing_missing_and_invalid_names() {
+        let repo = TestRepo::new();
+        repo.git(&["branch", "other"]);
+
+        assert!(rename_branch(&repo.root, "main", "other").is_err());
+        assert!(rename_branch(&repo.root, "missing", "new").is_err());
+        assert!(rename_branch(&repo.root, "other", "-M").is_err());
+        assert!(rename_branch(&repo.root, "other", "bad..name").is_err());
     }
 
     #[test]

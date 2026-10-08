@@ -8,7 +8,7 @@ use crate::modules::git::utils::authorized_repo_root;
 
 const MAX_BRANCH_CHARS: usize = 255;
 
-fn is_safe_branch_name(name: &str) -> bool {
+pub(super) fn is_safe_branch_name(name: &str) -> bool {
     !name.is_empty()
         && name.len() <= MAX_BRANCH_CHARS
         && !name.starts_with('-')
@@ -18,7 +18,7 @@ fn is_safe_branch_name(name: &str) -> bool {
             .any(|c| c.is_whitespace() || c.is_control() || "~^:?*[\\@{".contains(c))
 }
 
-fn ensure_local_branch(root: &str, branch: &str) -> Result<()> {
+pub(super) fn ensure_local_branch(root: &str, branch: &str) -> Result<()> {
     if !is_safe_branch_name(branch) {
         return Err(GitError::command("invalid branch", branch.to_string()));
     }
@@ -38,7 +38,7 @@ fn ensure_local_branch(root: &str, branch: &str) -> Result<()> {
 }
 
 /// Tracked changes only: untracked files never block a merge or rebase.
-fn ensure_clean(root: &str, context: &'static str) -> Result<()> {
+pub(super) fn ensure_clean(root: &str, context: &'static str) -> Result<()> {
     let output = run_git(
         Some(root),
         ["status", "--porcelain", "--untracked-files=no"],

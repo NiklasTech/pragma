@@ -93,7 +93,9 @@ export function GitGraphDialogs({
             <AlertDialogAction
               onClick={onConfirm}
               className={
-                confirmDialog?.type === "reset-hard" ? "bg-destructive text-white" : undefined
+                confirmDialog?.type === "reset-hard" || confirmDialog?.type === "delete-tag"
+                  ? "bg-destructive text-white"
+                  : undefined
               }
             >
               Confirm

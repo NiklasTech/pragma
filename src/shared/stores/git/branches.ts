@@ -6,7 +6,12 @@ import type { GitActions, GitBranch, GitSlice } from "./types";
 export const createBranchesSlice: GitSlice<
   Pick<
     GitActions,
-    "loadBranches" | "checkoutBranch" | "smartCheckout" | "createBranch" | "deleteBranch"
+    | "loadBranches"
+    | "checkoutBranch"
+    | "smartCheckout"
+    | "createBranch"
+    | "deleteBranch"
+    | "renameBranch"
   >
 > = (set, get) => ({
   loadBranches: async () => {
@@ -111,6 +116,23 @@ export const createBranchesSlice: GitSlice<
       await invoke("git_delete_branch", { repoPath, branchName });
       await get().loadBranches();
     } catch (err) {
+      set({ error: String(err) });
+    } finally {
+      set({ actionBusy: null });
+    }
+  },
+
+  renameBranch: async (oldName: string, newName: string) => {
+    const { repoPath } = get();
+    if (!repoPath) return;
+
+    set({ actionBusy: "rename-branch" });
+    try {
+      await invoke("git_rename_branch", { repoPath, oldName, newName });
+      toast.success(`Renamed ${oldName} to ${newName}`);
+      await get().refreshAll();
+    } catch (err) {
+      toast.error(String(err));
       set({ error: String(err) });
     } finally {
       set({ actionBusy: null });

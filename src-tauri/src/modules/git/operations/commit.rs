@@ -367,7 +367,7 @@ fn split_name_status_numstat(bytes: &[u8]) -> (&[u8], &[u8]) {
     (&bytes[..split_at], &bytes[split_at..])
 }
 
-fn parse_diff_tree_name_status(bytes: &[u8]) -> Vec<GitCommitFileChange> {
+pub(super) fn parse_diff_tree_name_status(bytes: &[u8]) -> Vec<GitCommitFileChange> {
     let s = std::str::from_utf8(bytes).unwrap_or("");
     let mut tokens = s.split('\0').filter(|t| !t.is_empty());
     let mut files: Vec<GitCommitFileChange> = Vec::new();
@@ -410,7 +410,7 @@ fn parse_diff_tree_name_status(bytes: &[u8]) -> Vec<GitCommitFileChange> {
     files
 }
 
-fn apply_numstat(files: &mut [GitCommitFileChange], bytes: &[u8]) {
+pub(super) fn apply_numstat(files: &mut [GitCommitFileChange], bytes: &[u8]) {
     let s = std::str::from_utf8(bytes).unwrap_or("");
     let tokens: Vec<&str> = s.split('\0').filter(|t| !t.is_empty()).collect();
     let mut idx = 0;

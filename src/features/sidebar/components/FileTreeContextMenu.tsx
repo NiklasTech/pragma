@@ -7,6 +7,7 @@ import {
   Files,
   FolderOpen,
   FolderPlus,
+  GitCommit,
   PencilSimple,
   TerminalWindow,
   Trash,
@@ -25,6 +26,7 @@ import {
   openInTerminal,
   revealInFileManager,
 } from "@/features/sidebar/lib/fileTreeActions";
+import { useFileHistoryDialog } from "@/features/sidebar/lib/gitDialogs";
 
 const REVEAL_LABEL = getIsMac()
   ? "Reveal in Finder"
@@ -105,6 +107,12 @@ export function FileTreeContextMenu({
         <ContextMenuItem onClick={onShowLocalHistory}>
           <ClockCounterClockwise size={14} />
           <span>Local History</span>
+        </ContextMenuItem>
+      )}
+      {!node.isDirectory && (
+        <ContextMenuItem onClick={() => useFileHistoryDialog.getState().show(node.path)}>
+          <GitCommit size={14} />
+          <span>File History</span>
         </ContextMenuItem>
       )}
       <ContextMenuSeparator />
