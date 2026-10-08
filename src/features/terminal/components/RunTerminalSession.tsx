@@ -16,7 +16,7 @@ import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { registerTerminalOutput } from "../terminalOutput";
-import { loadRenderAddons, passFindShortcut } from "../terminalAddons";
+import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { useTerminalFind } from "../hooks/useTerminalFind";
 import { useCopyOnSelect } from "../hooks/useTerminalPreferences";
 import { TerminalFindBar } from "./TerminalFindBar";
@@ -89,7 +89,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       );
       t.open(containerRef.current);
       loadRenderAddons(t);
-      passFindShortcut(t);
+      passAppShortcuts(t, ["search.find"]);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);

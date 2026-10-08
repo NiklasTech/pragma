@@ -7,6 +7,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 
+use super::shell_integration;
+
 #[derive(Serialize, Clone)]
 struct PtyOutputEvent {
     id: String,
@@ -217,6 +219,7 @@ pub fn create_pty(
     for (key, value) in env {
         cmd.env(key, value);
     }
+    shell_integration::apply(&app, &mut cmd, &shell);
     let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     drop(pair.slave);
 

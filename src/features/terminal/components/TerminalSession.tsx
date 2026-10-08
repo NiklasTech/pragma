@@ -21,6 +21,8 @@ import { useTerminalCommands, useTerminalSelection } from "../hooks/useTerminalE
 import { useTerminalFind } from "../hooks/useTerminalFind";
 import { useCopyOnSelect, useTerminalCursor } from "../hooks/useTerminalPreferences";
 import { useTerminalFileDrop } from "../hooks/useTerminalFileDrop";
+import { useShellIntegration } from "../hooks/useShellIntegration";
+import { CommandFailureBar } from "./CommandFailureBar";
 import { quotePathsForShell } from "../shellQuote";
 
 interface TerminalSessionProps {
@@ -114,6 +116,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   useCopyOnSelect(termState);
 
   const find = useTerminalFind(termState, rootRef);
+  const shellIntegration = useShellIntegration(termState, rootRef);
 
   const insertPaths = useCallback(
     (paths: string[]) => {
@@ -131,7 +134,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     <div
       ref={rootRef}
       data-terminal-find
-      className="relative h-full w-full bg-terminal-bg p-2"
+      className="relative h-full w-full bg-terminal-bg py-2 pr-2"
       style={{ display: isActive ? "block" : "none" }}
       {...drop.handlers}
     >
@@ -148,23 +151,31 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
           onClose={find.close}
         />
       )}
-      <div ref={containerRef} className="relative h-full w-full overflow-hidden">
+      <div ref={containerRef} className="relative h-full w-full overflow-hidden [&>.xterm]:pl-2">
         <AISuggestionsOverlay
           suggestion={suggestions.suggestion}
           loading={suggestions.loading}
           visible={suggestions.visible}
         />
       </div>
-      {showScrollDown && (
-        <button
-          type="button"
-          onClick={() => termRef.current?.scrollToBottom()}
-          className="absolute bottom-4 right-4 z-10 flex size-7 items-center justify-center rounded-full border border-border bg-bg-elevated text-fg-muted shadow-md transition-colors hover:text-fg-default"
-          title="Scroll to Bottom"
-        >
-          <ArrowDown size={13} />
-        </button>
-      )}
+      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2">
+        {shellIntegration.failure && (
+          <CommandFailureBar
+            command={shellIntegration.failure}
+            onDismiss={shellIntegration.dismissFailure}
+          />
+        )}
+        {showScrollDown && (
+          <button
+            type="button"
+            onClick={() => termRef.current?.scrollToBottom()}
+            className="flex size-7 items-center justify-center rounded-full border border-border bg-bg-elevated text-fg-muted shadow-md transition-colors hover:text-fg-default"
+            title="Scroll to Bottom"
+          >
+            <ArrowDown size={13} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

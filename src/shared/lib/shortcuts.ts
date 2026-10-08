@@ -267,6 +267,24 @@ export const SHORTCUT_ACTIONS = [
     default: (): ShortcutBinding => ({ code: "F9" }),
   },
   {
+    id: "terminal.previousCommand" as const,
+    label: "Go to Previous Terminal Command",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      key: "ArrowUp",
+    }),
+  },
+  {
+    id: "terminal.nextCommand" as const,
+    label: "Go to Next Terminal Command",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      key: "ArrowDown",
+    }),
+  },
+  {
     id: "voice.holdToDictate" as const,
     label: "Hold to Dictate",
     category: "chat" as const,
