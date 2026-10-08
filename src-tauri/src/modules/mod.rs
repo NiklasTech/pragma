@@ -14,6 +14,7 @@ pub mod mcp;
 pub mod parakeet;
 pub mod pty;
 pub mod run;
+pub mod shell_integration;
 pub mod stt;
 pub mod voice_access;
 pub mod voice_hardware;

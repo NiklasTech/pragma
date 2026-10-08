@@ -15,7 +15,7 @@ import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { safePtyInvoke } from "../safePtyInvoke";
 import { registerTerminalOutput } from "../terminalOutput";
-import { loadRenderAddons, passFindShortcut } from "../terminalAddons";
+import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { terminalEnvFor } from "../terminalEnv";
 import { takeTerminalScrollback } from "../terminalScrollback";
 
@@ -101,7 +101,7 @@ export function useTerminalSetup({
       );
       t.open(containerRef.current);
       loadRenderAddons(t);
-      passFindShortcut(t);
+      passAppShortcuts(t, ["search.find", "terminal.previousCommand", "terminal.nextCommand"]);
       removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);

@@ -1,7 +1,7 @@
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebglAddon } from "@xterm/addon-webgl";
-import { matchShortcut } from "@/shared/lib/shortcuts";
+import { matchShortcut, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 /** Loads Unicode 11 character widths and the WebGL renderer. Call after `term.open()`. */
@@ -19,13 +19,11 @@ export function loadRenderAddons(term: XTerm): void {
   }
 }
 
-/** Lets the find shortcut reach the app instead of being sent to the shell. */
-export function passFindShortcut(term: XTerm): void {
-  term.attachCustomKeyEventHandler(
-    (event) =>
-      !(
-        event.type === "keydown" &&
-        matchShortcut(event, useSettingsStore.getState().shortcuts["search.find"])
-      ),
-  );
+/** Lets the given shortcuts reach the app instead of being sent to the shell. */
+export function passAppShortcuts(term: XTerm, ids: readonly ShortcutActionId[]): void {
+  term.attachCustomKeyEventHandler((event) => {
+    if (event.type !== "keydown") return true;
+    const { shortcuts } = useSettingsStore.getState();
+    return !ids.some((id) => matchShortcut(event, shortcuts[id]));
+  });
 }
