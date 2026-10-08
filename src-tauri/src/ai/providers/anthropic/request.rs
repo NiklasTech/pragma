@@ -143,7 +143,7 @@ impl From<Message> for AnthropicMessage {
                 let content = serde_json::json!([{
                     "type": "tool_result",
                     "tool_use_id": tool_use_id,
-                    "content": msg.content,
+                    "content": message_content(msg.content, &msg.images),
                 }]);
                 Self {
                     role: "user".to_string(),
@@ -292,6 +292,33 @@ mod tests {
                 },
                 { "type": "text", "text": "what is this?" },
             ])
+        );
+    }
+
+    #[test]
+    fn tool_result_images_stay_inside_the_tool_result() {
+        let image = ImageContent {
+            media_type: "image/png".to_string(),
+            data: "aGk=".to_string(),
+        };
+        let mut tool_result = user_message("Screenshot of the page", vec![image]);
+        tool_result.role = Role::Tool;
+        tool_result.tool_call_id = Some("call_1".to_string());
+        let message = AnthropicMessage::from(tool_result);
+        assert_eq!(message.role, "user");
+        assert_eq!(
+            message.content,
+            serde_json::json!([{
+                "type": "tool_result",
+                "tool_use_id": "call_1",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": { "type": "base64", "media_type": "image/png", "data": "aGk=" },
+                    },
+                    { "type": "text", "text": "Screenshot of the page" },
+                ],
+            }])
         );
     }
 }

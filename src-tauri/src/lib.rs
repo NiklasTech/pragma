@@ -31,6 +31,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_cli::init())
+        .plugin(modules::browser_pane::init())
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
@@ -331,6 +332,7 @@ pub fn run() {
             commands::cli::cli_chat_stream,
             commands::cli::cli_acp_chat_stream,
             ai::child_sessions::server::child_session_spawn_reply,
+            modules::browser_pane::snapshot::browser_pane_snapshot,
             ai::child_sessions::server::extension_tools_sync,
             commands::cli::cli_acp_cancel,
             commands::cli::cli_acp_approve,

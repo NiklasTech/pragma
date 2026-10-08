@@ -2,6 +2,8 @@
 
 import { CheckCircle, XCircle, Spinner } from "@phosphor-icons/react";
 
+import { imageToFilePart } from "@/shared/lib/ai/images";
+import { isToolImageOutput, toolOutputImages } from "@/shared/lib/ai/toolOutput";
 import { stepLabel } from "@/features/agent/executor";
 
 import { ActivityBlock } from "./ActivityBlock";
@@ -24,6 +26,7 @@ interface ToolInvocationBlockProps {
 function formatValue(value: unknown): string {
   if (value === undefined) return "";
   if (typeof value === "string") return value;
+  if (isToolImageOutput(value)) return value.text;
   return JSON.stringify(value, null, 2);
 }
 
@@ -114,7 +117,17 @@ export function ToolInvocationBlock({
             {isError ? (
               <p className="mt-1 text-status-error">{errorText ?? "Tool execution failed"}</p>
             ) : (
-              <pre className={PRE_CLASS}>{formatValue(output)}</pre>
+              <>
+                <pre className={PRE_CLASS}>{formatValue(output)}</pre>
+                {toolOutputImages(output).map((image, index) => (
+                  <img
+                    key={index}
+                    src={imageToFilePart(image).url}
+                    alt={`Tool result image ${index + 1}`}
+                    className="mt-2 max-h-60 max-w-full rounded-md border border-border-subtle object-contain"
+                  />
+                ))}
+              </>
             )}
           </div>
         )}

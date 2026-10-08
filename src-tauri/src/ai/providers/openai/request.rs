@@ -32,7 +32,7 @@ impl OpenAIRequestBody {
     pub(super) fn from_completion_request(model: &str, req: CompletionRequest) -> Self {
         Self {
             model: model.to_string(),
-            messages: coalesce_system_messages(req.messages)
+            messages: move_tool_images_to_user_message(coalesce_system_messages(req.messages))
                 .into_iter()
                 .map(Into::into)
                 .collect(),
@@ -118,6 +118,35 @@ impl From<Message> for OpenAIMessage {
     }
 }
 
+/// OpenAI accepts images only in user messages, so images of tool results follow them in one.
+fn move_tool_images_to_user_message(messages: Vec<Message>) -> Vec<Message> {
+    let mut result = Vec::with_capacity(messages.len());
+    let mut pending: Vec<ImageContent> = Vec::new();
+    for mut message in messages {
+        if message.role != Role::Tool && !pending.is_empty() {
+            result.push(tool_images_message(std::mem::take(&mut pending)));
+        }
+        if message.role == Role::Tool {
+            pending.append(&mut message.images);
+        }
+        result.push(message);
+    }
+    if !pending.is_empty() {
+        result.push(tool_images_message(pending));
+    }
+    result
+}
+
+fn tool_images_message(images: Vec<ImageContent>) -> Message {
+    Message {
+        role: Role::User,
+        content: "Images returned by the tool calls above.".to_string(),
+        tool_calls: None,
+        tool_call_id: None,
+        images,
+    }
+}
+
 fn message_content(text: String, images: &[ImageContent]) -> serde_json::Value {
     if images.is_empty() {
         return serde_json::Value::String(text);
@@ -178,5 +207,53 @@ mod tests {
                 { "type": "image_url", "image_url": { "url": "data:image/jpeg;base64,aGk=" } },
             ])
         );
+    }
+
+    fn tool_message(id: &str, images: Vec<ImageContent>) -> Message {
+        Message {
+            role: Role::Tool,
+            content: format!("result {id}"),
+            tool_calls: None,
+            tool_call_id: Some(id.to_string()),
+            images,
+        }
+    }
+
+    #[test]
+    fn tool_images_move_to_a_user_message_after_the_tool_results() {
+        let image = ImageContent {
+            media_type: "image/png".to_string(),
+            data: "aGk=".to_string(),
+        };
+        let messages = move_tool_images_to_user_message(vec![
+            user_message("check the page", Vec::new()),
+            tool_message("call_1", vec![image.clone()]),
+            tool_message("call_2", Vec::new()),
+            user_message("thanks", Vec::new()),
+        ]);
+
+        let roles: Vec<&Role> = messages.iter().map(|message| &message.role).collect();
+        assert_eq!(
+            roles,
+            vec![
+                &Role::User,
+                &Role::Tool,
+                &Role::Tool,
+                &Role::User,
+                &Role::User
+            ]
+        );
+        assert!(messages[1].images.is_empty());
+        assert_eq!(messages[3].images, vec![image]);
+        assert_eq!(messages[4].content, "thanks");
+    }
+
+    #[test]
+    fn tool_results_without_images_stay_unchanged() {
+        let messages = vec![
+            user_message("hi", Vec::new()),
+            tool_message("call_1", Vec::new()),
+        ];
+        assert_eq!(move_tool_images_to_user_message(messages.clone()), messages);
     }
 }

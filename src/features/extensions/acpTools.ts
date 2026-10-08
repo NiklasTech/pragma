@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
+import { toolOutputText } from "@/shared/lib/ai/toolOutput";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
 import type { AgentRunContext } from "@/features/agent/runContext";
@@ -46,7 +47,11 @@ async function handleToolRequest(event: ToolRequestEvent): Promise<void> {
   );
   const ok = "output" in result;
   await invoke("child_session_spawn_reply", {
-    req: { request_id: event.requestId, ok, text: ok ? result.output : result.errorText },
+    req: {
+      request_id: event.requestId,
+      ok,
+      text: ok ? toolOutputText(result.output) : result.errorText,
+    },
   }).catch(() => {});
 }
 

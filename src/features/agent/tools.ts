@@ -14,6 +14,8 @@ export const AGENT_TOOL_NAMES = {
   remember: "agent_remember",
   spawnSession: "agent_spawn_session",
   openBrowser: "agent_open_browser",
+  browserScreenshot: "agent_browser_screenshot",
+  browserConsole: "agent_browser_console",
   listDir: "agent_list_dir",
   getDiagnostics: "agent_get_diagnostics",
   findDefinition: "agent_find_definition",

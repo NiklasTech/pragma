@@ -28,7 +28,7 @@ export function scaledSize(
   };
 }
 
-async function blobToBase64(blob: Blob): Promise<string> {
+export async function blobToBase64(blob: Blob): Promise<string> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () =>
@@ -45,15 +45,8 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number)
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
-async function downscale(bitmap: ImageBitmap, sourceType: string): Promise<Blob> {
-  const size = scaledSize(bitmap.width, bitmap.height);
-  const canvas = document.createElement("canvas");
-  canvas.width = size.width;
-  canvas.height = size.height;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Could not process the image.");
-  context.drawImage(bitmap, 0, 0, size.width, size.height);
-
+/** Encodes a canvas for the models: PNG when the source is PNG and fits, else JPEG. */
+export async function encodeCanvas(canvas: HTMLCanvasElement, sourceType: string): Promise<Blob> {
   // Screenshots stay PNG so text stays sharp; JPEG is the fallback when PNG is too large.
   if (sourceType === "image/png") {
     const png = await canvasToBlob(canvas, "image/png");
@@ -62,6 +55,17 @@ async function downscale(bitmap: ImageBitmap, sourceType: string): Promise<Blob>
   const jpeg = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
   if (!jpeg) throw new Error("Could not process the image.");
   return jpeg;
+}
+
+async function downscale(bitmap: ImageBitmap, sourceType: string): Promise<Blob> {
+  const size = scaledSize(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not process the image.");
+  context.drawImage(bitmap, 0, 0, size.width, size.height);
+  return encodeCanvas(canvas, sourceType);
 }
 
 /** Reads an image file, scaling large images down to the size the models process. */

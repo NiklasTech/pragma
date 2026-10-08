@@ -5,6 +5,7 @@ import type { ChatMessage } from "@/shared/stores/ai";
 
 import { createCompactionMessage, isCompactionMessage } from "./compaction";
 import { getMessageImages, imageToFilePart, toBackendImage, type BackendImage } from "./images";
+import { toolOutputImages, toolOutputText } from "./toolOutput";
 
 export interface BackendToolCall {
   id: string;
@@ -212,16 +213,19 @@ export function uiMessageToBackendMessages(msg: UIMessage): APIChatRequest["mess
     for (const part of msg.parts) {
       const inv = getToolInvocation(part);
       if (!inv) continue;
-      if (inv.state === "output-available" || inv.state === "output-error") {
+      if (inv.state === "output-error") {
         messages.push({
           role: "tool",
-          content:
-            inv.state === "output-error"
-              ? (inv.errorText ?? "tool execution failed")
-              : typeof inv.output === "string"
-                ? inv.output
-                : JSON.stringify(inv.output ?? ""),
+          content: inv.errorText ?? "tool execution failed",
           tool_call_id: inv.toolCallId,
+        });
+      } else if (inv.state === "output-available") {
+        const images = toolOutputImages(inv.output);
+        messages.push({
+          role: "tool",
+          content: toolOutputText(inv.output),
+          tool_call_id: inv.toolCallId,
+          ...(images.length > 0 ? { images: images.map(toBackendImage) } : {}),
         });
       }
     }

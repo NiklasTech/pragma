@@ -5,8 +5,9 @@ use std::time::Duration;
 use serde_json::{json, Value};
 
 use super::protocol::{
-    BridgeRequest, SpawnReply, BROWSER_TOOL_NAME, EXTENSION_TOOL_PREFIX, LIST_EXTENSION_TOOLS,
-    MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV, TOOL_NAME,
+    is_browser_tool, BridgeRequest, SpawnReply, BROWSER_CONSOLE_TOOL_NAME,
+    BROWSER_SCREENSHOT_TOOL_NAME, BROWSER_TOOL_NAME, EXTENSION_TOOL_PREFIX, LIST_EXTENSION_TOOLS,
+    MAX_REPLY_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV, TOOL_NAME,
 };
 
 const DEFAULT_PROTOCOL_VERSION: &str = "2024-11-05";
@@ -69,6 +70,27 @@ fn browser_tool_definition() -> Value {
     })
 }
 
+fn browser_screenshot_tool_definition() -> Value {
+    json!({
+        "name": BROWSER_SCREENSHOT_TOOL_NAME,
+        "description": "Take a screenshot of the page in Pragma's browser pane and return it as an image, for example to check a UI change. Open the page with agent_open_browser first.",
+        "inputSchema": { "type": "object", "properties": {} }
+    })
+}
+
+fn browser_console_tool_definition() -> Value {
+    json!({
+        "name": BROWSER_CONSOLE_TOOL_NAME,
+        "description": "Read the recent console messages, uncaught errors and failed requests of the page in Pragma's browser pane. Messages are kept from the last load of the page.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "limit": { "type": "number", "description": "Maximum number of recent entries to return. Defaults to 50." }
+            }
+        }
+    })
+}
+
 fn forward(config: &BridgeConfig, tool: &str, arguments: Value) -> Result<SpawnReply, String> {
     let address = std::net::SocketAddr::from(([127, 0, 0, 1], config.port));
     let mut stream = TcpStream::connect_timeout(&address, CONNECT_TIMEOUT)
@@ -91,7 +113,7 @@ fn forward(config: &BridgeConfig, tool: &str, arguments: Value) -> Result<SpawnR
         .map_err(|e| format!("failed to send the request: {e}"))?;
 
     let mut line = String::new();
-    BufReader::new(stream.take(MAX_LINE_BYTES))
+    BufReader::new(stream.take(MAX_REPLY_LINE_BYTES))
         .read_line(&mut line)
         .map_err(|e| format!("failed to read the reply: {e}"))?;
     serde_json::from_str(line.trim()).map_err(|e| format!("the reply was malformed: {e}"))
@@ -101,7 +123,12 @@ type ToolSender<'a> = &'a dyn Fn(&str, Value) -> Result<SpawnReply, String>;
 
 /// Pragma's own tools plus the tools extensions currently register.
 fn list_tools(send: ToolSender) -> Value {
-    let mut tools = vec![tool_definition(), browser_tool_definition()];
+    let mut tools = vec![
+        tool_definition(),
+        browser_tool_definition(),
+        browser_screenshot_tool_definition(),
+        browser_console_tool_definition(),
+    ];
     if let Ok(reply) = send(LIST_EXTENSION_TOOLS, json!({})) {
         if let Ok(Value::Array(extension_tools)) = serde_json::from_str::<Value>(&reply.text) {
             tools.extend(extension_tools);
@@ -113,21 +140,32 @@ fn list_tools(send: ToolSender) -> Value {
 fn call_tool(params: &Value, send: ToolSender) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or("");
     let forwarded =
-        name == TOOL_NAME || name == BROWSER_TOOL_NAME || name.starts_with(EXTENSION_TOOL_PREFIX);
+        name == TOOL_NAME || is_browser_tool(name) || name.starts_with(EXTENSION_TOOL_PREFIX);
     let reply = if forwarded {
         let arguments = params
             .get("arguments")
             .cloned()
             .unwrap_or_else(|| json!({}));
-        send(name, arguments).unwrap_or_else(|text| SpawnReply { ok: false, text })
+        send(name, arguments).unwrap_or_else(|text| SpawnReply {
+            ok: false,
+            text,
+            images: Vec::new(),
+        })
     } else {
         SpawnReply {
             ok: false,
             text: format!("Unknown tool: {name}"),
+            images: Vec::new(),
         }
     };
+    let mut content = vec![json!({ "type": "text", "text": reply.text })];
+    content.extend(
+        reply.images.iter().map(
+            |image| json!({ "type": "image", "data": image.data, "mimeType": image.media_type }),
+        ),
+    );
     json!({
-        "content": [{ "type": "text", "text": reply.text }],
+        "content": content,
         "isError": !reply.ok,
     })
 }
@@ -231,7 +269,15 @@ mod tests {
             handle_message(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#, &unused).unwrap();
         assert_eq!(response["result"]["tools"][0]["name"], TOOL_NAME);
         assert_eq!(response["result"]["tools"][1]["name"], BROWSER_TOOL_NAME);
-        assert_eq!(response["result"]["tools"].as_array().unwrap().len(), 2);
+        assert_eq!(
+            response["result"]["tools"][2]["name"],
+            BROWSER_SCREENSHOT_TOOL_NAME
+        );
+        assert_eq!(
+            response["result"]["tools"][3]["name"],
+            BROWSER_CONSOLE_TOOL_NAME
+        );
+        assert_eq!(response["result"]["tools"].as_array().unwrap().len(), 4);
     }
 
     #[test]
@@ -241,12 +287,13 @@ mod tests {
             Ok(SpawnReply {
                 ok: true,
                 text: r#"[{"name":"ext__word-count__count","description":"Count","inputSchema":{"type":"object"}}]"#.to_string(),
+                images: Vec::new(),
             })
         };
         let response =
             handle_message(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#, &send).unwrap();
         assert_eq!(
-            response["result"]["tools"][2]["name"],
+            response["result"]["tools"][4]["name"],
             "ext__word-count__count"
         );
     }
@@ -259,6 +306,7 @@ mod tests {
             Ok(SpawnReply {
                 ok: true,
                 text: "2".to_string(),
+                images: Vec::new(),
             })
         };
         let response = handle_message(
@@ -277,6 +325,7 @@ mod tests {
             Ok(SpawnReply {
                 ok: true,
                 text: "started".to_string(),
+                images: Vec::new(),
             })
         };
         let response = handle_message(
@@ -307,6 +356,7 @@ mod tests {
             Ok(SpawnReply {
                 ok: true,
                 text: "opened".to_string(),
+                images: Vec::new(),
             })
         };
         let response = handle_message(
@@ -315,6 +365,31 @@ mod tests {
         )
         .unwrap();
         assert_eq!(response["result"]["content"][0]["text"], "opened");
+    }
+
+    #[test]
+    fn returns_screenshot_images_as_image_content() {
+        let send = |tool: &str, _: Value| {
+            assert_eq!(tool, BROWSER_SCREENSHOT_TOOL_NAME);
+            Ok(SpawnReply {
+                ok: true,
+                text: "Screenshot".to_string(),
+                images: vec![crate::ai::image::ImageContent {
+                    media_type: "image/png".to_string(),
+                    data: "aGk=".to_string(),
+                }],
+            })
+        };
+        let response = handle_message(
+            r#"{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"agent_browser_screenshot","arguments":{}}}"#,
+            &send,
+        )
+        .unwrap();
+        assert_eq!(response["result"]["content"][0]["text"], "Screenshot");
+        assert_eq!(
+            response["result"]["content"][1],
+            json!({ "type": "image", "data": "aGk=", "mimeType": "image/png" })
+        );
     }
 
     #[test]

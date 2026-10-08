@@ -11,7 +11,7 @@ function text(id: string, role: UIMessage["role"], content: string): UIMessage {
   return { id, role, parts: [{ type: "text", text: content }] };
 }
 
-function toolStep(id: string, outputs: string[]): UIMessage {
+function toolStep(id: string, outputs: unknown[]): UIMessage {
   return {
     id,
     role: "assistant",
@@ -61,6 +61,27 @@ describe("estimateTokens", () => {
   it("counts text and tool payloads at four characters per token", () => {
     expect(estimateTokens([text("1", "user", "x".repeat(400))])).toBe(100);
     expect(estimateTokens([toolStep("2", ["y".repeat(400)])])).toBeGreaterThan(100);
+  });
+
+  it("counts a tool image at a fixed size instead of its base64 length", () => {
+    const screenshot = {
+      text: "Screenshot",
+      images: [{ mediaType: "image/png", data: "A".repeat(400_000) }],
+    };
+    const tokens = estimateTokens([toolStep("2", [screenshot])]);
+    expect(tokens).toBeGreaterThan(1500);
+    expect(tokens).toBeLessThan(2000);
+  });
+});
+
+describe("pruneToolOutputs with images", () => {
+  it("replaces old screenshots with a placeholder", () => {
+    const screenshot = { text: "Screenshot", images: [{ mediaType: "image/png", data: "aGk=" }] };
+    const result = pruneToolOutputs([
+      toolStep("1", [screenshot]),
+      toolStep("2", ["a", "b", "c", "d", "e", "f"]),
+    ]);
+    expect(outputs(result.messages[0])[0]).toEqual(expect.stringContaining("removed"));
   });
 });
 

@@ -11,9 +11,10 @@ use tokio::sync::{oneshot, Mutex};
 use tokio::time::timeout;
 
 use crate::ai::acp::types::{McpEnvVar, McpServer};
+use crate::ai::image::{validate_images, ImageContent};
 
 use super::protocol::{
-    BridgeRequest, SpawnReply, BROWSER_TOOL_NAME, EXTENSION_TOOL_PREFIX, LIST_EXTENSION_TOOLS,
+    is_browser_tool, BridgeRequest, SpawnReply, EXTENSION_TOOL_PREFIX, LIST_EXTENSION_TOOLS,
     MAX_LINE_BYTES, PORT_ENV, SESSION_ENV, TOKEN_ENV, TOOL_NAME,
 };
 use super::BRIDGE_FLAG;
@@ -28,6 +29,7 @@ const READ_TIMEOUT: Duration = Duration::from_secs(10);
 const REPLY_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const MAX_REPLY_BYTES: usize = 64 * 1024;
 const MAX_ID_LEN: usize = 128;
+const MAX_REPLY_IMAGES: usize = 4;
 
 type Pending = Arc<Mutex<HashMap<String, oneshot::Sender<SpawnReply>>>>;
 /// MCP tool definitions of extension tools, per window that registered them.
@@ -158,19 +160,23 @@ async fn handle_connection(
         Ok(req) if req.token != token => SpawnReply {
             ok: false,
             text: "The request was not authorized".to_string(),
+            images: Vec::new(),
         },
         Ok(req) if req.session_id.is_empty() || req.session_id.len() > MAX_ID_LEN => SpawnReply {
             ok: false,
             text: "The parent session id is invalid".to_string(),
+            images: Vec::new(),
         },
         Ok(req) if req.tool == LIST_EXTENSION_TOOLS => SpawnReply {
             ok: true,
             text: Value::Array(registered_tools(&tools)).to_string(),
+            images: Vec::new(),
         },
         Ok(req) => forward(&app, &pending, &tools, req).await,
         Err(e) => SpawnReply {
             ok: false,
             text: format!("The request was malformed: {e}"),
+            images: Vec::new(),
         },
     };
 
@@ -204,7 +210,7 @@ async fn forward(
 ) -> SpawnReply {
     let event_name = match req.tool.as_str() {
         TOOL_NAME => SPAWN_REQUEST_EVENT,
-        BROWSER_TOOL_NAME => BROWSER_REQUEST_EVENT,
+        name if is_browser_tool(name) => BROWSER_REQUEST_EVENT,
         name if name.starts_with(EXTENSION_TOOL_PREFIX) && is_registered_tool(tools, name) => {
             EXTENSION_TOOL_EVENT
         }
@@ -212,6 +218,7 @@ async fn forward(
             return SpawnReply {
                 ok: false,
                 text: format!("Unknown tool: {other}"),
+                images: Vec::new(),
             }
         }
     };
@@ -223,13 +230,14 @@ async fn forward(
         request_id: request_id.clone(),
         chat_session_id: req.session_id,
         arguments: req.arguments,
-        tool: (event_name == EXTENSION_TOOL_EVENT).then_some(req.tool),
+        tool: (event_name != SPAWN_REQUEST_EVENT).then_some(req.tool),
     };
     if let Err(e) = app.emit(event_name, event) {
         pending.lock().await.remove(&request_id);
         return SpawnReply {
             ok: false,
             text: format!("Pragma could not ask the user: {e}"),
+            images: Vec::new(),
         };
     }
 
@@ -240,6 +248,7 @@ async fn forward(
             SpawnReply {
                 ok: false,
                 text: "Nobody answered the request".to_string(),
+                images: Vec::new(),
             }
         }
     }
@@ -250,6 +259,8 @@ pub struct SpawnReplyRequest {
     pub request_id: String,
     pub ok: bool,
     pub text: String,
+    #[serde(default)]
+    pub images: Vec<ImageContent>,
 }
 
 #[tauri::command]
@@ -263,12 +274,17 @@ pub async fn child_session_spawn_reply(
     if req.text.len() > MAX_REPLY_BYTES {
         return Err("text is too long".to_string());
     }
+    if req.images.len() > MAX_REPLY_IMAGES {
+        return Err("too many images".to_string());
+    }
+    validate_images(&req.images)?;
     state
         .reply(
             &req.request_id,
             SpawnReply {
                 ok: req.ok,
                 text: req.text,
+                images: req.images,
             },
         )
         .await

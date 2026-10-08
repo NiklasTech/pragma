@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowClockwise, ArrowLeft, ArrowRight, Browser } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 
+import { registerBrowserFrame } from "./frames";
 import { currentUrl, useBrowserHistoryStore } from "./history";
 import { parseBrowserUrl } from "./url";
 
@@ -19,6 +20,10 @@ export function BrowserPane({ leafId }: { leafId: string }) {
   const reload = useBrowserHistoryStore((state) => state.reload);
 
   const url = currentUrl(history);
+  const frameRef = useCallback(
+    (frame: HTMLIFrameElement | null) => registerBrowserFrame(leafId, frame),
+    [leafId],
+  );
   const [draft, setDraft] = useState(url ?? "");
   const [error, setError] = useState<string | null>(null);
 
@@ -100,6 +105,7 @@ export function BrowserPane({ leafId }: { leafId: string }) {
         {url ? (
           <iframe
             key={`${history?.index ?? 0}-${history?.reloadToken ?? 0}`}
+            ref={frameRef}
             title={url}
             src={url}
             sandbox={IFRAME_SANDBOX}

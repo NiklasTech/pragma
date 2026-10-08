@@ -122,3 +122,43 @@ describe("message images", () => {
     ]);
   });
 });
+
+describe("tool outputs with images", () => {
+  function toolMessage(output: unknown): UIMessage {
+    return {
+      id: "a1",
+      role: "assistant",
+      parts: [
+        {
+          type: "dynamic-tool",
+          toolName: "agent_browser_screenshot",
+          toolCallId: "call_1",
+          state: "output-available",
+          input: {},
+          output,
+        },
+      ],
+    };
+  }
+
+  it("sends the text as content and the images separately", () => {
+    const messages = uiMessageToBackendMessages(
+      toolMessage({ text: "Screenshot", images: [{ mediaType: "image/png", data: "aGk=" }] }),
+    );
+    expect(messages[1]).toEqual({
+      role: "tool",
+      content: "Screenshot",
+      tool_call_id: "call_1",
+      images: [{ media_type: "image/png", data: "aGk=" }],
+    });
+  });
+
+  it("keeps string and object outputs as text without images", () => {
+    expect(uiMessageToBackendMessages(toolMessage("done"))[1]).toEqual({
+      role: "tool",
+      content: "done",
+      tool_call_id: "call_1",
+    });
+    expect(uiMessageToBackendMessages(toolMessage({ count: 2 }))[1].content).toBe('{"count":2}');
+  });
+});

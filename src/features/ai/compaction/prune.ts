@@ -1,10 +1,20 @@
 import { isToolUIPart, type UIMessage } from "ai";
 
+import { toolOutputImages, toolOutputText } from "@/shared/lib/ai/toolOutput";
+
 const KEEP_RECENT_TOOL_OUTPUTS = 6;
 const MIN_PRUNED_OUTPUT_CHARS = 2000;
+/** Rough size of one image in characters, about 1,600 tokens. */
+const IMAGE_CHARS = 6400;
 
 function serialize(value: unknown): string {
   return typeof value === "string" ? value : JSON.stringify(value ?? "");
+}
+
+function outputChars(output: unknown): number {
+  const images = toolOutputImages(output);
+  if (images.length === 0) return serialize(output).length;
+  return toolOutputText(output).length + images.length * IMAGE_CHARS;
 }
 
 export function prunedOutputPlaceholder(chars: number): string {
@@ -28,11 +38,11 @@ export function pruneToolOutputs(messages: UIMessage[]): {
       if (!isToolUIPart(part) || part.state !== "output-available") continue;
       seen += 1;
       if (seen <= KEEP_RECENT_TOOL_OUTPUTS) continue;
-      const output = serialize(part.output);
-      if (output.length < MIN_PRUNED_OUTPUT_CHARS) continue;
-      const placeholder = prunedOutputPlaceholder(output.length);
+      const chars = outputChars(part.output);
+      if (chars < MIN_PRUNED_OUTPUT_CHARS) continue;
+      const placeholder = prunedOutputPlaceholder(chars);
       parts[j] = { ...part, output: placeholder };
-      removedChars += output.length - placeholder.length;
+      removedChars += chars - placeholder.length;
       changed = true;
     }
     if (changed) result[i] = { ...result[i], parts };
@@ -47,7 +57,7 @@ function messageChars(message: UIMessage): number {
     if (part.type === "text" || part.type === "reasoning") chars += part.text.length;
     else if (isToolUIPart(part)) {
       chars += serialize(part.input).length;
-      if (part.state === "output-available") chars += serialize(part.output).length;
+      if (part.state === "output-available") chars += outputChars(part.output);
       if (part.state === "output-error") chars += part.errorText.length;
     }
   }
