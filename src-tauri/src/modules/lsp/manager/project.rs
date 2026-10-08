@@ -53,6 +53,9 @@ pub fn resolve_project_root(language: &str, file_path: &str) -> Option<String> {
         "java" => &["pom.xml", "build.gradle", "build.gradle.kts"],
         "c" | "cpp" => &["CMakeLists.txt", "Makefile", "meson.build"],
         "html" | "css" => &["package.json", "index.html"],
+        "ruby" => &["Gemfile"],
+        "swift" => &["Package.swift"],
+        "zig" => &["build.zig"],
         _ => &["package.json"],
     };
 
@@ -104,6 +107,12 @@ fn extension_to_language(ext: &str) -> Option<&'static str> {
         "cpp" | "cc" | "cxx" | "hpp" | "hh" => Some("cpp"),
         "html" | "htm" => Some("html"),
         "css" | "scss" | "sass" | "less" => Some("css"),
+        "sh" | "bash" | "zsh" => Some("shell"),
+        "rb" => Some("ruby"),
+        "toml" => Some("toml"),
+        "cs" => Some("csharp"),
+        "swift" => Some("swift"),
+        "zig" => Some("zig"),
         _ => None,
     }
 }

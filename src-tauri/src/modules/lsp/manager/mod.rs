@@ -95,6 +95,48 @@ const SERVERS: &[ServerEntry] = &[
         install_program: Some("npm"),
         install_args: &["install", "-g", "vscode-langservers-extracted"],
     },
+    ServerEntry {
+        language: "shell",
+        command: "bash-language-server",
+        args: &["start"],
+        install_program: Some("npm"),
+        install_args: &["install", "-g", "bash-language-server"],
+    },
+    ServerEntry {
+        language: "ruby",
+        command: "ruby-lsp",
+        args: &[],
+        install_program: Some("gem"),
+        install_args: &["install", "ruby-lsp"],
+    },
+    ServerEntry {
+        language: "toml",
+        command: "taplo",
+        args: &["lsp", "stdio"],
+        install_program: Some("cargo"),
+        install_args: &["install", "taplo-cli", "--locked", "--features", "lsp"],
+    },
+    ServerEntry {
+        language: "csharp",
+        command: "csharp-ls",
+        args: &[],
+        install_program: Some("dotnet"),
+        install_args: &["tool", "install", "--global", "csharp-ls"],
+    },
+    ServerEntry {
+        language: "swift",
+        command: "sourcekit-lsp",
+        args: &[],
+        install_program: None,
+        install_args: &[],
+    },
+    ServerEntry {
+        language: "zig",
+        command: "zls",
+        args: &[],
+        install_program: None,
+        install_args: &[],
+    },
 ];
 
 pub(crate) struct RunningServer {

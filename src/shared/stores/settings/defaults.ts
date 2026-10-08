@@ -107,6 +107,12 @@ export const defaultSettings: SettingsState = {
       cpp: true,
       html: true,
       css: true,
+      shell: true,
+      ruby: true,
+      toml: true,
+      csharp: true,
+      swift: true,
+      zig: true,
     },
   },
   experimental: {

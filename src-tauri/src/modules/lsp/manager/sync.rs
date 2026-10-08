@@ -134,6 +134,9 @@ impl LspManager {
 }
 
 fn language_id_for_path(file_path: &str, language: &str) -> String {
+    if language == "shell" {
+        return "shellscript".to_string();
+    }
     if language != "typescript" && language != "javascript" {
         return language.to_string();
     }

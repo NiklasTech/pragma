@@ -1,16 +1,40 @@
+import { StreamLanguage } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
+import { legacyModeLoaders } from "./legacyModes";
 
 export type LanguageLoader = () => Promise<Extension>;
+
+type EmmetSyntax = "html" | "jsx" | "tsx" | "vue";
+
+const legacyMode =
+  (mode: string): LanguageLoader =>
+  async () => {
+    const load = legacyModeLoaders[mode];
+    return load ? StreamLanguage.define(await load()) : [];
+  };
+
+const withEmmet =
+  (loader: LanguageLoader, syntax: EmmetSyntax): LanguageLoader =>
+  async () => {
+    const [language, emmet] = await Promise.all([loader(), import("@emmetio/codemirror6-plugin")]);
+    return [language, emmet.abbreviationTracker({ syntax: emmet.EmmetKnownSyntax[syntax] })];
+  };
 
 const languageMap: Record<string, LanguageLoader> = {
   // JavaScript / TypeScript
   js: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
-  jsx: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ jsx: true })),
+  jsx: withEmmet(
+    () => import("@codemirror/lang-javascript").then((m) => m.javascript({ jsx: true })),
+    "jsx",
+  ),
   ts: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ typescript: true })),
-  tsx: () =>
-    import("@codemirror/lang-javascript").then((m) =>
-      m.javascript({ typescript: true, jsx: true }),
-    ),
+  tsx: withEmmet(
+    () =>
+      import("@codemirror/lang-javascript").then((m) =>
+        m.javascript({ typescript: true, jsx: true }),
+      ),
+    "tsx",
+  ),
   mjs: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
   cjs: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
 
@@ -26,8 +50,8 @@ const languageMap: Record<string, LanguageLoader> = {
   go: () => import("@codemirror/lang-go").then((m) => m.go()),
 
   // HTML
-  html: () => import("@codemirror/lang-html").then((m) => m.html()),
-  htm: () => import("@codemirror/lang-html").then((m) => m.html()),
+  html: withEmmet(() => import("@codemirror/lang-html").then((m) => m.html()), "html"),
+  htm: withEmmet(() => import("@codemirror/lang-html").then((m) => m.html()), "html"),
 
   // CSS
   css: () => import("@codemirror/lang-css").then((m) => m.css()),
@@ -72,13 +96,68 @@ const languageMap: Record<string, LanguageLoader> = {
   php: () => import("@codemirror/lang-php").then((m) => m.php()),
 
   // Vue
-  vue: () => import("@codemirror/lang-vue").then((m) => m.vue()),
+  vue: withEmmet(() => import("@codemirror/lang-vue").then((m) => m.vue()), "vue"),
 
   // Angular
   angular: () => import("@codemirror/lang-angular").then((m) => m.angular()),
 
   // Liquid
   liquid: () => import("@codemirror/lang-liquid").then((m) => m.liquid()),
+
+  // Shell
+  sh: legacyMode("shell"),
+  bash: legacyMode("shell"),
+  zsh: legacyMode("shell"),
+
+  // Ruby
+  rb: legacyMode("ruby"),
+  rake: legacyMode("ruby"),
+  gemspec: legacyMode("ruby"),
+  ru: legacyMode("ruby"),
+
+  // TOML
+  toml: legacyMode("toml"),
+
+  // Dockerfile
+  dockerfile: legacyMode("dockerfile"),
+
+  // Kotlin
+  kt: legacyMode("kotlin"),
+  kts: legacyMode("kotlin"),
+
+  // Swift
+  swift: legacyMode("swift"),
+
+  // C#
+  cs: legacyMode("csharp"),
+
+  // Lua
+  lua: legacyMode("lua"),
+
+  // PowerShell
+  ps1: legacyMode("powershell"),
+  psm1: legacyMode("powershell"),
+  psd1: legacyMode("powershell"),
+
+  // Makefile
+  mk: legacyMode("makefile"),
+  mak: legacyMode("makefile"),
+
+  // Dart
+  dart: legacyMode("dart"),
+
+  // Zig
+  zig: () => import("codemirror-lang-zig").then((m) => m.zig()),
+};
+
+// Files recognized by their full name rather than an extension.
+const fileNameMap: Record<string, LanguageLoader> = {
+  dockerfile: legacyMode("dockerfile"),
+  containerfile: legacyMode("dockerfile"),
+  makefile: legacyMode("makefile"),
+  gnumakefile: legacyMode("makefile"),
+  gemfile: legacyMode("ruby"),
+  rakefile: legacyMode("ruby"),
 };
 
 export function getExtension(filename: string): string {
@@ -87,9 +166,13 @@ export function getExtension(filename: string): string {
   return filename.slice(dotIndex + 1).toLowerCase();
 }
 
+function getBaseName(filename: string): string {
+  const slashIndex = Math.max(filename.lastIndexOf("/"), filename.lastIndexOf("\\"));
+  return filename.slice(slashIndex + 1).toLowerCase();
+}
+
 export async function loadLanguage(filename: string): Promise<Extension> {
-  const ext = getExtension(filename);
-  const loader = languageMap[ext];
+  const loader = fileNameMap[getBaseName(filename)] ?? languageMap[getExtension(filename)];
   if (!loader) return [];
   try {
     return await loader();
