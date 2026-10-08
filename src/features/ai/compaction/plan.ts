@@ -6,6 +6,7 @@ import {
   isCompactionMessage,
 } from "@/shared/lib/ai/compaction";
 import { getMessageText, getToolInvocation } from "@/shared/lib/ai/protocol";
+import { toolOutputText } from "@/shared/lib/ai/toolOutput";
 
 const KEEP_RECENT_TURNS = 2;
 const MAX_TOOL_INPUT_CHARS = 500;
@@ -68,9 +69,7 @@ function renderMessage(message: UIMessage): string {
     if (call.state === "output-error") {
       lines.push(`Tool error: ${clip(call.errorText ?? "", MAX_TOOL_OUTPUT_CHARS)}`);
     } else if (call.state === "output-available") {
-      const output =
-        typeof call.output === "string" ? call.output : JSON.stringify(call.output ?? "");
-      lines.push(`Tool result: ${clip(output, MAX_TOOL_OUTPUT_CHARS)}`);
+      lines.push(`Tool result: ${clip(toolOutputText(call.output), MAX_TOOL_OUTPUT_CHARS)}`);
     }
   }
   return lines.join("\n");

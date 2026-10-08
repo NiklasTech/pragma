@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 
+import type { ToolOutput } from "@/shared/lib/ai/toolOutput";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import {
@@ -9,7 +10,11 @@ import {
   type AgentAccess,
 } from "@/features/ai/named-agents/folders";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
-import { runOpenBrowserTool } from "@/features/ai/browser/agentTool";
+import {
+  runBrowserConsoleTool,
+  runBrowserScreenshotTool,
+  runOpenBrowserTool,
+} from "@/features/ai/browser/agentTool";
 import { runSpawnTool } from "@/features/ai/children/spawn";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
@@ -34,7 +39,7 @@ export interface AgentToolCall {
   input: unknown;
 }
 
-export type AgentToolResult = { output: string } | { errorText: string };
+export type AgentToolResult = { output: ToolOutput } | { errorText: string };
 
 interface FileReadResult {
   path: string;
@@ -113,6 +118,10 @@ export function stepLabel(toolName: string, input: unknown): { label: string; de
       return { label: "Start child session", detail: readStringInput(input, "title") };
     case AGENT_TOOL_NAMES.openBrowser:
       return { label: "Open in browser", detail: readStringInput(input, "url") };
+    case AGENT_TOOL_NAMES.browserScreenshot:
+      return { label: "Screenshot browser" };
+    case AGENT_TOOL_NAMES.browserConsole:
+      return { label: "Read browser console" };
     default:
       return insightStepLabel(toolName, input) ?? { label: toolName };
   }
@@ -168,7 +177,7 @@ async function dispatchTool(
   rootPath: string,
   agentAccess: AgentAccess | null,
   context: AgentRunContext,
-): Promise<{ output: string; detail?: string }> {
+): Promise<{ output: ToolOutput; detail?: string }> {
   if (isInsightTool(toolName)) return dispatchInsightTool(toolName, input, rootPath);
   switch (toolName) {
     case AGENT_TOOL_NAMES.readFile: {
@@ -255,6 +264,10 @@ async function dispatchTool(
     }
     case AGENT_TOOL_NAMES.openBrowser:
       return { output: runOpenBrowserTool(input) };
+    case AGENT_TOOL_NAMES.browserScreenshot:
+      return { output: await runBrowserScreenshotTool() };
+    case AGENT_TOOL_NAMES.browserConsole:
+      return { output: await runBrowserConsoleTool(input) };
     case AGENT_TOOL_NAMES.taskComplete: {
       const summary = readStringInput(input, "summary");
       context.finishTask(summary);

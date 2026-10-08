@@ -9,7 +9,7 @@ import {
 } from "@/features/agent/loop";
 import { loadProjectRules } from "@/features/agent/rules";
 import type { AgentRunContext } from "@/features/agent/runContext";
-import { OPEN_BROWSER_TOOL_DEFINITION } from "@/features/agent/browserTool";
+import { BROWSER_TOOL_DEFINITIONS } from "@/features/agent/browserTool";
 import { INSIGHT_TOOL_DEFINITIONS } from "@/features/agent/insightTools";
 import { SPAWN_SESSION_TOOL_DEFINITION } from "@/features/agent/spawnTool";
 import { writeAgentFileEdit } from "@/features/agent/applyEdit";
@@ -206,7 +206,7 @@ export async function startChildRun(
         ...AGENT_TOOL_DEFINITIONS,
         ...INSIGHT_TOOL_DEFINITIONS,
         SPAWN_SESSION_TOOL_DEFINITION,
-        OPEN_BROWSER_TOOL_DEFINITION,
+        ...BROWSER_TOOL_DEFINITIONS,
         ...extensionToolDefinitions(useExtensionsStore.getState().agentTools),
       ];
 
