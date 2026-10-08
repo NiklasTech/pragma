@@ -21,6 +21,7 @@ interface FileReadResult {
   path: string;
   name: string;
   content: string;
+  encoding: string;
 }
 
 function getRelativePath(path: string, rootPath: string | null): string {
@@ -62,6 +63,7 @@ export function GoToFile() {
           originalContent: result.content,
           isModified: false,
           language: detectLanguage(result.name),
+          encoding: result.encoding,
         },
         editorPanelId,
       );

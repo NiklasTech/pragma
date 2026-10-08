@@ -8,6 +8,7 @@ interface FileReadResult {
   path: string;
   name: string;
   content: string;
+  encoding: string;
 }
 
 /// Reads a file from disk and opens it in the editor, like the file explorer does.
@@ -23,6 +24,7 @@ export async function openWorkspaceFile(path: string, panelId: string | null): P
         originalContent: result.content,
         isModified: false,
         language: detectLanguage(result.name),
+        encoding: result.encoding,
       },
       panelId,
     );

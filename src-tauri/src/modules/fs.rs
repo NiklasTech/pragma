@@ -6,6 +6,7 @@ use std::path::{Component, Path};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::local_history;
+use super::text_encoding::{self, DecodedText};
 
 pub(crate) fn validate_path(path: &str) -> Result<&Path, String> {
     let parsed = Path::new(path);
@@ -28,6 +29,9 @@ pub struct FileReadResult {
     pub path: String,
     pub name: String,
     pub content: String,
+    /// WHATWG name of the encoding the file was read with, such as `UTF-8` or `windows-1252`.
+    pub encoding: String,
+    pub bom: bool,
 }
 
 #[derive(Serialize)]
@@ -40,8 +44,13 @@ pub struct DirEntry {
 
 const MAX_FILE_SIZE_BYTES: u64 = 10 * 1024 * 1024;
 
+/// Reads a text file, detecting its encoding unless `encoding` names one.
 #[tauri::command(async)]
-pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
+pub fn read_text_file(path: String, encoding: Option<String>) -> Result<FileReadResult, String> {
+    let forced = encoding
+        .as_deref()
+        .map(text_encoding::encoding_for_label)
+        .transpose()?;
     let path_ref = validate_path(&path)?;
 
     if !path_ref.exists() {
@@ -64,13 +73,7 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     }
 
     let bytes = fs::read(path_ref).map_err(|e| format!("Failed to read file: {}", e))?;
-
-    if bytes.contains(&0) {
-        return Err("Binary files are not supported".to_string());
-    }
-
-    let content =
-        String::from_utf8(bytes).map_err(|e| format!("File is not valid UTF-8: {}", e))?;
+    let decoded = text_encoding::decode(&bytes, forced)?;
 
     let name = path_ref
         .file_name()
@@ -81,7 +84,9 @@ pub fn read_text_file(path: String) -> Result<FileReadResult, String> {
     Ok(FileReadResult {
         path,
         name,
-        content,
+        content: decoded.text,
+        encoding: decoded.encoding.name().to_string(),
+        bom: decoded.bom,
     })
 }
 
@@ -90,12 +95,15 @@ pub const CHANGED_ON_DISK_ERROR: &str = "File changed on disk since it was loade
 
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+/// Writes a text file. Without `encoding` an existing file keeps its encoding and BOM;
+/// new files are UTF-8.
 #[tauri::command(async)]
 pub fn write_text_file(
     app: tauri::AppHandle,
     path: String,
     content: String,
     expected_hash: Option<String>,
+    encoding: Option<String>,
 ) -> Result<(), String> {
     let path_ref = validate_path(&path)?;
 
@@ -103,11 +111,26 @@ pub fn write_text_file(
         return Err(format!("Not a file: {}", path));
     }
 
-    if let Some(expected) = expected_hash.as_deref() {
-        ensure_unchanged_on_disk(path_ref, expected)?;
+    let forced = encoding
+        .as_deref()
+        .map(text_encoding::encoding_for_label)
+        .transpose()?;
+    let existing = match fs::read(path_ref) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => None,
+        Err(e) => return Err(format!("Failed to read file: {}", e)),
+    };
+    let current = existing
+        .as_deref()
+        .and_then(|bytes| text_encoding::decode(bytes, forced).ok());
+
+    if let (Some(expected), Some(bytes)) = (expected_hash.as_deref(), existing.as_deref()) {
+        ensure_unchanged(bytes, current.as_ref(), expected)?;
     }
 
-    write_atomic(path_ref, content.as_bytes())?;
+    let (target, bom) = target_encoding(forced, current.as_ref());
+    let bytes = text_encoding::encode(&content, target, bom)?;
+    write_atomic(path_ref, &bytes)?;
 
     let repo_path = path_ref
         .parent()
@@ -124,18 +147,35 @@ fn content_hash(bytes: &[u8]) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-fn ensure_unchanged_on_disk(path: &Path, expected_hash: &str) -> Result<(), String> {
-    let bytes = match fs::read(path) {
-        Ok(bytes) => bytes,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
-        Err(e) => return Err(format!("Failed to read file: {}", e)),
+/// The frontend hashes the text it loaded, so a decodable file is compared as text.
+fn ensure_unchanged(
+    bytes: &[u8],
+    decoded: Option<&DecodedText>,
+    expected_hash: &str,
+) -> Result<(), String> {
+    let hash = match decoded {
+        Some(decoded) => content_hash(decoded.text.as_bytes()),
+        None => content_hash(bytes),
     };
-
-    if content_hash(&bytes) == expected_hash {
+    if hash == expected_hash {
         Ok(())
     } else {
         Err(CHANGED_ON_DISK_ERROR.to_string())
     }
+}
+
+/// `current` is the file on disk decoded with `forced` when one is given.
+fn target_encoding(
+    forced: Option<&'static encoding_rs::Encoding>,
+    current: Option<&DecodedText>,
+) -> (&'static encoding_rs::Encoding, bool) {
+    let Some(encoding) = forced else {
+        return current.map_or((encoding_rs::UTF_8, false), |d| (d.encoding, d.bom));
+    };
+    // UTF-16 needs its BOM to be detected again when the file is reopened.
+    let utf16 = encoding == encoding_rs::UTF_16LE || encoding == encoding_rs::UTF_16BE;
+    let keep_bom = current.is_some_and(|d| d.encoding == encoding && d.bom);
+    (encoding, utf16 || keep_bom)
 }
 
 /// Writes to a temp file next to the target and renames it over the target,
@@ -389,7 +429,7 @@ mod tests {
         let path = dir.path().join("notes.md");
         fs::write(&path, "# Notes\n").unwrap();
 
-        let result = read_text_file(path_string(&path)).unwrap();
+        let result = read_text_file(path_string(&path), None).unwrap();
 
         assert_eq!(result.name, "notes.md");
         assert_eq!(result.content, "# Notes\n");
@@ -400,29 +440,34 @@ mod tests {
     fn read_text_file_rejects_missing_files_and_directories() {
         let dir = tempfile::tempdir().unwrap();
 
-        let missing = read_text_file(path_string(&dir.path().join("missing.txt")));
-        let directory = read_text_file(path_string(dir.path()));
+        let missing = read_text_file(path_string(&dir.path().join("missing.txt")), None);
+        let directory = read_text_file(path_string(dir.path()), None);
 
         assert!(missing.err().unwrap().starts_with("File not found"));
         assert!(directory.err().unwrap().starts_with("Not a file"));
     }
 
     #[test]
-    fn read_text_file_rejects_binary_and_invalid_utf8() {
+    fn read_text_file_rejects_binary_and_decodes_legacy_text() {
         let dir = tempfile::tempdir().unwrap();
         let binary = dir.path().join("image.bin");
         let latin1 = dir.path().join("latin1.txt");
         fs::write(&binary, [b'a', 0, b'b']).unwrap();
-        fs::write(&latin1, [0xe4, 0xf6, 0xfc]).unwrap();
+        fs::write(&latin1, b"Gr\xfc\xdfe aus K\xf6ln").unwrap();
 
         assert_eq!(
-            read_text_file(path_string(&binary)).err().as_deref(),
+            read_text_file(path_string(&binary), None).err().as_deref(),
             Some("Binary files are not supported")
         );
-        assert!(read_text_file(path_string(&latin1))
-            .err()
-            .unwrap()
-            .starts_with("File is not valid UTF-8"));
+        let legacy = read_text_file(path_string(&latin1), None).unwrap();
+        assert_eq!(legacy.content, "Grüße aus Köln");
+        assert_eq!(legacy.encoding, "windows-1252");
+        assert!(
+            read_text_file(path_string(&latin1), Some("utf-8".to_string()))
+                .err()
+                .unwrap()
+                .starts_with("File is not valid UTF-8")
+        );
     }
 
     #[test]
@@ -432,7 +477,7 @@ mod tests {
         let file = fs::File::create(&path).unwrap();
         file.set_len(MAX_FILE_SIZE_BYTES + 1).unwrap();
 
-        assert!(read_text_file(path_string(&path))
+        assert!(read_text_file(path_string(&path), None)
             .err()
             .unwrap()
             .starts_with("File is too large"));
@@ -631,32 +676,52 @@ mod tests {
         assert_eq!(fs::read_to_string(&target).unwrap(), "new");
     }
 
+    fn decoded(bytes: &[u8]) -> Option<DecodedText> {
+        text_encoding::decode(bytes, None).ok()
+    }
+
     #[test]
     fn unchanged_check_accepts_matching_hash() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("file.txt");
-        fs::write(&path, "content").unwrap();
-
-        assert!(ensure_unchanged_on_disk(&path, &content_hash(b"content")).is_ok());
+        let bytes = b"content";
+        assert!(
+            ensure_unchanged(bytes, decoded(bytes).as_ref(), &content_hash(b"content")).is_ok()
+        );
     }
 
     #[test]
     fn unchanged_check_rejects_external_change() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("file.txt");
-        fs::write(&path, "changed by an agent").unwrap();
-
+        let bytes = b"changed by an agent";
         assert_eq!(
-            ensure_unchanged_on_disk(&path, &content_hash(b"content")),
+            ensure_unchanged(bytes, decoded(bytes).as_ref(), &content_hash(b"content")),
             Err(CHANGED_ON_DISK_ERROR.to_string())
         );
     }
 
     #[test]
-    fn unchanged_check_allows_missing_file() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("deleted.txt");
+    fn unchanged_check_compares_the_decoded_text_of_legacy_files() {
+        let bytes = b"K\xf6ln";
+        let text_hash = content_hash("Köln".as_bytes());
+        assert!(ensure_unchanged(bytes, decoded(bytes).as_ref(), &text_hash).is_ok());
+        assert!(ensure_unchanged(bytes, None, &content_hash(bytes)).is_ok());
+    }
 
-        assert!(ensure_unchanged_on_disk(&path, &content_hash(b"content")).is_ok());
+    #[test]
+    fn writes_keep_the_existing_encoding_unless_one_is_named() {
+        let latin = decoded(b"Gr\xfc\xdfe aus K\xf6ln");
+        assert_eq!(
+            target_encoding(None, latin.as_ref()),
+            (encoding_rs::WINDOWS_1252, false)
+        );
+        assert_eq!(target_encoding(None, None), (encoding_rs::UTF_8, false));
+
+        let with_bom = decoded(&[0xEF, 0xBB, 0xBF, b'x']);
+        assert_eq!(
+            target_encoding(Some(encoding_rs::UTF_8), with_bom.as_ref()),
+            (encoding_rs::UTF_8, true)
+        );
+        assert_eq!(
+            target_encoding(Some(encoding_rs::UTF_16LE), latin.as_ref()),
+            (encoding_rs::UTF_16LE, true)
+        );
     }
 }
