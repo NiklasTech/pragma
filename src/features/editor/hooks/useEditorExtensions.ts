@@ -33,6 +33,14 @@ import {
   indentUnitCompartment,
   blameCompartment,
   gitChangeCompartment,
+  whitespaceCompartment,
+  rulersCompartment,
+  indentGuidesCompartment,
+  bracketColorsCompartment,
+  cursorCompartment,
+  lineHeightCompartment,
+  ligaturesCompartment,
+  overviewCompartment,
 } from "@/features/editor/compartments";
 
 export interface EditorExtensionsContext {
@@ -128,6 +136,14 @@ export function useEditorExtensions({
         editorBaseTheme,
         fontStyleCompartment.of(createEditorFontStyleExtension(fontSize, editorFontFamily)),
         wordWrapCompartment.of(wordWrap ? EditorView.lineWrapping : []),
+        whitespaceCompartment.of([]),
+        rulersCompartment.of([]),
+        indentGuidesCompartment.of([]),
+        bracketColorsCompartment.of([]),
+        cursorCompartment.of([]),
+        lineHeightCompartment.of([]),
+        ligaturesCompartment.of([]),
+        overviewCompartment.of([]),
         docSyncExtension(onChangeValue),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

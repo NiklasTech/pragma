@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useDiskStateStore } from "@/shared/stores/diskState";
+import { useSettingsStore } from "@/shared/stores/settings";
+import { applySaveTransforms } from "@/shared/lib/editor/saveTransforms";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
 import { setDiskBaseline } from "@/features/editor/diskSync";
@@ -34,7 +36,11 @@ export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
       return;
     }
 
-    const content = tab.content;
+    const editorSettings = useSettingsStore.getState().editor;
+    // Delayed autosave fires while typing; trimming would remove the space just typed.
+    const transform = !auto || editorSettings.autoSave !== "afterDelay";
+    const content = transform ? applySaveTransforms(tab.content, editorSettings) : tab.content;
+    if (content !== tab.content) useEditorStore.getState().updateFileContent(tab.id, content);
     try {
       await invoke("write_text_file", {
         path: tab.path,

@@ -29,6 +29,7 @@ import { useEditorSearchEvents } from "@/features/editor/hooks/useEditorSearchEv
 import { useEditorLanguageSync } from "@/features/editor/hooks/useEditorLanguageSync";
 import { useBlameGutter } from "@/features/editor/hooks/useBlameGutter";
 import { useGitChangeGutter } from "@/features/editor/hooks/useGitChangeGutter";
+import { useEditorDisplaySettings } from "@/features/editor/hooks/useEditorDisplaySettings";
 
 export function FileEditor({
   content,
@@ -316,6 +317,8 @@ export function FileEditor({
   });
 
   useGitChangeGutter({ view: editorView, filePath, tabId });
+
+  useEditorDisplaySettings(editorView);
 
   return (
     <div className="flex h-full w-full flex-col">
