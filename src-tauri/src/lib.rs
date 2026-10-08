@@ -325,6 +325,7 @@ pub fn run() {
             commands::chat_storage::ai_save_session,
             commands::chat_storage::ai_save_session_messages,
             commands::chat_storage::ai_delete_session,
+            commands::chat_search::ai_search_sessions,
             commands::ai::ai_inline_completion,
             commands::ai::ai_terminal_suggestion,
             commands::ai::ai_generate_chat_title,

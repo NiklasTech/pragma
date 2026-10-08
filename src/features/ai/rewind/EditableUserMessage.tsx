@@ -74,7 +74,7 @@ export function EditableUserMessage({
   }
 
   return (
-    <Message from="user" className="flex-col gap-1">
+    <Message from="user" className="flex-col gap-1" data-message-id={message.id}>
       <MessageContent>
         <MessageImages message={message} />
         {text && <p className="whitespace-pre-wrap wrap-break-word">{text}</p>}
