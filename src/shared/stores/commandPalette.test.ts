@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from "vite-plus/test";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { useCommandPaletteStore } from "./commandPalette";
 
 describe("useCommandPaletteStore", () => {
   beforeEach(() => {
-    useCommandPaletteStore.setState({ commands: [], isOpen: false });
+    useCommandPaletteStore.setState({ commands: [], isOpen: false, picker: null, prompt: null });
   });
 
   it("registers a command", () => {
@@ -79,5 +79,45 @@ describe("useCommandPaletteStore", () => {
 
     store.toggle();
     expect(useCommandPaletteStore.getState().isOpen).toBe(false);
+  });
+
+  it("opens a picker or a prompt as the next step", () => {
+    const store = useCommandPaletteStore.getState();
+    const picker = { placeholder: "Pick", emptyText: "None", items: [], onSelect: () => {} };
+    const prompt = { placeholder: "Name", submitLabel: () => "Create", onSubmit: () => {} };
+
+    store.openPicker(picker);
+    expect(useCommandPaletteStore.getState()).toMatchObject({ isOpen: true, picker, prompt: null });
+
+    store.openPrompt(prompt);
+    expect(useCommandPaletteStore.getState()).toMatchObject({ isOpen: true, picker: null, prompt });
+
+    store.open();
+    expect(useCommandPaletteStore.getState()).toMatchObject({ picker: null, prompt: null });
+  });
+
+  it("cancels an open picker on close and toggle but not on finish", () => {
+    const onCancel = vi.fn();
+    const picker = {
+      placeholder: "Pick",
+      emptyText: "None",
+      items: [],
+      onSelect: () => {},
+      onCancel,
+    };
+    const store = useCommandPaletteStore.getState();
+
+    store.openPicker(picker);
+    store.close();
+    expect(onCancel).toHaveBeenCalledTimes(1);
+
+    store.openPicker(picker);
+    store.toggle();
+    expect(onCancel).toHaveBeenCalledTimes(2);
+
+    store.openPicker(picker);
+    store.finish();
+    expect(onCancel).toHaveBeenCalledTimes(2);
+    expect(useCommandPaletteStore.getState()).toMatchObject({ isOpen: false, picker: null });
   });
 });

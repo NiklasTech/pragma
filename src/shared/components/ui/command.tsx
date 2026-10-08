@@ -31,12 +31,14 @@ function CommandDialog({
   children,
   className,
   showCloseButton = false,
+  commandProps,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
   title?: string;
   description?: string;
   className?: string;
   showCloseButton?: boolean;
+  commandProps?: Omit<React.ComponentProps<typeof CommandPrimitive>, "children" | "className">;
   children: React.ReactNode;
 }) {
   return (
@@ -52,7 +54,7 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        <Command className="bg-transparent">
+        <Command className="bg-transparent" {...commandProps}>
           {children}
           <div className="flex items-center gap-3 border-t border-border-subtle px-4 py-2 text-ui-2xs text-fg-subtle">
             <span className="flex items-center gap-1">
