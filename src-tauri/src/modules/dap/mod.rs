@@ -1,9 +1,14 @@
+mod attach_args;
 mod breakpoints;
 pub mod client;
 pub mod install;
 mod launch_args;
 pub mod manager;
+mod processes;
 pub mod types;
+
+use attach_args::AttachTarget;
+pub use processes::DapProcessInfo;
 
 pub use manager::DapManager;
 pub use types::{
@@ -51,17 +56,25 @@ pub async fn dap_start(
     if params.adapter.is_empty() {
         return Err("adapter is required".to_string());
     }
-    if params.command.is_empty() {
+    let request = params.request.as_deref().unwrap_or("launch");
+    if request != "launch" && request != "attach" {
+        return Err(format!("Invalid debug request type '{request}'"));
+    }
+    if request == "launch" && params.command.is_empty() {
         return Err("command is required".to_string());
     }
-
-    if let Some(request) = params.request.as_deref() {
-        if request != "launch" && request != "attach" {
-            return Err(format!("Invalid debug request type '{request}'"));
-        }
-    }
+    attach_args::validate_attach_target(&AttachTarget {
+        host: params.host.clone(),
+        port: params.port,
+        process_id: params.process_id,
+    })?;
 
     state.start_session(params).await
+}
+
+#[tauri::command(async)]
+pub fn dap_list_processes() -> Result<Vec<DapProcessInfo>, String> {
+    Ok(processes::list_processes())
 }
 
 #[tauri::command]

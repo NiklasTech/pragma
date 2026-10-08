@@ -1,4 +1,4 @@
-//! Launch and attach arguments for Delve (Go) and java-debug (Java), built from
+//! Launch arguments for Delve (Go) and java-debug (Java), built from
 //! a run config command that was already split into program + args.
 
 use crate::platform::resolve_program;
@@ -7,8 +7,6 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::path::Path;
 
-const DEFAULT_JDWP_PORT: u16 = 5005;
-const JAVA_ATTACH_TIMEOUT_MS: u64 = 30_000;
 // `go build` flags whose value is the next token.
 const GO_VALUE_FLAGS: [&str; 14] = [
     "-tags",
@@ -164,7 +162,7 @@ fn join_args(args: &[String]) -> String {
 }
 
 /// The JDWP port from `-agentlib:jdwp=...,address=*:5005`, if the command has one.
-fn jdwp_port(args: &[String]) -> Option<u16> {
+pub(super) fn jdwp_port(args: &[String]) -> Option<u16> {
     args.iter()
         .filter(|arg| arg.starts_with("-agentlib:jdwp=") || arg.starts_with("-Xrunjdwp:"))
         .flat_map(|arg| arg.split(','))
@@ -200,7 +198,7 @@ fn split_class_path(value: &str, cwd: &str) -> Vec<String> {
 }
 
 /// java-debug launches `java [options] -cp <classpath> <MainClass> [args]` or
-/// `java [options] -jar <jar> [args]`; attach connects to a JDWP port.
+/// `java [options] -jar <jar> [args]`.
 pub(super) fn build_java_arguments(
     request: &str,
     name: &str,
@@ -209,15 +207,8 @@ pub(super) fn build_java_arguments(
     cwd: &str,
     env: &HashMap<String, String>,
 ) -> Result<Value, String> {
-    if request == "attach" {
-        return Ok(json!({
-            "type": "java",
-            "request": "attach",
-            "name": name,
-            "hostName": "localhost",
-            "port": jdwp_port(args).unwrap_or(DEFAULT_JDWP_PORT),
-            "timeout": JAVA_ATTACH_TIMEOUT_MS,
-        }));
+    if request != "launch" {
+        return Err("The java adapter builds launch arguments only".to_string());
     }
     if !is_tool(program, "java") {
         return Err(
@@ -457,26 +448,5 @@ mod tests {
         assert!(java(&["Main.java"]).is_err());
         assert!(java(&["-cp", "out"]).is_err());
         assert!(build_java_arguments("launch", "x", "mvn", &[], "/ws", &HashMap::new()).is_err());
-    }
-
-    #[test]
-    fn java_attach_reads_the_jdwp_port() {
-        let value = build_java_arguments(
-            "attach",
-            "app",
-            "java",
-            &strings(&[
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000",
-                "-jar",
-                "app.jar",
-            ]),
-            "/ws",
-            &HashMap::new(),
-        )
-        .unwrap();
-        assert_eq!(value["port"], 8000);
-        let value =
-            build_java_arguments("attach", "app", "mvn", &[], "/ws", &HashMap::new()).unwrap();
-        assert_eq!(value["port"], 5005);
     }
 }

@@ -19,6 +19,11 @@ export interface RunConfig {
   debug?: {
     adapter: string;
     request?: "launch" | "attach";
+    /** Program arguments appended to the command on launch. */
+    args?: string[];
+    host?: string;
+    port?: number;
+    processId?: number;
   };
 }
 

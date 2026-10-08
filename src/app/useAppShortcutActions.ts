@@ -20,6 +20,7 @@ import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { type ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
 import { debugCurrentFile } from "@/features/debug/debugCurrentFile";
 import { useDebugStore } from "@/features/debug/store";
+import { useAttachDialogStore } from "@/features/debug/attachProcess";
 import { useAgentStore } from "@/features/agent/store";
 
 function cycleTab(delta: 1 | -1): void {
@@ -152,6 +153,9 @@ export function useAppShortcutActions(): ShortcutActions {
       },
       "debug.stop": () => {
         void useDebugStore.getState().stopSession();
+      },
+      "debug.attach": () => {
+        useAttachDialogStore.getState().setOpen(true);
       },
       "debug.stepOver": () => {
         void useDebugStore.getState().stepOver();

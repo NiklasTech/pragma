@@ -83,6 +83,15 @@ pub struct DapStartRequest {
     pub name: Option<String>,
     #[serde(default)]
     pub breakpoints: Vec<DapFileBreakpoints>,
+    /// Program arguments appended to the launch command.
+    #[serde(default)]
+    pub args: Vec<String>,
+    #[serde(default)]
+    pub host: Option<String>,
+    #[serde(default)]
+    pub port: Option<u16>,
+    #[serde(default)]
+    pub process_id: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -201,8 +210,8 @@ impl DapInitializeArguments {
     }
 }
 
-/// Builds the adapter-specific `launch`/`attach` arguments from a run config
-/// command that was already split into program + args.
+/// Builds the adapter-specific `launch` arguments from a run config command
+/// that was already split into program + args; `attach` lives in attach_args.rs.
 pub fn build_launch_arguments(
     adapter_id: &str,
     request: &str,
@@ -213,8 +222,8 @@ pub fn build_launch_arguments(
     env: &HashMap<String, String>,
 ) -> Result<serde_json::Value, String> {
     match adapter_id {
-        "node" => Ok(build_node_arguments(request, name, program, args, cwd, env)),
-        "python" => build_python_arguments(request, name, args, cwd, env),
+        "node" => Ok(build_node_arguments(name, program, args, cwd, env)),
+        "python" => build_python_arguments(name, args, cwd, env),
         "lldb" => build_lldb_arguments(request, name, program, args, cwd, env),
         "go" => super::launch_args::build_go_arguments(request, name, program, args, cwd, env),
         "java" => super::launch_args::build_java_arguments(request, name, program, args, cwd, env),
@@ -254,24 +263,12 @@ fn build_lldb_arguments(
 }
 
 fn build_node_arguments(
-    request: &str,
     name: &str,
     program: &str,
     args: &[String],
     cwd: &str,
     env: &HashMap<String, String>,
 ) -> serde_json::Value {
-    if request == "attach" {
-        return serde_json::json!({
-            "type": "pwa-node",
-            "request": "attach",
-            "name": name,
-            "address": "localhost",
-            "port": 9229,
-            "cwd": cwd,
-        });
-    }
-
     serde_json::json!({
         "type": "pwa-node",
         "request": "launch",
@@ -286,21 +283,11 @@ fn build_node_arguments(
 }
 
 fn build_python_arguments(
-    request: &str,
     name: &str,
     args: &[String],
     cwd: &str,
     env: &HashMap<String, String>,
 ) -> Result<serde_json::Value, String> {
-    if request == "attach" {
-        return Ok(serde_json::json!({
-            "request": "attach",
-            "name": name,
-            "connect": { "host": "localhost", "port": 5678 },
-            "justMyCode": true,
-        }));
-    }
-
     let first = args.first().ok_or_else(|| {
         "Python debug requires a script argument (e.g. 'python main.py')".to_string()
     })?;
@@ -420,13 +407,6 @@ mod tests {
         assert_eq!(value["program"], "target/debug/myapp.exe");
         assert_eq!(value["args"][0], "--verbose");
         assert_eq!(value["cwd"], "C:/ws");
-    }
-
-    #[test]
-    fn lldb_attach_is_not_supported() {
-        let result =
-            build_launch_arguments("lldb", "attach", "x", "app", &[], "/ws", &HashMap::new());
-        assert!(result.is_err());
     }
 
     #[test]
