@@ -11,6 +11,7 @@ import {
 } from "@/shared/components/ui/select";
 import { useSettingsStore, type AutoSave } from "@/shared/stores/settings";
 import { FontSelect } from "./FontSelect";
+import { EditorDisplaySettings } from "./EditorDisplaySettings";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 
@@ -86,6 +87,8 @@ export function EditorSettings() {
         />
       </SettingSection>
 
+      <EditorDisplaySettings />
+
       <SettingSection title="Behavior">
         <SettingRow
           label="Vim Mode"
@@ -146,6 +149,26 @@ export function EditorSettings() {
             <Switch
               checked={editor.formatOnSave}
               onCheckedChange={(v) => setEditorSettings({ formatOnSave: v })}
+            />
+          }
+        />
+        <SettingRow
+          label="Trim Trailing Whitespace"
+          description="Remove trailing spaces and tabs when saving"
+          control={
+            <Switch
+              checked={editor.trimTrailingWhitespace}
+              onCheckedChange={(v) => setEditorSettings({ trimTrailingWhitespace: v })}
+            />
+          }
+        />
+        <SettingRow
+          label="Insert Final Newline"
+          description="End the file with a newline when saving"
+          control={
+            <Switch
+              checked={editor.insertFinalNewline}
+              onCheckedChange={(v) => setEditorSettings({ insertFinalNewline: v })}
             />
           }
         />

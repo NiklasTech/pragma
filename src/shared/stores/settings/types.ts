@@ -3,6 +3,10 @@ import type { ShortcutActionId, ShortcutBinding, ShortcutMap } from "@/shared/li
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
 
+export type RenderWhitespace = "none" | "boundary" | "all";
+
+export type EditorCursorStyle = "line" | "block" | "underline";
+
 export interface EditorSettings {
   vimMode: boolean;
   fontSize: number;
@@ -17,6 +21,17 @@ export interface EditorSettings {
   formatOnSave: boolean;
   stickyLines: boolean;
   inlayHints: boolean;
+  renderWhitespace: RenderWhitespace;
+  rulers: number[];
+  indentGuides: boolean;
+  bracketPairColorization: boolean;
+  cursorStyle: EditorCursorStyle;
+  cursorBlinking: boolean;
+  lineHeight: number;
+  fontLigatures: boolean;
+  trimTrailingWhitespace: boolean;
+  insertFinalNewline: boolean;
+  overviewMarkers: boolean;
 }
 
 export type TerminalCursorStyle = "block" | "underline" | "bar";

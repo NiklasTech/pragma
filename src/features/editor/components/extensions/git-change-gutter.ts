@@ -25,7 +25,7 @@ export interface GitChangeActions {
   stage: (selection: GitLineSelection) => void;
 }
 
-type ChangeKind = "added" | "modified" | "deleted";
+export type ChangeKind = "added" | "modified" | "deleted";
 
 interface GitChangeState {
   base: Text | null;
@@ -253,6 +253,23 @@ const trackFocus = ViewPlugin.define((view) => ({
 /** The editor that last had focus among those showing git changes. */
 export function focusedGitChangeView(): EditorView | null {
   return focusedView;
+}
+
+export interface GitChangeRange {
+  from: number;
+  to: number;
+  kind: ChangeKind;
+}
+
+/** Ranges changed against the git index; empty while the gutter is off. */
+export function gitChangeRanges(state: EditorState): GitChangeRange[] {
+  const field = state.field(gitChangeField, false);
+  if (!field) return [];
+  return field.chunks.map((chunk) => ({
+    from: Math.min(chunk.fromB, state.doc.length),
+    to: Math.min(chunk.endB, state.doc.length),
+    kind: chunkKind(chunk),
+  }));
 }
 
 export const goToNextChange = (view: EditorView): boolean => moveToChange(view, 1);
