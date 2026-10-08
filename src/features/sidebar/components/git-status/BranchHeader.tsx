@@ -8,7 +8,9 @@ import {
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
 } from "@/shared/components/ui/context-menu";
+import { useGitCompareDialog } from "../../lib/gitDialogs";
 import {
   Spinner,
   GitBranch as GitBranchIcon,
@@ -25,6 +27,9 @@ export function BranchHeader({
   onCheckout,
   onCreateBranch,
   onDeleteBranch,
+  onMergeBranch,
+  onRebaseOnto,
+  onRenameBranch,
   actionBusy,
 }: {
   isDetached: boolean;
@@ -33,6 +38,9 @@ export function BranchHeader({
   onCheckout: (name: string) => void;
   onCreateBranch: (name: string) => void;
   onDeleteBranch: (name: string) => void;
+  onMergeBranch: (name: string) => void;
+  onRebaseOnto: (name: string) => void;
+  onRenameBranch: (name: string) => void;
   actionBusy: string | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -42,7 +50,10 @@ export function BranchHeader({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Element;
+      // The branch context menu is portaled, so it lies outside menuRef.
+      if (target.closest?.('[data-slot="context-menu-content"]')) return;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setOpen(false);
         setCreating(false);
         setNewBranchName("");
@@ -122,19 +133,55 @@ export function BranchHeader({
                         <span className="truncate">{branch.name}</span>
                       </button>
                     </ContextMenuTrigger>
-                    <ContextMenuContent className="w-44">
+                    <ContextMenuContent className="w-56">
                       {!isCurrent && (
                         <>
                           <ContextMenuItem onClick={() => onCheckout(branch.name)}>
                             Checkout
                           </ContextMenuItem>
+                          <ContextMenuSeparator />
                           <ContextMenuItem
-                            onClick={() => onDeleteBranch(branch.name)}
-                            className="text-status-error focus:text-status-error"
+                            onClick={() => {
+                              setOpen(false);
+                              onMergeBranch(branch.name);
+                            }}
                           >
-                            Delete
+                            Merge into {currentBranch}
                           </ContextMenuItem>
+                          <ContextMenuItem
+                            onClick={() => {
+                              setOpen(false);
+                              onRebaseOnto(branch.name);
+                            }}
+                          >
+                            Rebase {currentBranch} onto this
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            onClick={() => {
+                              setOpen(false);
+                              useGitCompareDialog.getState().show(currentBranch, branch.name);
+                            }}
+                          >
+                            Compare with {currentBranch}
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
                         </>
+                      )}
+                      <ContextMenuItem
+                        onClick={() => {
+                          setOpen(false);
+                          onRenameBranch(branch.name);
+                        }}
+                      >
+                        Rename
+                      </ContextMenuItem>
+                      {!isCurrent && (
+                        <ContextMenuItem
+                          onClick={() => onDeleteBranch(branch.name)}
+                          className="text-status-error focus:text-status-error"
+                        >
+                          Delete
+                        </ContextMenuItem>
                       )}
                     </ContextMenuContent>
                   </ContextMenu>

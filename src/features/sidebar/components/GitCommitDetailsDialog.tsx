@@ -18,7 +18,7 @@ interface GitCommitDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function FileChangeRow({
+export function FileChangeRow({
   file,
   loading,
   onClick,

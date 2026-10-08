@@ -4,7 +4,9 @@ import {
   ArrowUp,
   CloudArrowDown,
   GitBranch,
+  GitDiff,
   Spinner,
+  Tag,
   type Icon,
 } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
@@ -55,6 +57,8 @@ export function GitToolbar({
   onPull,
   onPush,
   onNewBranch,
+  onCompare,
+  onTags,
   canPushPull,
   ahead,
   behind,
@@ -68,6 +72,8 @@ export function GitToolbar({
   onPull: () => void;
   onPush: () => void;
   onNewBranch: () => void;
+  onCompare: () => void;
+  onTags: () => void;
   canPushPull: boolean;
   ahead: number;
   behind: number;
@@ -108,6 +114,8 @@ export function GitToolbar({
           busy={isRefreshBusy}
         />
         <ToolbarButton icon={GitBranch} label="New branch" onClick={onNewBranch} />
+        <ToolbarButton icon={Tag} label="Tags" onClick={onTags} />
+        <ToolbarButton icon={GitDiff} label="Compare" onClick={onCompare} />
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useGitStore } from "@/shared/stores/git";
 import { CommitList } from "./git-graph/CommitList";
 import { CommitTable } from "./git-graph/CommitTable";
+import { CreateTagDialog } from "./git-graph/CreateTagDialog";
 import { GitGraphDialogs } from "./git-graph/GitGraphDialogs";
 import {
   LoadErrorState,
@@ -34,6 +35,7 @@ export function GitGraph() {
     cherryPickCommit,
     revertCommit,
     resetToCommit,
+    deleteTag,
   } = useGitStore();
   const [commits, setCommits] = useState<GitLogEntry[]>([]);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
@@ -46,6 +48,7 @@ export function GitGraph() {
   const [branchDialogSha, setBranchDialogSha] = useState<string | null>(null);
   const [branchNameInput, setBranchNameInput] = useState("");
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+  const [tagDialogSha, setTagDialogSha] = useState<string | null>(null);
 
   const requestIdRef = useRef(0);
   const loadMoreRequestIdRef = useRef(0);
@@ -218,6 +221,16 @@ export function GitGraph() {
     });
   };
 
+  const handleDeleteTag = (tag: string) => {
+    setConfirmDialog({
+      type: "delete-tag",
+      sha: "",
+      tag,
+      title: `Delete tag ${tag}?`,
+      description: "The tag is removed from this repository. Remote copies are not affected.",
+    });
+  };
+
   const executeConfirm = async () => {
     if (!confirmDialog) return;
     const { type, sha } = confirmDialog;
@@ -233,6 +246,8 @@ export function GitGraph() {
       await resetToCommit(sha, "mixed");
     } else if (type === "reset-hard") {
       await resetToCommit(sha, "hard");
+    } else if (type === "delete-tag" && confirmDialog.tag) {
+      await deleteTag(confirmDialog.tag);
     }
     setConfirmDialog(null);
   };
@@ -274,6 +289,8 @@ export function GitGraph() {
           onCherryPick={handleCherryPick}
           onRevert={handleRevert}
           onReset={handleReset}
+          onCreateTag={setTagDialogSha}
+          onDeleteTag={handleDeleteTag}
         />
       ) : (
         <CommitTable
@@ -296,6 +313,8 @@ export function GitGraph() {
           onCherryPick={handleCherryPick}
           onRevert={handleRevert}
           onReset={handleReset}
+          onCreateTag={setTagDialogSha}
+          onDeleteTag={handleDeleteTag}
         />
       )}
 
@@ -310,6 +329,12 @@ export function GitGraph() {
         confirmDialog={confirmDialog}
         onCloseConfirm={() => setConfirmDialog(null)}
         onConfirm={() => void executeConfirm()}
+      />
+
+      <CreateTagDialog
+        open={!!tagDialogSha}
+        target={tagDialogSha}
+        onOpenChange={(open) => !open && setTagDialogSha(null)}
       />
     </div>
   );

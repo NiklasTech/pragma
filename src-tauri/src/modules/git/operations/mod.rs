@@ -1,37 +1,47 @@
 mod blame;
 mod branch;
 mod commit;
+mod compare;
 mod compose;
 mod conflict;
 mod diff;
 mod hunk;
 mod log;
 mod merge;
+mod rebase;
 mod remote;
+mod revision;
 mod stage;
 mod stash;
 mod status;
+mod tag;
 #[cfg(test)]
 pub(crate) mod test_support;
 
 pub use blame::blame;
 pub use branch::{
     checkout_branch, create_branch, delete_branch, get_branches, has_uncommitted_changes,
+    rename_branch,
 };
 pub use commit::{
     checkout_commit, cherry_pick_commit, commit, commit_details, commit_file_diff, commit_files,
     create_branch_from_commit, reset_to_commit, revert_commit, show_commit_diff,
 };
+pub use compare::{compare_file_diff, compare_files};
 pub use compose::compose_file_changed_between_branches;
 pub use conflict::{conflict_sides, resolve_conflict};
 pub use diff::{diff, diff_content, index_content};
 pub use hunk::{apply_lines, LineAction, LineSelection};
 pub use log::{file_history, log};
 pub use merge::{merge_branch, rebase_onto};
+pub use rebase::{
+    abort_operation, continue_operation, operation_state, rebase_branch, GitOperationKind,
+};
 pub use remote::{fetch, list_remote_branches, list_remotes, pull_ff_only, push, remote_url};
 pub use stage::{discard, stage, unstage};
 pub use stash::{smart_checkout, stash_apply, stash_drop, stash_list, stash_pop, stash_push};
 pub use status::{conflicted_files, resolve_repo, status};
+pub use tag::{create_tag, delete_tag, list_tags, GitTag};
 
 use std::path::Path;
 

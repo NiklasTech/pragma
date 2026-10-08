@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
-import { GitDiff, X } from "@phosphor-icons/react";
+import { GitCommit, GitDiff, X } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useFileHistoryDialog } from "@/features/sidebar/lib/gitDialogs";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -164,6 +165,15 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                   <span>Close to the Right</span>
                 </ContextMenuItem>
                 <ContextMenuSeparator />
+                {tab.kind === "file" && (
+                  <>
+                    <ContextMenuItem onClick={() => useFileHistoryDialog.getState().show(tab.path)}>
+                      <GitCommit size={14} />
+                      <span>File History</span>
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                  </>
+                )}
                 <ContextMenuItem onClick={handleCloseAll}>
                   <span>Close All</span>
                 </ContextMenuItem>

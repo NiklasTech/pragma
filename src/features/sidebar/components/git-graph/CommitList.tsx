@@ -26,6 +26,8 @@ export function CommitList({
   onCherryPick,
   onRevert,
   onReset,
+  onCreateTag,
+  onDeleteTag,
 }: {
   virtualizer: ReactVirtualizer<HTMLDivElement, Element>;
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -44,6 +46,8 @@ export function CommitList({
   onCherryPick: (sha: string) => void;
   onRevert: (sha: string) => void;
   onReset: (sha: string, mode: "soft" | "mixed" | "hard") => void;
+  onCreateTag: (sha: string) => void;
+  onDeleteTag: (tag: string) => void;
 }) {
   return (
     <div
@@ -84,6 +88,8 @@ export function CommitList({
                   onCherryPick={onCherryPick}
                   onRevert={onRevert}
                   onReset={onReset}
+                  onCreateTag={onCreateTag}
+                  onDeleteTag={onDeleteTag}
                 />
               </ContextMenu>
             </div>

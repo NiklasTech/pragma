@@ -39,6 +39,8 @@ import { CodeActionsDialog } from "@/features/editor/components/CodeActionsDialo
 import { SymbolDialog } from "@/features/editor/components/SymbolDialog";
 import { BreakpointEditDialog } from "@/features/debug/components/BreakpointEditDialog";
 import { AttachProcessDialog } from "@/features/debug/components/AttachProcessDialog";
+import { GitCompareDialog } from "@/features/sidebar/components/GitCompareDialog";
+import { FileHistoryDialog } from "@/features/sidebar/components/FileHistoryDialog";
 import { UpdateDialog } from "./UpdateDialog";
 
 export default function App() {
@@ -90,6 +92,8 @@ export default function App() {
         <SymbolDialog />
         <BreakpointEditDialog />
         <AttachProcessDialog />
+        <GitCompareDialog />
+        <FileHistoryDialog />
         <UpdateDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>

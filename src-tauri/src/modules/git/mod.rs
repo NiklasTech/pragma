@@ -9,4 +9,5 @@ mod process;
 pub mod session_finish;
 pub mod types;
 pub mod utils;
+pub mod workflow;
 pub mod worktree;

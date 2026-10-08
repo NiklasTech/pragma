@@ -6,6 +6,7 @@ export interface GitLogEntry {
   timestamp_secs: number;
   parents: string[];
   subject: string;
+  tags: string[];
   files_changed: number;
   insertions: number;
   deletions: number;
@@ -19,11 +20,13 @@ export type ConfirmDialogType =
   | "revert"
   | "reset-soft"
   | "reset-mixed"
-  | "reset-hard";
+  | "reset-hard"
+  | "delete-tag";
 
 export interface ConfirmDialogState {
   type: ConfirmDialogType;
   sha: string;
+  tag?: string;
   title: string;
   description: string;
 }

@@ -1,3 +1,5 @@
+import { Tag } from "@phosphor-icons/react";
+import { Badge } from "@/shared/components/ui/badge";
 import { cn } from "@/shared/lib/utils";
 import { GraphRail } from "../GraphRail";
 import type { GraphRow } from "../lib/gitGraphLayout";
@@ -67,15 +69,23 @@ export function CommitRow({
       </span>
 
       {/* Subject — collapsed */}
-      <span
-        className={cn(
-          "min-w-0 truncate text-ui-base leading-tight",
-          active ? "font-semibold text-fg-default" : "font-medium text-fg-default/95",
-          subjectCollapsed && "text-ui-sm opacity-70",
-        )}
-        title={commit.subject}
-      >
-        {commit.subject || <span className="text-fg-muted">(no subject)</span>}
+      <span className="flex min-w-0 items-center gap-1.5">
+        {commit.tags.map((tag) => (
+          <Badge key={tag} variant="secondary" className="max-w-32 truncate" title={`Tag ${tag}`}>
+            <Tag weight="bold" />
+            {tag}
+          </Badge>
+        ))}
+        <span
+          className={cn(
+            "min-w-0 truncate text-ui-base leading-tight",
+            active ? "font-semibold text-fg-default" : "font-medium text-fg-default/95",
+            subjectCollapsed && "text-ui-sm opacity-70",
+          )}
+          title={commit.subject}
+        >
+          {commit.subject || <span className="text-fg-muted">(no subject)</span>}
+        </span>
       </span>
 
       {/* Author — collapsed: only avatar */}

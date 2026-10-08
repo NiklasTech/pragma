@@ -30,6 +30,21 @@ export interface GitBranch {
   is_head: boolean;
 }
 
+export interface GitTag {
+  name: string;
+  target_sha: string;
+  annotated: boolean;
+  message: string;
+  timestamp_secs: number;
+}
+
+export type GitOperationKind = "merge" | "rebase";
+
+export interface GitMergeResult {
+  completed: boolean;
+  conflicts: string[];
+}
+
 export interface GitCommit {
   id: string;
   message: string;
@@ -187,6 +202,8 @@ export interface GitState {
   blameLines: GitBlameLine[];
   blameLoading: boolean;
   blameSelectedSha: string | null;
+  tags: GitTag[];
+  operation: GitOperationKind | null;
 }
 
 export interface GitActions {
@@ -216,6 +233,15 @@ export interface GitActions {
   smartCheckout: (branchName: string) => Promise<void>;
   createBranch: (branchName: string, checkout?: boolean) => Promise<void>;
   deleteBranch: (branchName: string) => Promise<void>;
+  renameBranch: (oldName: string, newName: string) => Promise<void>;
+  mergeBranch: (branchName: string) => Promise<void>;
+  rebaseBranch: (onto: string) => Promise<void>;
+  loadOperation: () => Promise<void>;
+  continueOperation: () => Promise<void>;
+  abortOperation: () => Promise<void>;
+  loadTags: () => Promise<void>;
+  createTag: (name: string, target?: string, message?: string) => Promise<boolean>;
+  deleteTag: (name: string) => Promise<void>;
   hasUncommittedChanges: () => Promise<boolean>;
   refreshAll: () => Promise<void>;
   clearError: () => void;

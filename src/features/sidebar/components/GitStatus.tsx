@@ -20,6 +20,11 @@ import { DiscardChangesDialog } from "./git-status/DiscardChangesDialog";
 import { StashPanel } from "./StashPanel";
 import { GitConflictEditor } from "./GitConflictEditor";
 import { GutterBlame } from "./GutterBlame";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
+import { CreateTagDialog } from "./git-graph/CreateTagDialog";
+import { OperationBanner } from "./git-status/OperationBanner";
+import { TagsDialog } from "./git-status/TagsDialog";
+import { useGitCompareDialog } from "../lib/gitDialogs";
 
 export function GitStatus() {
   const {
@@ -52,6 +57,10 @@ export function GitStatus() {
     discardFiles,
     remotes,
     openConflict,
+    renameBranch,
+    mergeBranch,
+    rebaseBranch,
+    loadOperation,
   } = useGitStore();
 
   const editorPanelId = useEditorPanelId();
@@ -61,6 +70,9 @@ export function GitStatus() {
   const [discardEntry, setDiscardEntry] = useState<GitStatusEntry | null>(null);
   const [createBranchOpen, setCreateBranchOpen] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
+  const [renamingBranch, setRenamingBranch] = useState<string | null>(null);
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,6 +87,10 @@ export function GitStatus() {
       void loadBranches();
     }
   }, [repoPath, loadLog, loadBranches]);
+
+  useEffect(() => {
+    if (snapshot) void loadOperation();
+  }, [snapshot, loadOperation]);
 
   const allFiles = useMemo(() => snapshot?.changed_files ?? [], [snapshot]);
   const conflictFiles = useMemo(() => allFiles.filter((f) => f.is_conflicted), [allFiles]);
@@ -223,6 +239,9 @@ export function GitStatus() {
         onCheckout={(name) => void checkoutBranch(name)}
         onCreateBranch={(name) => void createBranch(name, true)}
         onDeleteBranch={(name) => void deleteBranch(name)}
+        onMergeBranch={(name) => void mergeBranch(name)}
+        onRebaseOnto={(name) => void rebaseBranch(name)}
+        onRenameBranch={setRenamingBranch}
         actionBusy={actionBusy}
       />
 
@@ -232,6 +251,8 @@ export function GitStatus() {
         onPull={() => void pull()}
         onPush={() => void push()}
         onNewBranch={() => setCreateBranchOpen(true)}
+        onCompare={() => useGitCompareDialog.getState().show(currentBranch, "HEAD")}
+        onTags={() => setTagsOpen(true)}
         canPushPull={canPushPull}
         ahead={ahead}
         behind={behind}
@@ -240,6 +261,8 @@ export function GitStatus() {
         isFetchBusy={actionBusy === "fetch"}
         isRefreshBusy={isLoading}
       />
+
+      <OperationBanner conflictCount={conflictFiles.length} />
 
       <PullRequestSection />
 
@@ -289,6 +312,31 @@ export function GitStatus() {
         onCancel={() => setDiscardEntry(null)}
         onConfirm={handleDiscard}
       />
+
+      <InputDialog
+        open={renamingBranch !== null}
+        onOpenChange={(open) => !open && setRenamingBranch(null)}
+        title="Rename branch"
+        label="New name"
+        defaultValue={renamingBranch ?? ""}
+        confirmLabel="Rename"
+        onConfirm={(name) => {
+          if (renamingBranch && name && name !== renamingBranch) {
+            void renameBranch(renamingBranch, name);
+          }
+        }}
+      />
+
+      <TagsDialog
+        open={tagsOpen}
+        onOpenChange={setTagsOpen}
+        onCreateTag={() => {
+          setTagsOpen(false);
+          setTagDialogOpen(true);
+        }}
+      />
+
+      <CreateTagDialog open={tagDialogOpen} target={null} onOpenChange={setTagDialogOpen} />
 
       <GitConflictEditor />
       <GutterBlame />

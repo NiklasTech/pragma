@@ -19,6 +19,8 @@ export const createReposSlice: GitSlice<
       commitMessage: "",
       commitAmend: false,
       error: null,
+      tags: [],
+      operation: null,
     });
     if (path) {
       void get().refreshAll();
@@ -39,8 +41,15 @@ export const createReposSlice: GitSlice<
   },
 
   refreshAll: async () => {
-    const { loadStatus, loadBranches, loadLog, loadRemotes, loadStashes } = get();
-    await Promise.all([loadStatus(), loadBranches(), loadLog(), loadRemotes(), loadStashes()]);
+    const { loadStatus, loadBranches, loadLog, loadRemotes, loadStashes, loadOperation } = get();
+    await Promise.all([
+      loadStatus(),
+      loadBranches(),
+      loadLog(),
+      loadRemotes(),
+      loadStashes(),
+      loadOperation(),
+    ]);
   },
 
   clearError: () => set({ error: null }),

@@ -1,3 +1,5 @@
+import { Tag } from "@phosphor-icons/react";
+import { Badge } from "@/shared/components/ui/badge";
 import { cn } from "@/shared/lib/utils";
 import { GraphRail } from "../GraphRail";
 import type { GraphRow } from "../lib/gitGraphLayout";
@@ -60,6 +62,12 @@ export function CompactCommitRow({
           <span className="min-w-0 truncate">{commit.author || "Unknown"}</span>
           <span aria-hidden="true">·</span>
           <span className="shrink-0 tabular-nums">{relativeDate(commit.timestamp_secs)}</span>
+          {commit.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="max-w-24 truncate" title={`Tag ${tag}`}>
+              <Tag weight="bold" />
+              {tag}
+            </Badge>
+          ))}
           {isHead && (
             <span className="shrink-0 rounded-full bg-accent-subtle px-1.5 font-medium text-primary">
               HEAD

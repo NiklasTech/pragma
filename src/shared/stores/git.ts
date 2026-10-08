@@ -6,11 +6,13 @@ import { createCommitsSlice } from "./git/commits";
 import { createConflictsSlice } from "./git/conflicts";
 import { createDiffSlice } from "./git/diff";
 import { createGraphSlice } from "./git/graph";
+import { createIntegrationSlice } from "./git/integration";
 import { createLastCommitSlice } from "./git/lastCommit";
 import { createRemotesSlice } from "./git/remotes";
 import { createReposSlice } from "./git/repo";
 import { createStagingSlice } from "./git/staging";
 import { createStashSlice } from "./git/stash";
+import { createTagsSlice } from "./git/tags";
 
 export type {
   CheckState,
@@ -28,12 +30,15 @@ export type {
   GitLastCommit,
   GitLineAction,
   GitLineSelection,
+  GitMergeResult,
+  GitOperationKind,
   GitProgress,
   GitRemote,
   GitRemoteBranch,
   GitRepoInfo,
   GitStatusEntry,
   GitStatusSnapshot,
+  GitTag,
   StashEntry,
 } from "./git/types";
 
@@ -67,6 +72,8 @@ const initialState: GitState = {
   blameLines: [],
   blameLoading: false,
   blameSelectedSha: null,
+  tags: [],
+  operation: null,
 };
 
 export const useGitStore = create<GitState & GitActions>()((...a) => ({
@@ -82,4 +89,6 @@ export const useGitStore = create<GitState & GitActions>()((...a) => ({
   ...createRemotesSlice(...a),
   ...createStashSlice(...a),
   ...createBlameSlice(...a),
+  ...createIntegrationSlice(...a),
+  ...createTagsSlice(...a),
 }));
