@@ -235,6 +235,7 @@ pub fn run() {
             modules::dap::dap_scopes,
             modules::dap::dap_variables,
             modules::dap::dap_evaluate,
+            modules::dap::dap_list_processes,
             modules::mcp::mcp_load_config,
             modules::mcp::mcp_save_config,
             modules::mcp::secrets::mcp_set_secret,

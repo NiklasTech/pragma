@@ -33,6 +33,7 @@ import { RenameDialog } from "@/features/editor/components/RenameDialog";
 import { CodeActionsDialog } from "@/features/editor/components/CodeActionsDialog";
 import { SymbolDialog } from "@/features/editor/components/SymbolDialog";
 import { BreakpointEditDialog } from "@/features/debug/components/BreakpointEditDialog";
+import { AttachProcessDialog } from "@/features/debug/components/AttachProcessDialog";
 import { UpdateDialog } from "./UpdateDialog";
 
 export default function App() {
@@ -78,6 +79,7 @@ export default function App() {
         <CodeActionsDialog />
         <SymbolDialog />
         <BreakpointEditDialog />
+        <AttachProcessDialog />
         <UpdateDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>

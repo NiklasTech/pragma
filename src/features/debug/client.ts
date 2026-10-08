@@ -81,7 +81,17 @@ export type DapStartParams = {
   request?: "launch" | "attach";
   name?: string;
   breakpoints?: Array<{ path: string; breakpoints: SourceBreakpoint[] }>;
+  args?: string[];
+  host?: string;
+  port?: number;
+  processId?: number;
 };
+
+export interface DapProcessInfo {
+  pid: number;
+  name: string;
+  command: string;
+}
 
 export function dapListAdapters(): Promise<DapAdapterInfo[]> {
   return invoke("dap_list_adapters");
@@ -103,6 +113,10 @@ export function listenDapInstallProgress(
 
 export function dapStart(params: DapStartParams): Promise<void> {
   return invoke("dap_start", { params });
+}
+
+export function dapListProcesses(): Promise<DapProcessInfo[]> {
+  return invoke("dap_list_processes");
 }
 
 export function dapStop(): Promise<void> {

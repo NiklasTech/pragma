@@ -126,6 +126,7 @@ fn go_debug() -> Option<DebugConfig> {
     Some(DebugConfig {
         adapter: "go".to_string(),
         request: Some("launch".to_string()),
+        ..DebugConfig::default()
     })
 }
 
