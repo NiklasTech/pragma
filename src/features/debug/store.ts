@@ -282,6 +282,10 @@ export const useDebugStore = create<DebugState & DebugActions>(
             request: config.debug.request ?? "launch",
             name: config.name,
             breakpoints: toFileBreakpoints(get().breakpoints, get().breakpointSettings),
+            args: config.debug.args,
+            host: config.debug.host,
+            port: config.debug.port,
+            processId: config.debug.processId,
           });
         } catch (err) {
           set({ status: "error", statusError: String(err) });

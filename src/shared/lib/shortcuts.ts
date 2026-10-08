@@ -243,6 +243,12 @@ export const SHORTCUT_ACTIONS = [
     default: (): ShortcutBinding => ({ shift: true, code: "F5" }),
   },
   {
+    id: "debug.attach" as const,
+    label: "Attach to Process",
+    category: "view" as const,
+    default: (): ShortcutBinding | null => null,
+  },
+  {
     id: "debug.stepOver" as const,
     label: "Step Over",
     category: "view" as const,

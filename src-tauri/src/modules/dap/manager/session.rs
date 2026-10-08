@@ -1,3 +1,4 @@
+use crate::modules::dap::attach_args::{build_attach_arguments, AttachTarget};
 use crate::modules::dap::breakpoints::to_request_breakpoints;
 use crate::modules::dap::client::DapClient;
 use crate::modules::dap::types::{
@@ -27,11 +28,14 @@ struct LaunchParams<'a> {
     args: &'a [String],
     cwd: &'a str,
     env: &'a HashMap<String, String>,
+    attach: AttachTarget,
 }
 
 pub(super) struct RunningSession {
     client: DapClient,
     capabilities: DapCapabilities,
+    // An attached process outlives the session; only launched ones are terminated.
+    terminate_debuggee: bool,
     child: Arc<Mutex<Child>>,
     event_handle: tokio::task::JoinHandle<()>,
     log_handle: tokio::task::JoinHandle<()>,
@@ -90,7 +94,8 @@ impl DapManager {
         }
 
         let request = params.request.as_deref().unwrap_or("launch");
-        let (program, args) = parse_command(&params.command);
+        let (program, mut args) = parse_command(&params.command);
+        args.extend(params.args);
         if program.is_empty() && request == "launch" {
             return Err("Empty command".to_string());
         }
@@ -130,6 +135,11 @@ impl DapManager {
             args: &args,
             cwd: &cwd,
             env: &params.env,
+            attach: AttachTarget {
+                host: params.host,
+                port: params.port,
+                process_id: params.process_id,
+            },
         };
         let result = self
             .handshake(&client, &launch, params.breakpoints, initialized_rx)
@@ -151,6 +161,7 @@ impl DapManager {
             *session = Some(Arc::new(RunningSession {
                 client,
                 capabilities,
+                terminate_debuggee: request != "attach",
                 child,
                 event_handle,
                 log_handle,
@@ -205,15 +216,25 @@ impl DapManager {
                 .map_err(|e| e.to_string())?;
         }
 
-        let arguments = build_launch_arguments(
-            launch.adapter,
-            launch.request,
-            launch.name,
-            launch.program,
-            launch.args,
-            launch.cwd,
-            launch.env,
-        )?;
+        let arguments = if launch.request == "attach" {
+            build_attach_arguments(
+                launch.adapter,
+                launch.name,
+                launch.args,
+                launch.cwd,
+                &launch.attach,
+            )?
+        } else {
+            build_launch_arguments(
+                launch.adapter,
+                launch.request,
+                launch.name,
+                launch.program,
+                launch.args,
+                launch.cwd,
+                launch.env,
+            )?
+        };
         client
             .request(launch.request, Some(arguments), None)
             .await
@@ -256,7 +277,7 @@ impl DapManager {
             .client
             .request(
                 "disconnect",
-                Some(serde_json::json!({ "terminateDebuggee": true })),
+                Some(serde_json::json!({ "terminateDebuggee": session.terminate_debuggee })),
                 Some(DISCONNECT_TIMEOUT_MS),
             )
             .await;

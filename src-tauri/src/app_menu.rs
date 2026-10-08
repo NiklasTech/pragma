@@ -55,6 +55,7 @@ const MENU_ACTION_IDS: &[&str] = &[
     "ai.toggle",
     "debug.currentFile",
     "debug.stop",
+    "debug.attach",
     "debug.stepOver",
     "debug.stepInto",
     "debug.stepOut",
@@ -393,6 +394,13 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             "Stop",
             true,
             Some("Shift+F5"),
+        )?)
+        .item(&MenuItem::with_id(
+            app,
+            "debug.attach",
+            "Attach to Process…",
+            true,
+            None::<&str>,
         )?)
         .separator()
         .item(&MenuItem::with_id(
