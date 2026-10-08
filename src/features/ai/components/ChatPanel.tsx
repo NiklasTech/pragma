@@ -40,6 +40,7 @@ import { EditableUserMessage } from "@/features/ai/rewind/EditableUserMessage";
 import { MessageActionBar, MessageActionButton } from "@/features/ai/rewind/MessageActionBar";
 import { RewindDialog } from "@/features/ai/rewind/RewindDialog";
 import { useMessageActions } from "@/features/ai/rewind/useMessageActions";
+import { CopyMessageButton } from "@/features/ai/export/CopyMessageButton";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -371,24 +372,25 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
                       />
                     </ChatApplyProvider>
                   </MessageContent>
-                  {canActOnMessages && (
-                    <MessageActionBar>
+                  <MessageActionBar>
+                    {!isStreaming && <CopyMessageButton message={msg} />}
+                    {canActOnMessages && (
                       <MessageActionButton
                         label="Fork from here"
                         onClick={() => messageActions.fork(messageIndex)}
                       >
                         <GitFork size={13} />
                       </MessageActionButton>
-                      {messageIndex < messages.length - 1 && (
-                        <MessageActionButton
-                          label="Rewind to here"
-                          onClick={() => messageActions.requestRewind(messageIndex)}
-                        >
-                          <ClockCounterClockwise size={13} />
-                        </MessageActionButton>
-                      )}
-                    </MessageActionBar>
-                  )}
+                    )}
+                    {canActOnMessages && messageIndex < messages.length - 1 && (
+                      <MessageActionButton
+                        label="Rewind to here"
+                        onClick={() => messageActions.requestRewind(messageIndex)}
+                      >
+                        <ClockCounterClockwise size={13} />
+                      </MessageActionButton>
+                    )}
+                  </MessageActionBar>
                 </Message>
               );
             })}
