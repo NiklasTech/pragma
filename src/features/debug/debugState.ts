@@ -1,3 +1,9 @@
+import {
+  toSourceBreakpoints,
+  type BreakpointSettingsMap,
+  type SourceBreakpoint,
+} from "./breakpointSettings";
+
 export interface DapEventPayload {
   event: string;
   body?: Record<string, unknown>;
@@ -8,6 +14,7 @@ export interface DapEventEffect {
   stoppedThreadId?: number | null;
   stopReason?: string;
   appendOutput?: string;
+  outputCategory?: string;
   sessionEnded?: boolean;
 }
 
@@ -30,8 +37,11 @@ export function mapDapEvent(payload: DapEventPayload): DapEventEffect {
     case "terminated":
     case "exited":
       return { sessionEnded: true, isStopped: false, stoppedThreadId: null };
-    case "output":
-      return typeof body.output === "string" ? { appendOutput: body.output } : {};
+    case "output": {
+      if (typeof body.output !== "string" || body.category === "telemetry") return {};
+      const category = typeof body.category === "string" ? body.category : "console";
+      return { appendOutput: body.output, outputCategory: category };
+    }
     default:
       return {};
   }
@@ -62,10 +72,11 @@ export function sameLines(a: number[], b: number[]): boolean {
 
 export function toFileBreakpoints(
   breakpoints: Record<string, number[]>,
-): Array<{ path: string; lines: number[] }> {
+  settings: BreakpointSettingsMap = {},
+): Array<{ path: string; breakpoints: SourceBreakpoint[] }> {
   return Object.entries(breakpoints)
     .filter(([, lines]) => lines.length > 0)
-    .map(([path, lines]) => ({ path, lines }));
+    .map(([path, lines]) => ({ path, breakpoints: toSourceBreakpoints(lines, settings[path]) }));
 }
 
 const BREAKPOINTS_STORAGE_KEY = "pragma.debug.breakpoints";

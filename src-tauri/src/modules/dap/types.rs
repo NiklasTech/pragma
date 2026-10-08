@@ -89,7 +89,7 @@ pub struct DapStartRequest {
 pub struct DapFileBreakpoints {
     pub path: String,
     #[serde(default)]
-    pub lines: Vec<u32>,
+    pub breakpoints: Vec<DapSourceBreakpoint>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,10 +101,25 @@ pub struct DapSource {
     pub path: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DapSourceBreakpoint {
     pub line: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hit_condition: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub log_message: Option<String>,
+}
+
+/// The subset of the adapter's `initialize` response that shapes breakpoint requests.
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DapCapabilities {
+    pub supports_conditional_breakpoints: bool,
+    pub supports_hit_conditional_breakpoints: bool,
+    pub supports_log_points: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

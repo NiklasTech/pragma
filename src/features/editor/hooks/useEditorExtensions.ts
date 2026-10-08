@@ -14,6 +14,7 @@ import {
 } from "@/shared/lib/theme/editor-theme";
 import { useDebugStore } from "@/features/debug/store";
 import { breakpointGutter, getBreakpointLines } from "@/features/debug/breakpointGutter";
+import { useBreakpointEditorStore } from "@/features/debug/breakpointEditor";
 import { sameLines } from "@/features/debug/debugState";
 import {
   ghostTextExtension,
@@ -104,9 +105,14 @@ export function useEditorExtensions({
         lspDocumentSymbolsCompartmentRef.current.of([]),
         lspInlayHintsCompartmentRef.current.of([]),
         breakpointCompartmentRef.current.of(
-          breakpointGutter((line) => {
-            useDebugStore.getState().toggleBreakpoint(filePathRef.current, line);
-          }),
+          breakpointGutter(
+            (line) => {
+              useDebugStore.getState().toggleBreakpoint(filePathRef.current, line);
+            },
+            (line) => {
+              useBreakpointEditorStore.getState().openEditor({ file: filePathRef.current, line });
+            },
+          ),
         ),
         lintGutter(),
         lineNumbersCompartment.of(showLineNumbers ? lineNumbers() : []),

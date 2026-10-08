@@ -40,7 +40,20 @@ describe("sameLines", () => {
 describe("toFileBreakpoints", () => {
   it("skips files without breakpoints", () => {
     const result = toFileBreakpoints({ "/a.ts": [1], "/b.ts": [] });
-    expect(result).toEqual([{ path: "/a.ts", lines: [1] }]);
+    expect(result).toEqual([{ path: "/a.ts", breakpoints: [{ line: 1 }] }]);
+  });
+
+  it("attaches breakpoint settings to their lines", () => {
+    const result = toFileBreakpoints(
+      { "/a.ts": [1, 5] },
+      { "/a.ts": { 5: { condition: "x > 1", logMessage: "x={x}" } } },
+    );
+    expect(result).toEqual([
+      {
+        path: "/a.ts",
+        breakpoints: [{ line: 1 }, { line: 5, condition: "x > 1", logMessage: "x={x}" }],
+      },
+    ]);
   });
 });
 
@@ -79,8 +92,14 @@ describe("mapDapEvent", () => {
       event: "output",
       body: { category: "stdout", output: "hello\n" },
     });
-    expect(effect).toEqual({ appendOutput: "hello\n" });
+    expect(effect).toEqual({ appendOutput: "hello\n", outputCategory: "stdout" });
     expect(mapDapEvent({ event: "output", body: {} })).toEqual({});
+  });
+
+  it("ignores telemetry output", () => {
+    expect(
+      mapDapEvent({ event: "output", body: { category: "telemetry", output: "ptvsd" } }),
+    ).toEqual({});
   });
 
   it("ignores unknown events", () => {

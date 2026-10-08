@@ -31,6 +31,22 @@ import {
   toggleBreakpointLine,
   type DapEventPayload,
 } from "./debugState";
+import {
+  loadPersistedBreakpointSettings,
+  normalizeBreakpointSettings,
+  persistBreakpointSettings,
+  remapFileSettings,
+  setLineSettings,
+  toSourceBreakpoints,
+  type BreakpointSettings,
+  type BreakpointSettingsMap,
+} from "./breakpointSettings";
+import {
+  appendConsoleEntry,
+  outputEntryKind,
+  pushConsoleHistory,
+  type ConsoleEntry,
+} from "./debugConsole";
 
 export type DebugSessionStatus = "inactive" | "starting" | "running" | "error";
 
@@ -41,10 +57,9 @@ export interface WatchEntry {
   error?: string;
 }
 
-const MAX_OUTPUT_LINES = 500;
-
 interface DebugState {
   breakpoints: Record<string, number[]>;
+  breakpointSettings: BreakpointSettingsMap;
   status: DebugSessionStatus;
   statusError: string | null;
   sessionName: string | null;
@@ -56,12 +71,14 @@ interface DebugState {
   scopes: Record<number, DebugScope[]>;
   variables: Record<number, DebugVariable[]>;
   watches: WatchEntry[];
-  output: string[];
+  consoleEntries: ConsoleEntry[];
+  consoleHistory: string[];
 }
 
 interface DebugActions {
   toggleBreakpoint: (file: string, line: number) => void;
   syncFileBreakpoints: (file: string, lines: number[]) => void;
+  setBreakpointSettings: (file: string, line: number, settings: BreakpointSettings) => void;
   startSession: (config: RunConfig) => Promise<void>;
   stopSession: () => Promise<void>;
   continueSession: () => Promise<void>;
@@ -73,12 +90,15 @@ interface DebugActions {
   loadVariables: (variablesReference: number) => Promise<void>;
   addWatch: (expression: string) => void;
   removeWatch: (id: string) => void;
+  evaluateInConsole: (expression: string) => Promise<void>;
+  clearConsole: () => void;
   handleDapEvent: (payload: DapEventPayload) => void;
   handleStatusEvent: (payload: DapStatusEventPayload) => void;
 }
 
 const initialState: DebugState = {
   breakpoints: loadPersistedBreakpoints(),
+  breakpointSettings: loadPersistedBreakpointSettings(),
   status: "inactive",
   statusError: null,
   sessionName: null,
@@ -90,7 +110,8 @@ const initialState: DebugState = {
   scopes: {},
   variables: {},
   watches: [],
-  output: [],
+  consoleEntries: [],
+  consoleHistory: [],
 };
 
 const clearedSessionState: Partial<DebugState> = {
@@ -109,6 +130,20 @@ export const useDebugStore = create<DebugState & DebugActions>(
     getWindowScope(),
   )((set, get) => {
     const currentThreadId = () => get().stoppedThreadId ?? 1;
+
+    const sendFileBreakpoints = (file: string) => {
+      if (get().status !== "running") return;
+      const { breakpoints, breakpointSettings } = get();
+      void dapSetBreakpoints(
+        file,
+        toSourceBreakpoints(breakpoints[file] ?? [], breakpointSettings[file]),
+      ).catch(() => {});
+    };
+
+    const updateBreakpointSettings = (breakpointSettings: BreakpointSettingsMap) => {
+      set({ breakpointSettings });
+      persistBreakpointSettings(breakpointSettings);
+    };
 
     const evaluateWatches = async () => {
       const { watches, selectedFrameId, status } = get();
@@ -165,9 +200,10 @@ export const useDebugStore = create<DebugState & DebugActions>(
         const breakpoints = toggleBreakpointLine(get().breakpoints, file, line);
         set({ breakpoints });
         persistBreakpoints(breakpoints);
-        if (get().status === "running") {
-          void dapSetBreakpoints(file, breakpoints[file] ?? []).catch(() => {});
+        if (!breakpoints[file]?.includes(line) && get().breakpointSettings[file]?.[line]) {
+          updateBreakpointSettings(setLineSettings(get().breakpointSettings, file, line, null));
         }
+        sendFileBreakpoints(file);
       },
 
       syncFileBreakpoints: (file, lines) => {
@@ -181,6 +217,36 @@ export const useDebugStore = create<DebugState & DebugActions>(
         }
         set({ breakpoints });
         persistBreakpoints(breakpoints);
+
+        const fileSettings = get().breakpointSettings[file];
+        if (fileSettings) {
+          const remapped = remapFileSettings(fileSettings, current, lines);
+          const breakpointSettings = { ...get().breakpointSettings };
+          if (Object.keys(remapped).length === 0) {
+            delete breakpointSettings[file];
+          } else {
+            breakpointSettings[file] = remapped;
+          }
+          updateBreakpointSettings(breakpointSettings);
+        }
+      },
+
+      setBreakpointSettings: (file, line, settings) => {
+        const current = get().breakpoints[file] ?? [];
+        if (!current.includes(line)) {
+          const breakpoints = toggleBreakpointLine(get().breakpoints, file, line);
+          set({ breakpoints });
+          persistBreakpoints(breakpoints);
+        }
+        updateBreakpointSettings(
+          setLineSettings(
+            get().breakpointSettings,
+            file,
+            line,
+            normalizeBreakpointSettings(settings),
+          ),
+        );
+        sendFileBreakpoints(file);
       },
 
       startSession: async (config) => {
@@ -197,7 +263,7 @@ export const useDebugStore = create<DebugState & DebugActions>(
           status: "starting",
           statusError: null,
           sessionName: config.name,
-          output: [],
+          consoleEntries: [],
         });
 
         const adapter = await ensureAdapterForLanguage(config.debug.adapter);
@@ -215,7 +281,7 @@ export const useDebugStore = create<DebugState & DebugActions>(
             env: config.env,
             request: config.debug.request ?? "launch",
             name: config.name,
-            breakpoints: toFileBreakpoints(get().breakpoints),
+            breakpoints: toFileBreakpoints(get().breakpoints, get().breakpointSettings),
           });
         } catch (err) {
           set({ status: "error", statusError: String(err) });
@@ -310,12 +376,48 @@ export const useDebugStore = create<DebugState & DebugActions>(
         set({ watches: get().watches.filter((w) => w.id !== id) });
       },
 
+      evaluateInConsole: async (expression) => {
+        const trimmed = expression.trim();
+        if (!trimmed) return;
+        set({
+          consoleEntries: appendConsoleEntry(get().consoleEntries, "input", trimmed),
+          consoleHistory: pushConsoleHistory(get().consoleHistory, trimmed),
+        });
+        if (get().status !== "running") {
+          set({
+            consoleEntries: appendConsoleEntry(
+              get().consoleEntries,
+              "error",
+              "No active debug session",
+            ),
+          });
+          return;
+        }
+        try {
+          const result = await dapEvaluate(trimmed, get().selectedFrameId ?? undefined, "repl");
+          set({
+            consoleEntries: appendConsoleEntry(get().consoleEntries, "result", result.result),
+          });
+        } catch (err) {
+          set({ consoleEntries: appendConsoleEntry(get().consoleEntries, "error", String(err)) });
+        }
+      },
+
+      clearConsole: () => {
+        set({ consoleEntries: [] });
+      },
+
       handleDapEvent: (payload) => {
         const effect = mapDapEvent(payload);
 
         if (effect.appendOutput) {
-          const output = [...get().output, effect.appendOutput];
-          set({ output: output.slice(-MAX_OUTPUT_LINES) });
+          set({
+            consoleEntries: appendConsoleEntry(
+              get().consoleEntries,
+              outputEntryKind(effect.outputCategory),
+              effect.appendOutput,
+            ),
+          });
         }
 
         if (effect.sessionEnded) {

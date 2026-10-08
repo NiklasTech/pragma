@@ -11,6 +11,7 @@ import { DebugToolbar } from "./DebugToolbar";
 import { CallStackSection } from "./CallStackSection";
 import { WatchSection } from "./WatchSection";
 import { BreakpointsSection } from "./BreakpointsSection";
+import { DebugConsoleSection } from "./DebugConsoleSection";
 
 export function DebugPanel() {
   const {
@@ -107,6 +108,8 @@ export function DebugPanel() {
               <WatchSection watchInput={watchInput} onWatchInputChange={setWatchInput} />
 
               <BreakpointsSection breakpointCount={breakpointCount} />
+
+              <DebugConsoleSection />
             </>
           )}
         </div>

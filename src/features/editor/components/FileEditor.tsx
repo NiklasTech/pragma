@@ -60,6 +60,7 @@ export function FileEditor({
   );
 
   const fileBreakpoints = useDebugStore((state) => state.breakpoints[filePath]);
+  const fileBreakpointSettings = useDebugStore((state) => state.breakpointSettings[filePath]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -215,6 +216,7 @@ export function FileEditor({
     editorFontFamily,
     showLineNumbers,
     fileBreakpoints,
+    fileBreakpointSettings,
     filePath,
     wordWrap,
     tabSize,

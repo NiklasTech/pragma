@@ -32,6 +32,7 @@ import { GoToFile } from "./GoToFile";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
 import { CodeActionsDialog } from "@/features/editor/components/CodeActionsDialog";
 import { SymbolDialog } from "@/features/editor/components/SymbolDialog";
+import { BreakpointEditDialog } from "@/features/debug/components/BreakpointEditDialog";
 import { UpdateDialog } from "./UpdateDialog";
 
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
         <RenameDialog />
         <CodeActionsDialog />
         <SymbolDialog />
+        <BreakpointEditDialog />
         <UpdateDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>

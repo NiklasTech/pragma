@@ -1,7 +1,8 @@
+use crate::modules::dap::breakpoints::to_request_breakpoints;
 use crate::modules::dap::client::DapClient;
 use crate::modules::dap::types::{
-    build_launch_arguments, DapFileBreakpoints, DapInitializeArguments, DapSessionStatus,
-    DapStartRequest, DapStatusEvent,
+    build_launch_arguments, DapCapabilities, DapFileBreakpoints, DapInitializeArguments,
+    DapSessionStatus, DapStartRequest, DapStatusEvent,
 };
 use crate::modules::run::{parse_command, resolve_cwd};
 use std::collections::HashMap;
@@ -30,6 +31,7 @@ struct LaunchParams<'a> {
 
 pub(super) struct RunningSession {
     client: DapClient,
+    capabilities: DapCapabilities,
     child: Arc<Mutex<Child>>,
     event_handle: tokio::task::JoinHandle<()>,
     log_handle: tokio::task::JoinHandle<()>,
@@ -133,18 +135,22 @@ impl DapManager {
             .handshake(&client, &launch, params.breakpoints, initialized_rx)
             .await;
 
-        if let Err(e) = result {
-            let _ = child.lock().await.start_kill();
-            event_handle.abort();
-            log_handle.abort();
-            self.emit_status(DapSessionStatus::Error, Some(adapter), Some(e.clone()));
-            return Err(e);
-        }
+        let capabilities = match result {
+            Ok(capabilities) => capabilities,
+            Err(e) => {
+                let _ = child.lock().await.start_kill();
+                event_handle.abort();
+                log_handle.abort();
+                self.emit_status(DapSessionStatus::Error, Some(adapter), Some(e.clone()));
+                return Err(e);
+            }
+        };
 
         {
             let mut session = self.session.write().await;
             *session = Some(Arc::new(RunningSession {
                 client,
+                capabilities,
                 child,
                 event_handle,
                 log_handle,
@@ -161,8 +167,8 @@ impl DapManager {
         launch: &LaunchParams<'_>,
         breakpoints: Vec<DapFileBreakpoints>,
         initialized_rx: tokio::sync::oneshot::Receiver<()>,
-    ) -> std::result::Result<(), String> {
-        client
+    ) -> std::result::Result<DapCapabilities, String> {
+        let initialize_body = client
             .request(
                 "initialize",
                 Some(
@@ -173,6 +179,8 @@ impl DapManager {
             )
             .await
             .map_err(|e| e.to_string())?;
+        let capabilities: DapCapabilities =
+            serde_json::from_value(initialize_body).unwrap_or_default();
 
         // The adapter signals readiness for configuration requests with the
         // `initialized` event; some adapters accept them right away, so a
@@ -180,7 +188,7 @@ impl DapManager {
         let _ = tokio::time::timeout(INITIALIZED_WAIT_TIMEOUT, initialized_rx).await;
 
         for file in breakpoints {
-            if file.lines.is_empty() {
+            if file.breakpoints.is_empty() {
                 continue;
             }
             client
@@ -188,7 +196,7 @@ impl DapManager {
                     "setBreakpoints",
                     Some(serde_json::json!({
                         "source": { "path": file.path },
-                        "breakpoints": file.lines.iter().map(|line| serde_json::json!({ "line": line })).collect::<Vec<_>>(),
+                        "breakpoints": to_request_breakpoints(&file.breakpoints, capabilities),
                         "sourceModified": false,
                     })),
                     None,
@@ -217,7 +225,7 @@ impl DapManager {
         // the time they run.
         let _ = client.request("configurationDone", None, None).await;
 
-        Ok(())
+        Ok(capabilities)
     }
 
     pub async fn stop_session(&self) -> std::result::Result<(), String> {
@@ -281,6 +289,16 @@ impl DapManager {
         session
             .as_ref()
             .map(|s| s.client.clone())
+            .ok_or_else(|| "No active debug session".to_string())
+    }
+
+    pub(super) async fn get_client_with_capabilities(
+        &self,
+    ) -> std::result::Result<(DapClient, DapCapabilities), String> {
+        let session = self.session.read().await;
+        session
+            .as_ref()
+            .map(|s| (s.client.clone(), s.capabilities))
             .ok_or_else(|| "No active debug session".to_string())
     }
 
