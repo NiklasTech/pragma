@@ -26,6 +26,7 @@ import { isAcceptedImage } from "@/features/ai/images/readImage";
 import type { ComposerImage } from "@/features/ai/images/useComposerImages";
 import { useImageFileDrop } from "@/features/ai/images/useImageFileDrop";
 import { useImageInputSupport } from "@/features/ai/images/useImageInputSupport";
+import { useComposerInsert } from "@/features/ai/mentions/composerInsert";
 
 import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
@@ -118,6 +119,8 @@ export function ChatComposer({
     }
     consumePrefill();
   }, [prefillPrompt, consumePrefill, onInputChange]);
+
+  useComposerInsert(inputRef, onInputChange, textareaRef);
 
   useEffect(() => {
     textareaRef.current?.focus();

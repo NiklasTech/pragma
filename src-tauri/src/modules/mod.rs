@@ -6,6 +6,7 @@ pub mod env_loader;
 pub mod extensions;
 pub mod fonts;
 pub mod fs;
+pub mod fs_ops;
 pub mod fs_watcher;
 pub mod git;
 pub mod local_history;

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowsInLineVertical,
@@ -23,6 +23,9 @@ import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { getVisibleNodes, useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
 import { buildGitDecorations } from "@/features/sidebar/lib/gitDecorations";
+import { useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
+import { movePaths } from "@/features/sidebar/lib/fileTreeActions";
+import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
 import { FileTreeNode } from "./FileTreeNode";
 
 const ROW_HEIGHT = 26;
@@ -51,6 +54,30 @@ export function FileExplorer() {
   const rootName = rootPath ? rootPath.replace(/\\/g, "/").split("/").pop() || rootPath : null;
 
   const visibleNodes = useMemo(() => getVisibleNodes(tree, expandedDirs), [tree, expandedDirs]);
+
+  useEffect(() => {
+    useFileSelectionStore.getState().reset(null);
+  }, [rootPath]);
+
+  const handleMultiSelect = useCallback(
+    (path: string, mode: "toggle" | "range") => {
+      const selection = useFileSelectionStore.getState();
+      if (mode === "toggle") selection.toggle(path);
+      else
+        selection.extend(
+          path,
+          visibleNodes.map((item) => item.node.path),
+        );
+    },
+    [visibleNodes],
+  );
+
+  const handleMove = useCallback((paths: string[], targetDir: string) => {
+    useFileSelectionStore.getState().reset(null);
+    void movePaths(paths, targetDir);
+  }, []);
+
+  const rootDrop = useFileTreeDrop(rootPath ?? "", handleMove);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -102,7 +129,7 @@ export function FileExplorer() {
               <ArrowsInLineVertical size={14} />
             </HeaderAction>
           </div>
-          <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
+          <div ref={containerRef} className="min-h-0 flex-1 overflow-auto" {...rootDrop.handlers}>
             {showTreeLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Spinner size={20} className="animate-spin text-fg-muted" />
@@ -135,6 +162,8 @@ export function FileExplorer() {
                         onCreate={createNode}
                         onRename={renameNode}
                         onDelete={deleteNode}
+                        onMultiSelect={handleMultiSelect}
+                        onMove={handleMove}
                         onShowLocalHistory={openPanel}
                         decoration={decorations.files.get(node.path)}
                         hasChanges={node.isDirectory && decorations.dirtyDirs.has(node.path)}
