@@ -136,6 +136,8 @@ pub fn run() {
             modules::fs::delete_file,
             modules::fs_ops::duplicate_path,
             modules::fs_ops::reveal_in_file_manager,
+            modules::file_preview::read_file_preview,
+            modules::file_preview::open_with_default_app,
             modules::fs_watcher::workspace_watch,
             modules::fs_watcher::workspace_unwatch,
             modules::pty::create_pty,

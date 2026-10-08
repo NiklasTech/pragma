@@ -12,6 +12,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { retargetTabs } from "@/features/editor/retargetTabs";
+import { openNonTextFile } from "@/features/editor/preview/openPreview";
 
 export interface DirEntry {
   path: string;
@@ -116,6 +117,10 @@ export function useFileExplorer() {
 
   const openFileByPath = useCallback(
     async (path: string) => {
+      if (openNonTextFile(path, editorPanelId)) {
+        useFileExplorerStore.getState().setSelectedPath(path);
+        return;
+      }
       try {
         const result = await invoke<FileReadResult>("read_text_file", { path });
         useEditorStore.getState().openFile(
@@ -133,6 +138,7 @@ export function useFileExplorer() {
         useFileExplorerStore.getState().setSelectedPath(path);
         useSettingsStore.getState().addRecentFile(path);
       } catch (err) {
+        if (openNonTextFile(path, editorPanelId, err)) return;
         toast.error(String(err));
       }
     },

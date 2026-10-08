@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { detectLanguage } from "@/shared/lib/language";
+import { openNonTextFile } from "@/features/editor/preview/openPreview";
 
 interface FileReadResult {
   path: string;
@@ -32,6 +33,8 @@ export function useOpenFile() {
       return;
     }
 
+    if (openNonTextFile(path, editorPanelId)) return;
+
     try {
       const result = await invoke<FileReadResult>("read_text_file", { path });
       openFile(
@@ -47,6 +50,7 @@ export function useOpenFile() {
         editorPanelId,
       );
     } catch (err) {
+      if (openNonTextFile(path, editorPanelId, err)) return;
       toast.error(String(err));
     }
   }, [openFile, editorPanelId]);

@@ -16,6 +16,7 @@ import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { detectLanguage } from "@/shared/lib/language";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useGoToFile } from "./useGoToFile";
+import { openNonTextFile } from "@/features/editor/preview/openPreview";
 
 interface FileReadResult {
   path: string;
@@ -50,6 +51,7 @@ export function GoToFile() {
 
   async function handleSelect(path: string) {
     close();
+    if (openNonTextFile(path, editorPanelId)) return;
 
     try {
       const result = await invoke<FileReadResult>("read_text_file", { path });
@@ -66,6 +68,7 @@ export function GoToFile() {
         editorPanelId,
       );
     } catch (err) {
+      if (openNonTextFile(path, editorPanelId, err)) return;
       toast.error(String(err));
     }
   }

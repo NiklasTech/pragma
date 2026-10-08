@@ -8,6 +8,7 @@ import { InlineDiff } from "./InlineDiff";
 import { GitDiffTabView } from "./GitDiffTabView";
 import { FileEditor } from "./FileEditor";
 import { DiskChangeNotice } from "./DiskChangeNotice";
+import { FilePreviewView } from "../preview/FilePreviewView";
 
 interface EditorProps {
   panelId?: string;
@@ -75,6 +76,10 @@ export function Editor({ panelId }: EditorProps) {
 
   if (activeTab.kind === "references") {
     return <ReferencesView tab={activeTab} />;
+  }
+
+  if (activeTab.kind === "preview") {
+    return <FilePreviewView key={activeTab.id} tab={activeTab} />;
   }
 
   return (
