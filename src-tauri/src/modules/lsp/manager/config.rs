@@ -11,7 +11,7 @@ impl LspManager {
         let path = enriched_path();
         let command = resolve_command(&config.command, &path);
         let output = new_tokio_command(&command)
-            .arg("--version")
+            .arg(version_probe_arg(&config.command))
             .env("PATH", &path)
             .output()
             .await;
@@ -89,6 +89,15 @@ pub fn resolve_command(command: &str, path: &str) -> String {
     command.to_string()
 }
 
+/// sourcekit-lsp rejects `--version` with exit code 64, so probe it with `--help`.
+fn version_probe_arg(command: &str) -> &'static str {
+    if command == "sourcekit-lsp" {
+        "--help"
+    } else {
+        "--version"
+    }
+}
+
 pub(super) fn server_config_for_language(language: &str) -> Option<LspServerConfig> {
     SERVERS
         .iter()
@@ -136,6 +145,27 @@ mod tests {
 
         let resolved = resolve_command("typescript-language-server", "/usr/bin");
         assert_eq!(resolved, "typescript-language-server");
+    }
+
+    #[test]
+    fn sourcekit_lsp_is_probed_with_help() {
+        assert_eq!(version_probe_arg("sourcekit-lsp"), "--help");
+        assert_eq!(version_probe_arg("zls"), "--version");
+    }
+
+    #[test]
+    fn new_language_presets_are_configured() {
+        for (language, command) in [
+            ("shell", "bash-language-server"),
+            ("ruby", "ruby-lsp"),
+            ("toml", "taplo"),
+            ("csharp", "csharp-ls"),
+            ("swift", "sourcekit-lsp"),
+            ("zig", "zls"),
+        ] {
+            let config = server_config_for_language(language).unwrap();
+            assert_eq!(config.command, command, "{language} server command");
+        }
     }
 
     #[test]

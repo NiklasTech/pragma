@@ -47,6 +47,12 @@ function getServerDisplay(definition: LspServerDefinition, language: string): st
     cpp: "C++",
     html: "HTML",
     css: "CSS",
+    shell: "Shell",
+    ruby: "Ruby",
+    toml: "TOML",
+    csharp: "C#",
+    swift: "Swift",
+    zig: "Zig",
   };
   return labels[language] ?? definition.displayName;
 }
