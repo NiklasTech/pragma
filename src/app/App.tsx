@@ -27,6 +27,11 @@ import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
 import { useLspSymbolCommands } from "./useLspSymbolCommands";
+import { useGitPaletteCommands } from "./useGitPaletteCommands";
+import { useAgentPaletteCommands } from "./useAgentPaletteCommands";
+import { useThemePaletteCommand } from "./useThemePaletteCommand";
+import { useRunPaletteCommands } from "./useRunPaletteCommands";
+import { useRecentFolderPaletteCommand } from "./useRecentFolderPaletteCommand";
 import { CommandPalette } from "./CommandPalette";
 import { GoToFile } from "./GoToFile";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
@@ -57,6 +62,11 @@ export default function App() {
   useNativeAppMenu(actions);
   useCommandPaletteCommands();
   useLspSymbolCommands();
+  useGitPaletteCommands();
+  useAgentPaletteCommands();
+  useThemePaletteCommand();
+  useRunPaletteCommands();
+  useRecentFolderPaletteCommand();
   useEffect(() => startLspDidCloseWatcher(), []);
   useEffect(() => {
     const unlisten = listen<{ path: string }>("pragma:cli:invalid-path", (event) => {
