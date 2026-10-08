@@ -1,5 +1,6 @@
+use crate::modules::dap::breakpoints::to_request_breakpoints;
 use crate::modules::dap::types::{
-    DapBreakpoint, DapEvaluateResult, DapScope, DapStackFrame, DapVariable,
+    DapBreakpoint, DapEvaluateResult, DapScope, DapSourceBreakpoint, DapStackFrame, DapVariable,
 };
 
 use super::DapManager;
@@ -8,15 +9,15 @@ impl DapManager {
     pub async fn set_breakpoints(
         &self,
         file_path: &str,
-        lines: &[u32],
+        breakpoints: &[DapSourceBreakpoint],
     ) -> std::result::Result<Vec<DapBreakpoint>, String> {
-        let client = self.get_client().await?;
+        let (client, capabilities) = self.get_client_with_capabilities().await?;
         let body = client
             .request(
                 "setBreakpoints",
                 Some(serde_json::json!({
                     "source": { "path": file_path },
-                    "breakpoints": lines.iter().map(|line| serde_json::json!({ "line": line })).collect::<Vec<_>>(),
+                    "breakpoints": to_request_breakpoints(breakpoints, capabilities),
                     "sourceModified": false,
                 })),
                 None,
@@ -164,11 +165,12 @@ impl DapManager {
         &self,
         expression: &str,
         frame_id: Option<u64>,
+        context: &str,
     ) -> std::result::Result<DapEvaluateResult, String> {
         let client = self.get_client().await?;
         let mut arguments = serde_json::json!({
             "expression": expression,
-            "context": "watch",
+            "context": context,
         });
         if let Some(frame_id) = frame_id {
             arguments["frameId"] = serde_json::json!(frame_id);

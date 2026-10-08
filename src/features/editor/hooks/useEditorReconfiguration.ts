@@ -8,8 +8,15 @@ import {
   themeCompartment,
   createEditorFontStyleExtension,
 } from "@/shared/lib/theme/editor-theme";
-import { setBreakpointLinesEffect, getBreakpointLines } from "@/features/debug/breakpointGutter";
-import { sameLines } from "@/features/debug/debugState";
+import {
+  setBreakpointMarkersEffect,
+  getBreakpointMarkers,
+} from "@/features/debug/breakpointGutter";
+import {
+  sameMarkerSpecs,
+  toMarkerSpecs,
+  type FileBreakpointSettings,
+} from "@/features/debug/breakpointSettings";
 import {
   fontStyleCompartment,
   lineNumbersCompartment,
@@ -26,6 +33,7 @@ interface EditorReconfigurationContext {
   editorFontFamily: string;
   showLineNumbers: boolean;
   fileBreakpoints: number[] | undefined;
+  fileBreakpointSettings: FileBreakpointSettings | undefined;
   filePath: string;
   wordWrap: boolean;
   tabSize: number;
@@ -40,6 +48,7 @@ export function useEditorReconfiguration({
   editorFontFamily,
   showLineNumbers,
   fileBreakpoints,
+  fileBreakpointSettings,
   filePath,
   wordWrap,
   tabSize,
@@ -74,10 +83,10 @@ export function useEditorReconfiguration({
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    const lines = fileBreakpoints ?? [];
-    if (sameLines(getBreakpointLines(view.state), lines)) return;
-    view.dispatch({ effects: setBreakpointLinesEffect.of(lines) });
-  }, [fileBreakpoints, filePath]);
+    const markers = toMarkerSpecs(fileBreakpoints ?? [], fileBreakpointSettings);
+    if (sameMarkerSpecs(getBreakpointMarkers(view.state), markers)) return;
+    view.dispatch({ effects: setBreakpointMarkersEffect.of(markers) });
+  }, [fileBreakpoints, fileBreakpointSettings, filePath]);
 
   useEffect(() => {
     if (!viewRef.current) return;

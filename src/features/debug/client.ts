@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { useDebugStore } from "./store";
 import type { DapEventPayload } from "./debugState";
+import type { SourceBreakpoint } from "./breakpointSettings";
 
 export interface DapAdapterInfo {
   id: string;
@@ -79,7 +80,7 @@ export type DapStartParams = {
   env?: Record<string, string>;
   request?: "launch" | "attach";
   name?: string;
-  breakpoints?: Array<{ path: string; lines: number[] }>;
+  breakpoints?: Array<{ path: string; breakpoints: SourceBreakpoint[] }>;
 };
 
 export function dapListAdapters(): Promise<DapAdapterInfo[]> {
@@ -110,9 +111,9 @@ export function dapStop(): Promise<void> {
 
 export function dapSetBreakpoints(
   filePath: string,
-  lines: number[],
+  breakpoints: SourceBreakpoint[],
 ): Promise<DebugBreakpointResult[]> {
-  return invoke("dap_set_breakpoints", { filePath, lines });
+  return invoke("dap_set_breakpoints", { filePath, breakpoints });
 }
 
 export function dapContinue(threadId: number): Promise<void> {
@@ -147,8 +148,14 @@ export function dapVariables(variablesReference: number): Promise<DebugVariable[
   return invoke("dap_variables", { variablesReference });
 }
 
-export function dapEvaluate(expression: string, frameId?: number): Promise<DebugEvaluateResult> {
-  return invoke("dap_evaluate", { expression, frameId });
+export type DapEvaluateContext = "watch" | "repl" | "hover" | "clipboard";
+
+export function dapEvaluate(
+  expression: string,
+  frameId?: number,
+  context?: DapEvaluateContext,
+): Promise<DebugEvaluateResult> {
+  return invoke("dap_evaluate", { expression, frameId, context });
 }
 
 let listenersInitialized = false;

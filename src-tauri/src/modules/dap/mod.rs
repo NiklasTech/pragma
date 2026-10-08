@@ -1,3 +1,4 @@
+mod breakpoints;
 pub mod client;
 pub mod install;
 mod launch_args;
@@ -7,8 +8,10 @@ pub mod types;
 pub use manager::DapManager;
 pub use types::{
     DapAdapterInfo, DapBreakpoint, DapEnsureResult, DapEvaluateResult, DapFileBreakpoints,
-    DapInstallResult, DapScope, DapStackFrame, DapStartRequest, DapVariable,
+    DapInstallResult, DapScope, DapSourceBreakpoint, DapStackFrame, DapStartRequest, DapVariable,
 };
+
+const EVALUATE_CONTEXTS: &[&str] = &["watch", "repl", "hover", "clipboard"];
 
 #[tauri::command]
 pub async fn dap_list_adapters(app: tauri::AppHandle) -> Result<Vec<DapAdapterInfo>, String> {
@@ -70,12 +73,13 @@ pub async fn dap_stop(state: tauri::State<'_, DapManager>) -> Result<(), String>
 pub async fn dap_set_breakpoints(
     state: tauri::State<'_, DapManager>,
     file_path: String,
-    lines: Vec<u32>,
+    breakpoints: Vec<DapSourceBreakpoint>,
 ) -> Result<Vec<DapBreakpoint>, String> {
     if file_path.is_empty() {
         return Err("file_path is required".to_string());
     }
-    state.set_breakpoints(&file_path, &lines).await
+    breakpoints::validate_breakpoints(&breakpoints)?;
+    state.set_breakpoints(&file_path, &breakpoints).await
 }
 
 #[tauri::command]
@@ -141,9 +145,14 @@ pub async fn dap_evaluate(
     state: tauri::State<'_, DapManager>,
     expression: String,
     frame_id: Option<u64>,
+    context: Option<String>,
 ) -> Result<DapEvaluateResult, String> {
     if expression.is_empty() {
         return Err("expression is required".to_string());
     }
-    state.evaluate(&expression, frame_id).await
+    let context = context.as_deref().unwrap_or("watch");
+    if !EVALUATE_CONTEXTS.contains(&context) {
+        return Err(format!("Invalid evaluate context '{context}'"));
+    }
+    state.evaluate(&expression, frame_id, context).await
 }
