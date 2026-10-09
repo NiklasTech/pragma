@@ -32,6 +32,7 @@ import {
   readStringInput,
   resolveWorkspacePath,
 } from "./toolInput";
+import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 export interface AgentToolCall {
   toolCallId: string;
@@ -321,7 +322,7 @@ export async function executeAgentTool(
     isSkillPath(resolveWorkspacePath(rootPath, readStringInput(call.input, "path")));
   const decision = writesSkill
     ? "required"
-    : resolveAgentApproval(call.toolName, call.input, settings.agent, settings.ai.yoloMode);
+    : resolveAgentApproval(call.toolName, call.input, getAgentSettings(), settings.ai.yoloMode);
 
   if (call.toolName === AGENT_TOOL_NAMES.spawnSession) {
     const outcome = await runSpawnTool(

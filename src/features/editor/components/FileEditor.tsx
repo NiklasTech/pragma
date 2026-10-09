@@ -30,6 +30,7 @@ import { useEditorLanguageSync } from "@/features/editor/hooks/useEditorLanguage
 import { useBlameGutter } from "@/features/editor/hooks/useBlameGutter";
 import { useGitChangeGutter } from "@/features/editor/hooks/useGitChangeGutter";
 import { useEditorDisplaySettings } from "@/features/editor/hooks/useEditorDisplaySettings";
+import { useEditorSetting, useLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 export function FileEditor({
   content,
@@ -83,9 +84,9 @@ export function FileEditor({
   const [hasSelection, setHasSelection] = useState(false);
   const selectedTextRef = useRef("");
   const { handleBlur } = useAutoSave();
+  const tabSize = useEditorSetting("tabSize");
+  const insertSpaces = useEditorSetting("insertSpaces");
   const {
-    tabSize,
-    insertSpaces,
     fontSize,
     fontFamily,
     fontId,
@@ -95,9 +96,7 @@ export function FileEditor({
     inlayHints: inlayHintsEnabled,
   } = useSettingsStore((state) => state.editor);
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
-  const lspEnabledForLanguage = useSettingsStore(
-    (state) => state.lsp.enabled[language ?? ""] ?? true,
-  );
+  const lspEnabledForLanguage = useLspEnabled(language);
   const blameEnabled = useGitStore((state) => state.blameEnabled);
   const blamePath = useGitStore((state) => state.blamePath);
   const blameLines = useGitStore((state) => state.blameLines);

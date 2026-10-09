@@ -8,6 +8,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { LSP_SERVERS, isLspAutoInstallable, listLspLanguages } from "@/shared/lib/lsp-servers";
 import { SettingSection } from "./ui/SettingSection";
+import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
 import { ArrowClockwise, Copy, Check, Globe, DownloadSimple } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 
@@ -91,6 +92,7 @@ export function LspSettings() {
 
   return (
     <div className="flex flex-col gap-8">
+      <WorkspaceOverrideNotice section="lsp" />
       <SettingSection
         title="Language Servers"
         action={
