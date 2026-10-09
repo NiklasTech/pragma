@@ -40,6 +40,7 @@ import { EditableUserMessage } from "@/features/ai/rewind/EditableUserMessage";
 import { MessageActionBar, MessageActionButton } from "@/features/ai/rewind/MessageActionBar";
 import { RewindDialog } from "@/features/ai/rewind/RewindDialog";
 import { useMessageActions } from "@/features/ai/rewind/useMessageActions";
+import { useScrollToJumpTarget } from "@/features/ai/search/useScrollToJumpTarget";
 import { CopyMessageButton } from "@/features/ai/export/CopyMessageButton";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
@@ -158,6 +159,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     submitText,
   });
   const canActOnMessages = activeChatSessionId !== null && !isCLIActive && !inFlight && !compacting;
+  const messageIds = useMemo(() => messages.map((message) => message.id), [messages]);
+  useScrollToJumpTarget(activeChatSessionId, messageIds);
 
   const openFiles = useMemo(
     () =>
@@ -344,7 +347,12 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
               });
 
               return (
-                <Message key={msg.id} from="assistant" className="flex-col gap-1">
+                <Message
+                  key={msg.id}
+                  from="assistant"
+                  className="flex-col gap-1"
+                  data-message-id={msg.id}
+                >
                   <MessageContent>
                     {sourceDocuments.map((source, index) => (
                       <SourceBlock
