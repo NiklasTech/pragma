@@ -251,7 +251,8 @@ Useful default shortcuts (`Cmd` on macOS, `Ctrl` on Windows and Linux):
 | `Cmd/Ctrl + Shift + P` | Command palette          |
 | `Cmd/Ctrl + Shift + E` | Switch Agents and Editor |
 | `Cmd/Ctrl + Shift + A` | Toggle AI chat           |
-| `Cmd/Ctrl + Shift + T` | Toggle terminal          |
+| `` Ctrl + ` ``         | Toggle terminal          |
+| `Cmd/Ctrl + Shift + T` | Reopen closed tab        |
 | `Cmd/Ctrl + ,`         | Open settings            |
 
 All shortcuts can be changed in **Settings > Keyboard**.
