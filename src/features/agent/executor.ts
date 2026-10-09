@@ -320,9 +320,20 @@ export async function executeAgentTool(
   const writesSkill =
     isFileEditTool(call.toolName) &&
     isSkillPath(resolveWorkspacePath(rootPath, readStringInput(call.input, "path")));
+  // Named agents are limited to their folders above; other sessions ask before leaving the workspace.
+  const outsideWorkspace =
+    !agentAccess &&
+    isFolderScopedTool(call.toolName) &&
+    !checkAgentToolPath(call.toolName, call.input, rootPath, []).approved;
   const decision = writesSkill
     ? "required"
-    : resolveAgentApproval(call.toolName, call.input, getAgentSettings(), settings.ai.yoloMode);
+    : resolveAgentApproval(
+        call.toolName,
+        call.input,
+        getAgentSettings(),
+        settings.ai.yoloMode,
+        outsideWorkspace,
+      );
 
   if (call.toolName === AGENT_TOOL_NAMES.spawnSession) {
     const outcome = await runSpawnTool(

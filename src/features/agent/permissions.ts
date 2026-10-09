@@ -1,6 +1,8 @@
 import type { AgentSettings } from "@/shared/stores/settings";
+import { isLocalUrl, parseBrowserUrl } from "@/features/ai/browser/url";
 
 import { AGENT_TOOL_NAMES, isDestructiveAgentTool } from "./tools";
+import { readStringInput } from "./toolInput";
 
 export type AgentApprovalDecision = "auto" | "required";
 
@@ -36,15 +38,27 @@ function readCommandInput(input: unknown): string {
   return typeof command === "string" ? command : "";
 }
 
+// A remote page can carry what the agent read in its URL, so only local pages open unasked.
+function opensRemotePage(toolName: string, input: unknown): boolean {
+  if (toolName !== AGENT_TOOL_NAMES.openBrowser) return false;
+  const parsed = parseBrowserUrl(readStringInput(input, "url"));
+  return parsed.ok && !isLocalUrl(parsed.url);
+}
+
+/// `outsideWorkspace` marks a file or command path outside the workspace; those always ask.
 export function resolveAgentApproval(
   toolName: string,
   input: unknown,
   settings: AgentSettings,
   yoloMode: boolean,
+  outsideWorkspace = false,
 ): AgentApprovalDecision {
-  const needsApproval = isDestructiveAgentTool(toolName) || toolName === AGENT_TOOL_NAMES.webFetch;
+  const asksAlways = outsideWorkspace || opensRemotePage(toolName, input);
+  const needsApproval =
+    asksAlways || isDestructiveAgentTool(toolName) || toolName === AGENT_TOOL_NAMES.webFetch;
   if (!needsApproval) return "auto";
   if (yoloMode || settings.autoApprove === "all") return "auto";
+  if (asksAlways) return "required";
 
   if (toolName === AGENT_TOOL_NAMES.runCommand) {
     return isCommandAllowed(readCommandInput(input), settings.allowedCommands)
