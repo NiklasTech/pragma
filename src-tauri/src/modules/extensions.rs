@@ -2,6 +2,8 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
+use crate::modules::workspace_trust::{ensure_trusted, trust_after_install};
+
 pub mod workspace;
 
 pub const EXTENSION_FORMAT: &str = "pragma-extension-v1";
@@ -262,9 +264,39 @@ fn copy_dir_recursive(source: &Path, target: &Path) -> Result<(), String> {
 
 // -- Commands ------------------------------------------------------------------
 
+const UNTRUSTED_ERROR: &str =
+    "This folder is not trusted. Trust it in Project settings to run its extensions.";
+
+fn ensure_extensions_trusted(app: &tauri::AppHandle, workspace_root: &str) -> Result<(), String> {
+    if ensure_trusted(app, workspace_root)? {
+        Ok(())
+    } else {
+        Err(UNTRUSTED_ERROR.to_string())
+    }
+}
+
+/// Lists the workspace extensions; in an untrusted folder each one carries an error instead of
+/// starting.
 #[tauri::command]
-pub fn extension_list(workspace_root: String) -> Result<Vec<ExtensionSummary>, String> {
-    let dir = extensions_dir(&workspace_root);
+pub async fn extension_list(
+    app: tauri::AppHandle,
+    workspace_root: String,
+) -> Result<Vec<ExtensionSummary>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut summaries = list_extensions(&workspace_root)?;
+        if !summaries.is_empty() && !ensure_trusted(&app, &workspace_root)? {
+            for summary in &mut summaries {
+                summary.error = Some(UNTRUSTED_ERROR.to_string());
+            }
+        }
+        Ok(summaries)
+    })
+    .await
+    .map_err(|e| format!("Extension task failed: {e}"))?
+}
+
+fn list_extensions(workspace_root: &str) -> Result<Vec<ExtensionSummary>, String> {
+    let dir = extensions_dir(workspace_root);
     if !dir.exists() {
         return Ok(Vec::new());
     }
@@ -291,8 +323,13 @@ pub fn extension_list(workspace_root: String) -> Result<Vec<ExtensionSummary>, S
     Ok(summaries)
 }
 
-#[tauri::command]
-pub fn extension_read_main(workspace_root: String, extension_id: String) -> Result<String, String> {
+#[tauri::command(async)]
+pub fn extension_read_main(
+    app: tauri::AppHandle,
+    workspace_root: String,
+    extension_id: String,
+) -> Result<String, String> {
+    ensure_extensions_trusted(&app, &workspace_root)?;
     let dir = extension_dir(&workspace_root, &extension_id)?;
     let (_, manifest) = read_manifest(&dir)?;
     let main = manifest
@@ -306,12 +343,14 @@ pub fn extension_read_main(workspace_root: String, extension_id: String) -> Resu
     read_limited_text_file(&main_path, MAX_MAIN_SIZE_BYTES)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn extension_read_asset(
+    app: tauri::AppHandle,
     workspace_root: String,
     extension_id: String,
     asset_path: String,
 ) -> Result<String, String> {
+    ensure_extensions_trusted(&app, &workspace_root)?;
     let dir = extension_dir(&workspace_root, &extension_id)?;
     let path = confined_join(&dir, &asset_path)?;
     if !path.is_file() {
@@ -322,6 +361,7 @@ pub fn extension_read_asset(
 
 #[tauri::command]
 pub fn extension_install_from_path(
+    app: tauri::AppHandle,
     workspace_root: String,
     source_path: String,
 ) -> Result<ExtensionSummary, String> {
@@ -351,6 +391,7 @@ pub fn extension_install_from_path(
             .map_err(|e| format!("Failed to replace existing extension: {e}"))?;
     }
     copy_dir_recursive(&canonical_source, &target)?;
+    trust_after_install(&app, &workspace_root)?;
 
     summarize_dir(&target).ok_or_else(|| "Failed to read installed extension".to_string())
 }

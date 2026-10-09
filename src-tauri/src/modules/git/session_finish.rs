@@ -219,7 +219,7 @@ mod tests {
     fn merges_the_session_branch_into_the_checkout() {
         let repo = TestRepo::new();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created = create_worktree(app_data.path(), &repo.root, SESSION).expect("create");
+        let created = create_worktree(app_data.path(), &repo.root, SESSION, true).expect("create");
         session_commit(&created.path, "session.txt", "work\n");
 
         let result = finish_merge(
@@ -239,7 +239,7 @@ mod tests {
     fn rebase_conflicts_leave_both_branches_untouched() {
         let repo = TestRepo::new();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created = create_worktree(app_data.path(), &repo.root, SESSION).expect("create");
+        let created = create_worktree(app_data.path(), &repo.root, SESSION, true).expect("create");
         session_commit(&created.path, "file.txt", "session\n");
         repo.write("file.txt", "checkout\n");
         repo.commit_all("checkout change");
@@ -266,7 +266,7 @@ mod tests {
     fn refuses_uncommitted_session_changes() {
         let repo = TestRepo::new();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created = create_worktree(app_data.path(), &repo.root, SESSION).expect("create");
+        let created = create_worktree(app_data.path(), &repo.root, SESSION, true).expect("create");
         std::fs::write(Path::new(&created.path).join("draft.txt"), "x").expect("write");
 
         let err = finish_merge(
@@ -283,7 +283,7 @@ mod tests {
     fn rejects_paths_and_branches_that_are_not_the_session_worktree() {
         let repo = TestRepo::new();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created = create_worktree(app_data.path(), &repo.root, SESSION).expect("create");
+        let created = create_worktree(app_data.path(), &repo.root, SESSION, true).expect("create");
 
         assert!(validate_session_worktree(&repo.root, &repo.root, &created.branch).is_err());
         assert!(validate_session_worktree(&repo.root, &created.path, "main").is_err());

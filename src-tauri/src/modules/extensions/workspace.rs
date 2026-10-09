@@ -51,6 +51,36 @@ pub(crate) fn resolve_workspace_path(
     Ok(candidate)
 }
 
+/// `.git` holds hooks that run as native code and `.pragma` decides what Pragma runs, so
+/// extensions may read but never write them.
+fn is_protected(relative: &Path) -> bool {
+    relative
+        .components()
+        .enumerate()
+        .any(|(index, component)| match component {
+            Component::Normal(part) => {
+                let name = part.to_string_lossy().to_ascii_lowercase();
+                name == ".git" || (index == 0 && name == ".pragma")
+            }
+            _ => false,
+        })
+}
+
+fn ensure_writable(workspace_root: &str, resolved: &Path) -> Result<(), String> {
+    let root_real = fs::canonicalize(workspace_root)
+        .map_err(|e| format!("Failed to resolve workspace root: {e}"))?;
+    let existing_real = fs::canonicalize(deepest_existing(resolved)?)
+        .map_err(|e| format!("Failed to resolve path: {e}"))?;
+    let requested = resolved.strip_prefix(&root_real).unwrap_or(resolved);
+    let actual = existing_real
+        .strip_prefix(&root_real)
+        .unwrap_or(&existing_real);
+    if is_protected(requested) || is_protected(actual) {
+        return Err("Extensions cannot write to .git or .pragma".to_string());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn extension_workspace_read_file(
     workspace_root: String,
@@ -68,6 +98,7 @@ pub fn extension_workspace_write_file(
     content: String,
 ) -> Result<(), String> {
     let resolved = resolve_workspace_path(&workspace_root, &path)?;
+    ensure_writable(&workspace_root, &resolved)?;
     fs_commands::write_text_file(
         app,
         resolved.to_string_lossy().into_owned(),
@@ -186,5 +217,38 @@ mod tests {
         assert!(resolve_workspace_path(&root, "escape/secret.txt").is_err());
         assert!(resolve_workspace_path(&root, "escape").is_err());
         assert!(resolve_workspace_path(&root, "broken").is_err());
+    }
+
+    #[test]
+    fn writes_to_git_and_pragma_are_refused() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::create_dir_all(temp.path().join(".git").join("hooks")).unwrap();
+        fs::create_dir_all(temp.path().join("vendor").join("lib").join(".git")).unwrap();
+        let root = temp.path().to_string_lossy().into_owned();
+
+        for path in [
+            ".git/hooks/pre-commit",
+            ".GIT/config",
+            "vendor/lib/.git/config",
+            ".pragma/worktree-setup",
+            ".pragma/extensions/x/main.js",
+        ] {
+            let resolved = resolve_workspace_path(&root, path).unwrap();
+            assert!(ensure_writable(&root, &resolved).is_err(), "{path}");
+        }
+        let allowed = resolve_workspace_path(&root, "src/.pragma-notes.md").unwrap();
+        assert!(ensure_writable(&root, &allowed).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn writes_through_a_link_into_git_are_refused() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::create_dir_all(temp.path().join(".git").join("hooks")).unwrap();
+        std::os::unix::fs::symlink(temp.path().join(".git"), temp.path().join("tools")).unwrap();
+        let root = temp.path().to_string_lossy().into_owned();
+
+        let resolved = resolve_workspace_path(&root, "tools/hooks/pre-commit").unwrap();
+        assert!(ensure_writable(&root, &resolved).is_err());
     }
 }

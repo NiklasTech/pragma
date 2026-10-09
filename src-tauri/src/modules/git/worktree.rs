@@ -14,8 +14,11 @@ use tauri::Manager;
 use crate::commands::chat_storage::workspace_hash;
 use crate::modules::git::process::run_git;
 use crate::modules::git::types::{DEFAULT_TIMEOUT_SECS, MAX_TIMEOUT_SECS};
+use crate::modules::workspace_trust::ensure_trusted;
 
 const NOT_A_REPO: &str = "This folder is not a git repository";
+const UNTRUSTED_SCRIPT_LOG: &str =
+    "Skipped the .pragma worktree script because this folder is not trusted.";
 
 #[derive(Debug, Serialize)]
 pub struct SessionRepoCheck {
@@ -68,7 +71,11 @@ pub async fn git_session_worktree_create(
         .path()
         .app_data_dir()
         .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
-    blocking(move || create_worktree(&app_data_dir, &repo_path, &session_id)).await
+    blocking(move || {
+        let scripts_trusted = ensure_trusted(&app, &repo_path)?;
+        create_worktree(&app_data_dir, &repo_path, &session_id, scripts_trusted)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -81,13 +88,18 @@ pub async fn git_session_worktree_dirty(path: String) -> Result<bool, String> {
 
 #[tauri::command]
 pub async fn git_session_worktree_teardown(
+    app: tauri::AppHandle,
     repo_path: String,
     worktree_path: String,
 ) -> Result<SessionWorktreeTeardown, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
     }
-    blocking(move || Ok(teardown(&repo_path, &worktree_path))).await
+    blocking(move || {
+        let scripts_trusted = ensure_trusted(&app, &repo_path)?;
+        Ok(teardown(&repo_path, &worktree_path, scripts_trusted))
+    })
+    .await
 }
 
 #[tauri::command]
@@ -290,6 +302,7 @@ pub(crate) fn create_worktree(
     app_data_dir: &Path,
     repo_path: &str,
     session_id: &str,
+    scripts_trusted: bool,
 ) -> Result<SessionWorktreeCreate, String> {
     validate_session_id(session_id)?;
 
@@ -339,7 +352,9 @@ pub(crate) fn create_worktree(
     }
 
     let setup_script = Path::new(repo_path).join(".pragma").join("worktree-setup");
-    let (status, setup_log) = if executable(&setup_script) {
+    let (status, setup_log) = if executable(&setup_script) && !scripts_trusted {
+        ("ready".to_string(), UNTRUSTED_SCRIPT_LOG.to_string())
+    } else if executable(&setup_script) {
         let (ok, log) = run_script(&setup_script, &path);
         if ok {
             ("ready".to_string(), log)
@@ -379,7 +394,11 @@ pub(crate) fn worktree_dirty(worktree_path: &str) -> Result<bool, String> {
     Ok(!String::from_utf8_lossy(&output.stdout).trim().is_empty())
 }
 
-pub(crate) fn teardown(repo_path: &str, worktree_path: &str) -> SessionWorktreeTeardown {
+pub(crate) fn teardown(
+    repo_path: &str,
+    worktree_path: &str,
+    scripts_trusted: bool,
+) -> SessionWorktreeTeardown {
     let script = Path::new(repo_path)
         .join(".pragma")
         .join("worktree-teardown");
@@ -387,6 +406,12 @@ pub(crate) fn teardown(repo_path: &str, worktree_path: &str) -> SessionWorktreeT
         return SessionWorktreeTeardown {
             ok: true,
             log: String::new(),
+        };
+    }
+    if !scripts_trusted {
+        return SessionWorktreeTeardown {
+            ok: true,
+            log: UNTRUSTED_SCRIPT_LOG.to_string(),
         };
     }
     let (ok, log) = run_script(&script, Path::new(worktree_path));
@@ -545,7 +570,8 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let created = create_worktree(app_data.path(), &repo_path, SESSION_A).expect("create");
+        let created =
+            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
         assert_eq!(created.branch, "pragma/11111111");
         assert_eq!(created.status, "ready");
         assert!(Path::new(&created.path).starts_with(app_data.path()));
@@ -561,8 +587,8 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let first = create_worktree(app_data.path(), &repo_path, SESSION_A).expect("first");
-        let second = create_worktree(app_data.path(), &repo_path, SESSION_B).expect("second");
+        let first = create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("first");
+        let second = create_worktree(app_data.path(), &repo_path, SESSION_B, true).expect("second");
 
         assert_eq!(first.branch, "pragma/11111111");
         assert_eq!(second.branch, "pragma/11111111-2");
@@ -572,7 +598,8 @@ mod tests {
     fn worktree_dirty_tracks_untracked_files() {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created = create_worktree(app_data.path(), &repo_path, SESSION_A).expect("create");
+        let created =
+            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
 
         assert!(!worktree_dirty(&created.path).expect("dirty"));
         std::fs::write(Path::new(&created.path).join("new.txt"), b"x").expect("write");
@@ -584,11 +611,11 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let clean = create_worktree(app_data.path(), &repo_path, SESSION_A).expect("create");
+        let clean = create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
         remove_worktree(&repo_path, &clean.path, false).expect("remove clean");
         assert!(!Path::new(&clean.path).exists());
 
-        let dirty = create_worktree(app_data.path(), &repo_path, SESSION_B).expect("create");
+        let dirty = create_worktree(app_data.path(), &repo_path, SESSION_B, true).expect("create");
         std::fs::write(Path::new(&dirty.path).join("dirty.txt"), b"x").expect("write");
         assert!(remove_worktree(&repo_path, &dirty.path, false).is_err());
         assert!(Path::new(&dirty.path).exists());
@@ -607,16 +634,34 @@ mod tests {
         std::fs::write(&script, b"#!/bin/sh\nexit 1\n").expect("write script");
         make_executable(&script);
 
-        let created = create_worktree(app_data.path(), &repo_path, SESSION_A).expect("create");
+        let created =
+            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
         assert_eq!(created.status, "error");
         assert!(Path::new(&created.path).exists());
+    }
+
+    #[test]
+    fn untrusted_setup_script_does_not_run() {
+        let (_repo, repo_path) = init_repo();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let pragma = Path::new(&repo_path).join(".pragma");
+        std::fs::create_dir_all(&pragma).expect("mkdir");
+        let script = pragma.join("worktree-setup");
+        std::fs::write(&script, b"#!/bin/sh\nexit 1\n").expect("write script");
+        make_executable(&script);
+
+        let created =
+            create_worktree(app_data.path(), &repo_path, SESSION_A, false).expect("create");
+        assert_eq!(created.status, "ready");
+        assert_eq!(created.setup_log, UNTRUSTED_SCRIPT_LOG);
     }
 
     #[test]
     fn teardown_failure_keeps_worktree() {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created = create_worktree(app_data.path(), &repo_path, SESSION_A).expect("create");
+        let created =
+            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
 
         let pragma = Path::new(&repo_path).join(".pragma");
         std::fs::create_dir_all(&pragma).expect("mkdir");
@@ -624,7 +669,7 @@ mod tests {
         std::fs::write(&script, b"#!/bin/sh\nexit 1\n").expect("write script");
         make_executable(&script);
 
-        let result = teardown(&repo_path, &created.path);
+        let result = teardown(&repo_path, &created.path, true);
         assert!(!result.ok);
         assert!(Path::new(&created.path).exists());
     }
