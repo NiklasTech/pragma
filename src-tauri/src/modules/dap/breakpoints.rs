@@ -7,13 +7,17 @@ fn non_empty(value: Option<&String>) -> Option<String> {
         .map(str::to_string)
 }
 
-/// Drops empty options and the ones the adapter does not support.
+/// Drops empty options and the ones the adapter does not support. Logpoints are left out
+/// entirely when unsupported, since sending them as plain breakpoints would pause.
 pub fn to_request_breakpoints(
     breakpoints: &[DapSourceBreakpoint],
     capabilities: DapCapabilities,
 ) -> Vec<DapSourceBreakpoint> {
     breakpoints
         .iter()
+        .filter(|bp| {
+            capabilities.supports_log_points || non_empty(bp.log_message.as_ref()).is_none()
+        })
         .map(|bp| DapSourceBreakpoint {
             line: bp.line,
             condition: non_empty(bp.condition.as_ref())
@@ -67,11 +71,27 @@ mod tests {
             supports_conditional_breakpoints: true,
             ..DapCapabilities::default()
         };
-        let result = to_request_breakpoints(&[breakpoint()], capabilities);
+        let mut bp = breakpoint();
+        bp.log_message = None;
+        let result = to_request_breakpoints(&[bp], capabilities);
         let value = serde_json::to_value(&result[0]).unwrap();
         assert_eq!(value["condition"], "x > 1");
         assert!(value.get("hitCondition").is_none());
         assert!(value.get("logMessage").is_none());
+    }
+
+    #[test]
+    fn skips_logpoints_the_adapter_cannot_run() {
+        let capabilities = DapCapabilities {
+            supports_conditional_breakpoints: true,
+            ..DapCapabilities::default()
+        };
+        let mut plain = breakpoint();
+        plain.line = 7;
+        plain.log_message = Some("  ".to_string());
+        let result = to_request_breakpoints(&[breakpoint(), plain], capabilities);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].line, 7);
     }
 
     #[test]
@@ -82,6 +102,7 @@ mod tests {
         };
         let mut bp = breakpoint();
         bp.condition = Some("   ".to_string());
+        bp.log_message = None;
         let result = to_request_breakpoints(&[bp], capabilities);
         assert!(result[0].condition.is_none());
     }

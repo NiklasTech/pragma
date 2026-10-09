@@ -13,6 +13,19 @@ interface PaneBounds {
   height: number;
 }
 
+const pendingByLeaf = new Map<string, Promise<unknown>>();
+
+/// Runs show and close of one pane in order, so a close never overtakes the show it undoes.
+function inOrder<T>(leafId: string, run: () => Promise<T>): Promise<T> {
+  const next = (pendingByLeaf.get(leafId) ?? Promise.resolve()).catch(() => {}).then(run);
+  pendingByLeaf.set(leafId, next);
+  const forget = () => {
+    if (pendingByLeaf.get(leafId) === next) pendingByLeaf.delete(leafId);
+  };
+  next.then(forget, forget);
+  return next;
+}
+
 function boundsOf(element: HTMLElement): PaneBounds {
   const rect = element.getBoundingClientRect();
   return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
@@ -54,7 +67,9 @@ export function NativeBrowserView({
       frame = requestAnimationFrame(tick);
     };
 
-    invoke("browser_webview_show", { leafId, url, bounds: boundsOf(element) })
+    inOrder(leafId, () =>
+      invoke("browser_webview_show", { leafId, url, bounds: boundsOf(element) }),
+    )
       .then(() => {
         if (!disposed) ready = true;
       })
@@ -66,7 +81,7 @@ export function NativeBrowserView({
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
-      void invoke("browser_webview_close", { leafId }).catch(() => {});
+      void inOrder(leafId, () => invoke("browser_webview_close", { leafId })).catch(() => {});
     };
   }, [leafId, url]);
 

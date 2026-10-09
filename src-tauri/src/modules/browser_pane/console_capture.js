@@ -2,6 +2,10 @@
 // It runs in every frame but only activates in direct child frames of the app.
 (() => {
   if (window === window.top || window.parent !== window.top) return;
+  const APP_ORIGINS = __PRAGMA_APP_ORIGINS__;
+  // A native browser pane shows a remote page on top; its frames must not report to it.
+  const ancestors = location.ancestorOrigins;
+  if (ancestors && ancestors.length > 0 && !APP_ORIGINS.includes(ancestors[0])) return;
 
   const MAX_ENTRIES = 200;
   const MAX_TEXT = 2000;
@@ -82,7 +86,7 @@
   };
 
   window.addEventListener("message", (event) => {
-    if (event.source !== window.parent) return;
+    if (event.source !== window.parent || !APP_ORIGINS.includes(event.origin)) return;
     const data = event.data;
     if (!data || data.type !== "pragma:browser-console") return;
     window.parent.postMessage(

@@ -25,13 +25,15 @@ pub fn run_child_sessions_bridge() -> i32 {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    let dev_url = context.config().build.dev_url.clone();
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             cli::handle_second_instance(app, &argv, &cwd);
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_cli::init())
-        .plugin(modules::browser_pane::init())
+        .plugin(modules::browser_pane::init(dev_url.as_ref()))
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
@@ -389,7 +391,7 @@ pub fn run() {
             app_menu::macos_menu_set_enabled,
             app_menu::macos_menu_set_checked,
         ])
-        .build(tauri::generate_context!());
+        .build(context);
 
     match result {
         Ok(app) => {
