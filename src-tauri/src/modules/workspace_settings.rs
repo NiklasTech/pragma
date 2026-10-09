@@ -186,6 +186,16 @@ pub fn merge_into(existing: Option<Value>, settings: &WorkspaceSettings) -> Resu
     Ok(Value::Object(document))
 }
 
+/// A linked `.pragma` folder or settings file could make a save overwrite a file outside the workspace.
+fn ensure_not_symlinked(path: &Path) -> Result<(), String> {
+    for candidate in [path.parent(), Some(path)].into_iter().flatten() {
+        if std::fs::symlink_metadata(candidate).is_ok_and(|meta| meta.file_type().is_symlink()) {
+            return Err(".pragma/settings.json must not be a symbolic link".to_string());
+        }
+    }
+    Ok(())
+}
+
 /// The workspace overrides, or `None` when the workspace has no `.pragma/settings.json`.
 #[tauri::command(async)]
 pub fn workspace_settings_load(root_path: String) -> Result<Option<WorkspaceSettings>, String> {
@@ -200,6 +210,7 @@ pub fn workspace_settings_save(
 ) -> Result<(), String> {
     validate(&settings)?;
     let path = settings_path(&root_path)?;
+    ensure_not_symlinked(&path)?;
     let existing = read_document(&path)?;
     let document = merge_into(existing, &settings)?;
     if let Some(dir) = path.parent() {
@@ -289,5 +300,21 @@ mod tests {
         assert!(workspace_settings_load("relative/path".to_string()).is_err());
         std::fs::write(dir.path().join(".pragma").join("settings.json"), "{oops").unwrap();
         assert!(workspace_settings_load(root).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saving_refuses_a_linked_settings_file() {
+        let workspace = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let target = outside.path().join("config.json");
+        std::fs::write(&target, "{}").unwrap();
+        std::fs::create_dir(workspace.path().join(".pragma")).unwrap();
+        std::os::unix::fs::symlink(&target, workspace.path().join(".pragma/settings.json"))
+            .unwrap();
+
+        let root = workspace.path().to_string_lossy().into_owned();
+        assert!(workspace_settings_save(root, WorkspaceSettings::default()).is_err());
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "{}");
     }
 }
