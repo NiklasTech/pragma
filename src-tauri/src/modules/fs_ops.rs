@@ -20,7 +20,10 @@ fn duplicate_target(source: &Path) -> Result<PathBuf, String> {
         source.extension().map(|e| e.to_string_lossy().into_owned())
     };
     let stem = match &extension {
-        Some(ext) => name[..name.len() - ext.len() - 1].to_string(),
+        Some(_) => source
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .ok_or_else(|| "Path has no name".to_string())?,
         None => name,
     };
 
