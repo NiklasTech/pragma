@@ -16,6 +16,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 
 import { useFramePolicy } from "./framePolicy";
+import { NativeBrowserView } from "./NativeBrowserView";
 import { registerBrowserFrame } from "./frames";
 import { currentUrl, useBrowserHistoryStore } from "./history";
 import { parseBrowserUrl } from "./url";
@@ -36,12 +37,17 @@ export function BrowserPane({ leafId }: { leafId: string }) {
   );
   const [draft, setDraft] = useState(url ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [nativeError, setNativeError] = useState<string | null>(null);
   const framePolicy = useFramePolicy(url);
 
   useEffect(() => {
     setDraft(url ?? "");
     setError(null);
+    setNativeError(null);
   }, [url]);
+
+  // Sites that refuse framing open in a native webview, which frame rules do not apply to.
+  const native = url !== null && framePolicy?.blocked === true && nativeError === null;
 
   const canGoBack = history !== undefined && history.index > 0;
   const canGoForward = history !== undefined && history.index < history.entries.length - 1;
@@ -118,7 +124,15 @@ export function BrowserPane({ leafId }: { leafId: string }) {
         </p>
       )}
       <div className="relative min-h-0 flex-1 bg-white">
-        {url && framePolicy?.blocked && (
+        {url && native && (
+          <NativeBrowserView
+            key={`${history?.index ?? 0}-${history?.reloadToken ?? 0}`}
+            leafId={leafId}
+            url={url}
+            onError={setNativeError}
+          />
+        )}
+        {url && framePolicy?.blocked && nativeError !== null && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-bg-root px-6 text-center">
             <ProhibitInset size={28} className="text-fg-subtle" />
             <div className="flex flex-col gap-1">
@@ -128,6 +142,7 @@ export function BrowserPane({ leafId }: { leafId: string }) {
               {framePolicy.reason && (
                 <span className="font-mono text-ui-xs text-fg-muted">{framePolicy.reason}</span>
               )}
+              <span className="text-ui-xs text-fg-muted">{nativeError}</span>
             </div>
             <Button variant="outline" size="sm" onClick={openExternally}>
               <ArrowSquareOut size={13} />
@@ -135,7 +150,7 @@ export function BrowserPane({ leafId }: { leafId: string }) {
             </Button>
           </div>
         )}
-        {url ? (
+        {native ? null : url ? (
           <iframe
             key={`${history?.index ?? 0}-${history?.reloadToken ?? 0}`}
             ref={frameRef}
