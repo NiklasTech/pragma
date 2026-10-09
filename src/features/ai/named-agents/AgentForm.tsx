@@ -8,12 +8,15 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useAIStore } from "@/shared/stores/ai";
+import { useWorkspaceSkills } from "@/features/ai/skills/useWorkspaceSkills";
 
 import { AgentEnginePicker } from "./AgentEnginePicker";
 import { AgentFoldersTab } from "./AgentFoldersTab";
 import { AgentMcpServersField } from "./AgentMcpServersField";
 import { draftAgent } from "./draft";
 import { useNamedAgentsStore } from "./store";
+import { AGENT_TEMPLATES, suggestedSkillIds, type AgentTemplate } from "./templates";
+import { uniqueAgentName } from "./transfer";
 import type { Agent, AgentEngine } from "./types";
 import {
   AGENT_BRIEF_MAX,
@@ -42,6 +45,8 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
   const [brief, setBrief] = useState(agent?.brief ?? "");
   const [folders, setFolders] = useState<string[]>(agent?.folders ?? []);
   const [mcpServers, setMcpServers] = useState<string[] | undefined>(agent?.mcpServers);
+  const [skills, setSkills] = useState<string[]>(agent?.skills ?? []);
+  const workspaceSkills = useWorkspaceSkills();
   const [saving, setSaving] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +88,17 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
     }
   }, [activeModel, activeProvider, description, providers]);
 
+  const applyTemplate = (template: AgentTemplate) => {
+    setName(uniqueAgentName(template.name, agents));
+    setBrief(template.brief);
+    setSkills(suggestedSkillIds(template, workspaceSkills));
+    setError(null);
+  };
+
+  const skillNames = workspaceSkills
+    .filter((skill) => skills.includes(skill.id))
+    .map((skill) => skill.name);
+
   const handleSave = useCallback(async () => {
     const trimmedName = name.trim();
     const trimmedBrief = brief.trim();
@@ -110,7 +126,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       engine,
       folders,
       memory: agent?.memory ?? [],
-      skills: agent?.skills ?? [],
+      skills,
       createdAt: agent?.createdAt ?? now,
       updatedAt: now,
     };
@@ -124,7 +140,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
     } finally {
       setSaving(false);
     }
-  }, [agent, agents, brief, engine, folders, mcpServers, name, onSaved, saveAgent]);
+  }, [agent, agents, brief, engine, folders, mcpServers, name, onSaved, saveAgent, skills]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -146,6 +162,25 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+          {!agent && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-ui-xs font-medium text-fg-muted">Start from a template</span>
+              <div className="flex flex-wrap gap-1.5">
+                {AGENT_TEMPLATES.map((template) => (
+                  <Button
+                    key={template.id}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyTemplate(template)}
+                  >
+                    {template.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <span className="text-ui-xs font-medium text-fg-muted">Describe this agent</span>
             <Textarea
@@ -190,6 +225,10 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
               className="text-ui-sm"
             />
           </div>
+
+          {!agent && skillNames.length > 0 && (
+            <p className="text-ui-xs text-fg-muted">Skills: {skillNames.join(", ")}</p>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <span className="text-ui-xs font-medium text-fg-muted">Engine</span>
