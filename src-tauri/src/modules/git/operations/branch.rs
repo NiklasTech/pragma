@@ -36,7 +36,17 @@ pub fn get_branches(repo_root: &str) -> Result<Vec<GitBranch>> {
     Ok(branches)
 }
 
+/// A name starting with `-` would reach git as an option instead of a branch.
+fn ensure_safe_branch_name(branch_name: &str) -> Result<()> {
+    if is_safe_branch_name(branch_name) {
+        Ok(())
+    } else {
+        Err(GitError::command("invalid branch", branch_name.to_string()))
+    }
+}
+
 pub fn checkout_branch(repo_root: &str, branch_name: &str) -> Result<()> {
+    ensure_safe_branch_name(branch_name)?;
     let repo_root = authorized_repo_root(repo_root)?;
     ensure_git_available()?;
     let output = run_git(
@@ -48,6 +58,7 @@ pub fn checkout_branch(repo_root: &str, branch_name: &str) -> Result<()> {
 }
 
 pub fn create_branch(repo_root: &str, branch_name: &str, checkout: bool) -> Result<()> {
+    ensure_safe_branch_name(branch_name)?;
     let repo_root = authorized_repo_root(repo_root)?;
     ensure_git_available()?;
     let output = run_git(
@@ -64,6 +75,7 @@ pub fn create_branch(repo_root: &str, branch_name: &str, checkout: bool) -> Resu
 }
 
 pub fn delete_branch(repo_root: &str, branch_name: &str) -> Result<()> {
+    ensure_safe_branch_name(branch_name)?;
     let repo_root = authorized_repo_root(repo_root)?;
     ensure_git_available()?;
     let output = run_git(
@@ -162,6 +174,15 @@ mod tests {
         let repo = TestRepo::new();
         assert!(create_branch(&repo.root, "main", false).is_err());
         assert!(create_branch(&repo.root, "bad..name", false).is_err());
+    }
+
+    #[test]
+    fn branch_names_that_look_like_options_are_rejected() {
+        let repo = TestRepo::new();
+        assert!(create_branch(&repo.root, "--orphan", false).is_err());
+        assert!(checkout_branch(&repo.root, "-f").is_err());
+        assert!(delete_branch(&repo.root, "--all").is_err());
+        assert_eq!(repo.git(&["branch", "--show-current"]), "main");
     }
 
     #[test]
