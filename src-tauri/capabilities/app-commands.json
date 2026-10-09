@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "app-commands",
+  "description": "Lets the app's own webviews call its commands; browser pane webviews get none",
+  "webviews": ["main", "workspace-*", "floating-*"],
+  "permissions": ["app-commands"]
+}

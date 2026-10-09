@@ -1,6 +1,8 @@
 pub mod ai;
 mod app_menu;
 pub mod cli;
+#[cfg(test)]
+mod command_permissions;
 pub mod commands;
 #[cfg(target_os = "macos")]
 mod macos_chrome;

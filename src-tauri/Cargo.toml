@@ -107,6 +107,7 @@ windows = { version = "0.61", features = [
 test-fixtures = []
 
 [dev-dependencies]
+tauri = { version = "2.11.2", features = ["test"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3"
 
