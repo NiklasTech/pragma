@@ -13,15 +13,16 @@ function renameKeys<T>(record: Record<string, T>, ids: Map<string, string>): Rec
   );
 }
 
-/// Points open file tabs at the new location after a file or folder moved on disk.
+/// Points open file and preview tabs at the new location after a file or folder moved on disk.
 export function retargetTabs(from: string, to: string): void {
   const ids = new Map<string, string>();
   const state = useEditorStore.getState();
   const tabs = state.tabs.map((tab): EditorTab => {
-    if (tab.kind !== "file") return tab;
+    if (tab.kind !== "file" && tab.kind !== "preview") return tab;
     const path = movedPath(tab.path, from, to);
     if (!path) return tab;
-    const id = tab.id === tab.path ? path : tab.id;
+    // File tab ids are the path; preview tab ids are `preview:` plus the path.
+    const id = tab.id.endsWith(tab.path) ? `${tab.id.slice(0, -tab.path.length)}${path}` : tab.id;
     if (id !== tab.id) ids.set(tab.id, id);
     const name = path.split(/[\\/]/).pop() ?? tab.name;
     return { ...tab, id, path, name };
