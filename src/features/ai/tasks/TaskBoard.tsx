@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Kanban, Plus, X } from "@phosphor-icons/react";
+import { GithubLogo, Kanban, Plus, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
@@ -13,6 +13,7 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { resolveTaskActions } from "./actionState";
 import { resumeTask, runTask, stopTask } from "./actions";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
+import { ImportIssuesDialog } from "./ImportIssuesDialog";
 import {
   EMPTY_TASK_FILTER,
   filterTasks,
@@ -49,6 +50,7 @@ export function TaskBoard() {
   const closeBoard = useTasksUiStore((state) => state.closeBoard);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [toDelete, setToDelete] = useState<Task | null>(null);
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
@@ -93,6 +95,16 @@ export function TaskBoard() {
           </span>
         )}
         <span className="flex-1" />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={!rootPath || !loaded}
+          onClick={() => setImportOpen(true)}
+        >
+          <GithubLogo size={13} />
+          Import issues
+        </Button>
         <Button
           type="button"
           size="sm"
@@ -194,6 +206,9 @@ export function TaskBoard() {
       )}
 
       <TaskDialog open={dialogOpen} task={editing} onOpenChange={setDialogOpen} />
+      {rootPath && (
+        <ImportIssuesDialog open={importOpen} rootPath={rootPath} onOpenChange={setImportOpen} />
+      )}
       <DeleteTaskDialog
         task={toDelete}
         onOpenChange={(open) => {

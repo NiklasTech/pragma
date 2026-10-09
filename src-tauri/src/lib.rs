@@ -217,6 +217,7 @@ pub fn run() {
             modules::git::github::gh_pr_current,
             modules::git::github::gh_pr_create,
             modules::git::github::gh_pr_review_comments,
+            modules::git::github_issues::gh_issue_list,
             modules::agent::agent_run_command,
             modules::local_history::commands::local_history_entries,
             modules::lsp::lsp_did_open,

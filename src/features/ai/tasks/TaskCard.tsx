@@ -1,8 +1,10 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import {
   ArrowClockwise,
   DotsThree,
+  GithubLogo,
   LockSimple,
   PencilSimple,
   Play,
@@ -97,6 +99,12 @@ export function TaskCard({
             ))}
           </span>
         )}
+        {task.issueNumber !== undefined && (
+          <span className="flex items-center gap-1 text-ui-2xs text-fg-subtle">
+            <GithubLogo size={11} />
+            Issue #{task.issueNumber}
+          </span>
+        )}
         {agentName && task.agentId && (
           <span className="flex items-center gap-1 text-ui-2xs text-fg-subtle">
             <Robot size={11} weight="fill" className={cn(seededAccent(task.agentId).text)} />
@@ -135,6 +143,14 @@ export function TaskCard({
             <ArrowClockwise size={14} />
             Resume
           </DropdownMenuItem>
+          {task.issueUrl && (
+            <DropdownMenuItem
+              onClick={() => void invoke("open_external_url", { url: task.issueUrl })}
+            >
+              <GithubLogo size={14} />
+              Open issue
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={onDelete}>
             <Trash size={14} />

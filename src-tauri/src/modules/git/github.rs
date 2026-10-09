@@ -133,7 +133,12 @@ fn gh_program() -> Option<PathBuf> {
     resolve_program("gh").ok()
 }
 
-fn run_gh<I, S>(program: &Path, repo_root: &Path, args: I, timeout_secs: u64) -> Result<GitOutput>
+pub(super) fn run_gh<I, S>(
+    program: &Path,
+    repo_root: &Path,
+    args: I,
+    timeout_secs: u64,
+) -> Result<GitOutput>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<std::ffi::OsStr>,
@@ -147,7 +152,7 @@ where
     )
 }
 
-fn gh_stdout(output: GitOutput, context: &'static str) -> Result<String> {
+pub(super) fn gh_stdout(output: GitOutput, context: &'static str) -> Result<String> {
     if output.timed_out {
         return Err(GitError::TimedOut(context));
     }
@@ -166,7 +171,7 @@ fn gh_stdout(output: GitOutput, context: &'static str) -> Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
-fn require_gh() -> Result<PathBuf> {
+pub(super) fn require_gh() -> Result<PathBuf> {
     gh_program().ok_or_else(|| {
         GitError::command(
             "GitHub CLI not found",
@@ -175,7 +180,10 @@ fn require_gh() -> Result<PathBuf> {
     })
 }
 
-fn parse_json<T: for<'de> Deserialize<'de>>(text: &str, context: &'static str) -> Result<T> {
+pub(super) fn parse_json<T: for<'de> Deserialize<'de>>(
+    text: &str,
+    context: &'static str,
+) -> Result<T> {
     serde_json::from_str(text).map_err(|e| GitError::command(context, e.to_string()))
 }
 
@@ -497,7 +505,7 @@ pub fn review_comments(repo_root: &str, number: u64) -> Result<Vec<GhReviewComme
     Ok(comments)
 }
 
-async fn blocking<F, T>(f: F) -> std::result::Result<T, String>
+pub(super) async fn blocking<F, T>(f: F) -> std::result::Result<T, String>
 where
     F: FnOnce() -> Result<T> + Send + 'static,
     T: Send + 'static,
@@ -507,7 +515,7 @@ where
         .map_err(|e| e.to_string())?
 }
 
-fn require_repo_path(repo_path: &str) -> std::result::Result<(), String> {
+pub(super) fn require_repo_path(repo_path: &str) -> std::result::Result<(), String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
     }
