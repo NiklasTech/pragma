@@ -48,6 +48,17 @@ describe("messageToMarkdown", () => {
     );
   });
 
+  it("keeps the text of image outputs without the image data", () => {
+    const screenshot = {
+      text: "Screenshot of the page",
+      images: [{ mediaType: "image/png", data: "aGk=" }],
+    };
+    const message = assistant([{ ...toolPart, output: screenshot } as UIMessage["parts"][number]]);
+    const markdown = messageToMarkdown(message, { ...OFF, includeToolOutput: true });
+    expect(markdown).toContain("Screenshot of the page");
+    expect(markdown).not.toContain("aGk=");
+  });
+
   it("fences output that itself contains backticks", () => {
     const message = assistant([
       { ...toolPart, output: "```ts\ncode\n```" } as UIMessage["parts"][number],

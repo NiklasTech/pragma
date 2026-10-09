@@ -2,6 +2,7 @@ import type { UIMessage } from "@ai-sdk/react";
 
 import { compactionSummary, isCompactionMessage } from "@/shared/lib/ai/compaction";
 import type { ToolInvocationLike } from "@/shared/lib/ai/protocol";
+import { isToolImageOutput } from "@/shared/lib/ai/toolOutput";
 
 import { buildAssistantTimeline, splitInlineReasoning } from "../components/timelineItems";
 
@@ -37,6 +38,7 @@ function toolTarget(input: unknown): string | null {
 
 function stringify(value: unknown): string {
   if (typeof value === "string") return value;
+  if (isToolImageOutput(value)) return value.text;
   return JSON.stringify(value, null, 2) ?? "";
 }
 
