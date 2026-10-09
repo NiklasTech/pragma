@@ -77,7 +77,8 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
         {tabs.map((tab, index) => {
           const isActive = activeTabId === tab.id;
           const isDropTarget = dragOverIndex === index;
-          const fileIconPath = tab.kind === "file" ? getFileIconPath(tab.name) : null;
+          const fileIconPath =
+            tab.kind === "file" || tab.kind === "preview" ? getFileIconPath(tab.name) : null;
 
           const handleCloseOthers = () => {
             tabs.forEach((t) => {

@@ -5,6 +5,7 @@ pub mod browser_pane;
 pub mod dap;
 pub mod env_loader;
 pub mod extensions;
+pub mod file_preview;
 pub mod fonts;
 pub mod fs;
 pub mod fs_ops;

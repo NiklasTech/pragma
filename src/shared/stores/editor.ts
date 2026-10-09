@@ -58,7 +58,16 @@ export interface ReferencesTab {
   locations: ReferenceLocation[];
 }
 
-export type EditorTab = FileTab | DiffTab | ReferencesTab;
+/** Read-only view of a file that is not text: an image preview or a binary placeholder. */
+export interface PreviewTab {
+  id: string;
+  kind: "preview";
+  path: string;
+  name: string;
+  previewKind: "image" | "binary";
+}
+
+export type EditorTab = FileTab | DiffTab | ReferencesTab | PreviewTab;
 
 export interface TabState {
   tabId: string;

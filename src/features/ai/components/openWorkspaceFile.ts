@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { detectLanguage } from "@/shared/lib/language";
 import { useEditorStore } from "@/shared/stores/editor";
+import { openNonTextFile } from "@/features/editor/preview/openPreview";
 
 interface FileReadResult {
   path: string;
@@ -13,6 +14,7 @@ interface FileReadResult {
 
 /// Reads a file from disk and opens it in the editor, like the file explorer does.
 export async function openWorkspaceFile(path: string, panelId: string | null): Promise<boolean> {
+  if (openNonTextFile(path, panelId)) return true;
   try {
     const result = await invoke<FileReadResult>("read_text_file", { path });
     useEditorStore.getState().openFile(
@@ -30,6 +32,7 @@ export async function openWorkspaceFile(path: string, panelId: string | null): P
     );
     return true;
   } catch (err) {
+    if (openNonTextFile(path, panelId, err)) return true;
     toast.error(String(err));
     return false;
   }
