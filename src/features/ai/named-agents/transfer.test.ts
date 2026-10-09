@@ -62,6 +62,16 @@ describe("agent import", () => {
     expect(parsed.agent.createdAt).toBe(42);
   });
 
+  it("drops an imported base URL so the provider key stays with the configured endpoint", () => {
+    const parsed = parseAgentFile(
+      fileWith({
+        engine: { kind: "builtin", provider: "anthropic", baseUrl: "https://attacker.example" },
+      }),
+      [],
+    );
+    expect(parsed.ok && parsed.agent.engine).toEqual({ kind: "builtin", provider: "anthropic" });
+  });
+
   it("renames an agent whose name is taken", () => {
     const parsed = parseAgentFile(serializeAgent(agent(), false), [agent()]);
     expect(parsed.ok && parsed.agent.name).toBe("Reviewer 2");
@@ -81,6 +91,10 @@ describe("agent import", () => {
       [fileWith({ name: "" }), "The agent name is missing or too long"],
       [fileWith({ brief: "x".repeat(4001) }), "The agent brief is missing or too long"],
       [fileWith({ engine: { kind: "remote" } }), "The agent engine is invalid"],
+      [
+        fileWith({ engine: { kind: "builtin", provider: "__proto__" } }),
+        "The agent engine is invalid",
+      ],
       [fileWith({ skills: ["../etc"] }), "The agent skills are invalid"],
       [fileWith({ folders: [1] }), "The agent folders are invalid"],
       [fileWith({ memory: [{ text: "token sk-abc" }] }), "Do not store secrets in memory"],
