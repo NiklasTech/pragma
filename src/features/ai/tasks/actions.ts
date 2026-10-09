@@ -6,6 +6,7 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 
+import { openBlockers } from "./organize";
 import { sendToSession, stopLiveSession } from "./sessionRuns";
 import { useTasksStore } from "./store";
 import type { Task } from "./types";
@@ -27,6 +28,10 @@ async function send(sessionId: string, text: string): Promise<void> {
 }
 
 export async function runTask(rootPath: string, task: Task): Promise<void> {
+  if (openBlockers(task, useTasksStore.getState().tasks).length > 0) {
+    toast.error("Finish the blocking tasks first");
+    return;
+  }
   const agent = task.agentId
     ? useNamedAgentsStore.getState().agents.find((item) => item.id === task.agentId)
     : undefined;

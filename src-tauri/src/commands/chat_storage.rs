@@ -132,7 +132,7 @@ pub(crate) fn workspace_hash(root_path: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-fn sessions_dir(app: &AppHandle, root_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn sessions_dir(app: &AppHandle, root_path: &str) -> Result<PathBuf, String> {
     let base = app
         .path()
         .app_data_dir()

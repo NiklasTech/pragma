@@ -3,12 +3,15 @@
 import {
   ArrowClockwise,
   DotsThree,
+  LockSimple,
   PencilSimple,
   Play,
   Robot,
   Stop,
   Trash,
 } from "@phosphor-icons/react";
+
+import { Badge } from "@/shared/components/ui/badge";
 
 import {
   DropdownMenu,
@@ -22,13 +25,22 @@ import { cn } from "@/shared/lib/utils";
 import { seededAccent } from "../panes/providerAccent";
 
 import type { TaskActionState } from "./actionState";
-import type { Task } from "./types";
+import { TASK_PRIORITIES } from "./organize";
+import type { Task, TaskPriority } from "./types";
+
+const PRIORITY_VARIANTS: Record<TaskPriority, "destructive" | "warning" | "secondary"> = {
+  high: "destructive",
+  medium: "warning",
+  low: "secondary",
+};
 
 export const TASK_MIME = "application/x-pragma-task";
 
 interface TaskCardProps {
   task: Task;
   agentName: string | null;
+  /** Titles of blocking tasks that are not done yet. */
+  blockers: string[];
   actions: TaskActionState;
   onEdit: () => void;
   onRun: () => void;
@@ -40,6 +52,7 @@ interface TaskCardProps {
 export function TaskCard({
   task,
   agentName,
+  blockers,
   actions,
   onEdit,
   onRun,
@@ -64,6 +77,26 @@ export function TaskCard({
         <span className="line-clamp-3 text-ui-sm text-fg-default wrap-break-word">
           {task.title}
         </span>
+        {(task.priority || (task.labels?.length ?? 0) > 0 || blockers.length > 0) && (
+          <span className="flex flex-wrap items-center gap-1">
+            {task.priority && (
+              <Badge variant={PRIORITY_VARIANTS[task.priority]}>
+                {TASK_PRIORITIES.find((item) => item.value === task.priority)?.label}
+              </Badge>
+            )}
+            {blockers.length > 0 && (
+              <Badge variant="outline" title={`Blocked by ${blockers.join(", ")}`}>
+                <LockSimple />
+                Blocked
+              </Badge>
+            )}
+            {task.labels?.map((label) => (
+              <Badge key={label} variant="outline">
+                {label}
+              </Badge>
+            ))}
+          </span>
+        )}
         {agentName && task.agentId && (
           <span className="flex items-center gap-1 text-ui-2xs text-fg-subtle">
             <Robot size={11} weight="fill" className={cn(seededAccent(task.agentId).text)} />
