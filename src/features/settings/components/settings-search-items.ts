@@ -173,6 +173,12 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "agents",
   },
   {
+    id: "ai-next-edit",
+    label: "Next Edit Prediction",
+    keywords: "next edit prediction suggestion ai rename",
+    category: "agents",
+  },
+  {
     id: "agent-mode",
     label: "Approvals",
     keywords: "agent auto approve allowed commands step limit",

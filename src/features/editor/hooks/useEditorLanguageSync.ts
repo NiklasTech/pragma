@@ -12,6 +12,7 @@ interface EditorLanguageSyncContext {
   canComplete: boolean;
   completionDebounce: number;
   completionTriggerCharacters: string[];
+  nextEdit: boolean;
   filePath: string;
   activeProvider: AIProvider;
   activeModel: string;
@@ -24,6 +25,7 @@ export function useEditorLanguageSync({
   canComplete,
   completionDebounce,
   completionTriggerCharacters,
+  nextEdit,
   filePath,
   activeProvider,
   activeModel,
@@ -60,6 +62,7 @@ export function useEditorLanguageSync({
           provider: activeProvider,
           model: activeModel,
           baseUrl: providerConfig.baseUrl,
+          nextEdit,
         }),
       ),
     });
@@ -67,6 +70,7 @@ export function useEditorLanguageSync({
     canComplete,
     completionDebounce,
     completionTriggerCharacters,
+    nextEdit,
     filePath,
     activeProvider,
     activeModel,

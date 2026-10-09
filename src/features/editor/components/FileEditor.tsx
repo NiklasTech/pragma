@@ -113,6 +113,7 @@ export function FileEditor({
   const inlineCompletion = useAIStore((state) => state.inlineCompletion);
   const completionDebounce = useAIStore((state) => state.completionDebounce);
   const completionTriggerCharacters = useAIStore((state) => state.completionTriggerCharacters);
+  const nextEdit = useSettingsStore((state) => state.ai.nextEditPrediction);
   const apiKeyRefs = useAIStore((state) => state.apiKeyRefs);
   const loadKeyStatus = useAIStore((state) => state.loadKeyStatus);
   const providerConfig = providers[activeProvider];
@@ -166,6 +167,7 @@ export function FileEditor({
     canComplete,
     completionDebounce,
     completionTriggerCharacters,
+    nextEdit,
     activeProvider,
     activeModel,
     providerConfig,
@@ -301,6 +303,7 @@ export function FileEditor({
     canComplete,
     completionDebounce,
     completionTriggerCharacters,
+    nextEdit,
     filePath,
     activeProvider,
     activeModel,

@@ -48,6 +48,7 @@ export const defaultSettings: SettingsState = {
     cliProvider: null,
     inlineCompletion: true,
     completionDebounce: 500,
+    nextEditPrediction: false,
     terminalSuggestions: true,
     terminalSuggestionProvider: null,
     terminalSuggestionModel: null,

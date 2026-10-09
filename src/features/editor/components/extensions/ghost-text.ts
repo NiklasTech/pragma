@@ -15,6 +15,7 @@ import {
   nextLineChunk,
   nextWordChunk,
 } from "./ghost-text-accept";
+import { nextEditExtension } from "./next-edit";
 
 interface GhostTextConfig {
   enabled: boolean;
@@ -24,6 +25,8 @@ interface GhostTextConfig {
   provider: string;
   model: string;
   baseUrl?: string;
+  /** Also predict the next edit elsewhere in the file. */
+  nextEdit: boolean;
 }
 
 interface GhostTextState {
@@ -366,5 +369,9 @@ export type { GhostTextConfig };
 
 export function ghostTextExtension(config: GhostTextConfig): Extension[] {
   const plugin = ghostTextPlugin(config);
-  return [ghostTextField, plugin, ghostTextKeymap(plugin), ghostTextTheme];
+  const extensions = [ghostTextField, plugin, ghostTextKeymap(plugin), ghostTextTheme];
+  // Registered after the ghost keymap so a shown suggestion keeps Tab.
+  return config.enabled && config.nextEdit
+    ? [...extensions, ...nextEditExtension(config)]
+    : extensions;
 }

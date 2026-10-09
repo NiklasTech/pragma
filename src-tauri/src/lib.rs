@@ -330,6 +330,7 @@ pub fn run() {
             commands::chat_storage::ai_delete_session,
             commands::chat_search::ai_search_sessions,
             commands::ai::ai_inline_completion,
+            commands::ai::ai_next_edit,
             commands::ai::ai_terminal_suggestion,
             commands::ai::ai_generate_chat_title,
             commands::ai::copilot_start_device_login,
