@@ -80,7 +80,7 @@ const ghostTextField = StateField.define<GhostTextState>({
         return effect.value;
       }
     }
-    return value;
+    return tr.docChanged ? { ...value, pos: tr.changes.mapPos(value.pos) } : value;
   },
   provide: (field) =>
     EditorView.decorations.compute([field], (state) => {
@@ -241,7 +241,7 @@ class GhostTextPlugin {
 
     try {
       const result = await invoke<InlineCompletionResponse>("ai_inline_completion", { req });
-      if (generation !== this.generation) {
+      if (!this.isPending(pos, generation)) {
         return;
       }
 
@@ -257,12 +257,18 @@ class GhostTextPlugin {
         this.clearGhost();
       }
     } catch {
-      if (generation !== this.generation) {
+      if (!this.isPending(pos, generation)) {
         return;
       }
       if (exclude.length > 0) this.showStored();
       else this.clearGhost();
     }
+  }
+
+  /// False once typing or Escape cleared the request, so a late reply is not shown.
+  private isPending(pos: number, generation: number): boolean {
+    const ghost = this.view.state.field(ghostTextField);
+    return generation === this.generation && ghost.loading && ghost.pos === pos;
   }
 
   /// An alternative request found nothing new; keep showing what was there.

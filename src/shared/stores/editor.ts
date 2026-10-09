@@ -228,6 +228,8 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
     if (closing?.kind === "file") {
       const cursor = tabStates.find((s) => s.tabId === tabId)?.cursor ?? null;
       useClosedTabsStore.getState().push({ path: closing.path, cursor });
+    } else if (closing?.kind === "preview") {
+      useClosedTabsStore.getState().push({ path: closing.path, cursor: null });
     }
     const nextTabs = tabs.filter((t) => t.id !== tabId);
     const nextStates = tabStates.filter((s) => s.tabId !== tabId);

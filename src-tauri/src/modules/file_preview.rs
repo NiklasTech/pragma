@@ -10,8 +10,9 @@ const MAX_PREVIEW_BYTES: u64 = 10 * 1024 * 1024;
 
 /// Extensions that run code when the system opens them; those stay closed.
 const EXECUTABLE_EXTENSIONS: &[&str] = &[
-    "app", "bat", "cmd", "com", "command", "cpl", "exe", "jar", "js", "jse", "lnk", "msi", "pif",
-    "ps1", "reg", "scr", "sh", "vb", "vbe", "vbs", "ws", "wsf",
+    "app", "appimage", "bat", "cmd", "com", "command", "cpl", "desktop", "exe", "jar", "js", "jse",
+    "lnk", "msi", "pif", "ps1", "reg", "scr", "sh", "terminal", "tool", "vb", "vbe", "vbs", "ws",
+    "wsf",
 ];
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -90,8 +91,20 @@ pub fn read_file_preview(path: String) -> Result<FilePreview, String> {
     })
 }
 
+// The system opener runs a file with the executable bit (macOS launches it in Terminal).
+#[cfg(unix)]
+fn has_executable_bit(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    fs::metadata(path).is_ok_and(|metadata| metadata.permissions().mode() & 0o111 != 0)
+}
+
+#[cfg(not(unix))]
+fn has_executable_bit(_path: &Path) -> bool {
+    false
+}
+
 fn ensure_not_executable(path: &Path) -> Result<(), String> {
-    if EXECUTABLE_EXTENSIONS.contains(&extension(path).as_str()) {
+    if EXECUTABLE_EXTENSIONS.contains(&extension(path).as_str()) || has_executable_bit(path) {
         return Err("Executable files are not opened from Pragma".to_string());
     }
     Ok(())
@@ -172,5 +185,18 @@ mod tests {
         assert!(ensure_not_executable(Path::new("/tmp/setup.EXE")).is_err());
         assert!(ensure_not_executable(Path::new("/tmp/run.sh")).is_err());
         assert!(ensure_not_executable(Path::new("/tmp/report.pdf")).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn files_with_the_executable_bit_are_not_opened() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let binary = dir.path().join("server");
+        fs::write(&binary, [0xCF, 0xFA, 0xED, 0xFE]).unwrap();
+        assert!(ensure_not_executable(&binary).is_ok());
+
+        fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(ensure_not_executable(&binary).is_err());
     }
 }

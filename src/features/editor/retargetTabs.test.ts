@@ -56,4 +56,27 @@ describe("retargetTabs", () => {
       name: "renamed.ts",
     });
   });
+
+  it("moves image preview tabs with their files", () => {
+    useEditorStore.setState({
+      tabs: [
+        {
+          id: "preview:/w/src/logo.png",
+          kind: "preview",
+          path: "/w/src/logo.png",
+          name: "logo.png",
+          previewKind: "image",
+        },
+      ],
+      activeTabId: "preview:/w/src/logo.png",
+    });
+    retargetTabs("/w/src", "/w/assets");
+
+    const state = useEditorStore.getState();
+    expect(state.tabs[0]).toMatchObject({
+      id: "preview:/w/assets/logo.png",
+      path: "/w/assets/logo.png",
+    });
+    expect(state.activeTabId).toBe("preview:/w/assets/logo.png");
+  });
 });

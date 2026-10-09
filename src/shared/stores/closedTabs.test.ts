@@ -62,4 +62,26 @@ describe("closed tabs", () => {
 
     expect(useClosedTabsStore.getState().entries).toEqual([]);
   });
+
+  it("records image and binary preview tabs without a cursor", () => {
+    useEditorStore.setState({
+      tabs: [
+        {
+          id: "preview:/assets/logo.png",
+          kind: "preview",
+          path: "/assets/logo.png",
+          name: "logo.png",
+          previewKind: "image",
+        },
+      ],
+      tabStates: [
+        { tabId: "preview:/assets/logo.png", cursor: { line: 0, column: 0 }, scrollTop: 0 },
+      ],
+    });
+    useEditorStore.getState().closeTab("preview:/assets/logo.png");
+
+    expect(useClosedTabsStore.getState().entries).toEqual([
+      { path: "/assets/logo.png", cursor: null },
+    ]);
+  });
 });

@@ -9,6 +9,8 @@ import {
   WidgetType,
 } from "@codemirror/view";
 
+import { externalUpdate } from "@/features/editor/compartments";
+
 import { diffRegion, locatePrediction, type PredictedEdit } from "./next-edit-diff";
 
 export interface NextEditConfig {
@@ -103,7 +105,12 @@ class NextEditPlugin {
     if (!update.docChanged) return;
     this.generation += 1;
     if (this.timer) clearTimeout(this.timer);
-    if (update.transactions.some((tr) => tr.annotation(acceptedPrediction))) {
+    // Reloads from disk and agent edits are not the user's edits to predict from.
+    if (
+      update.transactions.some(
+        (tr) => tr.annotation(acceptedPrediction) || tr.effects.some((e) => e.is(externalUpdate)),
+      )
+    ) {
       this.baseline = update.state.doc.toString();
       return;
     }
