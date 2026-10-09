@@ -57,7 +57,7 @@ export function agentFileName(agent: Pick<Agent, "name">): string {
   return `${slug || "agent"}.agent.json`;
 }
 
-type Parsed = { ok: true; agent: Agent } | { ok: false; error: string };
+type Parsed = { ok: true; agent: Agent; droppedFolders: number } | { ok: false; error: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -156,17 +156,18 @@ export function parseAgentFile(text: string, agents: Agent[], now = Date.now()):
     }
   }
 
+  // Folder access is granted on this machine only; a file must not widen it.
   const agent: Agent = {
     id: crypto.randomUUID(),
     name: uniqueAgentName(name, agents),
     brief,
     engine,
-    folders,
+    folders: [],
     memory,
     skills,
     createdAt: now,
     updatedAt: now,
   };
   if (mcpServers) agent.mcpServers = mcpServers;
-  return { ok: true, agent };
+  return { ok: true, agent, droppedFolders: folders.length };
 }

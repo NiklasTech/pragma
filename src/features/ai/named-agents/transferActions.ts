@@ -32,7 +32,12 @@ export async function importAgent(): Promise<Agent | null> {
       return null;
     }
     await saveAgent(parsed.agent);
-    toast.success(`Imported ${parsed.agent.name}`);
+    toast.success(`Imported ${parsed.agent.name}`, {
+      description:
+        parsed.droppedFolders > 0
+          ? "Folder access was not imported. Add folders when editing the agent."
+          : undefined,
+    });
     return parsed.agent;
   } catch (err) {
     toast.error("Could not import the agent", { description: String(err) });
