@@ -22,6 +22,7 @@ import { debugCurrentFile } from "@/features/debug/debugCurrentFile";
 import { useDebugStore } from "@/features/debug/store";
 import { useAttachDialogStore } from "@/features/debug/attachProcess";
 import { useAgentStore } from "@/features/agent/store";
+import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
 
 function cycleTab(delta: 1 | -1): void {
   const { tabs, activeTabId, setActiveTab } = useEditorStore.getState();
@@ -65,6 +66,9 @@ export function useAppShortcutActions(): ShortcutActions {
       "file.closeTab": () => {
         const { activeTabId, closeTab } = useEditorStore.getState();
         if (activeTabId) closeTab(activeTabId);
+      },
+      "file.reopenClosedTab": () => {
+        void reopenClosedTab(editorPanelId);
       },
       "view.toggleSidebar": () => {
         useLayoutStore.getState().toggleSidebar();

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
+import { getDefaultShortcuts } from "@/shared/lib/shortcuts";
 import { migrateAISettings, migrateMcpSettings, useSettingsStore } from "./settings";
+import { migrateShortcuts } from "./settings/migrations";
 
 describe("migrateAISettings", () => {
   const currentAI = useSettingsStore.getState().ai;
@@ -96,5 +98,32 @@ describe("settings extensions namespace", () => {
     const extensions = useSettingsStore.getState().extensions;
     expect(extensions["ext-a"]?.enabled).toBe(true);
     expect(extensions["ext-b"]).toEqual({ enabled: false, settings: { imported: true } });
+  });
+});
+
+describe("migrateShortcuts", () => {
+  const defaults = getDefaultShortcuts(false);
+
+  it("moves a stored old Toggle Terminal default off Ctrl+Shift+T", () => {
+    const migrated = migrateShortcuts(defaults, {
+      "view.toggleTerminal": { ctrl: true, shift: true, code: "KeyT" },
+    });
+    expect(migrated["view.toggleTerminal"]).toEqual(defaults["view.toggleTerminal"]);
+    expect(migrated["file.reopenClosedTab"]).toEqual({ ctrl: true, shift: true, code: "KeyT" });
+  });
+
+  it("keeps a custom Toggle Terminal binding", () => {
+    const custom = { ctrl: true, alt: true, code: "KeyJ" };
+    const migrated = migrateShortcuts(defaults, { "view.toggleTerminal": custom });
+    expect(migrated["view.toggleTerminal"]).toEqual(custom);
+  });
+
+  it("leaves bindings alone once Reopen Closed Tab is stored", () => {
+    const old = { ctrl: true, shift: true, code: "KeyT" };
+    const migrated = migrateShortcuts(defaults, {
+      "view.toggleTerminal": old,
+      "file.reopenClosedTab": null,
+    });
+    expect(migrated["view.toggleTerminal"]).toEqual(old);
   });
 });
