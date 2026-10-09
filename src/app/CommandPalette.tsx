@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
+  ArrowCounterClockwise,
   ArrowsLeftRight,
   FileText,
   FloppyDisk,
@@ -47,6 +48,7 @@ const COMMAND_ICONS: Record<string, Icon> = {
   "file.open": FileText,
   "file.save": FloppyDisk,
   "file.closeTab": X,
+  "file.reopenClosedTab": ArrowCounterClockwise,
   "view.toggleSidebar": SidebarSimple,
   "view.toggleTerminal": Terminal,
   "view.newTerminalTab": Plus,

@@ -31,6 +31,7 @@ import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
 import type { FinishAction } from "@/features/ai/worktree/finish";
 import { FinishWorktreeMenu } from "@/features/ai/worktree/FinishWorktreeMenu";
+import { ExportSessionMenu } from "@/features/ai/export/ExportSessionMenu";
 
 import { providerAccent } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -284,6 +285,7 @@ export function ThreadRow({
                 Duplicate
               </DropdownMenuItem>
             )}
+            <ExportSessionMenu session={session} />
             {onMoveToCategory && onNewCategory && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>

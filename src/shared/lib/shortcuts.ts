@@ -53,6 +53,16 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "file.reopenClosedTab" as const,
+    label: "Reopen Closed Tab",
+    category: "file" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyT",
+    }),
+  },
+  {
     id: "file.goToFile" as const,
     label: "Go to File",
     category: "file" as const,
@@ -83,11 +93,7 @@ export const SHORTCUT_ACTIONS = [
     id: "view.toggleTerminal" as const,
     label: "Toggle Terminal",
     category: "view" as const,
-    default: (isMac: boolean): ShortcutBinding => ({
-      [isMac ? "meta" : "ctrl"]: true,
-      shift: true,
-      code: "KeyT",
-    }),
+    default: (): ShortcutBinding => ({ ctrl: true, code: "Backquote" }),
   },
   {
     id: "view.newTerminalTab" as const,
