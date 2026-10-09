@@ -12,6 +12,7 @@ interface TasksState {
   loadFailed: boolean;
   load: (rootPath: string) => Promise<void>;
   saveTask: (task: Task) => Promise<void>;
+  addTasks: (tasks: Task[]) => Promise<void>;
   moveTask: (taskId: string, status: TaskStatus) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   linkSession: (taskId: string, sessionId: string) => Promise<void>;
@@ -70,6 +71,10 @@ export const useTasksStore = create<TasksState>()((set, get) => {
           ? get().tasks.map((item) => (item.id === task.id ? task : item))
           : [...get().tasks, task],
       );
+    },
+
+    addTasks: async (tasks) => {
+      if (tasks.length > 0) await commit([...get().tasks, ...tasks]);
     },
 
     moveTask: async (taskId, status) => {
