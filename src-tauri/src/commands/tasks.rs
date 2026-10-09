@@ -15,6 +15,7 @@ const STATUSES: [&str; 4] = ["todo", "in_progress", "in_review", "done"];
 const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
 const MAX_LABELS: usize = 10;
 const MAX_LABEL_CHARS: usize = 32;
+const MAX_ISSUE_URL_CHARS: usize = 500;
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -39,6 +40,11 @@ pub struct Task {
     /// Ids of tasks that must be done before this one can start.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub blocked_by: Vec<String>,
+    /// GitHub issue the task was imported from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub issue_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub issue_number: Option<u64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -129,6 +135,11 @@ fn validate_tasks(tasks: &[Task]) -> Result<(), String> {
             return Err("Invalid task priority".to_string());
         }
         validate_labels(&task.labels)?;
+        if task.issue_url.as_deref().is_some_and(|url| {
+            !url.starts_with("https://") || url.chars().count() > MAX_ISSUE_URL_CHARS
+        }) {
+            return Err("Issue links must be https URLs".to_string());
+        }
         validate_blockers(task, &seen)?;
     }
     Ok(())
@@ -206,6 +217,8 @@ mod tests {
             priority: None,
             labels: Vec::new(),
             blocked_by: Vec::new(),
+            issue_url: None,
+            issue_number: None,
             created_at: 1,
             updated_at: 1,
         }
@@ -291,5 +304,17 @@ mod tests {
         assert!(loaded.labels.is_empty() && loaded.blocked_by.is_empty());
         let saved = serde_json::to_value(&loaded).unwrap();
         assert!(saved.get("blockedBy").is_none() && saved.get("labels").is_none());
+    }
+
+    #[test]
+    fn issue_links_must_be_https() {
+        let mut linked = task("a", "Fix", "todo");
+        linked.issue_url = Some("https://github.com/o/r/issues/1".to_string());
+        linked.issue_number = Some(1);
+        assert!(validate_tasks(&[linked]).is_ok());
+
+        let mut unsafe_link = task("a", "Fix", "todo");
+        unsafe_link.issue_url = Some("javascript:alert(1)".to_string());
+        assert!(validate_tasks(&[unsafe_link]).is_err());
     }
 }

@@ -14,6 +14,9 @@ export interface Task {
   labels?: string[];
   /** Ids of tasks that must be done before this one can start. */
   blockedBy?: string[];
+  /** GitHub issue the task was imported from. */
+  issueUrl?: string;
+  issueNumber?: number;
   createdAt: number;
   updatedAt: number;
 }

@@ -31,9 +31,10 @@ export function validateTaskFields(fields: TaskFields): string | null {
   return null;
 }
 
-export function buildTaskMessage(task: Pick<Task, "title" | "notes">): string {
-  const notes = task.notes.trim();
-  return notes ? `${task.title.trim()}\n\n${notes}` : task.title.trim();
+export function buildTaskMessage(task: Pick<Task, "title" | "notes" | "issueUrl">): string {
+  const parts = [task.title.trim(), task.notes.trim()];
+  if (task.issueUrl) parts.push(`GitHub issue: ${task.issueUrl}`);
+  return parts.filter(Boolean).join("\n\n");
 }
 
 export function clampResult(text: string): string {

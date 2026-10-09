@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod errors;
 pub mod github;
+pub mod github_issues;
 pub mod graph_layout;
 pub mod last_commit;
 pub mod operations;
