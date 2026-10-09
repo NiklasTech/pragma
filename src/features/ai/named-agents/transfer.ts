@@ -1,3 +1,6 @@
+import { PROVIDER_LABELS } from "@/shared/lib/ai-providers";
+import type { AIProvider } from "@/shared/stores/ai";
+
 import type { Agent, AgentEngine, AgentMemoryEntry } from "./types";
 import {
   AGENT_NAME_MAX,
@@ -72,13 +75,21 @@ function optionalString(record: Record<string, unknown>, key: string): string | 
   return typeof value === "string" ? value : null;
 }
 
+function isProvider(value: string): value is AIProvider {
+  return Object.prototype.hasOwnProperty.call(PROVIDER_LABELS, value);
+}
+
+/// The base URL is left out: a foreign one would receive this machine's provider key.
 function parseEngine(value: unknown): AgentEngine | null {
   if (!isRecord(value) || (value.kind !== "builtin" && value.kind !== "cli")) return null;
   const engine: AgentEngine = { kind: value.kind };
-  for (const key of ["provider", "model", "baseUrl", "cliProviderId"] as const) {
+  const provider = optionalString(value, "provider");
+  if (provider === null || (provider !== undefined && !isProvider(provider))) return null;
+  if (provider !== undefined) engine.provider = provider;
+  for (const key of ["model", "cliProviderId"] as const) {
     const field = optionalString(value, key);
     if (field === null) return null;
-    if (field !== undefined) Object.assign(engine, { [key]: field });
+    if (field !== undefined) engine[key] = field;
   }
   return engine;
 }

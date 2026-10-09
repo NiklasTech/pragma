@@ -47,6 +47,12 @@ describe("GitHub issue import", () => {
     expect(task.labels).not.toContain("z".repeat(40));
   });
 
+  it("never cuts an emoji in half at the limit", () => {
+    const task = issueToTask(issue(1, { body: `${"y".repeat(7999)}\u{1F600}` }), 1);
+    expect(task.notes).toBe("y".repeat(7999));
+    expect(() => encodeURIComponent(task.notes)).not.toThrow();
+  });
+
   it("offers only issues that no task links to", () => {
     const linked = { ...issueToTask(issue(1), 1) } satisfies Task;
     expect(importableIssues([issue(1), issue(2)], [linked]).map((i) => i.number)).toEqual([2]);
