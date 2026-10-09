@@ -251,7 +251,7 @@ export function GitStatus() {
         onPull={() => void pull()}
         onPush={() => void push()}
         onNewBranch={() => setCreateBranchOpen(true)}
-        onCompare={() => useGitCompareDialog.getState().show(currentBranch, "HEAD")}
+        onCompare={() => useGitCompareDialog.getState().show(currentBranch, "")}
         onTags={() => setTagsOpen(true)}
         canPushPull={canPushPull}
         ahead={ahead}
