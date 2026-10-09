@@ -19,6 +19,10 @@ export interface FileTab {
   originalContent: string;
   isModified: boolean;
   language?: string;
+  /** Encoding the file was read with, such as `UTF-8` or `windows-1252`. */
+  encoding?: string;
+  /** Set when the user picked the encoding; otherwise it is detected again on each read. */
+  encodingForced?: boolean;
 }
 
 export interface DiffTab {

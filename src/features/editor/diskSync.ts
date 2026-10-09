@@ -7,6 +7,7 @@ import { flushPendingDocChanges } from "@/features/editor/components/extensions/
 
 interface FileReadResult {
   content: string;
+  encoding: string;
 }
 
 function isFileTab(tab: EditorTab): tab is FileTab {
@@ -18,10 +19,20 @@ function findFileTab(tabId: string): FileTab | null {
   return tab && isFileTab(tab) ? tab : null;
 }
 
-/// Reads the file as it is on disk now; null when it no longer exists.
-async function readDisk(path: string): Promise<string | null> {
+/// Reads the file as it is on disk now; null when it no longer exists. A detected encoding
+/// that changed on disk is kept on the tab so the next save writes it the same way.
+async function readDisk(tab: FileTab): Promise<string | null> {
   try {
-    return (await invoke<FileReadResult>("read_text_file", { path })).content;
+    const encoding = tab.encodingForced ? tab.encoding : null;
+    const result = await invoke<FileReadResult>("read_text_file", { path: tab.path, encoding });
+    if (result.encoding !== tab.encoding) {
+      useEditorStore.setState((state) => ({
+        tabs: state.tabs.map((t) =>
+          t.id === tab.id && isFileTab(t) ? { ...t, encoding: result.encoding } : t,
+        ),
+      }));
+    }
+    return result.content;
   } catch (err) {
     if (isMissingFileError(err)) return null;
     throw err;
@@ -51,7 +62,7 @@ async function syncTab(tabId: string): Promise<void> {
 
   let disk: string | null;
   try {
-    disk = await readDisk(before.path);
+    disk = await readDisk(before);
   } catch {
     // Unreadable for now (binary, too large, locked); keep the tab as it is.
     return;
@@ -88,7 +99,7 @@ export async function reloadFromDisk(tabId: string): Promise<void> {
   const tab = findFileTab(tabId);
   if (!tab) return;
   try {
-    const disk = await readDisk(tab.path);
+    const disk = await readDisk(tab);
     if (disk === null) {
       useDiskStateStore.getState().setStatus(tab.path, "deleted");
       return;
@@ -105,7 +116,7 @@ export async function keepLocalVersion(tabId: string): Promise<void> {
   const tab = findFileTab(tabId);
   if (!tab) return;
   try {
-    const disk = await readDisk(tab.path);
+    const disk = await readDisk(tab);
     if (disk !== null) setDiskBaseline(tabId, disk);
     useDiskStateStore.getState().clearStatus(tab.path);
   } catch (err) {
@@ -118,7 +129,7 @@ export async function compareWithDisk(tabId: string): Promise<void> {
   const tab = findFileTab(tabId);
   if (!tab) return;
   try {
-    const disk = await readDisk(tab.path);
+    const disk = await readDisk(tab);
     const editor = useEditorStore.getState();
     const id = `disk-compare:${tab.path}`;
     editor.closeTab(id);
