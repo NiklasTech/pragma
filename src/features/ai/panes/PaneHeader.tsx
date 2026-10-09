@@ -29,6 +29,7 @@ import type { AgentStatus } from "@/features/agent/store";
 
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { CompactSessionMenuItem } from "../compaction/CompactSessionMenuItem";
+import { ExportSessionMenu } from "../export/ExportSessionMenu";
 import { ComposerMicButton } from "../components/ComposerMicButton";
 import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useTerminalActivity } from "../terminal/useTerminalActivity";
@@ -292,6 +293,7 @@ export function PaneHeader({
                 </DropdownMenuItem>
               )}
               {session && <CompactSessionMenuItem session={session} />}
+              {session && <ExportSessionMenu session={session} />}
               <DropdownMenuItem onClick={onToggleMaximize}>
                 {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
                 <span>{maximizeLabel}</span>
