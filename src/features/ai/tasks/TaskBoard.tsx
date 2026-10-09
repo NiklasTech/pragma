@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GithubLogo, Kanban, Plus, X } from "@phosphor-icons/react";
+import { GithubLogo, Kanban, Plus, Rows, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
@@ -10,8 +10,10 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
+import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { resolveTaskActions } from "./actionState";
 import { resumeTask, runTask, stopTask } from "./actions";
+import { stopBackgroundTask } from "./background";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { ImportIssuesDialog } from "./ImportIssuesDialog";
 import {
@@ -26,6 +28,7 @@ import { useTasksStore } from "./store";
 import { TASK_MIME, TaskCard } from "./TaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { TaskFilters } from "./TaskFilters";
+import { ParallelStartDialog } from "./ParallelStartDialog";
 import type { Task, TaskStatus } from "./types";
 import { useTasksUiStore } from "./ui";
 import { TASK_COLUMNS } from "./validation";
@@ -47,10 +50,12 @@ export function TaskBoard() {
   const agents = useNamedAgentsStore((state) => state.agents);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const liveSessionId = useSessionRunsStore((state) => state.liveSessionId);
+  const childRuns = useChildRunsStore((state) => state.runs);
   const closeBoard = useTasksUiStore((state) => state.closeBoard);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [parallelOpen, setParallelOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [toDelete, setToDelete] = useState<Task | null>(null);
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
@@ -95,6 +100,16 @@ export function TaskBoard() {
           </span>
         )}
         <span className="flex-1" />
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={!rootPath || !loaded}
+          onClick={() => setParallelOpen(true)}
+        >
+          <Rows size={13} />
+          Start in parallel
+        </Button>
         <Button
           type="button"
           size="sm"
@@ -184,12 +199,15 @@ export function TaskBoard() {
                             liveSessionId,
                             task.sessionId !== undefined && sessionIds.has(task.sessionId),
                             blockers.length > 0,
+                            task.sessionId !== undefined && isRunLive(childRuns[task.sessionId]),
                           )}
                           onEdit={() => openDialog(task)}
                           onRun={() => {
                             if (rootPath) void runTask(rootPath, task);
                           }}
-                          onStop={() => stopTask(task)}
+                          onStop={() => {
+                            if (!rootPath || !stopBackgroundTask(rootPath, task)) stopTask(task);
+                          }}
                           onResume={() => {
                             if (rootPath) void resumeTask(rootPath, task);
                           }}
@@ -208,6 +226,13 @@ export function TaskBoard() {
       <TaskDialog open={dialogOpen} task={editing} onOpenChange={setDialogOpen} />
       {rootPath && (
         <ImportIssuesDialog open={importOpen} rootPath={rootPath} onOpenChange={setImportOpen} />
+      )}
+      {rootPath && (
+        <ParallelStartDialog
+          open={parallelOpen}
+          rootPath={rootPath}
+          onOpenChange={setParallelOpen}
+        />
       )}
       <DeleteTaskDialog
         task={toDelete}

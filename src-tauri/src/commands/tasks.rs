@@ -16,8 +16,22 @@ const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
 const MAX_LABELS: usize = 10;
 const MAX_LABEL_CHARS: usize = 32;
 const MAX_ISSUE_URL_CHARS: usize = 500;
+const FREQUENCIES: [&str; 2] = ["daily", "weekly"];
 
 // ─── Public Types ────────────────────────────────────────────────────────────
+
+/// Local time a task starts on its own while Pragma is open.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskSchedule {
+    pub frequency: String,
+    pub hour: u8,
+    pub minute: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weekday: Option<u8>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub paused: bool,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -45,6 +59,8 @@ pub struct Task {
     pub issue_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub issue_number: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schedule: Option<TaskSchedule>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -89,6 +105,19 @@ fn validate_labels(labels: &[String]) -> Result<(), String> {
         if !seen.insert(label.to_lowercase()) {
             return Err("Labels must be unique".to_string());
         }
+    }
+    Ok(())
+}
+
+fn validate_schedule(schedule: &TaskSchedule) -> Result<(), String> {
+    let weekly = schedule.frequency == "weekly";
+    if !FREQUENCIES.contains(&schedule.frequency.as_str())
+        || schedule.hour > 23
+        || schedule.minute > 59
+        || schedule.weekday.is_some_and(|day| day > 6)
+        || weekly != schedule.weekday.is_some()
+    {
+        return Err("Invalid task schedule".to_string());
     }
     Ok(())
 }
@@ -139,6 +168,9 @@ fn validate_tasks(tasks: &[Task]) -> Result<(), String> {
             !url.starts_with("https://") || url.chars().count() > MAX_ISSUE_URL_CHARS
         }) {
             return Err("Issue links must be https URLs".to_string());
+        }
+        if let Some(schedule) = &task.schedule {
+            validate_schedule(schedule)?;
         }
         validate_blockers(task, &seen)?;
     }
@@ -219,6 +251,7 @@ mod tests {
             blocked_by: Vec::new(),
             issue_url: None,
             issue_number: None,
+            schedule: None,
             created_at: 1,
             updated_at: 1,
         }
@@ -316,5 +349,30 @@ mod tests {
         let mut unsafe_link = task("a", "Fix", "todo");
         unsafe_link.issue_url = Some("javascript:alert(1)".to_string());
         assert!(validate_tasks(&[unsafe_link]).is_err());
+    }
+
+    #[test]
+    fn schedules_need_a_valid_local_time() {
+        let schedule = |frequency: &str, hour, minute, weekday| TaskSchedule {
+            frequency: frequency.to_string(),
+            hour,
+            minute,
+            weekday,
+            paused: false,
+        };
+        for (valid, value) in [
+            (true, schedule("daily", 9, 30, None)),
+            (true, schedule("weekly", 23, 59, Some(6))),
+            (false, schedule("hourly", 9, 0, None)),
+            (false, schedule("daily", 24, 0, None)),
+            (false, schedule("daily", 9, 60, None)),
+            (false, schedule("daily", 9, 0, Some(1))),
+            (false, schedule("weekly", 9, 0, None)),
+            (false, schedule("weekly", 9, 0, Some(7))),
+        ] {
+            let mut scheduled = task("a", "Fix", "todo");
+            scheduled.schedule = Some(value);
+            assert_eq!(validate_tasks(&[scheduled]).is_ok(), valid);
+        }
     }
 }

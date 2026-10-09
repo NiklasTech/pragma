@@ -27,7 +27,8 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { dependentTaskIds, parseLabels, validateLabels } from "./organize";
 import { useTasksStore } from "./store";
 import { TaskOrganizeFields } from "./TaskOrganizeFields";
-import type { Task, TaskPriority, TaskStatus } from "./types";
+import { TaskScheduleFields } from "./TaskScheduleFields";
+import type { Task, TaskPriority, TaskSchedule, TaskStatus } from "./types";
 import {
   TASK_COLUMNS,
   TASK_NOTES_MAX,
@@ -59,6 +60,7 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
   const [priority, setPriority] = useState<TaskPriority | undefined>(undefined);
   const [labels, setLabels] = useState("");
   const [blockedBy, setBlockedBy] = useState<string[]>([]);
+  const [schedule, setSchedule] = useState<TaskSchedule | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -73,6 +75,7 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
     setPriority(task?.priority);
     setLabels((task?.labels ?? []).join(", "));
     setBlockedBy(task?.blockedBy ?? []);
+    setSchedule(task?.schedule);
     setError(null);
   }, [open, task]);
 
@@ -114,6 +117,9 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
     const blockers = blockedBy.filter((id) => blockerCandidates.some((other) => other.id === id));
     if (blockers.length > 0) saved.blockedBy = blockers;
     if (sessionId) saved.sessionId = sessionId;
+    if (task?.issueUrl) saved.issueUrl = task.issueUrl;
+    if (task?.issueNumber !== undefined) saved.issueNumber = task.issueNumber;
+    if (schedule) saved.schedule = schedule;
 
     setSaving(true);
     try {
@@ -222,6 +228,8 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
             onBlockedByChange={setBlockedBy}
             candidates={blockerCandidates}
           />
+
+          <TaskScheduleFields schedule={schedule} onChange={setSchedule} />
 
           <label className="flex flex-col gap-1.5">
             <span className="text-ui-xs font-medium text-fg-muted">Result</span>

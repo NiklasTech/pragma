@@ -53,3 +53,13 @@ describe("blocked task actions", () => {
     expect(resolveTaskActions({ sessionId: "s1" }, "s1", true, true).canStop).toBe(true);
   });
 });
+
+describe("background task actions", () => {
+  it("can only be stopped while its worktree run is live", () => {
+    expect(resolveTaskActions({ sessionId: "s1" }, null, true, false, true)).toEqual({
+      canRun: false,
+      canStop: true,
+      canResume: false,
+    });
+  });
+});

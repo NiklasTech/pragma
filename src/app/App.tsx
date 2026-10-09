@@ -23,6 +23,7 @@ import { useExtensions } from "@/features/extensions/useExtensions";
 import { useAcpBrowserRequests } from "@/features/ai/browser/acpBrowser";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
+import { useTaskAutomation } from "@/features/ai/tasks/useTaskAutomation";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
@@ -56,6 +57,7 @@ export default function App() {
   useAcpSpawnRequests();
   useAcpBrowserRequests();
   useSessionNotifications();
+  useTaskAutomation();
   const { isLoading: onboardingLoading, isCompleted: onboardingCompleted } = useOnboarding();
 
   const actions = useGuardedShortcutActions(useAppShortcutActions());
