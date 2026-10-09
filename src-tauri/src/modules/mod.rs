@@ -25,3 +25,4 @@ pub mod voice_hardware;
 pub mod whisper_models;
 pub mod workspace;
 pub mod workspace_settings;
+pub mod workspace_trust;

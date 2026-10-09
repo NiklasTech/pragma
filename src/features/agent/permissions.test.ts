@@ -92,6 +92,36 @@ describe("resolveAgentApproval", () => {
     }
   });
 
+  it("asks before any tool leaves the workspace unless everything is auto-approved", () => {
+    const edits: AgentSettings = { ...baseSettings, autoApprove: "edits" };
+    const all: AgentSettings = { ...baseSettings, autoApprove: "all" };
+    const allowed: AgentSettings = { ...baseSettings, allowedCommands: ["pnpm test"] };
+    const read = AGENT_TOOL_NAMES.readFile;
+    expect(resolveAgentApproval(read, {}, baseSettings, false, true)).toBe("required");
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.writeFile, {}, edits, false, true)).toBe(
+      "required",
+    );
+    const command = { command: "pnpm test", cwd: "/elsewhere" };
+    expect(resolveAgentApproval(AGENT_TOOL_NAMES.runCommand, command, allowed, false, true)).toBe(
+      "required",
+    );
+    expect(resolveAgentApproval(read, {}, all, false, true)).toBe("auto");
+    expect(resolveAgentApproval(read, {}, baseSettings, true, true)).toBe("auto");
+  });
+
+  it("asks before opening a remote page but not a local one", () => {
+    const open = AGENT_TOOL_NAMES.openBrowser;
+    const remote = { url: "https://example.com/?q=secret" };
+    expect(resolveAgentApproval(open, remote, baseSettings, false)).toBe("required");
+    expect(resolveAgentApproval(open, { url: "localhost:5173" }, baseSettings, false)).toBe("auto");
+    expect(resolveAgentApproval(open, { url: "http://127.0.0.1:3000" }, baseSettings, false)).toBe(
+      "auto",
+    );
+    expect(resolveAgentApproval(open, remote, { ...baseSettings, autoApprove: "all" }, false)).toBe(
+      "auto",
+    );
+  });
+
   it("asks before fetching a URL unless everything is auto-approved", () => {
     const edits: AgentSettings = { ...baseSettings, autoApprove: "edits" };
     const all: AgentSettings = { ...baseSettings, autoApprove: "all" };

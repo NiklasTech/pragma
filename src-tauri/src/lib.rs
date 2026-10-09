@@ -140,6 +140,8 @@ pub fn run() {
             modules::fs_ops::reveal_in_file_manager,
             modules::workspace_settings::workspace_settings_load,
             modules::workspace_settings::workspace_settings_save,
+            modules::workspace_trust::workspace_trust_status,
+            modules::workspace_trust::workspace_trust_change,
             modules::file_preview::read_file_preview,
             modules::file_preview::open_with_default_app,
             modules::fs_watcher::workspace_watch,

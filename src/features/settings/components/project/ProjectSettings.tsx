@@ -18,6 +18,7 @@ import type { WorkspaceSettings } from "@/shared/stores/workspaceSettings/types"
 
 import { SettingRow } from "../ui/SettingRow";
 import { SettingSection } from "../ui/SettingSection";
+import { FolderTrustSection } from "./FolderTrustSection";
 import { LspOverrides } from "./LspOverrides";
 import { InheritSelect, parseNumberList, parsePositiveInt } from "./fields";
 
@@ -88,6 +89,8 @@ export function ProjectSettings() {
           <AlertDescription className="text-ui-xs">{error}</AlertDescription>
         </Alert>
       )}
+
+      <FolderTrustSection rootPath={rootPath} />
 
       <SettingSection title="Editor">
         <SettingRow
