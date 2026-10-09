@@ -31,6 +31,7 @@ import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
 import type { FinishAction } from "@/features/ai/worktree/finish";
 import { FinishWorktreeMenu } from "@/features/ai/worktree/FinishWorktreeMenu";
+import { ExportSessionMenu } from "@/features/ai/export/ExportSessionMenu";
 
 import { providerAccent } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -76,6 +77,8 @@ interface ThreadRowProps {
   selectionMode?: boolean;
   isSelected?: boolean;
   categories?: string[];
+  /** Matching message text shown under the title while searching. */
+  snippet?: string;
   onSelect: (sessionId: string) => void;
   onToggleSelect?: (sessionId: string, extend: boolean) => void;
   onRename: (sessionId: string, title: string) => void;
@@ -96,6 +99,7 @@ export function ThreadRow({
   selectionMode = false,
   isSelected = false,
   categories = [],
+  snippet,
   onSelect,
   onToggleSelect,
   onRename,
@@ -218,6 +222,11 @@ export function ThreadRow({
           >
             {session.title}
           </span>
+          {snippet && (
+            <span className="line-clamp-2 text-ui-2xs text-fg-muted" title={snippet}>
+              {snippet}
+            </span>
+          )}
           <span className="flex min-w-0 items-center gap-1.5 text-ui-2xs text-fg-subtle">
             {statusText ? (
               <span
@@ -276,6 +285,7 @@ export function ThreadRow({
                 Duplicate
               </DropdownMenuItem>
             )}
+            <ExportSessionMenu session={session} />
             {onMoveToCategory && onNewCategory && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>

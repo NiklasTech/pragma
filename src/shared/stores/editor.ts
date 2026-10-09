@@ -1,5 +1,6 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
+import { useClosedTabsStore } from "./closedTabs";
 import { crossWindowSync } from "./sync/crossWindowSync";
 import { createThrottledJSONStorage } from "./throttledStorage";
 import { getWindowScope } from "@/shared/lib/windowScope";
@@ -214,6 +215,11 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 
   closeTab: (tabId) => {
     const { tabs, tabStates, activeTabId, activeTabIds } = get();
+    const closing = tabs.find((t) => t.id === tabId);
+    if (closing?.kind === "file") {
+      const cursor = tabStates.find((s) => s.tabId === tabId)?.cursor ?? null;
+      useClosedTabsStore.getState().push({ path: closing.path, cursor });
+    }
     const nextTabs = tabs.filter((t) => t.id !== tabId);
     const nextStates = tabStates.filter((s) => s.tabId !== tabId);
     let nextActive =

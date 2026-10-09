@@ -4,13 +4,14 @@ Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Wi
 
 ## File
 
-| Action      | Default        |
-| ----------- | -------------- |
-| Open File   | `Cmd/Ctrl + O` |
-| Open Folder | None           |
-| Save File   | `Cmd/Ctrl + S` |
-| Close Tab   | `Cmd/Ctrl + W` |
-| Go to File  | `Cmd/Ctrl + P` |
+| Action            | Default                |
+| ----------------- | ---------------------- |
+| Open File         | `Cmd/Ctrl + O`         |
+| Open Folder       | None                   |
+| Save File         | `Cmd/Ctrl + S`         |
+| Close Tab         | `Cmd/Ctrl + W`         |
+| Reopen Closed Tab | `Cmd/Ctrl + Shift + T` |
+| Go to File        | `Cmd/Ctrl + P`         |
 
 ## Edit
 
@@ -24,7 +25,7 @@ Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Wi
 | Action                 | Default                |
 | ---------------------- | ---------------------- |
 | Toggle Sidebar         | `Cmd/Ctrl + B`         |
-| Toggle Terminal        | `Cmd/Ctrl + Shift + T` |
+| Toggle Terminal        | `` Ctrl + ` ``         |
 | New Terminal Tab       | `Cmd/Ctrl + T`         |
 | Open Settings          | `Cmd/Ctrl + ,`         |
 | Open Command Palette   | `Cmd/Ctrl + Shift + P` |

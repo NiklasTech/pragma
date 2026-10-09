@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { type Extension, StateEffect, StateField } from "@codemirror/state";
+import { Annotation, type Extension, Prec, StateEffect, StateField } from "@codemirror/state";
 import {
   Decoration,
   EditorView,
@@ -8,6 +8,13 @@ import {
   type ViewUpdate,
   WidgetType,
 } from "@codemirror/view";
+
+import {
+  addAlternative,
+  MAX_ALTERNATIVES,
+  nextLineChunk,
+  nextWordChunk,
+} from "./ghost-text-accept";
 
 interface GhostTextConfig {
   enabled: boolean;
@@ -23,6 +30,9 @@ interface GhostTextState {
   suggestion: string | null;
   pos: number;
   loading: boolean;
+  /** Every suggestion fetched for this position; `suggestion` is the one shown. */
+  alternatives: string[];
+  index: number;
 }
 
 interface InlineCompletionResponse {
@@ -37,17 +47,27 @@ interface InlineCompletionRequest {
   provider: string;
   model: string;
   base_url?: string;
+  exclude?: string[];
 }
 
 const WORD_CHAR_REGEX = /\w/;
 
 const setGhostText = StateEffect.define<GhostTextState>();
 
+/// Marks the insert of a partly accepted suggestion, which keeps the rest on screen.
+const partialAccept = Annotation.define<boolean>();
+
 const initialGhostState: GhostTextState = {
   suggestion: null,
   pos: 0,
   loading: false,
+  alternatives: [],
+  index: 0,
 };
+
+function shownState(pos: number, alternatives: string[], index: number): GhostTextState {
+  return { suggestion: alternatives[index] ?? null, pos, loading: false, alternatives, index };
+}
 
 const ghostTextField = StateField.define<GhostTextState>({
   create: () => initialGhostState,
@@ -65,13 +85,18 @@ const ghostTextField = StateField.define<GhostTextState>({
       if (!ghost.suggestion || ghost.suggestion.length === 0) {
         return Decoration.none;
       }
-      const widget = new GhostTextWidget(ghost.suggestion);
+      const count =
+        ghost.alternatives.length > 1 ? `${ghost.index + 1}/${ghost.alternatives.length}` : null;
+      const widget = new GhostTextWidget(ghost.suggestion, count);
       return Decoration.set([Decoration.widget({ widget, side: 1 }).range(ghost.pos)]);
     }),
 });
 
 class GhostTextWidget extends WidgetType {
-  constructor(private readonly text: string) {
+  constructor(
+    private readonly text: string,
+    private readonly count: string | null,
+  ) {
     super();
   }
 
@@ -79,11 +104,17 @@ class GhostTextWidget extends WidgetType {
     const span = document.createElement("span");
     span.className = "cm-ghost-text";
     span.textContent = this.text;
+    if (this.count) {
+      const badge = document.createElement("span");
+      badge.className = "cm-ghost-text-count";
+      badge.textContent = this.count;
+      span.appendChild(badge);
+    }
     return span;
   }
 
   eq(other: GhostTextWidget): boolean {
-    return other.text === this.text;
+    return other.text === this.text && other.count === this.count;
   }
 
   ignoreEvent(): boolean {
@@ -107,6 +138,10 @@ class GhostTextPlugin {
       return;
     }
 
+    if (update.transactions.some((tr) => tr.annotation(partialAccept))) {
+      this.generation += 1;
+      return;
+    }
     if (update.docChanged || update.selectionSet) {
       this.schedule();
     }
@@ -169,13 +204,23 @@ class GhostTextPlugin {
     const currentGeneration = this.generation;
 
     this.view.dispatch({
-      effects: setGhostText.of({ suggestion: null, pos, loading: true }),
+      effects: setGhostText.of({ ...initialGhostState, pos, loading: true }),
     });
 
-    void this.fetch(pos, currentGeneration);
+    void this.fetch(pos, currentGeneration, []);
   }
 
-  private async fetch(pos: number, generation: number): Promise<void> {
+  /// Fetches one more suggestion for the shown position, unlike the ones seen so far.
+  requestAlternative(): void {
+    const ghost = this.view.state.field(ghostTextField);
+    if (!ghost.suggestion || ghost.loading) return;
+    this.generation += 1;
+    const generation = this.generation;
+    this.view.dispatch({ effects: setGhostText.of({ ...ghost, loading: true }) });
+    void this.fetch(ghost.pos, generation, ghost.alternatives.slice(-MAX_ALTERNATIVES));
+  }
+
+  private async fetch(pos: number, generation: number, exclude: string[]): Promise<void> {
     const state = this.view.state;
     const content = state.doc.toString();
     const line = state.doc.lineAt(pos);
@@ -189,6 +234,7 @@ class GhostTextPlugin {
       model: this.config.model,
       base_url: this.config.baseUrl,
     };
+    if (exclude.length > 0) req.exclude = exclude;
 
     try {
       const result = await invoke<InlineCompletionResponse>("ai_inline_completion", { req });
@@ -198,9 +244,12 @@ class GhostTextPlugin {
 
       const suggestion = result.suggestion.trim();
       if (suggestion.length > 0) {
+        const next = addAlternative(exclude, suggestion);
         this.view.dispatch({
-          effects: setGhostText.of({ suggestion, pos, loading: false }),
+          effects: setGhostText.of(shownState(pos, next.suggestions, next.index)),
         });
+      } else if (exclude.length > 0) {
+        this.showStored();
       } else {
         this.clearGhost();
       }
@@ -208,43 +257,94 @@ class GhostTextPlugin {
       if (generation !== this.generation) {
         return;
       }
-      this.clearGhost();
+      if (exclude.length > 0) this.showStored();
+      else this.clearGhost();
     }
+  }
+
+  /// An alternative request found nothing new; keep showing what was there.
+  private showStored(): void {
+    const ghost = this.view.state.field(ghostTextField);
+    this.view.dispatch({
+      effects: setGhostText.of(shownState(ghost.pos, ghost.alternatives, ghost.index)),
+    });
   }
 }
 
-const ghostTextKeymap = keymap.of([
-  {
-    key: "Tab",
-    run: (view) => {
-      const ghost = view.state.field(ghostTextField);
-      if (!ghost.suggestion) {
-        return false;
-      }
+const ghostTextPlugin = (config: GhostTextConfig) =>
+  ViewPlugin.define((view) => new GhostTextPlugin(view, config));
 
-      view.dispatch({
-        changes: { from: ghost.pos, to: ghost.pos, insert: ghost.suggestion },
-        selection: { anchor: ghost.pos + ghost.suggestion.length },
-        effects: setGhostText.of(initialGhostState),
-      });
-      return true;
-    },
-  },
-  {
-    key: "Escape",
-    run: (view) => {
-      const ghost = view.state.field(ghostTextField);
-      if (!ghost.suggestion && !ghost.loading) {
-        return false;
-      }
+type GhostPluginSpec = ReturnType<typeof ghostTextPlugin>;
 
-      view.dispatch({
-        effects: setGhostText.of(initialGhostState),
-      });
-      return true;
-    },
-  },
-]);
+function acceptPart(view: EditorView, pick: (text: string) => string): boolean {
+  const ghost = view.state.field(ghostTextField);
+  if (!ghost.suggestion) return false;
+
+  const part = pick(ghost.suggestion);
+  const rest = ghost.suggestion.slice(part.length);
+  const pos = ghost.pos + part.length;
+  view.dispatch({
+    changes: { from: ghost.pos, to: ghost.pos, insert: part },
+    selection: { anchor: pos },
+    effects: setGhostText.of(rest ? shownState(pos, [rest], 0) : initialGhostState),
+    annotations: rest ? partialAccept.of(true) : [],
+  });
+  return true;
+}
+
+function cycle(view: EditorView, delta: 1 | -1, plugin: GhostPluginSpec): boolean {
+  const ghost = view.state.field(ghostTextField);
+  if (!ghost.suggestion || ghost.loading) return false;
+
+  const index = ghost.index + delta;
+  if (index >= 0 && index < ghost.alternatives.length) {
+    view.dispatch({ effects: setGhostText.of(shownState(ghost.pos, ghost.alternatives, index)) });
+  } else if (delta > 0) {
+    view.plugin(plugin)?.requestAlternative();
+  }
+  return true;
+}
+
+function ghostTextKeymap(plugin: GhostPluginSpec): Extension {
+  return Prec.high(
+    keymap.of([
+      {
+        key: "Tab",
+        run: (view) => acceptPart(view, (text) => text),
+      },
+      {
+        key: "Mod-ArrowRight",
+        run: (view) => acceptPart(view, nextWordChunk),
+      },
+      {
+        key: "Mod-Shift-ArrowRight",
+        run: (view) => acceptPart(view, nextLineChunk),
+      },
+      {
+        key: "Alt-]",
+        run: (view) => cycle(view, 1, plugin),
+      },
+      {
+        key: "Alt-[",
+        run: (view) => cycle(view, -1, plugin),
+      },
+      {
+        key: "Escape",
+        run: (view) => {
+          const ghost = view.state.field(ghostTextField);
+          if (!ghost.suggestion && !ghost.loading) {
+            return false;
+          }
+
+          view.dispatch({
+            effects: setGhostText.of(initialGhostState),
+          });
+          return true;
+        },
+      },
+    ]),
+  );
+}
 
 const ghostTextTheme = EditorView.baseTheme({
   ".cm-ghost-text": {
@@ -255,15 +355,16 @@ const ghostTextTheme = EditorView.baseTheme({
     userSelect: "none",
     whiteSpace: "pre",
   },
+  ".cm-ghost-text-count": {
+    marginLeft: "0.75em",
+    fontStyle: "normal",
+    fontSize: "0.85em",
+  },
 });
 
 export type { GhostTextConfig };
 
 export function ghostTextExtension(config: GhostTextConfig): Extension[] {
-  return [
-    ghostTextField,
-    ViewPlugin.define((view) => new GhostTextPlugin(view, config)),
-    ghostTextKeymap,
-    ghostTextTheme,
-  ];
+  const plugin = ghostTextPlugin(config);
+  return [ghostTextField, plugin, ghostTextKeymap(plugin), ghostTextTheme];
 }
