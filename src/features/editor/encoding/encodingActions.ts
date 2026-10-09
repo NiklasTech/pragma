@@ -3,6 +3,8 @@ import { toast } from "sonner";
 
 import { useDiskStateStore } from "@/shared/stores/diskState";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
+import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
+import { setDiskBaseline } from "@/features/editor/diskSync";
 
 interface FileReadResult {
   content: string;
@@ -39,7 +41,10 @@ export async function reopenWithEncoding(tab: FileTab, encoding: string): Promis
 }
 
 /// Writes the current text in `encoding`, after checking the file did not change on disk.
-export async function saveWithEncoding(tab: FileTab, encoding: string): Promise<void> {
+export async function saveWithEncoding(staleTab: FileTab, encoding: string): Promise<void> {
+  flushPendingDocChanges();
+  const current = useEditorStore.getState().tabs.find((t) => t.id === staleTab.id);
+  const tab = current?.kind === "file" ? current : staleTab;
   try {
     const disk = await invoke<FileReadResult>("read_text_file", {
       path: tab.path,
@@ -52,12 +57,8 @@ export async function saveWithEncoding(tab: FileTab, encoding: string): Promise<
     }
 
     await invoke("write_text_file", { path: tab.path, content: tab.content, encoding });
-    patchTab(tab.id, {
-      originalContent: tab.content,
-      isModified: false,
-      encoding,
-      encodingForced: true,
-    });
+    setDiskBaseline(tab.id, tab.content);
+    patchTab(tab.id, { encoding, encodingForced: true });
     useDiskStateStore.getState().clearStatus(tab.path);
     toast.success(`Saved ${tab.name} as ${encoding}`);
   } catch (err) {
