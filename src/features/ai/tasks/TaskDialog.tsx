@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LinkBreak } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -24,8 +24,10 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { useAIStore } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
+import { dependentTaskIds, parseLabels, validateLabels } from "./organize";
 import { useTasksStore } from "./store";
-import type { Task, TaskStatus } from "./types";
+import { TaskOrganizeFields } from "./TaskOrganizeFields";
+import type { Task, TaskPriority, TaskStatus } from "./types";
 import {
   TASK_COLUMNS,
   TASK_NOTES_MAX,
@@ -46,6 +48,7 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
   const agents = useNamedAgentsStore((state) => state.agents);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const saveTask = useTasksStore((state) => state.saveTask);
+  const tasks = useTasksStore((state) => state.tasks);
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -53,6 +56,9 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
   const [agentId, setAgentId] = useState<string>(BUILTIN_AGENT);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [result, setResult] = useState("");
+  const [priority, setPriority] = useState<TaskPriority | undefined>(undefined);
+  const [labels, setLabels] = useState("");
+  const [blockedBy, setBlockedBy] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -64,6 +70,9 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
     setAgentId(task?.agentId ?? BUILTIN_AGENT);
     setSessionId(task?.sessionId);
     setResult(task?.result ?? "");
+    setPriority(task?.priority);
+    setLabels((task?.labels ?? []).join(", "));
+    setBlockedBy(task?.blockedBy ?? []);
     setError(null);
   }, [open, task]);
 
@@ -75,8 +84,15 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
       ? "Built-in agent"
       : (agents.find((agent) => agent.id === agentId)?.name ?? "Missing agent");
 
+  const blockerCandidates = useMemo(() => {
+    if (!task) return tasks;
+    const dependents = dependentTaskIds(task.id, tasks);
+    return tasks.filter((other) => other.id !== task.id && !dependents.has(other.id));
+  }, [task, tasks]);
+
   const handleSave = async () => {
-    const failure = validateTaskFields({ title, notes, result });
+    const parsedLabels = parseLabels(labels);
+    const failure = validateTaskFields({ title, notes, result }) ?? validateLabels(parsedLabels);
     if (failure) {
       setError(failure);
       return;
@@ -93,6 +109,10 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
       updatedAt: now,
     };
     if (agentId !== BUILTIN_AGENT) saved.agentId = agentId;
+    if (priority) saved.priority = priority;
+    if (parsedLabels.length > 0) saved.labels = parsedLabels;
+    const blockers = blockedBy.filter((id) => blockerCandidates.some((other) => other.id === id));
+    if (blockers.length > 0) saved.blockedBy = blockers;
     if (sessionId) saved.sessionId = sessionId;
 
     setSaving(true);
@@ -192,6 +212,16 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
               </Select>
             </div>
           </div>
+
+          <TaskOrganizeFields
+            priority={priority}
+            onPriorityChange={setPriority}
+            labels={labels}
+            onLabelsChange={setLabels}
+            blockedBy={blockedBy}
+            onBlockedByChange={setBlockedBy}
+            candidates={blockerCandidates}
+          />
 
           <label className="flex flex-col gap-1.5">
             <span className="text-ui-xs font-medium text-fg-muted">Result</span>

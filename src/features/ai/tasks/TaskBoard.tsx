@@ -13,10 +13,18 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { resolveTaskActions } from "./actionState";
 import { resumeTask, runTask, stopTask } from "./actions";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
+import {
+  EMPTY_TASK_FILTER,
+  filterTasks,
+  listLabels,
+  openBlockers,
+  type TaskFilter,
+} from "./organize";
 import { useSessionRunsStore } from "./sessionRuns";
 import { useTasksStore } from "./store";
 import { TASK_MIME, TaskCard } from "./TaskCard";
 import { TaskDialog } from "./TaskDialog";
+import { TaskFilters } from "./TaskFilters";
 import type { Task, TaskStatus } from "./types";
 import { useTasksUiStore } from "./ui";
 import { TASK_COLUMNS } from "./validation";
@@ -44,6 +52,10 @@ export function TaskBoard() {
   const [editing, setEditing] = useState<Task | null>(null);
   const [toDelete, setToDelete] = useState<Task | null>(null);
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
+  const [filter, setFilter] = useState<TaskFilter>(EMPTY_TASK_FILTER);
+
+  const labels = useMemo(() => listLabels(tasks), [tasks]);
+  const shownTasks = useMemo(() => filterTasks(tasks, filter), [tasks, filter]);
 
   const sessionIds = useMemo(
     () => new Set(chatSessions.map((session) => session.id)),
@@ -106,71 +118,79 @@ export function TaskBoard() {
           {rootPath ? "Could not load the tasks." : "Open a folder to keep tasks."}
         </p>
       ) : (
-        <div className="grid min-h-0 flex-1 animate-in grid-cols-4 gap-2 p-3 duration-200 fade-in-0">
-          {TASK_COLUMNS.map((column) => {
-            const items = tasks.filter((task) => task.status === column.status);
-            return (
-              <section
-                key={column.status}
-                aria-label={column.label}
-                onDragOver={(event) => {
-                  if (!event.dataTransfer.types.includes(TASK_MIME)) return;
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "move";
-                  setDropTarget(column.status);
-                }}
-                onDragLeave={(event) => {
-                  const next = event.relatedTarget;
-                  if (next instanceof Node && event.currentTarget.contains(next)) return;
-                  setDropTarget(null);
-                }}
-                onDrop={(event) => handleDrop(column.status, event)}
-                className={cn(
-                  "flex min-h-0 flex-col rounded-lg bg-bg-hover/40 transition-colors",
-                  dropTarget === column.status && "bg-accent-subtle ring-1 ring-primary/40",
-                )}
-              >
-                <h3 className="flex shrink-0 items-center gap-1.5 px-2.5 pt-2 pb-1.5 text-ui-xs font-semibold text-fg-muted">
-                  <span
-                    className={cn("size-2 shrink-0 rounded-full", COLUMN_DOTS[column.status])}
-                    aria-hidden="true"
-                  />
-                  {column.label}
-                  <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-subtle tabular-nums">
-                    {items.length}
-                  </span>
-                </h3>
-                <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-1.5 pb-1.5">
-                  {items.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      agentName={
-                        task.agentId
-                          ? (agents.find((agent) => agent.id === task.agentId)?.name ?? null)
-                          : null
-                      }
-                      actions={resolveTaskActions(
-                        task,
-                        liveSessionId,
-                        task.sessionId !== undefined && sessionIds.has(task.sessionId),
-                      )}
-                      onEdit={() => openDialog(task)}
-                      onRun={() => {
-                        if (rootPath) void runTask(rootPath, task);
-                      }}
-                      onStop={() => stopTask(task)}
-                      onResume={() => {
-                        if (rootPath) void resumeTask(rootPath, task);
-                      }}
-                      onDelete={() => setToDelete(task)}
+        <>
+          {tasks.length > 0 && <TaskFilters filter={filter} labels={labels} onChange={setFilter} />}
+          <div className="grid min-h-0 flex-1 animate-in grid-cols-4 gap-2 p-3 duration-200 fade-in-0">
+            {TASK_COLUMNS.map((column) => {
+              const items = shownTasks.filter((task) => task.status === column.status);
+              return (
+                <section
+                  key={column.status}
+                  aria-label={column.label}
+                  onDragOver={(event) => {
+                    if (!event.dataTransfer.types.includes(TASK_MIME)) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDropTarget(column.status);
+                  }}
+                  onDragLeave={(event) => {
+                    const next = event.relatedTarget;
+                    if (next instanceof Node && event.currentTarget.contains(next)) return;
+                    setDropTarget(null);
+                  }}
+                  onDrop={(event) => handleDrop(column.status, event)}
+                  className={cn(
+                    "flex min-h-0 flex-col rounded-lg bg-bg-hover/40 transition-colors",
+                    dropTarget === column.status && "bg-accent-subtle ring-1 ring-primary/40",
+                  )}
+                >
+                  <h3 className="flex shrink-0 items-center gap-1.5 px-2.5 pt-2 pb-1.5 text-ui-xs font-semibold text-fg-muted">
+                    <span
+                      className={cn("size-2 shrink-0 rounded-full", COLUMN_DOTS[column.status])}
+                      aria-hidden="true"
                     />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+                    {column.label}
+                    <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-subtle tabular-nums">
+                      {items.length}
+                    </span>
+                  </h3>
+                  <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-1.5 pb-1.5">
+                    {items.map((task) => {
+                      const blockers = openBlockers(task, tasks);
+                      return (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          blockers={blockers.map((blocker) => blocker.title)}
+                          agentName={
+                            task.agentId
+                              ? (agents.find((agent) => agent.id === task.agentId)?.name ?? null)
+                              : null
+                          }
+                          actions={resolveTaskActions(
+                            task,
+                            liveSessionId,
+                            task.sessionId !== undefined && sessionIds.has(task.sessionId),
+                            blockers.length > 0,
+                          )}
+                          onEdit={() => openDialog(task)}
+                          onRun={() => {
+                            if (rootPath) void runTask(rootPath, task);
+                          }}
+                          onStop={() => stopTask(task)}
+                          onResume={() => {
+                            if (rootPath) void resumeTask(rootPath, task);
+                          }}
+                          onDelete={() => setToDelete(task)}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <TaskDialog open={dialogOpen} task={editing} onOpenChange={setDialogOpen} />

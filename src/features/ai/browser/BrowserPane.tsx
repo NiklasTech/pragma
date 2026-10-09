@@ -1,11 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowClockwise, ArrowLeft, ArrowRight, Browser } from "@phosphor-icons/react";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  ArrowClockwise,
+  ArrowLeft,
+  ArrowRight,
+  ArrowSquareOut,
+  Browser,
+  ProhibitInset,
+} from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 
+import { useFramePolicy } from "./framePolicy";
 import { registerBrowserFrame } from "./frames";
 import { currentUrl, useBrowserHistoryStore } from "./history";
 import { parseBrowserUrl } from "./url";
@@ -26,6 +36,7 @@ export function BrowserPane({ leafId }: { leafId: string }) {
   );
   const [draft, setDraft] = useState(url ?? "");
   const [error, setError] = useState<string | null>(null);
+  const framePolicy = useFramePolicy(url);
 
   useEffect(() => {
     setDraft(url ?? "");
@@ -34,6 +45,11 @@ export function BrowserPane({ leafId }: { leafId: string }) {
 
   const canGoBack = history !== undefined && history.index > 0;
   const canGoForward = history !== undefined && history.index < history.entries.length - 1;
+
+  const openExternally = () => {
+    if (!url) return;
+    invoke("open_external_url", { url }).catch((err: unknown) => toast.error(String(err)));
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -101,7 +117,24 @@ export function BrowserPane({ leafId }: { leafId: string }) {
           {error}
         </p>
       )}
-      <div className="min-h-0 flex-1 bg-white">
+      <div className="relative min-h-0 flex-1 bg-white">
+        {url && framePolicy?.blocked && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-bg-root px-6 text-center">
+            <ProhibitInset size={28} className="text-fg-subtle" />
+            <div className="flex flex-col gap-1">
+              <span className="text-ui-sm font-medium text-fg-default">
+                This site does not allow being shown inside Pragma
+              </span>
+              {framePolicy.reason && (
+                <span className="font-mono text-ui-xs text-fg-muted">{framePolicy.reason}</span>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={openExternally}>
+              <ArrowSquareOut size={13} />
+              Open in system browser
+            </Button>
+          </div>
+        )}
         {url ? (
           <iframe
             key={`${history?.index ?? 0}-${history?.reloadToken ?? 0}`}

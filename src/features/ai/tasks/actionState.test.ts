@@ -39,3 +39,17 @@ describe("task actions", () => {
     });
   });
 });
+
+describe("blocked task actions", () => {
+  it("cannot run or resume while a blocker is open", () => {
+    expect(resolveTaskActions({ sessionId: "s1" }, null, true, true)).toEqual({
+      canRun: false,
+      canStop: false,
+      canResume: false,
+    });
+  });
+
+  it("can still be stopped while it runs", () => {
+    expect(resolveTaskActions({ sessionId: "s1" }, "s1", true, true).canStop).toBe(true);
+  });
+});

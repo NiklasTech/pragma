@@ -1,4 +1,5 @@
 import { extractSecretLikeEnv, withoutSecretValues } from "@/shared/lib/mcpSecretEnv";
+import { isConflict, type ShortcutMap } from "@/shared/lib/shortcuts";
 import type { AISettings, McpSettings, SettingsActions, SettingsState } from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
@@ -84,6 +85,22 @@ export function migrateMcpSettings(mcp: McpSettings): McpSettings {
   };
 }
 
+/// Cmd/Ctrl+Shift+T moved from Toggle Terminal to Reopen Closed Tab; a stored old default must not shadow it.
+export function migrateShortcuts(
+  defaults: ShortcutMap,
+  persisted: Partial<ShortcutMap> | undefined,
+): ShortcutMap {
+  const merged = { ...defaults, ...persisted };
+  if (
+    persisted &&
+    !("file.reopenClosedTab" in persisted) &&
+    isConflict(persisted["view.toggleTerminal"], defaults["file.reopenClosedTab"])
+  ) {
+    merged["view.toggleTerminal"] = defaults["view.toggleTerminal"];
+  }
+  return merged;
+}
+
 export function mergeWithDefaults(
   persisted: unknown,
   defaults: SettingsState & SettingsActions,
@@ -115,6 +132,6 @@ export function mergeWithDefaults(
     notifications: mergePartial(defaults.notifications, partial.notifications),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
     extensions: { ...defaults.extensions, ...partial.extensions },
-    shortcuts: { ...defaults.shortcuts, ...partial.shortcuts },
+    shortcuts: migrateShortcuts(defaults.shortcuts, partial.shortcuts),
   };
 }
