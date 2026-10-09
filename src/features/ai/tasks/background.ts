@@ -1,4 +1,6 @@
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { invoke } from "@tauri-apps/api/core";
+
+import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
 import { startChildRun, stopChildRun } from "../children/runner";
@@ -25,6 +27,20 @@ export function backgroundStartBlocker(task: Task, tasks: Task[]): string | null
   return null;
 }
 
+/// Removes a worktree no session uses, so failed scheduled runs do not pile up worktrees.
+async function discardWorktree(rootPath: string, worktree: SessionWorktree): Promise<void> {
+  try {
+    await invoke("git_session_worktree_remove", {
+      repoPath: rootPath,
+      worktreePath: worktree.path,
+      force: true,
+    });
+    await invoke("git_session_delete_branch", { repoPath: rootPath, branch: worktree.branch });
+  } catch {
+    // The run is skipped either way; a leftover worktree can still be removed by hand.
+  }
+}
+
 /// Starts a task in a fresh worktree session that runs without a pane; returns an error or null.
 export async function startTaskInBackground(
   rootPath: string,
@@ -42,7 +58,10 @@ export async function startTaskInBackground(
   try {
     const worktree = await createSessionWorktree(rootPath, id);
     // Parallel runs in the shared checkout would overwrite each other's files.
-    if (worktree.status !== "ready") return "The worktree setup script failed";
+    if (worktree.status !== "ready") {
+      await discardWorktree(rootPath, worktree);
+      return "The worktree setup script failed";
+    }
     session = await useAIStore.getState().createChatSession(
       rootPath,
       {
