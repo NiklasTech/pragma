@@ -2,6 +2,18 @@ export type TaskStatus = "todo" | "in_progress" | "in_review" | "done";
 
 export type TaskPriority = "low" | "medium" | "high";
 
+export type TaskFrequency = "daily" | "weekly";
+
+/** Local time a task starts on its own while Pragma is open. */
+export interface TaskSchedule {
+  frequency: TaskFrequency;
+  hour: number;
+  minute: number;
+  /** 0 is Sunday; set only for weekly schedules. */
+  weekday?: number;
+  paused?: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -17,6 +29,7 @@ export interface Task {
   /** GitHub issue the task was imported from. */
   issueUrl?: string;
   issueNumber?: number;
+  schedule?: TaskSchedule;
   createdAt: number;
   updatedAt: number;
 }
