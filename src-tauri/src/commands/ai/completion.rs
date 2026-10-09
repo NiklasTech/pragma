@@ -113,10 +113,23 @@ pub async fn ai_inline_completion(
         tools: None,
     };
 
-    let response = match req.provider.as_str() {
+    let content = complete_with_provider(&req.provider, config, completion_req).await?;
+
+    Ok(InlineCompletionResponse {
+        suggestion: content.trim().to_string(),
+    })
+}
+
+/// Sends one non-streaming request to the named provider and returns the reply text.
+pub(super) async fn complete_with_provider(
+    provider: &str,
+    config: ProviderConfig,
+    completion_req: CompletionRequest,
+) -> Result<String, String> {
+    let response = match provider {
         "openai" | "deepseek" | "kimi" | "openrouter" | "grok" => {
-            let provider = OpenAIProvider::new_for_provider(config, &req.provider)
-                .map_err(|e| e.to_string())?;
+            let provider =
+                OpenAIProvider::new_for_provider(config, provider).map_err(|e| e.to_string())?;
             provider
                 .complete(completion_req)
                 .await
@@ -157,12 +170,10 @@ pub async fn ai_inline_completion(
                 .await
                 .map_err(|e| e.to_string())?
         }
-        _ => return Err(format!("unsupported provider: {}", req.provider)),
+        _ => return Err(format!("unsupported provider: {}", provider)),
     };
 
-    Ok(InlineCompletionResponse {
-        suggestion: response.content.trim().to_string(),
-    })
+    Ok(response.content)
 }
 
 #[cfg(test)]
