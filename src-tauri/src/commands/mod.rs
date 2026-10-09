@@ -1,6 +1,7 @@
 pub mod acp_config;
 pub mod agents;
 pub mod ai;
+pub mod browser_frame;
 pub mod chat_search;
 pub mod chat_storage;
 pub mod cli;

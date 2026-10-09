@@ -334,6 +334,7 @@ pub fn run() {
             commands::ai::copilot_auth_status,
             commands::ai::copilot_logout,
             commands::ai::open_external_url,
+            commands::browser_frame::browser_frame_policy,
             commands::context::read_chat_context,
             commands::cli::cli_list_manifests,
             commands::cli::cli_check_status,
