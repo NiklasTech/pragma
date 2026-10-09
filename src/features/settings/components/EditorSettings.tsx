@@ -13,6 +13,7 @@ import { useSettingsStore, type AutoSave } from "@/shared/stores/settings";
 import { FontSelect } from "./FontSelect";
 import { EditorDisplaySettings } from "./EditorDisplaySettings";
 import { SettingSection } from "./ui/SettingSection";
+import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
 import { SettingRow } from "./ui/SettingRow";
 
 const AUTO_SAVE_LABELS: Record<AutoSave, string> = {
@@ -26,6 +27,7 @@ export function EditorSettings() {
 
   return (
     <div className="flex flex-col gap-8">
+      <WorkspaceOverrideNotice section="editor" />
       <SettingSection title="Text">
         <SettingRow
           label="Font Size"

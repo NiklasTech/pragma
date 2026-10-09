@@ -6,6 +6,7 @@ import type { AgentRunContext } from "@/features/agent/runContext";
 
 import { callExtension } from "./calls";
 import { useExtensionsStore, type RegisteredAgentTool } from "./store";
+import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 const PREFIX = "ext__";
 const SEPARATOR = "__";
@@ -76,7 +77,7 @@ export async function runExtensionTool(
   }
 
   const settings = useSettingsStore.getState();
-  if (resolveExtensionToolApproval(tool, settings.agent, settings.ai.yoloMode) === "required") {
+  if (resolveExtensionToolApproval(tool, getAgentSettings(), settings.ai.yoloMode) === "required") {
     const approved = await context.requestApproval({
       toolCallId: call.toolCallId,
       toolName: label,

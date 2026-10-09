@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { markLspDocumentSynced, flushLspDocumentSync } from "@/features/editor/lsp/lspDocuments";
+import { useLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 const DEBOUNCE_MS = 500;
 
@@ -12,7 +13,7 @@ export function useLspDocumentSync(
   content: string,
   isModified: boolean,
 ) {
-  const lspEnabled = useSettingsStore((state) => state.lsp.enabled[language ?? ""] ?? true);
+  const lspEnabled = useLspEnabled(language);
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const openedRef = useRef<string | null>(null);
   const savedRef = useRef<string | null>(null);

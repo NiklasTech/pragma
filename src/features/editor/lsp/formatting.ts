@@ -1,17 +1,17 @@
 import type { EditorView } from "@codemirror/view";
 import { toast } from "sonner";
 
-import { useSettingsStore } from "@/shared/stores/settings";
 import { lspFormatDocument } from "./client";
 import { flushLspDocumentSync } from "./lspDocuments";
 import { lspTextEditsToChangeSpec } from "./edits";
+import { getEditorSettings } from "@/shared/stores/workspaceSettings/effective";
 
 export async function formatDocumentInView(
   view: EditorView,
   language: string,
   filePath: string,
 ): Promise<void> {
-  const { tabSize, insertSpaces } = useSettingsStore.getState().editor;
+  const { tabSize, insertSpaces } = getEditorSettings();
   try {
     await flushLspDocumentSync(language, filePath, view.state.doc.toString()).catch(() => {});
     const edits = await lspFormatDocument(language, filePath, tabSize, insertSpaces);

@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { isLspDocumentSynced, unmarkLspDocument, type LspInvokeFn } from "./lspDocuments";
+import { isLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 export type { LspInvokeFn } from "./lspDocuments";
 
@@ -41,7 +42,7 @@ export function startLspDidCloseWatcher(invokeFn: LspInvokeFn = invoke): () => v
       }
 
       const settings = useSettingsStore.getState();
-      const enabled = settings.experimental.lsp && (settings.lsp.enabled[language] ?? true);
+      const enabled = settings.experimental.lsp && isLspEnabled(language);
       if (!enabled) {
         continue;
       }
