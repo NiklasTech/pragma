@@ -16,6 +16,7 @@ interface FileReadResult {
   path: string;
   name: string;
   content: string;
+  encoding: string;
 }
 
 function entryToNode(entry: DirEntry) {
@@ -81,7 +82,10 @@ export function useWorkspaceRestore(): void {
         for (const tab of persistedTabs) {
           if (openedIds.has(tab.path)) continue;
           try {
-            const result = await invoke<FileReadResult>("read_text_file", { path: tab.path });
+            const result = await invoke<FileReadResult>("read_text_file", {
+              path: tab.path,
+              encoding: tab.encodingForced ? tab.encoding : null,
+            });
             openedIds.add(result.path);
             editor.openFile(
               {
@@ -92,6 +96,8 @@ export function useWorkspaceRestore(): void {
                 originalContent: result.content,
                 isModified: false,
                 language: detectLanguage(result.name),
+                encoding: result.encoding,
+                encodingForced: tab.encodingForced,
               },
               null,
             );

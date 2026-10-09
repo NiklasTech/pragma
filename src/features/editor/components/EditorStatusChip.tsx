@@ -1,11 +1,8 @@
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
 import { useEditorStore } from "@/shared/stores/editor";
+import { EncodingMenu } from "@/features/editor/encoding/EncodingMenu";
 
 const CHIP_ITEMS = new Set<StatusbarItem>(["vimMode", "cursor", "fileType", "encoding", "eol"]);
-
-function detectEncoding(content: string): string {
-  return content.startsWith("﻿") ? "UTF-8 BOM" : "UTF-8";
-}
 
 function detectEol(content: string): string {
   return content.includes("\r\n") ? "CRLF" : "LF";
@@ -27,7 +24,7 @@ export function EditorStatusChip({ panelId }: EditorStatusChipProps) {
   if (!statusbar.visible || activeTab?.kind !== "file") return null;
 
   const ext = activeTab.name.split(".").pop()?.toLowerCase() ?? "";
-  const parts: { key: StatusbarItem; label: string }[] = [];
+  const parts: { key: StatusbarItem; label: React.ReactNode }[] = [];
 
   for (const item of statusbar.items) {
     if (!CHIP_ITEMS.has(item)) continue;
@@ -36,7 +33,7 @@ export function EditorStatusChip({ panelId }: EditorStatusChipProps) {
     } else if (item === "fileType") {
       parts.push({ key: item, label: ext ? ext.toUpperCase() : "TXT" });
     } else if (item === "encoding") {
-      parts.push({ key: item, label: detectEncoding(activeTab.content) });
+      parts.push({ key: item, label: <EncodingMenu tab={activeTab} /> });
     } else if (item === "eol") {
       parts.push({ key: item, label: detectEol(activeTab.content) });
     }

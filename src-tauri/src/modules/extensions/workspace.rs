@@ -57,7 +57,7 @@ pub fn extension_workspace_read_file(
     path: String,
 ) -> Result<FileReadResult, String> {
     let resolved = resolve_workspace_path(&workspace_root, &path)?;
-    fs_commands::read_text_file(resolved.to_string_lossy().into_owned())
+    fs_commands::read_text_file(resolved.to_string_lossy().into_owned(), None)
 }
 
 #[tauri::command]
@@ -68,7 +68,13 @@ pub fn extension_workspace_write_file(
     content: String,
 ) -> Result<(), String> {
     let resolved = resolve_workspace_path(&workspace_root, &path)?;
-    fs_commands::write_text_file(app, resolved.to_string_lossy().into_owned(), content, None)
+    fs_commands::write_text_file(
+        app,
+        resolved.to_string_lossy().into_owned(),
+        content,
+        None,
+        None,
+    )
 }
 
 #[tauri::command]
@@ -133,7 +139,8 @@ mod tests {
         let root = temp.path().to_string_lossy().into_owned();
 
         let resolved = resolve_workspace_path(&root, "read.txt").unwrap();
-        let result = fs_commands::read_text_file(resolved.to_string_lossy().into_owned()).unwrap();
+        let result =
+            fs_commands::read_text_file(resolved.to_string_lossy().into_owned(), None).unwrap();
         assert_eq!(result.content, "content");
         assert_eq!(result.name, "read.txt");
     }

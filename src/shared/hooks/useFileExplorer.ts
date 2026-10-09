@@ -25,6 +25,7 @@ interface FileReadResult {
   path: string;
   name: string;
   content: string;
+  encoding: string;
 }
 
 export function entryToNode(entry: DirEntry): FileSystemNode {
@@ -132,6 +133,7 @@ export function useFileExplorer() {
             originalContent: result.content,
             isModified: false,
             language: detectLanguage(result.name),
+            encoding: result.encoding,
           },
           editorPanelId,
         );

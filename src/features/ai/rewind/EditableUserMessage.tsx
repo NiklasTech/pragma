@@ -8,6 +8,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { MessageImages } from "@/features/ai/images/MessageImages";
 import { Message, MessageContent } from "@/features/ai/components/Message";
+import { CopyMessageButton } from "@/features/ai/export/CopyMessageButton";
 
 import { MessageActionBar, MessageActionButton } from "./MessageActionBar";
 
@@ -74,18 +75,19 @@ export function EditableUserMessage({
   }
 
   return (
-    <Message from="user" className="flex-col gap-1">
+    <Message from="user" className="flex-col gap-1" data-message-id={message.id}>
       <MessageContent>
         <MessageImages message={message} />
         {text && <p className="whitespace-pre-wrap wrap-break-word">{text}</p>}
       </MessageContent>
-      {canEdit && (
-        <MessageActionBar>
+      <MessageActionBar>
+        <CopyMessageButton message={message} />
+        {canEdit && (
           <MessageActionButton label="Edit message" onClick={() => setDraft(text)}>
             <PencilSimple size={13} />
           </MessageActionButton>
-        </MessageActionBar>
-      )}
+        )}
+      </MessageActionBar>
     </Message>
   );
 }

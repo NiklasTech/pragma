@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ChatCircle, PencilSimple, Plus, Robot, Trash } from "@phosphor-icons/react";
+import { ChatCircle, Export, PencilSimple, Plus, Robot, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
@@ -18,6 +24,7 @@ import { AgentSkillsTab } from "./AgentSkillsTab";
 import { DeleteAgentDialog } from "./DeleteAgentDialog";
 import { engineLabel } from "./AgentEnginePicker";
 import { useNamedAgentsStore } from "./store";
+import { exportAgent } from "./transferActions";
 import type { Agent } from "./types";
 
 type AgentTab = "brief" | "memory" | "skills" | "folders";
@@ -102,6 +109,31 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           >
             <Trash size={14} />
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label="Export agent"
+                  title="Export agent"
+                  className="flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+                />
+              }
+            >
+              <Export size={14} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[180px]">
+              <DropdownMenuItem onClick={() => void exportAgent(agent, false)}>
+                Export
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={agent.memory.length === 0}
+                onClick={() => void exportAgent(agent, true)}
+              >
+                Export with memory
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button type="button" variant="outline" size="sm" onClick={onEdit}>
             <PencilSimple size={13} />
             Edit

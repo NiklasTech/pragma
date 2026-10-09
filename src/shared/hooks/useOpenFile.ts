@@ -11,6 +11,7 @@ interface FileReadResult {
   path: string;
   name: string;
   content: string;
+  encoding: string;
 }
 
 export function useOpenFile() {
@@ -46,6 +47,7 @@ export function useOpenFile() {
           originalContent: result.content,
           isModified: false,
           language: detectLanguage(result.name),
+          encoding: result.encoding,
         },
         editorPanelId,
       );

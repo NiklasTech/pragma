@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { withoutBlocker } from "./organize";
 import { loadTasks, saveTasks } from "./storage";
 import type { Task, TaskStatus } from "./types";
 import { clampResult } from "./validation";
@@ -78,7 +79,7 @@ export const useTasksStore = create<TasksState>()((set, get) => {
     },
 
     deleteTask: async (taskId) => {
-      await commit(get().tasks.filter((task) => task.id !== taskId));
+      await commit(withoutBlocker(get().tasks, taskId).filter((task) => task.id !== taskId));
     },
 
     linkSession: async (taskId, sessionId) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Robot } from "@phosphor-icons/react";
+import { DownloadSimple, Plus, Robot } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
@@ -9,6 +9,7 @@ import type { AgentStatus } from "@/features/agent/store";
 
 import { seededAccent } from "../panes/providerAccent";
 import { engineLabel } from "./AgentEnginePicker";
+import { importAgent } from "./transferActions";
 import type { Agent } from "./types";
 
 interface AgentRosterProps {
@@ -46,14 +47,30 @@ export function AgentRoster({
 
   return (
     <div className="flex flex-col gap-1">
-      <Button
-        type="button"
-        onClick={onNewAgent}
-        className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm shadow-[0_6px_18px_-10px_var(--color-accent-glow)]"
-      >
-        <Plus size={13} weight="bold" />
-        New agent
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          onClick={onNewAgent}
+          className="h-8 min-w-0 flex-1 justify-start gap-2 rounded-full px-3.5 text-ui-sm shadow-[0_6px_18px_-10px_var(--color-accent-glow)]"
+        >
+          <Plus size={13} weight="bold" />
+          New agent
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Import agent"
+          title="Import agent"
+          onClick={() => {
+            void importAgent().then((agent) => {
+              if (agent) onSelectAgent(agent.id);
+            });
+          }}
+        >
+          <DownloadSimple size={14} />
+        </Button>
+      </div>
 
       <div className="flex flex-col gap-0.5 pt-1">
         {agents.map((agent) => {

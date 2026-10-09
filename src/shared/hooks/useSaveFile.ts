@@ -46,6 +46,7 @@ export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
         path: tab.path,
         content,
         expectedHash: status === "deleted" ? null : await sha256Hex(tab.originalContent),
+        encoding: tab.encoding ?? null,
       });
       setDiskBaseline(tab.id, content);
       diskState.clearStatus(tab.path);

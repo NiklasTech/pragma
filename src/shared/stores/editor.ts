@@ -1,5 +1,6 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
+import { useClosedTabsStore } from "./closedTabs";
 import { crossWindowSync } from "./sync/crossWindowSync";
 import { createThrottledJSONStorage } from "./throttledStorage";
 import { getWindowScope } from "@/shared/lib/windowScope";
@@ -18,6 +19,10 @@ export interface FileTab {
   originalContent: string;
   isModified: boolean;
   language?: string;
+  /** Encoding the file was read with, such as `UTF-8` or `windows-1252`. */
+  encoding?: string;
+  /** Set when the user picked the encoding; otherwise it is detected again on each read. */
+  encodingForced?: boolean;
 }
 
 export interface DiffTab {
@@ -219,6 +224,11 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
 
   closeTab: (tabId) => {
     const { tabs, tabStates, activeTabId, activeTabIds } = get();
+    const closing = tabs.find((t) => t.id === tabId);
+    if (closing?.kind === "file") {
+      const cursor = tabStates.find((s) => s.tabId === tabId)?.cursor ?? null;
+      useClosedTabsStore.getState().push({ path: closing.path, cursor });
+    }
     const nextTabs = tabs.filter((t) => t.id !== tabId);
     const nextStates = tabStates.filter((s) => s.tabId !== tabId);
     let nextActive =

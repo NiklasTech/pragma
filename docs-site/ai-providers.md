@@ -74,6 +74,6 @@ Supported CLI providers include Codex CLI (OpenAI), Claude Code (Anthropic), Gem
 
 ## Completion and voice
 
-- **Inline completion** shows AI ghost-text suggestions in the editor, with a configurable debounce.
+- **Inline completion** shows AI ghost-text suggestions in the editor, with a configurable debounce. `Tab` accepts the whole suggestion, `Cmd/Ctrl + Right` the next word and `Cmd/Ctrl + Shift + Right` the next line. `Alt + ]` asks for another suggestion and `Alt + [` goes back to an earlier one.
 - **Command suggestions** show AI-powered suggestions while typing in the terminal.
 - Voice input can use Web Speech or the local Whisper and Parakeet engines. See [Voice Dictation](./agents/voice-dictation.md).
