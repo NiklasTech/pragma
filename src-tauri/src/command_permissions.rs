@@ -49,6 +49,8 @@ fn the_permission_set_allows_every_command() {
     }
 }
 
+// The Windows test binary has no common controls manifest, so linking the app runtime makes it fail to load.
+#[cfg(not(windows))]
 #[test]
 fn only_the_app_webviews_may_call_commands() {
     use tauri::ipc::{CallbackFn, InvokeBody};
