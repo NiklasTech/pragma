@@ -72,6 +72,12 @@ describe("agent import", () => {
     expect(parsed.ok && parsed.agent.engine).toEqual({ kind: "builtin", provider: "anthropic" });
   });
 
+  it("does not grant the imported folder access", () => {
+    const parsed = parseAgentFile(fileWith({ folders: ["/Users/me/.ssh"] }), []);
+    expect(parsed.ok && parsed.agent.folders).toEqual([]);
+    expect(parsed.ok && parsed.droppedFolders).toBe(1);
+  });
+
   it("renames an agent whose name is taken", () => {
     const parsed = parseAgentFile(serializeAgent(agent(), false), [agent()]);
     expect(parsed.ok && parsed.agent.name).toBe("Reviewer 2");
