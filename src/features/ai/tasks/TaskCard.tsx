@@ -3,6 +3,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
   ArrowClockwise,
+  Clock,
   DotsThree,
   GithubLogo,
   LockSimple,
@@ -28,6 +29,7 @@ import { seededAccent } from "../panes/providerAccent";
 
 import type { TaskActionState } from "./actionState";
 import { TASK_PRIORITIES } from "./organize";
+import { describeSchedule } from "./schedule";
 import type { Task, TaskPriority } from "./types";
 
 const PRIORITY_VARIANTS: Record<TaskPriority, "destructive" | "warning" | "secondary"> = {
@@ -103,6 +105,13 @@ export function TaskCard({
           <span className="flex items-center gap-1 text-ui-2xs text-fg-subtle">
             <GithubLogo size={11} />
             Issue #{task.issueNumber}
+          </span>
+        )}
+        {task.schedule && (
+          <span className="flex items-center gap-1 text-ui-2xs text-fg-subtle">
+            <Clock size={11} />
+            {describeSchedule(task.schedule)}
+            {task.schedule.paused && " (paused)"}
           </span>
         )}
         {agentName && task.agentId && (
