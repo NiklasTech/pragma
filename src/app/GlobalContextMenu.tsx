@@ -46,6 +46,7 @@ import {
   Sparkle,
   X,
 } from "@phosphor-icons/react";
+import { useLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 type ContextType = "editor" | "terminal" | "input" | "generic";
 
@@ -91,9 +92,7 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? null;
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const activeLanguage = activeTab?.kind === "file" ? detectLanguage(activeTab.name) : undefined;
-  const lspEnabledForLanguage = useSettingsStore(
-    (state) => state.lsp.enabled[activeLanguage ?? ""] ?? true,
-  );
+  const lspEnabledForLanguage = useLspEnabled(activeLanguage);
   const [definitionAvailable, setDefinitionAvailable] = useState(true);
   const checkSeqRef = useRef(0);
 

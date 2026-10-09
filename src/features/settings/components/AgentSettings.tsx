@@ -17,6 +17,7 @@ import { useSettingsStore, type AgentAutoApprove } from "@/shared/stores/setting
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
+import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
 
 const AUTO_APPROVE_OPTIONS: Array<{ value: AgentAutoApprove; label: string }> = [
   { value: "never", label: "Ask for everything" },
@@ -46,6 +47,7 @@ export function AgentSettings() {
 
   return (
     <div className="flex flex-col gap-8">
+      <WorkspaceOverrideNotice section="agent" />
       <SettingSection title="Approvals">
         <SettingRow
           label="Auto-approve"

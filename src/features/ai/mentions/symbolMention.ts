@@ -3,6 +3,7 @@ import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import type { LspDocumentSymbolItem } from "@/features/editor/lsp/client";
+import { isLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 export interface SymbolSearchContext {
   language: string;
@@ -18,7 +19,7 @@ function lspContext(tab: FileTab): SymbolSearchContext | null {
   const language = detectLanguage(tab.name);
   const settings = useSettingsStore.getState();
   if (!settings.experimental.lsp || !language || !isLspSupported(language)) return null;
-  if (!(settings.lsp.enabled[language] ?? true)) return null;
+  if (!isLspEnabled(language)) return null;
   return { language, filePath: tab.path };
 }
 

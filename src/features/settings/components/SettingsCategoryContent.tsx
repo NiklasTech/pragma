@@ -11,6 +11,7 @@ import { AboutSettings } from "./AboutSettings";
 import { ExtensionSettings } from "./ExtensionSettings";
 import { LspSettings } from "./LspSettings";
 import { VoiceSettings } from "./VoiceSettings";
+import { ProjectSettings } from "./project/ProjectSettings";
 import type { Category } from "./settings-categories";
 
 export function SettingsCategoryContent({ category }: { category: Category }) {
@@ -30,6 +31,7 @@ export function SettingsCategoryContent({ category }: { category: Category }) {
       {category === "mcp" && <McpSettings />}
       {category === "layout" && <LayoutSettings />}
       {category === "keyboard" && <KeyboardSettings />}
+      {category === "project" && <ProjectSettings />}
       {category === "languages" && <LspSettings />}
       {category === "extensions" && <ExtensionSettings />}
       {category === "about" && <AboutSettings />}

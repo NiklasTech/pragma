@@ -33,6 +33,7 @@ import { useAgentStore } from "@/features/agent/store";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { compactIfNeeded } from "@/features/ai/compaction/compactSession";
 import { useLiveChatRegistration } from "@/features/ai/compaction/liveChat";
+import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 export { getMessageText };
 
@@ -299,9 +300,7 @@ export function useAI() {
       }
 
       if (agentActive && !isCLIActive) {
-        useAgentStore
-          .getState()
-          .startTask(messageText, useSettingsStore.getState().agent.stepLimit);
+        useAgentStore.getState().startTask(messageText, getAgentSettings().stepLimit);
         useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
       }
 
@@ -372,10 +371,7 @@ export function useAI() {
       const lastUser = [...chat.messages].reverse().find((message) => message.role === "user");
       useAgentStore
         .getState()
-        .startTask(
-          lastUser ? getMessageText(lastUser) : "",
-          useSettingsStore.getState().agent.stepLimit,
-        );
+        .startTask(lastUser ? getMessageText(lastUser) : "", getAgentSettings().stepLimit);
       useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
     }
     return chat.regenerate();

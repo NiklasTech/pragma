@@ -11,6 +11,7 @@ import {
   BracketsAngle,
   PuzzlePiece,
   Microphone,
+  FolderSimple,
 } from "@phosphor-icons/react";
 
 export type Category =
@@ -22,6 +23,7 @@ export type Category =
   | "mcp"
   | "layout"
   | "keyboard"
+  | "project"
   | "languages"
   | "extensions"
   | "about";
@@ -62,6 +64,14 @@ export const CATEGORIES: CategoryDef[] = [
     icon: Keyboard,
     group: "Workspace",
     description: "Every shortcut in one place. Click a binding to change it.",
+  },
+  {
+    id: "project",
+    label: "Project",
+    icon: FolderSimple,
+    group: "Workspace",
+    description:
+      "Overrides for this folder, saved in .pragma/settings.json and shared with the repo.",
   },
   {
     id: "agents",
