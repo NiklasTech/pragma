@@ -90,6 +90,8 @@ export interface AISettings {
   cliProvider: string | null;
   inlineCompletion: boolean;
   completionDebounce: number;
+  /** Suggest the next edit elsewhere in the file after a change. */
+  nextEditPrediction: boolean;
   terminalSuggestions: boolean;
   terminalSuggestionProvider: AIProvider | null;
   terminalSuggestionModel: string | null;

@@ -233,8 +233,10 @@ export function AISettings() {
       <InlineCompletionSection
         enabled={settingsStore.ai.inlineCompletion}
         debounce={settingsStore.ai.completionDebounce}
+        nextEdit={settingsStore.ai.nextEditPrediction}
         onEnabledChange={(v) => settingsStore.setAISettings({ inlineCompletion: v })}
         onDebounceChange={(v) => settingsStore.setAISettings({ completionDebounce: v })}
+        onNextEditChange={(v) => settingsStore.setAISettings({ nextEditPrediction: v })}
       />
 
       <ChatContextSettings />

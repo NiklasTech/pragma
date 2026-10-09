@@ -17,6 +17,7 @@ interface EditorMountContext {
   canComplete: boolean;
   completionDebounce: number;
   completionTriggerCharacters: string[];
+  nextEdit: boolean;
   activeProvider: AIProvider;
   activeModel: string;
   providerConfig: ProviderConfig;
@@ -36,6 +37,7 @@ export function useEditorMount({
   canComplete,
   completionDebounce,
   completionTriggerCharacters,
+  nextEdit,
   activeProvider,
   activeModel,
   providerConfig,
@@ -62,6 +64,7 @@ export function useEditorMount({
             provider: activeProvider,
             model: activeModel,
             baseUrl: providerConfig.baseUrl,
+            nextEdit,
           },
         ),
       }),
