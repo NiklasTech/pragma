@@ -23,6 +23,7 @@ import { buildSessionTree } from "@/features/ai/children/limits";
 import { childThreadStatus, isChildRunning } from "@/features/ai/children/status";
 import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
 import { useStaleTerminalIds } from "@/features/ai/terminal/useStaleTerminals";
+import { useTranscriptJumpStore, useTranscriptSearch } from "@/features/ai/search/transcriptSearch";
 
 import { CategoryHeader } from "./CategoryHeader";
 import { buildThreadSections, listCategories, normalizeCategory } from "./categories";
@@ -72,11 +73,18 @@ export function ThreadList() {
     [sessions],
   );
 
+  const transcriptHits = useTranscriptSearch(
+    rootPath ?? "default",
+    view === "sessions" ? query : "",
+  );
+
   const visibleSessions = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return sortedSessions;
-    return sortedSessions.filter((session) => session.title.toLowerCase().includes(trimmed));
-  }, [query, sortedSessions]);
+    return sortedSessions.filter(
+      (session) => session.title.toLowerCase().includes(trimmed) || transcriptHits.has(session.id),
+    );
+  }, [query, sortedSessions, transcriptHits]);
 
   const searching = query.trim().length > 0;
   const tree = useMemo(
@@ -215,6 +223,12 @@ export function ThreadList() {
       : resolveThreadStatus(agentStatus, session.id, runSessionId);
   };
 
+  const handleSelectRow = (sessionId: string) => {
+    const hit = searching ? transcriptHits.get(sessionId) : undefined;
+    if (hit) useTranscriptJumpStore.getState().jumpTo(sessionId, hit.message_id);
+    handleSelect(sessionId);
+  };
+
   const renderRow = (session: ChatSession, depth = 0) => (
     <ThreadRow
       key={session.id}
@@ -226,7 +240,8 @@ export function ThreadList() {
       selectionMode={selection.active}
       isSelected={selection.picked.has(session.id)}
       categories={categories}
-      onSelect={handleSelect}
+      snippet={searching ? transcriptHits.get(session.id)?.snippet : undefined}
+      onSelect={handleSelectRow}
       onToggleSelect={handleToggleSelect}
       onRename={handleRename}
       onDuplicate={(sessionId) => void handleDuplicate([sessionId])}

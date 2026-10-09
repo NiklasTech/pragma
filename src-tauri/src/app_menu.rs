@@ -33,6 +33,7 @@ const MENU_ACTION_IDS: &[&str] = &[
     "file.openFolder",
     "file.save",
     "file.closeTab",
+    "file.reopenClosedTab",
     "file.goToFile",
     "tab.next",
     "tab.prev",
@@ -170,7 +171,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         "Toggle Terminal",
         true,
         false,
-        Some("CmdOrCtrl+Shift+T"),
+        Some("Ctrl+Backquote"),
     )?;
     let toggle_ai_item = CheckMenuItem::with_id(
         app,
@@ -247,6 +248,13 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             "Close Tab",
             true,
             Some("CmdOrCtrl+W"),
+        )?)
+        .item(&MenuItem::with_id(
+            app,
+            "file.reopenClosedTab",
+            "Reopen Closed Tab",
+            true,
+            Some("CmdOrCtrl+Shift+T"),
         )?)
         .build()?;
 
