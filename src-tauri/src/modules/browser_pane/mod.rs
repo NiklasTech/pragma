@@ -1,5 +1,6 @@
 //! Lets agents inspect the browser pane: a console capture in its frame and a webview snapshot.
 
+pub mod native;
 pub mod snapshot;
 
 use tauri::plugin::{Builder, TauriPlugin};
