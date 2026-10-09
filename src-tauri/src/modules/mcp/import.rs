@@ -1,5 +1,5 @@
-//! Reads MCP servers from a workspace `.mcp.json` and the Claude Desktop
-//! configuration so they can be imported.
+//! Reads MCP servers from a workspace `.mcp.json` or `.pragma/settings.json` and the
+//! Claude Desktop configuration so they can be imported.
 
 use crate::modules::mcp::{McpServerConfig, McpTransport};
 use serde::Serialize;
@@ -129,6 +129,10 @@ pub async fn mcp_import_candidates(
             return Err("workspace_root is not a directory".to_string());
         }
         candidates.extend(candidates_from(&root.join(".mcp.json"), ".mcp.json"));
+        candidates.extend(candidates_from(
+            &root.join(".pragma").join("settings.json"),
+            ".pragma/settings.json",
+        ));
     }
     if let Some(path) = claude_desktop_config() {
         candidates.extend(candidates_from(&path, "Claude Desktop"));

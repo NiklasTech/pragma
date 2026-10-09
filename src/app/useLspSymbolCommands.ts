@@ -7,6 +7,7 @@ import { detectLanguage } from "@/shared/lib/language";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { dispatchEditorDocumentSymbols } from "@/shared/lib/editor-events";
 import { useSymbolDialogStore } from "@/features/editor/lsp/symbols";
+import { isLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 function activeLspContext(): { language: string; filePath: string } | null {
   const { tabs, activeTabId } = useEditorStore.getState();
@@ -19,7 +20,7 @@ function activeLspContext(): { language: string; filePath: string } | null {
   if (!settings.experimental.lsp || !language || !isLspSupported(language)) {
     return null;
   }
-  if (!(settings.lsp.enabled[language] ?? true)) {
+  if (!isLspEnabled(language)) {
     return null;
   }
   return { language, filePath: activeTab.path };

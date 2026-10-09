@@ -16,6 +16,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 
 import { showSessionInPane } from "./open";
 import { runSpawnTool } from "./spawn";
+import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 const SPAWN_REQUEST_EVENT = "child_session_spawn_request";
 
@@ -94,7 +95,7 @@ export async function handleSpawnRequest(event: SpawnRequestEvent): Promise<void
   const decision = resolveAgentApproval(
     AGENT_TOOL_NAMES.spawnSession,
     event.arguments,
-    settings.agent,
+    getAgentSettings(),
     settings.ai.yoloMode,
   );
   const outcome = await runSpawnTool(

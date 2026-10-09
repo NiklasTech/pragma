@@ -3,7 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useDiskStateStore } from "@/shared/stores/diskState";
-import { useSettingsStore } from "@/shared/stores/settings";
 import { applySaveTransforms } from "@/shared/lib/editor/saveTransforms";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
@@ -11,6 +10,7 @@ import { setDiskBaseline } from "@/features/editor/diskSync";
 import { isChangedOnDiskError, sha256Hex } from "@/shared/lib/fileDisk";
 import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
 import { notifyFileSaved } from "@/features/extensions/events";
+import { getEditorSettings } from "@/shared/stores/workspaceSettings/effective";
 
 interface SaveFileOptions {
   /// Autosave skips the conflict toast; the editor notice already shows the conflict.
@@ -36,7 +36,7 @@ export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
       return;
     }
 
-    const editorSettings = useSettingsStore.getState().editor;
+    const editorSettings = getEditorSettings();
     // Delayed autosave fires while typing; trimming would remove the space just typed.
     const transform = !auto || editorSettings.autoSave !== "afterDelay";
     const content = transform ? applySaveTransforms(tab.content, editorSettings) : tab.content;

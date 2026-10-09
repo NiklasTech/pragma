@@ -21,11 +21,12 @@ import {
 import { indentGuidesExtension } from "@/features/editor/components/extensions/indent-guides";
 import { bracketColorsExtension } from "@/features/editor/components/extensions/bracket-colors";
 import { overviewRulerExtension } from "@/features/editor/components/extensions/overview-ruler";
+import { useEditorSetting } from "@/shared/stores/workspaceSettings/effective";
 
 /** Applies the editor display settings to a mounted view without recreating it. */
 export function useEditorDisplaySettings(view: EditorView | null): void {
   const renderWhitespace = useSettingsStore((state) => state.editor.renderWhitespace);
-  const rulers = useSettingsStore((state) => state.editor.rulers);
+  const rulers = useEditorSetting("rulers");
   const indentGuides = useSettingsStore((state) => state.editor.indentGuides);
   const bracketColors = useSettingsStore((state) => state.editor.bracketPairColorization);
   const cursorStyle = useSettingsStore((state) => state.editor.cursorStyle);

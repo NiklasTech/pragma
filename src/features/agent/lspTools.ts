@@ -12,6 +12,7 @@ import {
 } from "@/features/editor/lsp/client";
 import { flushLspDocumentSync, isLspDocumentSynced } from "@/features/editor/lsp/lspDocuments";
 import { symbolKindName } from "@/features/editor/lsp/symbols";
+import { isLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 interface FileReadResult {
   content: string;
@@ -64,7 +65,7 @@ function resolveLanguage(filePath: string): string {
     throw new Error(`No language server supports ${fileName}`);
   }
   const settings = useSettingsStore.getState();
-  if (!settings.experimental.lsp || !(settings.lsp.enabled[language] ?? true)) {
+  if (!settings.experimental.lsp || !isLspEnabled(language)) {
     throw new Error(`The ${language} language server is turned off in the settings`);
   }
   return language;

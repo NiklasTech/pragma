@@ -48,6 +48,7 @@ import {
   setChildRun,
   type ChildRunStatus,
 } from "./runStore";
+import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 const PUBLISH_INTERVAL_MS = 50;
 const PERSIST_INTERVAL_MS = 1000;
@@ -229,7 +230,7 @@ export async function startChildRun(
   );
 
   const context = createContext(sessionId);
-  const stepLimit = settings.agent.stepLimit;
+  const stepLimit = getAgentSettings().stepLimit;
   let publishTimer: ReturnType<typeof setTimeout> | undefined;
   let persistTimer: ReturnType<typeof setTimeout> | undefined;
   let previousStatus: ChatStatus = "ready";
