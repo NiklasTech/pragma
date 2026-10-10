@@ -11,6 +11,7 @@ import {
   PencilSimple,
   Plus,
   Robot,
+  Stop,
   X,
 } from "@phosphor-icons/react";
 
@@ -38,6 +39,7 @@ import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
+import { PaneCloseButton } from "./PaneCloseButton";
 import { usePaneHeaderDrag } from "./paneDrag";
 import { providerAccent } from "./providerAccent";
 import { ProviderLogo } from "./ProviderLogo";
@@ -167,6 +169,7 @@ interface PaneHeaderProps {
   maximized: boolean;
   hasOtherPanes: boolean;
   onClose: () => void;
+  onCloseTerminal: (stop: boolean) => void;
   onCloseOthers: () => void;
   onToggleMaximize: () => void;
   onDropOn: (targetLeafId: string) => void;
@@ -180,6 +183,7 @@ export function PaneHeader({
   maximized,
   hasOtherPanes,
   onClose,
+  onCloseTerminal,
   onCloseOthers,
   onToggleMaximize,
   onDropOn,
@@ -203,6 +207,7 @@ export function PaneHeader({
   const terminal = session?.kind === "terminal" ? session : null;
   const terminalStatus = useTerminalStatus(terminal?.id ?? null);
   const terminalActive = useTerminalActivity(terminal?.id ?? null);
+  const runningTerminal = terminal !== null && terminalStatus.status === "running";
   const working = terminal
     ? terminalActive && terminalStatus.status === "running"
     : status === "running";
@@ -312,10 +317,23 @@ export function PaneHeader({
               <DropdownMenuItem disabled={!hasOtherPanes} onClick={onCloseOthers}>
                 <span>Close other panes</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onClose}>
-                <X size={13} />
-                <span>Close pane</span>
-              </DropdownMenuItem>
+              {runningTerminal ? (
+                <>
+                  <DropdownMenuItem variant="destructive" onClick={() => onCloseTerminal(true)}>
+                    <Stop size={13} />
+                    <span>Stop process and close</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onCloseTerminal(false)}>
+                    <X size={13} />
+                    <span>Close, keep running</span>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem onClick={onClose}>
+                  <X size={13} />
+                  <span>Close pane</span>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <button
@@ -339,15 +357,12 @@ export function PaneHeader({
               <Plus size={13} />
             </button>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close pane"
-            title="Close pane"
+          <PaneCloseButton
+            runningTerminal={runningTerminal}
             className={PANE_ICON_BUTTON}
-          >
-            <X size={13} />
-          </button>
+            onClose={onClose}
+            onCloseTerminal={onCloseTerminal}
+          />
         </div>
 
         {working && (
