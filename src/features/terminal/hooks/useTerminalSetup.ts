@@ -3,8 +3,6 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { unlistenQuietly } from "@/shared/lib/unlisten";
 import {
   useTerminalStore,
   type TerminalSession as TerminalSessionType,
@@ -18,11 +16,7 @@ import { registerTerminalOutput } from "../terminalOutput";
 import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { terminalEnvFor } from "../terminalEnv";
 import { takeTerminalScrollback } from "../terminalScrollback";
-
-interface PtyOutputEvent {
-  id: string;
-  data: string;
-}
+import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } from "../ptyOutput";
 
 interface TerminalSetupOptions {
   session: TerminalSessionType;
@@ -60,7 +54,7 @@ export function useTerminalSetup({
 }: TerminalSetupOptions) {
   useEffect(() => {
     let disposed = false;
-    let unlistenFn: (() => void) | null = null;
+    let detachOutput: (() => void) | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let da1Handler: { dispose: () => void } | null = null;
@@ -137,19 +131,23 @@ export function useTerminalSetup({
         }
       };
 
-      // The shell can print its prompt before create_pty resolves, so hold output until the id is known.
-      let earlyOutput: PtyOutputEvent[] | null = session.ptyId ? null : [];
-      const unlisten = await listen<PtyOutputEvent>("pty_output", (event) => {
-        if (event.payload.id === ptyIdRef.current) {
-          writeOutput(event.payload.data);
-        } else if (earlyOutput && earlyOutput.length < 500) {
-          earlyOutput.push(event.payload);
-        }
-      });
-      unlistenFn = unlisten;
+      // A remounted terminal (after switching to the Agents view) replays what its shell printed.
+      const attachOutput = (ptyId: string) => {
+        detachOutput = attachPtyOutput(
+          ptyId,
+          (replay) => {
+            t.write(replay);
+            lastOutputRef.current = replay.slice(-1000);
+          },
+          writeOutput,
+        );
+      };
+
+      await ensurePtyOutputListener();
       if (disposed || !containerRef.current) return;
 
       fit.fit();
+      if (session.ptyId) attachOutput(session.ptyId);
 
       // Refit once fonts have actually loaded so cell measurements are correct.
       void fontsReady?.then(() => {
@@ -164,33 +162,31 @@ export function useTerminalSetup({
       if (!session.ptyId) {
         const { cols, rows } = t;
         try {
-          let ptyId: string;
-          if (session.command) {
-            ptyId = await invoke<string>("create_pty_command", {
-              command: session.command,
-              cwd: session.cwd ?? null,
-              cols: Math.max(cols, 10),
-              rows: Math.max(rows, 2),
-            });
-          } else {
+          const ptyId = await startPty(() => {
+            if (session.command) {
+              return invoke<string>("create_pty_command", {
+                command: session.command,
+                cwd: session.cwd ?? null,
+                cols: Math.max(cols, 10),
+                rows: Math.max(rows, 2),
+              });
+            }
             const shellArg = session.shell?.trim().length ? session.shell : undefined;
-            ptyId = await invoke<string>("create_pty", {
+            return invoke<string>("create_pty", {
               shell: shellArg,
               cwd: session.cwd ?? null,
               cols: Math.max(cols, 10),
               rows: Math.max(rows, 2),
               env: terminalEnvFor(useFileExplorerStore.getState().rootPath),
             });
-          }
+          });
           if (disposed) {
             safePtyInvoke(invoke("kill_pty", { id: ptyId }));
+            releasePtyOutput(ptyId);
             return;
           }
           ptyIdRef.current = ptyId;
-          for (const event of earlyOutput ?? []) {
-            if (event.id === ptyId) writeOutput(event.data);
-          }
-          earlyOutput = null;
+          attachOutput(ptyId);
           useTerminalStore.getState().attachPty(session.id, ptyId);
 
           if (pendingDa1Ref.current) {
@@ -257,7 +253,12 @@ export function useTerminalSetup({
     return () => {
       disposed = true;
       if (resizeTimer) clearTimeout(resizeTimer);
-      void unlistenQuietly(unlistenFn);
+      detachOutput?.();
+      const ptyId = ptyIdRef.current;
+      // Keep the output while the session lives on; drop it once the session or its shell is gone.
+      if (ptyId && !useTerminalStore.getState().sessions.some((s) => s.ptyId === ptyId)) {
+        releasePtyOutput(ptyId);
+      }
       resizeObserver?.disconnect();
       da1Handler?.dispose();
       scrollHandler?.dispose();
