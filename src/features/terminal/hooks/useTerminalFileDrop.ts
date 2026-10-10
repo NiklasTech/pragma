@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type RefObject } from "react";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { isOver } from "@/features/ai/images/useImageFileDrop";
 import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
+import { listenFileDrop } from "@/shared/lib/dragDrop";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 interface TerminalFileDropOptions {
@@ -36,7 +36,7 @@ export function useTerminalFileDrop({
 
     void (async () => {
       try {
-        unlisten = await getCurrentWebview().onDragDropEvent(({ payload }) => {
+        unlisten = await listenFileDrop((payload) => {
           if (payload.type === "leave") {
             setOver(false);
             return;

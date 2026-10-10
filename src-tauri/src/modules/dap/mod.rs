@@ -7,6 +7,7 @@ pub mod manager;
 mod processes;
 pub mod types;
 
+use crate::modules::workspace_trust::require_trusted;
 use attach_args::AttachTarget;
 pub use processes::DapProcessInfo;
 
@@ -47,12 +48,14 @@ pub async fn dap_ensure_adapter(
 
 #[tauri::command]
 pub async fn dap_start(
+    app: tauri::AppHandle,
     state: tauri::State<'_, DapManager>,
     params: DapStartRequest,
 ) -> Result<(), String> {
     if params.workspace_root.is_empty() {
         return Err("workspace_root is required".to_string());
     }
+    require_trusted(&app, &params.workspace_root, "start the debugger")?;
     if params.adapter.is_empty() {
         return Err("adapter is required".to_string());
     }

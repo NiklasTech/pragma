@@ -18,6 +18,7 @@ import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBeha
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
 import { useWorkspaceWatcher } from "@/shared/hooks/useWorkspaceWatcher";
 import { useWorkspaceSettingsSync } from "@/shared/hooks/useWorkspaceSettingsSync";
+import { useFolderTrust } from "@/shared/hooks/useFolderTrust";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { useExtensions } from "@/features/extensions/useExtensions";
@@ -44,7 +45,6 @@ import { AttachProcessDialog } from "@/features/debug/components/AttachProcessDi
 import { GitCompareDialog } from "@/features/sidebar/components/GitCompareDialog";
 import { FileHistoryDialog } from "@/features/sidebar/components/FileHistoryDialog";
 import { UpdateDialog } from "./UpdateDialog";
-import { WorkspaceTrustDialog } from "./WorkspaceTrustDialog";
 
 export default function App() {
   useAIInit();
@@ -54,6 +54,7 @@ export default function App() {
   useWorkspaceRestore();
   useWorkspaceWatcher();
   useWorkspaceSettingsSync();
+  useFolderTrust();
   useDiagnosticsCleanup();
   useTerminalShellResolver();
   useExtensions();
@@ -100,7 +101,6 @@ export default function App() {
         <GitCompareDialog />
         <FileHistoryDialog />
         <UpdateDialog />
-        <WorkspaceTrustDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>
     </ThemeProvider>

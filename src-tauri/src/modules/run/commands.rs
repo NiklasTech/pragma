@@ -3,6 +3,7 @@ use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use crate::modules::workspace_trust::require_trusted;
 use crate::platform::{new_std_command_for_program, resolve_program};
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
@@ -130,6 +131,7 @@ pub fn run_start(
     workspace_root: String,
     config: RunConfig,
 ) -> Result<String, String> {
+    require_trusted(&app, &workspace_root, "run configurations")?;
     let process_id = uuid::Uuid::new_v4().to_string();
     let cwd = resolve_cwd(config.cwd.as_deref(), &workspace_root);
     let (program, args) = parse_command(&config.command);

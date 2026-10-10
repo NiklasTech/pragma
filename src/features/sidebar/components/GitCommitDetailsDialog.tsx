@@ -49,8 +49,9 @@ export function FileChangeRow({
                 ? "text-status-info"
                 : "text-fg-muted",
         )}
+        title={file.status_label}
       >
-        {file.status_label}
+        {file.status}
       </span>
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="truncate">

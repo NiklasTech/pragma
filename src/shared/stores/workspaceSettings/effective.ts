@@ -5,7 +5,7 @@ import {
 } from "@/shared/stores/settings";
 
 import { useWorkspaceSettingsStore } from "./store";
-import { resolveTrust, useWorkspaceTrustStore } from "./trust";
+import { isFolderTrusted } from "./trust";
 import type { WorkspaceSettings } from "./types";
 
 /// Workspace editor values win over the user's.
@@ -40,10 +40,7 @@ export function lspEnabledFor(
 }
 
 function isTrusted(): boolean {
-  const { rootPath, settings } = useWorkspaceSettingsStore.getState();
-  return (
-    resolveTrust(rootPath, settings, useWorkspaceTrustStore.getState().decisions) === "trusted"
-  );
+  return isFolderTrusted(useWorkspaceSettingsStore.getState().rootPath);
 }
 
 export function getEditorSettings(): EditorSettings {

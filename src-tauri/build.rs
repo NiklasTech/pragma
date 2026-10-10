@@ -264,6 +264,7 @@ const COMMANDS: &[&str] = &[
     "workspace_settings_load",
     "workspace_settings_save",
     "workspace_trust_change",
+    "workspace_trust_request",
     "workspace_trust_status",
     "workspace_unwatch",
     "workspace_watch",

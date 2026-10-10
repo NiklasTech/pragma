@@ -3,11 +3,16 @@ use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use tauri_plugin_dialog::{
+    DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult,
+};
 use tauri_plugin_store::Store;
 
 const STORE_NAME: &str = "workspace-trust.json";
 const SCRIPT_NAMES: [&str; 2] = ["worktree-setup", "worktree-teardown"];
+const TRUST_FOLDER: &str = "Trust Folder";
+const TRUST_PARENT: &str = "Trust Parent Folder";
+const DONT_TRUST: &str = "Don't Trust";
 
 /// Serializes trust prompts so a second caller reads the first answer instead of asking again.
 static PROMPT_LOCK: Mutex<()> = Mutex::new(());
@@ -29,7 +34,7 @@ impl TrustContent {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrustStatus {
-    /// `None` until the user has decided; folders without extensions or scripts never ask.
+    /// `None` until the user has decided for the folder or one of its parents.
     pub trusted: Option<bool>,
     pub content: TrustContent,
 }
@@ -77,63 +82,135 @@ fn load_store<R: Runtime>(app: &AppHandle<R>) -> Result<Arc<Store<R>>, String> {
         .map_err(|e| format!("Failed to load workspace trust: {e}"))
 }
 
-fn stored_decision<R: Runtime>(app: &AppHandle<R>, key: &str) -> Result<Option<bool>, String> {
-    Ok(load_store(app)?.get(key).and_then(|value| value.as_bool()))
+/// The decision for the folder itself or, failing that, for its closest decided parent.
+fn closest_decision(root: &Path, lookup: impl Fn(&str) -> Option<bool>) -> Option<bool> {
+    root.ancestors()
+        .find_map(|dir| lookup(dir.to_string_lossy().as_ref()))
 }
 
-fn store_decision<R: Runtime>(app: &AppHandle<R>, key: &str, trusted: bool) -> Result<(), String> {
+fn stored_decision<R: Runtime>(app: &AppHandle<R>, root: &Path) -> Result<Option<bool>, String> {
     let store = load_store(app)?;
-    store.set(key.to_string(), serde_json::Value::Bool(trusted));
+    Ok(closest_decision(root, |key| {
+        store.get(key).and_then(|value| value.as_bool())
+    }))
+}
+
+/// Stores the decision for `key` and drops the folder's own one so a parent decision applies.
+fn store_decision<R: Runtime>(
+    app: &AppHandle<R>,
+    root: &Path,
+    key: &Path,
+    trusted: bool,
+) -> Result<(), String> {
+    let store = load_store(app)?;
+    store.delete(root.to_string_lossy());
+    store.set(
+        key.to_string_lossy().into_owned(),
+        serde_json::Value::Bool(trusted),
+    );
     store
         .save()
         .map_err(|e| format!("Failed to save workspace trust: {e}"))
 }
 
-fn prompt_message(root: &Path, content: &TrustContent) -> String {
-    let mut lines = vec![format!(
-        "{} contains code that Pragma runs on its own:",
-        root.display()
-    )];
+/// The parent offered for trust; never the file system root or the home folder.
+fn trustable_parent(root: &Path, home: Option<&Path>) -> Option<PathBuf> {
+    let parent = root.parent()?;
+    if parent.parent().is_none() || Some(parent) == home {
+        return None;
+    }
+    Some(parent.to_path_buf())
+}
+
+fn prompt_message(root: &Path, content: &TrustContent, parent: Option<&Path>) -> String {
+    let mut lines = vec![
+        root.display().to_string(),
+        "In a trusted folder Pragma runs the folder's extensions, worktree scripts, language servers, run configurations and debugger, and the agent may run the commands its .pragma/settings.json allows without asking. In a folder you don't trust, Pragma opens the files but runs none of this.".to_string(),
+    ];
     if !content.extensions.is_empty() {
         lines.push(format!("Extensions: {}", content.extensions.join(", ")));
     }
     if !content.scripts.is_empty() {
         lines.push(format!("Worktree scripts: {}", content.scripts.join(", ")));
     }
-    lines.push(
-        "Only trust folders from sources you know. Untrusted folders open without running this code."
-            .to_string(),
-    );
+    if let Some(parent) = parent {
+        lines.push(format!(
+            "{TRUST_PARENT} trusts every folder in {}.",
+            parent.display()
+        ));
+    }
     lines.join("\n\n")
+}
+
+/// Asks with a native dialog the webview cannot answer and stores the answer.
+fn prompt_decision<R: Runtime>(app: &AppHandle<R>, root: &Path) -> Result<bool, String> {
+    let home = app.path().home_dir().ok();
+    let parent = trustable_parent(root, home.as_deref());
+    let buttons = if parent.is_some() {
+        MessageDialogButtons::YesNoCancelCustom(
+            TRUST_FOLDER.to_string(),
+            TRUST_PARENT.to_string(),
+            DONT_TRUST.to_string(),
+        )
+    } else {
+        MessageDialogButtons::OkCancelCustom(TRUST_FOLDER.to_string(), DONT_TRUST.to_string())
+    };
+    let result = app
+        .dialog()
+        .message(prompt_message(
+            root,
+            &trust_content(root),
+            parent.as_deref(),
+        ))
+        .title("Do you trust the authors of the files in this folder?")
+        .kind(MessageDialogKind::Warning)
+        .buttons(buttons)
+        .blocking_show_with_result();
+    let (key, trusted) = match result {
+        MessageDialogResult::Custom(label) if label == TRUST_FOLDER => (root.to_path_buf(), true),
+        MessageDialogResult::Custom(label) if label == TRUST_PARENT => {
+            (parent.unwrap_or_else(|| root.to_path_buf()), true)
+        }
+        _ => (root.to_path_buf(), false),
+    };
+    store_decision(app, root, &key, trusted)?;
+    Ok(trusted)
+}
+
+/// The stored decision, or the answer to a prompt when the folder has none yet.
+fn decide<R: Runtime>(app: &AppHandle<R>, root: &Path) -> Result<bool, String> {
+    let _guard = PROMPT_LOCK
+        .lock()
+        .map_err(|_| "Workspace trust lock poisoned".to_string())?;
+    match stored_decision(app, root)? {
+        Some(trusted) => Ok(trusted),
+        None => prompt_decision(app, root),
+    }
 }
 
 /// Whether the folder may run its extensions and worktree scripts; asks once with a native
 /// dialog the webview cannot answer. Must not run on the main thread.
 pub(crate) fn ensure_trusted<R: Runtime>(app: &AppHandle<R>, root: &str) -> Result<bool, String> {
     let root = canonical_root(root)?;
-    let content = trust_content(&root);
-    if content.is_empty() {
+    if trust_content(&root).is_empty() {
         return Ok(true);
     }
-    let key = root.to_string_lossy().into_owned();
-    let _guard = PROMPT_LOCK
-        .lock()
-        .map_err(|_| "Workspace trust lock poisoned".to_string())?;
-    if let Some(trusted) = stored_decision(app, &key)? {
-        return Ok(trusted);
-    }
-    let trusted = app
-        .dialog()
-        .message(prompt_message(&root, &content))
-        .title("Trust this folder?")
-        .kind(MessageDialogKind::Warning)
-        .buttons(MessageDialogButtons::OkCancelCustom(
-            "Trust Folder".to_string(),
-            "Don't Trust".to_string(),
+    decide(app, &root)
+}
+
+/// Fails unless the user trusted `path` or one of its parents; never asks.
+pub(crate) fn require_trusted<R: Runtime>(
+    app: &AppHandle<R>,
+    path: &str,
+    action: &str,
+) -> Result<(), String> {
+    if stored_decision(app, &canonical_root(path)?)? == Some(true) {
+        Ok(())
+    } else {
+        Err(format!(
+            "This folder is not trusted, so Pragma does not {action} in it. Trust it in Project settings."
         ))
-        .blocking_show();
-    store_decision(app, &key, trusted)?;
-    Ok(trusted)
+    }
 }
 
 /// Marks a folder trusted after the user installed an extension into it.
@@ -141,34 +218,39 @@ pub(crate) fn trust_after_install<R: Runtime>(
     app: &AppHandle<R>,
     root: &str,
 ) -> Result<(), String> {
-    let key = canonical_root(root)?.to_string_lossy().into_owned();
-    if stored_decision(app, &key)? == Some(false) {
+    let root = canonical_root(root)?;
+    if stored_decision(app, &root)?.is_some() {
         return Ok(());
     }
-    store_decision(app, &key, true)
+    store_decision(app, &root, &root, true)
 }
 
 #[tauri::command(async)]
 pub fn workspace_trust_status(app: AppHandle, root_path: String) -> Result<TrustStatus, String> {
     let root = canonical_root(&root_path)?;
-    let key = root.to_string_lossy().into_owned();
     Ok(TrustStatus {
-        trusted: stored_decision(&app, &key)?,
+        trusted: stored_decision(&app, &root)?,
         content: trust_content(&root),
     })
 }
 
-/// Forgets the decision and asks again, so changing it always goes through the native dialog.
+/// Asks once when a folder opens, like the workspace trust prompt of other editors.
+#[tauri::command]
+pub async fn workspace_trust_request(app: AppHandle, root_path: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || decide(&app, &canonical_root(&root_path)?))
+        .await
+        .map_err(|e| format!("Workspace trust task failed: {e}"))?
+}
+
+/// Asks again even when a decision exists, so changing it always goes through the native dialog.
 #[tauri::command]
 pub async fn workspace_trust_change(app: AppHandle, root_path: String) -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let key = canonical_root(&root_path)?.to_string_lossy().into_owned();
-        let store = load_store(&app)?;
-        store.delete(&key);
-        store
-            .save()
-            .map_err(|e| format!("Failed to save workspace trust: {e}"))?;
-        ensure_trusted(&app, &root_path)
+        let root = canonical_root(&root_path)?;
+        let _guard = PROMPT_LOCK
+            .lock()
+            .map_err(|_| "Workspace trust lock poisoned".to_string())?;
+        prompt_decision(&app, &root)
     })
     .await
     .map_err(|e| format!("Workspace trust task failed: {e}"))?
@@ -201,6 +283,38 @@ mod tests {
         std::fs::create_dir_all(dir.path().join(".pragma")).unwrap();
         std::fs::write(dir.path().join(".pragma").join("settings.json"), "{}").unwrap();
         assert!(trust_content(dir.path()).is_empty());
+    }
+
+    #[test]
+    fn the_closest_decision_wins() {
+        let lookup = |key: &str| match key {
+            "/work" => Some(true),
+            "/work/untrusted" => Some(false),
+            _ => None,
+        };
+        assert_eq!(
+            closest_decision(Path::new("/work/app/src"), lookup),
+            Some(true)
+        );
+        assert_eq!(
+            closest_decision(Path::new("/work/untrusted/app"), lookup),
+            Some(false)
+        );
+        assert_eq!(closest_decision(Path::new("/elsewhere"), lookup), None);
+    }
+
+    #[test]
+    fn never_offers_the_root_or_home_as_parent() {
+        let home = Path::new("/Users/me");
+        assert_eq!(
+            trustable_parent(Path::new("/Users/me/dev/app"), Some(home)),
+            Some(PathBuf::from("/Users/me/dev"))
+        );
+        assert_eq!(
+            trustable_parent(Path::new("/Users/me/app"), Some(home)),
+            None
+        );
+        assert_eq!(trustable_parent(Path::new("/app"), Some(home)), None);
     }
 
     #[test]

@@ -9,11 +9,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
-import {
-  resolveTrust,
-  securityKey,
-  useWorkspaceTrustStore,
-} from "@/shared/stores/workspaceSettings/trust";
+import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
 import type { WorkspaceSettings } from "@/shared/stores/workspaceSettings/types";
 
 import { SettingRow } from "../ui/SettingRow";
@@ -31,8 +27,8 @@ export function ProjectSettings() {
   const saved = useWorkspaceSettingsStore((state) => state.settings);
   const error = useWorkspaceSettingsStore((state) => state.error);
   const save = useWorkspaceSettingsStore((state) => state.save);
-  const decisions = useWorkspaceTrustStore((state) => state.decisions);
-  const decide = useWorkspaceTrustStore((state) => state.decide);
+  const trustedRoot = useFolderTrustStore((state) => state.rootPath);
+  const folderTrusted = useFolderTrustStore((state) => state.trusted);
 
   const [draft, setDraft] = React.useState<WorkspaceSettings>({});
   const [newCommand, setNewCommand] = React.useState("");
@@ -74,8 +70,7 @@ export function ProjectSettings() {
     }
   };
 
-  const trust = resolveTrust(loadedRoot, saved, decisions);
-  const savedKey = securityKey(saved);
+  const trusted = trustedRoot === rootPath && folderTrusted;
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved ?? {});
 
   return (
@@ -146,24 +141,7 @@ export function ProjectSettings() {
 
       <SettingSection
         title="Agent"
-        badge={
-          trust === "trusted"
-            ? { label: "Allowed on this computer", variant: "success" }
-            : trust === "rejected"
-              ? { label: "Not allowed on this computer", variant: "warning" }
-              : undefined
-        }
-        action={
-          loadedRoot && savedKey && trust !== "pending" ? (
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => decide(loadedRoot, savedKey, trust !== "trusted")}
-            >
-              {trust === "trusted" ? "Stop allowing" : "Allow"}
-            </Button>
-          ) : undefined
-        }
+        badge={trusted ? undefined : { label: "Folder not trusted", variant: "warning" }}
       >
         <SettingRow
           label="Step limit"
@@ -184,7 +162,7 @@ export function ProjectSettings() {
         <div className="flex flex-col gap-2 py-3">
           <span className="text-ui-sm font-medium text-fg-default">Allowed commands</span>
           <span className="text-ui-xs text-fg-subtle">
-            Added to your own patterns once you allow them on this computer.
+            Added to your own patterns while you trust this folder.
           </span>
           <div className="flex items-center gap-2">
             <Input

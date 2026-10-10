@@ -4,6 +4,7 @@ import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { markLspDocumentSynced, flushLspDocumentSync } from "@/features/editor/lsp/lspDocuments";
 import { useLspEnabled } from "@/shared/stores/workspaceSettings/effective";
+import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
 
 const DEBOUNCE_MS = 500;
 
@@ -15,6 +16,7 @@ export function useLspDocumentSync(
 ) {
   const lspEnabled = useLspEnabled(language);
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
+  const folderTrusted = useFolderTrustStore((state) => state.trusted);
   const openedRef = useRef<string | null>(null);
   const savedRef = useRef<string | null>(null);
 
@@ -41,7 +43,8 @@ export function useLspDocumentSync(
           markLspDocumentSynced(filePath, content);
         }
       } catch {
-        // Missing optional servers are reported once via lsp_status_changed.
+        // Missing servers report via lsp_status_changed; an untrusted folder retries once trusted.
+        if (!cancelled && openedRef.current === filePath) openedRef.current = null;
       }
     };
 
@@ -50,7 +53,7 @@ export function useLspDocumentSync(
     return () => {
       cancelled = true;
     };
-  }, [language, filePath, lspEnabled, experimentalLsp]);
+  }, [language, filePath, lspEnabled, experimentalLsp, folderTrusted]);
 
   useEffect(() => {
     if (!experimentalLsp || !lspEnabled || !language || !isLspSupported(language) || !filePath) {
