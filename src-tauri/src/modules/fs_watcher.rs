@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
 use std::sync::Mutex;
@@ -120,7 +120,7 @@ fn validate_root(root: &str) -> Result<PathBuf, String> {
 fn debounce_loop(rx: Receiver<PathBuf>, mut filter: PathFilter, app: AppHandle, label: String) {
     let root = filter.display_root.to_string_lossy().into_owned();
     while let Ok(first) = rx.recv() {
-        let mut batch = vec![first];
+        let mut batch = HashSet::from([first]);
         let deadline = Instant::now() + MAX_BATCH_DELAY;
         let mut disconnected = false;
         loop {
@@ -129,7 +129,9 @@ fn debounce_loop(rx: Receiver<PathBuf>, mut filter: PathFilter, app: AppHandle, 
                 break;
             }
             match rx.recv_timeout(QUIET_PERIOD.min(remaining)) {
-                Ok(path) => batch.push(path),
+                Ok(path) => {
+                    batch.insert(path);
+                }
                 Err(RecvTimeoutError::Timeout) => break,
                 Err(RecvTimeoutError::Disconnected) => {
                     disconnected = true;
