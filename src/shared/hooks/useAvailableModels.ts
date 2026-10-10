@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo } from "react";
 
 import { useAIStore, type AIProvider, type ModelInfo } from "@/shared/stores/ai";
@@ -29,7 +30,17 @@ export function useAvailableModels(provider: AIProvider): UseAvailableModelsResu
     activeCLIProvider,
     cliStatuses,
     loadAvailableModels,
-  } = useAIStore();
+  } = useAIStore(
+    useShallow((s) => ({
+      availableModels: s.availableModels,
+      modelsLoading: s.modelsLoading,
+      apiKeyRefs: s.apiKeyRefs,
+      providers: s.providers,
+      activeCLIProvider: s.activeCLIProvider,
+      cliStatuses: s.cliStatuses,
+      loadAvailableModels: s.loadAvailableModels,
+    })),
+  );
 
   const cached = availableModels[provider];
   const loading = modelsLoading[provider] ?? false;

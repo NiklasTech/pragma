@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import type { ComponentProps } from "react";
 import { Streamdown } from "streamdown";
 import { MarkdownCode } from "@/features/ai/components/MarkdownCode";
@@ -19,7 +20,9 @@ const streamdownComponents: ComponentProps<typeof Streamdown>["components"] = {
 };
 
 export default function MarkdownPanel() {
-  const { tabs, activeTabId } = useEditorStore();
+  const { tabs, activeTabId } = useEditorStore(
+    useShallow((s) => ({ tabs: s.tabs, activeTabId: s.activeTabId })),
+  );
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const source = activeTab?.kind === "file" ? activeTab.content : "";
   const fileName = activeTab?.kind === "file" ? activeTab.name : "No file open";

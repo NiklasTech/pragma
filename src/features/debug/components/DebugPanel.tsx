@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect, useState } from "react";
 import { Bug } from "@phosphor-icons/react";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -24,7 +25,19 @@ export function DebugPanel() {
     selectedFrameId,
     scopes,
     loadVariables,
-  } = useDebugStore();
+  } = useDebugStore(
+    useShallow((s) => ({
+      breakpoints: s.breakpoints,
+      status: s.status,
+      statusError: s.statusError,
+      sessionName: s.sessionName,
+      isStopped: s.isStopped,
+      stopReason: s.stopReason,
+      selectedFrameId: s.selectedFrameId,
+      scopes: s.scopes,
+      loadVariables: s.loadVariables,
+    })),
+  );
 
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [watchInput, setWatchInput] = useState("");

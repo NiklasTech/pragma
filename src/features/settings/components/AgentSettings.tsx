@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import * as React from "react";
 import { Info, Plus, X } from "@phosphor-icons/react";
 
@@ -26,7 +27,9 @@ const AUTO_APPROVE_OPTIONS: Array<{ value: AgentAutoApprove; label: string }> = 
 ];
 
 export function AgentSettings() {
-  const { agent, setAgentSettings } = useSettingsStore();
+  const { agent, setAgentSettings } = useSettingsStore(
+    useShallow((s) => ({ agent: s.agent, setAgentSettings: s.setAgentSettings })),
+  );
   const [newCommand, setNewCommand] = React.useState("");
 
   const addCommand = () => {

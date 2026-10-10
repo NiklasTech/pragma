@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import * as React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
@@ -59,7 +60,14 @@ function getServerDisplay(definition: LspServerDefinition, language: string): st
 
 export function LanguagesStep() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
-  const { lsp, setLspEnabled, experimental, setExperimentalEnabled } = useSettingsStore();
+  const { lsp, setLspEnabled, experimental, setExperimentalEnabled } = useSettingsStore(
+    useShallow((s) => ({
+      lsp: s.lsp,
+      setLspEnabled: s.setLspEnabled,
+      experimental: s.experimental,
+      setExperimentalEnabled: s.setExperimentalEnabled,
+    })),
+  );
   const [languages, setLanguages] = React.useState<ProjectLanguage[]>([]);
   const [statuses, setStatuses] = React.useState<Record<string, ServerStatus>>({});
   const [installing, setInstalling] = React.useState<Record<string, boolean>>({});

@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/shared/components/ui/input";
 import { Switch } from "@/shared/components/ui/switch";
 import {
@@ -23,7 +24,9 @@ const AUTO_SAVE_LABELS: Record<AutoSave, string> = {
 };
 
 export function EditorSettings() {
-  const { editor, setEditorSettings } = useSettingsStore();
+  const { editor, setEditorSettings } = useSettingsStore(
+    useShallow((s) => ({ editor: s.editor, setEditorSettings: s.setEditorSettings })),
+  );
 
   return (
     <div className="flex flex-col gap-8">

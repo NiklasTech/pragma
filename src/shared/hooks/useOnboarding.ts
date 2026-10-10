@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect } from "react";
 import { useOnboardingStore } from "@/shared/stores/onboarding";
 
@@ -6,7 +7,14 @@ export function useOnboarding(): {
   isCompleted: boolean;
   initialized: boolean;
 } {
-  const { isLoading, isCompleted, initialized, initialize } = useOnboardingStore();
+  const { isLoading, isCompleted, initialized, initialize } = useOnboardingStore(
+    useShallow((s) => ({
+      isLoading: s.isLoading,
+      isCompleted: s.isCompleted,
+      initialized: s.initialized,
+      initialize: s.initialize,
+    })),
+  );
 
   useEffect(() => {
     if (!initialized) {

@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useMemo, useState } from "react";
 import {
   CaretDown,
@@ -33,8 +34,22 @@ const severityFilters: { id: SeverityFilter; label: string }[] = [
 ];
 
 export default function ProblemsPanel() {
-  const { problems, isLoading, refreshProblems } = useProblemsStore();
-  const { tabs, openFile, setActiveTab, setPanelActiveTab, goToPosition } = useEditorStore();
+  const { problems, isLoading, refreshProblems } = useProblemsStore(
+    useShallow((s) => ({
+      problems: s.problems,
+      isLoading: s.isLoading,
+      refreshProblems: s.refreshProblems,
+    })),
+  );
+  const { tabs, openFile, setActiveTab, setPanelActiveTab, goToPosition } = useEditorStore(
+    useShallow((s) => ({
+      tabs: s.tabs,
+      openFile: s.openFile,
+      setActiveTab: s.setActiveTab,
+      setPanelActiveTab: s.setPanelActiveTab,
+      goToPosition: s.goToPosition,
+    })),
+  );
   const editorPanelId = useEditorPanelId();
   const [filter, setFilter] = useState<SeverityFilter>("all");
   const [collapsedFiles, setCollapsedFiles] = useState<string[]>([]);

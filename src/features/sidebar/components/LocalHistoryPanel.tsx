@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useCallback, useEffect } from "react";
 import {
   ClockCounterClockwise,
@@ -59,7 +60,18 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
     selectEntry,
     restoreEntry,
     clear,
-  } = useLocalHistoryStore();
+  } = useLocalHistoryStore(
+    useShallow((s) => ({
+      entries: s.entries,
+      selectedEntry: s.selectedEntry,
+      diffResult: s.diffResult,
+      isLoading: s.isLoading,
+      loadEntries: s.loadEntries,
+      selectEntry: s.selectEntry,
+      restoreEntry: s.restoreEntry,
+      clear: s.clear,
+    })),
+  );
 
   useEffect(() => {
     if (isOpen && filePath) {

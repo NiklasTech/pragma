@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import * as React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/shared/components/ui/button";
@@ -19,8 +20,15 @@ function serversEqual(a: McpServerConfig[], b: McpServerConfig[]): boolean {
 }
 
 export function McpSettings() {
-  const { mcp, addMcpServer, updateMcpServer, removeMcpServer, setMcpSettings } =
-    useSettingsStore();
+  const { mcp, addMcpServer, updateMcpServer, removeMcpServer, setMcpSettings } = useSettingsStore(
+    useShallow((s) => ({
+      mcp: s.mcp,
+      addMcpServer: s.addMcpServer,
+      updateMcpServer: s.updateMcpServer,
+      removeMcpServer: s.removeMcpServer,
+      setMcpSettings: s.setMcpSettings,
+    })),
+  );
   const {
     statuses,
     tools,

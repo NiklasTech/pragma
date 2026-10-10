@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { useState } from "react";
 import type { ComponentProps } from "react";
 import { Streamdown } from "streamdown";
@@ -30,7 +31,9 @@ function isHtmlFile(name: string): boolean {
 }
 
 export default function PreviewPanel() {
-  const { tabs, activeTabId } = useEditorStore();
+  const { tabs, activeTabId } = useEditorStore(
+    useShallow((s) => ({ tabs: s.tabs, activeTabId: s.activeTabId })),
+  );
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const [showRaw, setShowRaw] = useState(false);
   const [copied, setCopied] = useState(false);

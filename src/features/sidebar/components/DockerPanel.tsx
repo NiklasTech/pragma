@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo, useState } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
@@ -232,7 +233,28 @@ export function DockerPanel() {
     composeRestart,
     openLogsTab,
     openExecTab,
-  } = useDockerStore();
+  } = useDockerStore(
+    useShallow((s) => ({
+      containers: s.containers,
+      runtime: s.runtime,
+      isLoading: s.isLoading,
+      runtimeLoading: s.runtimeLoading,
+      actionBusy: s.actionBusy,
+      error: s.error,
+      workspaceRoot: s.workspaceRoot,
+      loadContainers: s.loadContainers,
+      loadRuntimeInfo: s.loadRuntimeInfo,
+      startContainer: s.startContainer,
+      stopContainer: s.stopContainer,
+      restartContainer: s.restartContainer,
+      composeUp: s.composeUp,
+      composeDown: s.composeDown,
+      composeBuild: s.composeBuild,
+      composeRestart: s.composeRestart,
+      openLogsTab: s.openLogsTab,
+      openExecTab: s.openExecTab,
+    })),
+  );
 
   const [statsEnabled, setStatsEnabled] = useState(false);
 
