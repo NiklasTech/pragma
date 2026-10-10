@@ -66,7 +66,7 @@ If your tool loads process skills (for example Superpowers), follow them. The ru
 
 Every new Tauri command must:
 
-- Be registered in the capabilities (`src-tauri/capabilities/`)
+- Be registered in the capabilities: add it to `COMMANDS` in `src-tauri/build.rs` and its `allow-<command>` permission to `src-tauri/permissions/app-commands.toml` (the `command_permissions` tests check both)
 - Use exact path scopes only, never `fs:allow-all`
 - Validate all inputs on the Rust side, not just in the frontend
 - Return `Result<T, E>` and never panic
