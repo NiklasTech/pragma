@@ -266,6 +266,7 @@ permissions = [
   "allow-workspace-settings-load",
   "allow-workspace-settings-save",
   "allow-workspace-trust-change",
+  "allow-workspace-trust-request",
   "allow-workspace-trust-status",
   "allow-workspace-unwatch",
   "allow-workspace-watch",

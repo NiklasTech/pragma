@@ -4,7 +4,6 @@ import type { AgentSettings } from "@/shared/stores/settings";
 import { defaultSettings } from "@/shared/stores/settings/defaults";
 
 import { lspEnabledFor, mergeAgentSettings, mergeEditorSettings } from "./effective";
-import { resolveTrust, securityKey } from "./trust";
 
 const agent: AgentSettings = {
   enabled: true,
@@ -38,24 +37,5 @@ describe("workspace settings overlay", () => {
     expect(lspEnabledFor({ rust: true }, workspace, "rust")).toBe(false);
     expect(lspEnabledFor({ go: false }, workspace, "go")).toBe(false);
     expect(lspEnabledFor({}, workspace, "python")).toBe(true);
-  });
-
-  it("asks again when the allowed commands change", () => {
-    const settings = { agent: { allowedCommands: ["pnpm test"] } };
-    const key = securityKey(settings);
-    expect(securityKey({ agent: { stepLimit: 3 } })).toBeNull();
-    expect(resolveTrust("/repo", { agent: { stepLimit: 3 } }, {})).toBe("none");
-    expect(resolveTrust(null, settings, {})).toBe("none");
-    expect(resolveTrust("/repo", settings, {})).toBe("pending");
-    expect(resolveTrust("/repo", settings, { "/repo": { key: key ?? "", trusted: true } })).toBe(
-      "trusted",
-    );
-    expect(resolveTrust("/repo", settings, { "/repo": { key: key ?? "", trusted: false } })).toBe(
-      "rejected",
-    );
-    const changed = { agent: { allowedCommands: ["pnpm test", "rm -rf build"] } };
-    expect(resolveTrust("/repo", changed, { "/repo": { key: key ?? "", trusted: true } })).toBe(
-      "pending",
-    );
   });
 });

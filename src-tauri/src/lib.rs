@@ -144,6 +144,7 @@ pub fn run() {
             modules::workspace_settings::workspace_settings_save,
             modules::workspace_trust::workspace_trust_status,
             modules::workspace_trust::workspace_trust_change,
+            modules::workspace_trust::workspace_trust_request,
             modules::file_preview::read_file_preview,
             modules::file_preview::open_with_default_app,
             modules::fs_watcher::workspace_watch,

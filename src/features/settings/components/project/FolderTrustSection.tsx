@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
 import { loadWorkspaceExtensions } from "@/features/extensions/host";
+import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
 
 import { SettingRow } from "../ui/SettingRow";
 import { SettingSection } from "../ui/SettingSection";
@@ -13,8 +14,8 @@ interface TrustStatus {
   content: { extensions: string[]; scripts: string[] };
 }
 
-/// Whether this folder may run its own extensions and worktree scripts. Changing it asks in a
-/// native dialog, so a page in the app cannot answer for the user.
+/// Whether this folder may run its own extensions, worktree scripts and allowed agent commands.
+/// Changing it asks in a native dialog, so a page in the app cannot answer for the user.
 export function FolderTrustSection({ rootPath }: { rootPath: string }) {
   const [status, setStatus] = React.useState<TrustStatus | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -35,12 +36,11 @@ export function FolderTrustSection({ rootPath }: { rootPath: string }) {
 
   if (!status) return null;
   const { extensions, scripts } = status.content;
-  if (extensions.length === 0 && scripts.length === 0) return null;
 
   const change = async () => {
     setBusy(true);
     try {
-      const trusted = await invoke<boolean>("workspace_trust_change", { rootPath });
+      const trusted = await useFolderTrustStore.getState().change(rootPath);
       setStatus({ ...status, trusted });
       await loadWorkspaceExtensions(rootPath);
     } catch (err) {
@@ -64,6 +64,13 @@ export function FolderTrustSection({ rootPath }: { rootPath: string }) {
         </Button>
       }
     >
+      {extensions.length === 0 && scripts.length === 0 && (
+        <SettingRow
+          label="Restricted mode"
+          description="An untrusted folder opens normally but runs no extensions or worktree scripts, and its allowed commands still ask first."
+          control={null}
+        />
+      )}
       {extensions.length > 0 && (
         <SettingRow
           label="Extensions"
