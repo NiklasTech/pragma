@@ -1,3 +1,4 @@
+import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useAIStore } from "@/shared/stores/ai";
 import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 
@@ -10,9 +11,7 @@ export interface ContextUsage {
 
 /// How full the active session's context window is, or null when that is unknown.
 export function useContextUsage(): ContextUsage | null {
-  const session = useAIStore((state) =>
-    state.chatSessions.find((item) => item.id === state.activeChatSessionId),
-  );
+  const session = useActiveSessionMeta();
   const activeCLIProvider = useAIStore((state) => state.activeCLIProvider);
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);

@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
 import { unlistenQuietly } from "@/shared/lib/unlisten";
-import { useAIStore } from "@/shared/stores/ai";
+import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
 import { isMcpServerAllowed, mcpSelectionKey, resolveMcpServerIds } from "./selection";
@@ -24,9 +24,7 @@ const COMMANDS: Record<CatalogKind, string> = {
 
 /// The MCP server selection of the active chat session.
 export function useActiveMcpSelection(): string[] | null {
-  const session = useAIStore((state) =>
-    state.chatSessions.find((item) => item.id === state.activeChatSessionId),
-  );
+  const session = useActiveSessionMeta();
   const agent = useNamedAgentsStore((state) =>
     session?.agentId ? state.agents.find((item) => item.id === session.agentId) : undefined,
   );
