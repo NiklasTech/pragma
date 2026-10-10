@@ -18,6 +18,7 @@ const ITEM_LABELS: Record<StatusbarItem, string> = {
   gitSync: "Git Sync Status",
   problems: "Problems",
   aiProvider: "AI Provider",
+  subscriptionUsage: "Subscription Usage",
   theme: "Theme",
 };
 
@@ -31,6 +32,7 @@ const DEFAULT_ITEMS: StatusbarItem[] = [
   "gitSync",
   "problems",
   "aiProvider",
+  "subscriptionUsage",
   "theme",
 ];
 

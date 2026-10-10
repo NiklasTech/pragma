@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { getDefaultShortcuts } from "@/shared/lib/shortcuts";
 import { migrateAISettings, migrateMcpSettings, useSettingsStore } from "./settings";
-import { migrateShortcuts } from "./settings/migrations";
+import { migrateShortcuts, migrateStatusbarSettings } from "./settings/migrations";
 
 describe("migrateAISettings", () => {
   const currentAI = useSettingsStore.getState().ai;
@@ -54,6 +54,34 @@ describe("migrateMcpSettings", () => {
     const migrated = migrateMcpSettings({ servers: [server], migrationRevision: 1 });
 
     expect(migrated.servers[0]?.env.GITHUB_TOKEN).toBe("ghp_x");
+  });
+});
+
+describe("migrateStatusbarSettings", () => {
+  it("adds subscription usage after the AI provider for profiles before the revision marker", () => {
+    const migrated = migrateStatusbarSettings({
+      visible: true,
+      items: ["gitBranch", "aiProvider", "theme"],
+    });
+
+    expect(migrated.items).toEqual(["gitBranch", "aiProvider", "subscriptionUsage", "theme"]);
+    expect(migrated.migrationRevision).toBe(1);
+  });
+
+  it("appends it when the AI provider item is hidden", () => {
+    const migrated = migrateStatusbarSettings({ visible: true, items: ["gitBranch"] });
+
+    expect(migrated.items).toEqual(["gitBranch", "subscriptionUsage"]);
+  });
+
+  it("keeps the item hidden once the user removed it after the migration", () => {
+    const migrated = migrateStatusbarSettings({
+      visible: true,
+      items: ["aiProvider"],
+      migrationRevision: 1,
+    });
+
+    expect(migrated.items).toEqual(["aiProvider"]);
   });
 });
 

@@ -255,6 +255,8 @@ permissions = [
   "allow-stt-remove",
   "allow-stt-status",
   "allow-stt-transcribe",
+  "allow-subscription-usage-read",
+  "allow-subscription-usage-refresh",
   "allow-tasks-load",
   "allow-tasks-save",
   "allow-update-window-folder",

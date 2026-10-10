@@ -129,11 +129,14 @@ export type StatusbarItem =
   | "gitSync"
   | "problems"
   | "aiProvider"
+  | "subscriptionUsage"
   | "theme";
 
 export interface StatusbarSettings {
   visible: boolean;
   items: StatusbarItem[];
+  /** Internal marker for one-time migrations. */
+  migrationRevision?: number;
 }
 
 export type ThemeMode = "dark" | "light" | "system";

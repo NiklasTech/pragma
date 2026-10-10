@@ -9,6 +9,7 @@ pub mod keychain;
 pub mod provider;
 pub mod providers;
 pub mod registry;
+pub mod subscription_usage;
 
 pub use config::ProviderConfig;
 pub use error::AIError;

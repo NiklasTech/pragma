@@ -369,6 +369,8 @@ pub fn run() {
             commands::acp_config::cli_acp_session_config,
             commands::acp_config::cli_acp_set_config_option,
             commands::acp_config::cli_acp_accepts_images,
+            commands::subscription_usage::subscription_usage_read,
+            commands::subscription_usage::subscription_usage_refresh,
             commands::image_files::read_image_file,
             commands::docker::docker_list_containers,
             commands::docker::docker_start_container,
