@@ -34,6 +34,7 @@ fn spawn_exit_watcher(
     app: AppHandle,
     id: String,
     mut child: Box<dyn portable_pty::Child + Send + Sync>,
+    output_done: Receiver<()>,
 ) {
     std::thread::spawn(move || {
         let exit_code = match child.wait() {
@@ -48,6 +49,8 @@ fn spawn_exit_watcher(
             .ok()
             .and_then(|mut ptys| ptys.remove(&id));
         drop(removed);
+        // Let the emitter flush the last output so pty_exit never overtakes it.
+        let _ = output_done.recv_timeout(OUTPUT_DRAIN_TIMEOUT);
         let _ = app.emit("pty_exit", PtyExitEvent { id, exit_code });
     });
 }
@@ -56,6 +59,7 @@ const READ_BUFFER_SIZE: usize = 32 * 1024;
 const BURST_THRESHOLD: usize = 4096;
 const COALESCE_WINDOW: Duration = Duration::from_millis(4);
 const MAX_COALESCED_BYTES: usize = 256 * 1024;
+const OUTPUT_DRAIN_TIMEOUT: Duration = Duration::from_millis(250);
 
 /// Merges queued chunks into one string, waiting briefly for more only while output is bursting.
 fn coalesce_output(rx: &Receiver<String>, first: String) -> String {
@@ -75,10 +79,16 @@ fn coalesce_output(rx: &Receiver<String>, first: String) -> String {
     data
 }
 
-fn spawn_output_reader(app: AppHandle, id: String, mut reader: Box<dyn Read + Send>) {
+fn spawn_output_reader(
+    app: AppHandle,
+    id: String,
+    mut reader: Box<dyn Read + Send>,
+) -> Receiver<()> {
     let (tx, rx) = mpsc::channel::<String>();
+    let (done_tx, done_rx) = mpsc::channel::<()>();
     let emit_id = id.clone();
     std::thread::spawn(move || {
+        let _done = done_tx;
         while let Ok(first) = rx.recv() {
             let data = coalesce_output(&rx, first);
             let _ = app.emit(
@@ -106,6 +116,7 @@ fn spawn_output_reader(app: AppHandle, id: String, mut reader: Box<dyn Read + Se
         }
         send(decoder.finish());
     });
+    done_rx
 }
 
 pub struct PtyManager {
@@ -296,9 +307,9 @@ pub fn create_pty(
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
     let killer = child.clone_killer();
 
-    spawn_output_reader(app.clone(), id.clone(), reader);
+    let output_done = spawn_output_reader(app.clone(), id.clone(), reader);
 
-    spawn_exit_watcher(app, id.clone(), child);
+    spawn_exit_watcher(app, id.clone(), child, output_done);
 
     let mut ptys = state.ptys.lock().map_err(|e| e.to_string())?;
     ptys.insert(
@@ -425,9 +436,9 @@ pub fn create_pty_command(
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
     let killer = child.clone_killer();
 
-    spawn_output_reader(app.clone(), id.clone(), reader);
+    let output_done = spawn_output_reader(app.clone(), id.clone(), reader);
 
-    spawn_exit_watcher(app, id.clone(), child);
+    spawn_exit_watcher(app, id.clone(), child, output_done);
 
     let mut ptys = state.ptys.lock().map_err(|e| e.to_string())?;
     ptys.insert(
