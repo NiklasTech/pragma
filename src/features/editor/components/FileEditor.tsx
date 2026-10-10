@@ -82,7 +82,6 @@ export function FileEditor({
   const [editorView, setEditorView] = useState<EditorView | null>(null);
   const { themeId, resolvedMode } = useTheme();
   const [hasSelection, setHasSelection] = useState(false);
-  const selectedTextRef = useRef("");
   const { handleBlur } = useAutoSave();
   const tabSize = useEditorSetting("tabSize");
   const insertSpaces = useEditorSetting("insertSpaces");
@@ -136,7 +135,6 @@ export function FileEditor({
     lspDocumentSymbolsCompartmentRef,
     lspInlayHintsCompartmentRef,
     filePathRef,
-    selectedTextRef,
     setHasSelection,
     showLineNumbers,
     tabSize,
@@ -175,23 +173,33 @@ export function FileEditor({
     setCursorPos: (pos) => setCursorPosition(tabId, pos),
   });
 
+  const readSelectedText = useCallback(() => {
+    const state = viewRef.current?.state;
+    if (!state) return "";
+    const { from, to } = state.selection.main;
+    return state.doc.sliceString(from, to);
+  }, []);
+
   const handleEditWithAI = useCallback(() => {
-    if (!hasSelection || selectedTextRef.current.length === 0) return;
+    if (!hasSelection) return;
+    const selectedText = readSelectedText();
+    if (selectedText.length === 0) return;
 
     const language = detectLanguage(fileName);
     useAIEditStore.getState().startEdit({
-      originalCode: selectedTextRef.current,
+      originalCode: selectedText,
       filePath,
       fileTabId: tabId,
       language,
     });
     useLayoutStore.getState().setAIMode("drawer-right");
-  }, [hasSelection, fileName, filePath, tabId]);
+  }, [hasSelection, readSelectedText, fileName, filePath, tabId]);
 
   const captureActiveSelection = useCallback(() => {
-    if (!hasSelection || selectedTextRef.current.length === 0) return null;
-    return selectedTextRef.current;
-  }, [hasSelection]);
+    if (!hasSelection) return null;
+    const selectedText = readSelectedText();
+    return selectedText.length === 0 ? null : selectedText;
+  }, [hasSelection, readSelectedText]);
 
   useEffect(() => {
     if (!viewRef.current || !pendingScroll) return;
