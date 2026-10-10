@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { toast } from "sonner";
 
+import { listenFileDrop } from "@/shared/lib/dragDrop";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 interface ImageFile {
@@ -42,7 +42,7 @@ export function useImageFileDrop(
 
     void (async () => {
       try {
-        unlisten = await getCurrentWebview().onDragDropEvent(({ payload }) => {
+        unlisten = await listenFileDrop((payload) => {
           if (payload.type === "leave") {
             setOver(false);
             return;
