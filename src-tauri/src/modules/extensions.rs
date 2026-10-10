@@ -359,7 +359,7 @@ pub fn extension_read_asset(
     read_limited_text_file(&path, MAX_ASSET_SIZE_BYTES)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn extension_install_from_path(
     app: tauri::AppHandle,
     workspace_root: String,
@@ -396,7 +396,7 @@ pub fn extension_install_from_path(
     summarize_dir(&target).ok_or_else(|| "Failed to read installed extension".to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn extension_remove(workspace_root: String, extension_id: String) -> Result<(), String> {
     let dir = extension_dir(&workspace_root, &extension_id)?;
     if !dir.exists() {

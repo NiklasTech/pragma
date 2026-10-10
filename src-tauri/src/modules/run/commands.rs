@@ -124,7 +124,7 @@ pub fn kill_process_by_port(port: u16) -> Result<(), String> {
     crate::platform::kill_process_by_port(port)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn run_start(
     app: AppHandle,
     state: State<'_, RunManager>,
@@ -211,7 +211,7 @@ pub fn run_start(
     Ok(process_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn run_stop(state: State<'_, RunManager>, process_id: String) -> Result<(), String> {
     let instance = {
         let mut processes = state.processes.lock().map_err(|e| e.to_string())?;
@@ -225,7 +225,7 @@ pub fn run_stop(state: State<'_, RunManager>, process_id: String) -> Result<(), 
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn run_restart(
     app: AppHandle,
     state: State<'_, RunManager>,

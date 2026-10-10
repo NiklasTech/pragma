@@ -81,7 +81,7 @@ fn ensure_writable(workspace_root: &str, resolved: &Path) -> Result<(), String> 
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn extension_workspace_read_file(
     workspace_root: String,
     path: String,
@@ -90,7 +90,7 @@ pub fn extension_workspace_read_file(
     fs_commands::read_text_file(resolved.to_string_lossy().into_owned(), None)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn extension_workspace_write_file(
     app: tauri::AppHandle,
     workspace_root: String,
@@ -108,7 +108,7 @@ pub fn extension_workspace_write_file(
     )
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn extension_workspace_list(
     workspace_root: String,
     path: String,
