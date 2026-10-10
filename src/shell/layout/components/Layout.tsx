@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { Suspense, lazy, useRef } from "react";
 import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
 import {
   ResizableHandle,
@@ -15,9 +15,12 @@ import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Titlebar } from "@/shell/chrome/Titlebar";
 import { Statusbar } from "@/shell/chrome/Statusbar";
-import { AgentsWorkspace } from "@/features/ai/components/AgentsWorkspace";
 import { useUiMode } from "@/shell/mode";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
+
+const AgentsWorkspace = lazy(() =>
+  import("@/features/ai/components/AgentsWorkspace").then((m) => ({ default: m.AgentsWorkspace })),
+);
 
 const GAP_HANDLE_CLASS =
   "w-1.5 hover:bg-transparent data-[resize-handle-active]:bg-transparent focus-visible:ring-0 before:absolute before:inset-y-4 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:rounded-full before:transition-colors hover:before:bg-primary/50 data-[resize-handle-active]:before:bg-primary";
@@ -68,7 +71,9 @@ export function Layout() {
 
       {uiMode === "agents" ? (
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          <AgentsWorkspace />
+          <Suspense fallback={null}>
+            <AgentsWorkspace />
+          </Suspense>
         </div>
       ) : (
         <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5">

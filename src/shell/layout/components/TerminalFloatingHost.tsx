@@ -1,10 +1,13 @@
-import { useCallback } from "react";
+import { Suspense, lazy, useCallback } from "react";
 import { Terminal as TerminalIcon } from "@phosphor-icons/react";
 import { openFloatingWebview } from "@/shared/lib/openFloatingWebview";
 import { useLayoutStore } from "../store";
 import { FloatingWindow } from "./FloatingWindow";
-import { Terminal } from "@/features/terminal/components";
 import { createFloating, createPanel } from "../tree/operations";
+
+const Terminal = lazy(() =>
+  import("@/features/terminal/components").then((m) => ({ default: m.Terminal })),
+);
 
 export function TerminalFloatingHost() {
   const terminal = useLayoutStore((s) => s.terminal);
@@ -71,7 +74,9 @@ export function TerminalFloatingHost() {
       onClose={() => setTerminalMode("hidden")}
       onExternalize={() => void handleExternalize()}
     >
-      <Terminal />
+      <Suspense fallback={null}>
+        <Terminal />
+      </Suspense>
     </FloatingWindow>
   );
 }
