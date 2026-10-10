@@ -127,7 +127,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                     data-active={isActive}
                     className={cn(
                       props.className,
-                      "pragma-pill-tab group relative max-w-[220px] cursor-pointer",
+                      "pragma-pill-tab group/tab relative max-w-[220px] cursor-pointer",
                       isDropTarget && draggedIndex !== index && "bg-accent-subtle",
                     )}
                   >
@@ -138,14 +138,14 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                     )}
                     <span className="min-w-0 flex-1 truncate">{tab.name}</span>
                     {tab.kind === "file" && tab.isModified && (
-                      <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover:hidden" />
+                      <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover/tab:hidden" />
                     )}
                     <button
                       onClick={handleCloseTab(tab.id)}
                       className={cn(
                         "shrink-0 rounded-sm p-0.5 text-fg-subtle transition-opacity hover:bg-bg-hover hover:text-fg-default",
-                        isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-                        tab.kind === "file" && tab.isModified && "hidden group-hover:block",
+                        isActive ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100",
+                        tab.kind === "file" && tab.isModified && "hidden group-hover/tab:block",
                       )}
                       aria-label={`Close ${tab.name}`}
                     >
