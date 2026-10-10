@@ -10,5 +10,6 @@ pub mod docker;
 pub mod image_files;
 pub mod perf;
 pub mod search;
+pub mod subscription_usage;
 pub mod tasks;
 pub mod web_fetch;

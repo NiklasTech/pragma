@@ -11,6 +11,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { focusAttentionSession } from "../notifications/focusSession";
 import { collectLeaves } from "../panes/layout";
 import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
+import { ProviderUsageSection } from "../subscription/ProviderUsageSection";
 import { getTerminalEntryStatus } from "../terminal/runner";
 import { ActivityRow } from "./ActivityRow";
 import {
@@ -80,16 +81,20 @@ export function ActivityDashboard() {
 
   if (items.length === 0) {
     return (
-      <PanelEmptyState
-        icon={Pulse}
-        title="No live sessions"
-        description="Open or running sessions show their activity here."
-      />
+      <div className="flex flex-col gap-3 p-2">
+        <ProviderUsageSection items={items} now={now} />
+        <PanelEmptyState
+          icon={Pulse}
+          title="No live sessions"
+          description="Open or running sessions show their activity here."
+        />
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-3 p-2">
+      <ProviderUsageSection items={items} now={now} />
       <div className="flex flex-wrap items-center gap-1 px-1" aria-label="Session states">
         {SUMMARY_STATES.filter((state) => counts[state] > 0).map((state) => (
           <span

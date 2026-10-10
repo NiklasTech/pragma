@@ -18,6 +18,8 @@ import { useExtensionsStore } from "@/features/extensions/store";
 import { formatActivitySummary } from "@/features/ai/notifications/activity";
 import { focusAttentionSession } from "@/features/ai/notifications/focusSession";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
+import { useSubscriptionUsageProviders } from "@/features/ai/subscription/providers";
+import { SubscriptionUsageStatus } from "@/features/ai/subscription/SubscriptionUsageStatus";
 import { cn } from "@/shared/lib/utils";
 
 const LEADING_ITEMS = new Set<StatusbarItem>(["gitBranch", "gitSync", "problems"]);
@@ -70,6 +72,7 @@ export function Statusbar() {
   const extensionItemCount = useExtensionsStore((state) => state.statusBarItems.length);
   const showSessionSummary = useSettingsStore((state) => state.notifications.statusSummary);
   const activity = useSessionActivity();
+  const usageProviders = useSubscriptionUsageProviders();
 
   if (!statusbar.visible) return null;
 
@@ -148,6 +151,10 @@ export function Statusbar() {
             </span>
           </StatusChip>
         );
+
+      case "subscriptionUsage":
+        if (usageProviders.length === 0) return null;
+        return <SubscriptionUsageStatus key={item} providerIds={usageProviders} />;
 
       case "theme":
         return (

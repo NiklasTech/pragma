@@ -101,6 +101,7 @@ export const defaultSettings: SettingsState = {
       "gitSync",
       "problems",
       "aiProvider",
+      "subscriptionUsage",
       "theme",
     ],
   },

@@ -9,6 +9,8 @@ import type { ChatSession } from "@/shared/stores/ai";
 
 import { providerAccent } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
+import { sessionTokens } from "../subscription/summary";
+import { formatTokens } from "../usage/formatTokens";
 import { sessionCwd } from "../worktree/cwd";
 import { DASHBOARD_STATE_LABELS, formatStateDuration, type DashboardState } from "./dashboard";
 
@@ -60,6 +62,7 @@ export function ActivityRow({
   const cwd = sessionCwd(session, rootPath);
   const folder = cwd === "default" ? null : getWorkspaceName(cwd);
   const label = DASHBOARD_STATE_LABELS[state];
+  const tokens = sessionTokens(session);
 
   return (
     <button
@@ -121,6 +124,14 @@ export function ActivityRow({
             <span className="flex min-w-0 shrink items-center gap-1" title={cwd}>
               <FolderSimple size={11} className="shrink-0" />
               <span className="truncate">{folder}</span>
+            </span>
+          )}
+          {tokens !== null && (
+            <span
+              className="ml-auto shrink-0 tabular-nums"
+              title={`${tokens.toLocaleString("en-US")} tokens used in this session`}
+            >
+              {formatTokens(tokens)} tokens
             </span>
           )}
         </span>

@@ -1,6 +1,12 @@
 import { extractSecretLikeEnv, withoutSecretValues } from "@/shared/lib/mcpSecretEnv";
 import { isConflict, type ShortcutMap } from "@/shared/lib/shortcuts";
-import type { AISettings, McpSettings, SettingsActions, SettingsState } from "./types";
+import type {
+  AISettings,
+  McpSettings,
+  SettingsActions,
+  SettingsState,
+  StatusbarSettings,
+} from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
   if (!partial || typeof partial !== "object") {
@@ -85,6 +91,19 @@ export function migrateMcpSettings(mcp: McpSettings): McpSettings {
   };
 }
 
+const STATUSBAR_REVISION = 1;
+
+export function migrateStatusbarSettings(statusbar: StatusbarSettings): StatusbarSettings {
+  // Revision 1 shows the new subscription usage item next to the AI provider; removing it later sticks.
+  if ((statusbar.migrationRevision ?? 0) >= STATUSBAR_REVISION) return statusbar;
+  const items = [...statusbar.items];
+  if (!items.includes("subscriptionUsage")) {
+    const provider = items.indexOf("aiProvider");
+    items.splice(provider === -1 ? items.length : provider + 1, 0, "subscriptionUsage");
+  }
+  return { ...statusbar, items, migrationRevision: STATUSBAR_REVISION };
+}
+
 /// Cmd/Ctrl+Shift+T moved from Toggle Terminal to Reopen Closed Tab; a stored old default must not shadow it.
 export function migrateShortcuts(
   defaults: ShortcutMap,
@@ -124,7 +143,7 @@ export function mergeWithDefaults(
     ai: mergePartial(defaults.ai, migratedAi),
     layout: mergePartial(defaults.layout, partial.layout),
     workspace: mergePartial(defaults.workspace, partial.workspace),
-    statusbar: mergePartial(defaults.statusbar, partial.statusbar),
+    statusbar: migrateStatusbarSettings(mergePartial(defaults.statusbar, partial.statusbar)),
     mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
     lsp: mergePartial(defaults.lsp, partial.lsp),
     experimental: mergePartial(defaults.experimental, partial.experimental),

@@ -253,6 +253,8 @@ const COMMANDS: &[&str] = &[
     "stt_remove",
     "stt_status",
     "stt_transcribe",
+    "subscription_usage_read",
+    "subscription_usage_refresh",
     "tasks_load",
     "tasks_save",
     "update_window_folder",
