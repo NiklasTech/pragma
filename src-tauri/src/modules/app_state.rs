@@ -27,10 +27,7 @@ pub fn get_onboarding_completed(app: tauri::AppHandle) -> Result<bool, String> {
 }
 
 #[tauri::command(async)]
-pub fn set_onboarding_completed(
-    app: tauri::AppHandle,
-    completed: bool,
-) -> Result<(), String> {
+pub fn set_onboarding_completed(app: tauri::AppHandle, completed: bool) -> Result<(), String> {
     let store = load_store(&app)?;
     store.set(
         ONBOARDING_COMPLETED_KEY.to_string(),

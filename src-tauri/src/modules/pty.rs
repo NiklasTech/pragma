@@ -4,8 +4,10 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 #[cfg(windows)]
 use std::path::PathBuf;
+use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, State};
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use super::pty_utf8::Utf8StreamDecoder;
 use super::shell_integration;
@@ -38,32 +40,71 @@ fn spawn_exit_watcher(
             Ok(status) => status.exit_code() as i32,
             Err(_) => -1,
         };
+        // Drop the finished PTY so its master and writer handles do not outlive the process.
+        let removed = app
+            .state::<PtyManager>()
+            .ptys
+            .lock()
+            .ok()
+            .and_then(|mut ptys| ptys.remove(&id));
+        drop(removed);
         let _ = app.emit("pty_exit", PtyExitEvent { id, exit_code });
     });
 }
 
+const READ_BUFFER_SIZE: usize = 32 * 1024;
+const BURST_THRESHOLD: usize = 4096;
+const COALESCE_WINDOW: Duration = Duration::from_millis(4);
+const MAX_COALESCED_BYTES: usize = 256 * 1024;
+
+/// Merges queued chunks into one string, waiting briefly for more only while output is bursting.
+fn coalesce_output(rx: &Receiver<String>, first: String) -> String {
+    let mut data = first;
+    while data.len() < MAX_COALESCED_BYTES {
+        match rx.try_recv() {
+            Ok(chunk) => data.push_str(&chunk),
+            Err(TryRecvError::Empty) if data.len() >= BURST_THRESHOLD => {
+                match rx.recv_timeout(COALESCE_WINDOW) {
+                    Ok(chunk) => data.push_str(&chunk),
+                    Err(_) => break,
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    data
+}
+
 fn spawn_output_reader(app: AppHandle, id: String, mut reader: Box<dyn Read + Send>) {
+    let (tx, rx) = mpsc::channel::<String>();
+    let emit_id = id.clone();
+    std::thread::spawn(move || {
+        while let Ok(first) = rx.recv() {
+            let data = coalesce_output(&rx, first);
+            let _ = app.emit(
+                "pty_output",
+                PtyOutputEvent {
+                    id: emit_id.clone(),
+                    data,
+                },
+            );
+        }
+    });
     std::thread::spawn(move || {
         let mut decoder = Utf8StreamDecoder::default();
-        let mut buf = [0u8; 4096];
-        let emit = |data: String| {
+        let mut buf = vec![0u8; READ_BUFFER_SIZE];
+        let send = |data: String| {
             if !data.is_empty() {
-                let _ = app.emit(
-                    "pty_output",
-                    PtyOutputEvent {
-                        id: id.clone(),
-                        data,
-                    },
-                );
+                let _ = tx.send(data);
             }
         };
         loop {
             match reader.read(&mut buf) {
                 Ok(0) | Err(_) => break,
-                Ok(n) => emit(decoder.decode(&buf[..n])),
+                Ok(n) => send(decoder.decode(&buf[..n])),
             }
         }
-        emit(decoder.finish());
+        send(decoder.finish());
     });
 }
 
@@ -219,7 +260,7 @@ pub fn resolve_terminal_shell(shell: Option<String>) -> Result<String, String> {
     Ok(default_shell())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_pty(
     app: AppHandle,
     state: State<'_, PtyManager>,
@@ -316,7 +357,7 @@ pub fn kill_pty(state: State<'_, PtyManager>, id: String) -> Result<(), String> 
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_pty_command(
     app: AppHandle,
     state: State<'_, PtyManager>,
@@ -405,6 +446,16 @@ pub fn create_pty_command(
 mod tests {
     use super::*;
     use std::ffi::OsString;
+
+    #[test]
+    fn coalesce_output_merges_queued_chunks() {
+        let (tx, rx) = mpsc::channel();
+        tx.send("b".to_string()).unwrap();
+        tx.send("c".to_string()).unwrap();
+
+        assert_eq!(coalesce_output(&rx, "a".to_string()), "abc");
+        assert_eq!(coalesce_output(&rx, "d".to_string()), "d");
+    }
 
     #[test]
     fn resolve_shell_falls_back_to_the_default_shell() {

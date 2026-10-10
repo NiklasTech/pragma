@@ -250,10 +250,7 @@ pub fn local_history_delete_older_than(
 /// Snapshot the current on-disk content of a file into Local History.
 /// Used by Agent Mode to create a checkpoint before the first agent write.
 #[tauri::command(async)]
-pub fn local_history_snapshot(
-    app: tauri::AppHandle,
-    file_path: String,
-) -> Result<(), String> {
+pub fn local_history_snapshot(app: tauri::AppHandle, file_path: String) -> Result<(), String> {
     if file_path.is_empty() {
         return Err("File path is required".to_string());
     }
