@@ -27,7 +27,7 @@ import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 import { BrowserPane } from "../browser/BrowserPane";
 import { ChatPanel } from "../components/ChatPanel";
 import { TerminalPane } from "../terminal/TerminalPane";
-import { getTerminalEntryStatus } from "../terminal/runner";
+import { cancelTerminal, getTerminalEntryStatus } from "../terminal/runner";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { ChildRunView } from "../children/ChildRunView";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
@@ -171,6 +171,11 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         maximized={maximized}
         hasOtherPanes={otherLeafIds.length > 0}
         onClose={() => requestClose([leaf.id])}
+        onCloseTerminal={(stop) => {
+          if (stop && leaf.sessionId) cancelTerminal(leaf.sessionId);
+          closeLeaf(rootPath, leaf.id);
+          void purgeStaleTerminals(rootPath).catch(() => {});
+        }}
         onCloseOthers={() => requestClose(otherLeafIds)}
         onToggleMaximize={() => {
           if (maximized) {

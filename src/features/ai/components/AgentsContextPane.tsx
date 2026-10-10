@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { Icon } from "@phosphor-icons/react";
-import { CaretDoubleRight, Files, ListChecks, MagicWand } from "@phosphor-icons/react";
+import { CaretDoubleRight, Files, ListChecks, MagicWand, Pulse } from "@phosphor-icons/react";
 
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -13,6 +13,8 @@ import { useAgentStore } from "@/features/agent/store";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { sessionCwd } from "@/features/ai/worktree/cwd";
 
+import { ActivityDashboard } from "../activity/ActivityDashboard";
+import { ActivityTabBadge } from "../activity/ActivityTabBadge";
 import { selectFocusedSessionId, useAgentsPanesStore } from "../panes/store";
 import { ReviewFilesList } from "../review/ReviewFilesList";
 import type { ReviewRow } from "../review/rows";
@@ -21,11 +23,12 @@ import { SessionReview } from "../review/SessionReview";
 import { useReviewRows } from "../review/useReviewRows";
 import { useAgentsUiStore } from "../store/agentsUi";
 
-type ContextTab = "review" | "files";
+type ContextTab = "review" | "files" | "activity";
 
 const TABS: Array<{ id: ContextTab; label: string; icon: Icon }> = [
   { id: "review", label: "Review", icon: ListChecks },
   { id: "files", label: "Files", icon: Files },
+  { id: "activity", label: "Activity", icon: Pulse },
 ];
 
 function ContextResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
@@ -112,6 +115,7 @@ export function AgentsContextPane() {
               >
                 <item.icon weight={tab === item.id ? "fill" : "regular"} />
                 {item.label}
+                {item.id === "activity" && <ActivityTabBadge />}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -128,7 +132,9 @@ export function AgentsContextPane() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {!focusedSessionId ? (
+        {tab === "activity" ? (
+          <ActivityDashboard />
+        ) : !focusedSessionId ? (
           <EmptyReview />
         ) : tab === "review" ? (
           <SessionReview

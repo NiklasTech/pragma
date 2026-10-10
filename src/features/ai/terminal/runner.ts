@@ -37,6 +37,8 @@ const entries = new Map<string, TerminalEntry>();
 const starting = new Map<string, Promise<void>>();
 const outputListeners = new Map<string, Set<(data: string) => void>>();
 const statusListeners = new Map<string, Set<() => void>>();
+const anyOutputListeners = new Set<(sessionId: string) => void>();
+const anyStatusListeners = new Set<(sessionId: string) => void>();
 const unclaimedOutput = new Map<string, string>();
 const unclaimedExit = new Map<string, number>();
 
@@ -69,12 +71,14 @@ function findByPtyId(ptyId: string): TerminalEntry | null {
 
 function pushOutput(entry: TerminalEntry, data: string): void {
   entry.buffer = appendTerminalBuffer(entry.buffer, data);
+  for (const listener of anyOutputListeners) listener(entry.sessionId);
   const listeners = outputListeners.get(entry.sessionId);
   if (!listeners) return;
   for (const listener of listeners) listener(data);
 }
 
 function notifyStatus(sessionId: string): void {
+  for (const listener of anyStatusListeners) listener(sessionId);
   const listeners = statusListeners.get(sessionId);
   if (!listeners) return;
   for (const listener of listeners) listener();
@@ -145,6 +149,21 @@ export function subscribeTerminalStatus(sessionId: string, listener: () => void)
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0) statusListeners.delete(sessionId);
+  };
+}
+
+/// Output of every agent terminal, including ones that start or restart after subscribing.
+export function subscribeAnyTerminalOutput(listener: (sessionId: string) => void): () => void {
+  anyOutputListeners.add(listener);
+  return () => {
+    anyOutputListeners.delete(listener);
+  };
+}
+
+export function subscribeAnyTerminalStatus(listener: (sessionId: string) => void): () => void {
+  anyStatusListeners.add(listener);
+  return () => {
+    anyStatusListeners.delete(listener);
   };
 }
 
