@@ -111,7 +111,11 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
         }
       });
 
-      if (disposed) return;
+      if (disposed) {
+        void unlistenQuietly(unlistenOutput);
+        void unlistenQuietly(unlistenStatus);
+        return;
+      }
       fit.fit();
 
       resizeObserver = new ResizeObserver(() => {
