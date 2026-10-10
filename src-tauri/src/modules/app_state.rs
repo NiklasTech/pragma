@@ -17,8 +17,8 @@ fn load_store(app: &tauri::AppHandle) -> Result<Arc<Store<tauri::Wry>>, String> 
         .map_err(|e| format!("failed to load store: {e}"))
 }
 
-#[tauri::command]
-pub async fn get_onboarding_completed(app: tauri::AppHandle) -> Result<bool, String> {
+#[tauri::command(async)]
+pub fn get_onboarding_completed(app: tauri::AppHandle) -> Result<bool, String> {
     let store = load_store(&app)?;
     match store.get(ONBOARDING_COMPLETED_KEY) {
         Some(value) => serde_json::from_value(value).map_err(|e| e.to_string()),
@@ -26,8 +26,8 @@ pub async fn get_onboarding_completed(app: tauri::AppHandle) -> Result<bool, Str
     }
 }
 
-#[tauri::command]
-pub async fn set_onboarding_completed(
+#[tauri::command(async)]
+pub fn set_onboarding_completed(
     app: tauri::AppHandle,
     completed: bool,
 ) -> Result<(), String> {
