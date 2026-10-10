@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 
+use super::pty_utf8::Utf8StreamDecoder;
 use super::shell_integration;
 
 #[derive(Serialize, Clone)]
@@ -38,6 +39,31 @@ fn spawn_exit_watcher(
             Err(_) => -1,
         };
         let _ = app.emit("pty_exit", PtyExitEvent { id, exit_code });
+    });
+}
+
+fn spawn_output_reader(app: AppHandle, id: String, mut reader: Box<dyn Read + Send>) {
+    std::thread::spawn(move || {
+        let mut decoder = Utf8StreamDecoder::default();
+        let mut buf = [0u8; 4096];
+        let emit = |data: String| {
+            if !data.is_empty() {
+                let _ = app.emit(
+                    "pty_output",
+                    PtyOutputEvent {
+                        id: id.clone(),
+                        data,
+                    },
+                );
+            }
+        };
+        loop {
+            match reader.read(&mut buf) {
+                Ok(0) | Err(_) => break,
+                Ok(n) => emit(decoder.decode(&buf[..n])),
+            }
+        }
+        emit(decoder.finish());
     });
 }
 
@@ -229,26 +255,7 @@ pub fn create_pty(
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
     let killer = child.clone_killer();
 
-    let event_id = id.clone();
-    let app_handle = app.clone();
-    std::thread::spawn(move || {
-        let mut reader = reader;
-        let mut buf = [0u8; 4096];
-        loop {
-            match reader.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
-                    let data = String::from_utf8_lossy(&buf[..n]).to_string();
-                    let payload = PtyOutputEvent {
-                        id: event_id.clone(),
-                        data,
-                    };
-                    let _ = app_handle.emit("pty_output", payload);
-                }
-                Err(_) => break,
-            }
-        }
-    });
+    spawn_output_reader(app.clone(), id.clone(), reader);
 
     spawn_exit_watcher(app, id.clone(), child);
 
@@ -377,26 +384,7 @@ pub fn create_pty_command(
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
     let killer = child.clone_killer();
 
-    let event_id = id.clone();
-    let app_handle = app.clone();
-    std::thread::spawn(move || {
-        let mut reader = reader;
-        let mut buf = [0u8; 4096];
-        loop {
-            match reader.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
-                    let data = String::from_utf8_lossy(&buf[..n]).to_string();
-                    let payload = PtyOutputEvent {
-                        id: event_id.clone(),
-                        data,
-                    };
-                    let _ = app_handle.emit("pty_output", payload);
-                }
-                Err(_) => break,
-            }
-        }
-    });
+    spawn_output_reader(app.clone(), id.clone(), reader);
 
     spawn_exit_watcher(app, id.clone(), child);
 

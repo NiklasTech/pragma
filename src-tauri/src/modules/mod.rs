@@ -16,6 +16,7 @@ pub mod lsp;
 pub mod mcp;
 pub mod parakeet;
 pub mod pty;
+pub mod pty_utf8;
 pub mod run;
 pub mod shell_integration;
 pub mod stt;
