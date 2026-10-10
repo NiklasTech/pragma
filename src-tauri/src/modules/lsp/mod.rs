@@ -4,6 +4,7 @@ pub mod requests;
 pub mod types;
 pub mod uris;
 
+use crate::modules::workspace_trust::require_trusted;
 pub use manager::{resolve_project_root, LspManager};
 pub use types::{
     DefinitionTarget, LspCodeAction, LspCompletionItem, LspDiagnostic, LspDiagnosticsEvent,
@@ -48,6 +49,7 @@ mod tests {
 
 #[tauri::command]
 pub async fn lsp_did_open(
+    app: tauri::AppHandle,
     state: tauri::State<'_, LspManager>,
     language: String,
     file_path: String,
@@ -60,6 +62,12 @@ pub async fn lsp_did_open(
         return Err("file_path is required".to_string());
     }
     let project_root = project_root_for(&language, &file_path);
+    let trust_path = if project_root.is_empty() {
+        &file_path
+    } else {
+        &project_root
+    };
+    require_trusted(&app, trust_path, "start language servers")?;
     state
         .did_open(&language, &project_root, &file_path, &content)
         .await

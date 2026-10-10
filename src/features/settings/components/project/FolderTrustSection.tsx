@@ -14,7 +14,7 @@ interface TrustStatus {
   content: { extensions: string[]; scripts: string[] };
 }
 
-/// Whether this folder may run its own extensions, worktree scripts and allowed agent commands.
+/// Whether this folder may run its own code, from extensions to language servers and the debugger.
 /// Changing it asks in a native dialog, so a page in the app cannot answer for the user.
 export function FolderTrustSection({ rootPath }: { rootPath: string }) {
   const [status, setStatus] = React.useState<TrustStatus | null>(null);
@@ -67,7 +67,7 @@ export function FolderTrustSection({ rootPath }: { rootPath: string }) {
       {extensions.length === 0 && scripts.length === 0 && (
         <SettingRow
           label="Restricted mode"
-          description="An untrusted folder opens normally but runs no extensions or worktree scripts, and its allowed commands still ask first."
+          description="An untrusted folder opens normally but runs no extensions, worktree scripts, language servers, run configurations or debugger, and its allowed commands still ask first."
           control={null}
         />
       )}

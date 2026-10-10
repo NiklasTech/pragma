@@ -125,7 +125,7 @@ fn trustable_parent(root: &Path, home: Option<&Path>) -> Option<PathBuf> {
 fn prompt_message(root: &Path, content: &TrustContent, parent: Option<&Path>) -> String {
     let mut lines = vec![
         root.display().to_string(),
-        "In a trusted folder Pragma runs the folder's own extensions and worktree scripts, and the agent may run the commands its .pragma/settings.json allows without asking. In a folder you don't trust, Pragma opens the files but runs none of this.".to_string(),
+        "In a trusted folder Pragma runs the folder's extensions, worktree scripts, language servers, run configurations and debugger, and the agent may run the commands its .pragma/settings.json allows without asking. In a folder you don't trust, Pragma opens the files but runs none of this.".to_string(),
     ];
     if !content.extensions.is_empty() {
         lines.push(format!("Extensions: {}", content.extensions.join(", ")));
@@ -196,6 +196,21 @@ pub(crate) fn ensure_trusted<R: Runtime>(app: &AppHandle<R>, root: &str) -> Resu
         return Ok(true);
     }
     decide(app, &root)
+}
+
+/// Fails unless the user trusted `path` or one of its parents; never asks.
+pub(crate) fn require_trusted<R: Runtime>(
+    app: &AppHandle<R>,
+    path: &str,
+    action: &str,
+) -> Result<(), String> {
+    if stored_decision(app, &canonical_root(path)?)? == Some(true) {
+        Ok(())
+    } else {
+        Err(format!(
+            "This folder is not trusted, so Pragma does not {action} in it. Trust it in Project settings."
+        ))
+    }
 }
 
 /// Marks a folder trusted after the user installed an extension into it.
