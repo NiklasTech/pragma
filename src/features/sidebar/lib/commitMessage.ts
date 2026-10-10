@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { stripReasoningTags } from "@/shared/lib/ai/protocol";
+import { stripReasoningTags } from "@/shared/lib/ai/reasoningTags";
 import type { AIProvider } from "@/shared/stores/ai";
 
 interface ChatResponse {
