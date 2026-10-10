@@ -288,10 +288,13 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
   setCursorPosition: (tabId, cursor) => {
     const { cursorPositions, tabStates } = get();
     const previous = cursorPositions[tabId];
-    if (previous?.line === cursor.line && previous.column === cursor.column) return;
+    const tabState = tabStates.find((s) => s.tabId === tabId);
+    const same = (p: CursorPosition | undefined) =>
+      p?.line === cursor.line && p.column === cursor.column;
+    if (same(previous) && (!tabState || same(tabState.cursor))) return;
     set({
       cursorPositions: { ...cursorPositions, [tabId]: cursor },
-      tabStates: tabStates.some((s) => s.tabId === tabId)
+      tabStates: tabState
         ? tabStates.map((s) => (s.tabId === tabId ? { ...s, cursor } : s))
         : tabStates,
     });
