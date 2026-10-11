@@ -1,4 +1,10 @@
-import type { AgentEngine, AIProvider, ChatSession, ProviderConfig } from "@/shared/stores/ai";
+import type {
+  AgentEngine,
+  AIProvider,
+  ChatSession,
+  CLIStatus,
+  ProviderConfig,
+} from "@/shared/stores/ai";
 
 export interface EngineDefaults {
   activeCLIProvider: string | null;
@@ -12,6 +18,12 @@ export interface EffectiveEngine {
   provider: AIProvider;
   model: string;
   baseUrl: string | undefined;
+}
+
+export interface EngineAuth {
+  apiKeyRefs: Record<AIProvider, string | null>;
+  cliStatuses: Record<string, CLIStatus>;
+  copilotAuth: { authenticated: boolean };
 }
 
 /// A session's pinned engine wins over the global provider, model and CLI selection.
@@ -33,6 +45,19 @@ export function resolveEffectiveEngine(
       ? pinned.baseUrl
       : defaults.providers[provider].baseUrl;
   return { cliProviderId, provider, model, baseUrl };
+}
+
+/// True when the engine has the sign-in, key or endpoint it needs to answer a message.
+export function engineCanChat(engine: EffectiveEngine, auth: EngineAuth): boolean {
+  const cliAuthenticated =
+    engine.cliProviderId !== null && auth.cliStatuses[engine.cliProviderId]?.authenticated === true;
+  return (
+    cliAuthenticated ||
+    auth.apiKeyRefs[engine.provider] !== null ||
+    engine.provider === "ollama" ||
+    (engine.provider === "custom" && Boolean(engine.baseUrl)) ||
+    (engine.provider === "copilot" && auth.copilotAuth.authenticated)
+  );
 }
 
 /// A coding CLI conversation started before engines were pinned still runs on its own CLI.

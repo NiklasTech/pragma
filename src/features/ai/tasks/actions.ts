@@ -6,6 +6,7 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 
+import { taskEngine, toastNoTaskEngine } from "./engine";
 import { openBlockers } from "./organize";
 import { sendToSession, stopLiveSession } from "./sessionRuns";
 import { useTasksStore } from "./store";
@@ -40,6 +41,12 @@ export async function runTask(rootPath: string, task: Task): Promise<void> {
     return;
   }
 
+  const engine = taskEngine(agent?.engine);
+  if (!engine) {
+    toastNoTaskEngine();
+    return;
+  }
+
   const title = task.title.trim();
   let session: ChatSession;
   try {
@@ -49,7 +56,8 @@ export async function runTask(rootPath: string, task: Task): Promise<void> {
           title,
           kind: "agent",
           environment: "checkout",
-          agentEngine: { kind: "builtin" },
+          cliProviderId: engine.cliProviderId,
+          agentEngine: engine,
         });
   } catch {
     toast.error("Could not start the task");
