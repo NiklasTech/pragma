@@ -26,16 +26,11 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
 import { dependentTaskIds, parseLabels, validateLabels } from "./organize";
 import { useTasksStore } from "./store";
+import { TaskNotesField } from "./TaskNotesField";
 import { TaskOrganizeFields } from "./TaskOrganizeFields";
 import { TaskScheduleFields } from "./TaskScheduleFields";
 import type { Task, TaskPriority, TaskSchedule, TaskStatus } from "./types";
-import {
-  TASK_COLUMNS,
-  TASK_NOTES_MAX,
-  TASK_RESULT_MAX,
-  TASK_TITLE_MAX,
-  validateTaskFields,
-} from "./validation";
+import { TASK_COLUMNS, TASK_RESULT_MAX, TASK_TITLE_MAX, validateTaskFields } from "./validation";
 
 const BUILTIN_AGENT = "builtin";
 
@@ -134,14 +129,14 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-ui-md">{task ? "Edit task" : "New task"}</DialogTitle>
         </DialogHeader>
 
         <form
           id="task-form"
-          className="flex flex-col gap-3"
+          className="-mx-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-1"
           onSubmit={(event) => {
             event.preventDefault();
             void handleSave();
@@ -159,17 +154,12 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
             />
           </label>
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-ui-xs font-medium text-fg-muted">Notes</span>
-            <Textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              maxLength={TASK_NOTES_MAX}
-              rows={5}
-              placeholder="Details, constraints, links"
-              className="text-ui-sm"
-            />
-          </label>
+          <TaskNotesField
+            open={open}
+            initialNotes={task?.notes ?? ""}
+            notes={notes}
+            onChange={setNotes}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -239,7 +229,7 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
               maxLength={TASK_RESULT_MAX}
               rows={3}
               placeholder="What came out of the work"
-              className="text-ui-sm"
+              className="max-h-48 overflow-y-auto text-ui-sm"
             />
           </label>
 
