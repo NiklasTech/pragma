@@ -109,6 +109,5 @@ Semantic Versioning (`MAJOR.MINOR.PATCH`), currently 0.x. Breaking changes are a
 Release process:
 
 1. Bump the version in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` on a `chore/release-vX.Y.Z` branch with PR. Run `cd src-tauri && cargo check` to sync `Cargo.lock` and `pnpm run generate:licenses` to refresh `public/third-party-licenses.json`.
-2. Rename the Release Drafter draft to the target version (tag `vX.Y.Z`, title `Pragma X.Y.Z`).
-3. After the PR is merged, tag the merge commit on `main`: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-4. The tag push triggers `.github/workflows/release.yml` (Windows, Linux, macOS), which attaches the build artifacts to the draft release. Publish the draft once all three platform builds are green.
+2. After the PR is merged, tag the merge commit on `main`: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. The tag push triggers `.github/workflows/release.yml`. It sets the Release Drafter draft to tag `vX.Y.Z` and title `Pragma X.Y.Z`, uploads the Windows, Linux and macOS artifacts to that draft, and publishes it once all three builds are green. Never create the release by hand, or the notes and the assets end up in two separate releases.
