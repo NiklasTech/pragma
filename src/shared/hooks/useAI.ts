@@ -17,7 +17,11 @@ import {
 } from "@/features/ai/home/pendingFirstMessage";
 import { createStreamTransport } from "@/shared/lib/ai/transport";
 import { isAcpActive } from "@/shared/lib/ai/acp";
-import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
+import {
+  engineCanChat,
+  pinnedSessionEngine,
+  resolveEffectiveEngine,
+} from "@/shared/lib/ai/sessionEngine";
 import { getMessageText, storedMessagesToUI } from "@/shared/lib/ai/protocol";
 import { imageToFilePart } from "@/shared/lib/ai/images";
 import type { ChatImage } from "@/shared/stores/ai";
@@ -85,22 +89,19 @@ export function useAI() {
     mcpServerCountRef.current = mcpServerCount;
   }, [mcpServerCount]);
 
-  const {
-    cliProviderId: effectiveCLIProvider,
-    provider: effectiveProvider,
-    model: effectiveModel,
-    baseUrl: effectiveBaseUrl,
-  } = resolveEffectiveEngine(pinnedSessionEngine(activeSession), {
+  const effectiveEngine = resolveEffectiveEngine(pinnedSessionEngine(activeSession), {
     activeCLIProvider,
     activeProvider,
     activeModel,
     providers,
   });
-  const hasAPIKey = apiKeyRefs[effectiveProvider] !== null;
+  const {
+    cliProviderId: effectiveCLIProvider,
+    provider: effectiveProvider,
+    model: effectiveModel,
+    baseUrl: effectiveBaseUrl,
+  } = effectiveEngine;
   const isCLIActive = effectiveCLIProvider !== null;
-  const cliAuthenticated = effectiveCLIProvider
-    ? cliStatuses[effectiveCLIProvider]?.authenticated === true
-    : false;
   const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
   const acpActive = useMemo(
     () => isAcpActive(cliManifests, effectiveCLIProvider, experimentalAcp),
@@ -358,12 +359,7 @@ export function useAI() {
     agentActive,
   });
 
-  const canChat =
-    (isCLIActive && cliAuthenticated) ||
-    hasAPIKey ||
-    effectiveProvider === "ollama" ||
-    (effectiveProvider === "custom" && Boolean(effectiveBaseUrl)) ||
-    (effectiveProvider === "copilot" && copilotAuth.authenticated);
+  const canChat = engineCanChat(effectiveEngine, { apiKeyRefs, cliStatuses, copilotAuth });
 
   const regenerate = useCallback(() => {
     // A retry in Agent Mode is a fresh run; a failed run would otherwise block auto-continue.
