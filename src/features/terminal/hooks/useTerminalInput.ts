@@ -5,7 +5,9 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { useSettingsStore } from "@/shared/stores/settings";
 import type { UseTerminalSuggestionsReturn } from "@/shared/hooks/useTerminalSuggestions";
 import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
+import { getIsMac, matchShortcut } from "@/shared/lib/shortcuts";
 import { safePtyInvoke } from "../safePtyInvoke";
+import { macTerminalKeyAction } from "../terminalKeymap";
 
 interface TerminalInputOptions {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -16,7 +18,7 @@ interface TerminalInputOptions {
   fontSize: number;
 }
 
-// Forwards typing to the PTY and handles Tab, clipboard and font size shortcuts.
+// Forwards typing to the PTY and handles Tab, clipboard, macOS terminal and font size shortcuts.
 export function useTerminalInput({
   containerRef,
   termRef,
@@ -69,6 +71,9 @@ export function useTerminalInput({
   useEffect(() => {
     if (!termState) return;
 
+    // macOS keeps Ctrl+C as SIGINT and uses Cmd for the clipboard instead.
+    if (getIsMac()) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!event.ctrlKey) return;
 
@@ -98,6 +103,48 @@ export function useTerminalInput({
         event.preventDefault();
         event.stopPropagation();
       }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [termState]);
+
+  useEffect(() => {
+    if (!termState || !getIsMac()) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const action = macTerminalKeyAction(event);
+      if (!action) return;
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      const activeElement = document.activeElement;
+      if (!activeElement || !container.contains(activeElement)) return;
+
+      const { shortcuts } = useSettingsStore.getState();
+      if (Object.values(shortcuts).some((binding) => matchShortcut(event, binding))) return;
+
+      const term = termRef.current;
+      if (!term) return;
+
+      if (action.type === "copy") {
+        const selection = term.getSelection();
+        if (!selection) return;
+        void copyToClipboard(selection);
+      } else if (action.type === "paste") {
+        void readFromClipboard().then((text) => {
+          if (text) term.paste(text);
+        });
+      } else if (action.type === "clear") {
+        term.clear();
+      } else if (action.type === "selectAll") {
+        term.selectAll();
+      } else if (ptyIdRef.current) {
+        safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data: action.data }));
+      }
+      event.preventDefault();
+      event.stopPropagation();
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
