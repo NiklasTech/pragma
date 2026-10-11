@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use super::pty_utf8::Utf8StreamDecoder;
@@ -56,24 +56,26 @@ fn spawn_exit_watcher(
 }
 
 const READ_BUFFER_SIZE: usize = 32 * 1024;
-const BURST_THRESHOLD: usize = 4096;
-const COALESCE_WINDOW: Duration = Duration::from_millis(4);
+const COALESCE_WINDOW: Duration = Duration::from_millis(8);
 const MAX_COALESCED_BYTES: usize = 256 * 1024;
 const OUTPUT_DRAIN_TIMEOUT: Duration = Duration::from_millis(250);
 
-/// Merges queued chunks into one string, waiting briefly for more only while output is bursting.
-fn coalesce_output(rx: &Receiver<String>, first: String) -> String {
+/// Merges queued chunks into one string, waiting for more until `deadline` while output is bursting.
+fn coalesce_output(rx: &Receiver<String>, first: String, deadline: Instant) -> String {
     let mut data = first;
     while data.len() < MAX_COALESCED_BYTES {
         match rx.try_recv() {
             Ok(chunk) => data.push_str(&chunk),
-            Err(TryRecvError::Empty) if data.len() >= BURST_THRESHOLD => {
-                match rx.recv_timeout(COALESCE_WINDOW) {
+            Err(TryRecvError::Empty) => {
+                let Some(wait) = deadline.checked_duration_since(Instant::now()) else {
+                    break;
+                };
+                match rx.recv_timeout(wait) {
                     Ok(chunk) => data.push_str(&chunk),
                     Err(_) => break,
                 }
             }
-            Err(_) => break,
+            Err(TryRecvError::Disconnected) => break,
         }
     }
     data
@@ -89,8 +91,11 @@ fn spawn_output_reader(
     let emit_id = id.clone();
     std::thread::spawn(move || {
         let _done = done_tx;
+        // Output after a quiet period goes out at once; a burst is held to one event per window.
+        let mut last_emit: Option<Instant> = None;
         while let Ok(first) = rx.recv() {
-            let data = coalesce_output(&rx, first);
+            let deadline = last_emit.map_or_else(Instant::now, |at| at + COALESCE_WINDOW);
+            let data = coalesce_output(&rx, first, deadline);
             let _ = app.emit(
                 "pty_output",
                 PtyOutputEvent {
@@ -98,6 +103,7 @@ fn spawn_output_reader(
                     data,
                 },
             );
+            last_emit = Some(Instant::now());
         }
     });
     std::thread::spawn(move || {
@@ -464,8 +470,9 @@ mod tests {
         tx.send("b".to_string()).unwrap();
         tx.send("c".to_string()).unwrap();
 
-        assert_eq!(coalesce_output(&rx, "a".to_string()), "abc");
-        assert_eq!(coalesce_output(&rx, "d".to_string()), "d");
+        let now = Instant::now();
+        assert_eq!(coalesce_output(&rx, "a".to_string(), now), "abc");
+        assert_eq!(coalesce_output(&rx, "d".to_string(), now), "d");
     }
 
     #[test]
