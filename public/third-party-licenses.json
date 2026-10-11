@@ -1,7 +1,14 @@
 {
-  "generatedAt": "2026-09-29T19:18:13.756Z",
-  "total": 80,
+  "generatedAt": "2026-10-11T00:45:34.669Z",
+  "total": 92,
   "entries": [
+    {
+      "name": "@emmetio/codemirror6-plugin",
+      "version": "0.4.1",
+      "license": "Unknown",
+      "url": "https://www.npmjs.com/package/@emmetio/codemirror6-plugin/v/0.4.1",
+      "source": "npm"
+    },
     {
       "name": "@types/node",
       "version": "26.6.2",
@@ -80,10 +87,31 @@
       "source": "rust"
     },
     {
+      "name": "block2",
+      "version": "0.6.2",
+      "license": "MIT",
+      "url": "https://crates.io/crates/block2/0.6.2",
+      "source": "rust"
+    },
+    {
       "name": "bollard",
       "version": "0.21.1",
       "license": "Apache-2.0",
       "url": "https://crates.io/crates/bollard/0.21.1",
+      "source": "rust"
+    },
+    {
+      "name": "cairo-rs",
+      "version": "0.18.5",
+      "license": "MIT",
+      "url": "https://crates.io/crates/cairo-rs/0.18.5",
+      "source": "rust"
+    },
+    {
+      "name": "chardetng",
+      "version": "0.1.17",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/chardetng/0.1.17",
       "source": "rust"
     },
     {
@@ -122,10 +150,24 @@
       "source": "npm"
     },
     {
+      "name": "codemirror-lang-zig",
+      "version": "0.1.0",
+      "license": "MIT",
+      "url": "https://www.npmjs.com/package/codemirror-lang-zig/v/0.1.0",
+      "source": "npm"
+    },
+    {
       "name": "diffy",
       "version": "0.5.2",
       "license": "MIT OR Apache-2.0",
       "url": "https://crates.io/crates/diffy/0.5.2",
+      "source": "rust"
+    },
+    {
+      "name": "encoding_rs",
+      "version": "0.8.35",
+      "license": "(Apache-2.0 OR MIT) AND BSD-3-Clause",
+      "url": "https://crates.io/crates/encoding_rs/0.8.35",
       "source": "rust"
     },
     {
@@ -231,6 +273,13 @@
       "version": "0.3.2",
       "license": "MIT",
       "url": "https://crates.io/crates/objc2-foundation/0.3.2",
+      "source": "rust"
+    },
+    {
+      "name": "objc2-web-kit",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/objc2-web-kit/0.3.2",
       "source": "rust"
     },
     {
@@ -444,6 +493,13 @@
       "source": "rust"
     },
     {
+      "name": "tauri-plugin-notification",
+      "version": "2.4.0",
+      "license": "Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/tauri-plugin-notification/2.4.0",
+      "source": "rust"
+    },
+    {
       "name": "tauri-plugin-opener",
       "version": "2.5.5",
       "license": "Apache-2.0 OR MIT",
@@ -535,11 +591,39 @@
       "source": "npm"
     },
     {
+      "name": "webkit2gtk",
+      "version": "2.0.2",
+      "license": "MIT",
+      "url": "https://crates.io/crates/webkit2gtk/2.0.2",
+      "source": "rust"
+    },
+    {
+      "name": "webview2-com",
+      "version": "0.38.2",
+      "license": "MIT",
+      "url": "https://crates.io/crates/webview2-com/0.38.2",
+      "source": "rust"
+    },
+    {
       "name": "whisper.cpp",
       "version": "1.8.7",
       "license": "MIT",
       "url": "https://github.com/ggml-org/whisper.cpp",
       "source": "download"
+    },
+    {
+      "name": "windows",
+      "version": "0.61.3",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/windows/0.61.3",
+      "source": "rust"
+    },
+    {
+      "name": "windows",
+      "version": "0.62.2",
+      "license": "MIT OR Apache-2.0",
+      "url": "https://crates.io/crates/windows/0.62.2",
+      "source": "rust"
     },
     {
       "name": "XTerm",
