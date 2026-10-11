@@ -6,7 +6,34 @@ on:
       - "v*.*.*"
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.draft.outputs.id }}
+    steps:
+      - name: Find the Release Drafter draft
+        id: draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          drafts=$(gh api "repos/$GH_REPO/releases" --paginate --jq '.[] | select(.draft) | "\(.id) \(.tag_name)"')
+          id=$(echo "$drafts" | awk -v tag="$TAG" '$2 == tag { print $1; exit }')
+          # Release Drafter keeps one draft; reuse it when it resolved a different version.
+          if [ -z "$id" ] && [ "$(echo "$drafts" | grep -c .)" = "1" ]; then
+            id=$(echo "$drafts" | awk '{ print $1 }')
+          fi
+          if [ -z "$id" ]; then
+            id=$(gh api -X POST "repos/$GH_REPO/releases" -f tag_name="$TAG" -F draft=true -F generate_release_notes=true --jq .id)
+          fi
+          gh api -X PATCH "repos/$GH_REPO/releases/$id" -f tag_name="$TAG" -f name="Pragma ${TAG#v}" --silent
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: prepare
     permissions:
       contents: write
     strategy:
@@ -56,18 +83,27 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and publish release
+      - name: Build and upload to the draft release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Pragma ${{ github.ref_name }}"
-          releaseDraft: false
-          prerelease: false
-          generateReleaseNotes: false
+          releaseId: ${{ needs.prepare.outputs.release_id }}
           retryAttempts: 3
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
+        run: gh api -X PATCH "repos/$GH_REPO/releases/$RELEASE_ID" -F draft=false -f make_latest=true --silent
