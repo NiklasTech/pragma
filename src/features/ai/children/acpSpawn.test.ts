@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const invokeMock = vi.hoisted(() => vi.fn());
 
@@ -21,6 +21,10 @@ function replies() {
 }
 
 describe("handleSpawnRequest", () => {
+  beforeAll(async () => {
+    await import("./spawn");
+  });
+
   beforeEach(() => {
     invokeMock.mockReset();
     invokeMock.mockResolvedValue(null);

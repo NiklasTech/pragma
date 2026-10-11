@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useGitStore, type GitStatusEntry, type CheckState } from "@/shared/stores/git";
@@ -61,7 +62,43 @@ export function GitStatus() {
     mergeBranch,
     rebaseBranch,
     loadOperation,
-  } = useGitStore();
+  } = useGitStore(
+    useShallow((s) => ({
+      snapshot: s.snapshot,
+      repoPath: s.repoPath,
+      isLoading: s.isLoading,
+      error: s.error,
+      commitMessage: s.commitMessage,
+      commitAmend: s.commitAmend,
+      actionBusy: s.actionBusy,
+      actionStatus: s.actionStatus,
+      commits: s.commits,
+      branches: s.branches,
+      loadStatus: s.loadStatus,
+      loadLog: s.loadLog,
+      loadBranches: s.loadBranches,
+      stageFiles: s.stageFiles,
+      unstageFiles: s.unstageFiles,
+      commit: s.commit,
+      amendCommit: s.amendCommit,
+      loadFileDiff: s.loadFileDiff,
+      setCommitMessage: s.setCommitMessage,
+      checkoutBranch: s.checkoutBranch,
+      createBranch: s.createBranch,
+      deleteBranch: s.deleteBranch,
+      push: s.push,
+      pull: s.pull,
+      fetch: s.fetch,
+      refreshAll: s.refreshAll,
+      discardFiles: s.discardFiles,
+      remotes: s.remotes,
+      openConflict: s.openConflict,
+      renameBranch: s.renameBranch,
+      mergeBranch: s.mergeBranch,
+      rebaseBranch: s.rebaseBranch,
+      loadOperation: s.loadOperation,
+    })),
+  );
 
   const editorPanelId = useEditorPanelId();
 

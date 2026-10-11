@@ -76,8 +76,8 @@ fn load_store(app: &tauri::AppHandle) -> Result<Arc<Store<tauri::Wry>>, String> 
         .map_err(|e| format!("failed to load store: {e}"))
 }
 
-#[tauri::command]
-pub async fn workspace_save(
+#[tauri::command(async)]
+pub fn workspace_save(
     app: tauri::AppHandle,
     repo_path: String,
     branch_name: String,
@@ -101,8 +101,8 @@ pub async fn workspace_save(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn workspace_load(
+#[tauri::command(async)]
+pub fn workspace_load(
     app: tauri::AppHandle,
     repo_path: String,
     branch_name: String,
@@ -128,8 +128,8 @@ pub async fn workspace_load(
     }
 }
 
-#[tauri::command]
-pub async fn workspace_delete(
+#[tauri::command(async)]
+pub fn workspace_delete(
     app: tauri::AppHandle,
     repo_path: String,
     branch_name: String,

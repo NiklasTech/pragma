@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Bug,
@@ -76,9 +77,24 @@ export function RunConfigWidget() {
     stopProcess,
     restartProcess,
     removeProcess,
-  } = useRunConfigStore();
-  const { addRunSession } = useTerminalStore();
-  const { terminal, setTerminalMode } = useLayoutStore();
+  } = useRunConfigStore(
+    useShallow((s) => ({
+      configs: s.configs,
+      processes: s.processes,
+      activeProcessId: s.activeProcessId,
+      setActiveProcess: s.setActiveProcess,
+      startConfig: s.startConfig,
+      stopProcess: s.stopProcess,
+      restartProcess: s.restartProcess,
+      removeProcess: s.removeProcess,
+    })),
+  );
+  const { addRunSession } = useTerminalStore(
+    useShallow((s) => ({ addRunSession: s.addRunSession })),
+  );
+  const { terminal, setTerminalMode } = useLayoutStore(
+    useShallow((s) => ({ terminal: s.terminal, setTerminalMode: s.setTerminalMode })),
+  );
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

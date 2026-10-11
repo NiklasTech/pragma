@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import * as React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
@@ -30,7 +31,16 @@ const STATUS_LABELS: Record<ServerStatus, string> = {
 
 export function LspSettings() {
   const { lsp, setLspEnabled, experimental, setExperimentalEnabled, editor, setEditorSettings } =
-    useSettingsStore();
+    useSettingsStore(
+      useShallow((s) => ({
+        lsp: s.lsp,
+        setLspEnabled: s.setLspEnabled,
+        experimental: s.experimental,
+        setExperimentalEnabled: s.setExperimentalEnabled,
+        editor: s.editor,
+        setEditorSettings: s.setEditorSettings,
+      })),
+    );
   const [statuses, setStatuses] = React.useState<Record<string, ServerStatus>>({});
   const [installing, setInstalling] = React.useState<Record<string, boolean>>({});
   const [copied, setCopied] = React.useState<string | null>(null);

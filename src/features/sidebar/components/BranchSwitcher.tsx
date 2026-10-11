@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useGitStore } from "@/shared/stores/git";
@@ -37,8 +38,31 @@ export function BranchSwitcher({ repoLabel, ahead, behind, isDetached }: BranchS
     pushPullError,
     clearPushPullError,
     loadRemoteBranches,
-  } = useGitStore();
-  const { workspaceRoot, composeUpBuild } = useDockerStore();
+  } = useGitStore(
+    useShallow((s) => ({
+      branches: s.branches,
+      snapshot: s.snapshot,
+      checkoutBranch: s.checkoutBranch,
+      smartCheckout: s.smartCheckout,
+      createBranch: s.createBranch,
+      deleteBranch: s.deleteBranch,
+      hasUncommittedChanges: s.hasUncommittedChanges,
+      actionBusy: s.actionBusy,
+      actionStatus: s.actionStatus,
+      actionProgress: s.actionProgress,
+      push: s.push,
+      pull: s.pull,
+      fetch: s.fetch,
+      remotes: s.remotes,
+      remoteBranches: s.remoteBranches,
+      pushPullError: s.pushPullError,
+      clearPushPullError: s.clearPushPullError,
+      loadRemoteBranches: s.loadRemoteBranches,
+    })),
+  );
+  const { workspaceRoot, composeUpBuild } = useDockerStore(
+    useShallow((s) => ({ workspaceRoot: s.workspaceRoot, composeUpBuild: s.composeUpBuild })),
+  );
 
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);

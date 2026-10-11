@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type StatusbarItem } from "@/shared/stores/settings";
@@ -37,7 +38,9 @@ const DEFAULT_ITEMS: StatusbarItem[] = [
 ];
 
 export function StatusbarSettings() {
-  const { statusbar, setStatusbarSettings } = useSettingsStore();
+  const { statusbar, setStatusbarSettings } = useSettingsStore(
+    useShallow((s) => ({ statusbar: s.statusbar, setStatusbarSettings: s.setStatusbarSettings })),
+  );
 
   const toggleItem = (item: StatusbarItem) => {
     const next = statusbar.items.includes(item)

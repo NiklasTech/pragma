@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
@@ -44,7 +45,7 @@ export function GoToFile() {
   const error = useGoToFileStore((state) => state.error);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const editorPanelId = useEditorPanelId();
-  const { openFile } = useEditorStore();
+  const { openFile } = useEditorStore(useShallow((s) => ({ openFile: s.openFile })));
 
   const sortedFiles = useMemo(() => {
     return [...files].sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));

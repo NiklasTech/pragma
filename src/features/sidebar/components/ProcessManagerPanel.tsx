@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
@@ -223,9 +224,32 @@ export function ProcessManagerPanel() {
     updateConfig,
     acceptDetectedConfig,
     rejectDetectedConfig,
-  } = useRunConfigStore();
-  const { terminal, setTerminalMode } = useLayoutStore();
-  const { addRunSession } = useTerminalStore();
+  } = useRunConfigStore(
+    useShallow((s) => ({
+      configs: s.configs,
+      detectedConfigs: s.detectedConfigs,
+      processes: s.processes,
+      activeProcessId: s.activeProcessId,
+      workspaceRoot: s.workspaceRoot,
+      isLoading: s.isLoading,
+      isDetecting: s.isDetecting,
+      detectConfigs: s.detectConfigs,
+      startConfig: s.startConfig,
+      stopProcess: s.stopProcess,
+      restartProcess: s.restartProcess,
+      setActiveProcess: s.setActiveProcess,
+      removeConfig: s.removeConfig,
+      updateConfig: s.updateConfig,
+      acceptDetectedConfig: s.acceptDetectedConfig,
+      rejectDetectedConfig: s.rejectDetectedConfig,
+    })),
+  );
+  const { terminal, setTerminalMode } = useLayoutStore(
+    useShallow((s) => ({ terminal: s.terminal, setTerminalMode: s.setTerminalMode })),
+  );
+  const { addRunSession } = useTerminalStore(
+    useShallow((s) => ({ addRunSession: s.addRunSession })),
+  );
 
   useEffect(() => {
     if (!workspaceRoot) return;

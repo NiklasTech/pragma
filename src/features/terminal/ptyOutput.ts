@@ -1,15 +1,15 @@
 import { listen } from "@tauri-apps/api/event";
 
-import { appendTerminalBuffer } from "@/features/ai/terminal/buffer";
+import { TailBuffer } from "./ptyBuffer";
 
 interface PtyOutputEvent {
   id: string;
   data: string;
 }
 
-const buffers = new Map<string, string>();
+const buffers = new Map<string, TailBuffer>();
 const subscribers = new Map<string, Set<(data: string) => void>>();
-const unclaimed = new Map<string, string>();
+const unclaimed = new Map<string, TailBuffer>();
 let starting = 0;
 let listening: Promise<void> | null = null;
 
@@ -17,10 +17,14 @@ function handleOutput({ id, data }: PtyOutputEvent): void {
   const buffer = buffers.get(id);
   if (buffer === undefined) {
     // The shell can print its prompt before create_pty resolves with the id.
-    if (starting > 0) unclaimed.set(id, appendTerminalBuffer(unclaimed.get(id) ?? "", data));
+    if (starting > 0) {
+      const pending = unclaimed.get(id) ?? new TailBuffer();
+      pending.append(data);
+      unclaimed.set(id, pending);
+    }
     return;
   }
-  buffers.set(id, appendTerminalBuffer(buffer, data));
+  buffer.append(data);
   for (const listener of subscribers.get(id) ?? []) listener(data);
 }
 
@@ -38,7 +42,7 @@ export async function startPty(start: () => Promise<string>): Promise<string> {
   starting += 1;
   try {
     const ptyId = await start();
-    buffers.set(ptyId, unclaimed.get(ptyId) ?? buffers.get(ptyId) ?? "");
+    buffers.set(ptyId, unclaimed.get(ptyId) ?? buffers.get(ptyId) ?? new TailBuffer());
     unclaimed.delete(ptyId);
     return ptyId;
   } finally {
@@ -54,8 +58,8 @@ export function attachPtyOutput(
   onReplay: (data: string) => void,
   onData: (data: string) => void,
 ): () => void {
-  const replay = buffers.get(ptyId) ?? "";
-  if (!buffers.has(ptyId)) buffers.set(ptyId, "");
+  const replay = buffers.get(ptyId)?.toString() ?? "";
+  if (!buffers.has(ptyId)) buffers.set(ptyId, new TailBuffer());
   if (replay) onReplay(replay);
   const listeners = subscribers.get(ptyId) ?? new Set<(data: string) => void>();
   listeners.add(onData);

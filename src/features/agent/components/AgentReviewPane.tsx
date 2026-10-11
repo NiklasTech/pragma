@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import {
   Check,
   CircleDashed,
@@ -69,7 +70,16 @@ function StepRow({ step, isLast }: { step: AgentStep; isLast: boolean }) {
 }
 
 export function AgentReviewPane() {
-  const { status, goal, steps, stepCount, summary, error } = useAgentStore();
+  const { status, goal, steps, stepCount, summary, error } = useAgentStore(
+    useShallow((s) => ({
+      status: s.status,
+      goal: s.goal,
+      steps: s.steps,
+      stepCount: s.stepCount,
+      summary: s.summary,
+      error: s.error,
+    })),
+  );
   const stopAgent = useAgentStop();
 
   const canStop = status === "running" || status === "waiting-approval";

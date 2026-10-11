@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useRef, useEffect } from "react";
 import { X, Circle, Terminal } from "@phosphor-icons/react";
 import { useRunConfigStore, type RunStatus } from "@/shared/stores/runConfig";
@@ -29,7 +30,14 @@ function StatusBadge({ status }: { status: RunStatus }) {
 
 export function RunOutputPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { processes, activeProcessId, setActiveProcess, removeProcess } = useRunConfigStore();
+  const { processes, activeProcessId, setActiveProcess, removeProcess } = useRunConfigStore(
+    useShallow((s) => ({
+      processes: s.processes,
+      activeProcessId: s.activeProcessId,
+      setActiveProcess: s.setActiveProcess,
+      removeProcess: s.removeProcess,
+    })),
+  );
 
   const activeProcess = processes.find((p) => p.id === activeProcessId);
 

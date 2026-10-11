@@ -55,7 +55,6 @@ export interface EditorExtensionsContext {
   lspDocumentSymbolsCompartmentRef: RefObject<Compartment>;
   lspInlayHintsCompartmentRef: RefObject<Compartment>;
   filePathRef: RefObject<string>;
-  selectedTextRef: RefObject<string>;
   setHasSelection: Dispatch<SetStateAction<boolean>>;
   showLineNumbers: boolean;
   tabSize: number;
@@ -84,7 +83,6 @@ export function useEditorExtensions({
   lspDocumentSymbolsCompartmentRef,
   lspInlayHintsCompartmentRef,
   filePathRef,
-  selectedTextRef,
   setHasSelection,
   showLineNumbers,
   tabSize,
@@ -159,9 +157,7 @@ export function useEditorExtensions({
             onCursorChange({ line: line.number, column: head - line.from + 1 });
 
             const { from, to } = update.state.selection.main;
-            const selected = from !== to;
-            setHasSelection(selected);
-            selectedTextRef.current = selected ? update.state.doc.sliceString(from, to) : "";
+            setHasSelection(from !== to);
           }
         }),
         tabSizeCompartment.of(EditorState.tabSize.of(tabSize)),

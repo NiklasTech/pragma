@@ -5,6 +5,7 @@ import { sessionCwd } from "@/features/ai/worktree/cwd";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
+import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -32,11 +33,10 @@ export function useCliSessionOptions(): CliSessionOptions | null {
   const providers = useAIStore((state) => state.providers);
   const cliManifests = useAIStore((state) => state.cliManifests);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const session = useActiveSessionMeta();
   const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
 
-  const session = chatSessions.find((item) => item.id === activeChatSessionId);
   const activeCLIProvider = resolveEffectiveEngine(pinnedSessionEngine(session), {
     activeCLIProvider: globalCLIProvider,
     activeProvider,

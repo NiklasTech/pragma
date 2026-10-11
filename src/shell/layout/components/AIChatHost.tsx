@@ -1,8 +1,11 @@
+import { Suspense, lazy } from "react";
 import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useLayoutStore } from "../store";
 import { hasMountedAIPanel } from "../aiPlacement";
-import { ChatPanel } from "@/features/ai/components/ChatPanel";
+const ChatPanel = lazy(() =>
+  import("@/features/ai/components/ChatPanel").then((m) => ({ default: m.ChatPanel })),
+);
 
 function ResizeHandle({
   className,
@@ -65,7 +68,9 @@ export function AIChatHost() {
         onResize={(delta) => setAISize(ai.size + (isLeft ? delta : -delta))}
       />
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ChatPanel />
+        <Suspense fallback={null}>
+          <ChatPanel />
+        </Suspense>
       </div>
     </div>
   );

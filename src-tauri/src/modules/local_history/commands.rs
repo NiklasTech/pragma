@@ -78,8 +78,8 @@ fn snapshot_to_entry(meta: &SnapshotMeta) -> HistoryEntry {
     }
 }
 
-#[tauri::command]
-pub async fn local_history_entries(
+#[tauri::command(async)]
+pub fn local_history_entries(
     app: tauri::AppHandle,
     file_path: String,
     limit: Option<u32>,
@@ -127,8 +127,8 @@ pub async fn local_history_entries(
     Ok(LocalHistoryEntriesResponse { entries })
 }
 
-#[tauri::command]
-pub async fn local_history_diff(
+#[tauri::command(async)]
+pub fn local_history_diff(
     app: tauri::AppHandle,
     file_path: String,
     entry_id: String,
@@ -170,8 +170,8 @@ pub async fn local_history_diff(
     }
 }
 
-#[tauri::command]
-pub async fn local_history_restore(
+#[tauri::command(async)]
+pub fn local_history_restore(
     app: tauri::AppHandle,
     file_path: String,
     entry_id: String,
@@ -202,8 +202,8 @@ pub async fn local_history_restore(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn local_history_delete_older_than(
+#[tauri::command(async)]
+pub fn local_history_delete_older_than(
     app: tauri::AppHandle,
     file_path: String,
     days: u32,
@@ -249,11 +249,8 @@ pub async fn local_history_delete_older_than(
 
 /// Snapshot the current on-disk content of a file into Local History.
 /// Used by Agent Mode to create a checkpoint before the first agent write.
-#[tauri::command]
-pub async fn local_history_snapshot(
-    app: tauri::AppHandle,
-    file_path: String,
-) -> Result<(), String> {
+#[tauri::command(async)]
+pub fn local_history_snapshot(app: tauri::AppHandle, file_path: String) -> Result<(), String> {
     if file_path.is_empty() {
         return Err("File path is required".to_string());
     }

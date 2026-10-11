@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { Input } from "@/shared/components/ui/input";
 import { Switch } from "@/shared/components/ui/switch";
 import {
@@ -23,7 +24,9 @@ const CURSOR_STYLE_LABELS: Record<TerminalCursorStyle, string> = {
 };
 
 export function TerminalSettings() {
-  const { terminal, setTerminalSettings } = useSettingsStore();
+  const { terminal, setTerminalSettings } = useSettingsStore(
+    useShallow((s) => ({ terminal: s.terminal, setTerminalSettings: s.setTerminalSettings })),
+  );
   const terminalStore = useTerminalStore();
 
   const update = (partial: Parameters<typeof setTerminalSettings>[0]) => {

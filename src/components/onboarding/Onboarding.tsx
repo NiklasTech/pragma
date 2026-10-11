@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useState } from "react";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { useOnboardingStore } from "@/shared/stores/onboarding";
@@ -21,7 +22,9 @@ const STEPS = [
 
 export function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
-  const { skip, complete } = useOnboardingStore();
+  const { skip, complete } = useOnboardingStore(
+    useShallow((s) => ({ skip: s.skip, complete: s.complete })),
+  );
   const { selectRoot } = useFileExplorer();
 
   const handleNext = () => {

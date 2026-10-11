@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useAIStore, type AgentEngine, type AIProvider } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
@@ -12,20 +13,17 @@ export interface PinnedChatEngine {
 
 /// The built-in provider and model pinned on the active chat, which win over the global selection.
 export function usePinnedChatEngine(): PinnedChatEngine | null {
-  const session = useAIStore((state) =>
-    state.chatSessions.find((item) => item.id === state.activeChatSessionId),
-  );
+  const engine = useActiveSessionMeta()?.agentEngine;
   const rootPath = useFileExplorerStore((state) => state.rootPath);
-  const engine = session?.agentEngine;
 
   const save = useCallback(
     (next: AgentEngine) => {
+      const { chatSessions, activeChatSessionId, updateChatSession } = useAIStore.getState();
+      const session = chatSessions.find((item) => item.id === activeChatSessionId);
       if (!session) return;
-      void useAIStore
-        .getState()
-        .updateChatSession(rootPath ?? "default", { ...session, agentEngine: next });
+      void updateChatSession(rootPath ?? "default", { ...session, agentEngine: next });
     },
-    [rootPath, session],
+    [rootPath],
   );
 
   const setProvider = useCallback(

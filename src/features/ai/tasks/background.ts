@@ -3,7 +3,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
-import { startChildRun, stopChildRun } from "../children/runner";
 import { getChildRun, isRunLive } from "../children/runStore";
 import { createSessionWorktree } from "../worktree/create";
 import { openBlockers } from "./organize";
@@ -81,6 +80,7 @@ export async function startTaskInBackground(
 
   try {
     await useTasksStore.getState().linkSession(task.id, session.id);
+    const { startChildRun } = await import("../children/runner");
     await startChildRun(rootPath, session.id, buildTaskMessage(task));
   } catch (err) {
     return `Could not start the task: ${String(err)}`;
@@ -105,6 +105,7 @@ export async function startTasksInBackground(
 
 export function stopBackgroundTask(rootPath: string, task: Task): boolean {
   if (!task.sessionId || !isTaskRunningInBackground(task)) return false;
-  stopChildRun(rootPath, task.sessionId);
+  const { sessionId } = task;
+  void import("../children/runner").then((m) => m.stopChildRun(rootPath, sessionId));
   return true;
 }

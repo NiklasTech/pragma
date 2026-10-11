@@ -195,7 +195,7 @@ pub async fn download_font(
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_font_file(
     app: tauri::AppHandle,
     request: ImportFontRequest,
@@ -244,7 +244,7 @@ pub fn import_font_file(
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn delete_font(app: tauri::AppHandle, id: String) -> Result<(), String> {
     let base = fonts_dir(&app)?;
     let font_dir = font_dir_for_id(&base, &id)?;
@@ -255,7 +255,7 @@ pub fn delete_font(app: tauri::AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_fonts(app: tauri::AppHandle) -> Result<Vec<FontConfig>, String> {
     let base = fonts_dir(&app)?;
     if !base.exists() {

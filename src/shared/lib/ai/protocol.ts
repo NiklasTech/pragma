@@ -3,9 +3,12 @@ import { getToolName, isToolUIPart, type DynamicToolUIPart, type UIMessage } fro
 import { buildContextUserMessage } from "@/shared/lib/chat-context";
 import type { ChatMessage } from "@/shared/stores/ai";
 
+import { stripReasoningTags } from "./reasoningTags";
 import { createCompactionMessage, isCompactionMessage } from "./compaction";
 import { getMessageImages, imageToFilePart, toBackendImage, type BackendImage } from "./images";
 import { toolOutputImages, toolOutputText } from "./toolOutput";
+
+export { stripReasoningTags };
 
 export interface BackendToolCall {
   id: string;
@@ -99,24 +102,6 @@ interface ToolInvocationPart {
     output?: unknown;
     errorText?: string;
   };
-}
-
-export function stripReasoningTags(text: string): string {
-  const tags = [
-    { open: "<thinking>", close: "</thinking>" },
-    { open: "<reasoning>", close: "</reasoning>" },
-    { open: "<think>", close: "</think>" },
-  ];
-
-  let cleaned = text;
-  for (const { open, close } of tags) {
-    const pattern = new RegExp(
-      `${open.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?${close.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
-      "g",
-    );
-    cleaned = cleaned.replace(pattern, "");
-  }
-  return cleaned.trim();
 }
 
 export function getMessageText(msg: UIMessage): string {

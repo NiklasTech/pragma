@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { invoke } from "@tauri-apps/api/core";
@@ -36,7 +37,18 @@ export function GitGraph() {
     revertCommit,
     resetToCommit,
     deleteTag,
-  } = useGitStore();
+  } = useGitStore(
+    useShallow((s) => ({
+      repoPath: s.repoPath,
+      snapshot: s.snapshot,
+      checkoutCommit: s.checkoutCommit,
+      createBranchFromCommit: s.createBranchFromCommit,
+      cherryPickCommit: s.cherryPickCommit,
+      revertCommit: s.revertCommit,
+      resetToCommit: s.resetToCommit,
+      deleteTag: s.deleteTag,
+    })),
+  );
   const [commits, setCommits] = useState<GitLogEntry[]>([]);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [error, setError] = useState<string | null>(null);

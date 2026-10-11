@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowClockwise,
@@ -22,7 +23,15 @@ import { buildOutlineTree, outlineNodeKey, type OutlineNode } from "@/features/e
 type OutlineStatus = "idle" | "loading" | "ready" | "error";
 
 export default function OutlinePanel() {
-  const { tabs, activeTabId, setActiveTab, setPanelActiveTab, goToPosition } = useEditorStore();
+  const { tabs, activeTabId, setActiveTab, setPanelActiveTab, goToPosition } = useEditorStore(
+    useShallow((s) => ({
+      tabs: s.tabs,
+      activeTabId: s.activeTabId,
+      setActiveTab: s.setActiveTab,
+      setPanelActiveTab: s.setPanelActiveTab,
+      goToPosition: s.goToPosition,
+    })),
+  );
   const editorPanelId = useEditorPanelId();
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const activeTab =

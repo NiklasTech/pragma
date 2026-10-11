@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAcpSessionOptionsStore } from "@/features/ai/acp/sessionOptions";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
+import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 
@@ -18,10 +19,9 @@ export function useImageInputSupport(): ImageInputSupport {
   const availableModels = useAIStore((state) => state.availableModels);
   const cliManifests = useAIStore((state) => state.cliManifests);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const session = useActiveSessionMeta();
   const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
 
-  const session = chatSessions.find((item) => item.id === activeChatSessionId);
   const engine = resolveEffectiveEngine(pinnedSessionEngine(session), {
     activeCLIProvider: globalCLIProvider,
     activeProvider,

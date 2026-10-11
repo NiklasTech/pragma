@@ -15,7 +15,6 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import { showSessionInPane } from "./open";
-import { runSpawnTool } from "./spawn";
 import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 const SPAWN_REQUEST_EVENT = "child_session_spawn_request";
@@ -98,6 +97,7 @@ export async function handleSpawnRequest(event: SpawnRequestEvent): Promise<void
     getAgentSettings(),
     settings.ai.yoloMode,
   );
+  const { runSpawnTool } = await import("./spawn");
   const outcome = await runSpawnTool(
     event.requestId,
     AGENT_TOOL_NAMES.spawnSession,

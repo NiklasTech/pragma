@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo, useState } from "react";
 
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
@@ -61,12 +62,26 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     setActiveModel,
     setActiveCLIProvider,
     updateProviderConfig,
-  } = useAIStore();
-  const settingsStore = useSettingsStore();
+  } = useAIStore(
+    useShallow((s) => ({
+      activeProvider: s.activeProvider,
+      activeModel: s.activeModel,
+      providers: s.providers,
+      apiKeyRefs: s.apiKeyRefs,
+      activeCLIProvider: s.activeCLIProvider,
+      cliStatuses: s.cliStatuses,
+      copilotAuth: s.copilotAuth,
+      setActiveProvider: s.setActiveProvider,
+      setActiveModel: s.setActiveModel,
+      setActiveCLIProvider: s.setActiveCLIProvider,
+      updateProviderConfig: s.updateProviderConfig,
+    })),
+  );
+  const showUnavailable = useSettingsStore((s) => s.ai.showUnavailableProviders);
+  const setAISettings = useSettingsStore((s) => s.setAISettings);
   const pinned = usePinnedChatEngine();
   const activeProvider = pinned?.provider ?? globalProvider;
   const activeModel = pinned ? pinned.model : globalModel;
-  const showUnavailable = settingsStore.ai.showUnavailableProviders;
 
   const {
     models: availableModels,
@@ -126,14 +141,14 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     }
     setActiveModel(first);
     updateProviderConfig(activeProvider, { model: first });
-    settingsStore.setAISettings({ defaultModel: first });
+    setAISettings({ defaultModel: first });
   }, [
     activeModel,
     availableModels,
     activeProvider,
     setActiveModel,
     updateProviderConfig,
-    settingsStore,
+    setAISettings,
     pinned,
   ]);
 
@@ -157,7 +172,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     const nextModel = providers[provider].model || "";
     setActiveModel(nextModel);
     updateProviderConfig(provider, { model: nextModel });
-    settingsStore.setAISettings({
+    setAISettings({
       defaultProvider: provider,
       defaultModel: nextModel,
       cliProvider: cliProviderId,
@@ -173,7 +188,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
     }
     setActiveModel(model);
     updateProviderConfig(activeProvider, { model });
-    settingsStore.setAISettings({ defaultModel: model });
+    setAISettings({ defaultModel: model });
     setOpen(false);
   };
 
