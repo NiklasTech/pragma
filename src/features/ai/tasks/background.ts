@@ -2,9 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
+import type { Agent } from "@/features/ai/named-agents/types";
 
 import { getChildRun, isRunLive } from "../children/runStore";
 import { createSessionWorktree } from "../worktree/create";
+import { NO_TASK_ENGINE_MESSAGE, taskEngine } from "./engine";
 import { openBlockers } from "./organize";
 import { useTasksStore } from "./store";
 import type { Task } from "./types";
@@ -20,10 +22,16 @@ export function isTaskRunningInBackground(task: Pick<Task, "sessionId">): boolea
 export function backgroundStartBlocker(task: Task, tasks: Task[]): string | null {
   if (openBlockers(task, tasks).length > 0) return "Finish the blocking tasks first";
   if (isTaskRunningInBackground(task)) return "The previous run is still active";
-  if (task.agentId && !useNamedAgentsStore.getState().agents.some((a) => a.id === task.agentId)) {
-    return "The assigned agent no longer exists";
-  }
+  const agent = findAgent(task);
+  if (task.agentId && !agent) return "The assigned agent no longer exists";
+  if (!taskEngine(agent?.engine)) return NO_TASK_ENGINE_MESSAGE;
   return null;
+}
+
+function findAgent(task: Task): Agent | undefined {
+  return task.agentId
+    ? useNamedAgentsStore.getState().agents.find((item) => item.id === task.agentId)
+    : undefined;
 }
 
 /// Removes a worktree no session uses, so failed scheduled runs do not pile up worktrees.
@@ -48,9 +56,9 @@ export async function startTaskInBackground(
 ): Promise<string | null> {
   const blocker = backgroundStartBlocker(task, useTasksStore.getState().tasks);
   if (blocker) return blocker;
-  const agent = task.agentId
-    ? useNamedAgentsStore.getState().agents.find((item) => item.id === task.agentId)
-    : undefined;
+  const agent = findAgent(task);
+  const engine = taskEngine(agent?.engine);
+  if (!engine) return NO_TASK_ENGINE_MESSAGE;
 
   const id = crypto.randomUUID();
   let session: ChatSession;
@@ -69,8 +77,9 @@ export async function startTaskInBackground(
         kind: "agent",
         environment: "worktree",
         worktree,
+        cliProviderId: engine.cliProviderId,
         agentId: agent?.id,
-        agentEngine: agent?.engine ?? { kind: "builtin" },
+        agentEngine: engine,
       },
       { activate: false },
     );
