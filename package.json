@@ -1,6 +1,6 @@
 {
   "name": "pragma",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "private": true,
   "author": "NiklasTech <info@nh-webdev.de>",
   "type": "module",
