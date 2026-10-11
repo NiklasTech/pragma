@@ -14,6 +14,7 @@ function manifest(id: string, usesAcp: boolean): CLIManifest {
     supports_sessions: true,
     uses_acp: usesAcp,
     offers_terminal: true,
+    native_rules_files: [],
   };
 }
 

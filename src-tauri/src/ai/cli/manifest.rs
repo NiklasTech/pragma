@@ -41,6 +41,10 @@ pub struct CLIManifest {
     /// official interactive terminal.
     pub offers_terminal: bool,
 
+    /// Project rules files the CLI loads on its own. Pragma does not send
+    /// these again; `PRAGMA.md` is never one of them.
+    pub native_rules_files: Vec<String>,
+
     /// Extra environment variables to set when running the CLI
     pub env: Option<HashMap<String, String>>,
 
@@ -55,6 +59,10 @@ pub enum OutputFormat {
     StreamJson,
     Json,
     Text,
+}
+
+fn rules_files(names: &[&str]) -> Vec<String> {
+    names.iter().map(|name| name.to_string()).collect()
 }
 
 /// Built-in manifests for verified CLI providers.
@@ -79,6 +87,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["AGENTS.md"]),
             env: None,
             path_env: None,
         },
@@ -98,6 +107,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["AGENTS.md"]),
             env: None,
             path_env: Some(HashMap::from([(
                 "CODEX_PATH".to_string(),
@@ -120,6 +130,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["CLAUDE.md"]),
             env: None,
             path_env: None,
         },
@@ -139,6 +150,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: Vec::new(),
             env: None,
             path_env: None,
         },
@@ -158,6 +170,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["AGENTS.md"]),
             env: None,
             path_env: None,
         },
@@ -177,6 +190,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["AGENTS.md"]),
             env: None,
             path_env: None,
         },
@@ -195,6 +209,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["AGENTS.md"]),
             env: None,
             path_env: None,
         },
@@ -212,6 +227,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: rules_files(&["AGENTS.md"]),
             env: None,
             path_env: None,
         },
@@ -230,6 +246,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: true,
+            native_rules_files: Vec::new(),
             env: None,
             path_env: None,
         },
@@ -248,6 +265,7 @@ pub fn built_in_manifests() -> Vec<CLIManifest> {
             supports_sessions: true,
             uses_acp: true,
             offers_terminal: false,
+            native_rules_files: Vec::new(),
             env: None,
             path_env: None,
         },
@@ -287,6 +305,27 @@ mod tests {
         assert_eq!(manifest.chat_cmd, "dsh --profile acp");
         assert_eq!(manifest.auth_check_cmd, None);
         assert_eq!(manifest.logout_cmd, None);
+    }
+
+    #[test]
+    fn no_manifest_loads_pragma_rules_natively() {
+        for manifest in built_in_manifests() {
+            assert!(
+                !manifest
+                    .native_rules_files
+                    .contains(&"PRAGMA.md".to_string()),
+                "{} must not list PRAGMA.md",
+                manifest.id
+            );
+        }
+    }
+
+    #[test]
+    fn coding_clis_list_the_rules_files_they_load() {
+        let native = |id: &str| get_manifest(id).expect(id).native_rules_files;
+        assert_eq!(native("anthropic-claude"), vec!["CLAUDE.md"]);
+        assert_eq!(native("openai-codex"), vec!["AGENTS.md"]);
+        assert!(native("google-gemini").is_empty());
     }
 
     #[test]

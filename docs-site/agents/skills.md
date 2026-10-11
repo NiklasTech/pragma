@@ -52,7 +52,7 @@ The headings `## Steps`, `## Check` and `## Needs approval` are required. A skil
 Skills are managed in **Settings > Agents > Skills**:
 
 - **New skill** creates `.pragma/skills/new-skill.md` from the template above and opens it in the editor.
-- The switch next to each skill sets its `enabled` field. Enabled skills are offered to every session that does not use a [named agent](./named-agents.md).
+- The switch next to each skill sets its `enabled` field. Enabled skills are offered to every session that does not use a [named agent](./named-agents.md), including [coding CLI conversations](./coding-clis.md#what-a-conversation-receives).
 
 A named agent ignores the `enabled` field and uses the skills selected on its own **Skills** tab instead.
 
