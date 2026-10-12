@@ -8,7 +8,7 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { withLspDocument } from "@/features/agent/lspTools";
 import { resolveWorkspacePath } from "@/features/agent/toolInput";
 import { relativePath } from "@/features/ai/context/autoContext";
-import { skillsDir } from "@/features/ai/skills/paths";
+import { readSkillFile } from "@/features/ai/skills/readSkillFile";
 import { lspDocumentSymbol, type LspDocumentSymbolItem } from "@/features/editor/lsp/client";
 import { readTerminalOutput } from "@/features/terminal/terminalOutput";
 
@@ -136,11 +136,10 @@ async function urlSection(url: string): Promise<MentionSection> {
 }
 
 async function skillSection(id: string, rootPath: string): Promise<MentionSection> {
-  const path = `${skillsDir(rootPath)}/${id}.md`;
-  const result = await invoke<FileReadResult>("read_text_file", { path });
+  const { path, content } = await readSkillFile(rootPath, id);
   return {
     label: `Skill ${id} (${relativePath(rootPath, path)})`,
-    content: `Follow this skill for the request.\n\n${result.content.trim()}`,
+    content: `Follow this skill for the request.\n\n${content.trim()}`,
   };
 }
 

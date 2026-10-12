@@ -99,3 +99,85 @@ describe("setSkillEnabled", () => {
     expect(setSkillEnabled(BODY, true)).toBeNull();
   });
 });
+
+const STANDARD_PATH = "/ws/.pragma/skills/pdf-processing/SKILL.md";
+
+const STANDARD_SKILL = `---
+name: pdf-processing
+description: >
+  Extract text and tables from PDF files.
+  Use when the user works with PDFs.
+license: Apache-2.0
+allowed-tools: [Read, Grep]
+metadata:
+  author: example-org
+  version: "1.0"
+---
+
+# PDF processing
+
+Run scripts/extract.py on the file.
+`;
+
+describe("parseSkill with SKILL.md", () => {
+  it("accepts a standard skill with YAML front matter, extra fields and a free-form body", () => {
+    expect(parseSkill("pdf-processing", STANDARD_PATH, STANDARD_SKILL)).toEqual({
+      id: "pdf-processing",
+      path: STANDARD_PATH,
+      name: "pdf-processing",
+      description: "Extract text and tables from PDF files. Use when the user works with PDFs.",
+      enabled: true,
+      error: null,
+    });
+  });
+
+  it("reads enabled from YAML", () => {
+    const content = STANDARD_SKILL.replace("license:", "enabled: false\nlicense:");
+    expect(parseSkill("pdf-processing", STANDARD_PATH, content).enabled).toBe(false);
+  });
+
+  it("ignores nested keys when looking for name", () => {
+    const content = skillFile("description: D\nmetadata:\n  name: nested", "Body");
+    expect(parseSkill("pdf-processing", STANDARD_PATH, content).error).toBe("Missing name");
+  });
+
+  it("falls back to reading lines when the YAML is invalid", () => {
+    const content = skillFile("name: pdf\ndescription: Use this: when X", "Body");
+    const skill = parseSkill("pdf-processing", STANDARD_PATH, content);
+    expect(skill.description).toBe("Use this: when X");
+    expect(skill.error).toBeNull();
+  });
+
+  it("names the folder in the id error", () => {
+    const path = "/ws/.pragma/skills/my skill/SKILL.md";
+    expect(parseSkill("my skill", path, STANDARD_SKILL).error).toBe(
+      "Folder name may only use letters, digits, - and _",
+    );
+  });
+
+  it("toggles enabled without touching nested front matter", () => {
+    const disabled = setSkillEnabled(STANDARD_SKILL, false) ?? "";
+    expect(disabled).toContain("metadata:\n  author: example-org\n");
+    expect(parseSkill("pdf-processing", STANDARD_PATH, disabled)).toMatchObject({
+      enabled: false,
+      error: null,
+    });
+    const enabled = setSkillEnabled(disabled, true) ?? "";
+    expect(enabled.match(/enabled:/g)).toHaveLength(1);
+    expect(parseSkill("pdf-processing", STANDARD_PATH, enabled).enabled).toBe(true);
+  });
+});
+
+describe("parseSkill with a legacy file", () => {
+  it("keeps values that are not valid YAML as written", () => {
+    const content = skillFile("name: Release\ndescription: Use #release: when shipping", BODY);
+    expect(parseSkill("release", PATH, content).description).toBe("Use #release: when shipping");
+  });
+
+  it("treats a file named SKILL.md directly in the skills folder as legacy", () => {
+    const content = skillFile("name: R\ndescription: D", "No headings");
+    expect(parseSkill("SKILL", "/ws/.pragma/skills/SKILL.md", content).error).toBe(
+      "Missing ## Steps heading",
+    );
+  });
+});
