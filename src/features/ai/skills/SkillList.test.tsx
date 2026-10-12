@@ -39,4 +39,22 @@ describe("SkillList", () => {
     expect(releaseSwitch).not.toContain(' data-disabled=""');
     expect(releaseSwitch).toContain('aria-checked="true"');
   });
+
+  it("offers Convert to SKILL.md only for single-file skills", () => {
+    const standard: Skill = {
+      ...skills[0],
+      id: "pdf",
+      path: "/ws/.pragma/skills/pdf/SKILL.md",
+      name: "PDF",
+    };
+    const props = { isEnabled: () => true, onToggle: () => {} };
+
+    const withConvert = renderToStaticMarkup(
+      <SkillList skills={[skills[0], standard]} onConvert={() => {}} {...props} />,
+    );
+    expect(withConvert.match(/Convert to SKILL\.md/g)).toHaveLength(1);
+
+    const withoutConvert = renderToStaticMarkup(<SkillList skills={skills} {...props} />);
+    expect(withoutConvert).not.toContain("Convert to SKILL.md");
+  });
 });
