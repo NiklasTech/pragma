@@ -4,6 +4,7 @@ pub mod cli;
 #[cfg(test)]
 mod command_permissions;
 pub mod commands;
+mod dev_identifier;
 #[cfg(target_os = "macos")]
 mod macos_chrome;
 pub mod modules;
@@ -28,6 +29,12 @@ pub fn run_child_sessions_bridge() -> i32 {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
+    if let Err(message) =
+        dev_identifier::check(&context.config().identifier, cfg!(debug_assertions))
+    {
+        eprintln!("{message}");
+        std::process::exit(1);
+    }
     let dev_url = context.config().build.dev_url.clone();
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
