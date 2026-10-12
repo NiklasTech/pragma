@@ -27,6 +27,7 @@ import { imageToFilePart } from "@/shared/lib/ai/images";
 import type { ChatImage } from "@/shared/stores/ai";
 import { useMcpChatTools } from "./useMcpChatTools";
 import { useChatPrompt } from "./useChatPrompt";
+import { nativeRulesFiles } from "./cliLeadingMessage";
 import { useChatSessionLoading, useChatSessionPersistence } from "./useChatSessionSync";
 import { runChatToolCall, shouldAutoContinueChat } from "./chatToolCall";
 import { resolveMentionContext } from "./chatMentionContext";
@@ -112,8 +113,18 @@ export function useAI() {
   // Request-scoped context for the next API call; consumed once so continuations stay clean.
   const pendingContextRef = useRef<string | null>(null);
 
+  const cliNativeRulesFiles = useMemo(
+    () => nativeRulesFiles(cliManifests, effectiveCLIProvider),
+    [cliManifests, effectiveCLIProvider],
+  );
   const { agentActive, agentToolDefinitions, systemPrompt, leadingSystemMessage, agentAccess } =
-    useChatPrompt({ activeSession, activeAgent, cwd, rootPath });
+    useChatPrompt({
+      activeSession,
+      activeAgent,
+      cwd,
+      rootPath,
+      nativeRulesFiles: cliNativeRulesFiles,
+    });
   const activeSessionKind = activeSession?.kind;
 
   const transport = useMemo<ChatTransport<UIMessage>>(

@@ -19,15 +19,23 @@ import type { Agent } from "@/features/ai/named-agents/types";
 import { formatSkillCatalog, selectCatalogSkills } from "@/features/ai/skills/catalog";
 import { skillsDir } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
+import { buildCliLeadingMessage } from "./cliLeadingMessage";
 
 interface ChatPromptOptions {
   activeSession: ChatSession | undefined;
   activeAgent: Agent | null;
   cwd: string;
   rootPath: string;
+  nativeRulesFiles: readonly string[];
 }
 
-export function useChatPrompt({ activeSession, activeAgent, cwd, rootPath }: ChatPromptOptions) {
+export function useChatPrompt({
+  activeSession,
+  activeAgent,
+  cwd,
+  rootPath,
+  nativeRulesFiles,
+}: ChatPromptOptions) {
   const useProjectRules = useSettingsStore((state) => state.agent.useProjectRules);
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const agentActive = agentModeActive;
@@ -84,13 +92,16 @@ export function useChatPrompt({ activeSession, activeAgent, cwd, rootPath }: Cha
     return composeAgentSystemPrompt(agentBlock, formatRulesForPrompt(rules), skillsBlock);
   }, [activeAgent, agentActive, cwd, projectRules, skillsBlock, useProjectRules]);
 
-  const leadingSystemMessage = useMemo(() => {
-    if (!activeAgent) return null;
-    const rules = useProjectRules ? formatRulesForPrompt(projectRules) : null;
-    return (
-      composeAgentSystemPrompt(buildAgentContextBlock(activeAgent), rules, skillsBlock) ?? null
-    );
-  }, [activeAgent, projectRules, skillsBlock, useProjectRules]);
+  const leadingSystemMessage = useMemo(
+    () =>
+      buildCliLeadingMessage(
+        activeAgent ? buildAgentContextBlock(activeAgent) : null,
+        useProjectRules ? projectRules : null,
+        skillsBlock,
+        nativeRulesFiles,
+      ),
+    [activeAgent, nativeRulesFiles, projectRules, skillsBlock, useProjectRules],
+  );
 
   const agentAccess = useMemo<AgentAccess | null>(() => {
     if (!activeAgent) return null;

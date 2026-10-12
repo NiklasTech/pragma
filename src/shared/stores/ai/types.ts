@@ -128,6 +128,7 @@ export interface CLIManifest {
   supports_sessions: boolean;
   uses_acp: boolean;
   offers_terminal: boolean;
+  native_rules_files: string[];
 }
 
 export interface CLIStatus {

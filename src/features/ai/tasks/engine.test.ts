@@ -13,6 +13,7 @@ const claude: CLIManifest = {
   supports_sessions: true,
   uses_acp: true,
   offers_terminal: true,
+  native_rules_files: [],
 };
 
 function status(authenticated: boolean): CLIStatus {

@@ -11,6 +11,15 @@ Installed CLIs are listed under **Coding CLIs** in the **New session** menu. Eac
 
 All supported CLIs offer both modes, except DeepSeek Harness, which has no interactive terminal. When a CLI offers only one mode, the menu starts it directly.
 
+## What a conversation receives
+
+Before your first message, Pragma sends a Conversation session a short block of context:
+
+- **Skills**: the catalog of the enabled [workspace skills](./skills.md). With a [named agent](./named-agents.md), the agent's brief, its memory and the skills selected on its **Skills** tab instead.
+- **Project rules**: with **Use PRAGMA.md** turned on, the rules file of the project (`PRAGMA.md`, otherwise `AGENTS.md`, otherwise `CLAUDE.md`), but only when the CLI does not load that file on its own. Codex, Copilot, Cursor, OpenCode, Grok and Kimi read `AGENTS.md`, and Claude Code reads `CLAUDE.md`, so Pragma leaves those out to avoid sending them twice. No CLI reads `PRAGMA.md`, so Pragma always sends it.
+
+Terminal sessions receive nothing from Pragma; the CLI starts exactly as in your shell.
+
 ## Terminal panes
 
 A Terminal session starts the CLI in the session's folder and shows it in a full terminal pane. It is titled with the CLI name and the start time, for example `Claude Code 14:32`. Terminal panes use the font, size and scrollback from **Settings > Terminal**.

@@ -58,6 +58,7 @@ pub struct CLIManifestResponse {
     pub supports_sessions: bool,
     pub uses_acp: bool,
     pub offers_terminal: bool,
+    pub native_rules_files: Vec<String>,
 }
 
 fn terminal_command(check_cmd: &str) -> String {
@@ -83,6 +84,7 @@ pub async fn cli_list_manifests() -> Result<Vec<CLIManifestResponse>, String> {
             supports_sessions: m.supports_sessions,
             uses_acp: m.uses_acp,
             offers_terminal: m.offers_terminal,
+            native_rules_files: m.native_rules_files,
         })
         .collect())
 }
