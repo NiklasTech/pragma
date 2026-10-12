@@ -4,6 +4,7 @@ import { Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
+import { convertSkill } from "@/features/ai/skills/convertSkill";
 import { SkillList } from "@/features/ai/skills/SkillList";
 import { useSkillsStore } from "@/features/ai/skills/store";
 import { useCreateSkill } from "@/features/ai/skills/useCreateSkill";
@@ -38,6 +39,9 @@ export function SkillsSettings() {
         isEnabled={(skill) => skill.enabled}
         onToggle={(skill, enabled) =>
           void setWorkspaceEnabled(skill, enabled).catch((err: unknown) => toast.error(String(err)))
+        }
+        onConvert={(skill) =>
+          void convertSkill(skill).catch((err: unknown) => toast.error(String(err)))
         }
       />
     </SettingSection>
