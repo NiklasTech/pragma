@@ -83,7 +83,7 @@ export function GitToolbar({
   isRefreshBusy: boolean;
 }) {
   return (
-    <div className="flex items-center gap-1 px-2.5 pb-2">
+    <div className="flex flex-wrap items-center gap-1 px-2.5 pb-2">
       <SyncButton
         icon={ArrowDown}
         label="Pull"
@@ -100,16 +100,23 @@ export function GitToolbar({
         disabled={!canPushPull || ahead === 0}
         onClick={onPush}
       />
+      <SyncButton
+        icon={CloudArrowDown}
+        label="Fetch"
+        count={0}
+        busy={isFetchBusy}
+        disabled={!canPushPull}
+        onClick={onFetch}
+      />
       {ahead === 0 && behind === 0 && (
         <span className="hidden truncate pl-1 text-ui-2xs text-fg-subtle @min-[280px]:inline">
           Up to date
         </span>
       )}
       <div className="ml-auto flex items-center gap-0.5">
-        <ToolbarButton icon={CloudArrowDown} label="Fetch" onClick={onFetch} busy={isFetchBusy} />
         <ToolbarButton
           icon={ArrowsClockwise}
-          label="Refresh"
+          label="Refresh local status (does not fetch)"
           onClick={onRefresh}
           busy={isRefreshBusy}
         />
