@@ -194,7 +194,7 @@ pnpm install
 pnpm run dev:desktop
 ```
 
-The dev build runs as **Pragma Dev** with the identifier `dev.pragma.ide.dev`. It starts next to an installed Pragma, keeps its own settings and app data and shows its own onboarding. API keys in the OS keychain are shared with the installed app.
+The dev build runs as **Pragma Dev** with the identifier `dev.pragma.ide.dev`. It starts next to an installed Pragma, keeps its own settings and app data and shows its own onboarding. API keys in the OS keychain are shared with the installed app. A debug build started without `tauri.dev.conf.json`, for example with a plain `vp run tauri dev`, stops with a hint to use `pnpm run dev:desktop`.
 
 ### Scripts
 

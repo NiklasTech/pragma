@@ -48,15 +48,15 @@ pnpm install
 # Start the frontend development server
 pnpm exec vp dev
 
-# Start the full Tauri desktop app
-pnpm exec vp run tauri dev
+# Start the full Tauri desktop app as Pragma Dev
+pnpm exec vp run tauri dev --config src-tauri/tauri.dev.conf.json
 ```
 
 If you have the Vite+ CLI installed globally:
 
 ```bash
 vp dev
-vp run tauri dev
+vp run tauri dev --config src-tauri/tauri.dev.conf.json
 ```
 
 > **Shortcut:** The same commands are available via `pnpm run`:

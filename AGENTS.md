@@ -73,15 +73,15 @@ Every new Tauri command must:
 
 ## Project Commands
 
-| Command                        | `pnpm run` shortcut      | Purpose                   |
-| ------------------------------ | ------------------------ | ------------------------- |
-| `pnpm exec vp dev`             | `pnpm run dev`           | Frontend dev server       |
-| `pnpm exec vp run tauri dev`   | `pnpm run dev:desktop`   | Run full Tauri app        |
-| `pnpm exec vp run tauri build` | `pnpm run build:desktop` | Tauri release build       |
-| `pnpm exec vp check`           | `pnpm run check`         | Lint + Format + TypeCheck |
-| `pnpm exec vp test`            | `pnpm run test`          | Vitest                    |
-| `cargo check` / `cargo clippy` | —                        | Rust check / lint         |
-| `cargo fmt --check`            | —                        | Rust format check         |
+| Command                                                             | `pnpm run` shortcut      | Purpose                          |
+| ------------------------------------------------------------------- | ------------------------ | -------------------------------- |
+| `pnpm exec vp dev`                                                  | `pnpm run dev`           | Frontend dev server              |
+| `pnpm exec vp run tauri dev --config src-tauri/tauri.dev.conf.json` | `pnpm run dev:desktop`   | Run full Tauri app as Pragma Dev |
+| `pnpm exec vp run tauri build`                                      | `pnpm run build:desktop` | Tauri release build              |
+| `pnpm exec vp check`                                                | `pnpm run check`         | Lint + Format + TypeCheck        |
+| `pnpm exec vp test`                                                 | `pnpm run test`          | Vitest                           |
+| `cargo check` / `cargo clippy`                                      | —                        | Rust check / lint                |
+| `cargo fmt --check`                                                 | —                        | Rust format check                |
 
 ## Verification (before claiming done)
 
