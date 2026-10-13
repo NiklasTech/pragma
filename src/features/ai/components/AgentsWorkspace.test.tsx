@@ -11,6 +11,7 @@ const ai = vi.hoisted(() => ({
       updatedAt: number;
     }>,
     activeChatSessionId: null as string | null,
+    workEnvironments: [] as unknown[],
     cliManifests: [] as unknown[],
     cliStatuses: {} as Record<string, unknown>,
     loadSessions: async () => {},

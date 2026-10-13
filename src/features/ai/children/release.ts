@@ -2,6 +2,7 @@ import { useAgentStore } from "@/features/agent/store";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
 import { disposeTerminal } from "../terminal/runner";
+import { releaseWorktrees } from "../worktree/cleanup";
 import { childSessions, descendantIds } from "./limits";
 import { stopChildRun } from "./runner";
 
@@ -32,10 +33,12 @@ export async function releaseChildren(
   if (archive) {
     const ids = new Set(parentIds.flatMap((parentId) => descendantIds(chatSessions, parentId)));
     for (const parentId of parentIds) ids.delete(parentId);
-    for (const child of chatSessions.filter((item) => ids.has(item.id) && !item.archived)) {
+    const archived = chatSessions.filter((item) => ids.has(item.id) && !item.archived);
+    for (const child of archived) {
       stopSession(rootPath, child.id);
       await updateChatSession(rootPath, { ...child, archived: true, updatedAt: now });
     }
+    await releaseWorktrees(rootPath, archived);
     return;
   }
 

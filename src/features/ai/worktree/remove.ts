@@ -17,10 +17,18 @@ export async function removeSessionWorktree(
   session: ChatSession,
   force: boolean,
 ): Promise<boolean> {
-  const store = useAIStore.getState();
-  const worktree = sessionEnvironment(session, store.workEnvironments);
+  const worktree = sessionEnvironment(session, useAIStore.getState().workEnvironments);
   if (worktree?.kind !== "worktree") return false;
+  return removeWorktreeEnvironment(rootPath, worktree, force);
+}
 
+/** Runs the teardown script, removes the worktree and moves every session using it to the checkout. */
+export async function removeWorktreeEnvironment(
+  rootPath: string,
+  worktree: WorkEnvironment,
+  force: boolean,
+): Promise<boolean> {
+  const store = useAIStore.getState();
   const users = store.chatSessions.filter((item) => item.environmentId === worktree.id);
   const agent = useAgentStore.getState();
   if (users.some((item) => item.id === agent.runSessionId)) agent.requestStop();

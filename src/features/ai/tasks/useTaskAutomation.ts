@@ -2,10 +2,13 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
+import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { isRunLive, useChildRunsStore } from "../children/runStore";
+import { releaseWorktrees } from "../worktree/cleanup";
 import { startTaskInBackground } from "./background";
+import { finishedTaskSessionIds } from "./finished";
 import { nextRunAt, scheduledRunTitle } from "./schedule";
 import { useTasksStore } from "./store";
 import type { Task } from "./types";
@@ -37,7 +40,7 @@ export function dueTasks(tasks: Task[], planned: Map<string, Planned>, now: numb
   return due;
 }
 
-/// Keeps tasks loaded for the open folder, starts scheduled tasks and moves finished background runs to review.
+/// Keeps tasks loaded for the open folder, starts scheduled tasks, moves finished background runs to review and removes the worktrees of finished tasks.
 export function useTaskAutomation(): void {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
 
@@ -62,6 +65,18 @@ export function useTaskAutomation(): void {
     tick();
     const timer = setInterval(tick, TICK_MS);
     return () => clearInterval(timer);
+  }, [rootPath]);
+
+  useEffect(() => {
+    if (!rootPath || !isWorkspaceWindow()) return;
+    return useTasksStore.subscribe((state, previous) => {
+      const sameFolder = state.rootPath === rootPath && previous.rootPath === rootPath;
+      if (!sameFolder || !state.loaded || !previous.loaded) return;
+      const ids = new Set(finishedTaskSessionIds(previous.tasks, state.tasks));
+      if (ids.size === 0) return;
+      const sessions = useAIStore.getState().chatSessions.filter((session) => ids.has(session.id));
+      void releaseWorktrees(rootPath, sessions);
+    });
   }, [rootPath]);
 
   useEffect(
