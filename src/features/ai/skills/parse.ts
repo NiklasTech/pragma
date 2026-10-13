@@ -6,7 +6,7 @@ import type { Skill } from "./types";
 export const SKILL_HEADINGS = ["Steps", "Check", "Needs approval"] as const;
 
 const SKILL_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
-const FRONT_MATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
+export const FRONT_MATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 
 export function isValidSkillId(id: string): boolean {
   return SKILL_ID_PATTERN.test(id);

@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -23,9 +24,11 @@ import { AgentMemoryTab } from "./AgentMemoryTab";
 import { AgentSkillsTab } from "./AgentSkillsTab";
 import { DeleteAgentDialog } from "./DeleteAgentDialog";
 import { engineLabel } from "./AgentEnginePicker";
+import { agentScope, SCOPE_LABELS } from "./scope";
 import { useNamedAgentsStore } from "./store";
-import { exportAgent } from "./transferActions";
-import type { Agent } from "./types";
+import { exportAgent, exportAgentMarkdown } from "./transferActions";
+import type { Agent, AgentScope } from "./types";
+import { useNamedAgentsUiStore } from "./ui";
 
 type AgentTab = "brief" | "memory" | "skills" | "folders";
 
@@ -49,6 +52,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const saveAgent = useNamedAgentsStore((state) => state.saveAgent);
   const deleteAgent = useNamedAgentsStore((state) => state.deleteAgent);
+  const copyAgent = useNamedAgentsStore((state) => state.copyAgent);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const cliManifests = useAIStore((state) => state.cliManifests);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
@@ -60,11 +64,27 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const childCount = outsideChildren(chatSessions, ownedIds).length;
   const cliName =
     cliManifests.find((manifest) => manifest.id === agent.engine.cliProviderId)?.name ?? null;
+  const scope = agentScope(agent);
+  const copyTarget: AgentScope = scope === "project" ? "personal" : "project";
 
   const handleFolders = (folders: string[]) => {
     void saveAgent({ ...agent, folders, updatedAt: Date.now() }).catch(() =>
       toast.error("Could not save folders"),
     );
+  };
+
+  const handleCopy = () => {
+    void copyAgent(agent, copyTarget)
+      .then(({ agent: copy, droppedFolders }) => {
+        toast.success(`Copied ${agent.name} to ${SCOPE_LABELS[copyTarget].toLowerCase()} agents`, {
+          description:
+            droppedFolders > 0 ? "Folders outside the workspace were not copied." : undefined,
+        });
+        useNamedAgentsUiStore.getState().selectAgent(copy.id);
+      })
+      .catch((err: unknown) =>
+        toast.error("Could not copy the agent", { description: String(err) }),
+      );
   };
 
   const handleDelete = (archiveChildren: boolean) => {
@@ -96,7 +116,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           <div className="flex min-w-0 flex-col">
             <h2 className="truncate text-ui-md font-semibold text-fg-default">{agent.name}</h2>
             <span className="truncate text-ui-xs text-fg-subtle">
-              {engineLabel(agent.engine, cliName)}
+              {`${SCOPE_LABELS[scope]} - ${engineLabel(agent.engine, cliName)}`}
             </span>
           </div>
           <span className="flex-1" />
@@ -114,8 +134,8 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
               render={
                 <button
                   type="button"
-                  aria-label="Export agent"
-                  title="Export agent"
+                  aria-label="Export or copy agent"
+                  title="Export or copy agent"
                   className="flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
                 />
               }
@@ -131,6 +151,16 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
                 onClick={() => void exportAgent(agent, true)}
               >
                 Export with memory
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void exportAgentMarkdown(agent)}>
+                Export as Markdown
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={copyTarget === "project" && rootPath === "default"}
+                onClick={handleCopy}
+              >
+                {copyTarget === "project" ? "Copy to project" : "Copy to personal agents"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

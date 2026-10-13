@@ -8,16 +8,20 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useAIStore } from "@/shared/stores/ai";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useWorkspaceSkills } from "@/features/ai/skills/useWorkspaceSkills";
 
 import { AgentEnginePicker } from "./AgentEnginePicker";
 import { AgentFoldersTab } from "./AgentFoldersTab";
 import { AgentMcpServersField } from "./AgentMcpServersField";
+import { AgentScopePicker } from "./AgentScopePicker";
 import { draftAgent } from "./draft";
+import { relativeAgentFolders } from "./projectFile";
+import { agentScope, agentsInScope, newAgentId, portableEngine } from "./scope";
 import { useNamedAgentsStore } from "./store";
 import { AGENT_TEMPLATES, suggestedSkillIds, type AgentTemplate } from "./templates";
 import { uniqueAgentName } from "./transfer";
-import type { Agent, AgentEngine } from "./types";
+import type { Agent, AgentEngine, AgentScope } from "./types";
 import {
   AGENT_BRIEF_MAX,
   AGENT_NAME_MAX,
@@ -39,7 +43,9 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
   const providers = useAIStore((state) => state.providers);
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
 
+  const [scope, setScope] = useState<AgentScope>(agent ? agentScope(agent) : "personal");
   const [description, setDescription] = useState("");
   const [name, setName] = useState(agent?.name ?? "");
   const [brief, setBrief] = useState(agent?.brief ?? "");
@@ -89,7 +95,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
   }, [activeModel, activeProvider, description, providers]);
 
   const applyTemplate = (template: AgentTemplate) => {
-    setName(uniqueAgentName(template.name, agents));
+    setName(uniqueAgentName(template.name, agentsInScope(agents, scope)));
     setBrief(template.brief);
     setSkills(suggestedSkillIds(template, workspaceSkills));
     setError(null);
@@ -107,40 +113,65 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       setError(`Name must be 1 to ${AGENT_NAME_MAX} characters`);
       return;
     }
-    if (!isAgentNameUnique(trimmedName, agents, agent?.id)) {
-      setError("An agent with this name already exists");
+    if (!isAgentNameUnique(trimmedName, agentsInScope(agents, scope), agent?.id)) {
+      setError(`A ${scope} agent with this name already exists`);
       return;
     }
     if (!isAgentBriefValid(trimmedBrief)) {
       setError(`Brief must be 1 to ${AGENT_BRIEF_MAX} characters`);
       return;
     }
+    if (scope === "project") {
+      if (!rootPath) {
+        setError("Open a folder to save project agents");
+        return;
+      }
+      if (relativeAgentFolders(rootPath, folders).outside.length > 0) {
+        setError("Project agents can only use folders inside the workspace");
+        return;
+      }
+    }
 
     setError(null);
     setSaving(true);
     const now = Date.now();
     const saved: Agent = {
-      id: agent?.id ?? crypto.randomUUID(),
+      id: agent?.id ?? newAgentId(scope, trimmedName, agents),
       name: trimmedName,
       brief: trimmedBrief,
-      engine,
+      engine: scope === "project" ? portableEngine(engine) : engine,
       folders,
       memory: agent?.memory ?? [],
       skills,
       createdAt: agent?.createdAt ?? now,
       updatedAt: now,
     };
+    if (agent?.description) saved.description = agent.description;
     if (mcpServers) saved.mcpServers = mcpServers;
+    if (scope === "project") saved.scope = "project";
 
     try {
       await saveAgent(saved);
       onSaved(saved);
-    } catch {
-      toast.error("Could not save the agent");
+    } catch (err) {
+      toast.error("Could not save the agent", { description: String(err) });
     } finally {
       setSaving(false);
     }
-  }, [agent, agents, brief, engine, folders, mcpServers, name, onSaved, saveAgent, skills]);
+  }, [
+    agent,
+    agents,
+    brief,
+    engine,
+    folders,
+    mcpServers,
+    name,
+    onSaved,
+    rootPath,
+    saveAgent,
+    scope,
+    skills,
+  ]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -162,6 +193,17 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+          {!agent && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-ui-xs font-medium text-fg-muted">Scope</span>
+              <AgentScopePicker
+                value={scope}
+                projectAvailable={rootPath !== null}
+                onChange={setScope}
+              />
+            </div>
+          )}
+
           {!agent && (
             <div className="flex flex-col gap-1.5">
               <span className="text-ui-xs font-medium text-fg-muted">Start from a template</span>
