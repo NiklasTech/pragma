@@ -3,10 +3,13 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  # Runs on main save the Rust cache that pull requests restore.
+  push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -103,12 +106,19 @@ jobs:
         with:
           components: clippy
 
+      - name: Check Rust formatting
+        if: needs.changes.outputs.rust == 'true'
+        working-directory: src-tauri
+        run: cargo fmt -- --check
+
       - name: Cache Rust dependencies
         if: needs.changes.outputs.rust == 'true'
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
           cache-on-failure: true
+          # Pull requests only read the cache; their own entries would evict main's.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Run clippy
         if: needs.changes.outputs.rust == 'true'
@@ -119,8 +129,3 @@ jobs:
         if: needs.changes.outputs.rust == 'true'
         working-directory: src-tauri
         run: cargo test --features test-fixtures
-
-      - name: Check Rust formatting
-        if: needs.changes.outputs.rust == 'true'
-        working-directory: src-tauri
-        run: cargo fmt -- --check
