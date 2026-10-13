@@ -13,12 +13,16 @@ interface WorktreeCreateResponse {
   status: "ready" | "error";
 }
 
-/** Creates a worktree and stores it as a new work environment of the workspace. */
-export async function createWorktreeEnvironment(rootPath: string): Promise<WorkEnvironment> {
+/** Creates a worktree from `baseBranch` (default: the checkout's HEAD) and stores it as a work environment. */
+export async function createWorktreeEnvironment(
+  rootPath: string,
+  baseBranch?: string,
+): Promise<WorkEnvironment> {
   const id = crypto.randomUUID();
   const created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
     repoPath: rootPath,
     environmentId: id,
+    baseBranch: baseBranch ?? null,
   });
   const environment: WorkEnvironment = {
     id,
