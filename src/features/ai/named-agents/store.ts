@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { useAIStore } from "@/shared/stores/ai";
 
+import { releaseWorktrees } from "../worktree/cleanup";
 import { cliAgentToPragma } from "./cliAgentCopy";
 import { withCliAgents } from "./cliAgentStorage";
 import type { ProjectAgentIssue } from "./projectFile";
@@ -169,6 +170,7 @@ export const useNamedAgentsStore = create<NamedAgentsState>()((set, get) => {
       for (const session of owned) {
         await updateChatSession(rootPath, { ...session, archived: true, updatedAt: Date.now() });
       }
+      await releaseWorktrees(rootPath, owned);
 
       if (!isProject) {
         await saveAgentRoster(nextPersonal);

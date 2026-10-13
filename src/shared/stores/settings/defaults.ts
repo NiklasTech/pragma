@@ -138,6 +138,7 @@ export const defaultSettings: SettingsState = {
     allowedCommands: [],
     useProjectRules: true,
     stepLimit: null,
+    removeWorktrees: true,
   },
   notifications: {
     sessionFinished: true,
