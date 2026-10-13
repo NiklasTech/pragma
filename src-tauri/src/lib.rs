@@ -337,6 +337,8 @@ pub fn run() {
             commands::ai::ai_list_models,
             commands::chat_storage::ai_load_sessions,
             commands::agents::agents_load,
+            commands::agents::agents_project_memory_load,
+            commands::agents::agents_project_memory_save,
             commands::agents::agents_save,
             commands::tasks::tasks_load,
             commands::tasks::tasks_save,

@@ -2,6 +2,8 @@
 const COMMANDS: &[&str] = &[
     "agent_run_command",
     "agents_load",
+    "agents_project_memory_load",
+    "agents_project_memory_save",
     "agents_save",
     "ai_chat",
     "ai_chat_stream",
