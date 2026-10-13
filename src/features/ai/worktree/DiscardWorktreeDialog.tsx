@@ -98,13 +98,7 @@ export function DiscardWorktreeDialog({
         const removed = await removeSessionWorktree(rootPath, session, force);
 
         if (removed && deleteBranch) {
-          const merged = await invoke<boolean>("git_session_branch_merged", {
-            repoPath: rootPath,
-            branch,
-          });
-          if (!merged) {
-            await invoke("git_session_delete_branch", { repoPath: rootPath, branch });
-          }
+          await invoke("git_session_delete_branch", { repoPath: rootPath, branch });
         }
 
         onOpenChange(false);
