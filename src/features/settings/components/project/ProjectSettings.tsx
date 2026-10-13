@@ -14,6 +14,7 @@ import type { WorkspaceSettings } from "@/shared/stores/workspaceSettings/types"
 
 import { SettingRow } from "../ui/SettingRow";
 import { SettingSection } from "../ui/SettingSection";
+import { CliSyncSection } from "./CliSyncSection";
 import { FolderTrustSection } from "./FolderTrustSection";
 import { LspOverrides } from "./LspOverrides";
 import { WritingSessionsSelect } from "./WritingSessionsSelect";
@@ -215,6 +216,8 @@ export function ProjectSettings() {
         value={draft.lsp?.enabled ?? {}}
         onChange={(enabled) => setDraft((current) => ({ ...current, lsp: { enabled } }))}
       />
+
+      <CliSyncSection rootPath={rootPath} trusted={trusted} />
 
       <div className="flex justify-end gap-2">
         <Button variant="ghost" disabled={!dirty || saving} onClick={() => setDraft(saved ?? {})}>

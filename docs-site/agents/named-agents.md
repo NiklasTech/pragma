@@ -68,6 +68,8 @@ To move an agent between scopes, open its export menu and choose **Copy to proje
 
 Subagents that coding CLIs keep in the project, such as `.claude/agents/` or `.codex/agents/`, are listed as read-only project agents labeled with their folder. **Copy to .pragma** turns one into a `.pragma/agents/` file you can edit; see [Skills and agents from coding CLIs](./coding-clis.md#skills-and-agents-from-coding-clis).
 
+In the other direction, `cliSync` in `.pragma/settings.json` writes each project agent into the agent folders of the coding CLIs, for example as a Claude Code subagent in `.claude/agents/`; see [Sync .pragma to coding CLI folders](./coding-clis.md#sync-pragma-to-coding-cli-folders).
+
 ## Brief
 
 The brief is the system instruction for every chat of the agent. Describe its role, the conventions it should follow and what it should not do.

@@ -48,6 +48,7 @@ const COMMANDS: &[&str] = &[
     "cli_list_manifests",
     "cli_logout",
     "cli_start_login",
+    "cli_sync_apply",
     "close_external_window",
     "copilot_auth_status",
     "copilot_logout",

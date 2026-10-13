@@ -25,6 +25,8 @@ If a folder and a single file use the same id, the folder wins and the single fi
 
 Pragma also lists the skills that coding CLIs keep in the project, such as `.claude/skills/` or `.agents/skills/`. They are read-only and start disabled; see [Skills and agents from coding CLIs](./coding-clis.md#skills-and-agents-from-coding-clis).
 
+With `cliSync` in `.pragma/settings.json`, Pragma copies the enabled skills into those CLI folders, so coding CLIs load them as their own skills, also in a plain terminal; see [Sync .pragma to coding CLI folders](./coding-clis.md#sync-pragma-to-coding-cli-folders).
+
 ## File format
 
 ### SKILL.md

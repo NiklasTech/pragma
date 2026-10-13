@@ -16,6 +16,10 @@ export interface WorkspaceSettings {
   lsp?: {
     enabled?: Record<string, boolean>;
   };
+  cliSync?: {
+    targets?: ("agents" | "claude" | "codex" | "cursor" | "gemini" | "github")[];
+    commit?: boolean;
+  };
 }
 
 export type WorkspaceEditorKey = keyof NonNullable<WorkspaceSettings["editor"]>;
