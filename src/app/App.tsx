@@ -30,6 +30,7 @@ import { useActivityTracker } from "@/features/ai/activity/useActivityTracker";
 import { useSubscriptionUsagePoller } from "@/features/ai/subscription/useSubscriptionUsagePoller";
 import { useTaskAutomation } from "@/features/ai/tasks/useTaskAutomation";
 import { useProjectAgentsSync } from "@/features/ai/named-agents/useProjectAgentsSync";
+import { useSkillsSync } from "@/features/ai/skills/useSkillsSync";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
@@ -60,6 +61,7 @@ export default function App() {
   useGitStateSync();
   useWorkspaceSettingsSync();
   useProjectAgentsSync();
+  useSkillsSync();
   useFolderTrust();
   useDiagnosticsCleanup();
   useTerminalShellResolver();

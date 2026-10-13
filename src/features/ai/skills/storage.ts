@@ -19,14 +19,14 @@ interface FileReadResult {
 
 const MAX_NEW_SKILL_ATTEMPTS = 100;
 
-interface SkillSource {
+export interface SkillSource {
   id: string;
   path: string;
 }
 
 const DUPLICATE_ERROR = "Duplicate skill id";
 
-async function listDirectory(path: string): Promise<DirEntry[]> {
+export async function listDirectory(path: string): Promise<DirEntry[]> {
   try {
     return await invoke<DirEntry[]>("list_directory", { path });
   } catch {
@@ -34,7 +34,7 @@ async function listDirectory(path: string): Promise<DirEntry[]> {
   }
 }
 
-async function standardSkillSources(entries: DirEntry[]): Promise<SkillSource[]> {
+export async function standardSkillSources(entries: DirEntry[]): Promise<SkillSource[]> {
   const folders = await Promise.all(
     entries
       .filter((entry) => entry.is_directory)
