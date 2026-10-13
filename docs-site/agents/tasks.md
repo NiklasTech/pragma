@@ -52,6 +52,21 @@ Further actions on a running or finished task:
 
 Only one session runs at a time, so **Run** and **Resume** are disabled while another session is busy.
 
+## Start tasks in parallel
+
+**Start in parallel** on the task board starts up to four tasks from **Todo** at once. Each runs in a background agent session, so no pane opens for it. A task that cannot start now, for example because a blocking task is still open, shows the reason and cannot be picked.
+
+**Work in** decides where the tasks run:
+
+| Work in                  | Effect                                                             |
+| ------------------------ | ------------------------------------------------------------------ |
+| Each in its own worktree | Every task gets a new [worktree](./worktrees.md) and branch        |
+| One shared worktree      | Pragma creates one new worktree, and all tasks work in it together |
+
+Worktrees are created one after another, so their creation never races on the repository. With **One shared worktree** and more than one task, the dialog warns that the tasks edit the same files.
+
+The dialog starts with **Each in its own worktree**. To change that for a project, set **Settings > Project > Agent > Parallel tasks work in**, stored as `agent.parallelTaskEnvironment` (`"isolated"` or `"shared"`) in `.pragma/settings.json`.
+
 ## Storage
 
 Tasks are stored per workspace in `pragma/tasks/<workspace hash>.json` inside Pragma's application data directory. They are not part of the repository.

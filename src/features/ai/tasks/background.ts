@@ -3,7 +3,8 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import type { Agent } from "@/features/ai/named-agents/types";
 
 import { getChildRun, isRunLive } from "../children/runStore";
-import { startSession } from "../sessions/start";
+import { groupEnvironmentRequest } from "../sessions/group";
+import { startSession, type StartSessionRequest } from "../sessions/start";
 import { NO_TASK_ENGINE_MESSAGE, taskEngine } from "./engine";
 import { openBlockers } from "./organize";
 import { useTasksStore } from "./store";
@@ -11,6 +12,9 @@ import type { Task } from "./types";
 import { buildTaskMessage } from "./validation";
 
 export const MAX_PARALLEL_TASKS = 4;
+
+/** Background runs never share the checkout, so only these two modes apply. */
+export type ParallelTaskEnvironment = "isolated" | "shared";
 
 export function isTaskRunningInBackground(task: Pick<Task, "sessionId">): boolean {
   return task.sessionId !== undefined && isRunLive(getChildRun(task.sessionId));
@@ -38,11 +42,20 @@ export async function startTaskInBackground(
   task: Task,
   title = task.title.trim(),
 ): Promise<string | null> {
+  return (await launchTask(rootPath, task, title, { environment: "worktree" })).error;
+}
+
+async function launchTask(
+  rootPath: string,
+  task: Task,
+  title: string,
+  environment: Pick<StartSessionRequest, "environment" | "sameEnvironmentAs">,
+): Promise<{ error: string | null; session?: ChatSession }> {
   const blocker = backgroundStartBlocker(task, useTasksStore.getState().tasks);
-  if (blocker) return blocker;
+  if (blocker) return { error: blocker };
   const agent = findAgent(task);
   const engine = taskEngine(agent?.engine);
-  if (!engine) return NO_TASK_ENGINE_MESSAGE;
+  if (!engine) return { error: NO_TASK_ENGINE_MESSAGE };
 
   let session: ChatSession;
   try {
@@ -55,12 +68,12 @@ export async function startTaskInBackground(
         agentId: agent?.id,
         agentEngine: engine,
       },
-      environment: "worktree",
+      ...environment,
       requireWorktree: true,
       activate: false,
     });
   } catch (err) {
-    return err instanceof Error ? err.message : String(err);
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 
   try {
@@ -68,20 +81,28 @@ export async function startTaskInBackground(
     const { startChildRun } = await import("../children/runner");
     await startChildRun(rootPath, session.id, buildTaskMessage(task));
   } catch (err) {
-    return `Could not start the task: ${String(err)}`;
+    return { error: `Could not start the task: ${String(err)}`, session };
   }
-  return null;
+  return { error: null, session };
 }
 
 /// Starts each task one after another so worktree creation never races on the repository.
 export async function startTasksInBackground(
   rootPath: string,
   tasks: Task[],
+  mode: ParallelTaskEnvironment,
 ): Promise<{ started: number; failures: string[] }> {
   let started = 0;
+  let first: ChatSession | undefined;
   const failures: string[] = [];
   for (const task of tasks.slice(0, MAX_PARALLEL_TASKS)) {
-    const error = await startTaskInBackground(rootPath, task);
+    const { error, session } = await launchTask(
+      rootPath,
+      task,
+      task.title.trim(),
+      groupEnvironmentRequest(mode, first),
+    );
+    first ??= session;
     if (error) failures.push(`${task.title}: ${error}`);
     else started += 1;
   }

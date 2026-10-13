@@ -39,6 +39,15 @@ pub enum WritingSessionEnvironment {
     Checkout,
 }
 
+/// How several sessions started together share their environment.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GroupEnvironment {
+    Isolated,
+    Shared,
+    Checkout,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceAgentSettings {
@@ -48,6 +57,10 @@ pub struct WorkspaceAgentSettings {
     pub step_limit: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub writing_sessions: Option<WritingSessionEnvironment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub launch_cli_environment: Option<GroupEnvironment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parallel_task_environment: Option<GroupEnvironment>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -119,6 +132,9 @@ fn validate_agent(agent: &WorkspaceAgentSettings) -> Result<(), String> {
         .is_some_and(|limit| limit == 0 || limit > MAX_STEP_LIMIT)
     {
         return Err(format!("agent.stepLimit must be 1 to {MAX_STEP_LIMIT}"));
+    }
+    if agent.parallel_task_environment == Some(GroupEnvironment::Checkout) {
+        return Err("agent.parallelTaskEnvironment must be isolated or shared".to_string());
     }
     Ok(())
 }
@@ -245,7 +261,9 @@ mod tests {
             "agent": {
                 "allowedCommands": ["pnpm test"],
                 "stepLimit": 40,
-                "writingSessions": "worktree"
+                "writingSessions": "worktree",
+                "launchCliEnvironment": "checkout",
+                "parallelTaskEnvironment": "shared"
             },
             "lsp": { "enabled": { "rust": false } },
             "mcpServers": { "docs": { "command": "npx" } }
@@ -260,6 +278,14 @@ mod tests {
             settings.agent.as_ref().unwrap().writing_sessions,
             Some(WritingSessionEnvironment::Worktree)
         );
+        assert_eq!(
+            settings.agent.as_ref().unwrap().launch_cli_environment,
+            Some(GroupEnvironment::Checkout)
+        );
+        assert_eq!(
+            settings.agent.as_ref().unwrap().parallel_task_environment,
+            Some(GroupEnvironment::Shared)
+        );
         assert_eq!(settings.lsp.unwrap().enabled.get("rust"), Some(&false));
     }
 
@@ -272,6 +298,8 @@ mod tests {
             json!({ "agent": { "allowedCommands": ["a\nb"] } }),
             json!({ "agent": { "stepLimit": 0 } }),
             json!({ "agent": { "writingSessions": "elsewhere" } }),
+            json!({ "agent": { "launchCliEnvironment": "elsewhere" } }),
+            json!({ "agent": { "parallelTaskEnvironment": "checkout" } }),
             json!({ "lsp": { "enabled": { "../x": true } } }),
             json!({ "editor": { "tabSize": "two" } }),
         ] {
@@ -308,6 +336,8 @@ mod tests {
                 allowed_commands: Some(vec!["cargo test".to_string()]),
                 step_limit: None,
                 writing_sessions: Some(WritingSessionEnvironment::Checkout),
+                launch_cli_environment: Some(GroupEnvironment::Shared),
+                parallel_task_environment: Some(GroupEnvironment::Isolated),
             }),
             ..Default::default()
         };

@@ -27,7 +27,8 @@ Some sessions do not follow the setting:
 
 - **Ask** sessions only read, so they always use the checkout.
 - An explicit choice, such as **Agent > This checkout** in the **New session** menu, wins over the setting.
-- Tasks started in the background always get their own worktree, so parallel runs cannot overwrite each other's files.
+- Tasks started in the background always work in a worktree, either their own or, with [Start in parallel](./tasks.md#start-tasks-in-parallel), one they share.
+- [Launch coding CLIs](./coding-clis.md#run-several-clis-side-by-side) has its own choice between own worktrees, one shared worktree and the checkout.
 - **Duplicate** and **Fork** keep the environment of the session they copy.
 - In a folder that is not a git repository, every session uses the folder itself.
 
