@@ -1,3 +1,5 @@
+import { cliFolderLabel } from "@/features/ai/cli-folders/sources";
+
 import { isPathInside } from "./folders";
 import { newProjectFileId, projectAgentFileId, projectAgentId } from "./projectFile";
 import { uniqueAgentName } from "./transfer";
@@ -10,6 +12,11 @@ export const SCOPE_LABELS: Record<AgentScope, string> = {
 
 export function agentScope(agent: Pick<Agent, "scope">): AgentScope {
   return agent.scope ?? "personal";
+}
+
+/** The scope, or the CLI folder a discovered agent was read from. */
+export function agentOriginLabel(agent: Pick<Agent, "scope" | "source">): string {
+  return agent.source ? cliFolderLabel(agent.source) : SCOPE_LABELS[agentScope(agent)];
 }
 
 export function agentsInScope(agents: Agent[], scope: AgentScope): Agent[] {
@@ -45,8 +52,9 @@ export function copyAgentToScope(
       ? agent.folders.filter((folder) => rootPath !== null && isPathInside(rootPath, folder))
       : agent.folders;
 
+  const { source: _source, ...rest } = agent;
   const copy: Agent = {
-    ...agent,
+    ...rest,
     id: newAgentId(scope, name, agents),
     name,
     engine: scope === "project" ? portableEngine(agent.engine) : agent.engine,

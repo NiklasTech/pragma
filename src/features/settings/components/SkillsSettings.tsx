@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
 import { convertSkill } from "@/features/ai/skills/convertSkill";
+import { copySkill } from "@/features/ai/skills/copySkill";
 import { SkillList } from "@/features/ai/skills/SkillList";
 import { useSkillsStore } from "@/features/ai/skills/store";
 import { useCreateSkill } from "@/features/ai/skills/useCreateSkill";
@@ -32,7 +33,8 @@ export function SkillsSettings() {
       }
     >
       <p className="py-3 text-ui-xs text-fg-muted">
-        Enabled skills are listed in the prompt of sessions without a named agent.
+        Enabled skills are listed in the prompt of sessions without a named agent. Skills from
+        coding CLI folders are read-only and start disabled.
       </p>
       <SkillList
         skills={skills}
@@ -42,6 +44,9 @@ export function SkillsSettings() {
         }
         onConvert={(skill) =>
           void convertSkill(skill).catch((err: unknown) => toast.error(String(err)))
+        }
+        onCopyToPragma={(skill) =>
+          void copySkill(skill).catch((err: unknown) => toast.error(String(err)))
         }
       />
     </SettingSection>

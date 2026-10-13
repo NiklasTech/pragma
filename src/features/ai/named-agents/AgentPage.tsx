@@ -24,7 +24,7 @@ import { AgentMemoryTab } from "./AgentMemoryTab";
 import { AgentSkillsTab } from "./AgentSkillsTab";
 import { DeleteAgentDialog } from "./DeleteAgentDialog";
 import { engineLabel } from "./AgentEnginePicker";
-import { agentScope, SCOPE_LABELS } from "./scope";
+import { agentOriginLabel, agentScope, SCOPE_LABELS } from "./scope";
 import { useNamedAgentsStore } from "./store";
 import { exportAgent, exportAgentMarkdown } from "./transferActions";
 import type { Agent, AgentScope } from "./types";
@@ -32,11 +32,11 @@ import { useNamedAgentsUiStore } from "./ui";
 
 type AgentTab = "brief" | "memory" | "skills" | "folders";
 
-const TABS: Array<{ id: AgentTab; label: string }> = [
+const TABS: Array<{ id: AgentTab; label: string; editable?: boolean }> = [
   { id: "brief", label: "Brief" },
   { id: "memory", label: "Memory" },
-  { id: "skills", label: "Skills" },
-  { id: "folders", label: "Folders" },
+  { id: "skills", label: "Skills", editable: true },
+  { id: "folders", label: "Folders", editable: true },
 ];
 
 interface AgentPageProps {
@@ -53,6 +53,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const saveAgent = useNamedAgentsStore((state) => state.saveAgent);
   const deleteAgent = useNamedAgentsStore((state) => state.deleteAgent);
   const copyAgent = useNamedAgentsStore((state) => state.copyAgent);
+  const copyCliAgent = useNamedAgentsStore((state) => state.copyCliAgent);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const cliManifests = useAIStore((state) => state.cliManifests);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
@@ -66,6 +67,9 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
     cliManifests.find((manifest) => manifest.id === agent.engine.cliProviderId)?.name ?? null;
   const scope = agentScope(agent);
   const copyTarget: AgentScope = scope === "project" ? "personal" : "project";
+  const readOnly = Boolean(agent.source);
+  const tabs = TABS.filter((item) => !readOnly || !item.editable);
+  const activeTab = tabs.some((item) => item.id === tab) ? tab : "brief";
 
   const handleFolders = (folders: string[]) => {
     void saveAgent({ ...agent, folders, updatedAt: Date.now() }).catch(() =>
@@ -80,6 +84,17 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           description:
             droppedFolders > 0 ? "Folders outside the workspace were not copied." : undefined,
         });
+        useNamedAgentsUiStore.getState().selectAgent(copy.id);
+      })
+      .catch((err: unknown) =>
+        toast.error("Could not copy the agent", { description: String(err) }),
+      );
+  };
+
+  const handleCopyToPragma = () => {
+    void copyCliAgent(agent)
+      .then((copy) => {
+        toast.success(`Copied ${agent.name} to .pragma/agents`);
         useNamedAgentsUiStore.getState().selectAgent(copy.id);
       })
       .catch((err: unknown) =>
@@ -116,19 +131,21 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           <div className="flex min-w-0 flex-col">
             <h2 className="truncate text-ui-md font-semibold text-fg-default">{agent.name}</h2>
             <span className="truncate text-ui-xs text-fg-subtle">
-              {`${SCOPE_LABELS[scope]} - ${engineLabel(agent.engine, cliName)}`}
+              {`${agentOriginLabel(agent)} - ${engineLabel(agent.engine, cliName)}`}
             </span>
           </div>
           <span className="flex-1" />
-          <button
-            type="button"
-            aria-label="Delete agent"
-            title="Delete agent"
-            onClick={() => setConfirmingDelete(true)}
-            className="flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-status-error"
-          >
-            <Trash size={14} />
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              aria-label="Delete agent"
+              title="Delete agent"
+              onClick={() => setConfirmingDelete(true)}
+              className="flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-status-error"
+            >
+              <Trash size={14} />
+            </button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -156,27 +173,33 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
                 Export as Markdown
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                disabled={copyTarget === "project" && rootPath === "default"}
-                onClick={handleCopy}
-              >
-                {copyTarget === "project" ? "Copy to project" : "Copy to personal agents"}
-              </DropdownMenuItem>
+              {readOnly ? (
+                <DropdownMenuItem onClick={handleCopyToPragma}>Copy to .pragma</DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  disabled={copyTarget === "project" && rootPath === "default"}
+                  onClick={handleCopy}
+                >
+                  {copyTarget === "project" ? "Copy to project" : "Copy to personal agents"}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button type="button" variant="outline" size="sm" onClick={onEdit}>
-            <PencilSimple size={13} />
-            Edit
-          </Button>
+          {!readOnly && (
+            <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+              <PencilSimple size={13} />
+              Edit
+            </Button>
+          )}
           <Button type="button" size="sm" onClick={onNewChat}>
             <Plus size={13} />
             New chat
           </Button>
         </div>
 
-        <Tabs value={tab} onValueChange={(value: AgentTab) => setTab(value)}>
+        <Tabs value={activeTab} onValueChange={(value: AgentTab) => setTab(value)}>
           <TabsList variant="line">
-            {TABS.map((item) => (
+            {tabs.map((item) => (
               <TabsTrigger key={item.id} value={item.id} className="px-2.5">
                 {item.label}
               </TabsTrigger>
@@ -186,13 +209,13 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {tab === "brief" ? (
+        {activeTab === "brief" ? (
           <div className="p-4">
             <p className="text-ui-sm whitespace-pre-wrap text-fg-default">{agent.brief}</p>
           </div>
-        ) : tab === "memory" ? (
+        ) : activeTab === "memory" ? (
           <AgentMemoryTab agentId={agent.id} memory={agent.memory} />
-        ) : tab === "skills" ? (
+        ) : activeTab === "skills" ? (
           <AgentSkillsTab agent={agent} />
         ) : (
           <AgentFoldersTab folders={agent.folders} onChange={handleFolders} />

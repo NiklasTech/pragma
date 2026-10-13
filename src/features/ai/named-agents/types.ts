@@ -27,6 +27,8 @@ export interface Agent {
   mcpServers?: string[];
   /** Unset for agents in the personal roster. */
   scope?: AgentScope;
+  /** The coding CLI folder a discovered project agent was read from; such agents are read-only. */
+  source?: string;
   createdAt: number;
   updatedAt: number;
 }

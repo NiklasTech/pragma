@@ -66,6 +66,8 @@ Rejected files are listed under the agents with their error and cannot be used. 
 
 To move an agent between scopes, open its export menu and choose **Copy to project** or **Copy to personal agents**. A copy to the project keeps only the folders inside the workspace.
 
+Subagents that coding CLIs keep in the project, such as `.claude/agents/` or `.codex/agents/`, are listed as read-only project agents labeled with their folder. **Copy to .pragma** turns one into a `.pragma/agents/` file you can edit; see [Skills and agents from coding CLIs](./coding-clis.md#skills-and-agents-from-coding-clis).
+
 ## Brief
 
 The brief is the system instruction for every chat of the agent. Describe its role, the conventions it should follow and what it should not do.

@@ -9,7 +9,7 @@ import type { AgentStatus } from "@/features/agent/store";
 
 import { seededAccent } from "../panes/providerAccent";
 import { engineLabel } from "./AgentEnginePicker";
-import { agentScope, SCOPE_LABELS } from "./scope";
+import { agentOriginLabel } from "./scope";
 import { useNamedAgentsStore } from "./store";
 import { importAgent } from "./transferActions";
 import type { Agent } from "./types";
@@ -129,7 +129,7 @@ export function AgentRoster({
                   {agent.name}
                 </span>
                 <span className="truncate text-ui-2xs text-fg-subtle">
-                  {`${SCOPE_LABELS[agentScope(agent)]} - ${engineLabel(
+                  {`${agentOriginLabel(agent)} - ${engineLabel(
                     agent.engine,
                     cliManifests.find((manifest) => manifest.id === agent.engine.cliProviderId)
                       ?.name ?? null,

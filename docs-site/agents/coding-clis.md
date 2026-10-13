@@ -43,3 +43,48 @@ The process keeps running while you look at other panes. A CLI terminal cannot b
 The new terminals replace the panes on screen and are numbered (`Claude Code 14:32 #1`, `#2` and so on). Your other threads stay in the thread list.
 
 All launched terminals work in the same folder, the open workspace.
+
+## Skills and agents from coding CLIs
+
+A repository set up for Claude Code, Codex, Copilot, Cursor or another coding CLI often keeps skills and subagents in that tool's own folder. Pragma reads these folders when a workspace opens and whenever a file in them changes, so they work in Pragma without copying anything. Only the project folders below are read; Pragma never changes a file in them.
+
+| Kind   | Path                               | Format                          | Read by                                                   |
+| ------ | ---------------------------------- | ------------------------------- | --------------------------------------------------------- |
+| Skills | `.agents/skills/<name>/SKILL.md`   | Agent Skills                    | Codex, Gemini CLI, Copilot, Cursor, OpenCode, Antigravity |
+| Skills | `.claude/skills/<name>/SKILL.md`   | Agent Skills                    | Claude Code, Copilot, Cursor                              |
+| Skills | `.github/skills/<name>/SKILL.md`   | Agent Skills                    | Copilot                                                   |
+| Skills | `.cursor/skills/<name>/SKILL.md`   | Agent Skills                    | Cursor                                                    |
+| Skills | `.gemini/skills/<name>/SKILL.md`   | Agent Skills                    | Gemini CLI                                                |
+| Skills | `.opencode/skills/<name>/SKILL.md` | Agent Skills                    | OpenCode                                                  |
+| Agents | `.claude/agents/<name>.md`         | Markdown with YAML front matter | Claude Code, Cursor                                       |
+| Agents | `.codex/agents/<name>.toml`        | TOML                            | Codex                                                     |
+| Agents | `.gemini/agents/<name>.md`         | Markdown with YAML front matter | Gemini CLI                                                |
+| Agents | `.github/agents/<name>.agent.md`   | Markdown with YAML front matter | Copilot (`<name>.md` is accepted too)                     |
+| Agents | `.cursor/agents/<name>.md`         | Markdown with YAML front matter | Cursor                                                    |
+| Agents | `.opencode/agents/<name>.md`       | Markdown with YAML front matter | OpenCode                                                  |
+| Agents | `.grok/agents/<name>.md`           | Markdown with YAML front matter | Grok Build                                                |
+
+The table reflects the documentation of each tool in October 2026. Only files directly in an agent folder are read, not files in its subfolders.
+
+### Skills
+
+Skills from these folders appear in **Settings > Agents > Skills** and on the **Skills** tab of named agents, labeled with their folder, for example `.claude` or `.agents`. They follow the [SKILL.md format](./skills.md#skillmd) with one difference: without `name`, the folder name is used, as Claude Code does.
+
+- A discovered skill starts disabled. Its switch is stored on this machine, because Pragma does not write to CLI folders.
+- Named agents can select discovered skills on their **Skills** tab like `.pragma` skills.
+- **Copy to .pragma** copies the skill folder to `.pragma/skills/<name>/`, including text files next to `SKILL.md`, and adds `name` when it is missing.
+
+### Agents
+
+Agents from these folders appear in the agent list as project agents, labeled with their folder, for example `.claude - Claude Code`. They are read-only: Pragma uses `name`, `description` and the instructions (the Markdown body, or `developer_instructions` in a Codex TOML file) and ignores tool-specific fields such as `tools` or `model`. A missing `name` falls back to the file name.
+
+A discovered agent runs on the CLI it came from, for example Claude Code for `.claude/agents/`. Start a chat with **New chat** as with any other agent; memory works as for project agents. To change the engine, the brief, skills or folders, choose **Copy to .pragma** in the export menu. It writes `.pragma/agents/<name>.md` in the [project agent format](./named-agents.md#project-agents), which you can then edit.
+
+### Precedence and errors
+
+- A skill or agent in `.pragma/` wins over one with the same id in a CLI folder; the CLI entry is not listed. After **Copy to .pragma**, the copy replaces the discovered entry.
+- When several CLI folders use the same id, the first folder in the table above wins.
+- A discovered agent whose name another project agent already uses is listed with an error.
+- A malformed file, for example invalid YAML or TOML or missing instructions, is listed with its error and does not affect the other entries.
+
+Skill and agent folders in your home directory, such as `~/.claude/skills`, plugin skills and CLI commands are not read.

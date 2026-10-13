@@ -23,6 +23,8 @@ The id may only use letters, digits, `-` and `_` (at most 64 characters). The st
 
 If a folder and a single file use the same id, the folder wins and the single file is listed with the error "Duplicate skill id".
 
+Pragma also lists the skills that coding CLIs keep in the project, such as `.claude/skills/` or `.agents/skills/`. They are read-only and start disabled; see [Skills and agents from coding CLIs](./coding-clis.md#skills-and-agents-from-coding-clis).
+
 ## File format
 
 ### SKILL.md
@@ -98,4 +100,4 @@ A named agent ignores the `enabled` field and uses the skills selected on its ow
 
 Pragma does not paste the whole skill into the prompt. The agent receives a list with the name, description and path of each available skill. When a task matches a description, the agent reads the skill file and follows it. For a `SKILL.md`, the agent can also open the files in the skill's folder.
 
-Agents can read skill files freely, but an agent edit to a file in `.pragma/skills/`, including files in skill folders, always needs your approval, even when file edits are otherwise auto-approved.
+Agents can read skill files freely, but an agent edit to a file in `.pragma/skills/` or a CLI skill folder, including files in skill folders, always needs your approval, even when file edits are otherwise auto-approved.

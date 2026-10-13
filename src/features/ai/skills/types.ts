@@ -5,4 +5,6 @@ export interface Skill {
   description: string;
   enabled: boolean;
   error: string | null;
+  /** The CLI folder a discovered skill was read from; unset for `.pragma/skills`. */
+  source?: string;
 }

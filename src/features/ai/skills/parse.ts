@@ -80,7 +80,13 @@ function headingError(body: string): string | null {
   return null;
 }
 
-export function parseSkill(id: string, path: string, content: string): Skill {
+/** `nameFromId` accepts a missing name, as coding CLIs fall back to the folder name. */
+export function parseSkill(
+  id: string,
+  path: string,
+  content: string,
+  { nameFromId = false }: { nameFromId?: boolean } = {},
+): Skill {
   const format = skillFormat(id, path);
   const fallback: Skill = { id, path, name: id, description: "", enabled: false, error: null };
   if (!isValidSkillId(id)) {
@@ -92,7 +98,7 @@ export function parseSkill(id: string, path: string, content: string): Skill {
   if (!frontMatter) return { ...fallback, error: "Missing front matter" };
 
   const { fields, body } = frontMatter;
-  const name = fields.get("name") ?? "";
+  const name = fields.get("name") || (nameFromId ? id : "");
   const description = (fields.get("description") ?? "").replace(/\s*\n\s*/g, " ");
   const enabledValue = fields.get("enabled");
   const skill: Skill = {
