@@ -13,13 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useAgentStore } from "@/features/agent/store";
-import { defaultEnvironment, type WorktreeChoice } from "@/features/ai/worktree/choice";
-import { createSessionForChoice } from "@/features/ai/worktree/create";
-import { useWorktreeChoiceStore } from "@/features/ai/worktree/remember";
+import { defaultEnvironment, type EnvironmentChoice } from "@/features/ai/sessions/environment";
+import { startSession } from "@/features/ai/sessions/start";
 
 import { useAgentsPanesStore } from "../panes/store";
 import { homePromptLabel, isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
@@ -43,22 +43,18 @@ export function AgentsHome() {
   const [prompt, setPrompt] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [picked, setPicked] = useState<WorktreeChoice | null>(null);
+  const [picked, setPicked] = useState<EnvironmentChoice | null>(null);
   const [repoCheck, setRepoCheck] = useState<RepoCheckResult | null>(null);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
-  const createChatSession = useAIStore((state) => state.createChatSession);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const openSession = useAgentsPanesStore((state) => state.openSession);
   const agentModeActive = useAgentStore((state) => state.modeActive);
-  const rememberedChoice = useWorktreeChoiceStore((state) =>
-    rootPath ? state.choices[rootPath] : undefined,
-  );
-  const setChoice = useWorktreeChoiceStore((state) => state.setChoice);
+  const setting = useWorkspaceSettingsStore((state) => state.settings?.agent?.writingSessions);
 
   const writingMode = agentModeActive;
-  const recommended = defaultEnvironment(chatSessions, rememberedChoice);
+  const recommended = defaultEnvironment(chatSessions, setting);
   const canChooseWorktree = writingMode && repoCheck?.is_repo === true;
-  const choice: WorktreeChoice = picked ?? recommended;
+  const choice: EnvironmentChoice = picked ?? recommended;
 
   useEffect(() => {
     setPicked(null);
@@ -94,41 +90,19 @@ export function AgentsHome() {
     }
 
     try {
-      let session: ChatSession | null;
-      if (canChooseWorktree) {
-        setChoice(rootPath, choice);
-        session = await createSessionForChoice(rootPath, choice);
-      } else if (writingMode) {
-        session = await createSessionForChoice(rootPath, "checkout");
-      } else {
-        session = await createChatSession(rootPath, { kind: "ask", environment: "checkout" });
-      }
-
-      if (!session) {
-        clearPendingFirstMessage();
-        setError("Could not start the thread.");
-        return;
-      }
-
+      const session = await startSession(rootPath, {
+        init: { kind: writingMode ? "agent" : "ask" },
+        environment: picked ?? undefined,
+      });
       openSession(rootPath, session.id);
       setPrompt("");
-    } catch {
+    } catch (err) {
       clearPendingFirstMessage();
-      setError("Could not start the thread.");
+      setError(err instanceof Error ? err.message : "Could not start the thread.");
     } finally {
       setCreating(false);
     }
-  }, [
-    canChooseWorktree,
-    choice,
-    createChatSession,
-    creating,
-    openSession,
-    prompt,
-    rootPath,
-    setChoice,
-    writingMode,
-  ]);
+  }, [creating, openSession, picked, prompt, rootPath, writingMode]);
 
   return (
     <div className="flex h-full w-full items-center justify-center overflow-y-auto px-6 py-10">

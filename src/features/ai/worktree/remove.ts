@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
 import { useAgentStore } from "@/features/agent/store";
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
 
 import { sessionEnvironment } from "./cwd";
 
@@ -50,4 +50,22 @@ export async function removeSessionWorktree(
   }
   await store.deleteEnvironment(rootPath, worktree.id);
   return true;
+}
+
+/// Removes a worktree no session uses, so failed starts do not pile up worktrees.
+export async function discardWorktreeEnvironment(
+  rootPath: string,
+  worktree: WorkEnvironment,
+): Promise<void> {
+  try {
+    await invoke("git_session_worktree_remove", {
+      repoPath: rootPath,
+      worktreePath: worktree.path,
+      force: true,
+    });
+    await invoke("git_session_delete_branch", { repoPath: rootPath, branch: worktree.branch });
+    await useAIStore.getState().deleteEnvironment(rootPath, worktree.id);
+  } catch {
+    // The start fails either way; a leftover worktree can still be removed by hand.
+  }
 }

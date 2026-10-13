@@ -1,11 +1,11 @@
 import { useCallback } from "react";
+import { toast } from "sonner";
 
-import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
+import type { CLIManifest } from "@/shared/stores/ai";
 import { createTerminalSession } from "../panes/launch";
 import { findLeaf } from "../panes/operations";
 import { useAgentsPanesStore } from "../panes/store";
-import { createSessionForChoice } from "../worktree/create";
-import { useWorktreeChoiceStore } from "../worktree/remember";
+import { startSession, type StartSessionRequest } from "../sessions/start";
 
 export interface NewSessionActions {
   startAsk: () => Promise<void>;
@@ -39,49 +39,54 @@ export function useNewSessionActions(
     [rootPath, targetLeafId],
   );
 
-  const startAsk = useCallback(async () => {
-    if (!rootPath) return;
-    const session = await useAIStore
-      .getState()
-      .createChatSession(rootPath, { kind: "ask", environment: "checkout" });
-    place(session.id);
-  }, [place, rootPath]);
+  const start = useCallback(
+    async (request: StartSessionRequest) => {
+      if (!rootPath) return;
+      try {
+        const session = await startSession(rootPath, request);
+        place(session.id);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not start the session");
+      }
+    },
+    [place, rootPath],
+  );
 
-  const startAgentCheckout = useCallback(async () => {
-    if (!rootPath) return;
-    useWorktreeChoiceStore.getState().setChoice(rootPath, "checkout");
-    const session = await createSessionForChoice(rootPath, "checkout");
-    if (session) place(session.id);
-  }, [place, rootPath]);
+  const startAsk = useCallback(() => start({ init: { kind: "ask" } }), [start]);
 
-  const startAgentWorktree = useCallback(async () => {
-    if (!rootPath) return;
-    useWorktreeChoiceStore.getState().setChoice(rootPath, "worktree");
-    const session = await createSessionForChoice(rootPath, "worktree");
-    if (session) place(session.id);
-  }, [place, rootPath]);
+  const startAgentCheckout = useCallback(
+    () => start({ init: { kind: "agent" }, environment: "checkout" }),
+    [start],
+  );
+
+  const startAgentWorktree = useCallback(
+    () => start({ init: { kind: "agent" }, environment: "worktree" }),
+    [start],
+  );
 
   const startTerminal = useCallback(
     async (manifest: CLIManifest) => {
       if (!rootPath) return;
-      const session = await createTerminalSession(rootPath, manifest);
-      place(session.id);
+      try {
+        const session = await createTerminalSession(rootPath, manifest);
+        place(session.id);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : `Could not start ${manifest.name}`);
+      }
     },
     [place, rootPath],
   );
 
   const startConversation = useCallback(
-    async (manifest: CLIManifest) => {
-      if (!rootPath) return;
-      const session = await useAIStore.getState().createChatSession(rootPath, {
-        kind: "agent",
-        environment: "checkout",
-        cliProviderId: manifest.id,
-        agentEngine: { kind: "cli", cliProviderId: manifest.id },
-      });
-      place(session.id);
-    },
-    [place, rootPath],
+    (manifest: CLIManifest) =>
+      start({
+        init: {
+          kind: "agent",
+          cliProviderId: manifest.id,
+          agentEngine: { kind: "cli", cliProviderId: manifest.id },
+        },
+      }),
+    [start],
   );
 
   return {

@@ -1,9 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 
-import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
-
-import type { WorktreeChoice } from "./choice";
+import { useAIStore, type WorkEnvironment } from "@/shared/stores/ai";
 
 interface WorktreeCreateResponse {
   branch: string;
@@ -35,29 +32,4 @@ export async function createWorktreeEnvironment(
   if (created.base_branch) environment.baseBranch = created.base_branch;
   await useAIStore.getState().saveEnvironment(rootPath, environment);
   return environment;
-}
-
-export async function createSessionForChoice(
-  rootPath: string,
-  choice: WorktreeChoice,
-): Promise<ChatSession | null> {
-  const { createChatSession } = useAIStore.getState();
-
-  if (choice === "checkout") {
-    return createChatSession(rootPath, { kind: "agent", environment: "checkout" });
-  }
-
-  let environment: WorkEnvironment;
-  try {
-    environment = await createWorktreeEnvironment(rootPath);
-  } catch {
-    toast.error("Could not create a worktree for this thread");
-    return null;
-  }
-
-  return createChatSession(rootPath, {
-    kind: "agent",
-    environment: "worktree",
-    environmentId: environment.id,
-  });
 }

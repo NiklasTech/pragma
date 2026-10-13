@@ -2,13 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { isSameOrInside, parentPath } from "@/shared/lib/fileDisk";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
-import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout";
 import { relativePath } from "@/features/ai/context/autoContext";
 import { useComposerInsertStore } from "@/features/ai/mentions/composerInsert";
 import { activeChatSession, revealChatSession } from "@/features/ai/revealChatSession";
+import { startSession } from "@/features/ai/sessions/start";
 import { movedPath, retargetTabs } from "@/features/editor/retargetTabs";
 import { refreshFileTree } from "./fileTreeRefresh";
 
@@ -96,13 +96,11 @@ export async function addPathsToChat(paths: string[]): Promise<void> {
   let session = activeChatSession();
   if (!session) {
     try {
-      session = await useAIStore.getState().createChatSession(rootPath, {
-        kind: "agent",
-        environment: "checkout",
-        agentEngine: { kind: "builtin" },
+      session = await startSession(rootPath, {
+        init: { kind: "agent", agentEngine: { kind: "builtin" } },
       });
-    } catch {
-      toast.error("Could not open a session");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not open a session");
       return;
     }
   }

@@ -11,6 +11,7 @@ export interface WorkspaceSettings {
   agent?: {
     allowedCommands?: string[];
     stepLimit?: number;
+    writingSessions?: "worktree" | "checkout";
   };
   lsp?: {
     enabled?: Record<string, boolean>;

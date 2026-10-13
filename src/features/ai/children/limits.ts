@@ -27,8 +27,8 @@ function readText(input: unknown, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export function isWritingSession(session: ChatSession): boolean {
-  return session.kind !== "ask" && session.kind !== "terminal";
+export function isWritingSession(session: Pick<ChatSession, "kind">): boolean {
+  return session.kind !== "ask";
 }
 
 export function parseSpawnRequest(input: unknown, parent: ChatSession): SpawnParse {

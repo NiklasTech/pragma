@@ -5,6 +5,7 @@ import { createAgentChat } from "@/features/ai/named-agents/createChat";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
+import { startSession } from "@/features/ai/sessions/start";
 
 import { taskEngine, toastNoTaskEngine } from "./engine";
 import { openBlockers } from "./organize";
@@ -52,15 +53,11 @@ export async function runTask(rootPath: string, task: Task): Promise<void> {
   try {
     session = agent
       ? await createAgentChat(rootPath, agent, title)
-      : await useAIStore.getState().createChatSession(rootPath, {
-          title,
-          kind: "agent",
-          environment: "checkout",
-          cliProviderId: engine.cliProviderId,
-          agentEngine: engine,
+      : await startSession(rootPath, {
+          init: { title, kind: "agent", cliProviderId: engine.cliProviderId, agentEngine: engine },
         });
-  } catch {
-    toast.error("Could not start the task");
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Could not start the task");
     return;
   }
 

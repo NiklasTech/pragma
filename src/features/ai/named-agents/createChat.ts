@@ -1,5 +1,6 @@
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import type { ChatSession } from "@/shared/stores/ai";
 
+import { startSession } from "../sessions/start";
 import type { Agent } from "./types";
 
 export async function createAgentChat(
@@ -7,11 +8,7 @@ export async function createAgentChat(
   agent: Agent,
   title?: string,
 ): Promise<ChatSession> {
-  return useAIStore.getState().createChatSession(rootPath, {
-    title,
-    kind: "agent",
-    environment: "checkout",
-    agentId: agent.id,
-    agentEngine: agent.engine,
+  return startSession(rootPath, {
+    init: { title, kind: "agent", agentId: agent.id, agentEngine: agent.engine },
   });
 }

@@ -16,6 +16,7 @@ import { SettingRow } from "../ui/SettingRow";
 import { SettingSection } from "../ui/SettingSection";
 import { FolderTrustSection } from "./FolderTrustSection";
 import { LspOverrides } from "./LspOverrides";
+import { WritingSessionsSelect } from "./WritingSessionsSelect";
 import { InheritSelect, parseNumberList, parsePositiveInt } from "./fields";
 
 type EditorDraft = NonNullable<WorkspaceSettings["editor"]>;
@@ -156,6 +157,16 @@ export function ProjectSettings() {
               onChange={(event) =>
                 setAgent({ stepLimit: parsePositiveInt(event.target.value, 10_000) })
               }
+            />
+          }
+        />
+        <SettingRow
+          label="Writing sessions work in"
+          description="Agent sessions, coding CLIs and tasks. Automatic uses a new worktree while another session works in the checkout."
+          control={
+            <WritingSessionsSelect
+              value={draft.agent?.writingSessions}
+              onChange={(writingSessions) => setAgent({ writingSessions })}
             />
           }
         />

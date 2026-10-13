@@ -1,11 +1,9 @@
-import { invoke } from "@tauri-apps/api/core";
-
-import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
+import type { ChatSession } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import type { Agent } from "@/features/ai/named-agents/types";
 
 import { getChildRun, isRunLive } from "../children/runStore";
-import { createWorktreeEnvironment } from "../worktree/create";
+import { startSession } from "../sessions/start";
 import { NO_TASK_ENGINE_MESSAGE, taskEngine } from "./engine";
 import { openBlockers } from "./organize";
 import { useTasksStore } from "./store";
@@ -34,21 +32,6 @@ function findAgent(task: Task): Agent | undefined {
     : undefined;
 }
 
-/// Removes a worktree no session uses, so failed scheduled runs do not pile up worktrees.
-async function discardWorktree(rootPath: string, worktree: WorkEnvironment): Promise<void> {
-  try {
-    await invoke("git_session_worktree_remove", {
-      repoPath: rootPath,
-      worktreePath: worktree.path,
-      force: true,
-    });
-    await invoke("git_session_delete_branch", { repoPath: rootPath, branch: worktree.branch });
-    await useAIStore.getState().deleteEnvironment(rootPath, worktree.id);
-  } catch {
-    // The run is skipped either way; a leftover worktree can still be removed by hand.
-  }
-}
-
 /// Starts a task in a fresh worktree session that runs without a pane; returns an error or null.
 export async function startTaskInBackground(
   rootPath: string,
@@ -63,27 +46,21 @@ export async function startTaskInBackground(
 
   let session: ChatSession;
   try {
-    const worktree = await createWorktreeEnvironment(rootPath);
     // Parallel runs in the shared checkout would overwrite each other's files.
-    if (worktree.setupStatus !== "ready") {
-      await discardWorktree(rootPath, worktree);
-      return "The worktree setup script failed";
-    }
-    session = await useAIStore.getState().createChatSession(
-      rootPath,
-      {
+    session = await startSession(rootPath, {
+      init: {
         title,
         kind: "agent",
-        environment: "worktree",
-        environmentId: worktree.id,
         cliProviderId: engine.cliProviderId,
         agentId: agent?.id,
         agentEngine: engine,
       },
-      { activate: false },
-    );
+      environment: "worktree",
+      requireWorktree: true,
+      activate: false,
+    });
   } catch (err) {
-    return `Could not create a worktree session: ${String(err)}`;
+    return err instanceof Error ? err.message : String(err);
   }
 
   try {
