@@ -16,6 +16,7 @@ const PRIORITIES: [&str; 3] = ["low", "medium", "high"];
 const MAX_LABELS: usize = 10;
 const MAX_LABEL_CHARS: usize = 32;
 const MAX_ISSUE_URL_CHARS: usize = 500;
+const MAX_SOURCE_PATH_CHARS: usize = 1024;
 const FREQUENCIES: [&str; 2] = ["daily", "weekly"];
 
 // ─── Public Types ────────────────────────────────────────────────────────────
@@ -59,6 +60,9 @@ pub struct Task {
     pub issue_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub issue_number: Option<u64>,
+    /// Workspace-relative Markdown file the task was imported from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_path: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub schedule: Option<TaskSchedule>,
     pub created_at: i64,
@@ -122,6 +126,15 @@ fn validate_schedule(schedule: &TaskSchedule) -> Result<(), String> {
     Ok(())
 }
 
+fn is_relative_source_path(path: &str) -> bool {
+    let drive = path.as_bytes().get(1) == Some(&b':');
+    !path.is_empty()
+        && path.chars().count() <= MAX_SOURCE_PATH_CHARS
+        && !path.starts_with(['/', '\\'])
+        && !drive
+        && path.split(['/', '\\']).all(|part| part != "..")
+}
+
 fn validate_blockers(task: &Task, ids: &std::collections::HashSet<&str>) -> Result<(), String> {
     let mut seen = std::collections::HashSet::new();
     for blocker in &task.blocked_by {
@@ -168,6 +181,13 @@ fn validate_tasks(tasks: &[Task]) -> Result<(), String> {
             !url.starts_with("https://") || url.chars().count() > MAX_ISSUE_URL_CHARS
         }) {
             return Err("Issue links must be https URLs".to_string());
+        }
+        if task
+            .source_path
+            .as_deref()
+            .is_some_and(|path| !is_relative_source_path(path))
+        {
+            return Err("Source paths must be relative to the workspace".to_string());
         }
         if let Some(schedule) = &task.schedule {
             validate_schedule(schedule)?;
@@ -251,6 +271,7 @@ mod tests {
             blocked_by: Vec::new(),
             issue_url: None,
             issue_number: None,
+            source_path: None,
             schedule: None,
             created_at: 1,
             updated_at: 1,
@@ -349,6 +370,29 @@ mod tests {
         let mut unsafe_link = task("a", "Fix", "todo");
         unsafe_link.issue_url = Some("javascript:alert(1)".to_string());
         assert!(validate_tasks(&[unsafe_link]).is_err());
+    }
+
+    #[test]
+    fn source_paths_must_stay_inside_the_workspace() {
+        for (valid, path) in [
+            (true, "plans/login.md"),
+            (true, "docs\\agents\\tasks.md"),
+            (true, "notes..md"),
+            (false, ""),
+            (false, "/etc/passwd.md"),
+            (false, "\\\\server\\share.md"),
+            (false, "C:\\plans.md"),
+            (false, "../outside.md"),
+            (false, "plans/../../outside.md"),
+            (false, "plans\\..\\outside.md"),
+        ] {
+            let mut imported = task("a", "Fix", "todo");
+            imported.source_path = Some(path.to_string());
+            assert_eq!(validate_tasks(&[imported]).is_ok(), valid, "{path}");
+        }
+        let mut long = task("a", "Fix", "todo");
+        long.source_path = Some("x".repeat(1025));
+        assert!(validate_tasks(&[long]).is_err());
     }
 
     #[test]

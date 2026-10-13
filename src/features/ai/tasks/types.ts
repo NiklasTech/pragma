@@ -29,6 +29,8 @@ export interface Task {
   /** GitHub issue the task was imported from. */
   issueUrl?: string;
   issueNumber?: number;
+  /** Workspace-relative Markdown file the task was imported from. */
+  sourcePath?: string;
   schedule?: TaskSchedule;
   createdAt: number;
   updatedAt: number;

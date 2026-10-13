@@ -27,6 +27,17 @@ Select **New task** and fill in:
 | Agent  | **Built-in agent** or one of your [named agents](./named-agents.md)       |
 | Result | What came out of the work, up to 4000 characters; filled in automatically |
 
+## Import Markdown files
+
+Select **Import Markdown** to turn instructions you already wrote for an agent into tasks. The dialog lists the `.md` files in the workspace; pick one or more and select **Import**. Each file becomes a Todo task:
+
+- The title is the file's first `#` heading, or the file name when it has none.
+- The notes are the content after that heading, shown as Markdown.
+- Title and notes are shortened to 120 and 8000 characters.
+- Front matter is left out of the notes. Its `labels` (a list or a single value) and `priority` (`low`, `medium` or `high`) are applied when valid.
+
+The task remembers the file's path relative to the workspace, so a file that a task already links to is not offered again.
+
 ## Run a task
 
 **Run** in the card menu starts a new agent session for the task, titled after it, and sends the title and notes as the first message. The task moves to **In progress** and is linked to the session.
