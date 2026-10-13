@@ -20,6 +20,7 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import type { ChatSession } from "@/shared/stores/ai";
 
 import { removeSessionWorktree } from "./remove";
+import { useSessionEnvironment } from "./useSessionEnvironment";
 
 interface DiscardWorktreeDialogProps {
   session: ChatSession | null;
@@ -46,8 +47,10 @@ export function DiscardWorktreeDialog({
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
 
+  const environment = useSessionEnvironment(session);
+  const worktree = environment?.kind === "worktree" ? environment : undefined;
   const sessionId = session?.id ?? null;
-  const worktreePath = session?.worktree?.path ?? null;
+  const worktreePath = worktree?.path ?? null;
 
   useEffect(() => {
     if (!open || !sessionId || !worktreePath) {
@@ -87,11 +90,11 @@ export function DiscardWorktreeDialog({
 
   const removeWorktree = useCallback(
     async (force: boolean) => {
-      if (!session || !session.worktree) return;
+      if (!session || !worktree) return;
 
       setBusy(true);
       try {
-        const branch = session.worktree.branch;
+        const branch = worktree.branch;
         const removed = await removeSessionWorktree(rootPath, session, force);
 
         if (removed && deleteBranch) {
@@ -111,7 +114,7 @@ export function DiscardWorktreeDialog({
         setBusy(false);
       }
     },
-    [deleteBranch, onOpenChange, rootPath, session],
+    [deleteBranch, onOpenChange, rootPath, session, worktree],
   );
 
   const handleConfirm = useCallback(() => {
@@ -137,9 +140,7 @@ export function DiscardWorktreeDialog({
             </AlertDialogMedia>
             <AlertDialogTitle>Discard worktree?</AlertDialogTitle>
             <AlertDialogDescription>
-              {session?.worktree
-                ? `Branch ${session.worktree.branch}. Path ${session.worktree.path}. `
-                : ""}
+              {worktree ? `Branch ${worktree.branch}. Path ${worktree.path}. ` : ""}
               {preparing
                 ? "Checking the worktree..."
                 : dirty

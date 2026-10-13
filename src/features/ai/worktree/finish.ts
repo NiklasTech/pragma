@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { useLayoutStore } from "@/shell/layout/store";
 import { useUiModeStore } from "@/shell/mode";
-import type { ChatMessage, SessionWorktree } from "@/shared/stores/ai";
+import type { ChatMessage, WorkEnvironment } from "@/shared/stores/ai";
 import { useGitStore } from "@/shared/stores/git";
 import type { GhCliStatus } from "@/shared/stores/github";
 
@@ -19,7 +19,7 @@ export interface SessionMergeResult {
 
 export function finishSessionMerge(
   rootPath: string,
-  worktree: SessionWorktree,
+  worktree: WorkEnvironment,
   strategy: SessionMergeStrategy,
 ): Promise<SessionMergeResult> {
   return invoke<SessionMergeResult>("git_session_finish_merge", {
@@ -30,7 +30,7 @@ export function finishSessionMerge(
   });
 }
 
-export function pushSessionBranch(rootPath: string, worktree: SessionWorktree): Promise<void> {
+export function pushSessionBranch(rootPath: string, worktree: WorkEnvironment): Promise<void> {
   return invoke("git_session_push_branch", {
     repoPath: rootPath,
     worktreePath: worktree.path,

@@ -1,11 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import type { Agent } from "@/features/ai/named-agents/types";
 
 import { getChildRun, isRunLive } from "../children/runStore";
-import { createSessionWorktree } from "../worktree/create";
+import { createWorktreeEnvironment } from "../worktree/create";
 import { NO_TASK_ENGINE_MESSAGE, taskEngine } from "./engine";
 import { openBlockers } from "./organize";
 import { useTasksStore } from "./store";
@@ -35,7 +35,7 @@ function findAgent(task: Task): Agent | undefined {
 }
 
 /// Removes a worktree no session uses, so failed scheduled runs do not pile up worktrees.
-async function discardWorktree(rootPath: string, worktree: SessionWorktree): Promise<void> {
+async function discardWorktree(rootPath: string, worktree: WorkEnvironment): Promise<void> {
   try {
     await invoke("git_session_worktree_remove", {
       repoPath: rootPath,
@@ -43,6 +43,7 @@ async function discardWorktree(rootPath: string, worktree: SessionWorktree): Pro
       force: true,
     });
     await invoke("git_session_delete_branch", { repoPath: rootPath, branch: worktree.branch });
+    await useAIStore.getState().deleteEnvironment(rootPath, worktree.id);
   } catch {
     // The run is skipped either way; a leftover worktree can still be removed by hand.
   }
@@ -60,23 +61,21 @@ export async function startTaskInBackground(
   const engine = taskEngine(agent?.engine);
   if (!engine) return NO_TASK_ENGINE_MESSAGE;
 
-  const id = crypto.randomUUID();
   let session: ChatSession;
   try {
-    const worktree = await createSessionWorktree(rootPath, id);
+    const worktree = await createWorktreeEnvironment(rootPath);
     // Parallel runs in the shared checkout would overwrite each other's files.
-    if (worktree.status !== "ready") {
+    if (worktree.setupStatus !== "ready") {
       await discardWorktree(rootPath, worktree);
       return "The worktree setup script failed";
     }
     session = await useAIStore.getState().createChatSession(
       rootPath,
       {
-        id,
         title,
         kind: "agent",
         environment: "worktree",
-        worktree,
+        environmentId: worktree.id,
         cliProviderId: engine.cliProviderId,
         agentId: agent?.id,
         agentEngine: engine,

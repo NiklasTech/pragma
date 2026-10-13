@@ -4,7 +4,7 @@ import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
 export type ActiveSessionMeta = Pick<
   ChatSession,
-  "kind" | "agentEngine" | "cliProviderId" | "worktree" | "mcpServers" | "agentId" | "usage"
+  "kind" | "agentEngine" | "cliProviderId" | "environmentId" | "mcpServers" | "agentId" | "usage"
 >;
 
 /// Session settings without the messages, so streaming does not re-render the caller on every update.
@@ -17,7 +17,7 @@ export function useActiveSessionMeta(): ActiveSessionMeta | undefined {
         kind: session.kind,
         agentEngine: session.agentEngine,
         cliProviderId: session.cliProviderId,
-        worktree: session.worktree,
+        environmentId: session.environmentId,
         mcpServers: session.mcpServers,
         agentId: session.agentId,
         usage: session.usage,

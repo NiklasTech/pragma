@@ -1,4 +1,5 @@
 use super::agents::AgentEngine;
+use super::work_environments::migrate_session_worktrees;
 use crate::ai::image::{validate_image, ImageContent};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -8,7 +9,7 @@ use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
 
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
-static SESSION_IO_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+pub(crate) static SESSION_IO_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -22,7 +23,10 @@ pub struct ChatSessionMetadata {
     pub kind: String,
     #[serde(default)]
     pub environment: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub environment_id: Option<String>,
+    /// Legacy worktree of a session; moved into a work environment on load.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub worktree: Option<SessionWorktreeMetadata>,
     #[serde(default)]
     pub cli_provider_id: Option<String>,
@@ -141,7 +145,7 @@ pub(crate) fn sessions_dir(app: &AppHandle, root_path: &str) -> Result<PathBuf, 
     Ok(base.join("pragma").join("sessions").join(hash))
 }
 
-fn validate_session_id(session_id: &str) -> Result<(), String> {
+pub(crate) fn validate_session_id(session_id: &str) -> Result<(), String> {
     let mut components = Path::new(session_id).components();
     match (components.next(), components.next()) {
         (Some(Component::Normal(name)), None)
@@ -170,10 +174,15 @@ pub async fn ai_load_sessions(
     req: LoadSessionsRequest,
 ) -> Result<Vec<ChatSessionMetadata>, String> {
     let dir = sessions_dir(&app, &req.root_path)?;
-    load_sessions(&dir).await
+    let mut sessions = load_sessions(&dir).await?;
+    if sessions.iter().any(|session| session.worktree.is_some()) {
+        let _guard = SESSION_IO_LOCK.lock().await;
+        migrate_session_worktrees(&dir, &mut sessions).await?;
+    }
+    Ok(sessions)
 }
 
-async fn load_sessions(dir: &Path) -> Result<Vec<ChatSessionMetadata>, String> {
+pub(crate) async fn load_sessions(dir: &Path) -> Result<Vec<ChatSessionMetadata>, String> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
@@ -249,7 +258,7 @@ async fn load_messages(path: &Path) -> Result<Vec<ChatMessage>, String> {
     Ok(messages)
 }
 
-async fn write_file(path: &Path, content: &[u8]) -> Result<(), String> {
+pub(crate) async fn write_file(path: &Path, content: &[u8]) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent)
             .await
@@ -283,7 +292,7 @@ pub async fn ai_save_session(app: AppHandle, req: SaveSessionRequest) -> Result<
     save_session(&dir, &req.session).await
 }
 
-async fn save_session(dir: &Path, session: &ChatSessionMetadata) -> Result<(), String> {
+pub(crate) async fn save_session(dir: &Path, session: &ChatSessionMetadata) -> Result<(), String> {
     let content = serde_json::to_string_pretty(session)
         .map_err(|e| format!("failed to serialize session: {e}"))?;
     write_file(&dir.join("state.json"), content.as_bytes()).await

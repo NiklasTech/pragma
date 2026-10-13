@@ -11,7 +11,7 @@ import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useAgentStore } from "@/features/agent/store";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
-import { sessionCwd } from "@/features/ai/worktree/cwd";
+import { sessionCwd, sessionEnvironment } from "@/features/ai/worktree/cwd";
 
 import { ActivityDashboard } from "../activity/ActivityDashboard";
 import { ActivityTabBadge } from "../activity/ActivityTabBadge";
@@ -80,12 +80,18 @@ export function AgentsContextPane() {
   );
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
+  const workEnvironments = useAIStore((state) => state.workEnvironments);
 
   const focusedSession = chatSessions.find((session) => session.id === focusedSessionId);
-  const focusedCwd = focusedSession ? sessionCwd(focusedSession, workspacePath) : null;
+  const focusedCwd = focusedSession
+    ? sessionCwd(focusedSession, workEnvironments, workspacePath)
+    : null;
   const reviewCwd = focusedCwd && focusedCwd !== "default" ? focusedCwd : null;
+  const focusedEnvironment = sessionEnvironment(focusedSession, workEnvironments);
   const worktreeBranch =
-    focusedSession?.worktree?.status === "ready" ? focusedSession.worktree.branch : null;
+    focusedEnvironment?.kind === "worktree" && focusedEnvironment.setupStatus === "ready"
+      ? focusedEnvironment.branch
+      : null;
   const ownsRun = focusedSessionId !== null && focusedSessionId === runSessionId;
 
   const { rows, error } = useReviewRows({ sessionId: focusedSessionId, cwd: reviewCwd, ownsRun });

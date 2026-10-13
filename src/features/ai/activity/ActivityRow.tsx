@@ -5,7 +5,7 @@ import { ChatCircle, FolderSimple, Robot, TerminalWindow } from "@phosphor-icons
 
 import { cn } from "@/shared/lib/utils";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
-import type { ChatSession } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
 import { providerAccent } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -59,7 +59,8 @@ export function ActivityRow({
 }: ActivityRowProps) {
   const KindIcon = KIND_ICONS[session.kind ?? "agent"];
   const accent = providerAccent(session);
-  const cwd = sessionCwd(session, rootPath);
+  const workEnvironments = useAIStore((state) => state.workEnvironments);
+  const cwd = sessionCwd(session, workEnvironments, rootPath);
   const folder = cwd === "default" ? null : getWorkspaceName(cwd);
   const label = DASHBOARD_STATE_LABELS[state];
   const tokens = sessionTokens(session);

@@ -44,7 +44,8 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
     ? cliManifests.find((item) => item.id === session.cliProviderId)
     : undefined;
   const command = manifest?.command ?? "";
-  const cwd = sessionCwd(session, workspaceRoot);
+  const workEnvironments = useAIStore((state) => state.workEnvironments);
+  const cwd = sessionCwd(session, workEnvironments, workspaceRoot);
   const [dropActive, setDropActive] = useState(false);
   const dictateBinding = useSettingsStore((state) =>
     state.ai.voiceInput ? state.shortcuts["voice.holdToDictate"] : null,
