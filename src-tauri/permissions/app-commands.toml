@@ -50,6 +50,7 @@ permissions = [
   "allow-cli-list-manifests",
   "allow-cli-logout",
   "allow-cli-start-login",
+  "allow-cli-sync-apply",
   "allow-close-external-window",
   "allow-copilot-auth-status",
   "allow-copilot-logout",

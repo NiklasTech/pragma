@@ -31,6 +31,7 @@ import { useSubscriptionUsagePoller } from "@/features/ai/subscription/useSubscr
 import { useTaskAutomation } from "@/features/ai/tasks/useTaskAutomation";
 import { useProjectAgentsSync } from "@/features/ai/named-agents/useProjectAgentsSync";
 import { useSkillsSync } from "@/features/ai/skills/useSkillsSync";
+import { useCliSync } from "@/features/ai/cli-sync/useCliSync";
 import { GlobalContextMenu } from "./GlobalContextMenu";
 import { useAppShortcutActions } from "./useAppShortcutActions";
 import { useCommandPaletteCommands } from "./useCommandPaletteCommands";
@@ -63,6 +64,7 @@ export default function App() {
   useProjectAgentsSync();
   useSkillsSync();
   useFolderTrust();
+  useCliSync();
   useDiagnosticsCleanup();
   useTerminalShellResolver();
   useExtensions();

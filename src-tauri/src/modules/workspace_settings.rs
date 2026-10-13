@@ -69,6 +69,27 @@ pub struct WorkspaceLspSettings {
     pub enabled: BTreeMap<String, bool>,
 }
 
+/// A coding CLI folder that `.pragma` skills and agents are copied into.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum CliSyncTarget {
+    Agents,
+    Claude,
+    Codex,
+    Cursor,
+    Gemini,
+    Github,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkspaceCliSyncSettings {
+    #[serde(default)]
+    pub targets: Vec<CliSyncTarget>,
+    /// `false` lists the generated files in `.gitignore`.
+    #[serde(default)]
+    pub commit: bool,
+}
+
 /// The settings a workspace may override; other keys of the file, such as `mcpServers`, are kept.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WorkspaceSettings {
@@ -78,6 +99,8 @@ pub struct WorkspaceSettings {
     pub agent: Option<WorkspaceAgentSettings>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lsp: Option<WorkspaceLspSettings>,
+    #[serde(default, rename = "cliSync", skip_serializing_if = "Option::is_none")]
+    pub cli_sync: Option<WorkspaceCliSyncSettings>,
 }
 
 fn settings_path(root_path: &str) -> Result<PathBuf, String> {
@@ -158,6 +181,14 @@ fn validate_lsp(lsp: &WorkspaceLspSettings) -> Result<(), String> {
     Ok(())
 }
 
+fn validate_cli_sync(cli_sync: &WorkspaceCliSyncSettings) -> Result<(), String> {
+    let unique: std::collections::BTreeSet<_> = cli_sync.targets.iter().collect();
+    if unique.len() != cli_sync.targets.len() {
+        return Err("cliSync.targets must not repeat a target".to_string());
+    }
+    Ok(())
+}
+
 pub fn validate(settings: &WorkspaceSettings) -> Result<(), String> {
     if let Some(editor) = &settings.editor {
         validate_editor(editor)?;
@@ -167,6 +198,9 @@ pub fn validate(settings: &WorkspaceSettings) -> Result<(), String> {
     }
     if let Some(lsp) = &settings.lsp {
         validate_lsp(lsp)?;
+    }
+    if let Some(cli_sync) = &settings.cli_sync {
+        validate_cli_sync(cli_sync)?;
     }
     Ok(())
 }
@@ -201,7 +235,7 @@ pub fn merge_into(existing: Option<Value>, settings: &WorkspaceSettings) -> Resu
         Some(_) => return Err(".pragma/settings.json must contain a JSON object".to_string()),
         None => serde_json::Map::new(),
     };
-    for key in ["editor", "agent", "lsp"] {
+    for key in ["editor", "agent", "lsp", "cliSync"] {
         document.remove(key);
     }
     if let Value::Object(sections) =
@@ -266,9 +300,15 @@ mod tests {
                 "parallelTaskEnvironment": "shared"
             },
             "lsp": { "enabled": { "rust": false } },
+            "cliSync": { "targets": ["claude", "agents"] },
             "mcpServers": { "docs": { "command": "npx" } }
         }))
         .unwrap();
+        assert_eq!(
+            settings.cli_sync.as_ref().unwrap().targets,
+            vec![CliSyncTarget::Claude, CliSyncTarget::Agents]
+        );
+        assert!(!settings.cli_sync.as_ref().unwrap().commit);
         assert_eq!(settings.editor.as_ref().unwrap().tab_size, Some(2));
         assert_eq!(
             settings.agent.as_ref().unwrap().allowed_commands,
@@ -302,6 +342,8 @@ mod tests {
             json!({ "agent": { "parallelTaskEnvironment": "checkout" } }),
             json!({ "lsp": { "enabled": { "../x": true } } }),
             json!({ "editor": { "tabSize": "two" } }),
+            json!({ "cliSync": { "targets": ["vscode"] } }),
+            json!({ "cliSync": { "targets": ["claude", "claude"] } }),
         ] {
             assert!(parse(document.clone()).is_err(), "{document}");
         }

@@ -147,6 +147,7 @@ pub fn run() {
             modules::fs::delete_file,
             modules::fs_ops::duplicate_path,
             modules::fs_ops::reveal_in_file_manager,
+            modules::cli_sync::cli_sync_apply,
             modules::workspace_settings::workspace_settings_load,
             modules::workspace_settings::workspace_settings_save,
             modules::workspace_trust::workspace_trust_status,
