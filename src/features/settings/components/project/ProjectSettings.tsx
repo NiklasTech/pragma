@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import { GroupEnvironmentSelect } from "@/features/ai/sessions/GroupEnvironmentSelect";
+import { DEFAULT_GROUP_ENVIRONMENT } from "@/features/ai/sessions/group";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
@@ -167,6 +169,32 @@ export function ProjectSettings() {
             <WritingSessionsSelect
               value={draft.agent?.writingSessions}
               onChange={(writingSessions) => setAgent({ writingSessions })}
+            />
+          }
+        />
+        <SettingRow
+          label="Launch coding CLIs in"
+          description="Default of Pane layout > Launch coding CLIs."
+          control={
+            <GroupEnvironmentSelect
+              value={draft.agent?.launchCliEnvironment ?? DEFAULT_GROUP_ENVIRONMENT}
+              modes={["isolated", "shared", "checkout"]}
+              label="Launch coding CLIs in"
+              className="w-52"
+              onChange={(launchCliEnvironment) => setAgent({ launchCliEnvironment })}
+            />
+          }
+        />
+        <SettingRow
+          label="Parallel tasks work in"
+          description="Default of Start in parallel on the task board."
+          control={
+            <GroupEnvironmentSelect
+              value={draft.agent?.parallelTaskEnvironment ?? DEFAULT_GROUP_ENVIRONMENT}
+              modes={["isolated", "shared"]}
+              label="Parallel tasks work in"
+              className="w-52"
+              onChange={(parallelTaskEnvironment) => setAgent({ parallelTaskEnvironment })}
             />
           }
         />

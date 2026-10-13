@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
@@ -13,8 +14,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
+import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 
-import { MAX_PARALLEL_TASKS, backgroundStartBlocker, startTasksInBackground } from "./background";
+import { GroupEnvironmentSelect } from "../sessions/GroupEnvironmentSelect";
+import { DEFAULT_GROUP_ENVIRONMENT, sharesFiles } from "../sessions/group";
+import {
+  MAX_PARALLEL_TASKS,
+  backgroundStartBlocker,
+  startTasksInBackground,
+  type ParallelTaskEnvironment,
+} from "./background";
 import { useTasksStore } from "./store";
 
 interface ParallelStartDialogProps {
@@ -23,14 +33,23 @@ interface ParallelStartDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/// Picks Todo tasks and starts each in its own worktree session that runs in the background.
+const MODES: readonly ParallelTaskEnvironment[] = ["isolated", "shared"];
+
+/// Picks Todo tasks and starts them in worktree sessions that run in the background.
 export function ParallelStartDialog({ open, rootPath, onOpenChange }: ParallelStartDialogProps) {
   const tasks = useTasksStore((state) => state.tasks);
   const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set());
   const [starting, setStarting] = useState(false);
+  const [chosenMode, setChosenMode] = useState<ParallelTaskEnvironment | null>(null);
+  const setting = useWorkspaceSettingsStore((state) =>
+    state.rootPath === rootPath ? state.settings?.agent?.parallelTaskEnvironment : undefined,
+  );
+  const mode = chosenMode ?? setting ?? DEFAULT_GROUP_ENVIRONMENT;
 
   useEffect(() => {
-    if (open) setPicked(new Set());
+    if (!open) return;
+    setPicked(new Set());
+    setChosenMode(null);
   }, [open]);
 
   const candidates = useMemo(
@@ -55,9 +74,10 @@ export function ParallelStartDialog({ open, rootPath, onOpenChange }: ParallelSt
     const selected = candidates.filter(({ task }) => picked.has(task.id)).map(({ task }) => task);
     setStarting(true);
     try {
-      const { started, failures } = await startTasksInBackground(rootPath, selected);
+      const { started, failures } = await startTasksInBackground(rootPath, selected, mode);
       if (started > 0) {
-        toast.success(`Started ${started} task${started === 1 ? "" : "s"} in worktrees`);
+        const place = mode === "shared" ? "one shared worktree" : "worktrees";
+        toast.success(`Started ${started} task${started === 1 ? "" : "s"} in ${place}`);
       }
       for (const failure of failures) toast.error(failure);
       onOpenChange(false);
@@ -72,7 +92,7 @@ export function ParallelStartDialog({ open, rootPath, onOpenChange }: ParallelSt
         <DialogHeader>
           <DialogTitle className="text-ui-md">Start tasks in parallel</DialogTitle>
           <DialogDescription>
-            Each task gets its own worktree session and runs in the background. Pick up to{" "}
+            Each task gets a worktree session and runs in the background. Pick up to{" "}
             {MAX_PARALLEL_TASKS}.
           </DialogDescription>
         </DialogHeader>
@@ -103,6 +123,25 @@ export function ParallelStartDialog({ open, rootPath, onOpenChange }: ParallelSt
               </label>
             ))}
           </div>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <Label>Work in</Label>
+          <GroupEnvironmentSelect
+            value={mode}
+            modes={MODES}
+            label="Work in"
+            className="w-full"
+            onChange={setChosenMode}
+          />
+        </div>
+
+        {sharesFiles(mode, picked.size) && (
+          <Alert variant="warning">
+            <AlertDescription className="text-ui-xs">
+              All {picked.size} tasks edit the same files.
+            </AlertDescription>
+          </Alert>
         )}
 
         <DialogFooter>

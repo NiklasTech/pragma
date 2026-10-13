@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -21,12 +22,16 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useAIStore } from "@/shared/stores/ai";
+import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 
+import { GroupEnvironmentSelect } from "../sessions/GroupEnvironmentSelect";
+import { DEFAULT_GROUP_ENVIRONMENT, sharesFiles, type GroupEnvironment } from "../sessions/group";
 import { buildSessionMenuCliRows } from "../threads/session-menu";
 import { launchTerminals } from "./launch";
 import { MAX_PANES } from "./operations";
 
 const COUNTS = Array.from({ length: MAX_PANES }, (_, index) => index + 1);
+const MODES: readonly GroupEnvironment[] = ["isolated", "shared", "checkout"];
 
 interface LaunchCliDialogProps {
   rootPath: string;
@@ -41,7 +46,16 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
   const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
   const [manifestId, setManifestId] = useState<string | null>(null);
   const [count, setCount] = useState(4);
+  const [picked, setPicked] = useState<GroupEnvironment | null>(null);
   const [launching, setLaunching] = useState(false);
+  const setting = useWorkspaceSettingsStore((state) =>
+    state.rootPath === rootPath ? state.settings?.agent?.launchCliEnvironment : undefined,
+  );
+  const mode = picked ?? setting ?? DEFAULT_GROUP_ENVIRONMENT;
+
+  useEffect(() => {
+    if (open) setPicked(null);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -59,7 +73,7 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
     if (!selected || launching) return;
     setLaunching(true);
     try {
-      await launchTerminals(rootPath, selected, count);
+      await launchTerminals(rootPath, selected, count, mode);
       onOpenChange(false);
     } catch {
       toast.error(`Could not start ${selected.name}`);
@@ -118,6 +132,25 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
               ))}
             </div>
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Work in</Label>
+            <GroupEnvironmentSelect
+              value={mode}
+              modes={MODES}
+              label="Work in"
+              className="w-full"
+              onChange={setPicked}
+            />
+          </div>
+
+          {sharesFiles(mode, count) && (
+            <Alert variant="warning">
+              <AlertDescription className="text-ui-xs">
+                All {count} instances edit the same files.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <DialogFooter>

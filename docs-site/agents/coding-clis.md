@@ -38,11 +38,20 @@ The process keeps running while you look at other panes. A CLI terminal cannot b
 
 1. Pick the CLI.
 2. Choose how many instances to start, from one to eight.
-3. Select **Launch**.
+3. Choose where they work in **Work in**.
+4. Select **Launch**.
 
 The new terminals replace the panes on screen and are numbered (`Claude Code 14:32 #1`, `#2` and so on). Your other threads stay in the thread list.
 
-All launched terminals work in the same folder, the open workspace.
+| Work in                  | Effect                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| Each in its own worktree | Every instance gets a new [worktree](./worktrees.md) on its own `pragma/...` branch  |
+| One shared worktree      | Pragma creates one new worktree, and all instances use it as their working directory |
+| This checkout            | All instances work in the open workspace                                             |
+
+Worktrees are created one after another, so their creation never races on the repository. With **One shared worktree** or **This checkout** and more than one instance, the dialog warns that the instances edit the same files.
+
+The dialog starts with **Each in its own worktree**. To change that for a project, set **Settings > Project > Agent > Launch coding CLIs in**, stored as `agent.launchCliEnvironment` (`"isolated"`, `"shared"` or `"checkout"`) in `.pragma/settings.json`. In a folder that is not a git repository, every instance works in the folder itself.
 
 ## Skills and agents from coding CLIs
 

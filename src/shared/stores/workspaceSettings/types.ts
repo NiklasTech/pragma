@@ -12,6 +12,8 @@ export interface WorkspaceSettings {
     allowedCommands?: string[];
     stepLimit?: number;
     writingSessions?: "worktree" | "checkout";
+    launchCliEnvironment?: "isolated" | "shared" | "checkout";
+    parallelTaskEnvironment?: "isolated" | "shared";
   };
   lsp?: {
     enabled?: Record<string, boolean>;
