@@ -17,6 +17,7 @@ import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindow
 import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
 import { useWorkspaceWatcher } from "@/shared/hooks/useWorkspaceWatcher";
+import { useGitStateSync } from "@/shared/hooks/useGitStateSync";
 import { useWorkspaceSettingsSync } from "@/shared/hooks/useWorkspaceSettingsSync";
 import { useFolderTrust } from "@/shared/hooks/useFolderTrust";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
@@ -55,6 +56,7 @@ export default function App() {
   useDisableBrowserBehaviors();
   useWorkspaceRestore();
   useWorkspaceWatcher();
+  useGitStateSync();
   useWorkspaceSettingsSync();
   useFolderTrust();
   useDiagnosticsCleanup();

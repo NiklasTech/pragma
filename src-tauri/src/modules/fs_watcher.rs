@@ -9,7 +9,10 @@ use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watche
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::modules::git::state_paths::GitStateDirs;
+
 const CHANGE_EVENT: &str = "workspace-fs-changed";
+const GIT_CHANGE_EVENT: &str = "workspace-git-changed";
 const QUIET_PERIOD: Duration = Duration::from_millis(200);
 const MAX_BATCH_DELAY: Duration = Duration::from_secs(1);
 
@@ -18,6 +21,11 @@ const MAX_BATCH_DELAY: Duration = Duration::from_secs(1);
 struct WorkspaceFsChange {
     root: String,
     paths: Vec<String>,
+}
+
+#[derive(Clone, Serialize)]
+struct WorkspaceGitChange {
+    root: String,
 }
 
 struct WorkspaceWatch {
@@ -116,8 +124,15 @@ fn validate_root(root: &str) -> Result<PathBuf, String> {
     Ok(path.to_path_buf())
 }
 
-/// Collects raw paths until the stream stays quiet, then emits one deduplicated batch.
-fn debounce_loop(rx: Receiver<PathBuf>, mut filter: PathFilter, app: AppHandle, label: String) {
+/// Collects raw paths until the stream stays quiet, then emits one deduplicated batch
+/// and, if the batch touches git state, one git change.
+fn debounce_loop(
+    rx: Receiver<PathBuf>,
+    mut filter: PathFilter,
+    git_state: Option<GitStateDirs>,
+    app: AppHandle,
+    label: String,
+) {
     let root = filter.display_root.to_string_lossy().into_owned();
     while let Ok(first) = rx.recv() {
         let mut batch = HashSet::from([first]);
@@ -156,6 +171,15 @@ fn debounce_loop(rx: Receiver<PathBuf>, mut filter: PathFilter, app: AppHandle, 
                 log::warn!("failed to emit workspace changes: {e}");
             }
         }
+        if git_state
+            .as_ref()
+            .is_some_and(|state| batch.iter().any(|path| state.is_state_path(path)))
+        {
+            let payload = WorkspaceGitChange { root: root.clone() };
+            if let Err(e) = app.emit_to(label.as_str(), GIT_CHANGE_EVENT, payload) {
+                log::warn!("failed to emit git state changes: {e}");
+            }
+        }
         if disconnected {
             return;
         }
@@ -163,7 +187,8 @@ fn debounce_loop(rx: Receiver<PathBuf>, mut filter: PathFilter, app: AppHandle, 
 }
 
 /// Watches the workspace root of the calling window and emits debounced
-/// `workspace-fs-changed` events for paths that `.gitignore` does not exclude.
+/// `workspace-fs-changed` events for paths that `.gitignore` does not exclude,
+/// plus `workspace-git-changed` when HEAD, the index or refs change.
 #[tauri::command(async)]
 pub fn workspace_watch(app: AppHandle, window: tauri::Window, root: String) -> Result<(), String> {
     let display_root = validate_root(&root)?;
@@ -188,13 +213,27 @@ pub fn workspace_watch(app: AppHandle, window: tauri::Window, root: String) -> R
     watcher
         .watch(&watched_root, RecursiveMode::Recursive)
         .map_err(|e| format!("Failed to watch {root}: {e}"))?;
+    let git_state = GitStateDirs::resolve(&watched_root);
+    for (path, recursive) in git_state
+        .iter()
+        .flat_map(|state| state.extra_watches(&watched_root))
+    {
+        let mode = if recursive {
+            RecursiveMode::Recursive
+        } else {
+            RecursiveMode::NonRecursive
+        };
+        if let Err(e) = watcher.watch(&path, mode) {
+            log::warn!("failed to watch git dir {}: {e}", path.display());
+        }
+    }
 
     let filter = PathFilter::new(watched_root, display_root);
     let thread_app = app.clone();
     let thread_label = label.clone();
     std::thread::Builder::new()
         .name("workspace-watcher".to_string())
-        .spawn(move || debounce_loop(rx, filter, thread_app, thread_label))
+        .spawn(move || debounce_loop(rx, filter, git_state, thread_app, thread_label))
         .map_err(|e| format!("Failed to start watcher thread: {e}"))?;
 
     let watchers = app.state::<WorkspaceWatchers>();

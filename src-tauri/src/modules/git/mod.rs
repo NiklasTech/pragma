@@ -8,6 +8,7 @@ pub mod operations;
 pub mod parser;
 mod process;
 pub mod session_finish;
+pub mod state_paths;
 pub mod types;
 pub mod utils;
 pub mod workflow;
