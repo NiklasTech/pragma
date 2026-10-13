@@ -4,6 +4,8 @@ description = "Every command of the Pragma app, for the app's own webviews only.
 permissions = [
   "allow-agent-run-command",
   "allow-agents-load",
+  "allow-agents-project-memory-load",
+  "allow-agents-project-memory-save",
   "allow-agents-save",
   "allow-ai-chat",
   "allow-ai-chat-stream",

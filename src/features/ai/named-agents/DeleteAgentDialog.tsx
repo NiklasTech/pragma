@@ -16,6 +16,7 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 
+import { projectAgentFileId } from "./projectFile";
 import type { Agent } from "./types";
 
 interface DeleteAgentDialogProps {
@@ -36,6 +37,7 @@ export function DeleteAgentDialog({
   onConfirm,
 }: DeleteAgentDialogProps) {
   const [archiveChildren, setArchiveChildren] = useState(true);
+  const fileId = projectAgentFileId(agent.id);
 
   useEffect(() => {
     if (open) setArchiveChildren(true);
@@ -51,6 +53,7 @@ export function DeleteAgentDialog({
           <AlertDialogTitle>Delete {agent.name}?</AlertDialogTitle>
           <AlertDialogDescription>
             {`This agent has ${chatCount} ${chatCount === 1 ? "chat" : "chats"}. Confirming archives them. Files the chats wrote are kept.`}
+            {fileId && ` The file .pragma/agents/${fileId}.md is deleted.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {childCount > 0 && (

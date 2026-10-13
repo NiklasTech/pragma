@@ -1,6 +1,6 @@
 "use client";
 
-import { DownloadSimple, Plus, Robot } from "@phosphor-icons/react";
+import { DownloadSimple, Plus, Robot, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
@@ -9,6 +9,8 @@ import type { AgentStatus } from "@/features/agent/store";
 
 import { seededAccent } from "../panes/providerAccent";
 import { engineLabel } from "./AgentEnginePicker";
+import { agentScope, SCOPE_LABELS } from "./scope";
+import { useNamedAgentsStore } from "./store";
 import { importAgent } from "./transferActions";
 import type { Agent } from "./types";
 
@@ -44,6 +46,7 @@ export function AgentRoster({
   onNewAgent,
 }: AgentRosterProps) {
   const cliManifests = useAIStore((state) => state.cliManifests);
+  const projectIssues = useNamedAgentsStore((state) => state.projectIssues);
 
   return (
     <div className="flex flex-col gap-1">
@@ -126,16 +129,31 @@ export function AgentRoster({
                   {agent.name}
                 </span>
                 <span className="truncate text-ui-2xs text-fg-subtle">
-                  {engineLabel(
+                  {`${SCOPE_LABELS[agentScope(agent)]} - ${engineLabel(
                     agent.engine,
                     cliManifests.find((manifest) => manifest.id === agent.engine.cliProviderId)
                       ?.name ?? null,
-                  )}
+                  )}`}
                 </span>
               </span>
             </button>
           );
         })}
+        {projectIssues.map((issue) => (
+          <div
+            key={issue.path}
+            title={issue.path}
+            className="flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-2"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-status-error/10 text-status-error">
+              <Warning size={14} weight="fill" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="truncate text-ui-sm text-fg-muted">{issue.name}</span>
+              <span className="text-ui-2xs text-status-error">{issue.error}</span>
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

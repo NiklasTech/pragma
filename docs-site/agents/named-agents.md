@@ -4,14 +4,67 @@ A named agent is a reusable assistant with its own instructions, memory, skills 
 
 Named agents are listed under **Agents** in the thread list. Select one to see its chats and settings.
 
+Each agent has a scope, shown next to its engine:
+
+- **Project** agents are Markdown files in `.pragma/agents/` of the open folder. They are versioned and shared with your team like [skills](./skills.md).
+- **Personal** agents live on this machine and are available in every workspace.
+
+Names must be unique within a scope. A project agent and a personal agent with the same name are both listed, each with its scope.
+
 ## Create an agent
 
 1. Select **New agent** in the thread list.
-2. Describe the agent in one paragraph and use **Draft with the current model** to get a suggested name and brief, or fill in both fields yourself.
-3. Pick the engine: the built-in agent with your current provider and model, or an installed [coding CLI](./coding-clis.md).
-4. Save the agent.
+2. Choose the scope: **Personal** or **Project**. Project needs an open folder.
+3. Describe the agent in one paragraph and use **Draft with the current model** to get a suggested name and brief, or fill in both fields yourself.
+4. Pick the engine: the built-in agent with your current provider and model, or an installed [coding CLI](./coding-clis.md).
+5. Save the agent.
 
 The name can have up to 40 characters, the brief up to 4000.
+
+## Project agents
+
+A project agent is the file `.pragma/agents/<id>.md`. The id is the file name without `.md` and may only use letters, digits, `-` and `_`.
+
+```md
+---
+name: Reviewer
+description: Reviews changes for correctness before a pull request.
+engine: cli # builtin or cli
+cli: anthropic-claude # CLI id, when engine is cli
+provider: anthropic # when engine is builtin
+model: claude-sonnet-5-5 # when engine is builtin
+skills: [release, add-migration]
+mcpServers: [docs]
+folders: [docs, src]
+---
+
+The brief: instructions the agent receives at the start of each chat.
+```
+
+| Field         | Required | Meaning                                                                        |
+| ------------- | -------- | ------------------------------------------------------------------------------ |
+| `name`        | yes      | Display name, up to 40 characters.                                             |
+| `description` | no       | One sentence about the agent.                                                  |
+| `engine`      | yes      | `builtin` or `cli`.                                                            |
+| `cli`         | for cli  | The id of the coding CLI.                                                      |
+| `provider`    | no       | Provider of the built-in engine. Without it, the current provider is used.     |
+| `model`       | no       | Model of the built-in engine. Without it, the current model is used.           |
+| `skills`      | no       | Ids of the workspace skills the agent uses.                                    |
+| `mcpServers`  | no       | MCP servers the agent uses. Without it, the agent uses all configured servers. |
+| `folders`     | no       | Approved folders relative to the workspace root.                               |
+
+The text below the front matter is the brief, up to 4000 characters.
+
+Pragma rejects a file when:
+
+- a folder is absolute or leaves the workspace, for example `../shared`
+- it contains `baseUrl`, which depends on the machine
+- it contains something that looks like a secret, for example an API key or a bearer token
+- a required field is missing or has the wrong type, or another project agent has the same name
+
+Rejected files are listed under the agents with their error and cannot be used. Pragma reloads project agents whenever a file in `.pragma/agents/` changes, so editing a file in the editor or pulling a change updates the agent. Editing a project agent in the form rewrites its file; comments and fields Pragma does not know are not kept.
+
+To move an agent between scopes, open its export menu and choose **Copy to project** or **Copy to personal agents**. A copy to the project keeps only the folders inside the workspace.
 
 ## Brief
 
@@ -26,13 +79,15 @@ Memory holds short facts the agent should keep across chats, for example "Use pn
 
 Every chat receives the brief followed by all memory entries, oldest first. Memory is limited to 50 entries of at most 500 characters each and 16,000 characters in total. Do not store secrets in memory.
 
+Memory is always personal. The memory of a project agent is stored in Pragma's application data directory for each workspace and agent, never in the repository.
+
 ## Skills
 
 The **Skills** tab chooses which [workspace skills](./skills.md) the agent can use. A named agent only sees the skills you turn on here, starting with none; the workspace-wide enabled flag does not apply to it.
 
 ## Approved folders
 
-A named agent can always read and write inside the open workspace folder. On the **Folders** tab you can approve additional folders with **Add folder**, for example a shared library next to the project.
+A named agent can always read and write inside the open workspace folder. On the **Folders** tab you can approve additional folders with **Add folder**, for example a shared library next to the project. Project agents can only approve folders inside the workspace.
 
 File tools and shell commands are checked against these folders. A read, write, search or command whose path or working directory is outside the workspace and the approved folders is refused with "Folder is not approved for this agent". Approved folders do not skip [tool approvals](./tool-approvals.md); a file edit or command still needs your approval if your settings require it.
 
@@ -40,6 +95,13 @@ File tools and shell commands are checked against these folders. A read, write, 
 
 An agent that runs on a coding CLI receives its brief, memory and skill list at the start of each chat. The CLI uses its own tools, so the folder checks and the remember tool above apply to the built-in engine only.
 
+## Import and export
+
+The export menu of an agent offers:
+
+- **Export** and **Export with memory**: a `<name>.agent.json` file. Import it with the import button next to **New agent**; imported agents are personal and their folders are not imported.
+- **Export as Markdown**: the project agent format above. Folders outside the open workspace are left out.
+
 ## Storage
 
-Agents are stored in `pragma/agents/roster.json` inside Pragma's application data directory and are available in every workspace.
+Personal agents are stored in `pragma/agents/roster.json` inside Pragma's application data directory. Project agents are the files in `.pragma/agents/`; their memory is stored in `pragma/agents/projects/` inside the application data directory.

@@ -75,7 +75,7 @@ function optionalString(record: Record<string, unknown>, key: string): string | 
   return typeof value === "string" ? value : null;
 }
 
-function isProvider(value: string): value is AIProvider {
+export function isProvider(value: string): value is AIProvider {
   return Object.prototype.hasOwnProperty.call(PROVIDER_LABELS, value);
 }
 

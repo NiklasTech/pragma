@@ -1,8 +1,11 @@
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
+
+use super::chat_storage::workspace_hash;
 
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
 static AGENTS_IO_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -14,6 +17,7 @@ const MAX_MEMORY_ENTRIES: usize = 50;
 const MAX_MEMORY_TOTAL_CHARS: usize = 16000;
 const MAX_SKILL_ID_CHARS: usize = 64;
 const SECRET_MARKERS: [&str; 5] = ["sk-", "ghp_", "github_pat_", "xai-", "Bearer "];
+const PROJECT_AGENT_ID_PREFIX: &str = "project:";
 
 // ─── Public Types ────────────────────────────────────────────────────────────
 
@@ -46,6 +50,8 @@ pub struct Agent {
     pub id: String,
     pub name: String,
     pub brief: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     pub engine: AgentEngine,
     #[serde(default)]
     pub folders: Vec<String>,
@@ -65,6 +71,20 @@ pub struct SaveAgentsRequest {
     pub agents: Vec<Agent>,
 }
 
+/// Memory of project agents, keyed by agent id; it stays on this machine, never in the repository.
+pub type ProjectMemory = BTreeMap<String, Vec<AgentMemory>>;
+
+#[derive(Debug, Deserialize)]
+pub struct LoadProjectMemoryRequest {
+    pub root_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveProjectMemoryRequest {
+    pub root_path: String,
+    pub memory: ProjectMemory,
+}
+
 // ─── Paths ───────────────────────────────────────────────────────────────────
 
 fn roster_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -73,6 +93,22 @@ fn roster_path(app: &AppHandle) -> Result<PathBuf, String> {
         .app_data_dir()
         .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
     Ok(base.join("pragma").join("agents").join("roster.json"))
+}
+
+fn project_memory_path(app: &AppHandle, root_path: &str) -> Result<PathBuf, String> {
+    if root_path.trim().is_empty() {
+        return Err("root_path is required".to_string());
+    }
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
+    let file_name = format!("{}.json", workspace_hash(root_path));
+    Ok(base
+        .join("pragma")
+        .join("agents")
+        .join("projects")
+        .join(file_name))
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────
@@ -113,27 +149,45 @@ fn validate_agents(agents: &[Agent]) -> Result<(), String> {
             return Err("Brief must be 4000 characters or fewer".to_string());
         }
 
-        let mut total_chars = 0usize;
-        for entry in &agent.memory {
-            if contains_secret(&entry.text) {
-                return Err("Do not store secrets in memory".to_string());
-            }
-            let chars = entry.text.chars().count();
-            if chars > MAX_MEMORY_TEXT_CHARS {
-                return Err("Memory text must be 500 characters or fewer".to_string());
-            }
-            total_chars += chars;
-        }
-
-        if agent.memory.len() > MAX_MEMORY_ENTRIES || total_chars > MAX_MEMORY_TOTAL_CHARS {
-            return Err("Memory is full".to_string());
-        }
+        validate_memory(&agent.memory)?;
 
         if !agent.skills.iter().all(|id| is_valid_skill_id(id)) {
             return Err("Invalid skill id".to_string());
         }
     }
 
+    Ok(())
+}
+
+fn validate_memory(memory: &[AgentMemory]) -> Result<(), String> {
+    let mut total_chars = 0usize;
+    for entry in memory {
+        if contains_secret(&entry.text) {
+            return Err("Do not store secrets in memory".to_string());
+        }
+        let chars = entry.text.chars().count();
+        if chars > MAX_MEMORY_TEXT_CHARS {
+            return Err("Memory text must be 500 characters or fewer".to_string());
+        }
+        total_chars += chars;
+    }
+
+    if memory.len() > MAX_MEMORY_ENTRIES || total_chars > MAX_MEMORY_TOTAL_CHARS {
+        return Err("Memory is full".to_string());
+    }
+    Ok(())
+}
+
+fn validate_project_memory(memory: &ProjectMemory) -> Result<(), String> {
+    for (agent_id, entries) in memory {
+        let valid_id = agent_id
+            .strip_prefix(PROJECT_AGENT_ID_PREFIX)
+            .is_some_and(is_valid_skill_id);
+        if !valid_id {
+            return Err("Invalid project agent id".to_string());
+        }
+        validate_memory(entries)?;
+    }
     Ok(())
 }
 
@@ -194,4 +248,79 @@ pub async fn agents_save(app: AppHandle, req: SaveAgentsRequest) -> Result<(), S
     write_roster_atomic(&path, content.as_bytes()).await?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn agents_project_memory_load(
+    app: AppHandle,
+    req: LoadProjectMemoryRequest,
+) -> Result<ProjectMemory, String> {
+    let path = project_memory_path(&app, &req.root_path)?;
+    if !path.exists() {
+        return Ok(ProjectMemory::new());
+    }
+
+    let content = tokio::fs::read_to_string(&path)
+        .await
+        .map_err(|e| format!("failed to read project memory file: {e}"))?;
+    serde_json::from_str::<ProjectMemory>(&content)
+        .map_err(|e| format!("failed to parse project memory file: {e}"))
+}
+
+#[tauri::command]
+pub async fn agents_project_memory_save(
+    app: AppHandle,
+    req: SaveProjectMemoryRequest,
+) -> Result<(), String> {
+    validate_project_memory(&req.memory)?;
+
+    let _guard = AGENTS_IO_LOCK.lock().await;
+    let path = project_memory_path(&app, &req.root_path)?;
+    let content = serde_json::to_string_pretty(&req.memory)
+        .map_err(|e| format!("failed to serialize project memory: {e}"))?;
+    write_roster_atomic(&path, content.as_bytes()).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(text: &str) -> AgentMemory {
+        AgentMemory {
+            id: "m1".to_string(),
+            text: text.to_string(),
+            created_at: 1,
+            source: "user".to_string(),
+        }
+    }
+
+    fn memory_for(agent_id: &str, entries: Vec<AgentMemory>) -> ProjectMemory {
+        ProjectMemory::from([(agent_id.to_string(), entries)])
+    }
+
+    #[test]
+    fn accepts_memory_of_project_agents() {
+        let memory = memory_for("project:reviewer", vec![entry("Use pnpm")]);
+        assert!(validate_project_memory(&memory).is_ok());
+    }
+
+    #[test]
+    fn rejects_ids_that_are_not_project_agents() {
+        for id in ["reviewer", "project:", "project:../roster", "project:a/b"] {
+            let memory = memory_for(id, vec![entry("Use pnpm")]);
+            assert!(validate_project_memory(&memory).is_err(), "{id}");
+        }
+    }
+
+    #[test]
+    fn rejects_secrets_and_full_project_memory() {
+        let secret = memory_for("project:reviewer", vec![entry("key sk-abc")]);
+        assert!(validate_project_memory(&secret).is_err());
+
+        let full = memory_for(
+            "project:reviewer",
+            (0..=MAX_MEMORY_ENTRIES).map(|_| entry("fact")).collect(),
+        );
+        assert!(validate_project_memory(&full).is_err());
+    }
 }
