@@ -3,10 +3,13 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  # Runs on main save the Rust cache that pull requests restore.
+  push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -65,7 +68,8 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-latest
     outputs:
-      rust: ${{ steps.filter.outputs.rust }}
+      # Main always builds Rust so a new toolchain or lockfile gets a cache right away.
+      rust: ${{ github.event_name == 'push' || steps.filter.outputs.rust == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,6 +113,8 @@ jobs:
         with:
           workspaces: src-tauri
           cache-on-failure: true
+          # Pull requests only read the cache; their own entries would evict main's.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Run clippy
         if: needs.changes.outputs.rust == 'true'
