@@ -114,6 +114,7 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
     if (sessionId) saved.sessionId = sessionId;
     if (task?.issueUrl) saved.issueUrl = task.issueUrl;
     if (task?.issueNumber !== undefined) saved.issueNumber = task.issueNumber;
+    if (task?.sourcePath) saved.sourcePath = task.sourcePath;
     if (schedule) saved.schedule = schedule;
 
     setSaving(true);

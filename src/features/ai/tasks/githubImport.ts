@@ -17,7 +17,7 @@ export function importableIssues(issues: GhIssue[], tasks: Task[]): GhIssue[] {
 }
 
 /// Cuts to `max` UTF-16 units without leaving half a surrogate pair, which the backend rejects.
-function clip(text: string, max: number): string {
+export function clip(text: string, max: number): string {
   return text.slice(0, max).replace(/[\uD800-\uDBFF]$/, "");
 }
 
