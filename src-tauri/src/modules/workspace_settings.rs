@@ -31,6 +31,14 @@ pub struct WorkspaceEditorSettings {
     pub rulers: Option<Vec<u32>>,
 }
 
+/// Where a session that changes files starts its work.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum WritingSessionEnvironment {
+    Worktree,
+    Checkout,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceAgentSettings {
@@ -38,6 +46,8 @@ pub struct WorkspaceAgentSettings {
     pub allowed_commands: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub step_limit: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub writing_sessions: Option<WritingSessionEnvironment>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -232,7 +242,11 @@ mod tests {
     fn parses_the_overridable_sections_and_ignores_other_keys() {
         let settings = parse(json!({
             "editor": { "tabSize": 2, "insertSpaces": true, "rulers": [80, 120] },
-            "agent": { "allowedCommands": ["pnpm test"], "stepLimit": 40 },
+            "agent": {
+                "allowedCommands": ["pnpm test"],
+                "stepLimit": 40,
+                "writingSessions": "worktree"
+            },
             "lsp": { "enabled": { "rust": false } },
             "mcpServers": { "docs": { "command": "npx" } }
         }))
@@ -241,6 +255,10 @@ mod tests {
         assert_eq!(
             settings.agent.as_ref().unwrap().allowed_commands,
             Some(vec!["pnpm test".to_string()])
+        );
+        assert_eq!(
+            settings.agent.as_ref().unwrap().writing_sessions,
+            Some(WritingSessionEnvironment::Worktree)
         );
         assert_eq!(settings.lsp.unwrap().enabled.get("rust"), Some(&false));
     }
@@ -253,6 +271,7 @@ mod tests {
             json!({ "agent": { "allowedCommands": [" rm -rf /"] } }),
             json!({ "agent": { "allowedCommands": ["a\nb"] } }),
             json!({ "agent": { "stepLimit": 0 } }),
+            json!({ "agent": { "writingSessions": "elsewhere" } }),
             json!({ "lsp": { "enabled": { "../x": true } } }),
             json!({ "editor": { "tabSize": "two" } }),
         ] {
@@ -288,6 +307,7 @@ mod tests {
             agent: Some(WorkspaceAgentSettings {
                 allowed_commands: Some(vec!["cargo test".to_string()]),
                 step_limit: None,
+                writing_sessions: Some(WritingSessionEnvironment::Checkout),
             }),
             ..Default::default()
         };

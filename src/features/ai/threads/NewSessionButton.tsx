@@ -5,11 +5,11 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { useAgentStore } from "@/features/agent/store";
 import { MAX_PANES, MAX_PANES_TITLE } from "../panes/operations";
 import { selectLeafCount, useAgentsPanesStore } from "../panes/store";
-import { defaultEnvironment } from "../worktree/choice";
-import { useWorktreeChoiceStore } from "../worktree/remember";
+import { defaultEnvironment } from "../sessions/environment";
 
 import { NewSessionMenu } from "./NewSessionMenu";
 import { useNewSessionActions } from "./useNewSessionActions";
@@ -35,9 +35,7 @@ export function NewSessionButton({
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const chatSessions = useAIStore((state) => state.chatSessions);
-  const rememberedChoice = useWorktreeChoiceStore((state) =>
-    rootPath ? state.choices[rootPath] : undefined,
-  );
+  const setting = useWorkspaceSettingsStore((state) => state.settings?.agent?.writingSessions);
   const actions = useNewSessionActions(rootPath, targetLeafId);
   const atCap = useAgentsPanesStore(
     (state) => selectLeafCount(state, rootPath ?? "default") >= MAX_PANES,
@@ -66,7 +64,7 @@ export function NewSessionButton({
     <NewSessionMenu
       rootPath={rootPath}
       isRepo={repoCheck?.is_repo === true}
-      defaultChoice={defaultEnvironment(chatSessions, rememberedChoice)}
+      defaultChoice={defaultEnvironment(chatSessions, setting)}
       actions={actions}
       disabledReason={atCap && !targetLeafId ? MAX_PANES_TITLE : undefined}
       className={className}

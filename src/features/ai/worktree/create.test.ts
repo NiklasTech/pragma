@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 vi.mock("@/shared/stores/ai", () => ({
   useAIStore: { getState: () => ({ saveEnvironment: mocks.saveEnvironment }) },
 }));

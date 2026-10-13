@@ -1,5 +1,6 @@
-import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
+import type { ChatSession, CLIManifest } from "@/shared/stores/ai";
 
+import { startSession } from "../sessions/start";
 import { terminalSessionTitle } from "../terminal/title";
 import { MAX_PANES } from "./operations";
 import { useAgentsPanesStore } from "./store";
@@ -9,16 +10,14 @@ export function createTerminalSession(
   manifest: CLIManifest,
   options?: { activate?: boolean; title?: string },
 ): Promise<ChatSession> {
-  return useAIStore.getState().createChatSession(
-    rootPath,
-    {
+  return startSession(rootPath, {
+    init: {
       kind: "terminal",
-      environment: "checkout",
       cliProviderId: manifest.id,
       title: options?.title ?? terminalSessionTitle(manifest.name),
     },
-    { activate: options?.activate },
-  );
+    activate: options?.activate,
+  });
 }
 
 /// Starts `count` new terminals of one CLI and shows exactly them in the grid.

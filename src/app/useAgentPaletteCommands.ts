@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { useAIStore } from "@/shared/stores/ai";
 import { useCommandPaletteStore, type CommandPaletteItem } from "@/shared/stores/commandPalette";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
@@ -8,8 +8,7 @@ import { revealChatSession } from "@/features/ai/revealChatSession";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
 import { useTasksUiStore } from "@/features/ai/tasks/ui";
-import { createSessionForChoice } from "@/features/ai/worktree/create";
-import { useWorktreeChoiceStore } from "@/features/ai/worktree/remember";
+import { startSession } from "@/features/ai/sessions/start";
 import { useRegisterPaletteCommands } from "./useRegisterPaletteCommands";
 
 const ASK_ID = "ask";
@@ -25,18 +24,14 @@ function showSessions(): void {
   useNamedAgentsUiStore.getState().setView("sessions");
 }
 
-async function startSession(rootPath: string, choice: string): Promise<void> {
-  let session: ChatSession | null;
-  if (choice === ASK_ID) {
-    session = await useAIStore
-      .getState()
-      .createChatSession(rootPath, { kind: "ask", environment: "checkout" });
-  } else {
-    const environment = choice === WORKTREE_ID ? "worktree" : "checkout";
-    useWorktreeChoiceStore.getState().setChoice(rootPath, environment);
-    session = await createSessionForChoice(rootPath, environment);
-  }
-  if (session) revealChatSession(rootPath, session.id);
+async function startPickedSession(rootPath: string, choice: string): Promise<void> {
+  const session = await startSession(
+    rootPath,
+    choice === ASK_ID
+      ? { init: { kind: "ask" } }
+      : { init: { kind: "agent" }, environment: choice === WORKTREE_ID ? "worktree" : "checkout" },
+  );
+  revealChatSession(rootPath, session.id);
 }
 
 function pickNewSession(): void {
@@ -67,8 +62,8 @@ function pickNewSession(): void {
         : []),
     ],
     onSelect: (item) => {
-      void startSession(rootPath, item.id).catch(() => {
-        toast.error("Could not start the session.");
+      void startPickedSession(rootPath, item.id).catch((err: unknown) => {
+        toast.error(err instanceof Error ? err.message : "Could not start the session.");
       });
     },
   });

@@ -1,15 +1,16 @@
 import { loadSessionMessages, saveSessionMessages } from "@/shared/lib/chat-storage";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
-/// Copies the conversation into a new thread; the worktree stays with the original.
+import { startSession } from "../sessions/start";
+
+/// Copies the conversation into a new thread that works in the same environment.
 export async function duplicateThread(rootPath: string, source: ChatSession): Promise<void> {
-  const { createChatSession, updateChatSessionMessages } = useAIStore.getState();
+  const { updateChatSessionMessages } = useAIStore.getState();
   const messages =
     source.messages.length > 0 ? source.messages : await loadSessionMessages(rootPath, source.id);
 
-  const copy = await createChatSession(
-    rootPath,
-    {
+  const copy = await startSession(rootPath, {
+    init: {
       title: `${source.title} (copy)`,
       kind: source.kind,
       cliProviderId: source.cliProviderId,
@@ -17,8 +18,9 @@ export async function duplicateThread(rootPath: string, source: ChatSession): Pr
       agentEngine: source.agentEngine,
       category: source.category,
     },
-    { activate: false },
-  );
+    sameEnvironmentAs: source,
+    activate: false,
+  });
   if (messages.length === 0) return;
 
   await saveSessionMessages(rootPath, copy.id, messages);

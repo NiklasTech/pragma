@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { updateOpenFileTab } from "@/features/agent/applyEdit";
 import { showSessionInPane } from "@/features/ai/children/open";
+import { startSession } from "@/features/ai/sessions/start";
 import { saveSessionMessages } from "@/shared/lib/chat-storage";
 import { uiMessageToStored } from "@/shared/lib/ai/protocol";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
@@ -80,13 +81,11 @@ export async function forkThread(
   messages: UIMessage[],
   index: number,
 ): Promise<void> {
-  const { createChatSession, updateChatSessionMessages, setActiveChatSession } =
-    useAIStore.getState();
+  const { updateChatSessionMessages, setActiveChatSession } = useAIStore.getState();
   const history = messages.slice(0, index + 1).map(uiMessageToStored);
 
-  const fork = await createChatSession(
-    rootPath,
-    {
+  const fork = await startSession(rootPath, {
+    init: {
       title: `${source.title} (fork)`,
       kind: source.kind,
       cliProviderId: source.cliProviderId,
@@ -94,8 +93,9 @@ export async function forkThread(
       agentEngine: source.agentEngine,
       category: source.category,
     },
-    { activate: false },
-  );
+    sameEnvironmentAs: source,
+    activate: false,
+  });
   await saveSessionMessages(rootPath, fork.id, history);
   updateChatSessionMessages(fork.id, history);
   setActiveChatSession(fork.id);

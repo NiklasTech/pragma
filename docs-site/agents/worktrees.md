@@ -11,7 +11,27 @@ Pragma creates a branch from the current `HEAD` and checks it out in a new workt
 
 The thread list and the pane header show the branch. Hover it to see the worktree path.
 
-When another agent session already works in the checkout, **New worktree** is the default choice. Otherwise Pragma remembers the choice you made last for this folder.
+## Choose where writing sessions work
+
+Every session that can change files starts in the environment the project setting **Settings > Project > Agent > Writing sessions work in** picks. This covers agent sessions, coding CLI terminals and conversations, named agent chats, Add to chat, Fix in session and tasks you start in the foreground.
+
+| Value         | Effect                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| Automatic     | A new worktree while another writing session works in the checkout, otherwise the checkout |
+| New worktree  | Each writing session gets its own worktree                                                 |
+| This checkout | Each writing session works in your checkout                                                |
+
+The setting is stored as `agent.writingSessions` (`"worktree"` or `"checkout"`) in `.pragma/settings.json` and is shared with everyone who opens the folder. Without it, Pragma uses **Automatic**.
+
+Some sessions do not follow the setting:
+
+- **Ask** sessions only read, so they always use the checkout.
+- An explicit choice, such as **Agent > This checkout** in the **New session** menu, wins over the setting.
+- Tasks started in the background always get their own worktree, so parallel runs cannot overwrite each other's files.
+- **Duplicate** and **Fork** keep the environment of the session they copy.
+- In a folder that is not a git repository, every session uses the folder itself.
+
+If the setup hook fails, Pragma reports it with a notification, whichever way the session was started.
 
 ## Where worktrees live
 

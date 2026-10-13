@@ -1,21 +1,22 @@
 import { toast } from "sonner";
 
-import { useAIStore, type ChatSession, type CreateChatSessionInit } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { startSession, type StartSessionRequest } from "@/features/ai/sessions/start";
 import { sendToSession } from "@/features/ai/tasks/sessionRuns";
 import { activeChatSession, revealChatSession } from "@/features/ai/revealChatSession";
 
 import type { FinishedCommand } from "./commandTracker";
 import { buildFailureMessage, type FailureIntent } from "./failureMessage";
 
-const NEW_SESSION: Record<FailureIntent, CreateChatSessionInit> = {
-  explain: { kind: "ask", environment: "checkout" },
-  session: { kind: "agent", environment: "checkout", agentEngine: { kind: "builtin" } },
+const NEW_SESSION: Record<FailureIntent, StartSessionRequest> = {
+  explain: { init: { kind: "ask" } },
+  session: { init: { kind: "agent", agentEngine: { kind: "builtin" } } },
 };
 
 async function targetSession(rootPath: string, intent: FailureIntent): Promise<ChatSession> {
   const active = intent === "session" ? activeChatSession() : null;
-  if (!active) return useAIStore.getState().createChatSession(rootPath, NEW_SESSION[intent]);
+  if (!active) return startSession(rootPath, NEW_SESSION[intent]);
   // The chat must hold the earlier messages before the new one, or saving would drop them.
   if (active.messages.length === 0) {
     await useAIStore.getState().loadSessionMessages(rootPath, active.id);
@@ -37,8 +38,8 @@ export async function sendCommandFailure(
   let session: ChatSession;
   try {
     session = await targetSession(rootPath, intent);
-  } catch {
-    toast.error("Could not open a session");
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Could not open a session");
     return false;
   }
 
