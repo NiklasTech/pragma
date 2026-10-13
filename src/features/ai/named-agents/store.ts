@@ -2,6 +2,8 @@ import { create } from "zustand";
 
 import { useAIStore } from "@/shared/stores/ai";
 
+import { cliAgentToPragma } from "./cliAgentCopy";
+import { withCliAgents } from "./cliAgentStorage";
 import type { ProjectAgentIssue } from "./projectFile";
 import {
   deleteProjectAgentFile,
@@ -32,6 +34,8 @@ interface NamedAgentsState {
   loadProjectAgents: (rootPath: string | null) => Promise<void>;
   saveAgent: (agent: Agent) => Promise<void>;
   copyAgent: (agent: Agent, scope: AgentScope) => Promise<{ agent: Agent; droppedFolders: number }>;
+  /** Writes a discovered agent to `.pragma/agents`, where it then takes precedence. */
+  copyCliAgent: (agent: Agent) => Promise<Agent>;
   deleteAgent: (rootPath: string, agentId: string) => Promise<void>;
   appendMemory: (agentId: string, text: string, source: AgentMemorySource) => MemoryWriteResult;
   updateMemory: (agentId: string, entryId: string, text: string) => MemoryWriteResult;
@@ -106,7 +110,7 @@ export const useNamedAgentsStore = create<NamedAgentsState>()((set, get) => {
       if (!rootPath) return;
 
       const [files, memory] = await Promise.all([
-        loadProjectAgents(rootPath),
+        loadProjectAgents(rootPath).then((project) => withCliAgents(rootPath, project)),
         get().projectMemory ?? loadProjectMemory(rootPath).catch((): ProjectMemory => ({})),
       ]);
       if (get().projectRoot !== rootPath) return;
@@ -126,6 +130,7 @@ export const useNamedAgentsStore = create<NamedAgentsState>()((set, get) => {
       }
 
       if (!projectRoot) throw new Error("Open a folder to save project agents");
+      if (agent.source) throw new Error("Agents from coding CLI folders are read-only");
       await writeProjectAgent(projectRoot, agent);
       setLists(get().personalAgents, upsert(get().projectAgents, agent));
       const stored = projectMemory?.[agent.id] ?? [];
@@ -139,6 +144,13 @@ export const useNamedAgentsStore = create<NamedAgentsState>()((set, get) => {
     copyAgent: async (agent, scope) => {
       const copy = copyAgentToScope(agent, scope, get().agents, get().projectRoot);
       await get().saveAgent(copy.agent);
+      return copy;
+    },
+
+    copyCliAgent: async (agent) => {
+      const copy = cliAgentToPragma(agent, get().agents);
+      await get().saveAgent(copy);
+      await get().loadProjectAgents(get().projectRoot);
       return copy;
     },
 
