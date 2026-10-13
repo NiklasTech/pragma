@@ -184,6 +184,7 @@ export interface AgentSettings {
   allowedCommands: string[];
   useProjectRules: boolean;
   stepLimit: number | null;
+  removeWorktrees: boolean;
 }
 
 export interface NotificationSettings {

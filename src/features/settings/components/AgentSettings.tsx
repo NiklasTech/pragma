@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type AgentAutoApprove } from "@/shared/stores/settings";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
@@ -100,6 +101,19 @@ export function AgentSettings() {
                 if (!Number.isInteger(value) || value < 1) return;
                 setAgentSettings({ stepLimit: value });
               }}
+            />
+          }
+        />
+      </SettingSection>
+
+      <SettingSection title="Worktrees">
+        <SettingRow
+          label="Remove worktrees automatically when a session is finished"
+          description="After a merge, or when a thread, task or session is deleted, archived or done. Worktrees with uncommitted changes are kept."
+          control={
+            <Switch
+              checked={agent.removeWorktrees}
+              onCheckedChange={(checked) => setAgentSettings({ removeWorktrees: checked })}
             />
           }
         />

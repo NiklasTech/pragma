@@ -171,6 +171,7 @@ describe("agent tools", () => {
       autoApprove: "edits",
       allowedCommands: [],
       stepLimit: null,
+      removeWorktrees: true,
       useProjectRules: true,
     };
     expect(resolveExtensionToolApproval(tool, settings, false)).toBe("required");

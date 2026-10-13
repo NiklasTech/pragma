@@ -30,6 +30,7 @@ import {
   type FinishAction,
   type SessionMergeStrategy,
 } from "./finish";
+import { autoRemoveWorktrees, releaseWorktree } from "./cleanup";
 import { sessionEnvironment } from "./cwd";
 import { removeSessionWorktree } from "./remove";
 
@@ -69,8 +70,14 @@ export function useFinishWorktree(rootPath: string): {
 
         if (result.completed) {
           toast.success(`Merged ${worktree.branch} into ${result.target}`, { id: toastId });
-          setDeleteBranch(true);
-          setMerged({ sessionId: session.id, worktree, target: result.target });
+          if (autoRemoveWorktrees()) {
+            const release = await releaseWorktree(rootPath, worktree.id, new Set([session.id]));
+            if (release === "in-use")
+              toast.info("Kept the worktree because a session still uses it");
+          } else {
+            setDeleteBranch(true);
+            setMerged({ sessionId: session.id, worktree, target: result.target });
+          }
         } else if (result.rebase_conflicts) {
           toast.error(
             `Rebasing onto ${result.target} conflicts in ${plural(result.conflicts.length, "file")}`,

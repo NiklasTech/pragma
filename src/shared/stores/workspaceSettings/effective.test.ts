@@ -11,6 +11,7 @@ const agent: AgentSettings = {
   allowedCommands: ["git status"],
   useProjectRules: true,
   stepLimit: null,
+  removeWorktrees: true,
 };
 
 describe("workspace settings overlay", () => {
