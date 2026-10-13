@@ -29,6 +29,7 @@ pub struct SessionRepoCheck {
 #[derive(Debug, Serialize)]
 pub struct SessionWorktreeCreate {
     pub branch: String,
+    pub base_branch: Option<String>,
     pub path: String,
     pub setup_log: String,
     pub status: String,
@@ -62,7 +63,7 @@ pub async fn git_session_repo_check(repo_path: String) -> Result<SessionRepoChec
 pub async fn git_session_worktree_create(
     app: tauri::AppHandle,
     repo_path: String,
-    session_id: String,
+    environment_id: String,
 ) -> Result<SessionWorktreeCreate, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
@@ -73,7 +74,7 @@ pub async fn git_session_worktree_create(
         .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
     blocking(move || {
         let scripts_trusted = ensure_trusted(&app, &repo_path)?;
-        create_worktree(&app_data_dir, &repo_path, &session_id, scripts_trusted)
+        create_worktree(&app_data_dir, &repo_path, &environment_id, scripts_trusted)
     })
     .await
 }
@@ -157,29 +158,29 @@ pub(crate) fn repo_check(repo_path: &str) -> SessionRepoCheck {
     }
 }
 
-pub(crate) fn worktree_dir(app_data_dir: &Path, repo_path: &str, session_id: &str) -> PathBuf {
+pub(crate) fn worktree_dir(app_data_dir: &Path, repo_path: &str, environment_id: &str) -> PathBuf {
     app_data_dir
         .join("worktrees")
         .join(workspace_hash(repo_path))
-        .join(session_id)
+        .join(environment_id)
 }
 
-fn validate_session_id(session_id: &str) -> Result<(), String> {
-    let valid = !session_id.is_empty()
-        && !session_id.contains("..")
-        && session_id
+pub(crate) fn validate_environment_id(environment_id: &str) -> Result<(), String> {
+    let valid = !environment_id.is_empty()
+        && !environment_id.contains("..")
+        && environment_id
             .chars()
             .all(|c| c.is_ascii_hexdigit() || c == '-');
     if !valid {
-        return Err("Session id may only contain hex digits and hyphens".to_string());
+        return Err("Environment id may only contain hex digits and hyphens".to_string());
     }
     Ok(())
 }
 
-fn branch_suffix(session_id: &str) -> Result<String, String> {
-    let compact: String = session_id.chars().filter(|c| *c != '-').collect();
+fn branch_suffix(environment_id: &str) -> Result<String, String> {
+    let compact: String = environment_id.chars().filter(|c| *c != '-').collect();
     if compact.is_empty() {
-        return Err("Session id has no hex characters".to_string());
+        return Err("Environment id has no hex characters".to_string());
     }
     let start = compact.len().saturating_sub(8);
     Ok(compact[start..].to_ascii_lowercase())
@@ -214,6 +215,21 @@ fn unique_branch(repo_path: &str, suffix: &str) -> Result<String, String> {
         }
     }
     Ok(branch)
+}
+
+/// The branch the checkout is on, or `None` on a detached HEAD.
+fn checked_out_branch(repo_path: &str) -> Option<String> {
+    let output = run_git(
+        Some(repo_path),
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        DEFAULT_TIMEOUT_SECS,
+    )
+    .ok()?;
+    if output.timed_out || output.exit_code != Some(0) {
+        return None;
+    }
+    let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    (!branch.is_empty() && branch != "HEAD").then_some(branch)
 }
 
 fn canonical_existing_ancestor(path: &Path) -> Option<PathBuf> {
@@ -301,10 +317,10 @@ fn run_script(script: &Path, cwd: &Path) -> (bool, String) {
 pub(crate) fn create_worktree(
     app_data_dir: &Path,
     repo_path: &str,
-    session_id: &str,
+    environment_id: &str,
     scripts_trusted: bool,
 ) -> Result<SessionWorktreeCreate, String> {
-    validate_session_id(session_id)?;
+    validate_environment_id(environment_id)?;
 
     let repo_canonical = Path::new(repo_path)
         .canonicalize()
@@ -313,7 +329,7 @@ pub(crate) fn create_worktree(
         return Err("Repository path is not a directory".to_string());
     }
 
-    let path = worktree_dir(app_data_dir, repo_path, session_id);
+    let path = worktree_dir(app_data_dir, repo_path, environment_id);
     // The worktree must stay outside the user's checkout even if app data was relocated.
     if let Some(existing) = canonical_existing_ancestor(&path) {
         if existing.starts_with(&repo_canonical) {
@@ -321,8 +337,9 @@ pub(crate) fn create_worktree(
         }
     }
 
-    let suffix = branch_suffix(session_id)?;
+    let suffix = branch_suffix(environment_id)?;
     let branch = unique_branch(repo_path, &suffix)?;
+    let base_branch = checked_out_branch(repo_path);
 
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
@@ -367,6 +384,7 @@ pub(crate) fn create_worktree(
 
     Ok(SessionWorktreeCreate {
         branch,
+        base_branch,
         path: path_str,
         setup_log,
         status,
@@ -502,8 +520,8 @@ pub(crate) fn delete_branch(repo_path: &str, branch: &str) -> Result<(), String>
 mod tests {
     use super::*;
 
-    const SESSION_A: &str = "11111111-1111-1111-1111-111111111111";
-    const SESSION_B: &str = "22222222-1111-1111-1111-111111111111";
+    const ENVIRONMENT_A: &str = "11111111-1111-1111-1111-111111111111";
+    const ENVIRONMENT_B: &str = "22222222-1111-1111-1111-111111111111";
 
     fn git(dir: &str, args: &[&str]) {
         let output = std::process::Command::new("git")
@@ -571,9 +589,11 @@ mod tests {
         let app_data = tempfile::tempdir().expect("tempdir");
 
         let created =
-            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
         assert_eq!(created.branch, "pragma/11111111");
         assert_eq!(created.status, "ready");
+        assert!(created.path.ends_with(ENVIRONMENT_A));
+        assert!(created.base_branch.is_some());
         assert!(Path::new(&created.path).starts_with(app_data.path()));
 
         std::fs::write(Path::new(&created.path).join("session.txt"), b"work").expect("write");
@@ -587,8 +607,10 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let first = create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("first");
-        let second = create_worktree(app_data.path(), &repo_path, SESSION_B, true).expect("second");
+        let first =
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("first");
+        let second =
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_B, true).expect("second");
 
         assert_eq!(first.branch, "pragma/11111111");
         assert_eq!(second.branch, "pragma/11111111-2");
@@ -599,7 +621,7 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
         let created =
-            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
 
         assert!(!worktree_dirty(&created.path).expect("dirty"));
         std::fs::write(Path::new(&created.path).join("new.txt"), b"x").expect("write");
@@ -611,11 +633,13 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let clean = create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
+        let clean =
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
         remove_worktree(&repo_path, &clean.path, false).expect("remove clean");
         assert!(!Path::new(&clean.path).exists());
 
-        let dirty = create_worktree(app_data.path(), &repo_path, SESSION_B, true).expect("create");
+        let dirty =
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_B, true).expect("create");
         std::fs::write(Path::new(&dirty.path).join("dirty.txt"), b"x").expect("write");
         assert!(remove_worktree(&repo_path, &dirty.path, false).is_err());
         assert!(Path::new(&dirty.path).exists());
@@ -635,7 +659,7 @@ mod tests {
         make_executable(&script);
 
         let created =
-            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
         assert_eq!(created.status, "error");
         assert!(Path::new(&created.path).exists());
     }
@@ -651,7 +675,7 @@ mod tests {
         make_executable(&script);
 
         let created =
-            create_worktree(app_data.path(), &repo_path, SESSION_A, false).expect("create");
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, false).expect("create");
         assert_eq!(created.status, "ready");
         assert_eq!(created.setup_log, UNTRUSTED_SCRIPT_LOG);
     }
@@ -661,7 +685,7 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
         let created =
-            create_worktree(app_data.path(), &repo_path, SESSION_A, true).expect("create");
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
 
         let pragma = Path::new(&repo_path).join(".pragma");
         std::fs::create_dir_all(&pragma).expect("mkdir");
@@ -694,6 +718,7 @@ mod tests {
             serde_json::from_str(json).expect("deserialize");
         assert!(session.kind.is_empty());
         assert!(session.environment.is_empty());
+        assert!(session.environment_id.is_none());
         assert!(session.worktree.is_none());
     }
 }

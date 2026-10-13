@@ -5,12 +5,12 @@ import {
   useAIStore,
   type AgentEngine,
   type ChatSession,
-  type SessionWorktree,
+  type WorkEnvironment,
 } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { disposeTerminal, ensureTerminal } from "../terminal/runner";
-import { createSessionWorktree } from "../worktree/create";
+import { createWorktreeEnvironment } from "../worktree/create";
 import { checkSpawnLimits, parseSpawnRequest, type SpawnRequest } from "./limits";
 import { startChildRun } from "./runner";
 import { deliverTerminalPrompt } from "./terminalPrompt";
@@ -92,8 +92,8 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
   const { rootPath, parent, engine, request, command } = plan;
   const id = crypto.randomUUID();
   // A child worktree always branches from the workspace, never from the parent's worktree.
-  const worktree: SessionWorktree | undefined =
-    request.environment === "worktree" ? await createSessionWorktree(rootPath, id) : undefined;
+  const worktree: WorkEnvironment | undefined =
+    request.environment === "worktree" ? await createWorktreeEnvironment(rootPath) : undefined;
   const { createChatSession } = useAIStore.getState();
 
   if (request.kind === "conversation") {
@@ -104,7 +104,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         title: request.title,
         kind: "agent",
         environment: request.environment,
-        worktree,
+        environmentId: worktree?.id,
         agentEngine: engine,
         parentId: parent.id,
       },
@@ -114,7 +114,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
     return session;
   }
 
-  const cwd = worktree?.status === "ready" ? worktree.path : rootPath;
+  const cwd = worktree?.setupStatus === "ready" ? worktree.path : rootPath;
   const started = ensureTerminal(id, {
     command: command ?? "",
     cwd,
@@ -130,7 +130,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         title: request.title,
         kind: "terminal",
         environment: request.environment,
-        worktree,
+        environmentId: worktree?.id,
         cliProviderId: request.cli ?? undefined,
         parentId: parent.id,
       },

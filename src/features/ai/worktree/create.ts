@@ -1,31 +1,36 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
-import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
 
 import type { WorktreeChoice } from "./choice";
 
 interface WorktreeCreateResponse {
   branch: string;
+  base_branch: string | null;
   path: string;
   setup_log: string;
   status: "ready" | "error";
 }
 
-export async function createSessionWorktree(
-  rootPath: string,
-  sessionId: string,
-): Promise<SessionWorktree> {
+/** Creates a worktree and stores it as a new work environment of the workspace. */
+export async function createWorktreeEnvironment(rootPath: string): Promise<WorkEnvironment> {
+  const id = crypto.randomUUID();
   const created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
     repoPath: rootPath,
-    sessionId,
+    environmentId: id,
   });
-  return {
-    branch: created.branch,
+  const environment: WorkEnvironment = {
+    id,
+    kind: "worktree",
     path: created.path,
+    branch: created.branch,
+    setupStatus: created.status,
     setupLog: created.setup_log,
-    status: created.status,
   };
+  if (created.base_branch) environment.baseBranch = created.base_branch;
+  await useAIStore.getState().saveEnvironment(rootPath, environment);
+  return environment;
 }
 
 export async function createSessionForChoice(
@@ -38,20 +43,17 @@ export async function createSessionForChoice(
     return createChatSession(rootPath, { kind: "agent", environment: "checkout" });
   }
 
-  const id = crypto.randomUUID();
-
-  let worktree: SessionWorktree;
+  let environment: WorkEnvironment;
   try {
-    worktree = await createSessionWorktree(rootPath, id);
+    environment = await createWorktreeEnvironment(rootPath);
   } catch {
     toast.error("Could not create a worktree for this thread");
     return null;
   }
 
   return createChatSession(rootPath, {
-    id,
     kind: "agent",
     environment: "worktree",
-    worktree,
+    environmentId: environment.id,
   });
 }

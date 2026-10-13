@@ -31,6 +31,7 @@ import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
 import type { FinishAction } from "@/features/ai/worktree/finish";
 import { FinishWorktreeMenu } from "@/features/ai/worktree/FinishWorktreeMenu";
+import { useSessionEnvironment } from "@/features/ai/worktree/useSessionEnvironment";
 import { ExportSessionMenu } from "@/features/ai/export/ExportSessionMenu";
 
 import { providerAccent } from "../panes/providerAccent";
@@ -127,6 +128,8 @@ export function ThreadRow({
   const accent = providerAccent(session);
   const terminalActive = useTerminalActivity(session.kind === "terminal" ? session.id : null);
   const shownStatus: ThreadStatus = status === "idle" && terminalActive ? "running" : status;
+  const environment = useSessionEnvironment(session);
+  const worktree = environment?.kind === "worktree" ? environment : undefined;
   const statusText = STATUS_TEXT[shownStatus];
 
   return (
@@ -240,13 +243,13 @@ export function ThreadRow({
                 {statusText}
               </span>
             ) : (
-              session.worktree && (
+              worktree && (
                 <span
                   className="flex min-w-0 items-center gap-1"
-                  title={`${session.worktree.branch} ${session.worktree.path}`}
+                  title={`${worktree.branch} ${worktree.path}`}
                 >
                   <GitBranch size={11} className="shrink-0" />
-                  <span className="truncate">{session.worktree.branch}</span>
+                  <span className="truncate">{worktree.branch}</span>
                 </span>
               )
             )}
@@ -309,13 +312,13 @@ export function ThreadRow({
                 Select
               </DropdownMenuItem>
             )}
-            {session.worktree && onFinish && (
+            {worktree && onFinish && (
               <FinishWorktreeMenu
                 disabled={shownStatus === "running" || shownStatus === "waiting-approval"}
                 onFinish={(action) => onFinish(session.id, action)}
               />
             )}
-            {session.worktree && (
+            {worktree && (
               <DropdownMenuItem onClick={() => onDiscard(session.id)}>
                 <GitBranch size={14} />
                 Discard worktree

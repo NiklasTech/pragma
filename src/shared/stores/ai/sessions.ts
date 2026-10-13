@@ -26,7 +26,9 @@ export function mergeSessionsWithStored(
       };
       if (memorySession.kind !== undefined) merged.kind = memorySession.kind;
       if (memorySession.environment !== undefined) merged.environment = memorySession.environment;
-      if (memorySession.worktree !== undefined) merged.worktree = memorySession.worktree;
+      if (memorySession.environmentId !== undefined) {
+        merged.environmentId = memorySession.environmentId;
+      }
       if (memorySession.cliProviderId !== undefined) {
         merged.cliProviderId = memorySession.cliProviderId;
       }
@@ -60,6 +62,8 @@ export const createSessionsSlice: AISlice<
 > = (set, get) => ({
   loadSessions: async (rootPath) => {
     const stored = await loadStoredSessions(rootPath);
+    // Loading the sessions first migrates legacy worktrees into environments.
+    await get().loadEnvironments(rootPath);
     if (stored.length === 0) {
       const session: ChatSession = {
         id: crypto.randomUUID(),
@@ -128,7 +132,7 @@ export const createSessionsSlice: AISlice<
     };
     if (init?.kind !== undefined) session.kind = init.kind;
     if (init?.environment !== undefined) session.environment = init.environment;
-    if (init?.worktree !== undefined) session.worktree = init.worktree;
+    if (init?.environmentId !== undefined) session.environmentId = init.environmentId;
     if (init?.cliProviderId !== undefined) session.cliProviderId = init.cliProviderId;
     if (init?.agentId !== undefined) session.agentId = init.agentId;
     if (init?.agentEngine !== undefined) session.agentEngine = init.agentEngine;

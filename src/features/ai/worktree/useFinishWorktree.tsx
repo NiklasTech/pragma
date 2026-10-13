@@ -19,7 +19,7 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { loadSessionMessages } from "@/shared/lib/chat-storage";
-import { useAIStore, type ChatSession, type SessionWorktree } from "@/shared/stores/ai";
+import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
 import { useGitStore } from "@/shared/stores/git";
 
 import {
@@ -30,16 +30,17 @@ import {
   type FinishAction,
   type SessionMergeStrategy,
 } from "./finish";
+import { sessionEnvironment } from "./cwd";
 import { removeSessionWorktree } from "./remove";
 
 interface MergedSession {
   sessionId: string;
-  worktree: SessionWorktree;
+  worktree: WorkEnvironment;
   target: string;
 }
 
 interface PullRequestDraft {
-  worktree: SessionWorktree;
+  worktree: WorkEnvironment;
   title: string;
   body: string;
 }
@@ -59,7 +60,7 @@ export function useFinishWorktree(rootPath: string): {
   const [draft, setDraft] = useState<PullRequestDraft | null>(null);
 
   const merge = useCallback(
-    async (session: ChatSession, worktree: SessionWorktree, strategy: SessionMergeStrategy) => {
+    async (session: ChatSession, worktree: WorkEnvironment, strategy: SessionMergeStrategy) => {
       const toastId = toast.loading(`Merging ${worktree.branch}…`);
       try {
         const result = await finishSessionMerge(rootPath, worktree, strategy);
@@ -97,7 +98,7 @@ export function useFinishWorktree(rootPath: string): {
   );
 
   const openPullRequest = useCallback(
-    async (session: ChatSession, worktree: SessionWorktree) => {
+    async (session: ChatSession, worktree: WorkEnvironment) => {
       const task = useTasksStore.getState().tasks.find((item) => item.sessionId === session.id);
       try {
         const messages =
@@ -118,9 +119,10 @@ export function useFinishWorktree(rootPath: string): {
 
   const finish = useCallback(
     (sessionId: string, action: FinishAction) => {
-      const session = useAIStore.getState().chatSessions.find((item) => item.id === sessionId);
-      const worktree = session?.worktree;
-      if (!session || !worktree) return;
+      const { chatSessions, workEnvironments } = useAIStore.getState();
+      const session = chatSessions.find((item) => item.id === sessionId);
+      const worktree = sessionEnvironment(session, workEnvironments);
+      if (!session || worktree?.kind !== "worktree") return;
       if (action === "pull-request") void openPullRequest(session, worktree);
       else void merge(session, worktree, action);
     },
@@ -129,8 +131,9 @@ export function useFinishWorktree(rootPath: string): {
 
   const cleanUp = async () => {
     if (!merged) return;
-    const session = useAIStore.getState().chatSessions.find((item) => item.id === merged.sessionId);
-    if (!session?.worktree) {
+    const { chatSessions, workEnvironments } = useAIStore.getState();
+    const session = chatSessions.find((item) => item.id === merged.sessionId);
+    if (!session || !sessionEnvironment(session, workEnvironments)) {
       setMerged(null);
       return;
     }

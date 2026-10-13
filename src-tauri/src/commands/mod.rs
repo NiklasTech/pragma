@@ -13,3 +13,4 @@ pub mod search;
 pub mod subscription_usage;
 pub mod tasks;
 pub mod web_fetch;
+pub mod work_environments;

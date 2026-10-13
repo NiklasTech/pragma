@@ -52,11 +52,17 @@ export interface ChatMessage {
   kind?: "compaction";
 }
 
-export interface SessionWorktree {
-  branch: string;
+/** A checkout or worktree that one or more sessions of a workspace work in. */
+export interface WorkEnvironment {
+  id: string;
+  kind: "checkout" | "worktree";
   path: string;
+  /** The worktree's branch; empty for a checkout. */
+  branch: string;
+  /** The checkout's branch when the worktree was created. */
+  baseBranch?: string;
+  setupStatus: "ready" | "error";
   setupLog: string;
-  status: "ready" | "error";
 }
 
 export type AgentEngineKind = "builtin" | "cli";
@@ -92,7 +98,7 @@ export interface ChatSession {
   updatedAt: number;
   kind?: "ask" | "agent" | "terminal";
   environment?: "checkout" | "worktree";
-  worktree?: SessionWorktree | null;
+  environmentId?: string;
   cliProviderId?: string;
   agentId?: string;
   archived?: boolean;
@@ -109,7 +115,7 @@ export interface CreateChatSessionInit {
   title?: string;
   kind?: ChatSession["kind"];
   environment?: ChatSession["environment"];
-  worktree?: ChatSession["worktree"];
+  environmentId?: string;
   cliProviderId?: string;
   agentId?: string;
   agentEngine?: AgentEngine;
@@ -154,6 +160,7 @@ export interface AIState {
   providers: Record<AIProvider, ProviderConfig>;
   chatSessions: ChatSession[];
   activeChatSessionId: string | null;
+  workEnvironments: WorkEnvironment[];
   apiKeyRefs: Record<AIProvider, string | null>;
   availableModels: Partial<Record<AIProvider, ModelListCache>>;
   modelsLoading: Partial<Record<AIProvider, boolean>>;
@@ -206,6 +213,11 @@ export interface AIActions {
     sessionId: string,
     messages: ChatMessage[],
   ) => Promise<void>;
+
+  // Work environments the sessions of the workspace reference.
+  loadEnvironments: (rootPath: string) => Promise<void>;
+  saveEnvironment: (rootPath: string, environment: WorkEnvironment) => Promise<void>;
+  deleteEnvironment: (rootPath: string, environmentId: string) => Promise<void>;
 
   addChatMessage: (sessionId: string, message: ChatMessage) => void;
   recordSessionUsage: (sessionId: string, usage: StreamUsage) => void;

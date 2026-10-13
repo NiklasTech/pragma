@@ -171,7 +171,7 @@ export async function startChildRun(
   const engine = resolveEffectiveEngine(session.agentEngine ?? null, ai);
   const isCLI = engine.cliProviderId !== null;
   const acp = isAcpActive(ai.cliManifests, engine.cliProviderId, settings.experimental.acp);
-  const cwd = sessionCwd(session, rootPath);
+  const cwd = sessionCwd(session, ai.workEnvironments, rootPath);
 
   setChildRun(sessionId, {
     status: "running",

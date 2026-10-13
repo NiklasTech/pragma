@@ -38,6 +38,7 @@ import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
+import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { PaneCloseButton } from "./PaneCloseButton";
 import { usePaneHeaderDrag } from "./paneDrag";
@@ -214,7 +215,9 @@ export function PaneHeader({
   const look = terminal
     ? terminalStatusLook(terminalStatus.status, terminalStatus.exitCode, terminalActive)
     : { color: STATUS_DOTS[status], label: STATUS_LABELS[status] };
-  const branch = session?.worktree?.branch ?? null;
+  const environment = useSessionEnvironment(session);
+  const worktree = environment?.kind === "worktree" ? environment : undefined;
+  const branch = worktree?.branch ?? null;
   const maximizeLabel = maximized ? "Restore" : "Maximize";
   const newLabel = terminal && manifest ? `New ${manifest.name}` : "New session";
   const canStartLike = session !== undefined && rootPath !== null;
@@ -255,7 +258,7 @@ export function PaneHeader({
         {branch && (
           <span
             className="flex min-w-0 shrink items-center gap-1 text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"
-            title={session?.worktree ? `${branch} ${session.worktree.path}` : branch}
+            title={worktree ? `${branch} ${worktree.path}` : branch}
           >
             <GitBranch size={11} className="shrink-0" />
             <span className="truncate">{branch}</span>

@@ -2,13 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { AgentEngine, ChatMessage, ChatSession, SessionUsage } from "@/shared/stores/ai";
 
-export interface StoredWorktree {
-  branch: string;
-  path: string;
-  setup_log: string;
-  status: "ready" | "error";
-}
-
 export interface StoredSessionUsage {
   input_tokens: number;
   output_tokens: number;
@@ -26,7 +19,7 @@ export interface StoredSessionMetadata {
   updated_at: number;
   kind?: string | null;
   environment?: string | null;
-  worktree?: StoredWorktree | null;
+  environment_id?: string | null;
   cli_provider_id?: string | null;
   agent_id?: string | null;
   archived?: boolean;
@@ -87,6 +80,7 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
 
   if (session.kind) stored.kind = session.kind;
   if (session.environment) stored.environment = session.environment;
+  if (session.environmentId) stored.environment_id = session.environmentId;
   if (session.cliProviderId) stored.cli_provider_id = session.cliProviderId;
   if (session.agentId) stored.agent_id = session.agentId;
   if (session.archived) stored.archived = true;
@@ -95,16 +89,6 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
   if (session.category) stored.category = session.category;
   if (session.mcpServers) stored.mcp_servers = session.mcpServers;
   if (session.usage) stored.usage = toStoredUsage(session.usage);
-  if (session.worktree === null) {
-    stored.worktree = null;
-  } else if (session.worktree) {
-    stored.worktree = {
-      branch: session.worktree.branch,
-      path: session.worktree.path,
-      setup_log: session.worktree.setupLog,
-      status: session.worktree.status,
-    };
-  }
 
   return stored;
 }
@@ -124,6 +108,7 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
   if (session.environment === "checkout" || session.environment === "worktree") {
     restored.environment = session.environment;
   }
+  if (session.environment_id) restored.environmentId = session.environment_id;
   if (session.cli_provider_id) restored.cliProviderId = session.cli_provider_id;
   if (session.agent_id) restored.agentId = session.agent_id;
   if (session.archived) restored.archived = true;
@@ -132,14 +117,6 @@ export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
   if (session.category) restored.category = session.category;
   if (session.mcp_servers) restored.mcpServers = session.mcp_servers;
   if (session.usage) restored.usage = fromStoredUsage(session.usage);
-  if (session.worktree) {
-    restored.worktree = {
-      branch: session.worktree.branch,
-      path: session.worktree.path,
-      setupLog: session.worktree.setup_log,
-      status: session.worktree.status,
-    };
-  }
 
   return restored;
 }

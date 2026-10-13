@@ -44,7 +44,8 @@ export function useCliSessionOptions(): CliSessionOptions | null {
     providers,
   }).cliProviderId;
   const acpActive = isAcpActive(cliManifests, activeCLIProvider, experimentalAcp);
-  const cwd = rootPath ? sessionCwd(session, rootPath) : null;
+  const workEnvironments = useAIStore((state) => state.workEnvironments);
+  const cwd = rootPath ? sessionCwd(session, workEnvironments, rootPath) : null;
 
   const options = useAcpSessionOptionsStore((state) =>
     activeChatSessionId ? state.bySession[activeChatSessionId] : undefined,

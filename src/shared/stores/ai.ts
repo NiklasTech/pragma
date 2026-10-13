@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createCLISlice } from "./ai/cli";
 import { createCopilotSlice } from "./ai/copilot";
 import { createCoreSlice } from "./ai/core";
+import { createEnvironmentsSlice } from "./ai/environments";
 import { createKeysSlice } from "./ai/keys";
 import { createMessagesSlice } from "./ai/messages";
 import { createModelsSlice } from "./ai/models";
@@ -23,7 +24,7 @@ export type {
   ModelListCache,
   ProviderConfig,
   SessionUsage,
-  SessionWorktree,
+  WorkEnvironment,
 } from "./ai/types";
 export { mergeSessionsWithStored } from "./ai/sessions";
 
@@ -55,6 +56,7 @@ const initialState: AIState = {
   providers: { ...defaultProviders },
   chatSessions: [],
   activeChatSessionId: null,
+  workEnvironments: [],
   apiKeyRefs: {
     openai: null,
     anthropic: null,
@@ -85,6 +87,7 @@ export const useAIStore = create<AIStore>()((...a) => ({
   ...initialState,
   ...createCoreSlice(...a),
   ...createSessionsSlice(...a),
+  ...createEnvironmentsSlice(...a),
   ...createMessagesSlice(...a),
   ...createUsageSlice(...a),
   ...createKeysSlice(...a),

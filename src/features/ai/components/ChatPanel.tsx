@@ -33,6 +33,7 @@ import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
 import { SpawnApprovals } from "@/features/ai/children/SpawnApprovals";
 import { ChildSessionCards, inlineChildIds } from "@/features/ai/children/ChildSessionCards";
 import { useComposerImages } from "@/features/ai/images/useComposerImages";
+import { useSessionEnvironment } from "@/features/ai/worktree/useSessionEnvironment";
 import { CompactionMarker } from "@/features/ai/compaction/CompactionMarker";
 import { useCompactionStore } from "@/features/ai/compaction/compactSession";
 import { compactionSummary, isCompactionMessage } from "@/shared/lib/ai/compaction";
@@ -85,8 +86,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   const activeSession = chatSessions.find((session) => session.id === activeChatSessionId);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
-  const setupLog =
-    activeSession?.worktree?.status === "error" ? activeSession.worktree.setupLog : null;
+  const activeEnvironment = useSessionEnvironment(activeSession);
+  const setupLog = activeEnvironment?.setupStatus === "error" ? activeEnvironment.setupLog : null;
   const edit = useAIEditStore((state) => state.edit);
   const receiveProposal = useAIEditStore((state) => state.receiveProposal);
   const cancelEdit = useAIEditStore((state) => state.cancelEdit);

@@ -7,7 +7,7 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { sessionCwd } from "@/features/ai/worktree/cwd";
+import { sessionCwd, sessionEnvironment } from "@/features/ai/worktree/cwd";
 import { type AutoContextAttachment } from "@/shared/lib/chat-context";
 import { collectLiveAutoContext } from "@/features/ai/context/liveContext";
 import { buildAutoContextPrompt } from "@/features/ai/context/autoContext";
@@ -54,11 +54,13 @@ export function useAI() {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const createChatSession = useAIStore((state) => state.createChatSession);
+  const workEnvironments = useAIStore((state) => state.workEnvironments);
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const cwd = sessionCwd(activeSession, rootPath);
+  const activeEnvironment = sessionEnvironment(activeSession, workEnvironments);
+  const cwd = sessionCwd(activeSession, workEnvironments, rootPath);
 
   const agents = useNamedAgentsStore((state) => state.agents);
   const activeAgent = activeSession?.agentId
@@ -256,7 +258,7 @@ export function useAI() {
       if (!raw.trim() && images.length === 0) return false;
       if (chat.status === "submitted" || chat.status === "streaming") return false;
 
-      if (agentActive && activeSession?.worktree?.status === "error") {
+      if (agentActive && activeEnvironment?.setupStatus === "error") {
         toast.error("This thread has no working worktree. Check the setup log before starting.");
         return false;
       }
@@ -332,6 +334,7 @@ export function useAI() {
       agentActive,
       isCLIActive,
       activeSession,
+      activeEnvironment,
       mcpServerIds,
       activeChatSessionId,
     ],
