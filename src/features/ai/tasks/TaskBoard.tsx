@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GithubLogo, Kanban, Plus, Rows, X } from "@phosphor-icons/react";
+import { GithubLogo, Kanban, MarkdownLogo, Plus, Rows, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
@@ -16,6 +16,7 @@ import { resumeTask, runTask, stopTask } from "./actions";
 import { stopBackgroundTask } from "./background";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { ImportIssuesDialog } from "./ImportIssuesDialog";
+import { ImportMarkdownDialog } from "./ImportMarkdownDialog";
 import {
   EMPTY_TASK_FILTER,
   filterTasks,
@@ -55,6 +56,7 @@ export function TaskBoard() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [markdownOpen, setMarkdownOpen] = useState(false);
   const [parallelOpen, setParallelOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [toDelete, setToDelete] = useState<Task | null>(null);
@@ -119,6 +121,16 @@ export function TaskBoard() {
         >
           <GithubLogo size={13} />
           Import issues
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={!rootPath || !loaded}
+          onClick={() => setMarkdownOpen(true)}
+        >
+          <MarkdownLogo size={13} />
+          Import Markdown
         </Button>
         <Button
           type="button"
@@ -226,6 +238,13 @@ export function TaskBoard() {
       <TaskDialog open={dialogOpen} task={editing} onOpenChange={setDialogOpen} />
       {rootPath && (
         <ImportIssuesDialog open={importOpen} rootPath={rootPath} onOpenChange={setImportOpen} />
+      )}
+      {rootPath && (
+        <ImportMarkdownDialog
+          open={markdownOpen}
+          rootPath={rootPath}
+          onOpenChange={setMarkdownOpen}
+        />
       )}
       {rootPath && (
         <ParallelStartDialog
