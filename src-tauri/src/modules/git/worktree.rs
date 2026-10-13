@@ -64,6 +64,7 @@ pub async fn git_session_worktree_create(
     app: tauri::AppHandle,
     repo_path: String,
     environment_id: String,
+    base_branch: Option<String>,
 ) -> Result<SessionWorktreeCreate, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
@@ -74,7 +75,13 @@ pub async fn git_session_worktree_create(
         .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
     blocking(move || {
         let scripts_trusted = ensure_trusted(&app, &repo_path)?;
-        create_worktree(&app_data_dir, &repo_path, &environment_id, scripts_trusted)
+        create_worktree(
+            &app_data_dir,
+            &repo_path,
+            &environment_id,
+            base_branch.as_deref(),
+            scripts_trusted,
+        )
     })
     .await
 }
@@ -217,6 +224,31 @@ fn unique_branch(repo_path: &str, suffix: &str) -> Result<String, String> {
     Ok(branch)
 }
 
+/// Accepts only the name of an existing local branch, never a remote ref, revision or option.
+fn validate_base_branch(repo_path: &str, base: &str) -> Result<(), String> {
+    let invalid = || {
+        Err(format!(
+            "Base branch must be an existing local branch: {base}"
+        ))
+    };
+    if base.is_empty() || base.starts_with('-') || base.starts_with("refs/") {
+        return invalid();
+    }
+    let reference = format!("refs/heads/{base}");
+    let output = run_git(
+        Some(repo_path),
+        [OsStr::new("check-ref-format"), OsStr::new(&reference)],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    if output.timed_out {
+        return Err("git check-ref-format timed out".to_string());
+    }
+    if output.exit_code != Some(0) || !branch_exists(repo_path, base)? {
+        return invalid();
+    }
+    Ok(())
+}
+
 /// The branch the checkout is on, or `None` on a detached HEAD.
 fn checked_out_branch(repo_path: &str) -> Option<String> {
     let output = run_git(
@@ -318,9 +350,13 @@ pub(crate) fn create_worktree(
     app_data_dir: &Path,
     repo_path: &str,
     environment_id: &str,
+    base: Option<&str>,
     scripts_trusted: bool,
 ) -> Result<SessionWorktreeCreate, String> {
     validate_environment_id(environment_id)?;
+    if let Some(base) = base {
+        validate_base_branch(repo_path, base)?;
+    }
 
     let repo_canonical = Path::new(repo_path)
         .canonicalize()
@@ -339,7 +375,10 @@ pub(crate) fn create_worktree(
 
     let suffix = branch_suffix(environment_id)?;
     let branch = unique_branch(repo_path, &suffix)?;
-    let base_branch = checked_out_branch(repo_path);
+    let (start_point, base_branch) = match base {
+        Some(base) => (format!("refs/heads/{base}"), Some(base.to_string())),
+        None => ("HEAD".to_string(), checked_out_branch(repo_path)),
+    };
 
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
@@ -354,7 +393,7 @@ pub(crate) fn create_worktree(
             OsStr::new("-b"),
             OsStr::new(&branch),
             OsStr::new(&path_str),
-            OsStr::new("HEAD"),
+            OsStr::new(&start_point),
         ],
         DEFAULT_TIMEOUT_SECS,
     )?;
@@ -588,8 +627,8 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let created =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
+        let created = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true)
+            .expect("create");
         assert_eq!(created.branch, "pragma/11111111");
         assert_eq!(created.status, "ready");
         assert!(created.path.ends_with(ENVIRONMENT_A));
@@ -608,20 +647,87 @@ mod tests {
         let app_data = tempfile::tempdir().expect("tempdir");
 
         let first =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("first");
-        let second =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_B, true).expect("second");
+            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true).expect("first");
+        let second = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_B, None, true)
+            .expect("second");
 
         assert_eq!(first.branch, "pragma/11111111");
         assert_eq!(second.branch, "pragma/11111111-2");
     }
 
     #[test]
+    fn create_worktree_branches_from_a_given_base_branch() {
+        let (_repo, repo_path) = init_repo();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let lead = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true)
+            .expect("create lead");
+        git(
+            &lead.path,
+            &[
+                "-c",
+                "user.email=test@example.com",
+                "-c",
+                "user.name=Pragma Test",
+                "-c",
+                "core.hooksPath=",
+                "commit",
+                "--allow-empty",
+                "-m",
+                "lead work",
+            ],
+        );
+
+        let worker = create_worktree(
+            app_data.path(),
+            &repo_path,
+            ENVIRONMENT_B,
+            Some(&lead.branch),
+            true,
+        )
+        .expect("create worker");
+
+        assert_eq!(worker.base_branch.as_deref(), Some(lead.branch.as_str()));
+        let output = run_git(Some(&worker.path), ["log", "-1", "--format=%s"], 30).expect("log");
+        assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "lead work");
+    }
+
+    #[test]
+    fn create_worktree_rejects_invalid_base_branches() {
+        let (_repo, repo_path) = init_repo();
+        git(&repo_path, &["branch", "existing"]);
+        git(
+            &repo_path,
+            &["update-ref", "refs/remotes/origin/main", "HEAD"],
+        );
+        let app_data = tempfile::tempdir().expect("tempdir");
+
+        for base in [
+            "",
+            "missing",
+            "--output=/tmp/x",
+            "-b",
+            "origin/main",
+            "refs/heads/existing",
+            "existing..HEAD",
+            "existing~1",
+            "HEAD",
+        ] {
+            assert!(
+                create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, Some(base), true)
+                    .is_err(),
+                "base {base:?} was accepted"
+            );
+        }
+        assert!(!worktree_dir(app_data.path(), &repo_path, ENVIRONMENT_A).exists());
+        assert!(!branch_exists(&repo_path, "pragma/11111111").expect("show-ref"));
+    }
+
+    #[test]
     fn worktree_dirty_tracks_untracked_files() {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
+        let created = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true)
+            .expect("create");
 
         assert!(!worktree_dirty(&created.path).expect("dirty"));
         std::fs::write(Path::new(&created.path).join("new.txt"), b"x").expect("write");
@@ -633,13 +739,13 @@ mod tests {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
 
-        let clean =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
+        let clean = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true)
+            .expect("create");
         remove_worktree(&repo_path, &clean.path, false).expect("remove clean");
         assert!(!Path::new(&clean.path).exists());
 
-        let dirty =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_B, true).expect("create");
+        let dirty = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_B, None, true)
+            .expect("create");
         std::fs::write(Path::new(&dirty.path).join("dirty.txt"), b"x").expect("write");
         assert!(remove_worktree(&repo_path, &dirty.path, false).is_err());
         assert!(Path::new(&dirty.path).exists());
@@ -658,8 +764,8 @@ mod tests {
         std::fs::write(&script, b"#!/bin/sh\nexit 1\n").expect("write script");
         make_executable(&script);
 
-        let created =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
+        let created = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true)
+            .expect("create");
         assert_eq!(created.status, "error");
         assert!(Path::new(&created.path).exists());
     }
@@ -674,8 +780,8 @@ mod tests {
         std::fs::write(&script, b"#!/bin/sh\nexit 1\n").expect("write script");
         make_executable(&script);
 
-        let created =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, false).expect("create");
+        let created = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, false)
+            .expect("create");
         assert_eq!(created.status, "ready");
         assert_eq!(created.setup_log, UNTRUSTED_SCRIPT_LOG);
     }
@@ -684,8 +790,8 @@ mod tests {
     fn teardown_failure_keeps_worktree() {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
-        let created =
-            create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, true).expect("create");
+        let created = create_worktree(app_data.path(), &repo_path, ENVIRONMENT_A, None, true)
+            .expect("create");
 
         let pragma = Path::new(&repo_path).join(".pragma");
         std::fs::create_dir_all(&pragma).expect("mkdir");
