@@ -17,6 +17,7 @@ import { loadRenderAddons } from "@/features/terminal/terminalAddons";
 
 import { sessionCwd } from "../worktree/cwd";
 import { quoteShellPath } from "./buffer";
+import { terminalLaunchCommand } from "./cliAttention";
 import {
   ensureTerminal,
   getTerminalBuffer,
@@ -43,7 +44,7 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
   const manifest = session.cliProviderId
     ? cliManifests.find((item) => item.id === session.cliProviderId)
     : undefined;
-  const command = manifest?.command ?? "";
+  const command = manifest ? terminalLaunchCommand(manifest.id, manifest.command) : "";
   const workEnvironments = useAIStore((state) => state.workEnvironments);
   const cwd = sessionCwd(session, workEnvironments, workspaceRoot);
   const [dropActive, setDropActive] = useState(false);

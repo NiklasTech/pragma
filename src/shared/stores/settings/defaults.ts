@@ -148,6 +148,8 @@ export const defaultSettings: SettingsState = {
     approvalNeeded: true,
     badge: true,
     statusSummary: true,
+    playSound: true,
+    inAppPopups: true,
   },
   customThemes: {},
   extensions: {},

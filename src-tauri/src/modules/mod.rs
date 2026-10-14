@@ -15,6 +15,7 @@ pub mod git;
 pub mod local_history;
 pub mod lsp;
 pub mod mcp;
+pub mod notification_permission;
 pub mod parakeet;
 pub mod pty;
 pub mod pty_utf8;

@@ -2,7 +2,7 @@ import type { AgentApproval, AgentStatus } from "@/features/agent/store";
 
 import type { ChildRun } from "../children/runStore";
 
-export type AttentionKind = "finished" | "failed" | "approval";
+export type AttentionKind = "finished" | "failed" | "approval" | "input";
 
 export interface ActivityInput {
   liveSessionId: string | null;
@@ -74,5 +74,7 @@ export function attentionMessage(
       return { title: "Session failed", body: `${title} stopped with an error.` };
     case "approval":
       return { title: "Approval needed", body: `${title} is waiting for your approval.` };
+    case "input":
+      return { title: "Input needed", body: `${title} is waiting for your input.` };
   }
 }

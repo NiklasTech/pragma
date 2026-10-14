@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
@@ -10,20 +11,24 @@ import { useSettingsStore, type NotificationSettings } from "@/shared/stores/set
 import { useSpawnApprovalsStore } from "../children/acpSpawn";
 import { useChildRunsStore } from "../children/runStore";
 import { useSessionRunsStore } from "../tasks/sessionRuns";
+import { subscribeTerminalAttention } from "../terminal/runner";
 import { attentionMessage, childRunOutcomes, type AttentionKind } from "./activity";
+import { resolveAttentionDelivery } from "./delivery";
 import { focusAttentionSession } from "./focusSession";
 import { setAttentionBadge, showSystemNotification } from "./notifier";
 import { subscribeSessionOutcomes } from "./outcomes";
+import { readSessionInView } from "./sessionInView";
 import { readSessionActivity } from "./useSessionActivity";
 
 const KIND_SETTINGS: Record<AttentionKind, keyof NotificationSettings> = {
   finished: "sessionFinished",
   failed: "sessionFailed",
   approval: "approvalNeeded",
+  input: "approvalNeeded",
 };
 
-/// Notifies about sessions that need attention while the window is in the
-/// background and keeps the dock badge at the number of waiting sessions.
+/// Notifies about sessions that need attention, with a popup while Pragma is focused and a
+/// system notification while it is in the background, and keeps the dock badge up to date.
 export function useSessionNotifications(): void {
   useEffect(() => {
     let active = true;
@@ -33,11 +38,25 @@ export function useSessionNotifications(): void {
     let unlistenFocus: UnlistenFn | undefined;
 
     const notify = (sessionId: string, kind: AttentionKind) => {
-      if (focused || !useSettingsStore.getState().notifications[KIND_SETTINGS[kind]]) return;
+      const settings = useSettingsStore.getState().notifications;
+      const delivery = resolveAttentionDelivery({
+        enabled: settings[KIND_SETTINGS[kind]],
+        windowFocused: focused,
+        sessionInView: readSessionInView(sessionId),
+        inAppPopups: settings.inAppPopups,
+      });
+      if (delivery === "none") return;
       const session = useAIStore.getState().chatSessions.find((item) => item.id === sessionId);
       const message = attentionMessage(kind, session?.title || "A session");
+      if (delivery === "popup") {
+        toast(message.title, {
+          description: message.body,
+          action: { label: "Open", onClick: () => focusAttentionSession(sessionId) },
+        });
+        return;
+      }
       pendingSessionId = sessionId;
-      void showSystemNotification(message.title, message.body);
+      void showSystemNotification(message.title, message.body, settings.playSound);
     };
 
     const refresh = () => {
@@ -64,6 +83,7 @@ export function useSessionNotifications(): void {
         if (state.notifications !== previous.notifications) refresh();
       }),
       subscribeSessionOutcomes(notify),
+      subscribeTerminalAttention(notify),
     ];
     refresh();
 
