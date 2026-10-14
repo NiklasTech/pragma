@@ -52,6 +52,13 @@ export interface ChatMessage {
   kind?: "compaction";
 }
 
+/** The pull request opened for a worktree's branch. */
+export interface EnvironmentPullRequest {
+  number: number;
+  url: string;
+  state: "OPEN" | "CLOSED" | "MERGED";
+}
+
 /** A checkout or worktree that one or more sessions of a workspace work in. */
 export interface WorkEnvironment {
   id: string;
@@ -63,6 +70,7 @@ export interface WorkEnvironment {
   baseBranch?: string;
   setupStatus: "ready" | "error";
   setupLog: string;
+  pullRequest?: EnvironmentPullRequest;
 }
 
 export type AgentEngineKind = "builtin" | "cli";

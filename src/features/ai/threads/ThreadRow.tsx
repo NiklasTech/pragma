@@ -31,6 +31,7 @@ import type { ChatSession } from "@/shared/stores/ai";
 import { cn } from "@/shared/lib/utils";
 import type { FinishAction } from "@/features/ai/worktree/finish";
 import { FinishWorktreeMenu } from "@/features/ai/worktree/FinishWorktreeMenu";
+import { PullRequestBadge } from "@/features/ai/worktree/PullRequestBadge";
 import { useSessionEnvironment } from "@/features/ai/worktree/useSessionEnvironment";
 import { ExportSessionMenu } from "@/features/ai/export/ExportSessionMenu";
 import { SharersBadge } from "@/features/ai/sessions/SharersBadge";
@@ -252,6 +253,7 @@ export function ThreadRow({
                   <GitBranch size={11} className="shrink-0" />
                   <span className="truncate">{worktree.branch}</span>
                   <SharersBadge environmentId={worktree.id} />
+                  <PullRequestBadge pullRequest={worktree.pullRequest} />
                 </span>
               )
             )}

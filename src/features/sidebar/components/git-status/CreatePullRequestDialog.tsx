@@ -48,7 +48,7 @@ export function CreatePullRequestDialog({
   defaultBody?: string;
   /** Replaces the default push of the checkout's current branch. */
   pushBranch?: () => Promise<void>;
-  onCreated: () => void;
+  onCreated: (url: string) => void;
 }) {
   const branches = useGitStore((state) => state.branches);
   const [options, setOptions] = useState<GhPrCreateOptions | null>(null);
@@ -121,7 +121,7 @@ export function CreatePullRequestDialog({
           : undefined,
       });
       onOpenChange(false);
-      onCreated();
+      onCreated(url);
     } catch (err) {
       toast.error(String(err));
     } finally {

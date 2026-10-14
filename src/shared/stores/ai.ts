@@ -20,6 +20,7 @@ export type {
   CLIManifest,
   CLIStatus,
   CreateChatSessionInit,
+  EnvironmentPullRequest,
   ModelInfo,
   ModelListCache,
   ProviderConfig,

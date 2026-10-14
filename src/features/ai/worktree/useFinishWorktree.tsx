@@ -35,6 +35,7 @@ import {
 } from "./finish";
 import { autoRemoveWorktrees, releaseWorktree } from "./cleanup";
 import { sessionEnvironment } from "./cwd";
+import { rememberPullRequest } from "./pullRequests";
 import { removeSessionWorktree } from "./remove";
 
 interface MergedSession {
@@ -261,7 +262,10 @@ export function useFinishWorktree(rootPath: string): {
           defaultTitle={draft.title}
           defaultBody={draft.body}
           pushBranch={() => pushSessionBranch(rootPath, draft.worktree)}
-          onCreated={() => setDraft(null)}
+          onCreated={(url) => {
+            void rememberPullRequest(rootPath, draft.worktree.id, url).catch(() => {});
+            setDraft(null);
+          }}
         />
       )}
     </>
