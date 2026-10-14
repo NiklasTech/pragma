@@ -58,7 +58,9 @@ export function useAI() {
 
   const sessionId = activeChatSessionId ?? "default";
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId);
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const workspaceRoot = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  // Every run input comes from the session's repository, whatever repository is active.
+  const rootPath = activeSession?.rootPath ?? workspaceRoot;
   const activeEnvironment = sessionEnvironment(activeSession, workEnvironments);
   const cwd = sessionCwd(activeSession, workEnvironments, rootPath);
 
@@ -246,7 +248,13 @@ export function useAI() {
   const [lastAttachments, setLastAttachments] = useState<AutoContextAttachment[]>([]);
   const [lastContextTruncated, setLastContextTruncated] = useState(false);
 
-  useChatSessionLoading({ chat, rootPath, activeChatSessionId, chatSessions, activeSession });
+  useChatSessionLoading({
+    chat,
+    rootPath: workspaceRoot,
+    activeChatSessionId,
+    chatSessions,
+    activeSession,
+  });
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -274,7 +282,7 @@ export function useAI() {
       const { question, contextParts } = mentionContext;
 
       try {
-        const autoContext = await collectLiveAutoContext();
+        const autoContext = await collectLiveAutoContext(rootPath);
         if (autoContext.attachments.length > 0) {
           contextParts.push(buildAutoContextPrompt(autoContext));
         }
@@ -313,7 +321,7 @@ export function useAI() {
       }
 
       if (agentActive && !isCLIActive) {
-        useAgentStore.getState().startTask(messageText, getAgentSettings().stepLimit);
+        useAgentStore.getState().startTask(messageText, getAgentSettings(rootPath).stepLimit);
         useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
       }
 
@@ -379,11 +387,11 @@ export function useAI() {
       const lastUser = [...chat.messages].reverse().find((message) => message.role === "user");
       useAgentStore
         .getState()
-        .startTask(lastUser ? getMessageText(lastUser) : "", getAgentSettings().stepLimit);
+        .startTask(lastUser ? getMessageText(lastUser) : "", getAgentSettings(rootPath).stepLimit);
       useAgentStore.getState().setRunSessionId(useAIStore.getState().activeChatSessionId);
     }
     return chat.regenerate();
-  }, [agentActive, isCLIActive, chat]);
+  }, [agentActive, isCLIActive, chat, rootPath]);
 
   return {
     messages: chat.messages,
@@ -408,7 +416,7 @@ export function useAI() {
     lastAttachments,
     lastContextTruncated,
     createChatSession: () => {
-      return createChatSession(rootPath);
+      return createChatSession(workspaceRoot);
     },
   };
 }

@@ -80,6 +80,21 @@ describe("handleSpawnRequest", () => {
     expect(useAIStore.getState().chatSessions).toHaveLength(1);
   });
 
+  it("starts the child in the parent's repository while another one is active", async () => {
+    useFileExplorerStore.setState({ rootPath: "/other" });
+    const settings = useSettingsStore.getState();
+    useSettingsStore.setState({ ai: { ...settings.ai, yoloMode: true } });
+
+    await handleSpawnRequest(request);
+
+    const child = useAIStore.getState().chatSessions.find((item) => item.parentId === "parent");
+    expect(child?.rootPath).toBe("/workspace");
+    expect(invokeMock).toHaveBeenCalledWith(
+      "ai_save_session",
+      expect.objectContaining({ req: expect.objectContaining({ root_path: "/workspace" }) }),
+    );
+  });
+
   it("reports a limit error to the coding CLI", async () => {
     await handleSpawnRequest({ ...request, arguments: { title: "", prompt: "x" } });
     expect(replies()[0][1].req.ok).toBe(false);

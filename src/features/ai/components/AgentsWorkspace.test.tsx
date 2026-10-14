@@ -38,6 +38,8 @@ vi.mock("@/shared/stores/ai", () => ({
   useAIStore: (selector: (state: typeof ai.state) => unknown) => selector(ai.state),
   repositorySessions: (sessions: Array<{ rootPath: string }>, rootPath: string) =>
     sessions.filter((session) => session.rootPath === rootPath),
+  repositoryEnvironments: (environments: Array<{ rootPath: string }>, rootPath: string) =>
+    environments.filter((environment) => environment.rootPath === rootPath),
 }));
 
 vi.mock("@/shared/stores/fileExplorer", () => ({

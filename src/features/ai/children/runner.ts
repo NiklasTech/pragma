@@ -28,7 +28,7 @@ import {
 import { notifySessionFinished } from "@/features/extensions/events";
 import { useExtensionsStore } from "@/features/extensions/store";
 import { formatSkillCatalog, selectCatalogSkills } from "@/features/ai/skills/catalog";
-import { useSkillsStore } from "@/features/ai/skills/store";
+import { repositorySkills } from "@/features/ai/skills/store";
 import { isAcpActive } from "@/shared/lib/ai/acp";
 import { callMcpTool, loadMcpChatTools, mcpToolDefinition } from "@/shared/lib/ai/mcpTools";
 import { uiMessageToStored } from "@/shared/lib/ai/protocol";
@@ -191,7 +191,7 @@ export async function startChildRun(
   let systemPrompt: string | undefined;
   if (!isCLI) {
     const rules = settings.agent.useProjectRules ? await loadProjectRules(cwd) : null;
-    const skills = selectCatalogSkills(useSkillsStore.getState().skills, null);
+    const skills = selectCatalogSkills(await repositorySkills(rootPath).catch(() => []), null);
     systemPrompt = composeAgentSystemPrompt(
       buildAgentSystemPrompt(cwd, rules, null),
       formatSkillCatalog(skills),
@@ -230,7 +230,7 @@ export async function startChildRun(
   );
 
   const context = createContext(sessionId);
-  const stepLimit = getAgentSettings().stepLimit;
+  const stepLimit = getAgentSettings(rootPath).stepLimit;
   let publishTimer: ReturnType<typeof setTimeout> | undefined;
   let persistTimer: ReturnType<typeof setTimeout> | undefined;
   let previousStatus: ChatStatus = "ready";

@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import { repositorySessions, useAIStore, type ChatSession } from "@/shared/stores/ai";
+import {
+  repositoryEnvironments,
+  repositorySessions,
+  useAIStore,
+  type ChatSession,
+  type WorkEnvironment,
+} from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 
@@ -10,6 +16,14 @@ export function useRepositorySessions(rootPath?: string): ChatSession[] {
   const root = rootPath ?? activeRoot;
   const chatSessions = useAIStore((state) => state.chatSessions);
   return useMemo(() => repositorySessions(chatSessions, root), [chatSessions, root]);
+}
+
+/// The work environments of one repository, the active one unless a root is given.
+export function useRepositoryEnvironments(rootPath?: string): WorkEnvironment[] {
+  const activeRoot = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const root = rootPath ?? activeRoot;
+  const environments = useAIStore((state) => state.workEnvironments);
+  return useMemo(() => repositoryEnvironments(environments, root), [environments, root]);
 }
 
 /// Loads the sessions of every open repository and drops those of a closed one from memory.

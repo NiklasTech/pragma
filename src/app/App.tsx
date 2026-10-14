@@ -20,6 +20,7 @@ import { useWorkspaceWatcher } from "@/shared/hooks/useWorkspaceWatcher";
 import { useGitStateSync } from "@/shared/hooks/useGitStateSync";
 import { useWorkspaceSettingsSync } from "@/shared/hooks/useWorkspaceSettingsSync";
 import { useFolderTrust } from "@/shared/hooks/useFolderTrust";
+import { useOpenRepositorySettings } from "@/shared/hooks/useOpenRepositorySettings";
 import { useOpenRepositoriesSync } from "@/shared/hooks/useOpenRepositories";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
@@ -53,6 +54,7 @@ import { BreakpointEditDialog } from "@/features/debug/components/BreakpointEdit
 import { AttachProcessDialog } from "@/features/debug/components/AttachProcessDialog";
 import { GitCompareDialog } from "@/features/sidebar/components/GitCompareDialog";
 import { FileHistoryDialog } from "@/features/sidebar/components/FileHistoryDialog";
+import { CloseRepositoryDialog } from "@/shell/chrome/CloseRepositoryDialog";
 import { UpdateDialog } from "./UpdateDialog";
 
 export default function App() {
@@ -69,6 +71,7 @@ export default function App() {
   useProjectAgentsSync();
   useSkillsSync();
   useFolderTrust();
+  useOpenRepositorySettings();
   useCliSync();
   useDiagnosticsCleanup();
   useTerminalShellResolver();
@@ -119,6 +122,7 @@ export default function App() {
         <GitCompareDialog />
         <FileHistoryDialog />
         <UpdateDialog />
+        <CloseRepositoryDialog />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>
     </ThemeProvider>

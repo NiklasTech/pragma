@@ -28,6 +28,7 @@ export type {
   WorkEnvironment,
 } from "./ai/types";
 export { mergeSessionsWithStored, repositorySessions } from "./ai/sessions";
+export { repositoryEnvironments } from "./ai/environments";
 
 const defaultProviders: Record<AIProvider, ProviderConfig> = {
   openai: { model: "" },

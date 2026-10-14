@@ -35,6 +35,7 @@ const PR_URL = "https://github.com/o/r/pull/42";
 function worktree(id: string, state: "OPEN" | "CLOSED" | "MERGED"): WorkEnvironment {
   return {
     id,
+    rootPath: "/repo",
     kind: "worktree",
     path: `/data/worktrees/${id}`,
     branch: "pragma/1a2b3c4d",

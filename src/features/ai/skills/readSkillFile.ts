@@ -13,10 +13,8 @@ export async function readSkillFile(
   id: string,
 ): Promise<{ path: string; content: string }> {
   const store = useSkillsStore.getState();
-  const known =
-    store.rootPath === rootPath
-      ? store.skills.find((skill) => skill.id === id && skill.error === null)
-      : undefined;
+  const skills = store.rootPath === rootPath ? store.skills : (store.byRoot[rootPath] ?? []);
+  const known = skills.find((skill) => skill.id === id && skill.error === null);
   const dir = skillsDir(rootPath);
   const candidates = known ? [known.path] : [`${dir}/${id}.md`, `${dir}/${id}/${SKILL_FILE_NAME}`];
 

@@ -92,12 +92,23 @@ function activeFileTab(): FileTab | null {
   return tab && tab.kind === "file" ? tab : null;
 }
 
-export async function collectLiveAutoContext(): Promise<CappedAutoContext> {
+/// Editor, git and terminal context of the active repository; a session of another repository gets none.
+export async function collectLiveAutoContext(sessionRoot: string): Promise<CappedAutoContext> {
   const sources = getChatContextSources();
+  const rootPath = useFileExplorerStore.getState().rootPath;
+  if (sessionRoot !== (rootPath ?? "default")) {
+    return assembleAutoContext({
+      rootPath: sessionRoot,
+      activeFile: null,
+      openTabs: [],
+      gitDiff: null,
+      terminalOutput: null,
+      sources,
+    });
+  }
   const editor = useEditorStore.getState();
   const active = activeFileTab();
   const fileTabs = editor.tabs.filter((tab): tab is FileTab => tab.kind === "file");
-  const rootPath = useFileExplorerStore.getState().rootPath;
 
   const gitDiff = sources.gitDiff
     ? await readWorkspaceDiff(useGitStore.getState().repoPath ?? rootPath ?? "")

@@ -10,6 +10,7 @@ import { commitBeforeFinish, parentMergeTarget, pullRequestBody } from "./finish
 
 const WORKTREE: WorkEnvironment = {
   id: "env-1",
+  rootPath: "/repo",
   kind: "worktree",
   path: "/data/worktrees/env-1",
   branch: "pragma/1a2b3c4d",
@@ -85,6 +86,7 @@ describe("commitBeforeFinish", () => {
 function worktree(id: string, branch: string, baseBranch?: string): WorkEnvironment {
   return {
     id,
+    rootPath: "/repo",
     kind: "worktree",
     path: `/wt/${id}`,
     branch,

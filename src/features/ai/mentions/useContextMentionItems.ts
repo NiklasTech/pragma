@@ -82,6 +82,7 @@ const MAX_SYMBOLS = 50;
 const COMMIT_LIMIT = 20;
 const COMMIT_SHA_LENGTH = 12;
 const TERMINAL_ID_LENGTH = 8;
+const NO_SKILLS: Skill[] = [];
 
 function matches(query: string, ...texts: string[]): boolean {
   const needle = query.trim().toLowerCase();
@@ -269,10 +270,12 @@ export function useContextMentionItems(
   const commits = useRecentCommits(kind === "diff", rootPath);
   const problems = useProblemsStore((state) => state.problems);
   const terminals = useTerminalStore((state) => state.sessions);
-  const skills = useSkillsStore((state) => state.skills);
+  const skills = useSkillsStore((state) => (rootPath ? state.byRoot[rootPath] : null) ?? NO_SKILLS);
 
   useEffect(() => {
-    if (kind === "skill") void useSkillsStore.getState().loadSkills(rootPath);
+    if (kind === "skill" && rootPath) {
+      void useSkillsStore.getState().loadRepositorySkills(rootPath);
+    }
   }, [kind, rootPath]);
 
   if (query === null) return null;

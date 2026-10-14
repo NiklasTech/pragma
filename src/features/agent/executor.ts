@@ -22,6 +22,7 @@ import { useSkillsStore } from "@/features/ai/skills/store";
 import type { AgentStep, AgentTodo } from "./store";
 import { resolveAgentApproval, type AgentApprovalDecision } from "./permissions";
 import { foregroundRunContext, type AgentRunContext } from "./runContext";
+import { runAgentSettings, runRepository } from "./runSettings";
 import { AGENT_TOOL_NAMES, isFileEditTool } from "./tools";
 import { applySearchReplace } from "./searchReplace";
 import { sliceFileLines } from "./readSlice";
@@ -32,7 +33,6 @@ import {
   readStringInput,
   resolveWorkspacePath,
 } from "./toolInput";
-import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 export interface AgentToolCall {
   toolCallId: string;
@@ -330,7 +330,7 @@ export async function executeAgentTool(
     : resolveAgentApproval(
         call.toolName,
         call.input,
-        getAgentSettings(),
+        runAgentSettings(context),
         settings.ai.yoloMode,
         outsideWorkspace,
       );
@@ -351,7 +351,7 @@ export async function executeAgentTool(
     try {
       const output = await dispatchFileEdit(call, rootPath, decision, context);
       finishStep("done", detail);
-      if (writesSkill) void useSkillsStore.getState().reloadSkills();
+      if (writesSkill) void useSkillsStore.getState().reloadSkills(runRepository(context));
       return { output };
     } catch (err) {
       const errorText = String(err);

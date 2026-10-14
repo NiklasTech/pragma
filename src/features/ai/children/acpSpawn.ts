@@ -11,7 +11,6 @@ import { AGENT_TOOL_NAMES } from "@/features/agent/tools";
 import { resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import { showSessionInPane } from "./open";
@@ -58,7 +57,11 @@ export function resolveSpawnApproval(sessionId: string, toolCallId: string, appr
   approval.resolve(approved);
 }
 
-function acpContext(parentId: string, cliProviderId: string | null): AgentRunContext {
+function acpContext(
+  parentId: string,
+  rootPath: string,
+  cliProviderId: string | null,
+): AgentRunContext {
   return {
     sessionId: () => parentId,
     childEngine: () => (cliProviderId ? { kind: "cli", cliProviderId } : { kind: "builtin" }),
@@ -69,7 +72,6 @@ function acpContext(parentId: string, cliProviderId: string | null): AgentRunCon
       const { activeChatSessionId, chatSessions } = useAIStore.getState();
       if (activeChatSessionId !== parentId) {
         const title = chatSessions.find((item) => item.id === parentId)?.title ?? "A session";
-        const rootPath = useFileExplorerStore.getState().rootPath ?? "default";
         toast(`${title} wants to start a child session`, {
           action: { label: "Open", onClick: () => showSessionInPane(rootPath, parentId) },
         });
@@ -94,7 +96,7 @@ export async function handleSpawnRequest(event: SpawnRequestEvent): Promise<void
   const decision = resolveAgentApproval(
     AGENT_TOOL_NAMES.spawnSession,
     event.arguments,
-    getAgentSettings(),
+    getAgentSettings(parent.rootPath),
     settings.ai.yoloMode,
   );
   const { runSpawnTool } = await import("./spawn");
@@ -103,7 +105,7 @@ export async function handleSpawnRequest(event: SpawnRequestEvent): Promise<void
     AGENT_TOOL_NAMES.spawnSession,
     event.arguments,
     decision,
-    acpContext(parent.id, cliProviderId),
+    acpContext(parent.id, parent.rootPath, cliProviderId),
   );
   const ok = "output" in outcome.result;
   const text = "output" in outcome.result ? outcome.result.output : outcome.result.errorText;
