@@ -165,11 +165,15 @@ pub(crate) fn repo_check(repo_path: &str) -> SessionRepoCheck {
     }
 }
 
-pub(crate) fn worktree_dir(app_data_dir: &Path, repo_path: &str, environment_id: &str) -> PathBuf {
+/// The directory that holds every session worktree of one workspace.
+pub(crate) fn worktrees_root(app_data_dir: &Path, repo_path: &str) -> PathBuf {
     app_data_dir
         .join("worktrees")
         .join(workspace_hash(repo_path))
-        .join(environment_id)
+}
+
+pub(crate) fn worktree_dir(app_data_dir: &Path, repo_path: &str, environment_id: &str) -> PathBuf {
+    worktrees_root(app_data_dir, repo_path).join(environment_id)
 }
 
 pub(crate) fn validate_environment_id(environment_id: &str) -> Result<(), String> {

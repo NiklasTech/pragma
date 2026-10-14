@@ -47,7 +47,8 @@ export function worktreeKeepReason(
   return needed ? "in-use" : null;
 }
 
-async function removeWorktree(rootPath: string, worktree: WorkEnvironment, force: boolean) {
+/** Removes the worktree and deletes its branch once it is merged. */
+export async function removeWorktree(rootPath: string, worktree: WorkEnvironment, force: boolean) {
   if (!(await removeWorktreeEnvironment(rootPath, worktree, force))) return false;
   const merged = await invoke<boolean>("git_session_branch_merged", {
     repoPath: rootPath,

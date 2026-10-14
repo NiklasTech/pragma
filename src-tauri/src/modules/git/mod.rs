@@ -13,3 +13,4 @@ pub mod types;
 pub mod utils;
 pub mod workflow;
 pub mod worktree;
+pub mod worktree_orphans;

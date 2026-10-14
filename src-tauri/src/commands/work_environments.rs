@@ -45,7 +45,7 @@ pub struct DeleteEnvironmentRequest {
     pub environment_id: String,
 }
 
-fn environments_file(sessions_dir: &Path) -> PathBuf {
+pub(crate) fn environments_file(sessions_dir: &Path) -> PathBuf {
     sessions_dir.join(ENVIRONMENTS_FILE)
 }
 
@@ -69,7 +69,7 @@ fn validate_environment(environment: &WorkEnvironment) -> Result<(), String> {
     Ok(())
 }
 
-async fn load_environments(file: &Path) -> Result<Vec<WorkEnvironment>, String> {
+pub(crate) async fn load_environments(file: &Path) -> Result<Vec<WorkEnvironment>, String> {
     let content = match tokio::fs::read_to_string(file).await {
         Ok(content) => content,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),

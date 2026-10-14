@@ -21,6 +21,7 @@ import { AgentsContextPane } from "./AgentsContextPane";
 import { AgentsHome } from "./AgentsHome";
 import { PaneTree } from "../panes/PaneTree";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
+import { removeOrphanWorktrees } from "../worktree/orphans";
 import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { shouldAutoOpenContextPane, useAgentsUiStore } from "../store/agentsUi";
 
@@ -94,6 +95,12 @@ export function AgentsWorkspace() {
   useEffect(() => {
     if (loadedRoot !== rootPath) return;
     void purgeStaleTerminals(rootPath).catch(() => {});
+  }, [loadedRoot, rootPath]);
+
+  // Worktrees left by deleted sessions or older versions; runs after loading migrated legacy worktrees.
+  useEffect(() => {
+    if (loadedRoot !== rootPath) return;
+    void removeOrphanWorktrees(rootPath).catch(() => {});
   }, [loadedRoot, rootPath]);
 
   useEffect(() => {
