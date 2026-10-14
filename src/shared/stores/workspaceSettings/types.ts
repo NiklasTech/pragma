@@ -14,6 +14,7 @@ export interface WorkspaceSettings {
     writingSessions?: "worktree" | "checkout";
     launchCliEnvironment?: "isolated" | "shared" | "checkout";
     parallelTaskEnvironment?: "isolated" | "shared";
+    childEnvironment?: "parent" | "worktree";
   };
   lsp?: {
     enabled?: Record<string, boolean>;

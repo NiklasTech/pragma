@@ -24,9 +24,9 @@ export const SPAWN_SESSION_TOOL_DEFINITION: BackendToolDefinition = {
         },
         environment: {
           type: "string",
-          enum: ["checkout", "worktree"],
+          enum: ["checkout", "worktree", "parent"],
           description:
-            "Worktree gives the child its own new git worktree. Defaults to worktree for a writing session.",
+            "Worktree gives the child its own new git worktree, branched from this session's branch when this session works in a worktree. Parent lets the child work in this session's environment. Checkout is the main checkout. Defaults to the project setting, otherwise worktree for a writing session.",
         },
         cli: {
           type: "string",

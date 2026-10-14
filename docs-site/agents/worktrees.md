@@ -11,6 +11,20 @@ Pragma creates a branch from the current `HEAD` and checks it out in a new workt
 
 The thread list and the pane header show the branch. Hover it to see the worktree path.
 
+## Join another session's worktree
+
+Several sessions can work in one worktree, for example a reviewer next to the agent that implements a feature.
+
+1. Open **New session** in the thread list.
+2. Choose **Join worktree of...**. The list shows every worktree a thread works in, with its sessions and branch.
+3. Pick a worktree, then the kind of session: **Ask**, **Agent**, or a coding CLI as conversation or terminal.
+
+The new session sees the same files as the others. Agents and coding CLIs edit the same files, which the menu points out; an Ask session only reads, so it can always join safely.
+
+When a worktree is shared, the thread list and the pane header show the number of sessions next to the branch. **Group by worktree** in the thread list header sorts the threads into one section per worktree, followed by the threads in your checkout.
+
+A shared worktree is only removed when no session needs it anymore, see [When worktrees are removed](#when-worktrees-are-removed).
+
 ## Choose where writing sessions work
 
 Every session that can change files starts in the environment the project setting **Settings > Project > Agent > Writing sessions work in** picks. This covers agent sessions, coding CLI terminals and conversations, named agent chats, Add to chat, Fix in session and tasks you start in the foreground.
@@ -25,18 +39,20 @@ The setting is stored as `agent.writingSessions` (`"worktree"` or `"checkout"`) 
 
 Some sessions do not follow the setting:
 
-- **Ask** sessions only read, so they always use the checkout.
+- **Ask** sessions only read, so they use the checkout unless they join a worktree.
 - An explicit choice, such as **Agent > This checkout** in the **New session** menu, wins over the setting.
 - Tasks started in the background always work in a worktree, either their own or, with [Start in parallel](./tasks.md#start-tasks-in-parallel), one they share.
 - [Launch coding CLIs](./coding-clis.md#run-several-clis-side-by-side) has its own choice between own worktrees, one shared worktree and the checkout.
 - **Duplicate** and **Fork** keep the environment of the session they copy.
+- **Join worktree of...** starts the session in an existing worktree.
+- [Child sessions](./child-sessions.md#environments) follow their own setting, **Child sessions work in**.
 - In a folder that is not a git repository, every session uses the folder itself.
 
 If the setup hook fails, Pragma reports it with a notification, whichever way the session was started.
 
 ## Where worktrees live
 
-Worktrees are created outside your repository, in Pragma's application data directory under `worktrees/<workspace hash>/<session id>`:
+Worktrees are created outside your repository, in Pragma's application data directory under `worktrees/<workspace hash>/<environment id>`:
 
 | Platform | Application data directory                      |
 | -------- | ----------------------------------------------- |

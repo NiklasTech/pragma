@@ -1,11 +1,29 @@
 import type { ChatSession } from "@/shared/stores/ai";
+import type { AgentSettings } from "@/shared/stores/settings";
 
-export const MAX_SESSION_DEPTH = 3;
-export const MAX_CHILD_SESSIONS = 4;
+export const DEFAULT_MAX_SESSION_DEPTH = 3;
+export const DEFAULT_MAX_CHILD_SESSIONS = 4;
+export const SESSION_DEPTH_BOUNDS = { min: 2, max: 3 } as const;
+export const CHILD_SESSIONS_BOUNDS = { min: 1, max: 8 } as const;
 export const MAX_CHILD_TITLE_LENGTH = 80;
 
+const LIMITS_HINT = "Change the limit in Settings > Agents > Child sessions.";
+
 export type ChildKind = "conversation" | "terminal";
-export type ChildEnvironment = "checkout" | "worktree";
+/** `parent` joins the parent's environment; `worktree` branches from the parent's worktree when it has one. */
+export type ChildEnvironment = "checkout" | "worktree" | "parent";
+/** The project setting for a child without an explicit environment. */
+export type ChildEnvironmentSetting = "parent" | "worktree";
+
+export interface SpawnLimits {
+  maxChildren: number;
+  maxDepth: number;
+}
+
+export const DEFAULT_SPAWN_LIMITS: SpawnLimits = {
+  maxChildren: DEFAULT_MAX_CHILD_SESSIONS,
+  maxDepth: DEFAULT_MAX_SESSION_DEPTH,
+};
 
 export interface SpawnRequest {
   title: string;
@@ -31,7 +49,30 @@ export function isWritingSession(session: Pick<ChatSession, "kind">): boolean {
   return session.kind !== "ask";
 }
 
-export function parseSpawnRequest(input: unknown, parent: ChatSession): SpawnParse {
+function clampLimit(value: number, bounds: { min: number; max: number }, fallback: number): number {
+  if (!Number.isInteger(value)) return fallback;
+  return Math.min(Math.max(value, bounds.min), bounds.max);
+}
+
+/** The user's limits, kept inside the bounds that stop runaway spawning. */
+export function spawnLimits(
+  settings: Pick<AgentSettings, "maxChildSessions" | "maxSessionDepth">,
+): SpawnLimits {
+  return {
+    maxChildren: clampLimit(
+      settings.maxChildSessions,
+      CHILD_SESSIONS_BOUNDS,
+      DEFAULT_MAX_CHILD_SESSIONS,
+    ),
+    maxDepth: clampLimit(settings.maxSessionDepth, SESSION_DEPTH_BOUNDS, DEFAULT_MAX_SESSION_DEPTH),
+  };
+}
+
+export function parseSpawnRequest(
+  input: unknown,
+  parent: ChatSession,
+  setting?: ChildEnvironmentSetting,
+): SpawnParse {
   const title = readText(input, "title");
   if (title.length === 0 || title.length > MAX_CHILD_TITLE_LENGTH) {
     return { ok: false, error: `The title must be 1 to ${MAX_CHILD_TITLE_LENGTH} characters` };
@@ -45,10 +86,12 @@ export function parseSpawnRequest(input: unknown, parent: ChatSession): SpawnPar
     return { ok: false, error: "The kind must be conversation or terminal" };
   }
 
-  const fallback: ChildEnvironment = isWritingSession(parent) ? "worktree" : "checkout";
+  const fallback: ChildEnvironment = isWritingSession(parent)
+    ? (setting ?? "worktree")
+    : "checkout";
   const environment = readField(input, "environment") ?? fallback;
-  if (environment !== "checkout" && environment !== "worktree") {
-    return { ok: false, error: "The environment must be checkout or worktree" };
+  if (environment !== "checkout" && environment !== "worktree" && environment !== "parent") {
+    return { ok: false, error: "The environment must be checkout, worktree or parent" };
   }
 
   const cli = readText(input, "cli") || null;
@@ -78,12 +121,16 @@ export function sessionDepth(sessions: ChatSession[], sessionId: string): number
   return depth;
 }
 
-export function checkSpawnLimits(sessions: ChatSession[], parentId: string): string | null {
-  if (sessionDepth(sessions, parentId) + 1 > MAX_SESSION_DEPTH) {
-    return `Session nesting is limited to ${MAX_SESSION_DEPTH} levels`;
+export function checkSpawnLimits(
+  sessions: ChatSession[],
+  parentId: string,
+  limits: SpawnLimits = DEFAULT_SPAWN_LIMITS,
+): string | null {
+  if (sessionDepth(sessions, parentId) + 1 > limits.maxDepth) {
+    return `Session nesting is limited to ${limits.maxDepth} levels. ${LIMITS_HINT}`;
   }
-  if (childSessions(sessions, parentId).length >= MAX_CHILD_SESSIONS) {
-    return `This session already has ${MAX_CHILD_SESSIONS} children`;
+  if (childSessions(sessions, parentId).length >= limits.maxChildren) {
+    return `This session already has the maximum of ${limits.maxChildren} children. ${LIMITS_HINT}`;
   }
   return null;
 }
