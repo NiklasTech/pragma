@@ -156,6 +156,7 @@ permissions = [
   "allow-git-resolve-conflict",
   "allow-git-revert-commit",
   "allow-git-session-branch-merged",
+  "allow-git-session-commit-all",
   "allow-git-session-delete-branch",
   "allow-git-session-finish-merge",
   "allow-git-session-push-branch",

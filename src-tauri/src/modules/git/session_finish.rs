@@ -144,6 +144,22 @@ pub(crate) fn finish_merge(
     })
 }
 
+pub(crate) fn commit_all(
+    repo_path: &str,
+    worktree_path: &str,
+    branch: &str,
+    message: &str,
+) -> Result<(), String> {
+    let message = message.trim();
+    if message.is_empty() {
+        return Err("Commit message is required".to_string());
+    }
+    let worktree = validate_session_worktree(repo_path, worktree_path, branch)?;
+    git_text(&worktree, &["add", "-A"], "git add")?;
+    git_text(&worktree, &["commit", "-q", "-m", message], "git commit")?;
+    Ok(())
+}
+
 pub(crate) fn push_branch(
     repo_path: &str,
     worktree_path: &str,
@@ -178,6 +194,19 @@ pub async fn git_session_finish_merge(
         return Err("Repository and worktree paths are required".to_string());
     }
     blocking(move || finish_merge(&repo_path, &worktree_path, &branch, strategy)).await
+}
+
+#[tauri::command]
+pub async fn git_session_commit_all(
+    repo_path: String,
+    worktree_path: String,
+    branch: String,
+    message: String,
+) -> Result<(), String> {
+    if repo_path.is_empty() || worktree_path.is_empty() {
+        return Err("Repository and worktree paths are required".to_string());
+    }
+    blocking(move || commit_all(&repo_path, &worktree_path, &branch, &message)).await
 }
 
 #[tauri::command]
@@ -280,6 +309,47 @@ mod tests {
         )
         .expect_err("dirty");
         assert!(err.contains("uncommitted"));
+    }
+
+    #[test]
+    fn commits_uncommitted_changes_then_finishes() {
+        let repo = TestRepo::new();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let created =
+            create_worktree(app_data.path(), &repo.root, SESSION, None, true).expect("create");
+        std::fs::write(Path::new(&created.path).join("draft.txt"), "draft\n").expect("write");
+
+        commit_all(
+            &repo.root,
+            &created.path,
+            &created.branch,
+            " Add the draft ",
+        )
+        .expect("commit");
+        assert!(!worktree_dirty(&created.path).expect("dirty"));
+
+        let result = finish_merge(
+            &repo.root,
+            &created.path,
+            &created.branch,
+            SessionMergeStrategy::Merge,
+        )
+        .expect("merge");
+        assert!(result.completed);
+        assert_eq!(repo.read("draft.txt"), "draft\n");
+    }
+
+    #[test]
+    fn commit_all_requires_a_message_and_the_session_worktree() {
+        let repo = TestRepo::new();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let created =
+            create_worktree(app_data.path(), &repo.root, SESSION, None, true).expect("create");
+        std::fs::write(Path::new(&created.path).join("draft.txt"), "x").expect("write");
+
+        assert!(commit_all(&repo.root, &created.path, &created.branch, "  ").is_err());
+        assert!(commit_all(&repo.root, &repo.root, &created.branch, "msg").is_err());
+        assert!(worktree_dirty(&created.path).expect("dirty"));
     }
 
     #[test]

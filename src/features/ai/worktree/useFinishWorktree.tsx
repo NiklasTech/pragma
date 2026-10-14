@@ -18,11 +18,13 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { loadSessionMessages } from "@/shared/lib/chat-storage";
 import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
 import { useGitStore } from "@/shared/stores/git";
 
 import {
+  commitBeforeFinish,
   finishSessionMerge,
   openCheckoutConflicts,
   pullRequestBody,
@@ -46,6 +48,11 @@ interface PullRequestDraft {
   body: string;
 }
 
+interface CommitPrompt {
+  message: string;
+  resolve: (message: string | null) => void;
+}
+
 function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
@@ -59,6 +66,13 @@ export function useFinishWorktree(rootPath: string): {
   const [deleteBranch, setDeleteBranch] = useState(true);
   const [removing, setRemoving] = useState(false);
   const [draft, setDraft] = useState<PullRequestDraft | null>(null);
+  const [commitPrompt, setCommitPrompt] = useState<CommitPrompt | null>(null);
+
+  const promptCommitMessage = useCallback(
+    (message: string) =>
+      new Promise<string | null>((resolve) => setCommitPrompt({ message, resolve })),
+    [],
+  );
 
   const merge = useCallback(
     async (session: ChatSession, worktree: WorkEnvironment, strategy: SessionMergeStrategy) => {
@@ -130,10 +144,25 @@ export function useFinishWorktree(rootPath: string): {
       const session = chatSessions.find((item) => item.id === sessionId);
       const worktree = sessionEnvironment(session, workEnvironments);
       if (!session || worktree?.kind !== "worktree") return;
-      if (action === "pull-request") void openPullRequest(session, worktree);
-      else void merge(session, worktree, action);
+      const task = useTasksStore.getState().tasks.find((item) => item.sessionId === session.id);
+      void (async () => {
+        try {
+          const ready = await commitBeforeFinish(
+            rootPath,
+            worktree,
+            commitMessageFor(task?.title ?? null, session.title),
+            promptCommitMessage,
+          );
+          if (!ready) return;
+        } catch (err) {
+          toast.error(String(err));
+          return;
+        }
+        if (action === "pull-request") void openPullRequest(session, worktree);
+        else void merge(session, worktree, action);
+      })();
     },
-    [merge, openPullRequest],
+    [merge, openPullRequest, promptCommitMessage, rootPath],
   );
 
   const cleanUp = async () => {
@@ -165,6 +194,21 @@ export function useFinishWorktree(rootPath: string): {
 
   const dialogs = (
     <>
+      <InputDialog
+        open={commitPrompt !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          commitPrompt?.resolve(null);
+          setCommitPrompt(null);
+        }}
+        title="Commit the uncommitted changes?"
+        description="The session has uncommitted changes. They are committed to the session branch before finishing."
+        label="Commit message"
+        defaultValue={commitPrompt?.message ?? ""}
+        confirmLabel="Commit and finish"
+        onConfirm={(message) => commitPrompt?.resolve(message)}
+      />
+
       <AlertDialog
         open={merged !== null}
         onOpenChange={(open) => {

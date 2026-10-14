@@ -30,6 +30,25 @@ export function finishSessionMerge(
   });
 }
 
+/** Commits uncommitted worktree changes first; false when the commit prompt is cancelled. */
+export async function commitBeforeFinish(
+  rootPath: string,
+  worktree: WorkEnvironment,
+  defaultMessage: string,
+  promptMessage: (defaultMessage: string) => Promise<string | null>,
+): Promise<boolean> {
+  if (!(await invoke<boolean>("git_session_worktree_dirty", { path: worktree.path }))) return true;
+  const message = await promptMessage(defaultMessage);
+  if (message === null) return false;
+  await invoke("git_session_commit_all", {
+    repoPath: rootPath,
+    worktreePath: worktree.path,
+    branch: worktree.branch,
+    message,
+  });
+  return true;
+}
+
 export function pushSessionBranch(rootPath: string, worktree: WorkEnvironment): Promise<void> {
   return invoke("git_session_push_branch", {
     repoPath: rootPath,
