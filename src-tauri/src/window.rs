@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use serde::Deserialize;
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 const LABEL_PREFIX: &str = "floating-";
 
@@ -170,9 +170,9 @@ fn url_encode(input: &str) -> String {
         .collect()
 }
 
-/// Tracks which workspace window (label) currently has which folder open,
-/// so a second instance asking for an already-open folder can focus the
-/// existing window instead of opening a duplicate.
+/// Tracks which workspace window (label) has which repositories open, so a
+/// second instance asking for an already-open folder can focus the existing
+/// window instead of opening a duplicate.
 #[derive(Default)]
 pub struct OpenFolders(Mutex<HashMap<String, String>>);
 
@@ -192,15 +192,15 @@ fn folder_key(path: &str) -> String {
 }
 
 impl OpenFolders {
-    /// Sets the folder currently open in the given window, replacing any
-    /// folder previously recorded for that window. `None` clears it.
-    fn update(&self, label: &str, folder: Option<&str>) -> Result<(), String> {
+    /// Sets the folders open in the given window, replacing the folders
+    /// previously recorded for that window. An empty list clears them.
+    fn update(&self, label: &str, folders: &[String]) -> Result<(), String> {
         let mut map = self
             .0
             .lock()
             .map_err(|_| "open-folders lock poisoned".to_string())?;
         map.retain(|_, existing| existing != label);
-        if let Some(folder) = folder {
+        for folder in folders {
             map.insert(folder_key(folder), label.to_string());
         }
         Ok(())
@@ -212,30 +212,50 @@ impl OpenFolders {
     }
 }
 
-/// Records the folder a workspace window has open (or clears it), keeping
-/// the folder-dedup registry in sync with the frontend.
+/// Records the repositories a workspace window has open, keeping the
+/// folder-dedup registry in sync with the frontend.
 #[tauri::command]
 pub fn update_window_folder(
     window: tauri::Window,
     open_folders: tauri::State<OpenFolders>,
-    folder: Option<String>,
+    folders: Vec<String>,
 ) -> Result<(), String> {
-    open_folders.update(window.label(), folder.as_deref())
+    validate_window_folders(&folders)?;
+    open_folders.update(window.label(), &folders)
 }
+
+fn validate_window_folders(folders: &[String]) -> Result<(), String> {
+    if let Some(folder) = folders
+        .iter()
+        .find(|folder| folder.trim().is_empty() || !std::path::Path::new(folder).is_absolute())
+    {
+        return Err(format!("Invalid repository path: {folder:?}"));
+    }
+    Ok(())
+}
+
+const ACTIVATE_REPOSITORY_EVENT: &str = "pragma:workspace:activate-repository";
 
 /// Creates a new independent workspace window that opens the given folder.
 /// If the folder is already open in another window, that window is focused
-/// instead. The window starts hidden; the frontend reveals it after first
-/// paint, same as the main window (see src/main.tsx).
+/// and asked to activate it instead. The window starts hidden; the frontend
+/// reveals it after first paint, same as the main window (see src/main.tsx).
 pub fn create_workspace_window(app: &AppHandle, folder_path: &str) -> Result<String, String> {
     if let Some(open_folders) = app.try_state::<OpenFolders>() {
         if let Some(label) = open_folders.label_for(folder_path) {
             if let Some(window) = app.get_webview_window(&label) {
                 let _ = window.unminimize();
                 let _ = window.set_focus();
+                if let Err(err) = app.emit_to(
+                    label.as_str(),
+                    ACTIVATE_REPOSITORY_EVENT,
+                    serde_json::json!({ "path": folder_path }),
+                ) {
+                    log::warn!("failed to emit activate-repository event: {err}");
+                }
                 return Ok(label);
             }
-            open_folders.update(&label, None)?;
+            open_folders.update(&label, &[])?;
         }
     }
 
@@ -256,7 +276,7 @@ pub fn create_workspace_window(app: &AppHandle, folder_path: &str) -> Result<Str
     crate::macos_chrome::align_webview(&created);
 
     if let Some(open_folders) = app.try_state::<OpenFolders>() {
-        open_folders.update(&label, Some(folder_path))?;
+        open_folders.update(&label, &[folder_path.to_string()])?;
     }
 
     Ok(label)
@@ -319,7 +339,7 @@ mod tests {
         } else {
             "/home/user/pragma"
         };
-        folders.update("main", Some(path)).unwrap();
+        folders.update("main", &[path.to_string()]).unwrap();
         assert_eq!(folders.label_for(path), Some("main".to_string()));
     }
 
@@ -331,23 +351,68 @@ mod tests {
         } else {
             ("/a", "/b")
         };
-        folders.update("main", Some(first)).unwrap();
-        folders.update("main", Some(second)).unwrap();
+        folders.update("main", &[first.to_string()]).unwrap();
+        folders.update("main", &[second.to_string()]).unwrap();
         assert_eq!(folders.label_for(first), None);
         assert_eq!(folders.label_for(second), Some("main".to_string()));
     }
 
     #[test]
-    fn open_folders_update_none_clears_label() {
+    fn open_folders_update_empty_clears_label() {
         let folders = OpenFolders::default();
         let path = if cfg!(target_os = "windows") {
             "C:\\a"
         } else {
             "/a"
         };
-        folders.update("main", Some(path)).unwrap();
-        folders.update("main", None).unwrap();
+        folders.update("main", &[path.to_string()]).unwrap();
+        folders.update("main", &[]).unwrap();
         assert_eq!(folders.label_for(path), None);
+    }
+
+    #[test]
+    fn open_folders_update_registers_several_folders_per_window() {
+        let folders = OpenFolders::default();
+        let paths: Vec<String> = if cfg!(target_os = "windows") {
+            vec!["C:\\a".into(), "C:\\b".into(), "C:\\c".into()]
+        } else {
+            vec!["/a".into(), "/b".into(), "/c".into()]
+        };
+        folders.update("main", &paths).unwrap();
+        for path in &paths {
+            assert_eq!(folders.label_for(path), Some("main".to_string()));
+        }
+    }
+
+    #[test]
+    fn open_folders_update_drops_closed_folders_and_keeps_other_windows() {
+        let folders = OpenFolders::default();
+        let (a, b, c) = if cfg!(target_os = "windows") {
+            ("C:\\a", "C:\\b", "C:\\c")
+        } else {
+            ("/a", "/b", "/c")
+        };
+        folders
+            .update("main", &[a.to_string(), b.to_string()])
+            .unwrap();
+        folders.update("workspace-2", &[c.to_string()]).unwrap();
+        folders.update("main", &[b.to_string()]).unwrap();
+        assert_eq!(folders.label_for(a), None);
+        assert_eq!(folders.label_for(b), Some("main".to_string()));
+        assert_eq!(folders.label_for(c), Some("workspace-2".to_string()));
+    }
+
+    #[test]
+    fn validate_window_folders_rejects_empty_and_relative_paths() {
+        let absolute = if cfg!(target_os = "windows") {
+            "C:\\a"
+        } else {
+            "/a"
+        };
+        assert!(validate_window_folders(&[absolute.to_string()]).is_ok());
+        assert!(validate_window_folders(&[]).is_ok());
+        assert!(validate_window_folders(&[String::new()]).is_err());
+        assert!(validate_window_folders(&["relative/path".to_string()]).is_err());
     }
 
     #[test]
@@ -358,7 +423,9 @@ mod tests {
         } else {
             ("/home/user/pragma", "/home/user/pragma/")
         };
-        folders.update("workspace-2", Some(registered)).unwrap();
+        folders
+            .update("workspace-2", &[registered.to_string()])
+            .unwrap();
         assert_eq!(folders.label_for(lookup), Some("workspace-2".to_string()));
     }
 }
