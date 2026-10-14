@@ -17,6 +17,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type AgentAutoApprove } from "@/shared/stores/settings";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import { ChildSessionSettings } from "./ChildSessionSettings";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
@@ -118,6 +119,8 @@ export function AgentSettings() {
           }
         />
       </SettingSection>
+
+      <ChildSessionSettings />
 
       <SettingSection title="Allowed Commands">
         <div className="py-2.5">

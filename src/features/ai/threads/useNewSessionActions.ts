@@ -6,6 +6,12 @@ import { createTerminalSession } from "../panes/launch";
 import { findLeaf } from "../panes/operations";
 import { useAgentsPanesStore } from "../panes/store";
 import { startSession, type StartSessionRequest } from "../sessions/start";
+import type { SessionMenuCliAction } from "./session-menu";
+
+/** The kind of session that joins another session's worktree. */
+export type JoinTarget =
+  | { kind: "ask" | "agent" }
+  | { kind: "cli"; manifest: CLIManifest; action: SessionMenuCliAction };
 
 export interface NewSessionActions {
   startAsk: () => Promise<void>;
@@ -13,6 +19,15 @@ export interface NewSessionActions {
   startAgentWorktree: () => Promise<void>;
   startTerminal: (manifest: CLIManifest) => Promise<void>;
   startConversation: (manifest: CLIManifest) => Promise<void>;
+  joinWorktree: (environmentId: string, target: JoinTarget) => Promise<void>;
+}
+
+function cliConversationInit(manifest: CLIManifest): StartSessionRequest["init"] {
+  return {
+    kind: "agent",
+    cliProviderId: manifest.id,
+    agentEngine: { kind: "cli", cliProviderId: manifest.id },
+  };
 }
 
 export function useNewSessionActions(
@@ -65,10 +80,10 @@ export function useNewSessionActions(
   );
 
   const startTerminal = useCallback(
-    async (manifest: CLIManifest) => {
+    async (manifest: CLIManifest, environment?: Pick<StartSessionRequest, "sameEnvironmentAs">) => {
       if (!rootPath) return;
       try {
-        const session = await createTerminalSession(rootPath, manifest);
+        const session = await createTerminalSession(rootPath, manifest, { environment });
         place(session.id);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : `Could not start ${manifest.name}`);
@@ -78,15 +93,19 @@ export function useNewSessionActions(
   );
 
   const startConversation = useCallback(
-    (manifest: CLIManifest) =>
-      start({
-        init: {
-          kind: "agent",
-          cliProviderId: manifest.id,
-          agentEngine: { kind: "cli", cliProviderId: manifest.id },
-        },
-      }),
+    (manifest: CLIManifest) => start({ init: cliConversationInit(manifest) }),
     [start],
+  );
+
+  const joinWorktree = useCallback(
+    (environmentId: string, target: JoinTarget) => {
+      const sameEnvironmentAs = { environment: "worktree" as const, environmentId };
+      if (target.kind !== "cli") return start({ init: { kind: target.kind }, sameEnvironmentAs });
+      if (target.action === "terminal")
+        return startTerminal(target.manifest, { sameEnvironmentAs });
+      return start({ init: cliConversationInit(target.manifest), sameEnvironmentAs });
+    },
+    [start, startTerminal],
   );
 
   return {
@@ -95,5 +114,6 @@ export function useNewSessionActions(
     startAgentWorktree,
     startTerminal,
     startConversation,
+    joinWorktree,
   };
 }

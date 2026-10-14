@@ -185,6 +185,8 @@ export interface AgentSettings {
   useProjectRules: boolean;
   stepLimit: number | null;
   removeWorktrees: boolean;
+  maxChildSessions: number;
+  maxSessionDepth: number;
 }
 
 export interface NotificationSettings {

@@ -36,6 +36,7 @@ import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
+import { SharersBadge } from "../sessions/SharersBadge";
 import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
 import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
@@ -262,6 +263,7 @@ export function PaneHeader({
           >
             <GitBranch size={11} className="shrink-0" />
             <span className="truncate">{branch}</span>
+            <SharersBadge environmentId={worktree?.id} />
           </span>
         )}
 

@@ -172,6 +172,8 @@ describe("agent tools", () => {
       allowedCommands: [],
       stepLimit: null,
       removeWorktrees: true,
+      maxChildSessions: 4,
+      maxSessionDepth: 3,
       useProjectRules: true,
     };
     expect(resolveExtensionToolApproval(tool, settings, false)).toBe("required");
