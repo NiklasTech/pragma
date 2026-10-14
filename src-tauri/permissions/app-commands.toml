@@ -163,6 +163,7 @@ permissions = [
   "allow-git-session-repo-check",
   "allow-git-session-worktree-create",
   "allow-git-session-worktree-dirty",
+  "allow-git-session-worktree-orphans",
   "allow-git-session-worktree-remove",
   "allow-git-session-worktree-teardown",
   "allow-git-show-commit",

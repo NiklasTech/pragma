@@ -94,6 +94,7 @@ With **Settings > Agents > Remove worktrees automatically when a session is fini
 - when a stale coding CLI terminal is cleaned up
 - when sessions are archived, for example together with their parent thread or a deleted named agent
 - when a task moves to **Done** or is deleted
+- when you open the folder and a worktree belongs to no session anymore, for example one left by an earlier version. Pragma also runs `git worktree prune` then; such a worktree with uncommitted changes is only reported
 
 A worktree that several sessions share stays as long as one of them is still running or not finished. Sessions that used it continue in the checkout.
 

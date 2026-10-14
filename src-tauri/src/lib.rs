@@ -171,6 +171,7 @@ pub fn run() {
             modules::git::worktree::git_session_worktree_remove,
             modules::git::worktree::git_session_branch_merged,
             modules::git::worktree::git_session_delete_branch,
+            modules::git::worktree_orphans::git_session_worktree_orphans,
             modules::git::session_finish::git_session_commit_all,
             modules::git::session_finish::git_session_finish_merge,
             modules::git::session_finish::git_session_push_branch,

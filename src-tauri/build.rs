@@ -161,6 +161,7 @@ const COMMANDS: &[&str] = &[
     "git_session_repo_check",
     "git_session_worktree_create",
     "git_session_worktree_dirty",
+    "git_session_worktree_orphans",
     "git_session_worktree_remove",
     "git_session_worktree_teardown",
     "git_show_commit",
