@@ -54,7 +54,7 @@ export function useActivityTracker(): void {
     };
 
     const recordOutcome = (sessionId: string, kind: AttentionKind) => {
-      if (kind === "approval" || sessionId === lookedAtSessionId()) return;
+      if (kind === "approval" || kind === "input" || sessionId === lookedAtSessionId()) return;
       if (setOutcome(sessionId, kind)) refresh();
     };
 

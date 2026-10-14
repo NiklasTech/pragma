@@ -11,6 +11,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 
+import { terminalLaunchCommand } from "../terminal/cliAttention";
 import { disposeTerminal, ensureTerminal } from "../terminal/runner";
 import { createWorktreeEnvironment } from "../worktree/create";
 import { sessionEnvironment } from "../worktree/cwd";
@@ -91,7 +92,7 @@ function prepareChildSpawn(input: unknown, context: AgentRunContext): SpawnPrepa
         error: `No detected CLI has the id ${parsed.request.cli}. Detected: ${detected.join(", ") || "none"}`,
       };
     }
-    command = manifest.command;
+    command = terminalLaunchCommand(manifest.id, manifest.command);
   }
 
   // A child runs on the parent's engine; a builtin parent's child is always a builtin agent.

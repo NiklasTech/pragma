@@ -3,6 +3,7 @@
 import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type NotificationSettings as Settings } from "@/shared/stores/settings";
 
+import { NotificationPermissionRow } from "./NotificationPermissionRow";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 
@@ -10,17 +11,27 @@ const ROWS: Array<{ key: keyof Settings; label: string; description: string }> =
   {
     key: "sessionFinished",
     label: "Session finished",
-    description: "Notify when a session completes while Pragma is in the background.",
+    description: "Notify when a session completes or a CLI terminal reports that it is done.",
   },
   {
     key: "sessionFailed",
     label: "Session failed",
-    description: "Notify when a session stops with an error while Pragma is in the background.",
+    description: "Notify when a session stops with an error or a CLI terminal exits with one.",
   },
   {
     key: "approvalNeeded",
-    label: "Approval needed",
-    description: "Notify when a session waits for your approval while Pragma is in the background.",
+    label: "Approval or input needed",
+    description: "Notify when a session waits for your approval or a CLI terminal asks for input.",
+  },
+  {
+    key: "inAppPopups",
+    label: "In-app popups",
+    description: "Show a popup while Pragma is focused but the session is not in view.",
+  },
+  {
+    key: "playSound",
+    label: "Play sound",
+    description: "Play a sound with system notifications while Pragma is in the background.",
   },
   {
     key: "badge",
@@ -53,6 +64,7 @@ export function NotificationSettings() {
           }
         />
       ))}
+      <NotificationPermissionRow />
     </SettingSection>
   );
 }

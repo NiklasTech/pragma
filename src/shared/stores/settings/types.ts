@@ -195,6 +195,8 @@ export interface NotificationSettings {
   approvalNeeded: boolean;
   badge: boolean;
   statusSummary: boolean;
+  playSound: boolean;
+  inAppPopups: boolean;
 }
 
 export interface ExtensionSettings {

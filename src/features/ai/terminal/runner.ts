@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
+import { isAgentOutput } from "./activity";
+import { createAttentionParser, type TerminalAttention } from "./attentionSignals";
 import { appendTerminalBuffer } from "./buffer";
 
 interface PtyOutputEvent {
@@ -15,6 +17,11 @@ interface PtyExitEvent {
 
 export type TerminalStatus = "running" | "exited" | "cancelled";
 
+export type TerminalAttentionKind = TerminalAttention | "failed";
+
+/// A CLI that signals through its own channel and a Pragma hook reports one event only once.
+const ATTENTION_DEDUPE_MS = 2000;
+
 interface TerminalEntry {
   sessionId: string;
   ptyId: string | null;
@@ -24,6 +31,8 @@ interface TerminalEntry {
   status: TerminalStatus;
   exitCode: number | null;
   lastInputAt: number;
+  readAttention: (data: string) => TerminalAttention[];
+  lastAttentionAt: number;
 }
 
 export interface StartTerminalOptions {
@@ -39,6 +48,7 @@ const outputListeners = new Map<string, Set<(data: string) => void>>();
 const statusListeners = new Map<string, Set<() => void>>();
 const anyOutputListeners = new Set<(sessionId: string) => void>();
 const anyStatusListeners = new Set<(sessionId: string) => void>();
+const attentionListeners = new Set<(sessionId: string, kind: TerminalAttentionKind) => void>();
 const unclaimedOutput = new Map<string, string>();
 const unclaimedExit = new Map<string, number>();
 
@@ -69,8 +79,22 @@ function findByPtyId(ptyId: string): TerminalEntry | null {
   return null;
 }
 
+function emitAttention(sessionId: string, kind: TerminalAttentionKind): void {
+  for (const listener of attentionListeners) listener(sessionId, kind);
+}
+
+function detectAttention(entry: TerminalEntry, data: string): void {
+  const signals = entry.readAttention(data);
+  const now = Date.now();
+  if (signals.length === 0 || !isAgentOutput(now, entry.lastInputAt)) return;
+  if (now - entry.lastAttentionAt < ATTENTION_DEDUPE_MS) return;
+  entry.lastAttentionAt = now;
+  emitAttention(entry.sessionId, signals[signals.length - 1]);
+}
+
 function pushOutput(entry: TerminalEntry, data: string): void {
   entry.buffer = appendTerminalBuffer(entry.buffer, data);
+  detectAttention(entry, data);
   for (const listener of anyOutputListeners) listener(entry.sessionId);
   const listeners = outputListeners.get(entry.sessionId);
   if (!listeners) return;
@@ -89,6 +113,7 @@ function applyExit(entry: TerminalEntry, exitCode: number): void {
   entry.status = "exited";
   entry.exitCode = exitCode;
   notifyStatus(entry.sessionId);
+  if (exitCode !== 0) emitAttention(entry.sessionId, "failed");
 }
 
 function handleOutput(ptyId: string, data: string): void {
@@ -167,6 +192,16 @@ export function subscribeAnyTerminalStatus(listener: (sessionId: string) => void
   };
 }
 
+/// Bells, desktop notifications and failed exits of every agent terminal.
+export function subscribeTerminalAttention(
+  listener: (sessionId: string, kind: TerminalAttentionKind) => void,
+): () => void {
+  attentionListeners.add(listener);
+  return () => {
+    attentionListeners.delete(listener);
+  };
+}
+
 /// When the user last typed into the terminal, so the echo of typing is not read as agent work.
 export function getTerminalLastInputAt(sessionId: string): number {
   return entries.get(sessionId)?.lastInputAt ?? 0;
@@ -212,6 +247,8 @@ export async function ensureTerminal(
       status: "running",
       exitCode: null,
       lastInputAt: 0,
+      readAttention: createAttentionParser(),
+      lastAttentionAt: 0,
     };
     entries.set(sessionId, entry);
   }
