@@ -20,6 +20,7 @@ import { useWorkspaceWatcher } from "@/shared/hooks/useWorkspaceWatcher";
 import { useGitStateSync } from "@/shared/hooks/useGitStateSync";
 import { useWorkspaceSettingsSync } from "@/shared/hooks/useWorkspaceSettingsSync";
 import { useFolderTrust } from "@/shared/hooks/useFolderTrust";
+import { useOpenRepositoriesSync } from "@/shared/hooks/useOpenRepositories";
 import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { useExtensions } from "@/features/extensions/useExtensions";
@@ -41,6 +42,7 @@ import { useAgentPaletteCommands } from "./useAgentPaletteCommands";
 import { useThemePaletteCommand } from "./useThemePaletteCommand";
 import { useRunPaletteCommands } from "./useRunPaletteCommands";
 import { useRecentFolderPaletteCommand } from "./useRecentFolderPaletteCommand";
+import { useRepositoryPaletteCommands } from "./useRepositoryPaletteCommands";
 import { CommandPalette } from "./CommandPalette";
 import { GoToFile } from "./GoToFile";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
@@ -58,6 +60,7 @@ export default function App() {
   useExternalWindowManager();
   useDisableBrowserBehaviors();
   useWorkspaceRestore();
+  useOpenRepositoriesSync();
   useWorkspaceWatcher();
   useGitStateSync();
   useWorkspaceSettingsSync();
@@ -87,6 +90,7 @@ export default function App() {
   useThemePaletteCommand();
   useRunPaletteCommands();
   useRecentFolderPaletteCommand();
+  useRepositoryPaletteCommands();
   useEffect(() => startLspDidCloseWatcher(), []);
   useEffect(() => {
     const unlisten = listen<{ path: string }>("pragma:cli:invalid-path", (event) => {

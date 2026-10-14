@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { detectLanguage } from "@/shared/lib/language";
 
 interface DirEntry {
@@ -48,6 +49,7 @@ export function useWorkspaceRestore(): void {
         // Window labels are reused; drop editor state persisted for a previous folder.
         if (fileExplorer.rootPath && fileExplorer.rootPath !== folderParam) {
           useEditorStore.setState({ tabs: [], tabStates: [], activeTabId: null, activeTabIds: {} });
+          useOpenRepositoriesStore.getState().clear();
         }
         await selectRoot(folderParam);
         return;
@@ -66,9 +68,11 @@ export function useWorkspaceRestore(): void {
             path: fileExplorer.rootPath,
           });
           fileExplorer.setTree(entries.map(entryToNode));
+          useOpenRepositoriesStore.getState().add(fileExplorer.rootPath);
         } catch {
-          // Folder no longer exists; clear it.
-          fileExplorer.setRootPath(null);
+          // Folder no longer exists; drop it and fall back to the next open repository.
+          const next = useOpenRepositoriesStore.getState().remove(fileExplorer.rootPath);
+          if (!next || !(await selectRoot(next))) fileExplorer.setRootPath(null);
         }
       }
 
