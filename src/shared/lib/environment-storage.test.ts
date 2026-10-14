@@ -38,6 +38,25 @@ describe("work environment storage", () => {
     });
   });
 
+  it("keeps the pull request of an environment", () => {
+    const pullRequest = {
+      number: 7,
+      url: "https://github.com/o/r/pull/7",
+      state: "OPEN" as const,
+    };
+    expect(
+      fromStoredEnvironment({
+        id: "env-1",
+        kind: "worktree",
+        path: "/wt",
+        branch: "pragma/env1",
+        setup_status: "ready",
+        setup_log: "",
+        pull_request: pullRequest,
+      }).pullRequest,
+    ).toEqual(pullRequest);
+  });
+
   it("restores environments without a base branch", () => {
     expect(
       fromStoredEnvironment({

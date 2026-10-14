@@ -308,19 +308,30 @@ fn parse_pull_request(text: &str) -> Result<GhPullRequest> {
     })
 }
 
-/// The pull request of the current branch, or `None` when the branch has none.
-pub fn current_pull_request(repo_root: &str) -> Result<Option<GhPullRequest>> {
+fn pr_view_args(number: Option<u64>) -> Vec<String> {
+    let mut args = vec!["pr".to_string(), "view".to_string()];
+    if let Some(number) = number {
+        args.push(number.to_string());
+    }
+    args.push("--json".to_string());
+    args.push("number,title,url,state,isDraft,baseRefName,statusCheckRollup".to_string());
+    args
+}
+
+/// The pull request with `number`, or of the current branch, or `None` when the branch has none.
+pub fn current_pull_request(repo_root: &str, number: Option<u64>) -> Result<Option<GhPullRequest>> {
+    if number == Some(0) {
+        return Err(GitError::command(
+            "invalid pull request",
+            "number must be positive",
+        ));
+    }
     let repo_root = authorized_repo_root(repo_root)?;
     let program = require_gh()?;
     let output = run_gh(
         &program,
         &repo_root,
-        [
-            "pr",
-            "view",
-            "--json",
-            "number,title,url,state,isDraft,baseRefName,statusCheckRollup",
-        ],
+        pr_view_args(number),
         NETWORK_TIMEOUT_SECS,
     )?;
     if !output.timed_out && output.exit_code != Some(0) {
@@ -539,9 +550,10 @@ pub async fn gh_pr_create_options(
 #[tauri::command]
 pub async fn gh_pr_current(
     repo_path: String,
+    number: Option<u64>,
 ) -> std::result::Result<Option<GhPullRequest>, String> {
     require_repo_path(&repo_path)?;
-    blocking(move || current_pull_request(&repo_path)).await
+    blocking(move || current_pull_request(&repo_path, number)).await
 }
 
 #[tauri::command]
@@ -615,6 +627,13 @@ mod tests {
             "isDraft": false, "baseRefName": "main", "statusCheckRollup": null}"#;
         let pr = parse_pull_request(text).expect("parses");
         assert_eq!(pr.checks, GhChecksSummary::default());
+    }
+
+    #[test]
+    fn pr_view_args_name_the_number_when_given() {
+        assert_eq!(pr_view_args(None)[..2], ["pr", "view"]);
+        assert_eq!(pr_view_args(None)[2], "--json");
+        assert_eq!(pr_view_args(Some(42))[..4], ["pr", "view", "42", "--json"]);
     }
 
     #[test]

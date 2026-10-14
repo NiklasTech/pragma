@@ -22,6 +22,7 @@ import { AgentsHome } from "./AgentsHome";
 import { PaneTree } from "../panes/PaneTree";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { removeOrphanWorktrees } from "../worktree/orphans";
+import { usePullRequestChecks } from "../worktree/usePullRequestChecks";
 import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { shouldAutoOpenContextPane, useAgentsUiStore } from "../store/agentsUi";
 
@@ -102,6 +103,8 @@ export function AgentsWorkspace() {
     if (loadedRoot !== rootPath) return;
     void removeOrphanWorktrees(rootPath).catch(() => {});
   }, [loadedRoot, rootPath]);
+
+  usePullRequestChecks(rootPath, loadedRoot === rootPath);
 
   useEffect(() => {
     if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;

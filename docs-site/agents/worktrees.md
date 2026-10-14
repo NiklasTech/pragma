@@ -90,6 +90,7 @@ On Windows a hook file is started directly, so it has to be an executable progra
 With **Settings > Agents > Remove worktrees automatically when a session is finished** turned on (the default), Pragma removes a worktree as soon as no session needs it anymore:
 
 - after **Finish > Merge** succeeded
+- after the pull request from **Finish > Push and open pull request** is merged on GitHub, also as a squash merge. Pragma checks the pull request through the GitHub CLI (`gh`, installed and signed in) when the thread list loads and when the window gains focus. A pull request closed without merging keeps the worktree, and the thread shows that it was closed
 - when you delete a thread
 - when a stale coding CLI terminal is cleaned up
 - when sessions are archived, for example together with their parent thread or a deleted named agent
@@ -102,7 +103,7 @@ Automatic removal never loses work:
 
 - Only worktrees on a `pragma/<id>` branch are touched.
 - A worktree with uncommitted changes is kept. A notification offers **Discard** to remove it anyway. Deleting a thread whose worktree has uncommitted changes warns you first.
-- The `pragma/...` branch is deleted only when it is merged into the branch of your checkout. Otherwise the branch stays, so you can still merge it or open a pull request.
+- The `pragma/...` branch is deleted only when it is merged into the branch of your checkout or its pull request is merged. Otherwise the branch stays, so you can still merge it or open a pull request.
 - If the teardown hook fails, the worktree is kept and the hook output is shown.
 
 With the setting turned off, worktrees are only removed when you choose to: after **Finish > Merge**, Pragma asks whether to remove the worktree, and **Discard worktree** removes it at any time.
