@@ -13,6 +13,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
 
+import { useRepositoryEnvironments } from "../sessions/repositorySessions";
 import { joinableWorktrees } from "../sessions/shared";
 import type { SessionMenuCliRow } from "./session-menu";
 import type { NewSessionActions } from "./useNewSessionActions";
@@ -29,7 +30,7 @@ function plural(count: number, word: string): string {
 
 /** New session > Join worktree of...: starts a session in the worktree other sessions use. */
 export function JoinWorktreeMenu({ cliRows, findManifest, actions }: JoinWorktreeMenuProps) {
-  const environments = useAIStore((state) => state.workEnvironments);
+  const environments = useRepositoryEnvironments();
   const chatSessions = useAIStore((state) => state.chatSessions);
   const worktrees = useMemo(
     () => joinableWorktrees(environments, chatSessions),

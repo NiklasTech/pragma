@@ -5,7 +5,15 @@ import type { WorkEnvironment } from "@/shared/stores/ai";
 import { buildEnvironmentSections } from "./environmentSections";
 
 function worktree(id: string, branch: string): WorkEnvironment {
-  return { id, kind: "worktree", path: `/wt/${id}`, branch, setupStatus: "ready", setupLog: "" };
+  return {
+    id,
+    rootPath: "/repo",
+    kind: "worktree",
+    path: `/wt/${id}`,
+    branch,
+    setupStatus: "ready",
+    setupLog: "",
+  };
 }
 
 describe("buildEnvironmentSections", () => {

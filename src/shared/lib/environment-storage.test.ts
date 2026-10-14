@@ -14,6 +14,7 @@ describe("work environment storage", () => {
   it("saves environments in snake case", async () => {
     await saveEnvironment("/repo", {
       id: "env-1",
+      rootPath: "/repo",
       kind: "worktree",
       path: "/data/worktrees/env-1",
       branch: "pragma/env1",
@@ -45,30 +46,37 @@ describe("work environment storage", () => {
       state: "OPEN" as const,
     };
     expect(
-      fromStoredEnvironment({
-        id: "env-1",
-        kind: "worktree",
-        path: "/wt",
-        branch: "pragma/env1",
-        setup_status: "ready",
-        setup_log: "",
-        pull_request: pullRequest,
-      }).pullRequest,
+      fromStoredEnvironment(
+        {
+          id: "env-1",
+          kind: "worktree",
+          path: "/wt",
+          branch: "pragma/env1",
+          setup_status: "ready",
+          setup_log: "",
+          pull_request: pullRequest,
+        },
+        "/repo",
+      ).pullRequest,
     ).toEqual(pullRequest);
   });
 
   it("restores environments without a base branch", () => {
     expect(
-      fromStoredEnvironment({
-        id: "env-1",
-        kind: "worktree",
-        path: "/wt",
-        branch: "pragma/env1",
-        setup_status: "ready",
-        setup_log: "",
-      }),
+      fromStoredEnvironment(
+        {
+          id: "env-1",
+          kind: "worktree",
+          path: "/wt",
+          branch: "pragma/env1",
+          setup_status: "ready",
+          setup_log: "",
+        },
+        "/repo",
+      ),
     ).toEqual({
       id: "env-1",
+      rootPath: "/repo",
       kind: "worktree",
       path: "/wt",
       branch: "pragma/env1",

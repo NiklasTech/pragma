@@ -103,7 +103,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     const active = state.tabs.find((tab) => tab.id === state.activeTabId);
     return active && active.kind === "file" ? active.path : null;
   });
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
+  const rootPath = activeSession?.rootPath ?? workspaceRoot;
   const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
   const [pendingApprovals, setPendingApprovals] = useState<

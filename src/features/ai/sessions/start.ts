@@ -8,7 +8,7 @@ import {
   type CreateChatSessionInit,
   type WorkEnvironment,
 } from "@/shared/stores/ai";
-import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
+import { repositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 
 import { isWritingSession } from "../children/limits";
 import { createWorktreeEnvironment } from "../worktree/create";
@@ -40,8 +40,7 @@ async function isGitRepo(rootPath: string): Promise<boolean> {
 }
 
 function writingSessionsSetting(rootPath: string): EnvironmentChoice | undefined {
-  const workspace = useWorkspaceSettingsStore.getState();
-  return workspace.rootPath === rootPath ? workspace.settings?.agent?.writingSessions : undefined;
+  return repositoryWorkspaceSettings(rootPath)?.agent?.writingSessions;
 }
 
 async function resolveChoice(

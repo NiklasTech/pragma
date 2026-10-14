@@ -29,7 +29,10 @@ import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { buildSessionTree } from "@/features/ai/children/limits";
 import { childThreadStatus, isChildRunning } from "@/features/ai/children/status";
 import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
-import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
+import {
+  useRepositoryEnvironments,
+  useRepositorySessions,
+} from "@/features/ai/sessions/repositorySessions";
 import { useStaleTerminalIds } from "@/features/ai/terminal/useStaleTerminals";
 import { useTranscriptJumpStore, useTranscriptSearch } from "@/features/ai/search/transcriptSearch";
 
@@ -48,7 +51,7 @@ const SEARCH_THRESHOLD = 8;
 
 export function ThreadList() {
   const chatSessions = useRepositorySessions();
-  const workEnvironments = useAIStore((state) => state.workEnvironments);
+  const workEnvironments = useRepositoryEnvironments();
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);

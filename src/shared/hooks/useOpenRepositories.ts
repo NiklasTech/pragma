@@ -7,11 +7,15 @@ import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useUiModeStore } from "@/shell/mode";
+import {
+  runningRepositorySessions,
+  useCloseRepositoryRequestStore,
+} from "@/features/ai/sessions/runningSessions";
 
 const ACTIVATE_REPOSITORY_EVENT = "pragma:workspace:activate-repository";
 
 /// Closes a repository; closing the active one activates the next, closing the last one shows the Agents home.
-export function useCloseRepository(): (path: string) => Promise<void> {
+export function useCloseRepositoryNow(): (path: string) => Promise<void> {
   const { selectRoot } = useFileExplorer();
 
   return useCallback(
@@ -25,6 +29,22 @@ export function useCloseRepository(): (path: string) => Promise<void> {
       useUiModeStore.getState().setUiMode("agents");
     },
     [selectRoot],
+  );
+}
+
+/// Closes a repository, or asks first when sessions still run in it.
+export function useCloseRepository(): (path: string) => Promise<void> {
+  const closeNow = useCloseRepositoryNow();
+
+  return useCallback(
+    async (path: string) => {
+      const running = runningRepositorySessions(path);
+      if (running.length === 0) return closeNow(path);
+      useCloseRepositoryRequestStore.setState({
+        request: { path, sessionIds: running.map((session) => session.id) },
+      });
+    },
+    [closeNow],
   );
 }
 

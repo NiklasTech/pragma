@@ -7,9 +7,8 @@ import {
   type ChatSession,
   type WorkEnvironment,
 } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
+import { repositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 
 import { terminalLaunchCommand } from "../terminal/cliAttention";
 import { disposeTerminal, ensureTerminal } from "../terminal/runner";
@@ -31,6 +30,7 @@ const TERMINAL_COLS = 120;
 const TERMINAL_ROWS = 32;
 
 interface SpawnPlan {
+  /** The parent's repository, which the child belongs to. */
   rootPath: string;
   parent: ChatSession;
   /** The parent's worktree, which a `worktree` child branches from. */
@@ -56,18 +56,18 @@ function detectedTerminalCliIds(): string[] {
 }
 
 function childEnvironmentSetting(rootPath: string): ChildEnvironmentSetting | undefined {
-  const workspace = useWorkspaceSettingsStore.getState();
-  return workspace.rootPath === rootPath ? workspace.settings?.agent?.childEnvironment : undefined;
+  return repositoryWorkspaceSettings(rootPath)?.agent?.childEnvironment;
 }
 
 function prepareChildSpawn(input: unknown, context: AgentRunContext): SpawnPrepare {
-  const rootPath = useFileExplorerStore.getState().rootPath;
-  if (!rootPath) return { ok: false, error: "Open a workspace to start a child session" };
-
   const { chatSessions, cliManifests, workEnvironments } = useAIStore.getState();
   const parentId = context.sessionId();
   const parent = chatSessions.find((session) => session.id === parentId);
   if (!parent) return { ok: false, error: "The parent session was not found" };
+  const rootPath = parent.rootPath;
+  if (rootPath === "default") {
+    return { ok: false, error: "Open a workspace to start a child session" };
+  }
   if (parent.kind === "ask" || parent.kind === "terminal") {
     return { ok: false, error: "Only conversation sessions can start child sessions" };
   }

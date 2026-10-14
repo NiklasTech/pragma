@@ -19,12 +19,16 @@ import type { Agent } from "@/features/ai/named-agents/types";
 import { formatSkillCatalog, selectCatalogSkills } from "@/features/ai/skills/catalog";
 import { skillsDir } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
+import type { Skill } from "@/features/ai/skills/types";
 import { buildCliLeadingMessage } from "./cliLeadingMessage";
+
+const NO_SKILLS: Skill[] = [];
 
 interface ChatPromptOptions {
   activeSession: ChatSession | undefined;
   activeAgent: Agent | null;
   cwd: string;
+  /** The session's repository. */
   rootPath: string;
   nativeRulesFiles: readonly string[];
 }
@@ -72,10 +76,10 @@ export function useChatPrompt({
     };
   }, [cwd]);
 
-  const workspaceSkills = useSkillsStore((state) => state.skills);
+  const workspaceSkills = useSkillsStore((state) => state.byRoot[rootPath] ?? NO_SKILLS);
 
   useEffect(() => {
-    void useSkillsStore.getState().loadSkills(rootPath === "default" ? null : rootPath);
+    if (rootPath !== "default") void useSkillsStore.getState().loadRepositorySkills(rootPath);
   }, [rootPath]);
 
   const skillsBlock = useMemo(

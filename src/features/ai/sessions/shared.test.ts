@@ -20,6 +20,7 @@ function session(id: string, init: Partial<ChatSession> = {}): ChatSession {
 function worktree(id: string, init: Partial<WorkEnvironment> = {}): WorkEnvironment {
   return {
     id,
+    rootPath: "/repo",
     kind: "worktree",
     path: `/wt/${id}`,
     branch: `pragma/${id}`,

@@ -9,6 +9,7 @@ import { cn } from "@/shared/lib/utils";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout/store";
 import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
@@ -62,7 +63,8 @@ export function ChatComposer({
   onAddImages,
   onRemoveImage,
 }: ChatComposerProps) {
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
+  const rootPath = useActiveSessionMeta()?.rootPath ?? workspaceRoot;
   const sendShortcut = useSettingsStore((state) => state.shortcuts["chat.send"]);
   const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
   const cliSession = useCliSessionOptions();

@@ -62,6 +62,8 @@ export interface EnvironmentPullRequest {
 /** A checkout or worktree that one or more sessions of a workspace work in. */
 export interface WorkEnvironment {
   id: string;
+  /** The repository the environment belongs to; comes from where it is stored. */
+  rootPath: string;
   kind: "checkout" | "worktree";
   path: string;
   /** The worktree's branch; empty for a checkout. */
@@ -222,7 +224,7 @@ export interface AIActions {
   updateChatSession: (session: ChatSession) => Promise<void>;
   saveSessionMessages: (sessionId: string, messages: ChatMessage[]) => Promise<void>;
 
-  // Work environments the sessions of the workspace reference.
+  // Work environments the sessions of every open repository reference.
   loadEnvironments: (rootPath: string) => Promise<void>;
   saveEnvironment: (rootPath: string, environment: WorkEnvironment) => Promise<void>;
   deleteEnvironment: (rootPath: string, environmentId: string) => Promise<void>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import type { WorkEnvironment } from "@/shared/stores/ai";
+import type { ChatSession, WorkEnvironment } from "@/shared/stores/ai";
 
 import { sessionCwd, sessionEnvironment } from "./cwd";
 
@@ -9,6 +9,7 @@ const ROOT = "/workspace";
 function environment(overrides: Partial<WorkEnvironment> = {}): WorkEnvironment {
   return {
     id: "env-1",
+    rootPath: ROOT,
     kind: "worktree",
     path: "/data/worktrees/env-1",
     branch: "pragma/env1",
@@ -47,6 +48,22 @@ describe("sessionCwd", () => {
 
   it("falls back to the workspace root when the environment is gone", () => {
     expect(sessionCwd({ environmentId: "missing" }, [environment()], ROOT)).toBe(ROOT);
+  });
+});
+
+describe("sessionCwd across repositories", () => {
+  it("runs each session in its own repository or worktree, whatever repository is active", () => {
+    const environments = [
+      environment({ id: "env-a", rootPath: "/a", path: "/wt/a" }),
+      environment({ id: "env-b", rootPath: "/b", path: "/wt/b" }),
+    ];
+    const inA = { rootPath: "/a", environmentId: "env-a" };
+    const inB: Pick<ChatSession, "rootPath" | "environmentId"> = { rootPath: "/b" };
+    const worktreeInB = { rootPath: "/b", environmentId: "env-b" };
+
+    expect(sessionCwd(inA, environments, inA.rootPath)).toBe("/wt/a");
+    expect(sessionCwd(inB, environments, inB.rootPath)).toBe("/b");
+    expect(sessionCwd(worktreeInB, environments, worktreeInB.rootPath)).toBe("/wt/b");
   });
 });
 

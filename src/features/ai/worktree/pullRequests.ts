@@ -81,6 +81,7 @@ export async function checkSessionPullRequests(rootPath: string): Promise<void> 
       .getState()
       .workEnvironments.filter(
         (environment) =>
+          environment.rootPath === rootPath &&
           environment.kind === "worktree" &&
           environment.pullRequest &&
           environment.pullRequest.state !== "CLOSED",

@@ -222,6 +222,64 @@ describe("sessions of several repositories", () => {
   });
 });
 
+describe("work environments of several repositories", () => {
+  let environments: Record<string, object[]> = {};
+
+  function storedEnvironment(id: string) {
+    return {
+      id,
+      kind: "worktree",
+      path: `/wt/${id}`,
+      branch: `pragma/${id}`,
+      setup_status: "ready",
+      setup_log: "",
+    };
+  }
+
+  function environmentRoots(): Record<string, string> {
+    return Object.fromEntries(
+      useAIStore.getState().workEnvironments.map((item) => [item.id, item.rootPath]),
+    );
+  }
+
+  beforeEach(() => {
+    environments = { "/a": [storedEnvironment("env-a")], "/b": [storedEnvironment("env-b")] };
+    invokeMock.mockReset();
+    invokeMock.mockImplementation(async (command: string, args: InvokeArgs) => {
+      if (command === "ai_load_sessions") return [storedMetadata(`${args.req.root_path}-1`, 1)];
+      if (command === "ai_load_environments") return environments[args.req.root_path] ?? [];
+      return [];
+    });
+    useAIStore.setState({ chatSessions: [], activeChatSessionId: null, workEnvironments: [] });
+  });
+
+  it("keeps the environments of a repository loaded in the background", async () => {
+    await useAIStore.getState().loadSessions("/a");
+    await useAIStore.getState().loadSessions("/b", { activate: false });
+
+    expect(environmentRoots()).toEqual({ "env-a": "/a", "env-b": "/b" });
+  });
+
+  it("replaces only the environments of the repository that loads again", async () => {
+    await useAIStore.getState().loadSessions("/a");
+    await useAIStore.getState().loadSessions("/b", { activate: false });
+    environments["/a"] = [storedEnvironment("env-a2")];
+
+    await useAIStore.getState().loadSessions("/a");
+
+    expect(environmentRoots()).toEqual({ "env-b": "/b", "env-a2": "/a" });
+  });
+
+  it("drops the environments of a closed repository", async () => {
+    await useAIStore.getState().loadSessions("/a");
+    await useAIStore.getState().loadSessions("/b", { activate: false });
+
+    useAIStore.getState().unloadSessions("/b");
+
+    expect(environmentRoots()).toEqual({ "env-a": "/a" });
+  });
+});
+
 describe("saving sessions", () => {
   beforeEach(() => {
     invokeMock.mockReset();

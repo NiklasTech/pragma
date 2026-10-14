@@ -87,7 +87,7 @@ export const createSessionsSlice: AISlice<
       const activate = options?.activate !== false;
       const stored = await loadStoredOnce(rootPath);
       // Loading the sessions first migrates legacy worktrees into environments.
-      if (activate) await get().loadEnvironments(rootPath);
+      await get().loadEnvironments(rootPath);
 
       const others = get().chatSessions.filter((session) => session.rootPath !== rootPath);
       if (stored.length === 0) {
@@ -132,7 +132,11 @@ export const createSessionsSlice: AISlice<
       const { chatSessions, activeChatSessionId } = get();
       const kept = chatSessions.filter((session) => session.rootPath !== rootPath);
       const activeKept = kept.some((session) => session.id === activeChatSessionId);
-      set({ chatSessions: kept, activeChatSessionId: activeKept ? activeChatSessionId : null });
+      set({
+        chatSessions: kept,
+        activeChatSessionId: activeKept ? activeChatSessionId : null,
+        workEnvironments: get().workEnvironments.filter((item) => item.rootPath !== rootPath),
+      });
     },
 
     loadSessionMessages: async (sessionId) => {

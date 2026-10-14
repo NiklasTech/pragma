@@ -28,10 +28,9 @@ import {
 
 interface TerminalPaneProps {
   session: ChatSession;
-  workspaceRoot: string;
 }
 
-export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
+export function TerminalPane({ session }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fontSize = useTerminalStore((s) => s.fontSize);
@@ -46,7 +45,7 @@ export function TerminalPane({ session, workspaceRoot }: TerminalPaneProps) {
     : undefined;
   const command = manifest ? terminalLaunchCommand(manifest.id, manifest.command) : "";
   const workEnvironments = useAIStore((state) => state.workEnvironments);
-  const cwd = sessionCwd(session, workEnvironments, workspaceRoot);
+  const cwd = sessionCwd(session, workEnvironments, session.rootPath);
   const [dropActive, setDropActive] = useState(false);
   const dictateBinding = useSettingsStore((state) =>
     state.ai.voiceInput ? state.shortcuts["voice.holdToDictate"] : null,

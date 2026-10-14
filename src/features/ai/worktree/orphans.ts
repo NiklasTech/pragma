@@ -26,6 +26,7 @@ export async function removeOrphanWorktrees(rootPath: string): Promise<void> {
     if (orphan.dirty || !orphan.branch || !isPragmaBranch(orphan.branch)) continue;
     const worktree: WorkEnvironment = {
       id: orphan.id,
+      rootPath,
       kind: "worktree",
       path: orphan.path,
       branch: orphan.branch,

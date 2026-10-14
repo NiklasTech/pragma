@@ -4,6 +4,7 @@ import {
   type EditorSettings,
 } from "@/shared/stores/settings";
 
+import { isRepositoryTrusted, repositoryWorkspaceSettings } from "./repositories";
 import { useWorkspaceSettingsStore } from "./store";
 import { isFolderTrusted } from "./trust";
 import type { WorkspaceSettings } from "./types";
@@ -50,7 +51,15 @@ export function getEditorSettings(): EditorSettings {
   );
 }
 
-export function getAgentSettings(): AgentSettings {
+/// The agent settings of `rootPath`, or of the active repository when it is omitted.
+export function getAgentSettings(rootPath?: string): AgentSettings {
+  if (rootPath !== undefined) {
+    return mergeAgentSettings(
+      useSettingsStore.getState().agent,
+      repositoryWorkspaceSettings(rootPath),
+      isRepositoryTrusted(rootPath),
+    );
+  }
   return mergeAgentSettings(
     useSettingsStore.getState().agent,
     useWorkspaceSettingsStore.getState().settings,

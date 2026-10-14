@@ -50,6 +50,7 @@ import { isPragmaBranch, releaseWorktree, releaseWorktrees, worktreeKeepReason }
 
 const WORKTREE: WorkEnvironment = {
   id: "env-1",
+  rootPath: "/repo",
   kind: "worktree",
   path: "/data/worktrees/env-1",
   branch: "pragma/1a2b3c4d",

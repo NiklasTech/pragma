@@ -57,7 +57,6 @@ function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
   const session = useAIStore((state) =>
     state.chatSessions.find((item) => item.id === leaf.sessionId),
   );
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const runningInBackground = useChildRunsStore((state) =>
     leaf.sessionId ? isRunLive(state.runs[leaf.sessionId]) : false,
   );
@@ -65,7 +64,7 @@ function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
   if (leaf.browser) return <BrowserPane leafId={leaf.id} />;
   if (leaf.sessionId === null) return <EmptyLeafView leafId={leaf.id} />;
   if (session?.kind === "terminal") {
-    return <TerminalPane session={session} workspaceRoot={rootPath} />;
+    return <TerminalPane session={session} />;
   }
   if (runningInBackground) return <ChildRunView sessionId={leaf.sessionId} />;
   if (focused && leaf.sessionId === activeChatSessionId) return <ChatPanel hideHeader />;

@@ -27,13 +27,9 @@ vi.mock("@/shared/stores/ai", () => ({
   },
   repositorySessions: () => [],
 }));
-vi.mock("@/shared/stores/workspaceSettings/store", () => ({
-  useWorkspaceSettingsStore: {
-    getState: () => ({
-      rootPath: "/repo",
-      settings: { agent: { writingSessions: mocks.writingSessions } },
-    }),
-  },
+vi.mock("@/shared/stores/workspaceSettings/repositories", () => ({
+  repositoryWorkspaceSettings: (rootPath: string) =>
+    rootPath === "/repo" ? { agent: { writingSessions: mocks.writingSessions } } : null,
 }));
 vi.mock("../worktree/create", () => ({
   createWorktreeEnvironment: mocks.createWorktreeEnvironment,
@@ -47,6 +43,7 @@ import { startSession } from "./start";
 function worktree(setupStatus: WorkEnvironment["setupStatus"]): WorkEnvironment {
   return {
     id: "env-1",
+    rootPath: "/repo",
     kind: "worktree",
     path: "/data/worktrees/env-1",
     branch: "pragma/env-1",

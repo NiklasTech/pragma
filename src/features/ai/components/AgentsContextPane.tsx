@@ -84,7 +84,7 @@ export function AgentsContextPane() {
 
   const focusedSession = chatSessions.find((session) => session.id === focusedSessionId);
   const focusedCwd = focusedSession
-    ? sessionCwd(focusedSession, workEnvironments, workspacePath)
+    ? sessionCwd(focusedSession, workEnvironments, focusedSession.rootPath)
     : null;
   const reviewCwd = focusedCwd && focusedCwd !== "default" ? focusedCwd : null;
   const focusedEnvironment = sessionEnvironment(focusedSession, workEnvironments);

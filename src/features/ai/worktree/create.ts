@@ -23,6 +23,7 @@ export async function createWorktreeEnvironment(
   });
   const environment: WorkEnvironment = {
     id,
+    rootPath,
     kind: "worktree",
     path: created.path,
     branch: created.branch,

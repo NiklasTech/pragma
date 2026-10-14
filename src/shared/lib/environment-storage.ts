@@ -27,9 +27,13 @@ function toStoredEnvironment(environment: WorkEnvironment): StoredWorkEnvironmen
   return stored;
 }
 
-export function fromStoredEnvironment(stored: StoredWorkEnvironment): WorkEnvironment {
+export function fromStoredEnvironment(
+  stored: StoredWorkEnvironment,
+  rootPath: string,
+): WorkEnvironment {
   const environment: WorkEnvironment = {
     id: stored.id,
+    rootPath,
     kind: stored.kind === "checkout" ? "checkout" : "worktree",
     path: stored.path,
     branch: stored.branch,
@@ -45,7 +49,7 @@ export async function loadEnvironments(rootPath: string): Promise<WorkEnvironmen
   const environments = await invoke<StoredWorkEnvironment[]>("ai_load_environments", {
     req: { root_path: rootPath || "default" },
   });
-  return environments.map(fromStoredEnvironment);
+  return environments.map((stored) => fromStoredEnvironment(stored, rootPath));
 }
 
 export async function saveEnvironment(

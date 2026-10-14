@@ -7,7 +7,6 @@ import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/ses
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useAIStore } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import {
@@ -35,7 +34,6 @@ export function useCliSessionOptions(): CliSessionOptions | null {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const session = useActiveSessionMeta();
   const experimentalAcp = useSettingsStore((state) => state.experimental.acp);
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
 
   const activeCLIProvider = resolveEffectiveEngine(pinnedSessionEngine(session), {
     activeCLIProvider: globalCLIProvider,
@@ -45,7 +43,7 @@ export function useCliSessionOptions(): CliSessionOptions | null {
   }).cliProviderId;
   const acpActive = isAcpActive(cliManifests, activeCLIProvider, experimentalAcp);
   const workEnvironments = useAIStore((state) => state.workEnvironments);
-  const cwd = rootPath ? sessionCwd(session, workEnvironments, rootPath) : null;
+  const cwd = session ? sessionCwd(session, workEnvironments, session.rootPath) : null;
 
   const options = useAcpSessionOptionsStore((state) =>
     activeChatSessionId ? state.bySession[activeChatSessionId] : undefined,

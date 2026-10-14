@@ -20,7 +20,12 @@ import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { loadSessionMessages } from "@/shared/lib/chat-storage";
-import { useAIStore, type ChatSession, type WorkEnvironment } from "@/shared/stores/ai";
+import {
+  repositoryEnvironments,
+  useAIStore,
+  type ChatSession,
+  type WorkEnvironment,
+} from "@/shared/stores/ai";
 import { useGitStore } from "@/shared/stores/git";
 
 import {
@@ -80,7 +85,10 @@ export function useFinishWorktree(rootPath: string): {
     async (session: ChatSession, worktree: WorkEnvironment, strategy: SessionMergeStrategy) => {
       const toastId = toast.loading(`Merging ${worktree.branch}…`);
       try {
-        const parentBranch = parentMergeTarget(worktree, useAIStore.getState().workEnvironments);
+        const parentBranch = parentMergeTarget(
+          worktree,
+          repositoryEnvironments(useAIStore.getState().workEnvironments, worktree.rootPath),
+        );
         const result = await finishSessionMerge(rootPath, worktree, strategy, parentBranch);
         const git = useGitStore.getState();
         if (git.repoPath === rootPath) void git.refreshAll();
