@@ -17,16 +17,32 @@ export interface SessionMergeResult {
   rebase_conflicts: boolean;
 }
 
+/** The branch of another session's worktree this worktree branched from, if that worktree still exists. */
+export function parentMergeTarget(
+  worktree: WorkEnvironment,
+  environments: readonly WorkEnvironment[],
+): string | undefined {
+  const base = worktree.baseBranch;
+  if (!base || base === worktree.branch) return undefined;
+  const parent = environments.find(
+    (environment) => environment.kind === "worktree" && environment.branch === base,
+  );
+  return parent ? base : undefined;
+}
+
+/** Merges into `targetBranch` inside its worktree, or into the checkout's current branch. */
 export function finishSessionMerge(
   rootPath: string,
   worktree: WorkEnvironment,
   strategy: SessionMergeStrategy,
+  targetBranch?: string,
 ): Promise<SessionMergeResult> {
   return invoke<SessionMergeResult>("git_session_finish_merge", {
     repoPath: rootPath,
     worktreePath: worktree.path,
     branch: worktree.branch,
     strategy,
+    targetBranch: targetBranch ?? null,
   });
 }
 

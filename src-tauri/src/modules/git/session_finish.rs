@@ -53,6 +53,32 @@ fn canonical(path: &str) -> Result<PathBuf, String> {
         .map_err(|e| format!("failed to resolve {path}: {e}"))
 }
 
+/// The canonical path of the worktree of `repo_path` that has `branch` checked out.
+fn worktree_of_branch(repo_path: &str, branch: &str) -> Result<Option<PathBuf>, String> {
+    let listing = git_text(
+        repo_path,
+        &["worktree", "list", "--porcelain"],
+        "git worktree list",
+    )?;
+    let expected_ref = format!("refs/heads/{branch}");
+    Ok(listing.split("\n\n").find_map(|block| {
+        let mut path = None;
+        let mut head_ref = None;
+        for line in block.lines() {
+            if let Some(rest) = line.strip_prefix("worktree ") {
+                path = Some(rest);
+            } else if let Some(rest) = line.strip_prefix("branch ") {
+                head_ref = Some(rest);
+            }
+        }
+        if head_ref == Some(expected_ref.as_str()) {
+            path.and_then(|p| canonical(p).ok())
+        } else {
+            None
+        }
+    }))
+}
+
 /// Confirms that `worktree_path` is a worktree of `repo_path` with `branch` checked out.
 fn validate_session_worktree(
     repo_path: &str,
@@ -63,29 +89,21 @@ fn validate_session_worktree(
         return Err("Only pragma worktree branches can be finished".to_string());
     }
     let wanted = canonical(worktree_path)?;
-    let listing = git_text(
-        repo_path,
-        &["worktree", "list", "--porcelain"],
-        "git worktree list",
-    )?;
-    let expected_ref = format!("refs/heads/{branch}");
-    let found = listing.split("\n\n").any(|block| {
-        let mut path = None;
-        let mut head_ref = None;
-        for line in block.lines() {
-            if let Some(rest) = line.strip_prefix("worktree ") {
-                path = Some(rest);
-            } else if let Some(rest) = line.strip_prefix("branch ") {
-                head_ref = Some(rest);
-            }
-        }
-        head_ref == Some(expected_ref.as_str())
-            && path.and_then(|p| canonical(p).ok()).as_ref() == Some(&wanted)
-    });
-    if !found {
+    if worktree_of_branch(repo_path, branch)?.as_ref() != Some(&wanted) {
         return Err("The session worktree does not belong to this repository".to_string());
     }
     Ok(wanted.to_string_lossy().into_owned())
+}
+
+/// The worktree that has the session branch `target` checked out, where the merge then runs.
+fn target_worktree(repo_path: &str, target: &str) -> Result<String, String> {
+    if !is_pragma_branch(target) {
+        return Err("Only pragma worktree branches can be a merge target".to_string());
+    }
+    match worktree_of_branch(repo_path, target)? {
+        Some(path) => Ok(path.to_string_lossy().into_owned()),
+        None => Err(format!("{target} is not checked out in a worktree")),
+    }
 }
 
 fn current_branch(repo_path: &str) -> Result<String, String> {
@@ -107,6 +125,7 @@ pub(crate) fn finish_merge(
     worktree_path: &str,
     branch: &str,
     strategy: SessionMergeStrategy,
+    target_branch: Option<&str>,
 ) -> Result<SessionMergeResult, String> {
     let worktree = validate_session_worktree(repo_path, worktree_path, branch)?;
     if worktree_dirty(&worktree)? {
@@ -114,7 +133,10 @@ pub(crate) fn finish_merge(
             "The session has uncommitted changes. Commit them before finishing.".to_string(),
         );
     }
-    let target = current_branch(repo_path)?;
+    let (target, merge_root) = match target_branch {
+        Some(target) => (target.to_string(), target_worktree(repo_path, target)?),
+        None => (current_branch(repo_path)?, repo_path.to_string()),
+    };
     if target == branch {
         return Err("The checkout is already on the session branch".to_string());
     }
@@ -132,7 +154,7 @@ pub(crate) fn finish_merge(
     }
 
     let merged = merge_branch(
-        repo_path,
+        &merge_root,
         branch,
         strategy == SessionMergeStrategy::MergeCommit,
     )?;
@@ -189,11 +211,21 @@ pub async fn git_session_finish_merge(
     worktree_path: String,
     branch: String,
     strategy: SessionMergeStrategy,
+    target_branch: Option<String>,
 ) -> Result<SessionMergeResult, String> {
     if repo_path.is_empty() || worktree_path.is_empty() {
         return Err("Repository and worktree paths are required".to_string());
     }
-    blocking(move || finish_merge(&repo_path, &worktree_path, &branch, strategy)).await
+    blocking(move || {
+        finish_merge(
+            &repo_path,
+            &worktree_path,
+            &branch,
+            strategy,
+            target_branch.as_deref(),
+        )
+    })
+    .await
 }
 
 #[tauri::command]
@@ -228,6 +260,7 @@ mod tests {
     use crate::modules::git::worktree::create_worktree;
 
     const SESSION: &str = "11111111-1111-1111-1111-111111111111";
+    const CHILD: &str = "22222222-2222-2222-2222-222222222222";
 
     fn session_commit(path: &str, file: &str, content: &str) {
         std::fs::write(Path::new(path).join(file), content).expect("write");
@@ -257,12 +290,73 @@ mod tests {
             &created.path,
             &created.branch,
             SessionMergeStrategy::Merge,
+            None,
         )
         .expect("merge");
 
         assert_eq!(result.target, "main");
         assert!(result.completed);
         assert_eq!(repo.read("session.txt"), "work\n");
+    }
+
+    #[test]
+    fn merges_a_child_branch_into_the_parent_branch_inside_the_parent_worktree() {
+        let repo = TestRepo::new();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let parent =
+            create_worktree(app_data.path(), &repo.root, SESSION, None, true).expect("parent");
+        session_commit(&parent.path, "parent.txt", "parent\n");
+        let child = create_worktree(
+            app_data.path(),
+            &repo.root,
+            CHILD,
+            Some(&parent.branch),
+            true,
+        )
+        .expect("child");
+        session_commit(&child.path, "child.txt", "child\n");
+
+        let result = finish_merge(
+            &repo.root,
+            &child.path,
+            &child.branch,
+            SessionMergeStrategy::Merge,
+            Some(&parent.branch),
+        )
+        .expect("merge");
+
+        assert_eq!(result.target, parent.branch);
+        assert!(result.completed);
+        assert_eq!(
+            std::fs::read_to_string(Path::new(&parent.path).join("child.txt")).expect("read"),
+            "child\n"
+        );
+        assert!(!Path::new(&repo.root).join("child.txt").exists());
+        assert!(!Path::new(&repo.root).join("parent.txt").exists());
+    }
+
+    #[test]
+    fn rejects_merge_targets_that_are_not_checked_out_session_branches() {
+        let repo = TestRepo::new();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let created =
+            create_worktree(app_data.path(), &repo.root, SESSION, None, true).expect("create");
+        repo.git(&["branch", "pragma/abcdef12"]);
+
+        for target in ["main", "pragma/abcdef12", "pragma/00000000"] {
+            let err = finish_merge(
+                &repo.root,
+                &created.path,
+                &created.branch,
+                SessionMergeStrategy::Merge,
+                Some(target),
+            )
+            .expect_err(target);
+            assert!(
+                err.contains("merge target") || err.contains("not checked out"),
+                "{err}"
+            );
+        }
     }
 
     #[test]
@@ -280,6 +374,7 @@ mod tests {
             &created.path,
             &created.branch,
             SessionMergeStrategy::Rebase,
+            None,
         )
         .expect("finish");
 
@@ -306,6 +401,7 @@ mod tests {
             &created.path,
             &created.branch,
             SessionMergeStrategy::Merge,
+            None,
         )
         .expect_err("dirty");
         assert!(err.contains("uncommitted"));
@@ -333,6 +429,7 @@ mod tests {
             &created.path,
             &created.branch,
             SessionMergeStrategy::Merge,
+            None,
         )
         .expect("merge");
         assert!(result.completed);

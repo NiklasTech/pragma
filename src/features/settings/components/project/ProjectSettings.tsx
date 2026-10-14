@@ -19,6 +19,7 @@ import { SettingSection } from "../ui/SettingSection";
 import { CliSyncSection } from "./CliSyncSection";
 import { FolderTrustSection } from "./FolderTrustSection";
 import { LspOverrides } from "./LspOverrides";
+import { ChildEnvironmentSelect } from "./ChildEnvironmentSelect";
 import { WritingSessionsSelect } from "./WritingSessionsSelect";
 import { InheritSelect, parseNumberList, parsePositiveInt } from "./fields";
 
@@ -196,6 +197,16 @@ export function ProjectSettings() {
               label="Parallel tasks work in"
               className="w-52"
               onChange={(parallelTaskEnvironment) => setAgent({ parallelTaskEnvironment })}
+            />
+          }
+        />
+        <SettingRow
+          label="Child sessions work in"
+          description="When the agent does not choose. An own worktree of a child whose parent works in the checkout branches from the current branch."
+          control={
+            <ChildEnvironmentSelect
+              value={draft.agent?.childEnvironment}
+              onChange={(childEnvironment) => setAgent({ childEnvironment })}
             />
           }
         />

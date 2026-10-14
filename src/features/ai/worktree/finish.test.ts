@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({ invoke: vi.fn(), dirty: false }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 
-import { commitBeforeFinish, pullRequestBody } from "./finish";
+import { commitBeforeFinish, parentMergeTarget, pullRequestBody } from "./finish";
 
 const WORKTREE: WorkEnvironment = {
   id: "env-1",
@@ -79,5 +79,32 @@ describe("commitBeforeFinish", () => {
 
     expect(await commitBeforeFinish("/repo", WORKTREE, "", async () => null)).toBe(false);
     expect(mocks.invoke).not.toHaveBeenCalledWith("git_session_commit_all", expect.anything());
+  });
+});
+
+function worktree(id: string, branch: string, baseBranch?: string): WorkEnvironment {
+  return {
+    id,
+    kind: "worktree",
+    path: `/wt/${id}`,
+    branch,
+    baseBranch,
+    setupStatus: "ready",
+    setupLog: "",
+  };
+}
+
+describe("parentMergeTarget", () => {
+  const parent = worktree("p", "pragma/aaaaaaaa", "main");
+
+  it("targets the branch of the worktree the session branched from", () => {
+    const child = worktree("c", "pragma/bbbbbbbb", parent.branch);
+    expect(parentMergeTarget(child, [parent, child])).toBe("pragma/aaaaaaaa");
+  });
+
+  it("falls back to the checkout for a base branch without a worktree", () => {
+    expect(parentMergeTarget(parent, [parent])).toBeUndefined();
+    const orphan = worktree("c", "pragma/bbbbbbbb", "pragma/cccccccc");
+    expect(parentMergeTarget(orphan, [parent, orphan])).toBeUndefined();
   });
 });

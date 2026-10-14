@@ -48,6 +48,14 @@ pub enum GroupEnvironment {
     Checkout,
 }
 
+/// Where a child session works by default when its parent is in a worktree.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ChildSessionEnvironment {
+    Parent,
+    Worktree,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceAgentSettings {
@@ -61,6 +69,8 @@ pub struct WorkspaceAgentSettings {
     pub launch_cli_environment: Option<GroupEnvironment>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parallel_task_environment: Option<GroupEnvironment>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_environment: Option<ChildSessionEnvironment>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -297,7 +307,8 @@ mod tests {
                 "stepLimit": 40,
                 "writingSessions": "worktree",
                 "launchCliEnvironment": "checkout",
-                "parallelTaskEnvironment": "shared"
+                "parallelTaskEnvironment": "shared",
+                "childEnvironment": "parent"
             },
             "lsp": { "enabled": { "rust": false } },
             "cliSync": { "targets": ["claude", "agents"] },
@@ -326,6 +337,10 @@ mod tests {
             settings.agent.as_ref().unwrap().parallel_task_environment,
             Some(GroupEnvironment::Shared)
         );
+        assert_eq!(
+            settings.agent.as_ref().unwrap().child_environment,
+            Some(ChildSessionEnvironment::Parent)
+        );
         assert_eq!(settings.lsp.unwrap().enabled.get("rust"), Some(&false));
     }
 
@@ -340,6 +355,7 @@ mod tests {
             json!({ "agent": { "writingSessions": "elsewhere" } }),
             json!({ "agent": { "launchCliEnvironment": "elsewhere" } }),
             json!({ "agent": { "parallelTaskEnvironment": "checkout" } }),
+            json!({ "agent": { "childEnvironment": "checkout" } }),
             json!({ "lsp": { "enabled": { "../x": true } } }),
             json!({ "editor": { "tabSize": "two" } }),
             json!({ "cliSync": { "targets": ["vscode"] } }),
@@ -380,6 +396,7 @@ mod tests {
                 writing_sessions: Some(WritingSessionEnvironment::Checkout),
                 launch_cli_environment: Some(GroupEnvironment::Shared),
                 parallel_task_environment: Some(GroupEnvironment::Isolated),
+                child_environment: Some(ChildSessionEnvironment::Worktree),
             }),
             ..Default::default()
         };

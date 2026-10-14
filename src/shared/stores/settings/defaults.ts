@@ -139,6 +139,8 @@ export const defaultSettings: SettingsState = {
     useProjectRules: true,
     stepLimit: null,
     removeWorktrees: true,
+    maxChildSessions: 4,
+    maxSessionDepth: 3,
   },
   notifications: {
     sessionFinished: true,

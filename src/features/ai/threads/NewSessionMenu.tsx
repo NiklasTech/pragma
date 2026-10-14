@@ -31,6 +31,7 @@ import {
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
 
+import { JoinWorktreeMenu } from "./JoinWorktreeMenu";
 import { buildSessionMenuCliRows } from "./session-menu";
 import type { NewSessionActions } from "./useNewSessionActions";
 
@@ -234,6 +235,10 @@ export function NewSessionMenu({
             </DropdownMenuSub>
           )}
         </DropdownMenuGroup>
+
+        {isRepo && (
+          <JoinWorktreeMenu cliRows={installedRows} findManifest={findManifest} actions={actions} />
+        )}
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => void loadCLIStatuses()}>

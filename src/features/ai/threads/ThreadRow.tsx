@@ -33,6 +33,7 @@ import type { FinishAction } from "@/features/ai/worktree/finish";
 import { FinishWorktreeMenu } from "@/features/ai/worktree/FinishWorktreeMenu";
 import { useSessionEnvironment } from "@/features/ai/worktree/useSessionEnvironment";
 import { ExportSessionMenu } from "@/features/ai/export/ExportSessionMenu";
+import { SharersBadge } from "@/features/ai/sessions/SharersBadge";
 
 import { providerAccent } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -250,6 +251,7 @@ export function ThreadRow({
                 >
                   <GitBranch size={11} className="shrink-0" />
                   <span className="truncate">{worktree.branch}</span>
+                  <SharersBadge environmentId={worktree.id} />
                 </span>
               )
             )}

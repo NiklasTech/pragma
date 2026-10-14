@@ -1,7 +1,13 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { ChatsCircle, CheckSquare, MagnifyingGlass, Robot } from "@phosphor-icons/react";
+import {
+  ChatsCircle,
+  CheckSquare,
+  MagnifyingGlass,
+  Robot,
+  TreeStructure,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Input } from "@/shared/components/ui/input";
@@ -9,6 +15,7 @@ import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
@@ -28,6 +35,7 @@ import { useTranscriptJumpStore, useTranscriptSearch } from "@/features/ai/searc
 import { CategoryHeader } from "./CategoryHeader";
 import { buildThreadSections, listCategories, normalizeCategory } from "./categories";
 import { DeleteThreadDialog } from "./DeleteThreadDialog";
+import { buildEnvironmentSections } from "./environmentSections";
 import { NewSessionButton } from "./NewSessionButton";
 import { resolveThreadStatus } from "./helpers";
 import { duplicateThreads, setThreadsCategory } from "./threadActions";
@@ -39,6 +47,7 @@ const SEARCH_THRESHOLD = 8;
 
 export function ThreadList() {
   const chatSessions = useAIStore((state) => state.chatSessions);
+  const workEnvironments = useAIStore((state) => state.workEnvironments);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
@@ -60,6 +69,7 @@ export function ThreadList() {
   const [discardSessionId, setDiscardSessionId] = useState<string | null>(null);
   const [categoryTargets, setCategoryTargets] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const [byWorktree, setByWorktree] = useState(false);
   const finishWorktree = useFinishWorktree(rootPath ?? "default");
 
   const staleTerminals = useStaleTerminalIds(chatSessions, rootPath ?? "default");
@@ -95,13 +105,16 @@ export function ThreadList() {
     [searching, visibleSessions],
   );
 
+  const hasWorktrees = workEnvironments.some((environment) => environment.kind === "worktree");
   const sections = useMemo(
     () =>
-      buildThreadSections(
-        tree.roots,
-        (session) => resolveThreadStatus(agentStatus, session.id, runSessionId) !== "idle",
-      ),
-    [agentStatus, runSessionId, tree],
+      byWorktree && hasWorktrees
+        ? buildEnvironmentSections(tree.roots, workEnvironments)
+        : buildThreadSections(
+            tree.roots,
+            (session) => resolveThreadStatus(agentStatus, session.id, runSessionId) !== "idle",
+          ),
+    [agentStatus, byWorktree, hasWorktrees, runSessionId, tree, workEnvironments],
   );
 
   const categories = useMemo(() => listCategories(sessions), [sessions]);
@@ -335,6 +348,21 @@ export function ThreadList() {
               </span>
             )}
             <span className="flex-1" />
+            {view === "sessions" && hasWorktrees && (
+              <button
+                type="button"
+                aria-label="Group by worktree"
+                aria-pressed={byWorktree}
+                title="Group by worktree"
+                onClick={() => setByWorktree((current) => !current)}
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-bg-hover hover:text-fg-default",
+                  byWorktree ? "text-primary" : "text-fg-subtle",
+                )}
+              >
+                <TreeStructure size={15} />
+              </button>
+            )}
             {view === "sessions" && sessions.length > 0 && (
               <button
                 type="button"

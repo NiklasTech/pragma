@@ -27,6 +27,7 @@ import {
   commitBeforeFinish,
   finishSessionMerge,
   openCheckoutConflicts,
+  parentMergeTarget,
   pullRequestBody,
   pushSessionBranch,
   type FinishAction,
@@ -78,7 +79,8 @@ export function useFinishWorktree(rootPath: string): {
     async (session: ChatSession, worktree: WorkEnvironment, strategy: SessionMergeStrategy) => {
       const toastId = toast.loading(`Merging ${worktree.branch}…`);
       try {
-        const result = await finishSessionMerge(rootPath, worktree, strategy);
+        const parentBranch = parentMergeTarget(worktree, useAIStore.getState().workEnvironments);
+        const result = await finishSessionMerge(rootPath, worktree, strategy, parentBranch);
         const git = useGitStore.getState();
         if (git.repoPath === rootPath) void git.refreshAll();
 
@@ -106,10 +108,12 @@ export function useFinishWorktree(rootPath: string): {
             `Merging into ${result.target} conflicts in ${plural(result.conflicts.length, "file")}`,
             {
               id: toastId,
-              description: "Resolve the conflicts, then commit the merge.",
+              description: parentBranch
+                ? "Resolve the conflicts in the parent's worktree, then commit the merge."
+                : "Resolve the conflicts, then commit the merge.",
             },
           );
-          await openCheckoutConflicts(rootPath);
+          if (!parentBranch) await openCheckoutConflicts(rootPath);
         }
       } catch (err) {
         toast.error(String(err), { id: toastId });

@@ -8,10 +8,19 @@ import {
   type WorkEnvironment,
 } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useSettingsStore } from "@/shared/stores/settings";
+import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 
 import { disposeTerminal, ensureTerminal } from "../terminal/runner";
 import { createWorktreeEnvironment } from "../worktree/create";
-import { checkSpawnLimits, parseSpawnRequest, type SpawnRequest } from "./limits";
+import { sessionEnvironment } from "../worktree/cwd";
+import {
+  checkSpawnLimits,
+  parseSpawnRequest,
+  spawnLimits,
+  type ChildEnvironmentSetting,
+  type SpawnRequest,
+} from "./limits";
 import { startChildRun } from "./runner";
 import { deliverTerminalPrompt } from "./terminalPrompt";
 
@@ -23,6 +32,8 @@ const TERMINAL_ROWS = 32;
 interface SpawnPlan {
   rootPath: string;
   parent: ChatSession;
+  /** The parent's worktree, which a `worktree` child branches from. */
+  parentWorktree: WorkEnvironment | undefined;
   engine: AgentEngine;
   request: SpawnRequest;
   command: string | null;
@@ -43,11 +54,16 @@ function detectedTerminalCliIds(): string[] {
     .map((manifest) => manifest.id);
 }
 
+function childEnvironmentSetting(rootPath: string): ChildEnvironmentSetting | undefined {
+  const workspace = useWorkspaceSettingsStore.getState();
+  return workspace.rootPath === rootPath ? workspace.settings?.agent?.childEnvironment : undefined;
+}
+
 function prepareChildSpawn(input: unknown, context: AgentRunContext): SpawnPrepare {
   const rootPath = useFileExplorerStore.getState().rootPath;
   if (!rootPath) return { ok: false, error: "Open a workspace to start a child session" };
 
-  const { chatSessions, cliManifests } = useAIStore.getState();
+  const { chatSessions, cliManifests, workEnvironments } = useAIStore.getState();
   const parentId = context.sessionId();
   const parent = chatSessions.find((session) => session.id === parentId);
   if (!parent) return { ok: false, error: "The parent session was not found" };
@@ -55,10 +71,14 @@ function prepareChildSpawn(input: unknown, context: AgentRunContext): SpawnPrepa
     return { ok: false, error: "Only conversation sessions can start child sessions" };
   }
 
-  const parsed = parseSpawnRequest(input, parent);
+  const parsed = parseSpawnRequest(input, parent, childEnvironmentSetting(rootPath));
   if (!parsed.ok) return parsed;
 
-  const limit = checkSpawnLimits(chatSessions, parent.id);
+  const limit = checkSpawnLimits(
+    chatSessions,
+    parent.id,
+    spawnLimits(useSettingsStore.getState().agent),
+  );
   if (limit) return { ok: false, error: limit };
 
   let command: string | null = null;
@@ -79,21 +99,43 @@ function prepareChildSpawn(input: unknown, context: AgentRunContext): SpawnPrepa
     context.childEngine() ??
     (parent.agentEngine?.kind === "builtin" ? parent.agentEngine : { kind: "builtin" });
 
-  return { ok: true, plan: { rootPath, parent, engine, request: parsed.request, command } };
+  const environment = sessionEnvironment(parent, workEnvironments);
+  const parentWorktree = environment?.kind === "worktree" ? environment : undefined;
+  return {
+    ok: true,
+    plan: { rootPath, parent, parentWorktree, engine, request: parsed.request, command },
+  };
 }
 
-function describeSpawn(request: SpawnRequest): string {
+function describeSpawn({ request, parentWorktree }: SpawnPlan): string {
   const kind = request.kind === "terminal" ? `Terminal (${request.cli})` : "Conversation";
-  const environment = request.environment === "worktree" ? "a new worktree" : "the checkout";
-  return `${kind} in ${environment}. Prompt: ${request.prompt}`;
+  const environments = {
+    checkout: "the checkout",
+    worktree: parentWorktree ? `a new worktree from ${parentWorktree.branch}` : "a new worktree",
+    parent: parentWorktree ? `the parent's worktree ${parentWorktree.branch}` : "the checkout",
+  };
+  return `${kind} in ${environments[request.environment]}. Prompt: ${request.prompt}`;
+}
+
+/** The child's environment: its own worktree (from the parent's branch), the parent's, or the checkout. */
+async function childEnvironment(
+  plan: SpawnPlan,
+): Promise<{ environment: "checkout" | "worktree"; worktree?: WorkEnvironment }> {
+  const { rootPath, parentWorktree, request } = plan;
+  if (request.environment === "parent") {
+    return parentWorktree
+      ? { environment: "worktree", worktree: parentWorktree }
+      : { environment: "checkout" };
+  }
+  if (request.environment === "checkout") return { environment: "checkout" };
+  const worktree = await createWorktreeEnvironment(rootPath, parentWorktree?.branch);
+  return { environment: "worktree", worktree };
 }
 
 async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
   const { rootPath, parent, engine, request, command } = plan;
   const id = crypto.randomUUID();
-  // A child worktree always branches from the workspace, never from the parent's worktree.
-  const worktree: WorkEnvironment | undefined =
-    request.environment === "worktree" ? await createWorktreeEnvironment(rootPath) : undefined;
+  const { environment, worktree } = await childEnvironment(plan);
   const { createChatSession } = useAIStore.getState();
 
   if (request.kind === "conversation") {
@@ -103,7 +145,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         id,
         title: request.title,
         kind: "agent",
-        environment: request.environment,
+        environment,
         environmentId: worktree?.id,
         agentEngine: engine,
         parentId: parent.id,
@@ -129,7 +171,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         id,
         title: request.title,
         kind: "terminal",
-        environment: request.environment,
+        environment,
         environmentId: worktree?.id,
         cliProviderId: request.cli ?? undefined,
         parentId: parent.id,
@@ -163,7 +205,7 @@ export async function runSpawnTool(
       toolCallId,
       toolName,
       args: input,
-      description: describeSpawn(request),
+      description: describeSpawn(prepared.plan),
     });
     if (!approved) return { status: "denied", result: { errorText: SPAWN_DENIED } };
   }

@@ -8,6 +8,7 @@ import {
   descendantIds,
   parseSpawnRequest,
   sessionDepth,
+  spawnLimits,
 } from "./limits";
 
 function session(id: string, init: Partial<ChatSession> = {}): ChatSession {
@@ -33,6 +34,28 @@ describe("parseSpawnRequest", () => {
 
   it("defaults to the checkout when the parent does not write", () => {
     const parsed = parseSpawnRequest({ title: "a", prompt: "b" }, session("p", { kind: "ask" }));
+    expect(parsed.ok && parsed.request.environment).toBe("checkout");
+  });
+
+  it("accepts parent as environment and follows the project setting by default", () => {
+    const explicit = parseSpawnRequest({ title: "a", prompt: "b", environment: "parent" }, parent);
+    expect(explicit.ok && explicit.request.environment).toBe("parent");
+    const fromSetting = parseSpawnRequest({ title: "a", prompt: "b" }, parent, "parent");
+    expect(fromSetting.ok && fromSetting.request.environment).toBe("parent");
+    const overridden = parseSpawnRequest(
+      { title: "a", prompt: "b", environment: "worktree" },
+      parent,
+      "parent",
+    );
+    expect(overridden.ok && overridden.request.environment).toBe("worktree");
+  });
+
+  it("keeps a reading parent's child in the checkout regardless of the setting", () => {
+    const parsed = parseSpawnRequest(
+      { title: "a", prompt: "b" },
+      session("p", { kind: "ask" }),
+      "parent",
+    );
     expect(parsed.ok && parsed.request.environment).toBe("checkout");
   });
 
@@ -72,21 +95,55 @@ describe("checkSpawnLimits", () => {
     ];
     expect(sessionDepth(sessions, "c")).toBe(3);
     expect(checkSpawnLimits(sessions, "b")).toBeNull();
-    expect(checkSpawnLimits(sessions, "c")).toBe("Session nesting is limited to 3 levels");
+    expect(checkSpawnLimits(sessions, "c")).toBe(
+      "Session nesting is limited to 3 levels. Change the limit in Settings > Agents > Child sessions.",
+    );
   });
 
   it("rejects a fifth child and ignores archived ones", () => {
     const children = ["1", "2", "3", "4"].map((id) => session(id, { parentId: "p" }));
     expect(checkSpawnLimits([session("p"), ...children], "p")).toBe(
-      "This session already has 4 children",
+      "This session already has the maximum of 4 children. Change the limit in Settings > Agents > Child sessions.",
     );
     const archived = { ...children[0], archived: true };
     expect(checkSpawnLimits([session("p"), archived, ...children.slice(1)], "p")).toBeNull();
   });
 
+  it("allows seven children with a raised limit and refuses the eighth", () => {
+    const limits = spawnLimits({ maxChildSessions: 7, maxSessionDepth: 3 });
+    const children = ["1", "2", "3", "4", "5", "6"].map((id) => session(id, { parentId: "p" }));
+    expect(checkSpawnLimits([session("p"), ...children], "p", limits)).toBeNull();
+    const seven = [...children, session("7", { parentId: "p" })];
+    expect(checkSpawnLimits([session("p"), ...seven], "p", limits)).toContain("maximum of 7");
+  });
+
+  it("applies a lower depth limit", () => {
+    const sessions = [session("a"), session("b", { parentId: "a" })];
+    const limits = spawnLimits({ maxChildSessions: 4, maxSessionDepth: 2 });
+    expect(checkSpawnLimits(sessions, "a", limits)).toBeNull();
+    expect(checkSpawnLimits(sessions, "b", limits)).toContain("limited to 2 levels");
+  });
+
   it("stops counting depth on a parent cycle", () => {
     const sessions = [session("a", { parentId: "b" }), session("b", { parentId: "a" })];
     expect(sessionDepth(sessions, "a")).toBe(2);
+  });
+});
+
+describe("spawnLimits", () => {
+  it("clamps the settings to their bounds", () => {
+    expect(spawnLimits({ maxChildSessions: 50, maxSessionDepth: 9 })).toEqual({
+      maxChildren: 8,
+      maxDepth: 3,
+    });
+    expect(spawnLimits({ maxChildSessions: 0, maxSessionDepth: 1 })).toEqual({
+      maxChildren: 1,
+      maxDepth: 2,
+    });
+    expect(spawnLimits({ maxChildSessions: 2.5, maxSessionDepth: Number.NaN })).toEqual({
+      maxChildren: 4,
+      maxDepth: 3,
+    });
   });
 });
 
