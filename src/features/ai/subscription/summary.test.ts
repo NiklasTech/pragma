@@ -46,7 +46,15 @@ function tokens(inputTokens: number, outputTokens: number): SessionUsage {
 function item(state: DashboardState, extra: Partial<ChatSession>) {
   return {
     state,
-    session: { id: "s", title: "s", messages: [], createdAt: 0, updatedAt: 0, ...extra },
+    session: {
+      id: "s",
+      rootPath: "/repo",
+      title: "s",
+      messages: [],
+      createdAt: 0,
+      updatedAt: 0,
+      ...extra,
+    },
   };
 }
 

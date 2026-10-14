@@ -6,9 +6,44 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
 import {
   fromStoredSession,
   loadSessionMessages,
+  loadSessions,
   saveSession,
   saveSessionMessages,
 } from "./chat-storage";
+
+describe("session repository", () => {
+  beforeEach(() => {
+    invokeMock.mockReset();
+  });
+
+  it("takes the repository from where the sessions are stored", async () => {
+    invokeMock.mockResolvedValue([{ id: "s1", title: "Session", created_at: 1, updated_at: 2 }]);
+
+    const [session] = await loadSessions("/repo");
+
+    expect(invokeMock).toHaveBeenCalledWith("ai_load_sessions", { req: { root_path: "/repo" } });
+    expect(session.rootPath).toBe("/repo");
+  });
+
+  it("keeps the repository out of the stored metadata", async () => {
+    invokeMock.mockResolvedValue(undefined);
+    await saveSession("/repo", {
+      id: "s1",
+      rootPath: "/repo",
+      title: "Session",
+      messages: [],
+      createdAt: 1,
+      updatedAt: 2,
+    });
+
+    expect(invokeMock).toHaveBeenCalledWith("ai_save_session", {
+      req: {
+        root_path: "/repo",
+        session: { id: "s1", title: "Session", created_at: 1, updated_at: 2 },
+      },
+    });
+  });
+});
 
 describe("session usage storage", () => {
   beforeEach(() => {
@@ -19,6 +54,7 @@ describe("session usage storage", () => {
   it("saves usage in snake case", async () => {
     await saveSession("/repo", {
       id: "s1",
+      rootPath: "/repo",
       title: "Session",
       messages: [],
       createdAt: 1,
@@ -51,20 +87,23 @@ describe("session usage storage", () => {
   });
 
   it("restores usage and leaves it out for older sessions", () => {
-    const restored = fromStoredSession({
-      id: "s1",
-      title: "Session",
-      created_at: 1,
-      updated_at: 2,
-      usage: {
-        input_tokens: 100,
-        output_tokens: 20,
-        cache_read_tokens: 0,
-        cache_write_tokens: 0,
-        responses: 1,
-        context_window: 200_000,
+    const restored = fromStoredSession(
+      {
+        id: "s1",
+        title: "Session",
+        created_at: 1,
+        updated_at: 2,
+        usage: {
+          input_tokens: 100,
+          output_tokens: 20,
+          cache_read_tokens: 0,
+          cache_write_tokens: 0,
+          responses: 1,
+          context_window: 200_000,
+        },
       },
-    });
+      "/repo",
+    );
     expect(restored.usage).toEqual({
       inputTokens: 100,
       outputTokens: 20,
@@ -74,7 +113,10 @@ describe("session usage storage", () => {
       contextWindow: 200_000,
     });
 
-    const older = fromStoredSession({ id: "s2", title: "Old", created_at: 1, updated_at: 1 });
+    const older = fromStoredSession(
+      { id: "s2", title: "Old", created_at: 1, updated_at: 1 },
+      "/repo",
+    );
     expect(older.usage).toBeUndefined();
   });
 });

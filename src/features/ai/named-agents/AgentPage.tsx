@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { outsideChildren, releaseChildren } from "@/features/ai/children/release";
 
@@ -54,7 +55,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const deleteAgent = useNamedAgentsStore((state) => state.deleteAgent);
   const copyAgent = useNamedAgentsStore((state) => state.copyAgent);
   const copyCliAgent = useNamedAgentsStore((state) => state.copyCliAgent);
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const chatSessions = useRepositorySessions();
   const cliManifests = useAIStore((state) => state.cliManifests);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 

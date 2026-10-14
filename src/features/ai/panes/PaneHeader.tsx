@@ -385,7 +385,7 @@ export function PaneHeader({
         )}
       </div>
 
-      {session && rootPath && (
+      {session && (
         <InputDialog
           open={renaming}
           onOpenChange={setRenaming}
@@ -393,7 +393,7 @@ export function PaneHeader({
           label="Name"
           defaultValue={identity.showTitle ? session.title : ""}
           confirmLabel="Rename"
-          onConfirm={(value) => void renameChatSession(rootPath, session.id, value)}
+          onConfirm={(value) => void renameChatSession(session.id, value)}
         />
       )}
     </>

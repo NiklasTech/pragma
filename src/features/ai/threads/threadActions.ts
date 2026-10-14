@@ -4,12 +4,14 @@ import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { startSession } from "../sessions/start";
 
 /// Copies the conversation into a new thread that works in the same environment.
-export async function duplicateThread(rootPath: string, source: ChatSession): Promise<void> {
+export async function duplicateThread(source: ChatSession): Promise<void> {
   const { updateChatSessionMessages } = useAIStore.getState();
   const messages =
-    source.messages.length > 0 ? source.messages : await loadSessionMessages(rootPath, source.id);
+    source.messages.length > 0
+      ? source.messages
+      : await loadSessionMessages(source.rootPath, source.id);
 
-  const copy = await startSession(rootPath, {
+  const copy = await startSession(source.rootPath, {
     init: {
       title: `${source.title} (copy)`,
       kind: source.kind,
@@ -23,17 +25,16 @@ export async function duplicateThread(rootPath: string, source: ChatSession): Pr
   });
   if (messages.length === 0) return;
 
-  await saveSessionMessages(rootPath, copy.id, messages);
+  await saveSessionMessages(copy.rootPath, copy.id, messages);
   updateChatSessionMessages(copy.id, messages);
 }
 
-export async function duplicateThreads(rootPath: string, sessionIds: string[]): Promise<void> {
+export async function duplicateThreads(sessionIds: string[]): Promise<void> {
   const sources = useAIStore.getState().chatSessions.filter((s) => sessionIds.includes(s.id));
-  for (const source of sources) await duplicateThread(rootPath, source);
+  for (const source of sources) await duplicateThread(source);
 }
 
 export async function setThreadsCategory(
-  rootPath: string,
   sessionIds: string[],
   category: string | null,
 ): Promise<void> {
@@ -43,6 +44,6 @@ export async function setThreadsCategory(
     const next: ChatSession = { ...session };
     if (category) next.category = category;
     else delete next.category;
-    await updateChatSession(rootPath, next);
+    await updateChatSession(next);
   }
 }

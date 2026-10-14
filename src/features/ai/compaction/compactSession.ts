@@ -6,7 +6,6 @@ import { requestMessages } from "@/shared/lib/ai/compaction";
 import { storedMessagesToUI, uiMessageToStored } from "@/shared/lib/ai/protocol";
 import { pinnedSessionEngine, resolveEffectiveEngine } from "@/shared/lib/ai/sessionEngine";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { resolveContextWindow } from "../usage/contextWindow";
 import { liveChat } from "./liveChat";
@@ -117,20 +116,19 @@ async function runCompaction(sessionId: string, mode: CompactionMode): Promise<b
   }
 
   const store = useAIStore.getState();
-  const rootPath = useFileExplorerStore.getState().rootPath ?? "default";
   if (target) {
     target.setMessages(next);
   } else {
     const stored = next.map(uiMessageToStored);
     store.updateChatSessionMessages(sessionId, stored);
-    void store.saveSessionMessages(rootPath, sessionId, stored);
+    void store.saveSessionMessages(sessionId, stored);
   }
 
   if (used !== undefined) {
     const overhead = Math.max(0, used - estimateTokens(requestMessages(before)));
     store.setSessionContextTokens(sessionId, overhead + estimateTokens(requestMessages(next)));
     const updated = useAIStore.getState().chatSessions.find((item) => item.id === sessionId);
-    if (updated) void store.saveSession(rootPath, updated);
+    if (updated) void store.saveSession(updated);
   }
 
   if (manual) toast.success("Compacted the session.");

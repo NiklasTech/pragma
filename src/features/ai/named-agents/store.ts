@@ -168,7 +168,7 @@ export const useNamedAgentsStore = create<NamedAgentsState>()((set, get) => {
         (session) => session.agentId === agentId && !session.archived,
       );
       for (const session of owned) {
-        await updateChatSession(rootPath, { ...session, archived: true, updatedAt: Date.now() });
+        await updateChatSession({ ...session, archived: true, updatedAt: Date.now() });
       }
       await releaseWorktrees(rootPath, owned);
 

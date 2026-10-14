@@ -7,6 +7,7 @@ import { defaultEnvironment, resolveEnvironment, type EnvironmentContext } from 
 function session(overrides: Partial<ChatSession> = {}): ChatSession {
   return {
     id: overrides.id ?? "session",
+    rootPath: "/repo",
     title: "Session",
     messages: [],
     createdAt: 1,

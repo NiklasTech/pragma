@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
 import {
+  repositorySessions,
   useAIStore,
   type ChatSession,
   type CreateChatSessionInit,
@@ -53,7 +54,7 @@ async function resolveChoice(
     override: request.environment,
     setting: writingSessionsSetting(rootPath),
     isRepo: isWritingSession({ kind }) && (await isGitRepo(rootPath)),
-    sessions: useAIStore.getState().chatSessions,
+    sessions: repositorySessions(useAIStore.getState().chatSessions, rootPath),
   });
 }
 

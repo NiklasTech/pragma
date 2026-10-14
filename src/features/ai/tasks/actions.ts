@@ -85,7 +85,7 @@ export async function resumeTask(rootPath: string, task: Task): Promise<void> {
   // The chat must hold the earlier messages before the new one, or saving would drop them.
   if (session.messages.length === 0) {
     try {
-      await loadSessionMessages(rootPath, sessionId);
+      await loadSessionMessages(sessionId);
     } catch {
       toast.error("Could not load the session");
       return;

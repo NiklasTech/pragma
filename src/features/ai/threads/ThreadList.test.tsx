@@ -5,6 +5,7 @@ const ai = vi.hoisted(() => ({
   state: {
     chatSessions: [] as Array<{
       id: string;
+      rootPath: string;
       title: string;
       messages: unknown[];
       createdAt: number;
@@ -37,6 +38,8 @@ vi.mock("@/shared/stores/ai", () => ({
   useAIStore: Object.assign((selector: (state: typeof ai.state) => unknown) => selector(ai.state), {
     getState: () => ai.state,
   }),
+  repositorySessions: (sessions: Array<{ rootPath: string }>, rootPath: string) =>
+    sessions.filter((session) => session.rootPath === rootPath),
 }));
 
 vi.mock("@/shared/stores/fileExplorer", () => ({
@@ -57,7 +60,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 import { ThreadList } from "./ThreadList";
 
 function session(id: string, title: string, updatedAt: number) {
-  return { id, title, messages: [], createdAt: updatedAt, updatedAt };
+  return { id, rootPath: "/workspace", title, messages: [], createdAt: updatedAt, updatedAt };
 }
 
 describe("ThreadList", () => {

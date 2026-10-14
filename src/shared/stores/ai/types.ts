@@ -100,6 +100,8 @@ export interface SessionUsage {
 
 export interface ChatSession {
   id: string;
+  /** The repository the session belongs to; comes from where it is stored and never changes. */
+  rootPath: string;
   title: string;
   messages: ChatMessage[];
   createdAt: number;
@@ -194,15 +196,17 @@ export interface AIActions {
   setTerminalSuggestionModel: (model: string | null) => void;
   updateProviderConfig: (provider: AIProvider, config: Partial<ProviderConfig>) => void;
 
-  // Chat sessions backed by the file system.
-  loadSessions: (rootPath: string) => Promise<void>;
-  loadSessionMessages: (rootPath: string, sessionId: string) => Promise<void>;
+  // Chat sessions backed by the file system; each one is saved to its own repository.
+  /** Loads a repository's sessions; `activate: false` loads them without switching to them. */
+  loadSessions: (rootPath: string, options?: { activate?: boolean }) => Promise<void>;
+  /** Drops a closed repository's sessions from memory. */
+  unloadSessions: (rootPath: string) => void;
+  loadSessionMessages: (sessionId: string) => Promise<void>;
   addChatSession: (session: ChatSession) => void;
   removeChatSession: (sessionId: string) => void;
   setActiveChatSession: (sessionId: string | null) => void;
   updateChatSessionMessages: (sessionId: string, messages: ChatMessage[]) => void;
   generateChatTitle: (
-    rootPath: string,
     sessionId: string,
     firstMessage: string,
     model: { provider: AIProvider; model: string; baseUrl: string | undefined } | null,
@@ -212,15 +216,11 @@ export interface AIActions {
     init?: CreateChatSessionInit,
     options?: { activate?: boolean },
   ) => Promise<ChatSession>;
-  renameChatSession: (rootPath: string, sessionId: string, title: string) => Promise<void>;
-  deleteSession: (rootPath: string, sessionId: string) => Promise<void>;
-  saveSession: (rootPath: string, session: ChatSession) => Promise<void>;
-  updateChatSession: (rootPath: string, session: ChatSession) => Promise<void>;
-  saveSessionMessages: (
-    rootPath: string,
-    sessionId: string,
-    messages: ChatMessage[],
-  ) => Promise<void>;
+  renameChatSession: (sessionId: string, title: string) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
+  saveSession: (session: ChatSession) => Promise<void>;
+  updateChatSession: (session: ChatSession) => Promise<void>;
+  saveSessionMessages: (sessionId: string, messages: ChatMessage[]) => Promise<void>;
 
   // Work environments the sessions of the workspace reference.
   loadEnvironments: (rootPath: string) => Promise<void>;

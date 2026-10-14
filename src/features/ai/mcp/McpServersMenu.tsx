@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { useAIStore } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
 import { isMcpServerAllowed, resolveMcpServerIds } from "./selection";
@@ -21,7 +20,6 @@ import { useMcpServerList } from "./useMcpServerList";
 /// Picks the MCP servers of the active session; without a choice it follows the agent or uses all.
 export function McpServersMenu() {
   const servers = useMcpServerList();
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const session = useAIStore((state) =>
     state.chatSessions.find((item) => item.id === state.activeChatSessionId),
   );
@@ -29,7 +27,7 @@ export function McpServersMenu() {
     session?.agentId ? state.agents.find((item) => item.id === session.agentId) : undefined,
   );
 
-  if (!session || !rootPath || servers.length === 0) return null;
+  if (!session || servers.length === 0) return null;
 
   const allowed = resolveMcpServerIds(session, agent);
   const enabledCount = servers.filter((server) => isMcpServerAllowed(allowed, server.id)).length;
@@ -41,7 +39,7 @@ export function McpServersMenu() {
     } else {
       delete next.mcpServers;
     }
-    void useAIStore.getState().updateChatSession(rootPath, next);
+    void useAIStore.getState().updateChatSession(next);
   };
 
   const toggle = (serverId: string, enabled: boolean) => {

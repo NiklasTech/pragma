@@ -35,6 +35,7 @@ describe("handleSpawnRequest", () => {
       chatSessions: [
         {
           id: "parent",
+          rootPath: "/workspace",
           title: "Parent",
           messages: [],
           createdAt: 0,

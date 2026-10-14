@@ -22,7 +22,7 @@ const quiet: StateInput = {
 };
 
 function session(id: string, extra: Partial<ChatSession> = {}): ChatSession {
-  return { id, title: id, messages: [], createdAt: 0, updatedAt: 100, ...extra };
+  return { id, rootPath: "/repo", title: id, messages: [], createdAt: 0, updatedAt: 100, ...extra };
 }
 
 function item(id: string, state: DashboardState, since: number, category?: string): DashboardItem {

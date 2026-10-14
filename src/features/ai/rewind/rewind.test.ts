@@ -114,6 +114,7 @@ describe("recordRewindCheckpoint", () => {
       chatSessions: [
         {
           id: "s1",
+          rootPath: "/repo",
           title: "Thread",
           createdAt: 0,
           updatedAt: 0,

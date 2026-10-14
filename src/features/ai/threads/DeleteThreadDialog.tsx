@@ -82,8 +82,8 @@ export function DeleteThreadDialog({
     try {
       if (childCount > 0) await releaseChildren(rootPath, sessionIds, archiveChildren);
       for (const sessionId of sessionIds) {
-        stopSession(rootPath, sessionId);
-        await deleteSession(rootPath, sessionId);
+        stopSession(sessionId);
+        await deleteSession(sessionId);
       }
       onOpenChange(false);
       onDeleted?.();

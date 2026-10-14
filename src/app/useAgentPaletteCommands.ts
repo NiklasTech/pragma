@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { useAIStore } from "@/shared/stores/ai";
+import { repositorySessions, useAIStore } from "@/shared/stores/ai";
 import { useCommandPaletteStore, type CommandPaletteItem } from "@/shared/stores/commandPalette";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
@@ -70,9 +70,8 @@ function pickNewSession(): void {
 }
 
 function pickSession(): void {
-  const sessions = useAIStore
-    .getState()
-    .chatSessions.filter((session) => !session.archived)
+  const sessions = repositorySessions(useAIStore.getState().chatSessions, workspaceRoot())
+    .filter((session) => !session.archived)
     .sort((a, b) => b.updatedAt - a.updatedAt);
   useCommandPaletteStore.getState().openPicker({
     placeholder: "Go to session...",

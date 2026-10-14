@@ -58,7 +58,7 @@ const WORKTREE: WorkEnvironment = {
 };
 
 function session(id: string, init: Partial<ChatSession> = {}): ChatSession {
-  return { id, title: id, messages: [], createdAt: 0, updatedAt: 0, ...init };
+  return { id, rootPath: "/repo", title: id, messages: [], createdAt: 0, updatedAt: 0, ...init };
 }
 
 function commands(): string[] {
@@ -140,7 +140,6 @@ describe("releaseWorktree", () => {
       branch: WORKTREE.branch,
     });
     expect(mocks.updateChatSession).toHaveBeenCalledWith(
-      "/repo",
       expect.objectContaining({ id: "a", environment: "checkout", environmentId: undefined }),
     );
     expect(mocks.deleteEnvironment).toHaveBeenCalledWith("/repo", "env-1");

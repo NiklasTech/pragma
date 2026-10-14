@@ -93,9 +93,10 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
   return stored;
 }
 
-export function fromStoredSession(session: StoredSessionMetadata): ChatSession {
+export function fromStoredSession(session: StoredSessionMetadata, rootPath: string): ChatSession {
   const restored: ChatSession = {
     id: session.id,
+    rootPath,
     title: session.title,
     messages: [],
     createdAt: session.created_at,
@@ -159,7 +160,7 @@ export async function loadSessions(rootPath: string): Promise<ChatSession[]> {
   const sessions = await invoke<StoredSessionMetadata[]>("ai_load_sessions", {
     req: { root_path: rootPath || "default" },
   });
-  return sessions.map(fromStoredSession);
+  return sessions.map((session) => fromStoredSession(session, rootPath));
 }
 
 export async function loadSessionMessages(

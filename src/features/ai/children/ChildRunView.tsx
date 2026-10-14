@@ -3,7 +3,6 @@ import { CircleDashed, Stop } from "@phosphor-icons/react";
 import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
 import { stepLabel } from "@/features/agent/executor";
 import { getMessageText } from "@/shared/lib/ai/protocol";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import { AssistantTimeline } from "../components/AssistantTimeline";
@@ -23,7 +22,6 @@ import { isRunLive, resolveChildApproval, useChildRunsStore } from "./runStore";
 /// A child conversation that is working in the background, shown live in its pane.
 export function ChildRunView({ sessionId }: { sessionId: string }) {
   const run = useChildRunsStore((state) => state.runs[sessionId]);
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
 
   if (!run) return null;
@@ -98,7 +96,7 @@ export function ChildRunView({ sessionId }: { sessionId: string }) {
           )}
           <button
             type="button"
-            onClick={() => stopChildRun(rootPath, sessionId)}
+            onClick={() => stopChildRun(sessionId)}
             aria-label="Stop session"
             title="Stop session"
             className="ml-auto flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors outline-none hover:bg-status-error/10 hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40"

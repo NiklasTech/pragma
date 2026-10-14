@@ -130,7 +130,7 @@ export function useFinishWorktree(rootPath: string): {
         const messages =
           session.messages.length > 0
             ? session.messages
-            : await loadSessionMessages(rootPath, session.id);
+            : await loadSessionMessages(session.rootPath, session.id);
         setDraft({
           worktree,
           title: commitMessageFor(task?.title ?? null, session.title),

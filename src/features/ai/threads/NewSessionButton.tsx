@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { useAgentStore } from "@/features/agent/store";
 import { MAX_PANES, MAX_PANES_TITLE } from "../panes/operations";
 import { selectLeafCount, useAgentsPanesStore } from "../panes/store";
 import { defaultEnvironment } from "../sessions/environment";
+import { useRepositorySessions } from "../sessions/repositorySessions";
 
 import { NewSessionMenu } from "./NewSessionMenu";
 import { useNewSessionActions } from "./useNewSessionActions";
@@ -34,7 +34,7 @@ export function NewSessionButton({
 }: NewSessionButtonProps) {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const agentModeActive = useAgentStore((state) => state.modeActive);
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const chatSessions = useRepositorySessions();
   const setting = useWorkspaceSettingsStore((state) => state.settings?.agent?.writingSessions);
   const actions = useNewSessionActions(rootPath, targetLeafId);
   const atCap = useAgentsPanesStore(

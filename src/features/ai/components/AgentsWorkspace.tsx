@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
-import { useAIStore } from "@/shared/stores/ai";
+import { repositorySessions, useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
 import { ThreadList } from "@/features/ai/threads/ThreadList";
@@ -85,7 +85,10 @@ export function AgentsWorkspace() {
     closeBoard();
   }, [focusedSessionId, closeBoard]);
 
-  const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
+  const sessionIds = useMemo(
+    () => repositorySessions(chatSessions, rootPath).map((session) => session.id),
+    [chatSessions, rootPath],
+  );
 
   useEffect(() => {
     if (sessionIds.length === 0 || loadedRoot !== rootPath) return;

@@ -12,6 +12,7 @@ import { focusAttentionSession } from "../notifications/focusSession";
 import { collectLeaves } from "../panes/layout";
 import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { ProviderUsageSection } from "../subscription/ProviderUsageSection";
+import { useRepositorySessions } from "../sessions/repositorySessions";
 import { getTerminalEntryStatus } from "../terminal/runner";
 import { ActivityRow } from "./ActivityRow";
 import {
@@ -46,7 +47,7 @@ function useNow(): number {
 
 export function ActivityDashboard() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const chatSessions = useRepositorySessions(rootPath);
   const manifests = useAIStore((state) => state.cliManifests);
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
