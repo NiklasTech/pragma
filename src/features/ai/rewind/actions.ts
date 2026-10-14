@@ -96,7 +96,7 @@ export async function forkThread(
     sameEnvironmentAs: source,
     activate: false,
   });
-  await saveSessionMessages(rootPath, fork.id, history);
+  await saveSessionMessages(fork.rootPath, fork.id, history);
   updateChatSessionMessages(fork.id, history);
   setActiveChatSession(fork.id);
   showSessionInPane(rootPath, fork.id);

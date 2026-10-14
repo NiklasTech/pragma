@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { ChatCircle, Robot, SquaresFour } from "@phosphor-icons/react";
 
 import { Input } from "@/shared/components/ui/input";
-import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
 
 import { CliQuickStart } from "../home/CliQuickStart";
+import { useRepositorySessions } from "../sessions/repositorySessions";
 import { useStaleTerminalIds } from "../terminal/useStaleTerminals";
 import { NewSessionButton } from "../threads/NewSessionButton";
 import { collectLeaves } from "./layout";
@@ -19,9 +19,9 @@ import { selectRoot, useAgentsPanesStore } from "./store";
 const RECENT_LIMIT = 6;
 
 export function EmptyLeafView({ leafId }: { leafId: string }) {
-  const chatSessions = useAIStore((state) => state.chatSessions);
   const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
   const rootPath = workspaceRoot ?? "default";
+  const chatSessions = useRepositorySessions(rootPath);
   const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
   const assignSession = useAgentsPanesStore((state) => state.assignSession);
   const [query, setQuery] = useState("");

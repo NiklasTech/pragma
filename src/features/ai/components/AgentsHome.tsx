@@ -13,12 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useAgentStore } from "@/features/agent/store";
 import { defaultEnvironment, type EnvironmentChoice } from "@/features/ai/sessions/environment";
+import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { startSession } from "@/features/ai/sessions/start";
 
 import { useAgentsPanesStore } from "../panes/store";
@@ -46,7 +46,7 @@ export function AgentsHome() {
   const [picked, setPicked] = useState<EnvironmentChoice | null>(null);
   const [repoCheck, setRepoCheck] = useState<RepoCheckResult | null>(null);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const chatSessions = useRepositorySessions();
   const openSession = useAgentsPanesStore((state) => state.openSession);
   const agentModeActive = useAgentStore((state) => state.modeActive);
   const setting = useWorkspaceSettingsStore((state) => state.settings?.agent?.writingSessions);

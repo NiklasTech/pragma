@@ -12,7 +12,16 @@ import {
 } from "./limits";
 
 function session(id: string, init: Partial<ChatSession> = {}): ChatSession {
-  return { id, title: id, messages: [], createdAt: 0, updatedAt: 0, kind: "agent", ...init };
+  return {
+    id,
+    rootPath: "/repo",
+    title: id,
+    messages: [],
+    createdAt: 0,
+    updatedAt: 0,
+    kind: "agent",
+    ...init,
+  };
 }
 
 describe("parseSpawnRequest", () => {

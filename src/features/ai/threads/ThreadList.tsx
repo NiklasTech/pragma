@@ -29,6 +29,7 @@ import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { buildSessionTree } from "@/features/ai/children/limits";
 import { childThreadStatus, isChildRunning } from "@/features/ai/children/status";
 import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
+import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useStaleTerminalIds } from "@/features/ai/terminal/useStaleTerminals";
 import { useTranscriptJumpStore, useTranscriptSearch } from "@/features/ai/search/transcriptSearch";
 
@@ -46,7 +47,7 @@ import { useThreadSelection } from "./useThreadSelection";
 const SEARCH_THRESHOLD = 8;
 
 export function ThreadList() {
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const chatSessions = useRepositorySessions();
   const workEnvironments = useAIStore((state) => state.workEnvironments);
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
@@ -171,9 +172,9 @@ export function ThreadList() {
 
   const handleRename = useCallback(
     (sessionId: string, title: string) => {
-      void renameChatSession(rootPath ?? "default", sessionId, title);
+      void renameChatSession(sessionId, title);
     },
-    [renameChatSession, rootPath],
+    [renameChatSession],
   );
 
   const handleToggleSelect = useCallback(
@@ -188,28 +189,25 @@ export function ThreadList() {
     [activeChatSessionId, extendSelection, handleSelect, toggleSelection, view],
   );
 
-  const handleDuplicate = useCallback(
-    async (sessionIds: string[]) => {
-      try {
-        await duplicateThreads(rootPath ?? "default", sessionIds);
-      } catch {
-        toast.error(
-          sessionIds.length > 1 ? "Failed to duplicate threads" : "Failed to duplicate thread",
-        );
-      }
-    },
-    [rootPath],
-  );
+  const handleDuplicate = useCallback(async (sessionIds: string[]) => {
+    try {
+      await duplicateThreads(sessionIds);
+    } catch {
+      toast.error(
+        sessionIds.length > 1 ? "Failed to duplicate threads" : "Failed to duplicate thread",
+      );
+    }
+  }, []);
 
   const handleMoveToCategory = useCallback(
     async (sessionIds: string[], category: string | null) => {
       try {
-        await setThreadsCategory(rootPath ?? "default", sessionIds, category);
+        await setThreadsCategory(sessionIds, category);
       } catch {
         toast.error("Failed to update the category");
       }
     },
-    [rootPath],
+    [],
   );
 
   const toggleCollapsed = useCallback((key: string) => {

@@ -218,7 +218,7 @@ export function TaskBoard() {
                             if (rootPath) void runTask(rootPath, task);
                           }}
                           onStop={() => {
-                            if (!rootPath || !stopBackgroundTask(rootPath, task)) stopTask(task);
+                            if (!stopBackgroundTask(task)) stopTask(task);
                           }}
                           onResume={() => {
                             if (rootPath) void resumeTask(rootPath, task);

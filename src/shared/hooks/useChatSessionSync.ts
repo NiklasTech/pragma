@@ -38,9 +38,9 @@ export function useChatSessionLoading({
     if (!activeChatSessionId) return;
     const session = chatSessions.find((s) => s.id === activeChatSessionId);
     if (session && session.messages.length === 0) {
-      void loadSessionMessages(rootPath, activeChatSessionId);
+      void loadSessionMessages(activeChatSessionId);
     }
-  }, [activeChatSessionId, rootPath, chatSessions, loadSessionMessages]);
+  }, [activeChatSessionId, chatSessions, loadSessionMessages]);
 
   // When loaded messages arrive for the active session and the chat is empty,
   // populate the chat (e.g. on startup or session switch).
@@ -55,7 +55,6 @@ export function useChatSessionLoading({
 interface ChatSessionPersistenceOptions {
   chat: UseChatHelpers<UIMessage>;
   chatRef: RefObject<UseChatHelpers<UIMessage> | null>;
-  rootPath: string;
   activeChatSessionId: string | null;
   chatSessions: ChatSession[];
   agentActive: boolean;
@@ -64,7 +63,6 @@ interface ChatSessionPersistenceOptions {
 export function useChatSessionPersistence({
   chat,
   chatRef,
-  rootPath,
   activeChatSessionId,
   chatSessions,
   agentActive,
@@ -116,14 +114,14 @@ export function useChatSessionPersistence({
     previousPersistRef.current = current;
 
     if (shouldPersistSession(previous, current)) {
-      void saveSession(rootPath, session);
+      void saveSession(session);
     }
 
     // Save messages when streaming finishes.
     const wasStreaming = previous.status === "streaming" || previous.status === "submitted";
     const isReady = chat.status === "ready";
     if (wasStreaming && isReady) {
-      void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
+      void saveSessionMessages(activeChatSessionId, session.messages);
     }
     // Agent Mode runs report their end through the agent store; tool steps continue on their own.
     const finished = isReady || chat.status === "error";
@@ -138,7 +136,6 @@ export function useChatSessionPersistence({
   }, [
     chat.status,
     activeChatSessionId,
-    rootPath,
     chatSessions,
     saveSession,
     saveSessionMessages,
@@ -161,7 +158,7 @@ export function useChatSessionPersistence({
         .getState()
         .chatSessions.some((s) => s.id === activeChatSessionId);
       if (!stillExists) return;
-      void saveSessionMessages(rootPath, activeChatSessionId, session.messages);
+      void saveSessionMessages(activeChatSessionId, session.messages);
     }, 1000);
 
     return () => {
@@ -169,5 +166,5 @@ export function useChatSessionPersistence({
         clearTimeout(debouncedSaveRef.current);
       }
     };
-  }, [activeChatSessionId, rootPath, chatSessions, saveSessionMessages]);
+  }, [activeChatSessionId, chatSessions, saveSessionMessages]);
 }

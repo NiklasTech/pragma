@@ -7,8 +7,9 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   createWorktreeEnvironment: vi.fn(),
   discardWorktreeEnvironment: vi.fn(async () => {}),
-  createChatSession: vi.fn(async (_rootPath: string, init?: CreateChatSessionInit) => ({
+  createChatSession: vi.fn(async (rootPath: string, init?: CreateChatSessionInit) => ({
     id: "new",
+    rootPath,
     title: "New Chat",
     messages: [],
     createdAt: 1,
@@ -24,6 +25,7 @@ vi.mock("@/shared/stores/ai", () => ({
   useAIStore: {
     getState: () => ({ chatSessions: [], createChatSession: mocks.createChatSession }),
   },
+  repositorySessions: () => [],
 }));
 vi.mock("@/shared/stores/workspaceSettings/store", () => ({
   useWorkspaceSettingsStore: {

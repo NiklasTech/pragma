@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { useAIStore } from "@/shared/stores/ai";
+import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { openBrowserPane } from "../browser/open";
@@ -26,7 +26,7 @@ export function PanePresetsMenu() {
   const hasPanes = useAgentsPanesStore((state) => selectRoot(state, rootPath) !== null);
   const atCap = useAgentsPanesStore((state) => selectLeafCount(state, rootPath) >= MAX_PANES);
   const applyPreset = useAgentsPanesStore((state) => state.applyPreset);
-  const chatSessions = useAIStore((state) => state.chatSessions);
+  const chatSessions = useRepositorySessions(rootPath);
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
   const [launchOpen, setLaunchOpen] = useState(false);
 

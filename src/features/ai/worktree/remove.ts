@@ -49,7 +49,7 @@ export async function removeWorktreeEnvironment(
   });
 
   for (const user of users) {
-    await store.updateChatSession(rootPath, {
+    await store.updateChatSession({
       ...user,
       environment: "checkout",
       environmentId: undefined,

@@ -20,7 +20,7 @@ export const createMessagesSlice: AISlice<
     });
   },
 
-  generateChatTitle: async (rootPath, sessionId, firstMessage, model) => {
+  generateChatTitle: async (sessionId, firstMessage, model) => {
     if (!firstMessage.trim()) return;
     const session = get().chatSessions.find((s) => s.id === sessionId);
     if (!session || session.title !== "New Chat") return;
@@ -44,7 +44,7 @@ export const createMessagesSlice: AISlice<
     if (!title || title === "New Chat") title = fallbackChatTitle(firstMessage);
     if (!title) return;
 
-    await get().renameChatSession(rootPath, sessionId, title);
+    await get().renameChatSession(sessionId, title);
   },
 
   addChatMessage: (sessionId, message) => {

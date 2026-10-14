@@ -19,7 +19,7 @@ async function targetSession(rootPath: string, intent: FailureIntent): Promise<C
   if (!active) return startSession(rootPath, NEW_SESSION[intent]);
   // The chat must hold the earlier messages before the new one, or saving would drop them.
   if (active.messages.length === 0) {
-    await useAIStore.getState().loadSessionMessages(rootPath, active.id);
+    await useAIStore.getState().loadSessionMessages(active.id);
   }
   return active;
 }

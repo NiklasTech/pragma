@@ -5,7 +5,16 @@ import type { ChatSession, WorkEnvironment } from "@/shared/stores/ai";
 import { countSharers, joinableWorktrees } from "./shared";
 
 function session(id: string, init: Partial<ChatSession> = {}): ChatSession {
-  return { id, title: id, messages: [], createdAt: 0, updatedAt: 0, kind: "agent", ...init };
+  return {
+    id,
+    rootPath: "/repo",
+    title: id,
+    messages: [],
+    createdAt: 0,
+    updatedAt: 0,
+    kind: "agent",
+    ...init,
+  };
 }
 
 function worktree(id: string, init: Partial<WorkEnvironment> = {}): WorkEnvironment {

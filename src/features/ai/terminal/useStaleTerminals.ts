@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { repositorySessions, useAIStore, type ChatSession } from "@/shared/stores/ai";
 
 import { collectLeaves } from "../panes/layout";
 import { useAgentsPanesStore } from "../panes/store";
@@ -49,8 +49,9 @@ export function useStaleTerminalIds(sessions: ChatSession[], rootPath: string): 
 /// Deletes standalone terminal sessions of the folder that are neither open nor running.
 export async function purgeStaleTerminals(rootPath: string): Promise<void> {
   const { chatSessions, deleteSession } = useAIStore.getState();
-  const ids = new Set(staleTerminalIds(chatSessions, openSessionIds(rootPath), isRunning));
-  const stale = chatSessions.filter((session) => ids.has(session.id));
-  for (const session of stale) await deleteSession(rootPath, session.id);
+  const sessions = repositorySessions(chatSessions, rootPath);
+  const ids = new Set(staleTerminalIds(sessions, openSessionIds(rootPath), isRunning));
+  const stale = sessions.filter((session) => ids.has(session.id));
+  for (const session of stale) await deleteSession(session.id);
   await releaseWorktrees(rootPath, stale);
 }

@@ -109,9 +109,9 @@ export async function startTasksInBackground(
   return { started, failures };
 }
 
-export function stopBackgroundTask(rootPath: string, task: Task): boolean {
+export function stopBackgroundTask(task: Task): boolean {
   if (!task.sessionId || !isTaskRunningInBackground(task)) return false;
   const { sessionId } = task;
-  void import("../children/runner").then((m) => m.stopChildRun(rootPath, sessionId));
+  void import("../children/runner").then((m) => m.stopChildRun(sessionId));
   return true;
 }

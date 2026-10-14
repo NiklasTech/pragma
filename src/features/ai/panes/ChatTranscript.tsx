@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 
 import { useAIStore } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { Conversation, ConversationContent } from "../components/Conversation";
 import { Message, MessageContent, MessageResponse } from "../components/Message";
@@ -13,13 +12,12 @@ import { CompactionMarker } from "../compaction/CompactionMarker";
 export function ChatTranscript({ sessionId }: { sessionId: string }) {
   const session = useAIStore((state) => state.chatSessions.find((item) => item.id === sessionId));
   const loadSessionMessages = useAIStore((state) => state.loadSessionMessages);
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
   useEffect(() => {
     if (session && session.messages.length === 0) {
-      void loadSessionMessages(rootPath, sessionId);
+      void loadSessionMessages(sessionId);
     }
-  }, [session, rootPath, sessionId, loadSessionMessages]);
+  }, [session, sessionId, loadSessionMessages]);
 
   const messages = session?.messages ?? [];
 

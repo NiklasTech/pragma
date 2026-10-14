@@ -99,7 +99,7 @@ interface LiveRun {
 
 const liveRuns = new Map<string, LiveRun>();
 
-function settle(rootPath: string, sessionId: string, status: ChildRunStatus, error?: string) {
+function settle(sessionId: string, status: ChildRunStatus, error?: string) {
   const live = liveRuns.get(sessionId);
   const run = getChildRun(sessionId);
   if (run) {
@@ -113,7 +113,7 @@ function settle(rootPath: string, sessionId: string, status: ChildRunStatus, err
   }
   if (!live) return;
   liveRuns.delete(sessionId);
-  persist(rootPath, sessionId, live.state.messages);
+  persist(sessionId, live.state.messages);
   if (status === "done" || status === "error" || status === "cancelled") {
     const title =
       useAIStore.getState().chatSessions.find((session) => session.id === sessionId)?.title ?? "";
@@ -121,12 +121,12 @@ function settle(rootPath: string, sessionId: string, status: ChildRunStatus, err
   }
 }
 
-function persist(rootPath: string, sessionId: string, messages: UIMessage[]): void {
+function persist(sessionId: string, messages: UIMessage[]): void {
   const stored = messages.map(uiMessageToStored);
   const ai = useAIStore.getState();
   if (!ai.chatSessions.some((session) => session.id === sessionId)) return;
   ai.updateChatSessionMessages(sessionId, stored);
-  void ai.saveSessionMessages(rootPath, sessionId, stored).catch(() => {});
+  void ai.saveSessionMessages(sessionId, stored).catch(() => {});
 }
 
 function createContext(sessionId: string): AgentRunContext {
@@ -241,16 +241,16 @@ export async function startChildRun(
     if (state.status !== "ready" && state.status !== "error") return;
     const run = getChildRun(sessionId);
     if (!run || !isRunLive(run)) {
-      settle(rootPath, sessionId, run?.status ?? "done");
+      settle(sessionId, run?.status ?? "done");
     } else if (isCLI) {
-      settle(rootPath, sessionId, "done");
+      settle(sessionId, "done");
     } else if (stepLimit !== null && countAgentSteps(state.messages) >= stepLimit) {
-      settle(rootPath, sessionId, "error", `Stopped after reaching the step limit (${stepLimit}).`);
+      settle(sessionId, "error", `Stopped after reaching the step limit (${stepLimit}).`);
     } else if (
       !lastStepHasToolCalls(state.messages) ||
       (lastStepToolCallsAnswered(state.messages) && !shouldAgentContinue(state.messages, stepLimit))
     ) {
-      settle(rootPath, sessionId, "done");
+      settle(sessionId, "done");
     }
   };
 
@@ -262,7 +262,7 @@ export async function startChildRun(
       }, PUBLISH_INTERVAL_MS);
       persistTimer ??= setTimeout(() => {
         persistTimer = undefined;
-        if (liveRuns.has(sessionId)) persist(rootPath, sessionId, state.messages);
+        if (liveRuns.has(sessionId)) persist(sessionId, state.messages);
       }, PERSIST_INTERVAL_MS);
     },
     (status) => {
@@ -273,7 +273,7 @@ export async function startChildRun(
       // The chat sets its error right after the status, so read it once that has happened.
       queueMicrotask(() => {
         if (status === "error" && isRunLive(getChildRun(sessionId))) {
-          settle(rootPath, sessionId, "error", state.error?.message ?? "The chat stream failed.");
+          settle(sessionId, "error", state.error?.message ?? "The chat stream failed.");
           return;
         }
         if (status === "ready" || status === "error") settleIfIdle();
@@ -326,10 +326,10 @@ export async function startChildRun(
   void chat.sendMessage({ text: prompt });
 }
 
-export function stopChildRun(rootPath: string, sessionId: string): void {
+export function stopChildRun(sessionId: string): void {
   const live = liveRuns.get(sessionId);
   if (!isRunLive(getChildRun(sessionId))) return;
   patchChildRun(sessionId, { status: "cancelled" });
   void live?.chat.stop();
-  settle(rootPath, sessionId, "cancelled");
+  settle(sessionId, "cancelled");
 }

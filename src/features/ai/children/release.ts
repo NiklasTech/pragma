@@ -7,8 +7,8 @@ import { childSessions, descendantIds } from "./limits";
 import { stopChildRun } from "./runner";
 
 /// Stops whatever a session is running: its background run, its terminal, or the focused turn.
-export function stopSession(rootPath: string, sessionId: string): void {
-  stopChildRun(rootPath, sessionId);
+export function stopSession(sessionId: string): void {
+  stopChildRun(sessionId);
   disposeTerminal(sessionId);
   const agent = useAgentStore.getState();
   if (agent.runSessionId === sessionId) agent.requestStop();
@@ -35,8 +35,8 @@ export async function releaseChildren(
     for (const parentId of parentIds) ids.delete(parentId);
     const archived = chatSessions.filter((item) => ids.has(item.id) && !item.archived);
     for (const child of archived) {
-      stopSession(rootPath, child.id);
-      await updateChatSession(rootPath, { ...child, archived: true, updatedAt: now });
+      stopSession(child.id);
+      await updateChatSession({ ...child, archived: true, updatedAt: now });
     }
     await releaseWorktrees(rootPath, archived);
     return;
@@ -45,6 +45,6 @@ export async function releaseChildren(
   for (const child of outsideChildren(chatSessions, parentIds)) {
     const unlinked = { ...child, updatedAt: now };
     delete unlinked.parentId;
-    await updateChatSession(rootPath, unlinked);
+    await updateChatSession(unlinked);
   }
 }

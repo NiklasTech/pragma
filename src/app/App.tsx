@@ -28,6 +28,7 @@ import { useAcpBrowserRequests } from "@/features/ai/browser/acpBrowser";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
 import { useActivityTracker } from "@/features/ai/activity/useActivityTracker";
+import { useOpenRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useSubscriptionUsagePoller } from "@/features/ai/subscription/useSubscriptionUsagePoller";
 import { useTaskAutomation } from "@/features/ai/tasks/useTaskAutomation";
 import { useProjectAgentsSync } from "@/features/ai/named-agents/useProjectAgentsSync";
@@ -61,6 +62,7 @@ export default function App() {
   useDisableBrowserBehaviors();
   useWorkspaceRestore();
   useOpenRepositoriesSync();
+  useOpenRepositorySessions();
   useWorkspaceWatcher();
   useGitStateSync();
   useWorkspaceSettingsSync();

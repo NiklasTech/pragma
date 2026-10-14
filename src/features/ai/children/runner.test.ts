@@ -62,6 +62,7 @@ describe("child runs", () => {
       chatSessions: [
         {
           id: "child",
+          rootPath: ROOT,
           title: "Child",
           messages: [],
           createdAt: 0,
@@ -113,7 +114,7 @@ describe("child runs", () => {
     await startChildRun(ROOT, "child", "Build");
 
     await vi.waitFor(() => expect(getChildRun("child")?.status).toBe("waiting-approval"));
-    stopChildRun(ROOT, "child");
+    stopChildRun("child");
 
     expect(getChildRun("child")?.status).toBe("cancelled");
     expect(getChildRun("child")?.approvals).toEqual([]);
@@ -122,7 +123,7 @@ describe("child runs", () => {
   it("does not start when stopped while it was still preparing", async () => {
     scripts.steps = [text("Should not run.")];
     const started = startChildRun(ROOT, "child", "Go");
-    stopChildRun(ROOT, "child");
+    stopChildRun("child");
     await started;
 
     expect(getChildRun("child")?.status).toBe("cancelled");

@@ -228,7 +228,6 @@ export function useAI() {
       if (message.message.role !== "assistant") return;
 
       void generateTitle(
-        rootPath,
         activeChatSessionId,
         firstUserMsg.content,
         isCLIActive || !effectiveModel
@@ -367,7 +366,6 @@ export function useAI() {
   useChatSessionPersistence({
     chat,
     chatRef,
-    rootPath,
     activeChatSessionId,
     chatSessions,
     agentActive,

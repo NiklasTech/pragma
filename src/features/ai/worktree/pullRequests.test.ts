@@ -45,7 +45,15 @@ function worktree(id: string, state: "OPEN" | "CLOSED" | "MERGED"): WorkEnvironm
 }
 
 function session(id: string, environmentId: string): ChatSession {
-  return { id, title: id, messages: [], createdAt: 0, updatedAt: 0, environmentId };
+  return {
+    id,
+    rootPath: "/repo",
+    title: id,
+    messages: [],
+    createdAt: 0,
+    updatedAt: 0,
+    environmentId,
+  };
 }
 
 function ghReturns(state: "OPEN" | "CLOSED" | "MERGED" | null) {

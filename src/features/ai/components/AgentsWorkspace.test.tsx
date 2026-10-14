@@ -5,6 +5,7 @@ const ai = vi.hoisted(() => ({
   state: {
     chatSessions: [] as Array<{
       id: string;
+      rootPath: string;
       title: string;
       messages: unknown[];
       createdAt: number;
@@ -35,6 +36,8 @@ const panes = vi.hoisted(() => ({
 
 vi.mock("@/shared/stores/ai", () => ({
   useAIStore: (selector: (state: typeof ai.state) => unknown) => selector(ai.state),
+  repositorySessions: (sessions: Array<{ rootPath: string }>, rootPath: string) =>
+    sessions.filter((session) => session.rootPath === rootPath),
 }));
 
 vi.mock("@/shared/stores/fileExplorer", () => ({
@@ -107,7 +110,14 @@ describe("AgentsWorkspace", () => {
   it("shows the live transcript when a pane has a session", () => {
     ai.state.activeChatSessionId = "a";
     ai.state.chatSessions = [
-      { id: "a", title: "Session A", messages: [], createdAt: 1, updatedAt: 1 },
+      {
+        id: "a",
+        rootPath: "/workspace",
+        title: "Session A",
+        messages: [],
+        createdAt: 1,
+        updatedAt: 1,
+      },
     ];
     panes.root = TAB_ROOT;
     panes.focusedSessionId = "a";
