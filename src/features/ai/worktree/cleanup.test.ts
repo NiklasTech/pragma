@@ -155,6 +155,20 @@ describe("releaseWorktree", () => {
     expect(commands()).not.toContain("git_session_delete_branch");
   });
 
+  it("deletes a squash-merged branch git does not see as merged", async () => {
+    mocks.results.git_session_branch_merged = false;
+
+    await expect(releaseWorktree("/repo", "env-1", new Set(["a"]), false, true)).resolves.toBe(
+      "removed",
+    );
+
+    expect(commands()).not.toContain("git_session_branch_merged");
+    expect(mocks.invoke).toHaveBeenCalledWith("git_session_delete_branch", {
+      repoPath: "/repo",
+      branch: WORKTREE.branch,
+    });
+  });
+
   it("never removes a worktree with uncommitted changes, but offers to discard it", async () => {
     mocks.results.git_session_worktree_dirty = true;
 

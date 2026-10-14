@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { FolderOpen, Plus } from "@phosphor-icons/react";
 
 interface DirEntry {
@@ -41,6 +42,7 @@ export function ProjectStep({ onOpenFolder }: ProjectStepProps) {
 
     try {
       await invoke("create_directory", { path: projectPath });
+      useOpenRepositoriesStore.getState().add(projectPath);
       store.setRootPath(projectPath);
       store.setIsLoading(true);
       const entries = await invoke<DirEntry[]>("list_directory", { path: projectPath });

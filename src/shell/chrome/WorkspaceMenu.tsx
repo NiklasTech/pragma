@@ -1,11 +1,23 @@
-import { CaretDown, FileText, FolderOpen, GitBranch, Plus, Star, X } from "@phosphor-icons/react";
+import {
+  CaretDown,
+  Check,
+  FileText,
+  FolderOpen,
+  FolderSimpleMinus,
+  GitBranch,
+  Plus,
+  Star,
+  X,
+} from "@phosphor-icons/react";
 import { open } from "@tauri-apps/plugin-dialog";
 
 import { PragmaMark } from "@/shared/components/PragmaMark";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -13,15 +25,20 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import { useCloseRepository } from "@/shared/hooks/useOpenRepositories";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 export function WorkspaceMenu() {
   const openFile = useOpenFile();
   const { selectRoot } = useFileExplorer();
+  const closeRepository = useCloseRepository();
+  const repositories = useOpenRepositoriesStore((s) => s.paths);
+  const activeRepository = useOpenRepositoriesStore((s) => s.activePath);
   const recentFolders = useSettingsStore((s) => s.workspace.recentFolders);
   const favoriteFolders = useSettingsStore((s) => s.workspace.favoriteFolders);
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
@@ -69,6 +86,47 @@ export function WorkspaceMenu() {
           <FileText size={14} />
           Open File
         </DropdownMenuItem>
+        {repositories.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Repositories</DropdownMenuLabel>
+              {repositories.map((path) => (
+                <DropdownMenuItem
+                  key={path}
+                  onClick={() => void selectRoot(path)}
+                  className="group justify-between"
+                  title={path}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Check
+                      size={14}
+                      className={path === activeRepository ? "shrink-0" : "invisible shrink-0"}
+                    />
+                    <span className="truncate">{getWorkspaceName(path)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void closeRepository(path);
+                    }}
+                    className="ml-2 rounded p-0.5 text-fg-subtle opacity-0 transition-opacity hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
+                    title="Close repository"
+                  >
+                    <X size={12} />
+                  </button>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+            {activeRepository && (
+              <DropdownMenuItem onClick={() => void closeRepository(activeRepository)}>
+                <FolderSimpleMinus size={14} />
+                Close Repository
+              </DropdownMenuItem>
+            )}
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>

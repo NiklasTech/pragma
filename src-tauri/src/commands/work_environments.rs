@@ -12,6 +12,15 @@ use crate::modules::git::worktree::validate_environment_id;
 const ENVIRONMENTS_FILE: &str = "environments.json";
 const KINDS: &[&str] = &["checkout", "worktree"];
 const SETUP_STATUSES: &[&str] = &["ready", "error"];
+const PULL_REQUEST_STATES: &[&str] = &["OPEN", "CLOSED", "MERGED"];
+
+/// The pull request opened for a worktree's branch.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EnvironmentPullRequest {
+    pub number: u64,
+    pub url: String,
+    pub state: String,
+}
 
 /// A checkout or worktree that one or more sessions of a workspace work in.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,6 +35,8 @@ pub struct WorkEnvironment {
     pub setup_status: String,
     #[serde(default)]
     pub setup_log: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pull_request: Option<EnvironmentPullRequest>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -65,6 +76,11 @@ fn validate_environment(environment: &WorkEnvironment) -> Result<(), String> {
     }
     if environment.kind == "worktree" && environment.branch.is_empty() {
         return Err("A worktree environment needs a branch".to_string());
+    }
+    if let Some(pull_request) = &environment.pull_request {
+        if pull_request.number == 0 || !PULL_REQUEST_STATES.contains(&pull_request.state.as_str()) {
+            return Err("invalid environment pull request".to_string());
+        }
     }
     Ok(())
 }
@@ -138,6 +154,7 @@ pub(crate) async fn migrate_session_worktrees(
                 base_branch: None,
                 setup_status: worktree.status,
                 setup_log: worktree.setup_log,
+                pull_request: None,
             });
         }
         session.environment_id = Some(id);
@@ -204,6 +221,7 @@ mod tests {
             base_branch: Some("main".to_string()),
             setup_status: "ready".to_string(),
             setup_log: String::new(),
+            pull_request: None,
         }
     }
 
@@ -296,6 +314,16 @@ mod tests {
         };
         assert!(validate_environment(&checkout).is_ok());
 
+        let with_pull_request = WorkEnvironment {
+            pull_request: Some(EnvironmentPullRequest {
+                number: 7,
+                url: "https://github.com/o/r/pull/7".to_string(),
+                state: "MERGED".to_string(),
+            }),
+            ..valid.clone()
+        };
+        assert!(validate_environment(&with_pull_request).is_ok());
+
         for invalid in [
             WorkEnvironment {
                 id: "../escape".to_string(),
@@ -315,6 +343,22 @@ mod tests {
             },
             WorkEnvironment {
                 branch: String::new(),
+                ..valid.clone()
+            },
+            WorkEnvironment {
+                pull_request: Some(EnvironmentPullRequest {
+                    number: 0,
+                    url: String::new(),
+                    state: "OPEN".to_string(),
+                }),
+                ..valid.clone()
+            },
+            WorkEnvironment {
+                pull_request: Some(EnvironmentPullRequest {
+                    number: 7,
+                    url: String::new(),
+                    state: "DRAFT".to_string(),
+                }),
                 ..valid.clone()
             },
         ] {
@@ -361,6 +405,7 @@ mod tests {
                 base_branch: None,
                 setup_status: "ready".to_string(),
                 setup_log: "installed".to_string(),
+                pull_request: None,
             }]
         );
 

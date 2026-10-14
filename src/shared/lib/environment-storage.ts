@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-import type { WorkEnvironment } from "@/shared/stores/ai";
+import type { EnvironmentPullRequest, WorkEnvironment } from "@/shared/stores/ai";
 
 export interface StoredWorkEnvironment {
   id: string;
@@ -10,6 +10,7 @@ export interface StoredWorkEnvironment {
   base_branch?: string | null;
   setup_status: string;
   setup_log: string;
+  pull_request?: EnvironmentPullRequest | null;
 }
 
 function toStoredEnvironment(environment: WorkEnvironment): StoredWorkEnvironment {
@@ -22,6 +23,7 @@ function toStoredEnvironment(environment: WorkEnvironment): StoredWorkEnvironmen
     setup_log: environment.setupLog,
   };
   if (environment.baseBranch) stored.base_branch = environment.baseBranch;
+  if (environment.pullRequest) stored.pull_request = environment.pullRequest;
   return stored;
 }
 
@@ -35,6 +37,7 @@ export function fromStoredEnvironment(stored: StoredWorkEnvironment): WorkEnviro
     setupLog: stored.setup_log,
   };
   if (stored.base_branch) environment.baseBranch = stored.base_branch;
+  if (stored.pull_request) environment.pullRequest = stored.pull_request;
   return environment;
 }
 
