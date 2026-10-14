@@ -229,6 +229,7 @@ mod tests {
             base_branch: None,
             setup_status: "ready".to_string(),
             setup_log: String::new(),
+            pull_request: None,
         }
     }
 

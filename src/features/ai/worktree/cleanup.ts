@@ -47,13 +47,20 @@ export function worktreeKeepReason(
   return needed ? "in-use" : null;
 }
 
-/** Removes the worktree and deletes its branch once it is merged. */
-export async function removeWorktree(rootPath: string, worktree: WorkEnvironment, force: boolean) {
+/** Removes the worktree and deletes its branch once it is merged; `branchMerged` covers squash merges git cannot see. */
+export async function removeWorktree(
+  rootPath: string,
+  worktree: WorkEnvironment,
+  force: boolean,
+  branchMerged = false,
+) {
   if (!(await removeWorktreeEnvironment(rootPath, worktree, force))) return false;
-  const merged = await invoke<boolean>("git_session_branch_merged", {
-    repoPath: rootPath,
-    branch: worktree.branch,
-  });
+  const merged =
+    branchMerged ||
+    (await invoke<boolean>("git_session_branch_merged", {
+      repoPath: rootPath,
+      branch: worktree.branch,
+    }));
   if (merged) {
     await invoke("git_session_delete_branch", { repoPath: rootPath, branch: worktree.branch });
   }
@@ -68,6 +75,7 @@ export async function releaseWorktree(
   environmentId: string,
   finishedIds: ReadonlySet<string>,
   force = false,
+  branchMerged = false,
 ): Promise<WorktreeRelease> {
   const { chatSessions, workEnvironments } = useAIStore.getState();
   const worktree = workEnvironments.find((environment) => environment.id === environmentId);
@@ -81,12 +89,13 @@ export async function releaseWorktree(
         duration: Infinity,
         action: {
           label: "Discard",
-          onClick: () => void releaseWorktree(rootPath, environmentId, finishedIds, true),
+          onClick: () =>
+            void releaseWorktree(rootPath, environmentId, finishedIds, true, branchMerged),
         },
       });
       return "dirty";
     }
-    return (await removeWorktree(rootPath, worktree, force)) ? "removed" : "failed";
+    return (await removeWorktree(rootPath, worktree, force, branchMerged)) ? "removed" : "failed";
   } catch (err) {
     toast.error(`Could not remove the worktree: ${String(err)}`);
     return "failed";
