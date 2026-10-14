@@ -154,6 +154,7 @@ const COMMANDS: &[&str] = &[
     "git_resolve_conflict",
     "git_revert_commit",
     "git_session_branch_merged",
+    "git_session_commit_all",
     "git_session_delete_branch",
     "git_session_finish_merge",
     "git_session_push_branch",
