@@ -7,7 +7,7 @@ import { groupEnvironmentRequest } from "../sessions/group";
 import { startSession, type StartSessionRequest } from "../sessions/start";
 import { NO_TASK_ENGINE_MESSAGE, taskEngine } from "./engine";
 import { openBlockers } from "./organize";
-import { useTasksStore } from "./store";
+import { repositoryTasks, useTasksStore } from "./store";
 import type { Task } from "./types";
 import { buildTaskMessage } from "./validation";
 
@@ -51,7 +51,10 @@ async function launchTask(
   title: string,
   environment: Pick<StartSessionRequest, "environment" | "sameEnvironmentAs">,
 ): Promise<{ error: string | null; session?: ChatSession }> {
-  const blocker = backgroundStartBlocker(task, useTasksStore.getState().tasks);
+  const blocker = backgroundStartBlocker(
+    task,
+    repositoryTasks(useTasksStore.getState().byRoot, rootPath).tasks,
+  );
   if (blocker) return { error: blocker };
   const agent = findAgent(task);
   const engine = taskEngine(agent?.engine);
@@ -77,7 +80,7 @@ async function launchTask(
   }
 
   try {
-    await useTasksStore.getState().linkSession(task.id, session.id);
+    await useTasksStore.getState().linkSession(rootPath, task.id, session.id);
     const { startChildRun } = await import("../children/runner");
     await startChildRun(rootPath, session.id, buildTaskMessage(task));
   } catch (err) {

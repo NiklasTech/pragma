@@ -8,9 +8,12 @@ import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
 import { isRunLive, useChildRunsStore } from "../children/runStore";
+import { RepositorySelect } from "../sessions/RepositoryPicker";
+import { chooseRepository } from "../sessions/repositoryChoice";
 import { resolveTaskActions } from "./actionState";
 import { resumeTask, runTask, stopTask } from "./actions";
 import { stopBackgroundTask } from "./background";
@@ -25,7 +28,7 @@ import {
   type TaskFilter,
 } from "./organize";
 import { useSessionRunsStore } from "./sessionRuns";
-import { useTasksStore } from "./store";
+import { useRepositoryTasks, useTasksStore } from "./store";
 import { TASK_MIME, TaskCard } from "./TaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { TaskFilters } from "./TaskFilters";
@@ -42,10 +45,12 @@ const COLUMN_DOTS: Record<TaskStatus, string> = {
 };
 
 export function TaskBoard() {
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
-  const tasks = useTasksStore((state) => state.tasks);
-  const loaded = useTasksStore((state) => state.loaded);
-  const loadFailed = useTasksStore((state) => state.loadFailed);
+  const paths = useOpenRepositoriesStore((state) => state.paths);
+  const activeRoot = useFileExplorerStore((state) => state.rootPath);
+  const boardRoot = useTasksUiStore((state) => state.boardRoot);
+  const pickBoardRoot = useTasksUiStore((state) => state.pickBoardRoot);
+  const rootPath = chooseRepository(paths, activeRoot, boardRoot);
+  const { tasks, loaded, loadFailed } = useRepositoryTasks(rootPath);
   const moveTask = useTasksStore((state) => state.moveTask);
   const deleteTask = useTasksStore((state) => state.deleteTask);
   const agents = useNamedAgentsStore((state) => state.agents);
@@ -79,16 +84,16 @@ export function TaskBoard() {
   const handleDrop = (status: TaskStatus, event: React.DragEvent<HTMLElement>) => {
     setDropTarget(null);
     const taskId = event.dataTransfer.getData(TASK_MIME);
-    if (!taskId) return;
+    if (!taskId || !rootPath) return;
     event.preventDefault();
-    void moveTask(taskId, status).catch(() => toast.error("Could not move the task"));
+    void moveTask(rootPath, taskId, status).catch(() => toast.error("Could not move the task"));
   };
 
   const handleConfirmDelete = () => {
-    if (!toDelete) return;
+    if (!toDelete || !rootPath) return;
     const taskId = toDelete.id;
     setToDelete(null);
-    void deleteTask(taskId).catch(() => toast.error("Could not delete the task"));
+    void deleteTask(rootPath, taskId).catch(() => toast.error("Could not delete the task"));
   };
 
   return (
@@ -102,6 +107,15 @@ export function TaskBoard() {
           </span>
         )}
         <span className="flex-1" />
+        {rootPath && paths.length > 1 && (
+          <RepositorySelect
+            paths={paths}
+            value={rootPath}
+            onChange={pickBoardRoot}
+            size="sm"
+            className="max-w-40"
+          />
+        )}
         <Button
           type="button"
           size="sm"
@@ -235,7 +249,14 @@ export function TaskBoard() {
         </>
       )}
 
-      <TaskDialog open={dialogOpen} task={editing} onOpenChange={setDialogOpen} />
+      {rootPath && (
+        <TaskDialog
+          open={dialogOpen}
+          rootPath={rootPath}
+          task={editing}
+          onOpenChange={setDialogOpen}
+        />
+      )}
       {rootPath && (
         <ImportIssuesDialog open={importOpen} rootPath={rootPath} onOpenChange={setImportOpen} />
       )}

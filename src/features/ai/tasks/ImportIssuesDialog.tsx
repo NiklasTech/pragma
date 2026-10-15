@@ -16,7 +16,7 @@ import {
 } from "@/shared/components/ui/dialog";
 
 import { importableIssues, issueToTask, type GhIssue } from "./githubImport";
-import { useTasksStore } from "./store";
+import { useRepositoryTasks, useTasksStore } from "./store";
 
 interface ImportIssuesDialogProps {
   open: boolean;
@@ -25,7 +25,7 @@ interface ImportIssuesDialogProps {
 }
 
 export function ImportIssuesDialog({ open, rootPath, onOpenChange }: ImportIssuesDialogProps) {
-  const tasks = useTasksStore((state) => state.tasks);
+  const { tasks } = useRepositoryTasks(rootPath);
   const addTasks = useTasksStore((state) => state.addTasks);
   const [issues, setIssues] = useState<GhIssue[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export function ImportIssuesDialog({ open, rootPath, onOpenChange }: ImportIssue
       .map((issue) => issueToTask(issue, now));
     setImporting(true);
     try {
-      await addTasks(imported);
+      await addTasks(rootPath, imported);
       toast.success(`Imported ${imported.length} issue${imported.length === 1 ? "" : "s"}`);
       onOpenChange(false);
     } catch {

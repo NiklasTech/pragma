@@ -4,24 +4,24 @@ import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { createAgentChat } from "@/features/ai/named-agents/createChat";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore } from "@/features/ai/named-agents/ui";
-import { useAgentsPanesStore } from "@/features/ai/panes/store";
+import { openInRepository } from "@/features/ai/sessions/openInRepository";
 import { startSession } from "@/features/ai/sessions/start";
 
 import { taskEngine, toastNoTaskEngine } from "./engine";
 import { openBlockers } from "./organize";
 import { sendToSession, stopLiveSession } from "./sessionRuns";
-import { useTasksStore } from "./store";
+import { repositoryTasks, useTasksStore } from "./store";
 import type { Task } from "./types";
 import { useTasksUiStore } from "./ui";
 import { buildTaskMessage } from "./validation";
 
 export const RESUME_MESSAGE = "Continue the task.";
 
-function focusSession(rootPath: string, sessionId: string): void {
+async function focusSession(rootPath: string, sessionId: string): Promise<void> {
   useTasksUiStore.getState().closeBoard();
   useNamedAgentsUiStore.getState().setView("sessions");
   useAIStore.getState().setActiveChatSession(sessionId);
-  useAgentsPanesStore.getState().openSession(rootPath, sessionId);
+  await openInRepository(rootPath, sessionId);
 }
 
 async function send(sessionId: string, text: string): Promise<void> {
@@ -30,7 +30,8 @@ async function send(sessionId: string, text: string): Promise<void> {
 }
 
 export async function runTask(rootPath: string, task: Task): Promise<void> {
-  if (openBlockers(task, useTasksStore.getState().tasks).length > 0) {
+  const { tasks } = repositoryTasks(useTasksStore.getState().byRoot, rootPath);
+  if (openBlockers(task, tasks).length > 0) {
     toast.error("Finish the blocking tasks first");
     return;
   }
@@ -62,12 +63,12 @@ export async function runTask(rootPath: string, task: Task): Promise<void> {
   }
 
   try {
-    await useTasksStore.getState().linkSession(task.id, session.id);
+    await useTasksStore.getState().linkSession(rootPath, task.id, session.id);
   } catch {
     toast.error("Could not save the task");
   }
 
-  focusSession(rootPath, session.id);
+  await focusSession(rootPath, session.id);
   await send(session.id, buildTaskMessage(task));
 }
 
@@ -92,7 +93,7 @@ export async function resumeTask(rootPath: string, task: Task): Promise<void> {
     }
   }
 
-  focusSession(rootPath, sessionId);
+  await focusSession(rootPath, sessionId);
   await send(sessionId, RESUME_MESSAGE);
 }
 

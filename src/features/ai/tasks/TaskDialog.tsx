@@ -25,7 +25,7 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
 import { dependentTaskIds, parseLabels, validateLabels } from "./organize";
-import { useTasksStore } from "./store";
+import { useRepositoryTasks, useTasksStore } from "./store";
 import { TaskNotesField } from "./TaskNotesField";
 import { TaskOrganizeFields } from "./TaskOrganizeFields";
 import { TaskScheduleFields } from "./TaskScheduleFields";
@@ -36,15 +36,16 @@ const BUILTIN_AGENT = "builtin";
 
 interface TaskDialogProps {
   open: boolean;
+  rootPath: string;
   task: Task | null;
   onOpenChange: (open: boolean) => void;
 }
 
-export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
+export function TaskDialog({ open, rootPath, task, onOpenChange }: TaskDialogProps) {
   const agents = useNamedAgentsStore((state) => state.agents);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const saveTask = useTasksStore((state) => state.saveTask);
-  const tasks = useTasksStore((state) => state.tasks);
+  const { tasks } = useRepositoryTasks(rootPath);
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -119,7 +120,7 @@ export function TaskDialog({ open, task, onOpenChange }: TaskDialogProps) {
 
     setSaving(true);
     try {
-      await saveTask(saved);
+      await saveTask(rootPath, saved);
       onOpenChange(false);
     } catch {
       toast.error("Could not save the task");

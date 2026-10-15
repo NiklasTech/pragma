@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
-import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
+import { useRepositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 
 import { GroupEnvironmentSelect } from "../sessions/GroupEnvironmentSelect";
 import { DEFAULT_GROUP_ENVIRONMENT, sharesFiles } from "../sessions/group";
@@ -25,7 +25,7 @@ import {
   startTasksInBackground,
   type ParallelTaskEnvironment,
 } from "./background";
-import { useTasksStore } from "./store";
+import { useRepositoryTasks } from "./store";
 
 interface ParallelStartDialogProps {
   open: boolean;
@@ -37,13 +37,11 @@ const MODES: readonly ParallelTaskEnvironment[] = ["isolated", "shared"];
 
 /// Picks Todo tasks and starts them in worktree sessions that run in the background.
 export function ParallelStartDialog({ open, rootPath, onOpenChange }: ParallelStartDialogProps) {
-  const tasks = useTasksStore((state) => state.tasks);
+  const { tasks } = useRepositoryTasks(rootPath);
   const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set());
   const [starting, setStarting] = useState(false);
   const [chosenMode, setChosenMode] = useState<ParallelTaskEnvironment | null>(null);
-  const setting = useWorkspaceSettingsStore((state) =>
-    state.rootPath === rootPath ? state.settings?.agent?.parallelTaskEnvironment : undefined,
-  );
+  const setting = useRepositoryWorkspaceSettings(rootPath)?.agent?.parallelTaskEnvironment;
   const mode = chosenMode ?? setting ?? DEFAULT_GROUP_ENVIRONMENT;
 
   useEffect(() => {

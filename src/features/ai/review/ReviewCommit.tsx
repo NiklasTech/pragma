@@ -3,7 +3,7 @@ import { GitCommit } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useTasksStore } from "@/features/ai/tasks/store";
+import { findSessionTask, useTasksStore } from "@/features/ai/tasks/store";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useAIStore } from "@/shared/stores/ai";
@@ -21,7 +21,7 @@ export function ReviewCommit({
   paths: string[];
 }) {
   const taskTitle = useTasksStore(
-    (state) => state.tasks.find((task) => task.sessionId === sessionId)?.title ?? null,
+    (state) => findSessionTask(state.byRoot, sessionId)?.title ?? null,
   );
   const sessionTitle = useAIStore(
     (state) => state.chatSessions.find((session) => session.id === sessionId)?.title ?? null,

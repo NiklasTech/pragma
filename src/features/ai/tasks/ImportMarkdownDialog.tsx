@@ -18,7 +18,7 @@ import type { DirEntry } from "@/shared/hooks/useFileExplorer";
 import { relativePath } from "@/features/ai/context/autoContext";
 
 import { importableMarkdownPaths, isMarkdownPath, markdownToTask } from "./markdownImport";
-import { useTasksStore } from "./store";
+import { useRepositoryTasks, useTasksStore } from "./store";
 
 interface FileReadResult {
   content: string;
@@ -31,7 +31,7 @@ interface ImportMarkdownDialogProps {
 }
 
 export function ImportMarkdownDialog({ open, rootPath, onOpenChange }: ImportMarkdownDialogProps) {
-  const tasks = useTasksStore((state) => state.tasks);
+  const { tasks } = useRepositoryTasks(rootPath);
   const addTasks = useTasksStore((state) => state.addTasks);
   const [paths, setPaths] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export function ImportMarkdownDialog({ open, rootPath, onOpenChange }: ImportMar
           }),
       );
       const imported = files.map((file) => markdownToTask(file, now));
-      await addTasks(imported);
+      await addTasks(rootPath, imported);
       toast.success(`Imported ${imported.length} file${imported.length === 1 ? "" : "s"}`);
       onOpenChange(false);
     } catch {

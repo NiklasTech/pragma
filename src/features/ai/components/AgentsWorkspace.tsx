@@ -74,7 +74,7 @@ export function AgentsWorkspace() {
   }, [loadSessions, rootPath]);
 
   useEffect(() => {
-    if (rootPath === "default" || useTasksStore.getState().rootPath === rootPath) return;
+    if (rootPath === "default" || useTasksStore.getState().byRoot[rootPath]) return;
     void useTasksStore.getState().load(rootPath);
   }, [rootPath]);
 
