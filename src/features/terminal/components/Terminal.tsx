@@ -17,6 +17,7 @@ import { resolvePanelActiveSessionId } from "@/shared/lib/terminal-panels";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { Button } from "@/shared/components/ui/button";
 import { dispatchTerminalClear, dispatchTerminalCopyOutput } from "@/shared/lib/terminal-events";
+import { NewTerminalButton } from "./NewTerminalButton";
 import { TerminalSession } from "./TerminalSession";
 import { RunTerminalSession } from "./RunTerminalSession";
 import { TerminalTabs } from "./TerminalTabs";
@@ -36,7 +37,6 @@ export function Terminal({ panelId }: TerminalProps) {
   const addSession = useTerminalStore((s) => s.addSession);
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const prevDefaultShellRef = useRef(defaultShell);
-  const prevRootPathRef = useRef(rootPath);
 
   // Orphan sessions without a panelId are shown in the first terminal panel.
   const layoutRoot = useLayoutStore((s) => s.root);
@@ -66,15 +66,6 @@ export function Terminal({ panelId }: TerminalProps) {
   }, [panelSessions.length, shellResolved, defaultShell, rootPath, panelId]);
 
   useEffect(() => {
-    const previous = prevRootPathRef.current;
-    prevRootPathRef.current = rootPath;
-
-    if (rootPath && rootPath !== previous) {
-      useTerminalStore.getState().moveShellSessionsToCwd(rootPath);
-    }
-  }, [rootPath]);
-
-  useEffect(() => {
     const previous = prevDefaultShellRef.current;
     prevDefaultShellRef.current = defaultShell;
 
@@ -85,13 +76,13 @@ export function Terminal({ panelId }: TerminalProps) {
 
   const showShellError = shellResolved && defaultShell.length === 0 && panelSessions.length === 0;
 
-  const handleNewSession = () => {
+  const handleNewSession = (repository: string | null = rootPath) => {
     addSession({
       id: crypto.randomUUID(),
       name: `Terminal ${panelSessions.length + 1}`,
       type: "shell",
       shell: defaultShell,
-      cwd: rootPath ?? undefined,
+      cwd: repository ?? undefined,
       panelId,
       isActive: true,
     });
@@ -146,14 +137,7 @@ export function Terminal({ panelId }: TerminalProps) {
               <SplitHorizontal size={13} />
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleNewSession}
-            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
-            title="New Session"
-          >
-            <Plus size={13} weight="bold" />
-          </button>
+          <NewTerminalButton onCreate={handleNewSession} />
           {panelId && (
             <button
               type="button"
@@ -179,7 +163,12 @@ export function Terminal({ panelId }: TerminalProps) {
             title="No sessions"
             description="Start a new shell session in this panel."
           >
-            <Button variant="outline" size="sm" onClick={handleNewSession} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleNewSession()}
+              className="gap-2"
+            >
               <Plus size={14} />
               New Session
             </Button>

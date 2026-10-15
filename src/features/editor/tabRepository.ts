@@ -1,4 +1,4 @@
-import { isPathInside } from "@/features/ai/named-agents/folders";
+import { owningRepository } from "@/shared/stores/openRepositories";
 
 /// The open repository a tab's file belongs to when that is not the active one, else null.
 export function otherTabRepository(
@@ -6,11 +6,6 @@ export function otherTabRepository(
   repositories: readonly string[],
   activeRoot: string | null,
 ): string | null {
-  const owner = repositories
-    .filter((root) => isPathInside(root, path))
-    .reduce<string | null>(
-      (best, root) => (!best || root.length > best.length ? root : best),
-      null,
-    );
+  const owner = owningRepository(repositories, path);
   return owner && owner !== activeRoot ? owner : null;
 }

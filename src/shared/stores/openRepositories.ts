@@ -1,6 +1,6 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
-import { normalizePath } from "@/features/ai/named-agents/folders";
+import { isPathInside, normalizePath } from "@/features/ai/named-agents/folders";
 import { getWindowScope } from "@/shared/lib/windowScope";
 
 interface OpenRepositoriesState {
@@ -25,6 +25,16 @@ const STORAGE_KEY = `pragma.open-repositories.v1.${getWindowScope()}`;
 export function findRepository(paths: string[], path: string): string | null {
   const key = normalizePath(path);
   return paths.find((existing) => normalizePath(existing) === key) ?? null;
+}
+
+/// The innermost open repository that contains the path.
+export function owningRepository(paths: readonly string[], path: string): string | null {
+  return paths
+    .filter((root) => isPathInside(root, path))
+    .reduce<string | null>(
+      (best, root) => (!best || root.length > best.length ? root : best),
+      null,
+    );
 }
 
 export const openRepositoriesStoreCreator: StateCreator<OpenRepositoriesStore> = (set, get) => ({

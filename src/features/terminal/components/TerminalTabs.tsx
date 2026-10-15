@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Command, Cube, Play, Terminal, TerminalWindow, X } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
+import { getWorkspaceName } from "@/shared/lib/workspaceName";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useTerminalStore, type TerminalSession } from "@/shared/stores/terminal";
+import { terminalRepository } from "../terminalRepository";
 
 interface TerminalTabsProps {
   sessions: TerminalSession[];
@@ -23,6 +26,7 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
   const killSession = useTerminalStore((s) => s.killSession);
   const renameSession = useTerminalStore((s) => s.renameSession);
   const activity = useTerminalStore((s) => s.activity);
+  const repositories = useOpenRepositoriesStore((s) => s.paths);
   const [now, setNow] = useState(() => Date.now());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -50,6 +54,8 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
         const isActive = session.id === activeSessionId;
         const isRunning = now - (activity[session.id] ?? 0) < 2000;
         const SessionIcon = sessionIcon(session);
+        const repository =
+          repositories.length > 1 ? terminalRepository(session, repositories) : null;
 
         return (
           <div
@@ -82,6 +88,14 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
             ) : (
               <span className="max-w-[140px] truncate" title="Double-click to rename">
                 {session.name}
+              </span>
+            )}
+            {repository && editingId !== session.id && (
+              <span
+                className="max-w-[100px] truncate text-ui-2xs text-fg-subtle"
+                title={repository}
+              >
+                {getWorkspaceName(repository)}
               </span>
             )}
             <button
