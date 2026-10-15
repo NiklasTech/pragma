@@ -8,6 +8,7 @@ import {
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
@@ -15,6 +16,7 @@ import { safePtyInvoke } from "../safePtyInvoke";
 import { registerTerminalOutput } from "../terminalOutput";
 import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { terminalEnvFor } from "../terminalEnv";
+import { terminalEnvRoot } from "../terminalRepository";
 import { takeTerminalScrollback } from "../terminalScrollback";
 import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } from "../ptyOutput";
 
@@ -177,7 +179,13 @@ export function useTerminalSetup({
               cwd: session.cwd ?? null,
               cols: Math.max(cols, 10),
               rows: Math.max(rows, 2),
-              env: terminalEnvFor(useFileExplorerStore.getState().rootPath),
+              env: terminalEnvFor(
+                terminalEnvRoot(
+                  session,
+                  useOpenRepositoriesStore.getState().paths,
+                  useFileExplorerStore.getState().rootPath,
+                ),
+              ),
             });
           });
           if (disposed) {

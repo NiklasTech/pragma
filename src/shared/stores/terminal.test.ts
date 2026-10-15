@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
+import { useFileExplorerStore } from "./fileExplorer";
 import { restorableTerminalState, useTerminalStore } from "./terminal";
 
 describe("useTerminalStore", () => {
@@ -111,28 +112,26 @@ describe("useTerminalStore", () => {
     expect(useTerminalStore.getState().activeByPanel["panel-1"]).toBeUndefined();
   });
 
-  it("moves shell sessions to a new cwd and drops their ptyId", () => {
+  it("keeps the cwd and PTY of every terminal when the active repository changes", () => {
     useTerminalStore.setState({ sessions: [], activeByPanel: {}, lastActiveSessionId: null });
+    useFileExplorerStore.getState().setRootPath("/code/a");
     const store = useTerminalStore.getState();
 
     store.addSession({
       id: "shell",
       name: "Shell",
       type: "shell",
-      cwd: "/old",
+      cwd: "/code/a",
       panelId: "panel-1",
       isActive: true,
     });
-    store.addRunSession("proc-1", "Run", "pnpm dev", "panel-1");
     store.attachPty("shell", "pty-1");
 
-    store.moveShellSessionsToCwd("/new");
+    useFileExplorerStore.getState().setRootPath("/code/b");
 
-    const sessions = useTerminalStore.getState().sessions;
-    const shell = sessions.find((s) => s.id === "shell");
-    expect(shell?.cwd).toBe("/new");
-    expect(shell?.ptyId).toBeUndefined();
-    expect(sessions.find((s) => s.type === "run")?.cwd).toBeUndefined();
+    const shell = useTerminalStore.getState().sessions.find((s) => s.id === "shell");
+    expect(shell?.cwd).toBe("/code/a");
+    expect(shell?.ptyId).toBe("pty-1");
   });
 });
 
