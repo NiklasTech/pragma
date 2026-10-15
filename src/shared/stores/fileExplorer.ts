@@ -36,17 +36,27 @@ export function getVisibleNodes(
   return result;
 }
 
+/** Explorer state of a repository that is open but not active. */
+export interface RepositoryExplorerState {
+  expandedDirs: string[];
+  selectedPath: string | null;
+}
+
 interface FileExplorerState {
   rootPath: string | null;
   expandedDirs: Set<string>;
   selectedPath: string | null;
+  /** Saved explorer state of the other open repositories, keyed by root path. */
+  savedStates: Record<string, RepositoryExplorerState>;
   tree: FileSystemNode[];
   isLoading: boolean;
   _hasHydrated: boolean;
 }
 
 interface FileExplorerActions {
+  /** Switches the root, keeping the explorer state of the previous root for later. */
   setRootPath: (path: string | null) => void;
+  forgetRepository: (path: string) => void;
   setTree: (tree: FileSystemNode[]) => void;
   toggleDir: (path: string) => void;
   expandDir: (path: string) => void;
@@ -69,6 +79,7 @@ const initialState: FileExplorerState = {
   rootPath: null,
   expandedDirs: new Set(),
   selectedPath: null,
+  savedStates: {},
   tree: [],
   isLoading: false,
   _hasHydrated: false,
@@ -80,7 +91,13 @@ const fileExplorerStoreCreator: StateCreator<FileExplorerState & FileExplorerAct
 ) => ({
   ...initialState,
 
-  setRootPath: (path) => set({ rootPath: path, tree: [], expandedDirs: new Set() }),
+  setRootPath: (path) => set((state) => switchRepository(state, path)),
+  forgetRepository: (path) => {
+    if (!(path in get().savedStates)) return;
+    const savedStates = { ...get().savedStates };
+    delete savedStates[path];
+    set({ savedStates });
+  },
   setTree: (tree) => set({ tree }),
 
   toggleDir: (path) => {
@@ -201,6 +218,38 @@ const fileExplorerStoreCreator: StateCreator<FileExplorerState & FileExplorerAct
   markHydrated: () => set({ _hasHydrated: true }),
 });
 
+/// Saves the explorer state of the current root and restores the one saved for the next root.
+export function switchRepository(
+  state: Pick<FileExplorerState, "rootPath" | "expandedDirs" | "selectedPath" | "savedStates">,
+  path: string | null,
+): Pick<FileExplorerState, "rootPath" | "tree" | "expandedDirs" | "selectedPath" | "savedStates"> {
+  if (path === state.rootPath) {
+    return {
+      rootPath: path,
+      tree: [],
+      expandedDirs: new Set(),
+      selectedPath: state.selectedPath,
+      savedStates: state.savedStates,
+    };
+  }
+  const savedStates = { ...state.savedStates };
+  if (state.rootPath) {
+    savedStates[state.rootPath] = {
+      expandedDirs: Array.from(state.expandedDirs),
+      selectedPath: state.selectedPath,
+    };
+  }
+  const restored = path ? savedStates[path] : undefined;
+  if (path) delete savedStates[path];
+  return {
+    rootPath: path,
+    tree: [],
+    expandedDirs: new Set(restored?.expandedDirs ?? []),
+    selectedPath: restored?.selectedPath ?? null,
+    savedStates,
+  };
+}
+
 /// A window without saved state (e.g. a new workspace window) hydrates with undefined.
 export function mergePersistedFileExplorer<T extends FileExplorerState>(
   persistedState: unknown,
@@ -224,6 +273,7 @@ export const useFileExplorerStore = create<FileExplorerState & FileExplorerActio
       rootPath: state.rootPath,
       expandedDirs: Array.from(state.expandedDirs),
       selectedPath: state.selectedPath,
+      savedStates: state.savedStates,
     }),
     onRehydrateStorage: () => (state) => {
       if (!state) return;

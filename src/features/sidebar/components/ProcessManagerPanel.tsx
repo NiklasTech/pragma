@@ -1,5 +1,5 @@
 import { useShallow } from "zustand/react/shallow";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import {
   ArrowClockwise,
@@ -20,7 +20,14 @@ import { cn } from "@/shared/lib/utils";
 import { useLayoutStore } from "@/shell/layout/store";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
-import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
+import {
+  useRunConfigStore,
+  type RunConfig,
+  type RunProcess,
+  type RunStatus,
+} from "@/shared/stores/runConfig";
+import { otherRepositoryProcesses, repositoryProcesses } from "@/shared/stores/runProcesses";
+import { OtherRepositoryProcesses } from "./OtherRepositoryProcesses";
 
 function StatusDot({ status }: { status: RunStatus }) {
   const colorClass =
@@ -186,7 +193,7 @@ function SavedConfigRow({
 
 function findConfigStatus(
   config: RunConfig,
-  processes: ReturnType<typeof useRunConfigStore.getState>["processes"],
+  processes: RunProcess[],
 ): { status: RunStatus; processId: string | undefined } {
   const matches = processes.filter((p) => p.configName === config.name);
   if (matches.length === 0) {
@@ -255,6 +262,21 @@ export function ProcessManagerPanel() {
     if (!workspaceRoot) return;
     void detectConfigs();
   }, [workspaceRoot, detectConfigs]);
+
+  const ownProcesses = useMemo(
+    () => repositoryProcesses(processes, workspaceRoot),
+    [processes, workspaceRoot],
+  );
+  const otherProcesses = useMemo(
+    () => otherRepositoryProcesses(processes, workspaceRoot),
+    [processes, workspaceRoot],
+  );
+
+  const openLogs = (process: RunProcess) => {
+    setActiveProcess(process.id);
+    if (terminal.mode === "hidden") setTerminalMode("docked-bottom");
+    addRunSession(process.id, process.configName, process.command, resolveDefaultTerminalPanelId());
+  };
 
   const refresh = () => {
     void detectConfigs();
@@ -337,7 +359,7 @@ export function ProcessManagerPanel() {
                 ) : (
                   <div className="space-y-0.5">
                     {configs.map((config) => {
-                      const { status, processId } = findConfigStatus(config, processes);
+                      const { status, processId } = findConfigStatus(config, ownProcesses);
                       return (
                         <SavedConfigRow
                           key={config.id ?? config.name}
@@ -390,6 +412,11 @@ export function ProcessManagerPanel() {
               </div>
             </>
           )}
+          <OtherRepositoryProcesses
+            processes={otherProcesses}
+            onStop={(processId) => void stopProcess(processId)}
+            onOpenLogs={openLogs}
+          />
         </div>
       </ScrollArea>
     </div>

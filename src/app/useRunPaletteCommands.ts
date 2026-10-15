@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { useCommandPaletteStore, type CommandPaletteItem } from "@/shared/stores/commandPalette";
 import { useRunConfigStore, type RunProcess } from "@/shared/stores/runConfig";
+import { processLabel, repositoryProcesses } from "@/shared/stores/runProcesses";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout";
 import { useRegisterPaletteCommands } from "./useRegisterPaletteCommands";
@@ -46,7 +47,7 @@ function pickProcess(
     emptyText: "No matching processes.",
     items: processes.map((process) => ({
       id: process.id,
-      label: process.configName,
+      label: processLabel(process, useRunConfigStore.getState().workspaceRoot),
       detail: process.status,
     })),
     onSelect: (item) => void onSelect(item.id),
@@ -82,7 +83,11 @@ const RUN_COMMANDS: CommandPaletteItem[] = [
     keywords: ["run", "restart", "reload", "configuration"],
     action: () => {
       const store = useRunConfigStore.getState();
-      pickProcess("Restart process...", store.processes, store.restartProcess);
+      pickProcess(
+        "Restart process...",
+        repositoryProcesses(store.processes, store.workspaceRoot),
+        store.restartProcess,
+      );
     },
   },
 ];

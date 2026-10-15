@@ -3,8 +3,12 @@ import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu
 import { GitCommit, GitDiff, X } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useEditorStore } from "@/shared/stores/editor";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileHistoryDialog } from "@/features/sidebar/lib/gitDialogs";
 import { cn } from "@/shared/lib/utils";
+import { otherTabRepository } from "@/features/editor/tabRepository";
 import { Button } from "@/shared/components/ui/button";
 import {
   ContextMenu,
@@ -25,6 +29,8 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
   const setPanelActiveTab = useEditorStore((s) => s.setPanelActiveTab);
   const closeTab = useEditorStore((s) => s.closeTab);
   const reorderTabs = useEditorStore((s) => s.reorderTabs);
+  const repositories = useOpenRepositoriesStore((s) => s.paths);
+  const activeRoot = useFileExplorerStore((s) => s.rootPath);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -79,6 +85,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
           const isDropTarget = dragOverIndex === index;
           const fileIconPath =
             tab.kind === "file" || tab.kind === "preview" ? getFileIconPath(tab.name) : null;
+          const repository = otherTabRepository(tab.path, repositories, activeRoot);
 
           const handleCloseOthers = () => {
             tabs.forEach((t) => {
@@ -123,7 +130,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                         closeTab(tab.id);
                       }
                     }}
-                    title={tab.name}
+                    title={repository ? `${tab.name} (${getWorkspaceName(repository)})` : tab.name}
                     data-active={isActive}
                     className={cn(
                       props.className,
