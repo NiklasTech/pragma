@@ -132,19 +132,23 @@ export function FileTreeContextMenu({
         <TerminalWindow size={14} />
         <span>Open in Terminal</span>
       </ContextMenuItem>
-      <ContextMenuSeparator />
-      <ContextMenuItem onClick={() => void duplicatePath(node.path)}>
-        <Files size={14} />
-        <span>Duplicate</span>
-      </ContextMenuItem>
-      <ContextMenuItem onClick={onRename}>
-        <PencilSimple size={14} />
-        <span>Rename</span>
-      </ContextMenuItem>
-      <ContextMenuItem variant="destructive" onClick={onDelete}>
-        <Trash size={14} />
-        <span>Delete</span>
-      </ContextMenuItem>
+      {!node.repositoryRoot && (
+        <>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => void duplicatePath(node.path)}>
+            <Files size={14} />
+            <span>Duplicate</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={onRename}>
+            <PencilSimple size={14} />
+            <span>Rename</span>
+          </ContextMenuItem>
+          <ContextMenuItem variant="destructive" onClick={onDelete}>
+            <Trash size={14} />
+            <span>Delete</span>
+          </ContextMenuItem>
+        </>
+      )}
     </ContextMenuContent>
   );
 }

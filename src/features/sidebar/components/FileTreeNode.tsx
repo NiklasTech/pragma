@@ -88,18 +88,19 @@ export function FileTreeNode({
 
   const handleClick = useCallback(
     (event: React.MouseEvent) => {
-      if (event.metaKey || event.ctrlKey) {
+      // A repository folder never joins a selection, so it cannot be deleted or moved with it.
+      if (!node.repositoryRoot && (event.metaKey || event.ctrlKey)) {
         onMultiSelect(node.path, "toggle");
         return;
       }
-      if (event.shiftKey) {
+      if (!node.repositoryRoot && event.shiftKey) {
         onMultiSelect(node.path, "range");
         return;
       }
       useFileSelectionStore.getState().reset(node.path);
       activate();
     },
-    [node.path, onMultiSelect, activate],
+    [node.path, node.repositoryRoot, onMultiSelect, activate],
   );
 
   const [createDialog, setCreateDialog] = useState<{ open: boolean; isDirectory: boolean }>({
@@ -142,7 +143,7 @@ export function FileTreeNode({
 
   const content = (
     <div
-      draggable
+      draggable={!node.repositoryRoot}
       onDragStart={(event) => {
         event.dataTransfer.setData(PRAGMA_PATH_MIME, node.path);
         event.dataTransfer.setData(PRAGMA_PATHS_MIME, JSON.stringify(targets));

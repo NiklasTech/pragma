@@ -39,7 +39,7 @@ export function entryToNode(entry: DirEntry): FileSystemNode {
 }
 
 /// Lists the folders a restored explorer state shows expanded, parents before their children.
-async function loadExpandedDirs(rootPath: string): Promise<void> {
+export async function loadExpandedDirs(rootPath: string): Promise<void> {
   const dirs = [...useFileExplorerStore.getState().expandedDirs].sort(
     (a, b) => a.length - b.length,
   );

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { isSameOrInside, parentPath } from "@/shared/lib/fileDisk";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { owningRepository, useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout";
 import { relativePath } from "@/features/ai/context/autoContext";
@@ -26,9 +27,16 @@ export function canMoveInto(path: string, targetDir: string): boolean {
   return parentPath(path) !== targetDir && !isSameOrInside(targetDir, path);
 }
 
+/// The open repository a path belongs to, else the active one.
+export function fileRepository(path: string): string | null {
+  const paths = useOpenRepositoriesStore.getState().paths;
+  return owningRepository(paths, path) ?? useFileExplorerStore.getState().rootPath;
+}
+
 export async function copyPaths(paths: string[], relative: boolean): Promise<void> {
-  const rootPath = useFileExplorerStore.getState().rootPath;
-  const text = paths.map((path) => (relative ? relativePath(rootPath, path) : path)).join("\n");
+  const text = paths
+    .map((path) => (relative ? relativePath(fileRepository(path), path) : path))
+    .join("\n");
   try {
     await navigator.clipboard.writeText(text);
   } catch (err) {
@@ -59,7 +67,7 @@ export function openInTerminal(path: string, isDirectory: boolean): void {
 }
 
 export async function duplicatePath(path: string): Promise<void> {
-  const rootPath = useFileExplorerStore.getState().rootPath;
+  const rootPath = fileRepository(path);
   try {
     const copy = await invoke<string>("duplicate_path", { path });
     if (rootPath) await refreshFileTree(rootPath, [copy]);
@@ -70,7 +78,6 @@ export async function duplicatePath(path: string): Promise<void> {
 
 /// Moves each path into `targetDir`; open tabs follow the files to their new location.
 export async function movePaths(paths: string[], targetDir: string): Promise<void> {
-  const rootPath = useFileExplorerStore.getState().rootPath;
   const changed: string[] = [];
   for (const path of paths.filter((p) => canMoveInto(p, targetDir))) {
     const newPath = joinPath(targetDir, baseName(path));
@@ -86,7 +93,13 @@ export async function movePaths(paths: string[], targetDir: string): Promise<voi
     if (selected) explorer.setSelectedPath(selected);
     changed.push(path, newPath);
   }
-  if (rootPath && changed.length > 0) await refreshFileTree(rootPath, changed);
+  const roots = new Set(changed.flatMap((path) => fileRepository(path) ?? []));
+  for (const root of roots) {
+    await refreshFileTree(
+      root,
+      changed.filter((path) => fileRepository(path) === root),
+    );
+  }
 }
 
 /// Adds `@path` mentions to the focused session's composer, starting a session if none is open.
