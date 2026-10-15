@@ -11,6 +11,7 @@ import {
   Terminal,
 } from "@phosphor-icons/react";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
+import { processLabel, repositoryProcesses } from "@/shared/stores/runProcesses";
 import { useDebugStore } from "@/features/debug/store";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout/store";
@@ -29,11 +30,13 @@ function StatusDot({ status }: { status: RunStatus }) {
 
 function RunningProcessBadge({
   process,
+  label,
   isActive,
   onOpenOutput,
   onStop,
 }: {
   process: { id: string; configName: string; status: RunStatus };
+  label: string;
   isActive: boolean;
   onOpenOutput: (id: string) => void;
   onStop: (id: string) => void;
@@ -51,7 +54,7 @@ function RunningProcessBadge({
         title="Open output"
       >
         <StatusDot status={process.status} />
-        <span className="text-ui-xs text-fg-default">{process.configName}</span>
+        <span className="text-ui-xs text-fg-default">{label}</span>
       </button>
       <button
         type="button"
@@ -71,6 +74,7 @@ export function RunConfigWidget() {
   const {
     configs,
     processes,
+    workspaceRoot,
     activeProcessId,
     setActiveProcess,
     startConfig,
@@ -81,6 +85,7 @@ export function RunConfigWidget() {
     useShallow((s) => ({
       configs: s.configs,
       processes: s.processes,
+      workspaceRoot: s.workspaceRoot,
       activeProcessId: s.activeProcessId,
       setActiveProcess: s.setActiveProcess,
       startConfig: s.startConfig,
@@ -142,23 +147,23 @@ export function RunConfigWidget() {
     (id: string) => {
       setActiveProcess(id);
       const process = processes.find((p) => p.id === id);
-      const config = configs.find((c) => c.name === process?.configName);
-      if (process && config) {
+      if (process) {
         if (terminal.mode === "hidden") {
           setTerminalMode("docked-bottom");
         }
-        addRunSession(id, config.name, config.command, resolveDefaultTerminalPanelId());
+        addRunSession(id, process.configName, process.command, resolveDefaultTerminalPanelId());
       }
     },
-    [setActiveProcess, addRunSession, processes, configs, terminal.mode, setTerminalMode],
+    [setActiveProcess, addRunSession, processes, terminal.mode, setTerminalMode],
   );
 
   if (configs.length === 0 && processes.length === 0) {
     return null;
   }
 
+  const ownProcesses = repositoryProcesses(processes, workspaceRoot);
   const runningProcesses = processes.filter((p) => p.status === "running");
-  const stoppedProcesses = processes.filter((p) => p.status !== "running");
+  const stoppedProcesses = ownProcesses.filter((p) => p.status !== "running");
 
   return (
     <div className="flex items-center gap-1.5" ref={dropdownRef}>
@@ -167,6 +172,7 @@ export function RunConfigWidget() {
         <RunningProcessBadge
           key={proc.id}
           process={proc}
+          label={processLabel(proc, workspaceRoot)}
           isActive={activeProcessId === proc.id}
           onOpenOutput={handleOpenOutput}
           onStop={handleStop}
@@ -189,7 +195,7 @@ export function RunConfigWidget() {
             <div className="py-1">
               {/* Section: Configs */}
               {configs.map((config) => {
-                const proc = processes.find((p) => p.configName === config.name);
+                const proc = ownProcesses.find((p) => p.configName === config.name);
                 return (
                   <div
                     key={config.name}

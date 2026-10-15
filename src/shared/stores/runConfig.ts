@@ -31,7 +31,10 @@ export type RunStatus = "running" | "failed" | "stopped";
 
 export interface RunProcess {
   id: string;
+  /** Repository the process was started in; it keeps running when another one becomes active. */
+  rootPath: string;
   configName: string;
+  command: string;
   status: RunStatus;
   exitCode: number | null;
   output: string[];
@@ -218,7 +221,9 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
           } catch (err) {
             const errorProcess: RunProcess = {
               id: `error-${Date.now()}`,
+              rootPath: workspaceRoot,
               configName: config.name,
+              command: config.command,
               status: "failed",
               exitCode: null,
               output: [`Failed to free port ${port}: ${String(err)}`],
@@ -240,7 +245,9 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
 
         const newProcess: RunProcess = {
           id: processId,
+          rootPath: workspaceRoot,
           configName: config.name,
+          command: config.command,
           status: "running",
           exitCode: null,
           output: [],
@@ -255,7 +262,9 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
       } catch (err) {
         const errorProcess: RunProcess = {
           id: `error-${Date.now()}`,
+          rootPath: workspaceRoot,
           configName: config.name,
+          command: config.command,
           status: "failed",
           exitCode: null,
           output: [`Failed to start: ${String(err)}`],
@@ -285,7 +294,8 @@ export const useRunConfigStore = create<RunConfigState & RunConfigActions>(
     restartProcess: async (processId) => {
       const { processes, workspaceRoot, configs } = get();
       const process = processes.find((p) => p.id === processId);
-      if (!process || !workspaceRoot) return;
+      // Configs of other repositories are not loaded, so only the active repository restarts.
+      if (!process || !workspaceRoot || process.rootPath !== workspaceRoot) return;
 
       const config = configs.find((c) => c.name === process.configName);
       if (!config) return;

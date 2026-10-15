@@ -5,7 +5,7 @@ import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
-import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { findRepository, useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useUiModeStore } from "@/shell/mode";
 import {
   runningRepositorySessions,
@@ -22,11 +22,13 @@ export function useCloseRepositoryNow(): (path: string) => Promise<void> {
     async (path: string) => {
       const repositories = useOpenRepositoriesStore.getState();
       const previousActive = repositories.activePath;
+      const closed = findRepository(repositories.paths, path) ?? path;
       const nextActive = repositories.remove(path);
-      if (nextActive === previousActive) return;
-      if (nextActive && (await selectRoot(nextActive))) return;
-      useFileExplorerStore.getState().setRootPath(null);
-      useUiModeStore.getState().setUiMode("agents");
+      if (nextActive !== previousActive && !(nextActive && (await selectRoot(nextActive)))) {
+        useFileExplorerStore.getState().setRootPath(null);
+        useUiModeStore.getState().setUiMode("agents");
+      }
+      useFileExplorerStore.getState().forgetRepository(closed);
     },
     [selectRoot],
   );

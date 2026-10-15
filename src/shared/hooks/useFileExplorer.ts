@@ -38,6 +38,25 @@ export function entryToNode(entry: DirEntry): FileSystemNode {
   };
 }
 
+/// Lists the folders a restored explorer state shows expanded, parents before their children.
+async function loadExpandedDirs(rootPath: string): Promise<void> {
+  const dirs = [...useFileExplorerStore.getState().expandedDirs].sort(
+    (a, b) => a.length - b.length,
+  );
+  for (const dir of dirs) {
+    if (useFileExplorerStore.getState().rootPath !== rootPath) return;
+    if (!findNode(useFileExplorerStore.getState().tree, dir)) continue;
+    try {
+      const entries = await invoke<DirEntry[]>("list_directory", { path: dir });
+      const store = useFileExplorerStore.getState();
+      if (store.rootPath !== rootPath) return;
+      store.setDirChildren(dir, entries.map(entryToNode));
+    } catch {
+      useFileExplorerStore.getState().collapseDir(dir);
+    }
+  }
+}
+
 /// Opens the folder, or asks for one, and makes it the active repository.
 export async function selectRootFolder(targetPath?: string): Promise<boolean> {
   let path: string | null = targetPath ?? null;
@@ -58,6 +77,7 @@ export async function selectRootFolder(targetPath?: string): Promise<boolean> {
     const repositoryPath = useOpenRepositoriesStore.getState().add(path);
     store.setRootPath(repositoryPath);
     store.setTree(entries.map(entryToNode));
+    void loadExpandedDirs(repositoryPath);
     useSettingsStore.getState().addRecentFolder(repositoryPath);
     return true;
   } catch (err) {
