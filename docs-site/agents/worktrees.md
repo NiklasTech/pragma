@@ -85,6 +85,23 @@ If the setup hook fails, the session is still created, and its chat shows the ho
 
 On Windows a hook file is started directly, so it has to be an executable program; shell scripts with a shebang line need macOS or Linux.
 
+## Finish a worktree session
+
+Open the thread's context menu and choose **Finish**. It is available for every session that works in a worktree: agent sessions, coding CLI terminals and conversations, named agent chats and tasks. While the session is running or waiting for an approval, **Finish** is disabled.
+
+| Action                               | Effect                                                                                         |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Merge into current branch            | Merges the `pragma/...` branch into the branch of your checkout, as a fast-forward if possible |
+| Merge with a merge commit            | Merges the branch and always creates a merge commit                                            |
+| Rebase onto current branch and merge | Rebases the branch onto the branch of your checkout, then merges it                            |
+| Push and open pull request           | Pushes the branch and opens a dialog to create the pull request                                |
+
+**Push and open pull request** is shown when the GitHub CLI (`gh`) is installed and signed in. The dialog suggests the task title, or else the session title, as the title, and the task notes, or else the session's first prompt, as the description.
+
+If the worktree has uncommitted changes, which coding CLIs often leave behind, Pragma asks for a commit message first and commits all changes to the session branch. The message is prefilled with the task or session title. Cancel the prompt to stop finishing.
+
+When a merge conflicts, the merge stays in your checkout and the conflicts open in the git panel so you can resolve them and commit the merge. A rebase that conflicts is undone right away; the notification offers **Merge** instead. A [child session](./child-sessions.md#finish-a-child-into-its-parent) merges into its parent's branch instead of your checkout.
+
 ## When worktrees are removed
 
 With **Settings > Agents > Remove worktrees automatically when a session is finished** turned on (the default), Pragma removes a worktree as soon as no session needs it anymore:

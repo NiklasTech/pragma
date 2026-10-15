@@ -53,6 +53,8 @@ Worktrees are created one after another, so their creation never races on the re
 
 The dialog starts with **Each in its own worktree**. To change that for a project, set **Settings > Project > Agent > Launch coding CLIs in**, stored as `agent.launchCliEnvironment` (`"isolated"`, `"shared"` or `"checkout"`) in `.pragma/settings.json`. In a folder that is not a git repository, every instance works in the folder itself.
 
+An instance in a worktree is finished like any other session: [Finish](./worktrees.md#finish-a-worktree-session) merges its branch or opens a pull request and commits changes the CLI left uncommitted first. The worktree is then [removed automatically](./worktrees.md#when-worktrees-are-removed).
+
 ## Skills and agents from coding CLIs
 
 A repository set up for Claude Code, Codex, Copilot, Cursor or another coding CLI often keeps skills and subagents in that tool's own folder. Pragma reads these folders when a workspace opens and whenever a file in them changes, so they work in Pragma without copying anything. Only the project folders below are read; Pragma never changes a file in them.
