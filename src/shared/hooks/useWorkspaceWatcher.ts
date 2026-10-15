@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { warn } from "@tauri-apps/plugin-log";
@@ -33,24 +33,43 @@ export function useWorkspaceWatcher(): void {
   const paths = useOpenRepositoriesStore((s) => s.paths);
   const rootsKey = watchedRoots(rootPath, showAll, paths).join("\n");
   const roots = useMemo(() => (rootsKey ? rootsKey.split("\n") : []), [rootsKey]);
+  const watchedRef = useRef(new Set<string>());
+
+  // Only added and removed roots change, so a root that stays is never unwatched and watched again out of order.
+  useEffect(() => {
+    if (!isWorkspaceWindow()) return;
+    const watched = watchedRef.current;
+    for (const root of roots) {
+      if (watched.has(root)) continue;
+      watched.add(root);
+      invoke("workspace_watch", { root }).catch((err: unknown) => {
+        void warn(`Failed to watch ${root}: ${String(err)}`);
+      });
+    }
+    for (const root of watched) {
+      if (roots.includes(root)) continue;
+      watched.delete(root);
+      invoke("workspace_unwatch", { root }).catch(() => {});
+    }
+  }, [roots]);
+
+  useEffect(() => {
+    const watched = watchedRef.current;
+    return () => {
+      for (const root of watched) invoke("workspace_unwatch", { root }).catch(() => {});
+      watched.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (roots.length === 0 || !isWorkspaceWindow()) return;
-
     const unlisten = listen<WorkspaceFsChange>("workspace-fs-changed", (event) => {
       if (!roots.includes(event.payload.root)) return;
       void refreshFileTree(event.payload.root, event.payload.paths);
       void syncTabsWithDisk(event.payload.paths);
     });
-    for (const root of roots) {
-      invoke("workspace_watch", { root }).catch((err: unknown) => {
-        void warn(`Failed to watch ${root}: ${String(err)}`);
-      });
-    }
-
     return () => {
       unlisten.then(unlistenQuietly).catch(() => {});
-      for (const root of roots) invoke("workspace_unwatch", { root }).catch(() => {});
     };
   }, [roots]);
 

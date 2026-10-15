@@ -28,20 +28,15 @@ struct WorkspaceGitChange {
     root: String,
 }
 
-struct WorkspaceWatch {
-    root: String,
-    _watcher: RecommendedWatcher,
-}
-
-/// One workspace watcher per window, keyed by window label.
+/// One watcher per window and workspace root, keyed by window label and root.
 #[derive(Default)]
-pub struct WorkspaceWatchers(Mutex<HashMap<String, WorkspaceWatch>>);
+pub struct WorkspaceWatchers(Mutex<HashMap<(String, String), RecommendedWatcher>>);
 
 impl WorkspaceWatchers {
-    /// Drops the watcher of a closed window; dropping it also ends its debounce thread.
+    /// Drops the watchers of a closed window; dropping one also ends its debounce thread.
     pub fn remove_window(&self, label: &str) {
         if let Ok(mut watches) = self.0.lock() {
-            watches.remove(label);
+            watches.retain(|(window, _), _| window != label);
         }
     }
 }
@@ -186,7 +181,7 @@ fn debounce_loop(
     }
 }
 
-/// Watches the workspace root of the calling window and emits debounced
+/// Watches a workspace root of the calling window and emits debounced
 /// `workspace-fs-changed` events for paths that `.gitignore` does not exclude,
 /// plus `workspace-git-changed` when HEAD, the index or refs change.
 #[tauri::command(async)]
@@ -241,17 +236,11 @@ pub fn workspace_watch(app: AppHandle, window: tauri::Window, root: String) -> R
         .0
         .lock()
         .map_err(|_| "Workspace watcher state is poisoned".to_string())?;
-    watches.insert(
-        label,
-        WorkspaceWatch {
-            root,
-            _watcher: watcher,
-        },
-    );
+    watches.insert((label, root), watcher);
     Ok(())
 }
 
-/// Stops the calling window's watcher if it still watches `root`.
+/// Stops the calling window's watcher of `root`.
 #[tauri::command(async)]
 pub fn workspace_unwatch(
     app: AppHandle,
@@ -263,12 +252,7 @@ pub fn workspace_unwatch(
         .0
         .lock()
         .map_err(|_| "Workspace watcher state is poisoned".to_string())?;
-    if watches
-        .get(window.label())
-        .is_some_and(|watch| watch.root == root)
-    {
-        watches.remove(window.label());
-    }
+    watches.remove(&(window.label().to_string(), root));
     Ok(())
 }
 
