@@ -13,7 +13,7 @@ import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 
-import { showSessionInPane } from "./open";
+import { showSessionInRepository } from "../sessions/openInRepository";
 import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
 
 const SPAWN_REQUEST_EVENT = "child_session_spawn_request";
@@ -57,11 +57,7 @@ export function resolveSpawnApproval(sessionId: string, toolCallId: string, appr
   approval.resolve(approved);
 }
 
-function acpContext(
-  parentId: string,
-  rootPath: string,
-  cliProviderId: string | null,
-): AgentRunContext {
+function acpContext(parentId: string, cliProviderId: string | null): AgentRunContext {
   return {
     sessionId: () => parentId,
     childEngine: () => (cliProviderId ? { kind: "cli", cliProviderId } : { kind: "builtin" }),
@@ -73,7 +69,7 @@ function acpContext(
       if (activeChatSessionId !== parentId) {
         const title = chatSessions.find((item) => item.id === parentId)?.title ?? "A session";
         toast(`${title} wants to start a child session`, {
-          action: { label: "Open", onClick: () => showSessionInPane(rootPath, parentId) },
+          action: { label: "Open", onClick: () => void showSessionInRepository(parentId) },
         });
       }
       return requestSpawnApproval(parentId, approval);
@@ -105,7 +101,7 @@ export async function handleSpawnRequest(event: SpawnRequestEvent): Promise<void
     AGENT_TOOL_NAMES.spawnSession,
     event.arguments,
     decision,
-    acpContext(parent.id, parent.rootPath, cliProviderId),
+    acpContext(parent.id, cliProviderId),
   );
   const ok = "output" in outcome.result;
   const text = "output" in outcome.result ? outcome.result.output : outcome.result.errorText;
