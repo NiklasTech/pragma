@@ -25,6 +25,7 @@ import { useAgentsPanesStore } from "../panes/store";
 import { homePromptLabel, isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
 import { CliQuickStart } from "../home/CliQuickStart";
+import { RepositoryOverview } from "../activity/RepositoryOverview";
 import { ChatToolbar } from "./ChatToolbar";
 
 const STARTERS = [
@@ -210,6 +211,8 @@ export function AgentsHome() {
         )}
 
         {rootPath && <CliQuickStart rootPath={rootPath} />}
+
+        <RepositoryOverview variant="full" />
       </div>
     </div>
   );

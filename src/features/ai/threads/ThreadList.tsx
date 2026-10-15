@@ -35,6 +35,7 @@ import {
 } from "@/features/ai/sessions/repositorySessions";
 import { useStaleTerminalIds } from "@/features/ai/terminal/useStaleTerminals";
 import { useTranscriptJumpStore, useTranscriptSearch } from "@/features/ai/search/transcriptSearch";
+import { RepositoryOverview } from "@/features/ai/activity/RepositoryOverview";
 
 import { CategoryHeader } from "./CategoryHeader";
 import { buildThreadSections, listCategories, normalizeCategory } from "./categories";
@@ -286,6 +287,7 @@ export function ThreadList() {
       }}
     >
       <div className="flex shrink-0 flex-col gap-2 pb-1">
+        <RepositoryOverview variant="compact" />
         <Tabs
           value={view}
           onValueChange={(value: NamedAgentsView) => {
