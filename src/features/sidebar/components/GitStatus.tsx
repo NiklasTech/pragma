@@ -24,6 +24,7 @@ import { GutterBlame } from "./GutterBlame";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { CreateTagDialog } from "./git-graph/CreateTagDialog";
 import { OperationBanner } from "./git-status/OperationBanner";
+import { RepositoryChanges } from "./git-status/RepositoryChanges";
 import { TagsDialog } from "./git-status/TagsDialog";
 import { useGitCompareDialog } from "../lib/gitDialogs";
 
@@ -268,6 +269,8 @@ export function GitStatus() {
   return (
     <div className="@container flex h-full min-w-0 flex-col">
       {error && <GitErrorAlert error={error} />}
+
+      <RepositoryChanges />
 
       <BranchHeader
         isDetached={isDetached}
