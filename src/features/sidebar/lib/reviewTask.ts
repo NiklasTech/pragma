@@ -54,8 +54,8 @@ export async function sendReviewCommentsToAgent(
   }
 
   const tasks = useTasksStore.getState();
-  if (tasks.rootPath !== rootPath || !tasks.loaded) await tasks.load(rootPath);
-  if (!useTasksStore.getState().loaded) {
+  if (!tasks.byRoot[rootPath]?.loaded) await tasks.load(rootPath);
+  if (!useTasksStore.getState().byRoot[rootPath]?.loaded) {
     toast.error("Could not load the task board");
     return;
   }
@@ -71,7 +71,7 @@ export async function sendReviewCommentsToAgent(
     updatedAt: now,
   };
   try {
-    await useTasksStore.getState().saveTask(task);
+    await useTasksStore.getState().saveTask(rootPath, task);
   } catch {
     toast.error("Could not save the task");
     return;

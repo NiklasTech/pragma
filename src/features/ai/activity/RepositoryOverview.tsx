@@ -10,6 +10,9 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 
+import { ACTIVE_TASK_STATUSES, countActiveTasks, type ActiveTaskStatus } from "../tasks/counts";
+import { repositoryTasks, useTasksStore } from "../tasks/store";
+
 import {
   needsAttention,
   REPOSITORY_STATES,
@@ -17,6 +20,7 @@ import {
   type RepositoryState,
   type RepositorySummary,
 } from "./repositories";
+import { showRepositoryTasks } from "./showRepositoryTasks";
 import { useActivityStore } from "./store";
 import { useShowRepository } from "./useShowRepository";
 
@@ -27,16 +31,24 @@ const STATE_BADGES: Record<RepositoryState, "warning" | "default" | "destructive
   finished: "success",
 };
 
+const TASK_LABELS: Record<ActiveTaskStatus, string> = {
+  in_progress: "in progress",
+  in_review: "in review",
+};
+
 interface EntryProps {
   summary: RepositorySummary;
+  tasks: Record<ActiveTaskStatus, number>;
   active: boolean;
   variant: "compact" | "full";
   onShow: (summary: RepositorySummary, sessionIds?: string[]) => void;
 }
 
-function RepositoryEntry({ summary, active, variant, onShow }: EntryProps) {
+function RepositoryEntry({ summary, tasks, active, variant, onShow }: EntryProps) {
   const attention = needsAttention(summary);
   const states = REPOSITORY_STATES.filter((state) => summary.sessions[state].length > 0);
+  const taskStatuses = ACTIVE_TASK_STATUSES.filter((status) => tasks[status] > 0);
+  const hasBadges = states.length > 0 || taskStatuses.length > 0;
   const full = variant === "full";
 
   const content = (
@@ -49,7 +61,7 @@ function RepositoryEntry({ summary, active, variant, onShow }: EntryProps) {
         className={cn(
           "flex min-w-0 items-center gap-1.5 rounded-md text-left",
           full ? "px-3" : "px-2 pt-1",
-          states.length === 0 && !full && "pb-1",
+          !hasBadges && !full && "pb-1",
         )}
       >
         <FolderSimple
@@ -76,7 +88,7 @@ function RepositoryEntry({ summary, active, variant, onShow }: EntryProps) {
           />
         )}
       </button>
-      {states.length > 0 ? (
+      {hasBadges && (
         <div className={cn("flex flex-wrap gap-1", full ? "px-3" : "pr-2 pb-1 pl-7")}>
           {states.map((state) => {
             const count = summary.sessions[state].length;
@@ -97,9 +109,29 @@ function RepositoryEntry({ summary, active, variant, onShow }: EntryProps) {
               </Badge>
             );
           })}
+          {taskStatuses.map((status) => {
+            const count = tasks[status];
+            return (
+              <Badge
+                key={status}
+                variant="outline"
+                className="cursor-pointer tabular-nums"
+                render={
+                  <button
+                    type="button"
+                    title={`Open the tasks of ${summary.name}`}
+                    onClick={() => showRepositoryTasks(summary.path)}
+                  />
+                }
+              >
+                {count} {count === 1 ? "task" : "tasks"} {TASK_LABELS[status]}
+              </Badge>
+            );
+          })}
         </div>
-      ) : (
-        full && <p className="px-3 text-ui-xs text-fg-subtle">No active agents</p>
+      )}
+      {states.length === 0 && full && (
+        <p className="px-3 text-ui-xs text-fg-subtle">No active agents</p>
       )}
     </>
   );
@@ -138,6 +170,7 @@ export function RepositoryOverview({ variant }: { variant: "compact" | "full" })
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const entries = useActivityStore((state) => state.entries);
+  const tasksByRoot = useTasksStore((state) => state.byRoot);
   const showRepository = useShowRepository();
 
   const summaries = useMemo(
@@ -166,6 +199,7 @@ export function RepositoryOverview({ variant }: { variant: "compact" | "full" })
           <RepositoryEntry
             key={summary.path}
             summary={summary}
+            tasks={countActiveTasks(repositoryTasks(tasksByRoot, summary.path).tasks)}
             active={summary.path === rootPath}
             variant={variant}
             onShow={handleShow}

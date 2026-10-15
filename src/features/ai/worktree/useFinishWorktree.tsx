@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { CreatePullRequestDialog } from "@/features/sidebar/components/git-status/CreatePullRequestDialog";
 import { commitMessageFor } from "@/features/ai/review/commit";
-import { useTasksStore } from "@/features/ai/tasks/store";
+import { findSessionTask, useTasksStore } from "@/features/ai/tasks/store";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -133,7 +133,7 @@ export function useFinishWorktree(rootPath: string): {
 
   const openPullRequest = useCallback(
     async (session: ChatSession, worktree: WorkEnvironment) => {
-      const task = useTasksStore.getState().tasks.find((item) => item.sessionId === session.id);
+      const task = findSessionTask(useTasksStore.getState().byRoot, session.id);
       try {
         const messages =
           session.messages.length > 0
@@ -157,7 +157,7 @@ export function useFinishWorktree(rootPath: string): {
       const session = chatSessions.find((item) => item.id === sessionId);
       const worktree = sessionEnvironment(session, workEnvironments);
       if (!session || worktree?.kind !== "worktree") return;
-      const task = useTasksStore.getState().tasks.find((item) => item.sessionId === session.id);
+      const task = findSessionTask(useTasksStore.getState().byRoot, session.id);
       void (async () => {
         try {
           const ready = await commitBeforeFinish(

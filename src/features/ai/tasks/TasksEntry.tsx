@@ -3,13 +3,16 @@
 import { Kanban } from "@phosphor-icons/react";
 
 import { cn } from "@/shared/lib/utils";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
-import { useTasksStore } from "./store";
+import { repositoryTasks, useTasksStore } from "./store";
 import { useTasksUiStore } from "./ui";
 
 export function TasksEntry() {
+  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const openCount = useTasksStore(
-    (state) => state.tasks.filter((task) => task.status !== "done").length,
+    (state) =>
+      repositoryTasks(state.byRoot, rootPath).tasks.filter((task) => task.status !== "done").length,
   );
   const boardOpen = useTasksUiStore((state) => state.boardOpen);
   const openBoard = useTasksUiStore((state) => state.openBoard);
@@ -17,7 +20,7 @@ export function TasksEntry() {
   return (
     <button
       type="button"
-      onClick={openBoard}
+      onClick={() => openBoard()}
       aria-current={boardOpen ? "page" : undefined}
       className={cn(
         "group flex h-8 w-full items-center gap-2 rounded-lg px-3.5 text-ui-sm transition-colors",

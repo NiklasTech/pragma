@@ -6,6 +6,13 @@ const stores = vi.hoisted(() => ({
   entries: {} as Record<string, { state: string; since: number }>,
 }));
 
+const tasks = vi.hoisted(() => ({
+  byRoot: {} as Record<
+    string,
+    { tasks: Array<{ id: string; status: string }>; loaded: boolean; loadFailed: boolean }
+  >,
+}));
+
 const ai = vi.hoisted(() => ({
   chatSessions: [] as Array<{
     id: string;
@@ -40,6 +47,17 @@ vi.mock("./useShowRepository", () => ({
   useShowRepository: () => async () => {},
 }));
 
+vi.mock("./showRepositoryTasks", () => ({
+  showRepositoryTasks: () => {},
+}));
+
+vi.mock("../tasks/store", () => ({
+  repositoryTasks: (byRoot: typeof tasks.byRoot, rootPath: string) =>
+    byRoot[rootPath] ?? { tasks: [], loaded: false, loadFailed: false },
+  useTasksStore: (selector: (state: { byRoot: typeof tasks.byRoot }) => unknown) =>
+    selector({ byRoot: tasks.byRoot }),
+}));
+
 import type { DashboardState } from "./dashboard";
 import { RepositoryOverview } from "./RepositoryOverview";
 
@@ -55,6 +73,7 @@ describe("RepositoryOverview", () => {
   beforeEach(() => {
     ai.chatSessions = [];
     stores.entries = {};
+    tasks.byRoot = {};
     stores.paths = ["/code/pragma", "/code/test-repo", "/code/empty"];
   });
 
@@ -77,6 +96,23 @@ describe("RepositoryOverview", () => {
 
     expect(html).toContain("1 waiting");
     expect(html).toContain('aria-label="Needs your input"');
+  });
+
+  it("shows the tasks in progress and in review of each repository", () => {
+    const board = (statuses: string[]) => ({
+      tasks: statuses.map((status, index) => ({ id: `${status}-${index}`, status })),
+      loaded: true,
+      loadFailed: false,
+    });
+    tasks.byRoot = {
+      "/code/pragma": board(["in_progress", "in_progress", "todo"]),
+      "/code/test-repo": board(["in_review", "done"]),
+    };
+
+    const html = renderToStaticMarkup(<RepositoryOverview variant="full" />);
+
+    expect(html).toContain("2 tasks in progress");
+    expect(html).toContain("1 task in review");
   });
 
   it("stays hidden with a single open repository", () => {
