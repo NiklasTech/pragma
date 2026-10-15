@@ -6,6 +6,7 @@ import {
   FolderOpen,
   FolderPlus,
   Files,
+  Folders,
   Spinner,
 } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
@@ -22,10 +23,12 @@ import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
 import { useLocalHistory } from "@/shared/hooks/useLocalHistory";
 import { getVisibleNodes, useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { buildGitDecorations } from "@/features/sidebar/lib/gitDecorations";
 import { useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
 import { movePaths } from "@/features/sidebar/lib/fileTreeActions";
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
+import { useRepositoryTree } from "@/features/sidebar/hooks/useRepositoryTree";
 import { FileTreeNode } from "./FileTreeNode";
 
 const ROW_HEIGHT = 26;
@@ -44,6 +47,10 @@ export function FileExplorer() {
 
   const { openPanel } = useLocalHistory();
   const collapseAll = useFileExplorerStore((s) => s.collapseAll);
+  const showAll = useFileExplorerStore((s) => s.showAllRepositories);
+  const setShowAll = useFileExplorerStore((s) => s.setShowAllRepositories);
+  const repositoryCount = useOpenRepositoriesStore((s) => s.paths.length);
+  useRepositoryTree();
   const gitSnapshot = useGitStore((s) => s.snapshot);
   const decorations = useMemo(() => buildGitDecorations(gitSnapshot), [gitSnapshot]);
   const [createAtRoot, setCreateAtRoot] = useState<{ open: boolean; isDirectory: boolean }>({
@@ -66,7 +73,7 @@ export function FileExplorer() {
       else
         selection.extend(
           path,
-          visibleNodes.map((item) => item.node.path),
+          visibleNodes.filter((item) => !item.node.repositoryRoot).map((item) => item.node.path),
         );
     },
     [visibleNodes],
@@ -111,8 +118,16 @@ export function FileExplorer() {
               className="min-w-0 flex-1 truncate text-ui-xs font-semibold text-fg-default"
               title={rootPath}
             >
-              {rootName ?? "Workspace"}
+              {showAll ? "Repositories" : (rootName ?? "Workspace")}
             </span>
+            {(showAll || repositoryCount > 1) && (
+              <HeaderAction
+                label={showAll ? "Show the active repository" : "Show all repositories"}
+                onClick={() => setShowAll(!showAll)}
+              >
+                <Folders size={14} weight={showAll ? "fill" : "regular"} />
+              </HeaderAction>
+            )}
             <HeaderAction
               label="New file"
               onClick={() => setCreateAtRoot({ open: true, isDirectory: false })}

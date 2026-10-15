@@ -35,9 +35,10 @@ async function listChildren(path: string): Promise<FileSystemNode[] | null> {
   }
 }
 
-/// Re-lists the root and every loaded folder that contains a changed path.
+/// Re-lists the root and every loaded folder that contains a changed path; with all repositories shown, the root is one of the top-level folders.
 export async function refreshFileTree(rootPath: string, changedPaths: string[]): Promise<void> {
   const { tree, expandedDirs } = useFileExplorerStore.getState();
+  const nested = tree.some((node) => node.repositoryRoot && node.path === rootPath);
   const targets = [...changedDirectories(changedPaths)].filter((dir) => {
     if (dir === rootPath) return true;
     const node = findNode(tree, dir);
@@ -49,9 +50,8 @@ export async function refreshFileTree(rootPath: string, changedPaths: string[]):
       const children = await listChildren(dir);
       if (!children) return;
       const store = useFileExplorerStore.getState();
-      if (store.rootPath !== rootPath) return;
-      if (dir === rootPath) {
-        store.setTree(mergeChildren(store.tree, children));
+      if (dir === rootPath && !nested) {
+        if (store.rootPath === rootPath) store.setTree(mergeChildren(store.tree, children));
         return;
       }
       const node = findNode(store.tree, dir);

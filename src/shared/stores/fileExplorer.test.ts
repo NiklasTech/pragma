@@ -66,6 +66,21 @@ describe("explorer state per repository", () => {
     expect(next.selectedPath).toBe("/code/a/x.ts");
   });
 
+  it("keeps one expanded set for all repositories while all of them are shown", () => {
+    const store = useFileExplorerStore.getState();
+    store.setShowAllRepositories(true);
+    store.setRootPath("/code/a");
+    store.expandDir("/code/a/src");
+    store.expandDir("/code/b/docs");
+
+    store.setRootPath("/code/b");
+
+    expect(useFileExplorerStore.getState().expandedDirs).toEqual(
+      new Set(["/code/a/src", "/code/b/docs"]),
+    );
+    store.setShowAllRepositories(false);
+  });
+
   it("forgets the state of a closed repository", () => {
     const store = useFileExplorerStore.getState();
     store.setRootPath("/code/a");

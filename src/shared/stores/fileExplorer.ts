@@ -10,6 +10,8 @@ export interface FileSystemNode {
   children?: FileSystemNode[];
   isLoading?: boolean;
   error?: string;
+  /** Top-level folder of an open repository while the explorer shows all of them. */
+  repositoryRoot?: boolean;
 }
 
 export interface VisibleFileNode {
@@ -50,6 +52,8 @@ interface FileExplorerState {
   savedStates: Record<string, RepositoryExplorerState>;
   tree: FileSystemNode[];
   isLoading: boolean;
+  /** Shows every open repository as a top-level folder instead of only the active one. */
+  showAllRepositories: boolean;
   _hasHydrated: boolean;
 }
 
@@ -70,6 +74,7 @@ interface FileExplorerActions {
   removeNode: (path: string) => void;
   renameNode: (oldPath: string, newPath: string, newName: string) => void;
   addNode: (parentPath: string, node: FileSystemNode) => void;
+  setShowAllRepositories: (show: boolean) => void;
   markHydrated: () => void;
 }
 
@@ -82,6 +87,7 @@ const initialState: FileExplorerState = {
   savedStates: {},
   tree: [],
   isLoading: false,
+  showAllRepositories: false,
   _hasHydrated: false,
 };
 
@@ -91,7 +97,12 @@ const fileExplorerStoreCreator: StateCreator<FileExplorerState & FileExplorerAct
 ) => ({
   ...initialState,
 
-  setRootPath: (path) => set((state) => switchRepository(state, path)),
+  // With all repositories shown, one tree holds the expanded folders of every repository.
+  setRootPath: (path) =>
+    set((state) =>
+      state.showAllRepositories ? { rootPath: path, tree: [] } : switchRepository(state, path),
+    ),
+  setShowAllRepositories: (show) => set({ showAllRepositories: show }),
   forgetRepository: (path) => {
     if (!(path in get().savedStates)) return;
     const savedStates = { ...get().savedStates };
@@ -274,6 +285,7 @@ export const useFileExplorerStore = create<FileExplorerState & FileExplorerActio
       expandedDirs: Array.from(state.expandedDirs),
       selectedPath: state.selectedPath,
       savedStates: state.savedStates,
+      showAllRepositories: state.showAllRepositories,
     }),
     onRehydrateStorage: () => (state) => {
       if (!state) return;
