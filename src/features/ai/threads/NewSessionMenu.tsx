@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   ArrowsClockwise,
   Chat,
@@ -51,6 +51,9 @@ interface NewSessionMenuProps {
   actions: NewSessionActions;
   /** Disables the button and explains why in its tooltip. */
   disabledReason?: string;
+  /** Shown at the top to start the session in another open repository. */
+  repositoryPicker?: ReactNode;
+  onOpen?: () => void;
   className?: string;
   variant?: "default" | "outline" | "secondary";
   size?: "default" | "sm";
@@ -62,6 +65,8 @@ export function NewSessionMenu({
   defaultChoice,
   actions,
   disabledReason,
+  repositoryPicker,
+  onOpen,
   className,
   variant = "default",
   size = "default",
@@ -76,10 +81,11 @@ export function NewSessionMenu({
     (next: boolean) => {
       setOpen(next);
       if (!next) return;
+      onOpen?.();
       if (manifests.length === 0) void loadCLIManifests();
       if (Object.keys(statuses).length === 0) void loadCLIStatuses();
     },
-    [loadCLIManifests, loadCLIStatuses, manifests.length, statuses],
+    [loadCLIManifests, loadCLIStatuses, manifests.length, onOpen, statuses],
   );
 
   const rows = buildSessionMenuCliRows(manifests, statuses);
@@ -113,6 +119,7 @@ export function NewSessionMenu({
         }
       />
       <DropdownMenuContent align="start" className="w-72">
+        {repositoryPicker}
         <DropdownMenuGroup>
           <DropdownMenuLabel>Conversation</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => void actions.startAsk()}>
@@ -237,7 +244,12 @@ export function NewSessionMenu({
         </DropdownMenuGroup>
 
         {isRepo && (
-          <JoinWorktreeMenu cliRows={installedRows} findManifest={findManifest} actions={actions} />
+          <JoinWorktreeMenu
+            rootPath={rootPath ?? undefined}
+            cliRows={installedRows}
+            findManifest={findManifest}
+            actions={actions}
+          />
         )}
 
         <DropdownMenuSeparator />

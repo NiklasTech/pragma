@@ -19,6 +19,8 @@ import type { SessionMenuCliRow } from "./session-menu";
 import type { NewSessionActions } from "./useNewSessionActions";
 
 interface JoinWorktreeMenuProps {
+  /** The repository whose worktrees are offered, the active one when not given. */
+  rootPath?: string;
   cliRows: SessionMenuCliRow[];
   findManifest: (manifestId: string) => CLIManifest | undefined;
   actions: NewSessionActions;
@@ -29,8 +31,13 @@ function plural(count: number, word: string): string {
 }
 
 /** New session > Join worktree of...: starts a session in the worktree other sessions use. */
-export function JoinWorktreeMenu({ cliRows, findManifest, actions }: JoinWorktreeMenuProps) {
-  const environments = useRepositoryEnvironments();
+export function JoinWorktreeMenu({
+  rootPath,
+  cliRows,
+  findManifest,
+  actions,
+}: JoinWorktreeMenuProps) {
+  const environments = useRepositoryEnvironments(rootPath);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const worktrees = useMemo(
     () => joinableWorktrees(environments, chatSessions),

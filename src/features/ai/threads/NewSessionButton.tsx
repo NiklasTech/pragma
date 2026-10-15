@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
-import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
+import { useRepositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 import { useAgentStore } from "@/features/agent/store";
 import { MAX_PANES, MAX_PANES_TITLE } from "../panes/operations";
 import { selectLeafCount, useAgentsPanesStore } from "../panes/store";
 import { defaultEnvironment } from "../sessions/environment";
 import { useRepositorySessions } from "../sessions/repositorySessions";
+import { RepositoryMenuPicker } from "../sessions/RepositoryPicker";
+import { useRepositoryChoice } from "../sessions/useRepositoryChoice";
 
 import { NewSessionMenu } from "./NewSessionMenu";
 import { useNewSessionActions } from "./useNewSessionActions";
@@ -32,10 +33,12 @@ export function NewSessionButton({
   variant,
   size,
 }: NewSessionButtonProps) {
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
+  const repository = useRepositoryChoice();
+  const rootPath = repository.rootPath;
+  const pickable = targetLeafId === undefined && rootPath !== null && repository.paths.length > 1;
   const agentModeActive = useAgentStore((state) => state.modeActive);
-  const chatSessions = useRepositorySessions();
-  const setting = useWorkspaceSettingsStore((state) => state.settings?.agent?.writingSessions);
+  const chatSessions = useRepositorySessions(rootPath ?? undefined);
+  const setting = useRepositoryWorkspaceSettings(rootPath)?.agent?.writingSessions;
   const actions = useNewSessionActions(rootPath, targetLeafId);
   const atCap = useAgentsPanesStore(
     (state) => selectLeafCount(state, rootPath ?? "default") >= MAX_PANES,
@@ -67,6 +70,16 @@ export function NewSessionButton({
       defaultChoice={defaultEnvironment(chatSessions, setting)}
       actions={actions}
       disabledReason={atCap && !targetLeafId ? MAX_PANES_TITLE : undefined}
+      repositoryPicker={
+        pickable ? (
+          <RepositoryMenuPicker
+            paths={repository.paths}
+            value={rootPath}
+            onChange={repository.pick}
+          />
+        ) : undefined
+      }
+      onOpen={repository.reset}
       className={className}
       variant={variant}
       size={size}

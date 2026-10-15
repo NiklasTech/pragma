@@ -25,7 +25,7 @@ export function EmptyLeafView({ leafId }: { leafId: string }) {
   const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
   const assignSession = useAgentsPanesStore((state) => state.assignSession);
   const [query, setQuery] = useState("");
-  const staleTerminals = useStaleTerminalIds(chatSessions, rootPath);
+  const staleTerminals = useStaleTerminalIds(chatSessions);
 
   const candidates = useMemo(() => {
     const shown = new Set(collectLeaves(root).map((leaf) => leaf.sessionId));

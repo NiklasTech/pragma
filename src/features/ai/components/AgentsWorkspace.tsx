@@ -20,6 +20,7 @@ import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { AgentsContextPane } from "./AgentsContextPane";
 import { AgentsHome } from "./AgentsHome";
 import { PaneTree } from "../panes/PaneTree";
+import { openInRepository } from "../sessions/openInRepository";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { removeOrphanWorktrees } from "../worktree/orphans";
 import { usePullRequestChecks } from "../worktree/usePullRequestChecks";
@@ -36,7 +37,6 @@ export function AgentsWorkspace() {
   const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
   const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, rootPath));
   const syncSessions = useAgentsPanesStore((state) => state.syncSessions);
-  const openSession = useAgentsPanesStore((state) => state.openSession);
 
   const agentStatus = useAgentStore((state) => state.status);
   const editReviewCount = useAgentStore((state) => state.editReviews.length);
@@ -136,13 +136,11 @@ export function AgentsWorkspace() {
     !showForm && view === "agents" && selectedAgent !== null && !focusedBelongsToSelected;
   const showBoard = boardOpen && view === "sessions";
 
-  const handleNewChat = (agentId: string) => {
+  const handleNewChat = (agentId: string, chatRoot: string) => {
     const agent = agents.find((item) => item.id === agentId);
     if (!agent) return;
-    void createAgentChat(rootPath, agent)
-      .then((session) => {
-        openSession(rootPath, session.id);
-      })
+    void createAgentChat(chatRoot, agent)
+      .then((session) => openInRepository(chatRoot, session.id))
       .catch(() => {});
   };
 
@@ -162,7 +160,7 @@ export function AgentsWorkspace() {
         ) : showAgentPage && selectedAgent ? (
           <AgentPage
             agent={selectedAgent}
-            onNewChat={() => handleNewChat(selectedAgent.id)}
+            onNewChat={(chatRoot) => handleNewChat(selectedAgent.id, chatRoot)}
             onEdit={() => startEditingAgent(selectedAgent.id)}
             onDeleted={() => selectAgent(null)}
           />

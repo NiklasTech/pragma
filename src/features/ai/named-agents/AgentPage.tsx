@@ -18,6 +18,8 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { outsideChildren, releaseChildren } from "@/features/ai/children/release";
+import { RepositorySelect } from "@/features/ai/sessions/RepositoryPicker";
+import { useRepositoryChoice } from "@/features/ai/sessions/useRepositoryChoice";
 
 import { seededAccent } from "../panes/providerAccent";
 import { AgentFoldersTab } from "./AgentFoldersTab";
@@ -42,7 +44,7 @@ const TABS: Array<{ id: AgentTab; label: string; editable?: boolean }> = [
 
 interface AgentPageProps {
   agent: Agent;
-  onNewChat: () => void;
+  onNewChat: (rootPath: string) => void;
   onEdit: () => void;
   onDeleted: () => void;
 }
@@ -58,6 +60,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const chatSessions = useRepositorySessions();
   const cliManifests = useAIStore((state) => state.cliManifests);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const repository = useRepositoryChoice();
 
   const chatCount = chatSessions.filter((session) => session.agentId === agent.id).length;
   const ownedIds = chatSessions
@@ -71,6 +74,9 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
   const readOnly = Boolean(agent.source);
   const tabs = TABS.filter((item) => !readOnly || !item.editable);
   const activeTab = tabs.some((item) => item.id === tab) ? tab : "brief";
+  // Project and CLI folder agents live in the active repository, personal agents work in any.
+  const pickRepository = scope === "personal" && !readOnly && repository.paths.length > 1;
+  const chatRoot = (pickRepository ? repository.rootPath : null) ?? rootPath;
 
   const handleFolders = (folders: string[]) => {
     void saveAgent({ ...agent, folders, updatedAt: Date.now() }).catch(() =>
@@ -192,7 +198,16 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
               Edit
             </Button>
           )}
-          <Button type="button" size="sm" onClick={onNewChat}>
+          {pickRepository && (
+            <RepositorySelect
+              paths={repository.paths}
+              value={chatRoot}
+              onChange={repository.pick}
+              size="sm"
+              className="max-w-40"
+            />
+          )}
+          <Button type="button" size="sm" onClick={() => onNewChat(chatRoot)}>
             <Plus size={13} />
             New chat
           </Button>
