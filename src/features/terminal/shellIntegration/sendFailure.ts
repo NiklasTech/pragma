@@ -43,7 +43,7 @@ export async function sendCommandFailure(
     return false;
   }
 
-  revealChatSession(rootPath, session.id);
+  revealChatSession(session.id);
   const sent = await sendToSession(session.id, buildFailureMessage(command, intent));
   if (!sent) toast.error("Could not send the command. Try again once the session is idle.");
   return sent;

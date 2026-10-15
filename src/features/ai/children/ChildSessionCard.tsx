@@ -4,9 +4,8 @@ import { Robot, TerminalWindow } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
-import { showSessionInPane } from "./open";
+import { showSessionInRepository } from "../sessions/openInRepository";
 import { CHILD_STATUS_LABELS, isChildRunning } from "./status";
 import { useSessionStatuses } from "./useSessionStatuses";
 
@@ -17,7 +16,6 @@ interface ChildSessionCardProps {
 
 export function ChildSessionCard({ sessionId, title }: ChildSessionCardProps) {
   const session = useAIStore((state) => state.chatSessions.find((item) => item.id === sessionId));
-  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
   const tracked = useMemo(() => (session ? [session] : []), [session]);
   const status = useSessionStatuses(tracked).get(sessionId) ?? null;
   const available = session !== undefined && !session.archived;
@@ -49,7 +47,7 @@ export function ChildSessionCard({ sessionId, title }: ChildSessionCardProps) {
           variant="outline"
           size="sm"
           className="rounded-full px-3"
-          onClick={() => showSessionInPane(rootPath, sessionId)}
+          onClick={() => void showSessionInRepository(sessionId)}
         >
           Open
         </Button>

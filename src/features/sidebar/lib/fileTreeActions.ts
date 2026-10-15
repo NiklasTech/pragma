@@ -107,5 +107,5 @@ export async function addPathsToChat(paths: string[]): Promise<void> {
   useComposerInsertStore
     .getState()
     .insert(paths.map((path) => `@${relativePath(rootPath, path)}`).join(" "));
-  revealChatSession(rootPath, session.id);
+  revealChatSession(session.id);
 }

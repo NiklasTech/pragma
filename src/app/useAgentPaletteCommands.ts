@@ -31,7 +31,7 @@ async function startPickedSession(rootPath: string, choice: string): Promise<voi
       ? { init: { kind: "ask" } }
       : { init: { kind: "agent" }, environment: choice === WORKTREE_ID ? "worktree" : "checkout" },
   );
-  revealChatSession(rootPath, session.id);
+  revealChatSession(session.id);
 }
 
 function pickNewSession(): void {
@@ -84,7 +84,7 @@ function pickSession(): void {
     onSelect: (item) => {
       showSessions();
       useTasksUiStore.getState().closeBoard();
-      revealChatSession(workspaceRoot(), item.id);
+      revealChatSession(item.id);
     },
   });
 }
