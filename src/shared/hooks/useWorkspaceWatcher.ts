@@ -16,22 +16,22 @@ interface WorkspaceFsChange {
   paths: string[];
 }
 
-/// The roots the explorer shows: every open repository when it shows all of them, else the active one.
-export function watchedRoots(
-  rootPath: string | null,
-  showAll: boolean,
-  paths: readonly string[],
-): string[] {
+/// Every open repository is watched, so tabs and git status of inactive repositories stay current.
+export function watchedRoots(rootPath: string | null, paths: readonly string[]): string[] {
   if (!rootPath) return [];
-  return showAll && paths.includes(rootPath) ? [...paths] : [rootPath];
+  return paths.includes(rootPath) ? [...paths] : [rootPath, ...paths];
+}
+
+/// Whether the explorer tree shows the root: the active one, or every root while all are shown.
+export function treeShowsRoot(root: string, rootPath: string | null, showAll: boolean): boolean {
+  return showAll || root === rootPath;
 }
 
 /// Picks up changes made outside Pragma (CLI agents, git, other editors) in the file tree and open tabs.
 export function useWorkspaceWatcher(): void {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
-  const showAll = useFileExplorerStore((s) => s.showAllRepositories);
   const paths = useOpenRepositoriesStore((s) => s.paths);
-  const rootsKey = watchedRoots(rootPath, showAll, paths).join("\n");
+  const rootsKey = watchedRoots(rootPath, paths).join("\n");
   const roots = useMemo(() => (rootsKey ? rootsKey.split("\n") : []), [rootsKey]);
   const watchedRef = useRef(new Set<string>());
 
@@ -65,7 +65,10 @@ export function useWorkspaceWatcher(): void {
     if (roots.length === 0 || !isWorkspaceWindow()) return;
     const unlisten = listen<WorkspaceFsChange>("workspace-fs-changed", (event) => {
       if (!roots.includes(event.payload.root)) return;
-      void refreshFileTree(event.payload.root, event.payload.paths);
+      const explorer = useFileExplorerStore.getState();
+      if (treeShowsRoot(event.payload.root, explorer.rootPath, explorer.showAllRepositories)) {
+        void refreshFileTree(event.payload.root, event.payload.paths);
+      }
       void syncTabsWithDisk(event.payload.paths);
     });
     return () => {
