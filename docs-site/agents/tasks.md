@@ -67,6 +67,8 @@ Worktrees are created one after another, so their creation never races on the re
 
 The dialog starts with **Each in its own worktree**. To change that for a project, set **Settings > Project > Agent > Parallel tasks work in**, stored as `agent.parallelTaskEnvironment` (`"isolated"` or `"shared"`) in `.pragma/settings.json`.
 
+Finish each task's session with [Finish](./worktrees.md#finish-a-worktree-session). Its worktree is [removed automatically](./worktrees.md#when-worktrees-are-removed) once the task moves to **Done** or its branch is merged.
+
 ## Storage
 
 Tasks are stored per workspace in `pragma/tasks/<workspace hash>.json` inside Pragma's application data directory. They are not part of the repository.
