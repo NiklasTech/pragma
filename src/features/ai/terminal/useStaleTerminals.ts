@@ -17,9 +17,9 @@ function openSessionIds(rootPath: string): Set<string> {
   return new Set(collectLeaves(root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])));
 }
 
-/// Terminal sessions to hide from the thread list, updated when their process exits.
-export function useStaleTerminalIds(sessions: ChatSession[], rootPath: string): Set<string> {
-  const root = useAgentsPanesStore((state) => state.trees[rootPath]?.root ?? null);
+/// Terminal sessions to hide from the thread list, updated when their process exits; open in the pane layout of any repository counts.
+export function useStaleTerminalIds(sessions: ChatSession[]): Set<string> {
+  const trees = useAgentsPanesStore((state) => state.trees);
   const [statusVersion, setStatusVersion] = useState(0);
 
   const terminalKey = sessions
@@ -39,11 +39,13 @@ export function useStaleTerminalIds(sessions: ChatSession[], rootPath: string): 
 
   return useMemo(() => {
     const open = new Set(
-      collectLeaves(root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])),
+      Object.values(trees).flatMap((entry) =>
+        collectLeaves(entry.root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])),
+      ),
     );
     return new Set(staleTerminalIds(sessions, open, isRunning));
     // statusVersion re-reads the terminal statuses, which live outside React.
-  }, [root, sessions, statusVersion]);
+  }, [trees, sessions, statusVersion]);
 }
 
 /// Deletes standalone terminal sessions of the folder that are neither open nor running.

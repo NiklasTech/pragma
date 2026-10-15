@@ -13,11 +13,10 @@ import { toast } from "sonner";
 import { Input } from "@/shared/components/ui/input";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { useAIStore, type ChatSession } from "@/shared/stores/ai";
+import { repositoryEnvironments, useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
-import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
 import { useFinishWorktree } from "@/features/ai/worktree/useFinishWorktree";
 import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
@@ -29,36 +28,33 @@ import { useTasksUiStore } from "@/features/ai/tasks/ui";
 import { buildSessionTree } from "@/features/ai/children/limits";
 import { childThreadStatus, isChildRunning } from "@/features/ai/children/status";
 import { useSessionStatuses } from "@/features/ai/children/useSessionStatuses";
-import {
-  useRepositoryEnvironments,
-  useRepositorySessions,
-} from "@/features/ai/sessions/repositorySessions";
+import { openInRepository } from "@/features/ai/sessions/openInRepository";
 import { useStaleTerminalIds } from "@/features/ai/terminal/useStaleTerminals";
 import { useTranscriptJumpStore, useTranscriptSearch } from "@/features/ai/search/transcriptSearch";
 import { RepositoryOverview } from "@/features/ai/activity/RepositoryOverview";
 
-import { CategoryHeader } from "./CategoryHeader";
 import { buildThreadSections, listCategories, normalizeCategory } from "./categories";
 import { DeleteThreadDialog } from "./DeleteThreadDialog";
 import { buildEnvironmentSections } from "./environmentSections";
 import { NewSessionButton } from "./NewSessionButton";
 import { resolveThreadStatus } from "./helpers";
+import { groupByRepository } from "./repositoryGroups";
 import { duplicateThreads, setThreadsCategory } from "./threadActions";
+import { ThreadGroupList } from "./ThreadGroupList";
 import { ThreadRow } from "./ThreadRow";
+import { ThreadScopeSwitch } from "./ThreadScopeSwitch";
 import { ThreadSelectionBar } from "./ThreadSelectionBar";
+import { useScopedThreads, type ThreadScope } from "./useScopedThreads";
 import { useThreadSelection } from "./useThreadSelection";
 
 const SEARCH_THRESHOLD = 8;
 
 export function ThreadList() {
-  const chatSessions = useRepositorySessions();
-  const workEnvironments = useRepositoryEnvironments();
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
-  const openSession = useAgentsPanesStore((state) => state.openSession);
 
   const agents = useNamedAgentsStore((state) => state.agents);
   const loaded = useNamedAgentsStore((state) => state.loaded);
@@ -69,6 +65,15 @@ export function ThreadList() {
   const selectAgent = useNamedAgentsUiStore((state) => state.selectAgent);
   const startCreatingAgent = useNamedAgentsUiStore((state) => state.startCreatingAgent);
 
+  const [scope, setScope] = useState<ThreadScope>("repository");
+  const {
+    paths,
+    allRepositories,
+    sessions: chatSessions,
+    environments: workEnvironments,
+  } = useScopedThreads(view === "sessions" ? scope : "repository");
+  const activeRoot = rootPath ?? "default";
+
   const [query, setQuery] = useState("");
   const [sessionsToDelete, setSessionsToDelete] = useState<string[]>([]);
   const [discardSessionId, setDiscardSessionId] = useState<string | null>(null);
@@ -77,7 +82,7 @@ export function ThreadList() {
   const [byWorktree, setByWorktree] = useState(false);
   const finishWorktree = useFinishWorktree(rootPath ?? "default");
 
-  const staleTerminals = useStaleTerminalIds(chatSessions, rootPath ?? "default");
+  const staleTerminals = useStaleTerminalIds(chatSessions);
   const sessions = useMemo(
     () => chatSessions.filter((session) => !session.archived && !staleTerminals.has(session.id)),
     [chatSessions, staleTerminals],
@@ -89,7 +94,7 @@ export function ThreadList() {
   );
 
   const transcriptHits = useTranscriptSearch(
-    rootPath ?? "default",
+    allRepositories ? paths : [activeRoot],
     view === "sessions" ? query : "",
   );
 
@@ -111,16 +116,28 @@ export function ThreadList() {
   );
 
   const hasWorktrees = workEnvironments.some((environment) => environment.kind === "worktree");
-  const sections = useMemo(
-    () =>
+  const groups = useMemo(() => {
+    const buildSections = (items: ChatSession[], path: string) =>
       byWorktree && hasWorktrees
-        ? buildEnvironmentSections(tree.roots, workEnvironments)
+        ? buildEnvironmentSections(items, repositoryEnvironments(workEnvironments, path))
         : buildThreadSections(
-            tree.roots,
+            items,
             (session) => resolveThreadStatus(agentStatus, session.id, runSessionId) !== "idle",
-          ),
-    [agentStatus, byWorktree, hasWorktrees, runSessionId, tree, workEnvironments],
-  );
+          );
+    if (allRepositories) return groupByRepository(paths, tree.roots, buildSections);
+    const sections = buildSections(tree.roots, activeRoot);
+    return [{ key: "repository", path: activeRoot, name: "", count: tree.roots.length, sections }];
+  }, [
+    activeRoot,
+    agentStatus,
+    allRepositories,
+    byWorktree,
+    hasWorktrees,
+    paths,
+    runSessionId,
+    tree,
+    workEnvironments,
+  ]);
 
   const categories = useMemo(() => listCategories(sessions), [sessions]);
 
@@ -130,11 +147,14 @@ export function ThreadList() {
       ids.push(session.id);
       for (const child of tree.childrenOf.get(session.id) ?? []) walk(child);
     };
-    for (const section of sections) {
-      if (!collapsed.has(section.key)) section.items.forEach(walk);
+    for (const group of groups) {
+      if (collapsed.has(group.key)) continue;
+      for (const section of group.sections) {
+        if (!collapsed.has(section.key)) section.items.forEach(walk);
+      }
     }
     return ids;
-  }, [collapsed, sections, tree]);
+  }, [collapsed, groups, tree]);
 
   const selection = useThreadSelection(visibleOrder);
   const { extendTo: extendSelection, toggle: toggleSelection } = selection;
@@ -169,9 +189,10 @@ export function ThreadList() {
   const handleSelect = useCallback(
     (sessionId: string) => {
       useTasksUiStore.getState().closeBoard();
-      openSession(rootPath ?? "default", sessionId);
+      const session = chatSessions.find((item) => item.id === sessionId);
+      void openInRepository(session?.rootPath ?? activeRoot, sessionId);
     },
-    [openSession, rootPath],
+    [activeRoot, chatSessions],
   );
 
   const handleRename = useCallback(
@@ -264,7 +285,7 @@ export function ThreadList() {
       onNewCategory={(sessionId) => setCategoryTargets([sessionId])}
       onDelete={(sessionId) => setSessionsToDelete([sessionId])}
       onDiscard={setDiscardSessionId}
-      onFinish={finishWorktree.finish}
+      onFinish={session.rootPath === activeRoot ? finishWorktree.finish : undefined}
     />
   );
 
@@ -311,6 +332,7 @@ export function ThreadList() {
           <>
             <NewSessionButton className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm shadow-[0_6px_18px_-10px_var(--color-accent-glow)]" />
             <TasksEntry />
+            {paths.length > 1 && <ThreadScopeSwitch value={scope} onChange={setScope} />}
           </>
         ) : (
           <AgentRoster
@@ -406,32 +428,14 @@ export function ThreadList() {
               {sessions.length === 0 ? "No threads yet." : "No threads match your search."}
             </p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {sections.map((section) => {
-                const isCollapsed = collapsed.has(section.key);
-                return (
-                  <section
-                    key={section.key}
-                    aria-label={section.label}
-                    className="flex flex-col gap-0.5"
-                  >
-                    {section.isCategory ? (
-                      <CategoryHeader
-                        label={section.label}
-                        count={section.items.length}
-                        collapsed={isCollapsed}
-                        onToggle={() => toggleCollapsed(section.key)}
-                      />
-                    ) : (
-                      <h3 className="px-2 pb-0.5 text-ui-2xs font-semibold tracking-wide text-fg-subtle uppercase">
-                        {section.label}
-                      </h3>
-                    )}
-                    {!isCollapsed && section.items.map((session) => renderBranch(session, 0))}
-                  </section>
-                );
-              })}
-            </div>
+            <ThreadGroupList
+              groups={groups}
+              byRepository={allRepositories}
+              activePath={rootPath}
+              collapsed={collapsed}
+              onToggle={toggleCollapsed}
+              renderThread={(session) => renderBranch(session, 0)}
+            />
           )
         ) : !selectedAgentId ? (
           <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-ui-xs text-fg-subtle">
@@ -450,7 +454,6 @@ export function ThreadList() {
 
       <DeleteThreadDialog
         sessions={deleteTargets}
-        rootPath={rootPath ?? "default"}
         onOpenChange={(open) => {
           if (!open) setSessionsToDelete([]);
         }}
@@ -473,7 +476,7 @@ export function ThreadList() {
 
       <DiscardWorktreeDialog
         session={discardSession}
-        rootPath={rootPath ?? "default"}
+        rootPath={discardSession?.rootPath ?? activeRoot}
         open={discardSessionId !== null}
         onOpenChange={(open) => {
           if (!open) setDiscardSessionId(null);

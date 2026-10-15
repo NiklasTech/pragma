@@ -22,10 +22,13 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useAIStore } from "@/shared/stores/ai";
-import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
+import { useRepositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 
 import { GroupEnvironmentSelect } from "../sessions/GroupEnvironmentSelect";
 import { DEFAULT_GROUP_ENVIRONMENT, sharesFiles, type GroupEnvironment } from "../sessions/group";
+import { activateRepository } from "../sessions/openInRepository";
+import { RepositorySelect } from "../sessions/RepositoryPicker";
+import { useRepositoryChoice } from "../sessions/useRepositoryChoice";
 import { buildSessionMenuCliRows } from "../threads/session-menu";
 import { launchTerminals } from "./launch";
 import { MAX_PANES } from "./operations";
@@ -34,12 +37,11 @@ const COUNTS = Array.from({ length: MAX_PANES }, (_, index) => index + 1);
 const MODES: readonly GroupEnvironment[] = ["isolated", "shared", "checkout"];
 
 interface LaunchCliDialogProps {
-  rootPath: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialogProps) {
+export function LaunchCliDialog({ open, onOpenChange }: LaunchCliDialogProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
@@ -48,14 +50,16 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
   const [count, setCount] = useState(4);
   const [picked, setPicked] = useState<GroupEnvironment | null>(null);
   const [launching, setLaunching] = useState(false);
-  const setting = useWorkspaceSettingsStore((state) =>
-    state.rootPath === rootPath ? state.settings?.agent?.launchCliEnvironment : undefined,
-  );
+  const repository = useRepositoryChoice();
+  const { reset: resetRepository, rootPath } = repository;
+  const setting = useRepositoryWorkspaceSettings(rootPath)?.agent?.launchCliEnvironment;
   const mode = picked ?? setting ?? DEFAULT_GROUP_ENVIRONMENT;
 
   useEffect(() => {
-    if (open) setPicked(null);
-  }, [open]);
+    if (!open) return;
+    setPicked(null);
+    resetRepository();
+  }, [open, resetRepository]);
 
   useEffect(() => {
     if (!open) return;
@@ -70,11 +74,12 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
   const selected = manifests.find((manifest) => manifest.id === selectedId);
 
   const handleLaunch = async () => {
-    if (!selected || launching) return;
+    if (!selected || !rootPath || launching) return;
     setLaunching(true);
     try {
       await launchTerminals(rootPath, selected, count, mode);
       onOpenChange(false);
+      await activateRepository(rootPath);
     } catch {
       toast.error(`Could not start ${selected.name}`);
     } finally {
@@ -94,6 +99,18 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
+          {rootPath && repository.paths.length > 1 && (
+            <div className="flex flex-col gap-1.5">
+              <Label>Repository</Label>
+              <RepositorySelect
+                paths={repository.paths}
+                value={rootPath}
+                onChange={repository.pick}
+                className="w-full"
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <Label>CLI</Label>
             {available.length === 0 ? (
@@ -157,7 +174,11 @@ export function LaunchCliDialog({ rootPath, open, onOpenChange }: LaunchCliDialo
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button size="sm" disabled={!selected || launching} onClick={() => void handleLaunch()}>
+          <Button
+            size="sm"
+            disabled={!selected || !rootPath || launching}
+            onClick={() => void handleLaunch()}
+          >
             {launching ? "Starting" : `Launch ${count}`}
           </Button>
         </DialogFooter>

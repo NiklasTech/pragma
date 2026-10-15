@@ -5,6 +5,7 @@ import type { CLIManifest } from "@/shared/stores/ai";
 import { createTerminalSession } from "../panes/launch";
 import { findLeaf } from "../panes/operations";
 import { useAgentsPanesStore } from "../panes/store";
+import { activateRepository } from "../sessions/openInRepository";
 import { startSession, type StartSessionRequest } from "../sessions/start";
 import type { SessionMenuCliAction } from "./session-menu";
 
@@ -50,6 +51,7 @@ export function useNewSessionActions(
       } else {
         useAgentsPanesStore.getState().openSession(rootPath, sessionId);
       }
+      void activateRepository(rootPath);
     },
     [rootPath, targetLeafId],
   );

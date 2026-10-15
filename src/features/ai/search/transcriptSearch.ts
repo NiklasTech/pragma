@@ -11,13 +11,14 @@ export interface SessionSearchHit {
 const MIN_QUERY_CHARS = 2;
 const DEBOUNCE_MS = 200;
 
-/// Message text matches for `query`, keyed by session id; empty for short queries.
+/// Message text matches for `query` in the given repositories, keyed by session id; empty for short queries.
 export function useTranscriptSearch(
-  rootPath: string,
+  rootPaths: readonly string[],
   query: string,
 ): ReadonlyMap<string, SessionSearchHit> {
   const [hits, setHits] = useState<ReadonlyMap<string, SessionSearchHit>>(() => new Map());
   const trimmed = query.trim();
+  const rootsKey = rootPaths.join("\n");
 
   useEffect(() => {
     if (trimmed.length < MIN_QUERY_CHARS) {
@@ -26,11 +27,15 @@ export function useTranscriptSearch(
     }
     let cancelled = false;
     const timer = setTimeout(() => {
-      invoke<SessionSearchHit[]>("ai_search_sessions", {
-        req: { root_path: rootPath, query: trimmed },
-      })
+      Promise.all(
+        rootsKey.split("\n").map((rootPath) =>
+          invoke<SessionSearchHit[]>("ai_search_sessions", {
+            req: { root_path: rootPath, query: trimmed },
+          }),
+        ),
+      )
         .then((results) => {
-          if (!cancelled) setHits(new Map(results.map((hit) => [hit.session_id, hit])));
+          if (!cancelled) setHits(new Map(results.flat().map((hit) => [hit.session_id, hit])));
         })
         .catch(() => {
           if (!cancelled) setHits(new Map());
@@ -40,7 +45,7 @@ export function useTranscriptSearch(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [rootPath, trimmed]);
+  }, [rootsKey, trimmed]);
 
   return hits;
 }

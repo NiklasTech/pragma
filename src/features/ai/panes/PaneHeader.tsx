@@ -42,6 +42,7 @@ import { useNewSessionActions, type NewSessionActions } from "../threads/useNewS
 import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { PaneCloseButton } from "./PaneCloseButton";
+import { PaneRepositoryLabel } from "./PaneRepositoryLabel";
 import { usePaneHeaderDrag } from "./paneDrag";
 import { providerAccent } from "./providerAccent";
 import { ProviderLogo } from "./ProviderLogo";
@@ -256,6 +257,7 @@ export function PaneHeader({
             </span>
           )}
         </span>
+        <PaneRepositoryLabel rootPath={session?.rootPath ?? rootPath} />
         {branch && (
           <span
             className="flex min-w-0 shrink items-center gap-1 text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"

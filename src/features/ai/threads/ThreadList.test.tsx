@@ -44,6 +44,18 @@ vi.mock("@/shared/stores/ai", () => ({
     environments.filter((environment) => environment.rootPath === rootPath),
 }));
 
+const repositories = vi.hoisted(() => ({
+  state: { paths: [] as string[], activePath: null as string | null },
+}));
+
+vi.mock("@/shared/stores/openRepositories", () => ({
+  useOpenRepositoriesStore: Object.assign(
+    (selector: (state: typeof repositories.state) => unknown) => selector(repositories.state),
+    { getState: () => repositories.state },
+  ),
+  findRepository: (paths: string[], path: string) => paths.find((item) => item === path) ?? null,
+}));
+
 vi.mock("@/shared/stores/fileExplorer", () => ({
   useFileExplorerStore: (selector: (state: { rootPath: string | null }) => unknown) =>
     selector({ rootPath: "/workspace" }),
@@ -72,6 +84,7 @@ describe("ThreadList", () => {
     agent.status = "idle";
     agent.runSessionId = null;
     agent.modeActive = false;
+    repositories.state = { paths: [], activePath: null };
   });
 
   it("marks the active thread as selected", () => {
@@ -121,6 +134,27 @@ describe("ThreadList", () => {
     expect(html).toContain('aria-label="Research"');
     expect(html).toContain('aria-expanded="true"');
     expect(html.indexOf("Session A")).toBeLessThan(html.indexOf("Session B"));
+  });
+
+  it("keeps the active repository's threads by default when several repositories are open", () => {
+    repositories.state = { paths: ["/workspace", "/other", "/third"], activePath: "/workspace" };
+    ai.state.chatSessions = [
+      session("a", "Session A", 1),
+      { ...session("b", "Session B", 2), rootPath: "/other" },
+    ];
+
+    const html = renderToStaticMarkup(<ThreadList />);
+
+    expect(html).toContain("This repository");
+    expect(html).toContain("All repositories");
+    expect(html).toContain("Session A");
+    expect(html).not.toContain("Session B");
+  });
+
+  it("hides the scope switch with one repository open", () => {
+    repositories.state = { paths: ["/workspace"], activePath: "/workspace" };
+
+    expect(renderToStaticMarkup(<ThreadList />)).not.toContain("All repositories");
   });
 
   it("offers a selection toggle once threads exist", () => {

@@ -24,17 +24,11 @@ import { releaseWorktrees } from "../worktree/cleanup";
 
 interface DeleteThreadDialogProps {
   sessions: ChatSession[];
-  rootPath: string;
   onOpenChange: (open: boolean) => void;
   onDeleted?: () => void;
 }
 
-export function DeleteThreadDialog({
-  sessions,
-  rootPath,
-  onOpenChange,
-  onDeleted,
-}: DeleteThreadDialogProps) {
+export function DeleteThreadDialog({ sessions, onOpenChange, onDeleted }: DeleteThreadDialogProps) {
   const chatSessions = useAIStore((state) => state.chatSessions);
   const workEnvironments = useAIStore((state) => state.workEnvironments);
   const deleteSession = useAIStore((state) => state.deleteSession);
@@ -80,14 +74,21 @@ export function DeleteThreadDialog({
   const handleConfirm = useCallback(async () => {
     if (sessionIds.length === 0) return;
     try {
-      if (childCount > 0) await releaseChildren(rootPath, sessionIds, archiveChildren);
+      const roots = [...new Set(sessions.map((session) => session.rootPath))];
+      const inRoot = (root: string) => sessions.filter((session) => session.rootPath === root);
+      if (childCount > 0) {
+        for (const root of roots) {
+          const ids = inRoot(root).map((session) => session.id);
+          await releaseChildren(root, ids, archiveChildren);
+        }
+      }
       for (const sessionId of sessionIds) {
         stopSession(sessionId);
         await deleteSession(sessionId);
       }
       onOpenChange(false);
       onDeleted?.();
-      await releaseWorktrees(rootPath, sessions);
+      for (const root of roots) await releaseWorktrees(root, inRoot(root));
     } catch {
       toast.error(isBulk ? "Failed to delete threads" : "Failed to delete thread");
     }
@@ -98,7 +99,6 @@ export function DeleteThreadDialog({
     isBulk,
     onDeleted,
     onOpenChange,
-    rootPath,
     sessionIds,
     sessions,
   ]);

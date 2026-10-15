@@ -38,6 +38,36 @@ export function entryToNode(entry: DirEntry): FileSystemNode {
   };
 }
 
+/// Opens the folder, or asks for one, and makes it the active repository.
+export async function selectRootFolder(targetPath?: string): Promise<boolean> {
+  let path: string | null = targetPath ?? null;
+  if (!path) {
+    try {
+      path = await open({ multiple: false, directory: true });
+    } catch (err) {
+      toast.error(`Failed to open dialog: ${String(err)}`);
+      return false;
+    }
+  }
+  if (typeof path !== "string" || path.length === 0) return false;
+  const store = useFileExplorerStore.getState();
+  store.setIsLoading(true);
+  try {
+    // Listing first rejects paths that are missing or not a directory before they are added.
+    const entries = await invoke<DirEntry[]>("list_directory", { path });
+    const repositoryPath = useOpenRepositoriesStore.getState().add(path);
+    store.setRootPath(repositoryPath);
+    store.setTree(entries.map(entryToNode));
+    useSettingsStore.getState().addRecentFolder(repositoryPath);
+    return true;
+  } catch (err) {
+    toast.error(String(err));
+    return false;
+  } finally {
+    store.setIsLoading(false);
+  }
+}
+
 /// Explorer actions only; components that render tree state select it from the store themselves.
 export function useFileExplorer() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
@@ -54,34 +84,7 @@ export function useFileExplorer() {
     }
   }, [rootPath]);
 
-  const selectRoot = useCallback(async (targetPath?: string) => {
-    let path: string | null = targetPath ?? null;
-    if (!path) {
-      try {
-        path = await open({ multiple: false, directory: true });
-      } catch (err) {
-        toast.error(`Failed to open dialog: ${String(err)}`);
-        return false;
-      }
-    }
-    if (typeof path !== "string" || path.length === 0) return false;
-    const store = useFileExplorerStore.getState();
-    store.setIsLoading(true);
-    try {
-      // Listing first rejects paths that are missing or not a directory before they are added.
-      const entries = await invoke<DirEntry[]>("list_directory", { path });
-      const repositoryPath = useOpenRepositoriesStore.getState().add(path);
-      store.setRootPath(repositoryPath);
-      store.setTree(entries.map(entryToNode));
-      useSettingsStore.getState().addRecentFolder(repositoryPath);
-      return true;
-    } catch (err) {
-      toast.error(String(err));
-      return false;
-    } finally {
-      store.setIsLoading(false);
-    }
-  }, []);
+  const selectRoot = selectRootFolder;
 
   const loadDirectory = useCallback(async (path: string) => {
     const store = useFileExplorerStore.getState();

@@ -77,9 +77,7 @@ export function PanePresetsMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {workspaceRoot && (
-        <LaunchCliDialog rootPath={workspaceRoot} open={launchOpen} onOpenChange={setLaunchOpen} />
-      )}
+      {workspaceRoot && <LaunchCliDialog open={launchOpen} onOpenChange={setLaunchOpen} />}
     </>
   );
 }

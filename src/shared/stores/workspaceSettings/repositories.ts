@@ -54,3 +54,14 @@ export function isRepositoryTrusted(rootPath: string): boolean {
   if (active.rootPath === rootPath) return active.trusted;
   return useRepositorySettingsStore.getState().byRoot[rootPath]?.trusted ?? false;
 }
+
+/// The settings of one open repository, kept up to date while it renders.
+export function useRepositoryWorkspaceSettings(rootPath: string | null): WorkspaceSettings | null {
+  const active = useWorkspaceSettingsStore((state) =>
+    state.rootPath === rootPath ? state.settings : undefined,
+  );
+  const cached = useRepositorySettingsStore((state) =>
+    rootPath ? state.byRoot[rootPath]?.settings : undefined,
+  );
+  return active !== undefined ? active : (cached ?? null);
+}
