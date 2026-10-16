@@ -20,6 +20,8 @@ import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { useTerminalFind } from "../hooks/useTerminalFind";
 import { useCopyOnSelect } from "../hooks/useTerminalPreferences";
 import { TerminalFindBar } from "./TerminalFindBar";
+import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 interface RunOutputEvent {
   process_id: string;
@@ -83,10 +85,10 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       fitRef.current = fit;
       t.loadAddon(fit);
       t.loadAddon(
-        new WebLinksAddon((event: MouseEvent, uri: string) => {
-          event.preventDefault();
-          void invoke("open_external_url", { url: uri });
-        }),
+        new WebLinksAddon(urlLinkHandler((url) => void invoke("open_external_url", { url }))),
+      );
+      t.registerLinkProvider(
+        pathLinkProvider(t, () => session.cwd ?? useFileExplorerStore.getState().rootPath),
       );
       t.open(containerRef.current);
       loadRenderAddons(t);

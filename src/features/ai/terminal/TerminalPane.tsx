@@ -26,6 +26,7 @@ import {
   writeTerminal,
 } from "./runner";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
+import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -76,11 +77,9 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.loadAddon(
-      new WebLinksAddon((event: MouseEvent, uri: string) => {
-        event.preventDefault();
-        void invoke("open_external_url", { url: uri });
-      }),
+      new WebLinksAddon(urlLinkHandler((url) => void invoke("open_external_url", { url }))),
     );
+    term.registerLinkProvider(pathLinkProvider(term, () => cwd));
     term.open(container);
     loadRenderAddons(term);
     const removeDeadKeyFix = fixWebKitDeadKeys(term, container);
