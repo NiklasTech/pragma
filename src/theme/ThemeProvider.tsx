@@ -183,6 +183,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   );
 }
 
+/** The theme context, or null outside a ThemeProvider. */
+export function useOptionalTheme(): ThemeContextValue | null {
+  return useContext(ThemeContext);
+}
+
 export function useTheme(): ThemeContextValue {
   const context = useContext(ThemeContext);
   if (!context) {
