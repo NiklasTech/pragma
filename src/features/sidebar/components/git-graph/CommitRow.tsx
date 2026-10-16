@@ -7,6 +7,7 @@ import { GRID_COLUMNS, ROW_HEIGHT } from "./constants";
 import type { ColumnKey } from "./columns";
 import { authorInitials, authorTint, compactDate } from "./format";
 import type { GitLogEntry } from "./types";
+import { useUiSize } from "@/theme/useUiMetrics";
 
 export function CommitRow({
   commit,
@@ -23,6 +24,7 @@ export function CommitRow({
   collapsedCols: Set<ColumnKey>;
   onClick: () => void;
 }) {
+  const uiSize = useUiSize();
   const date = compactDate(commit.timestamp_secs);
   const initials = authorInitials(commit.author);
   const totalStat = commit.insertions + commit.deletions;
@@ -50,7 +52,7 @@ export function CommitRow({
         {graphRow ? (
           <GraphRail
             row={graphRow}
-            rowHeight={ROW_HEIGHT}
+            rowHeight={uiSize(ROW_HEIGHT)}
             maxLaneCount={maxLaneCount}
             active={active}
           />

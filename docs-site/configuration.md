@@ -7,7 +7,7 @@ Pragma is configured through the in-app settings panel. Open it with `Cmd/Ctrl +
 | Editor     | Font, indentation, VIM mode, auto save and formatting      |
 | Terminal   | Shell, font, scrollback and AI command suggestions         |
 | Agents     | AI provider, model, inline completion and CLI integration  |
-| Theme      | Color mode, built-in themes and custom theme import        |
+| Appearance | Themes, density, UI scale and interface font               |
 | MCP        | Model Context Protocol servers                             |
 | Languages  | Language servers (LSP) per language                        |
 | Extensions | Workspace extensions and their contributed commands/panels |
@@ -40,6 +40,18 @@ Pragma is configured through the in-app settings panel. Open it with `Cmd/Ctrl +
 | Font family         | JetBrains Mono |                                                         |
 | Scrollback          | 10000 lines    | Clamped between 1000 and 100000                         |
 | Command suggestions | On             | AI-powered suggestions while typing                     |
+
+## Appearance
+
+Themes are described in the [Theming Guide](./theming.md). The **Interface** section sets how large and dense the UI is, independently of the theme. **Reset to Default** restores all three settings.
+
+| Setting  | Default | Notes                                                                                       |
+| -------- | ------- | ------------------------------------------------------------------------------------------- |
+| Density  | Default | Compact, Default or Comfortable; scales row, tab and bar heights and spacing                |
+| UI scale | 100%    | 80% to 150% in steps of 10; scales UI text and sizes, not the editor and terminal font size |
+| UI font  | Geist   | Any installed font or a custom font name; empty uses the default                            |
+
+`Cmd/Ctrl + Plus`, `Cmd/Ctrl + Minus` and `Cmd/Ctrl + 0` change and reset the UI scale. While the editor or a terminal has focus, the same keys change their own font size instead.
 
 ## Agents
 

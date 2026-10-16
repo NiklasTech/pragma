@@ -9,12 +9,10 @@ function cssVars(theme: Theme): Map<string, string> {
 }
 
 describe("layout theme tokens", () => {
-  it("emits layout sizes as CSS pixel lengths for every built-in theme", () => {
+  it("leaves sizes to the UI metrics and derives a frame color for every built-in theme", () => {
     for (const theme of builtInThemeList) {
       const vars = cssVars(theme);
-      expect(vars.get("--chrome-header-h")).toBe("40px");
-      expect(vars.get("--chrome-tab-h")).toBe("36px");
-      expect(vars.get("--chrome-statusbar-h")).toBe("26px");
+      expect(vars.has("--chrome-header-h")).toBe(false);
       expect(vars.get("--bg-chrome")).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
@@ -31,11 +29,9 @@ describe("layout theme tokens", () => {
     } as Theme;
 
     const vars = cssVars(legacy);
-    expect(vars.get("--chrome-tab-h")).toBe("36px");
-    expect(vars.get("--chrome-row-h")).toBe("26px");
-    expect(vars.get("--text-ui-base")).toBe("13px");
-    expect(vars.get("--text-editor")).toBe("14px");
-    expect(vars.get("--motion-fast")).toBe("150ms");
+    for (const name of ["--chrome-tab-h", "--chrome-row-h", "--text-ui-base", "--motion-fast"]) {
+      expect(vars.has(name)).toBe(false);
+    }
   });
 });
 

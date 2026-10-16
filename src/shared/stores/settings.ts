@@ -130,6 +130,9 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   setNotificationSettings: (settings) =>
     set((state) => ({ notifications: { ...state.notifications, ...settings } })),
 
+  setAppearanceSettings: (settings) =>
+    set((state) => ({ appearance: { ...state.appearance, ...settings } })),
+
   addMcpServer: (server) => {
     const id = `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => ({
@@ -204,6 +207,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       experimental: mergePartial(defaultSettings.experimental, partial.experimental),
       agent: mergePartial(defaultSettings.agent, partial.agent),
       notifications: mergePartial(defaultSettings.notifications, partial.notifications),
+      appearance: mergePartial(defaultSettings.appearance, partial.appearance),
       customThemes: { ...state.customThemes, ...partial.customThemes },
       extensions: { ...state.extensions, ...partial.extensions },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },

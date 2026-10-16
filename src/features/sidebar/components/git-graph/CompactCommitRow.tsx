@@ -6,6 +6,7 @@ import type { GraphRow } from "../lib/gitGraphLayout";
 import { COMPACT_ROW_HEIGHT } from "./constants";
 import { authorInitials, authorTint, relativeDate } from "./format";
 import type { GitLogEntry } from "./types";
+import { useUiSize } from "@/theme/useUiMetrics";
 
 export function CompactCommitRow({
   commit,
@@ -22,6 +23,7 @@ export function CompactCommitRow({
   maxLaneCount: number;
   onClick: () => void;
 }) {
+  const uiSize = useUiSize();
   return (
     <button
       type="button"
@@ -35,7 +37,7 @@ export function CompactCommitRow({
         {graphRow ? (
           <GraphRail
             row={graphRow}
-            rowHeight={COMPACT_ROW_HEIGHT}
+            rowHeight={uiSize(COMPACT_ROW_HEIGHT)}
             maxLaneCount={maxLaneCount}
             active={active}
           />

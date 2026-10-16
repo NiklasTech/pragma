@@ -27,6 +27,7 @@ import { OperationBanner } from "./git-status/OperationBanner";
 import { RepositoryChanges } from "./git-status/RepositoryChanges";
 import { TagsDialog } from "./git-status/TagsDialog";
 import { useGitCompareDialog } from "../lib/gitDialogs";
+import { useUiSize } from "@/theme/useUiMetrics";
 
 export function GitStatus() {
   const {
@@ -240,17 +241,21 @@ export function GitStatus() {
     [allFiles, conflictFiles, stagedFiles, unstagedFiles, commits, historyExpanded],
   );
 
+  const uiSize = useUiSize();
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: (index) => {
       const row = rows[index];
-      if (!row) return ROW_HEIGHTS["unstaged-entry"];
-      return ROW_HEIGHTS[row.kind];
+      return uiSize(row ? ROW_HEIGHTS[row.kind] : ROW_HEIGHTS["unstaged-entry"]);
     },
     overscan: 8,
     getItemKey: (index) => rows[index]?.key ?? index,
   });
+
+  useEffect(() => {
+    virtualizer.measure();
+  }, [virtualizer, uiSize]);
 
   const isSelected = (path: string) => selectedPath === path;
 

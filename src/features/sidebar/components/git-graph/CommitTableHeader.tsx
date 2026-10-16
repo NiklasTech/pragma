@@ -2,6 +2,7 @@ import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { ALL_COLUMNS, type ColumnKey } from "./columns";
 import { GRID_COLUMNS, TABLE_HEADER_HEIGHT } from "./constants";
+import { useUiSize } from "@/theme/useUiMetrics";
 
 export function CommitTableHeader({
   collapsedCols,
@@ -10,11 +11,12 @@ export function CommitTableHeader({
   collapsedCols: Set<ColumnKey>;
   onToggleCol: (key: ColumnKey) => void;
 }) {
+  const uiSize = useUiSize();
   return (
     <div
       className="sticky top-0 z-10 grid items-center gap-5 border-b border-border bg-bg-surface pr-3 text-ui-sm font-medium text-fg-muted select-none"
       style={{
-        height: TABLE_HEADER_HEIGHT,
+        height: uiSize(TABLE_HEADER_HEIGHT),
         gridTemplateColumns: GRID_COLUMNS,
       }}
     >

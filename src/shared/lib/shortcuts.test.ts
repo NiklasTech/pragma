@@ -205,3 +205,26 @@ describe("getIsMac", () => {
     expect(typeof getIsMac()).toBe("boolean");
   });
 });
+
+describe("UI zoom keys", () => {
+  it("are not taken by any default shortcut", () => {
+    const zoomCodes = new Set([
+      "Equal",
+      "Minus",
+      "Digit0",
+      "NumpadAdd",
+      "NumpadSubtract",
+      "Numpad0",
+    ]);
+    const zoomKeys = new Set(["=", "+", "-", "0"]);
+    for (const isMac of [true, false]) {
+      for (const [id, binding] of Object.entries(getDefaultShortcuts(isMac))) {
+        if (!binding || binding.alt || !(binding.meta || binding.ctrl)) continue;
+        const taken =
+          (binding.code && zoomCodes.has(binding.code)) ||
+          (binding.key && zoomKeys.has(binding.key));
+        expect(taken, `${id} uses a UI zoom key`).toBeFalsy();
+      }
+    }
+  });
+});

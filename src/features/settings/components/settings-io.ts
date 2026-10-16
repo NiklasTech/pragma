@@ -29,6 +29,7 @@ export async function exportSettings(): Promise<void> {
       mcp: { ...state.mcp, servers: state.mcp.servers.map(withoutSecretValues) },
       lsp: state.lsp,
       experimental: state.experimental,
+      appearance: state.appearance,
       customThemes: state.customThemes,
     },
     null,

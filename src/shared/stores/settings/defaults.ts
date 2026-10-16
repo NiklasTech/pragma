@@ -153,6 +153,12 @@ export const defaultSettings: SettingsState = {
     playSound: true,
     inAppPopups: true,
   },
+  appearance: {
+    density: "default",
+    uiScale: 100,
+    uiFontId: "",
+    uiFontFamily: "",
+  },
   customThemes: {},
   extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),

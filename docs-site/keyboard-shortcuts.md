@@ -37,6 +37,9 @@ Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Wi
 | Switch to Editor       | None                   |
 | Next Tab               | `Ctrl + Tab`           |
 | Previous Tab           | `Ctrl + Shift + Tab`   |
+| Zoom In (UI scale)     | `Cmd/Ctrl + Plus`      |
+| Zoom Out (UI scale)    | `Cmd/Ctrl + Minus`     |
+| Reset Zoom (UI scale)  | `Cmd/Ctrl + 0`         |
 
 ## Search
 
