@@ -1,6 +1,7 @@
 import { getDefaultShortcuts, getIsMac } from "@/shared/lib/shortcuts";
 import type { SettingsState } from "./types";
 import { BACKGROUND_DEFAULTS } from "@/theme/background";
+import { REPOSITORY_COLOR_DEFAULTS } from "@/shared/lib/repositoryColors";
 
 export const defaultSettings: SettingsState = {
   editor: {
@@ -170,6 +171,7 @@ export const defaultSettings: SettingsState = {
     accentColor: "",
   },
   background: { ...BACKGROUND_DEFAULTS },
+  repositoryColors: { ...REPOSITORY_COLOR_DEFAULTS },
   customThemes: {},
   extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),

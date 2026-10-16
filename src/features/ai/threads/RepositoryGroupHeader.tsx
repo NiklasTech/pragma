@@ -3,6 +3,7 @@
 import { CaretDown, CaretRight, FolderSimple } from "@phosphor-icons/react";
 
 import { cn } from "@/shared/lib/utils";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 interface RepositoryGroupHeaderProps {
   name: string;
@@ -35,6 +36,7 @@ export function RepositoryGroupHeader({
         weight={active ? "fill" : "regular"}
         className={cn("shrink-0", active ? "text-primary" : "text-fg-subtle")}
       />
+      <RepositoryColorDot path={path} />
       <span className="truncate">{name}</span>
       <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-muted tabular-nums">
         {count}

@@ -15,6 +15,7 @@ import { useRepositoryGitStore } from "@/shared/stores/repositoryGit";
 import { useRepositoryGitSync } from "../../hooks/useRepositoryGitSync";
 import { summarizeGitRepositories, type GitRepositorySummary } from "../../lib/gitRepositories";
 import { RepositoryChangesDetails } from "./RepositoryChangesDetails";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 function RepositoryLine({ summary }: { summary: GitRepositorySummary }) {
   return (
@@ -24,6 +25,7 @@ function RepositoryLine({ summary }: { summary: GitRepositorySummary }) {
         weight={summary.active ? "fill" : "regular"}
         className={summary.active ? "shrink-0 text-primary" : "shrink-0 text-fg-subtle"}
       />
+      <RepositoryColorDot path={summary.path} />
       <span className="min-w-0 truncate font-medium text-fg-default">{summary.name}</span>
       {summary.branch && (
         <span className="flex min-w-0 items-center gap-0.5 truncate text-fg-subtle">

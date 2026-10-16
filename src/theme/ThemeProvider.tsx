@@ -25,6 +25,10 @@ import { useEditorColors } from "./useEditorColors";
 import { useBackground } from "./useBackground";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { withAccent } from "./accent";
+import {
+  useRepositoryAccent,
+  useRepositoryColorAssignment,
+} from "@/shared/hooks/useRepositoryAccent";
 
 interface ThemeContextValue {
   /** The visible theme; follows the system appearance when `followSystemTheme` is on. */
@@ -102,7 +106,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useThemeFolderWatcher(showThemeFileErrors);
   useUiMetrics();
 
-  const accentColor = useSettingsStore((s) => s.appearance.accentColor);
+  useRepositoryColorAssignment();
+  const repositoryAccentColor = useRepositoryAccent();
+  const ownAccent = useSettingsStore((s) => s.appearance.accentColor);
+  const accentColor = repositoryAccentColor || ownAccent;
   const theme = useMemo(() => {
     const resolved = resolveTheme(requestedId, customThemes, fromFolder);
     return accentColor ? withAccent(resolved, accentColor) : resolved;
@@ -174,6 +181,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       {children}
     </ThemeContext.Provider>
   );
+}
+
+/** The theme context, or null outside a ThemeProvider. */
+export function useOptionalTheme(): ThemeContextValue | null {
+  return useContext(ThemeContext);
 }
 
 export function useTheme(): ThemeContextValue {

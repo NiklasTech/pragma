@@ -24,6 +24,7 @@ import type { GitDecoration, GitDecorationKind } from "@/features/sidebar/lib/gi
 import { selectionTargets, useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 const INDENT = 12;
 
@@ -197,6 +198,7 @@ export function FileTreeNode({
         <img src={getFileIconPath(node.name)} alt="" className="size-3.5 shrink-0" />
       )}
 
+      {node.repositoryRoot && <RepositoryColorDot path={node.path} />}
       <span
         className={cn(
           "min-w-0 truncate",

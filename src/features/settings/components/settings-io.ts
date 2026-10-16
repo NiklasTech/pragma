@@ -31,6 +31,7 @@ export async function exportSettings(): Promise<void> {
       experimental: state.experimental,
       appearance: state.appearance,
       background: state.background,
+      repositoryColors: state.repositoryColors,
       customThemes: state.customThemes,
     },
     null,

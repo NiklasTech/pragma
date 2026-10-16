@@ -2,6 +2,7 @@ import type { Theme } from "@/theme/types";
 import type { UiMetricsSettings } from "@/theme/uiMetrics";
 import type { EditorColorOverrides } from "@/theme/editorColors";
 import type { BackgroundSettings } from "@/theme/background";
+import type { RepositoryColorSettings } from "@/shared/lib/repositoryColors";
 import type { ShortcutActionId, ShortcutBinding, ShortcutMap } from "@/shared/lib/shortcuts";
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
@@ -240,6 +241,8 @@ export interface SettingsState {
   appearance: AppearanceSettings;
   /** Background image and how much of it shows through the surfaces. */
   background: BackgroundSettings;
+  /** Personal colors per repository path; not written to the workspace settings. */
+  repositoryColors: RepositoryColorSettings;
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
@@ -278,6 +281,7 @@ export interface SettingsActions {
   setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
   setAppearanceSettings: (settings: Partial<AppearanceSettings>) => void;
   setBackgroundSettings: (settings: Partial<BackgroundSettings>) => void;
+  setRepositoryColorSettings: (settings: Partial<RepositoryColorSettings>) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => string;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;

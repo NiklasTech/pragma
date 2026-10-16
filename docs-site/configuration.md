@@ -79,6 +79,12 @@ The **Background** section shows an image behind the interface and lets it, or t
 
 Menus and dialogs stay opaque. Window translucency is not available on Linux.
 
+### Repository colors
+
+Every open repository gets its own color, handed out from a fixed palette in the order repositories are opened. It shows as a small dot wherever a repository is named: the workspace menu and title bar, the repository overview, thread groups, pane headers, terminal tabs, editor tabs of other repositories, the explorer's repository folders and the git panel. With one repository open, the dot only shows once you pick a color yourself.
+
+Change the active repository's color with **Repository Color** in the workspace menu: **Automatic**, a preset or a custom color. **Use as Accent Color** makes the active repository's color the accent color while it is active, adjusted for contrast like the accent color. Repository colors are personal settings stored per repository path in the app settings, not in `.pragma/settings.json`.
+
 ## Agents
 
 See [AI Provider Setup](./ai-providers.md) for provider and model configuration. The Agents category also contains:
