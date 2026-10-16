@@ -32,6 +32,9 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
+
+import { RepositoryColorMenu } from "./RepositoryColorMenu";
 
 export function WorkspaceMenu() {
   const openFile = useOpenFile();
@@ -64,6 +67,7 @@ export function WorkspaceMenu() {
             title={rootPath ?? "Open folder or file"}
           >
             <PragmaMark variant="compact" className="size-4 shrink-0 text-fg-default" />
+            <RepositoryColorDot path={activeRepository} />
             <span className="min-w-0 truncate font-semibold text-fg-default">
               {workspaceName || "Open Folder"}
             </span>
@@ -103,6 +107,7 @@ export function WorkspaceMenu() {
                       size={14}
                       className={path === activeRepository ? "shrink-0" : "invisible shrink-0"}
                     />
+                    <RepositoryColorDot path={path} />
                     <span className="truncate">{getWorkspaceName(path)}</span>
                   </span>
                   <button
@@ -119,6 +124,7 @@ export function WorkspaceMenu() {
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
+            {activeRepository && <RepositoryColorMenu path={activeRepository} />}
             {activeRepository && (
               <DropdownMenuItem onClick={() => void closeRepository(activeRepository)}>
                 <FolderSimpleMinus size={14} />

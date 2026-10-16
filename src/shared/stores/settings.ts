@@ -136,6 +136,9 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   setBackgroundSettings: (settings) =>
     set((state) => ({ background: { ...state.background, ...settings } })),
 
+  setRepositoryColorSettings: (settings) =>
+    set((state) => ({ repositoryColors: { ...state.repositoryColors, ...settings } })),
+
   addMcpServer: (server) => {
     const id = `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => ({
@@ -212,6 +215,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       notifications: mergePartial(defaultSettings.notifications, partial.notifications),
       appearance: mergePartial(defaultSettings.appearance, partial.appearance),
       background: mergePartial(defaultSettings.background, partial.background),
+      repositoryColors: mergePartial(defaultSettings.repositoryColors, partial.repositoryColors),
       customThemes: { ...state.customThemes, ...partial.customThemes },
       extensions: { ...state.extensions, ...partial.extensions },
       shortcuts: { ...state.shortcuts, ...partial.shortcuts },

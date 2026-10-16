@@ -23,6 +23,7 @@ import {
 import { showRepositoryTasks } from "./showRepositoryTasks";
 import { useActivityStore } from "./store";
 import { useShowRepository } from "./useShowRepository";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 const STATE_BADGES: Record<RepositoryState, "warning" | "default" | "destructive" | "success"> = {
   waiting: "warning",
@@ -69,6 +70,7 @@ function RepositoryEntry({ summary, tasks, active, variant, onShow }: EntryProps
           weight={active ? "fill" : "regular"}
           className={cn("shrink-0", active ? "text-primary" : "text-fg-subtle")}
         />
+        <RepositoryColorDot path={summary.path} />
         <span className="flex min-w-0 flex-col">
           <span
             className={cn(

@@ -4,6 +4,7 @@ import { FolderSimple } from "@phosphor-icons/react";
 
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 /// The repository a pane's session works in, shown once several repositories are open.
 export function PaneRepositoryLabel({ rootPath }: { rootPath: string | null }) {
@@ -16,6 +17,7 @@ export function PaneRepositoryLabel({ rootPath }: { rootPath: string | null }) {
       title={rootPath}
     >
       <FolderSimple size={11} className="shrink-0" />
+      <RepositoryColorDot path={rootPath} className="size-1.5" />
       <span className="truncate">{getWorkspaceName(rootPath)}</span>
     </span>
   );

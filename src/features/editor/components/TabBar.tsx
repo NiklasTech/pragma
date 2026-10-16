@@ -16,6 +16,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/shared/components/ui/context-menu";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 interface TabBarProps {
   panelId?: string;
@@ -143,6 +144,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                     ) : (
                       <img src={fileIconPath ?? undefined} alt="" className="size-3.5 shrink-0" />
                     )}
+                    {repository && <RepositoryColorDot path={repository} className="size-1.5" />}
                     <span className="min-w-0 flex-1 truncate">{tab.name}</span>
                     {tab.kind === "file" && tab.isModified && (
                       <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover/tab:hidden" />

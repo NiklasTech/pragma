@@ -6,6 +6,7 @@ import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useTerminalStore, type TerminalSession } from "@/shared/stores/terminal";
 import { terminalRepository } from "../terminalRepository";
+import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 interface TerminalTabsProps {
   sessions: TerminalSession[];
@@ -92,10 +93,11 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
             )}
             {repository && editingId !== session.id && (
               <span
-                className="max-w-[100px] truncate text-ui-2xs text-fg-subtle"
+                className="flex max-w-[100px] min-w-0 items-center gap-1 text-ui-2xs text-fg-subtle"
                 title={repository}
               >
-                {getWorkspaceName(repository)}
+                <RepositoryColorDot path={repository} className="size-1.5" />
+                <span className="truncate">{getWorkspaceName(repository)}</span>
               </span>
             )}
             <button
