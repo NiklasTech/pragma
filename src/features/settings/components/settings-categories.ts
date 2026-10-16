@@ -19,7 +19,7 @@ export type Category =
   | "terminal"
   | "agents"
   | "voice"
-  | "theme"
+  | "appearance"
   | "mcp"
   | "layout"
   | "keyboard"
@@ -102,11 +102,11 @@ export const CATEGORIES: CategoryDef[] = [
     description: "Language servers for completion, diagnostics and navigation.",
   },
   {
-    id: "theme",
-    label: "Theme",
+    id: "appearance",
+    label: "Appearance",
     icon: Palette,
     group: "Appearance",
-    description: "Colors, light and dark mode and your own themes.",
+    description: "Themes and the look of Pragma.",
   },
   {
     id: "extensions",

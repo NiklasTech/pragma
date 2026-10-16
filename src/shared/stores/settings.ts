@@ -32,7 +32,6 @@ export type {
   TerminalCursorStyle,
   TerminalEnvVar,
   TerminalSettings,
-  ThemeMode,
   VoiceEngine,
   WhisperModel,
   WorkspaceSettings,
@@ -68,7 +67,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
     })),
 
   setTheme: (theme) => set({ theme }),
-  setThemeMode: (themeMode) => set({ themeMode }),
 
   addRecentFolder: (path) =>
     set((state) => ({
@@ -193,7 +191,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       terminal: mergePartial(defaultSettings.terminal, partial.terminal),
       ai: mergePartial(defaultSettings.ai, partial.ai),
       theme: partial.theme ?? state.theme,
-      themeMode: partial.themeMode ?? state.themeMode,
       keymap: partial.keymap ?? state.keymap,
       layout: mergePartial(defaultSettings.layout, partial.layout),
       workspace: mergePartial(defaultSettings.workspace, partial.workspace),

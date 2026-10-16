@@ -54,18 +54,6 @@ function validateColor(
   }
 }
 
-function validateNumber(
-  errors: string[],
-  obj: Record<string, unknown>,
-  key: string,
-  path: string,
-): void {
-  const value = obj[key];
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    addError(errors, `${path}.${key}`, "must be a finite number");
-  }
-}
-
 function validateObject(
   errors: string[],
   obj: unknown,
@@ -118,9 +106,9 @@ function validateForegroundTokens(errors: string[], fg: unknown, path: string): 
 }
 
 function validateAccentTokens(errors: string[], accent: unknown, path: string): void {
-  validateTokenObject(errors, accent, path, ["default", "hover", "dim", "glow"]);
+  validateTokenObject(errors, accent, path, ["default", "subtle", "glow"]);
   if (!validateObject(errors, accent, path)) return;
-  for (const key of ["default", "hover", "dim", "glow"]) {
+  for (const key of ["default", "subtle", "glow"]) {
     validateColor(errors, accent, key, path);
   }
 }
@@ -335,88 +323,6 @@ function validateTerminalTokens(errors: string[], terminal: unknown, path: strin
   validateAnsiTokens(errors, terminal.ansiBright, `${path}.ansiBright`);
 }
 
-function validatePaddingTokens(errors: string[], padding: unknown, path: string): void {
-  validateTokenObject(errors, padding, path, ["xs", "sm", "md", "lg"]);
-  if (!validateObject(errors, padding, path)) return;
-  for (const key of ["xs", "sm", "md", "lg"]) {
-    validateNumber(errors, padding, key, path);
-  }
-}
-
-function validateLayoutTokens(errors: string[], layout: unknown, path: string): void {
-  if (!validateObject(errors, layout, path)) return;
-
-  const numericKeys = [
-    "headerHeight",
-    "tabHeight",
-    "statusbarHeight",
-    "inputbarHeight",
-    "sidebarWidth",
-    "sidebarMinWidth",
-    "sidebarMaxWidth",
-    "panelMinHeight",
-    "panelDefaultHeight",
-    "rowHeight",
-  ];
-  for (const key of numericKeys) {
-    if (key in layout) validateNumber(errors, layout, key, path);
-  }
-
-  if ("padding" in layout) {
-    validatePaddingTokens(errors, layout.padding, `${path}.padding`);
-  }
-}
-
-function validateTypographyLineHeightUiTokens(errors: string[], ui: unknown, path: string): void {
-  validateTokenObject(errors, ui, path, ["2xs", "xs", "sm", "base", "md", "lg"]);
-  if (!validateObject(errors, ui, path)) return;
-  for (const key of ["2xs", "xs", "sm", "base", "md", "lg"]) {
-    validateString(errors, ui, key, path);
-  }
-}
-
-function validateTypographyTokens(errors: string[], typography: unknown, path: string): void {
-  if (!validateObject(errors, typography, path)) return;
-
-  if ("ui" in typography) {
-    const ui = typography.ui as Record<string, unknown>;
-    validateTokenObject(errors, ui, `${path}.ui`, ["2xs", "xs", "sm", "base", "md", "lg"]);
-    for (const key of ["2xs", "xs", "sm", "base", "md", "lg"]) {
-      validateString(errors, ui, key, `${path}.ui`);
-    }
-  }
-
-  if ("editor" in typography) validateString(errors, typography, "editor", path);
-
-  if ("lineHeight" in typography) {
-    const lineHeight = typography.lineHeight as Record<string, unknown>;
-    if ("ui" in lineHeight) {
-      validateTypographyLineHeightUiTokens(errors, lineHeight.ui, `${path}.lineHeight.ui`);
-    }
-    if ("editor" in lineHeight) validateString(errors, lineHeight, "editor", `${path}.lineHeight`);
-  }
-}
-
-function validateMotionTokens(errors: string[], motion: unknown, path: string): void {
-  if (!validateObject(errors, motion, path)) return;
-
-  if ("duration" in motion) {
-    const duration = motion.duration as Record<string, unknown>;
-    validateTokenObject(errors, duration, `${path}.duration`, ["fast", "base", "slow", "layout"]);
-    for (const key of ["fast", "base", "slow", "layout"]) {
-      validateString(errors, duration, key, `${path}.duration`);
-    }
-  }
-
-  if ("ease" in motion) {
-    const ease = motion.ease as Record<string, unknown>;
-    validateTokenObject(errors, ease, `${path}.ease`, ["default", "out", "inOut", "spring"]);
-    for (const key of ["default", "out", "inOut", "spring"]) {
-      validateString(errors, ease, key, `${path}.ease`);
-    }
-  }
-}
-
 function validateShadowTokens(errors: string[], shadows: unknown, path: string): void {
   validateTokenObject(errors, shadows, path, ["sm", "md"]);
   if (!validateObject(errors, shadows, path)) return;
@@ -432,19 +338,7 @@ function validateThemeTokens(errors: string[], tokens: unknown, path: string): v
   validateEditorTokens(errors, (tokens as Record<string, unknown>).editor, `${path}.editor`);
   validateTerminalTokens(errors, (tokens as Record<string, unknown>).terminal, `${path}.terminal`);
 
-  if ("layout" in tokens) {
-    validateLayoutTokens(errors, (tokens as Record<string, unknown>).layout, `${path}.layout`);
-  }
-  if ("typography" in tokens) {
-    validateTypographyTokens(
-      errors,
-      (tokens as Record<string, unknown>).typography,
-      `${path}.typography`,
-    );
-  }
-  if ("motion" in tokens) {
-    validateMotionTokens(errors, (tokens as Record<string, unknown>).motion, `${path}.motion`);
-  }
+  // Layout, typography and motion in older theme files are ignored, so they are not validated.
   if ("shadows" in tokens) {
     validateShadowTokens(errors, (tokens as Record<string, unknown>).shadows, `${path}.shadows`);
   }

@@ -151,75 +151,6 @@ export interface TerminalTokens {
   ansiBright: TerminalAnsiTokens;
 }
 
-export interface LayoutPadding {
-  xs: number;
-  sm: number;
-  md: number;
-  lg: number;
-}
-
-export interface LayoutTokens {
-  headerHeight: number;
-  tabHeight: number;
-  statusbarHeight: number;
-  breadcrumbHeight: number;
-  inputbarHeight: number;
-  sidebarWidth: number;
-  sidebarCollapsedWidth: number;
-  sidebarMinWidth: number;
-  sidebarMaxWidth: number;
-  panelMinHeight: number;
-  panelDefaultHeight: number;
-  rowHeight: number;
-  padding: LayoutPadding;
-}
-
-export interface TypographyUiTokens {
-  "2xs": string;
-  xs: string;
-  sm: string;
-  base: string;
-  md: string;
-  lg: string;
-}
-
-export interface TypographyLineHeightTokens {
-  "2xs": string;
-  xs: string;
-  sm: string;
-  base: string;
-  md: string;
-  lg: string;
-}
-
-export interface TypographyTokens {
-  ui: TypographyUiTokens;
-  editor: string;
-  lineHeight: {
-    ui: TypographyLineHeightTokens;
-    editor: string;
-  };
-}
-
-export interface MotionDurationTokens {
-  fast: string;
-  base: string;
-  slow: string;
-  layout: string;
-}
-
-export interface MotionEaseTokens {
-  default: string;
-  out: string;
-  inOut: string;
-  spring: string;
-}
-
-export interface MotionTokens {
-  duration: MotionDurationTokens;
-  ease: MotionEaseTokens;
-}
-
 export interface ShadowTokens {
   sm: string;
   md: string;
@@ -229,9 +160,6 @@ export interface ThemeTokens {
   colors: ColorTokens;
   editor: EditorTokens;
   terminal: TerminalTokens;
-  layout?: Partial<LayoutTokens>;
-  typography?: Partial<TypographyTokens>;
-  motion?: Partial<MotionTokens>;
   shadows?: ShadowTokens;
 }
 

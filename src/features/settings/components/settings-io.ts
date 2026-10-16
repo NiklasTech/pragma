@@ -18,7 +18,6 @@ export async function exportSettings(): Promise<void> {
       terminal: state.terminal,
       ai: state.ai,
       theme: state.theme,
-      themeMode: state.themeMode,
       keymap: state.keymap,
       shortcuts: state.shortcuts,
       layout: state.layout,

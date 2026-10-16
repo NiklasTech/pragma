@@ -77,7 +77,6 @@ export const defaultSettings: SettingsState = {
     },
   },
   theme: "dark-default",
-  themeMode: "dark",
   keymap: "default",
   layout: {
     sidebarWidth: 250,

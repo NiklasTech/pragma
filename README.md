@@ -284,7 +284,7 @@ MCP servers are added and started in **Settings > MCP**. The configuration is st
 
 ### Themes
 
-Built-in themes are selected in **Settings > Theme**, where you can also import your own themes.
+Built-in themes are selected in **Settings > Appearance**, where you can also import your own themes.
 
 More details are in the [documentation](https://niklastech.github.io/pragma/).
 

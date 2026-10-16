@@ -131,7 +131,12 @@ export function mergeWithDefaults(
   const partial = persisted as Partial<SettingsState> & Record<string, unknown>;
 
   // Drop legacy persisted keys that have been removed from the settings schema.
-  const { git: _, mcpRunningServerIds: _removedMcpRunningServerIds, ...restPartial } = partial;
+  const {
+    git: _,
+    mcpRunningServerIds: _removedMcpRunningServerIds,
+    themeMode: _removedThemeMode,
+    ...restPartial
+  } = partial;
 
   const migratedAi = migrateAISettings(partial.ai);
 
