@@ -236,13 +236,18 @@ export interface SettingsState {
   experimental: ExperimentalSettings;
   agent: AgentSettings;
   notifications: NotificationSettings;
-  /** Density, UI scale and UI font; independent of the theme. */
-  appearance: UiMetricsSettings;
+  /** Density, UI scale, UI font and accent color; independent of the theme. */
+  appearance: AppearanceSettings;
   /** Background image and how much of it shows through the surfaces. */
   background: BackgroundSettings;
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
+}
+
+export interface AppearanceSettings extends UiMetricsSettings {
+  /** Accent color for every theme; empty uses the theme's own accent. */
+  accentColor: string;
 }
 
 export interface FontSelection {
@@ -271,7 +276,7 @@ export interface SettingsActions {
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
   setAgentSettings: (settings: Partial<AgentSettings>) => void;
   setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
-  setAppearanceSettings: (settings: Partial<UiMetricsSettings>) => void;
+  setAppearanceSettings: (settings: Partial<AppearanceSettings>) => void;
   setBackgroundSettings: (settings: Partial<BackgroundSettings>) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => string;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;

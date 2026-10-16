@@ -49,7 +49,10 @@ export function InterfaceSettings() {
           variant="outline"
           size="xs"
           className="gap-1"
-          onClick={() => setAppearanceSettings(defaultSettings.appearance)}
+          onClick={() => {
+            const { density, uiScale, uiFontId, uiFontFamily } = defaultSettings.appearance;
+            setAppearanceSettings({ density, uiScale, uiFontId, uiFontFamily });
+          }}
         >
           <ArrowCounterClockwise size={12} />
           Reset to Default

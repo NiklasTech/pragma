@@ -167,6 +167,7 @@ export const defaultSettings: SettingsState = {
     uiScale: 100,
     uiFontId: "",
     uiFontFamily: "",
+    accentColor: "",
   },
   background: { ...BACKGROUND_DEFAULTS },
   customThemes: {},
