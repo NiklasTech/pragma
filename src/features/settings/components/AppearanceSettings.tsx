@@ -1,3 +1,4 @@
+import { BackgroundSettings } from "./BackgroundSettings";
 import { EditorAppearanceSettings } from "./EditorAppearanceSettings";
 import { InterfaceSettings } from "./InterfaceSettings";
 import { ThemeSettings } from "./ThemeSettings";
@@ -8,6 +9,7 @@ export function AppearanceSettings() {
       <ThemeSettings />
       <InterfaceSettings />
       <EditorAppearanceSettings />
+      <BackgroundSettings />
     </div>
   );
 }

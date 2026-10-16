@@ -97,11 +97,12 @@ pub fn create_external_window(
         .inner_size(request.bounds.width as f64, request.bounds.height as f64)
         .position(request.bounds.x as f64, request.bounds.y as f64)
         .initialization_script(&init_script);
+    let builder = crate::modules::window_translucency::prepare_session_builder(&app, builder);
 
-    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     let created = apply_window_chrome(builder, true)
         .build()
         .map_err(|err| format!("Failed to create external window: {err}"))?;
+    crate::modules::window_translucency::apply_to_window(&app, &created);
     #[cfg(target_os = "macos")]
     crate::macos_chrome::align_webview(&created);
 
@@ -267,11 +268,12 @@ pub fn create_workspace_window(app: &AppHandle, folder_path: &str) -> Result<Str
         .resizable(true)
         .visible(false)
         .inner_size(1200.0, 800.0);
+    let builder = crate::modules::window_translucency::prepare_session_builder(app, builder);
 
-    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     let created = apply_window_chrome(builder, false)
         .build()
         .map_err(|err| format!("Failed to create workspace window: {err}"))?;
+    crate::modules::window_translucency::apply_to_window(app, &created);
     #[cfg(target_os = "macos")]
     crate::macos_chrome::align_webview(&created);
 

@@ -1,5 +1,6 @@
 import { getDefaultShortcuts, getIsMac } from "@/shared/lib/shortcuts";
 import type { SettingsState } from "./types";
+import { BACKGROUND_DEFAULTS } from "@/theme/background";
 
 export const defaultSettings: SettingsState = {
   editor: {
@@ -167,6 +168,7 @@ export const defaultSettings: SettingsState = {
     uiFontId: "",
     uiFontFamily: "",
   },
+  background: { ...BACKGROUND_DEFAULTS },
   customThemes: {},
   extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),
