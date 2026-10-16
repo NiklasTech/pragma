@@ -25,6 +25,7 @@ import {
   subscribeTerminalOutput,
   writeTerminal,
 } from "./runner";
+import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -123,7 +124,16 @@ export function TerminalPane({ session }: TerminalPaneProps) {
       if (disposed) return;
       fit.fit();
       if (term.cols > 0 && term.rows > 0) {
-        void resizeTerminal(session.id, term.cols, term.rows);
+        // Replayed output of a reattached session is only partial frames, so let the program repaint.
+        if (replay) {
+          void forceTerminalRedraw(
+            (cols, rows) => resizeTerminal(session.id, cols, rows),
+            term.cols,
+            term.rows,
+          );
+        } else {
+          void resizeTerminal(session.id, term.cols, term.rows);
+        }
       }
     });
 

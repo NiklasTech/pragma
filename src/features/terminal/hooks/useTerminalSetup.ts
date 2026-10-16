@@ -19,6 +19,7 @@ import { terminalEnvFor } from "../terminalEnv";
 import { terminalEnvRoot } from "../terminalRepository";
 import { takeTerminalScrollback } from "../terminalScrollback";
 import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } from "../ptyOutput";
+import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 
 interface TerminalSetupOptions {
   session: TerminalSessionType;
@@ -104,6 +105,7 @@ export function useTerminalSetup({
       unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);
       ptyIdRef.current = session.ptyId ?? null;
+      const reattached = Boolean(session.ptyId);
       const restored = session.ptyId ? null : takeTerminalScrollback(session.id);
       if (restored) t.write(`${restored}\n`);
 
@@ -251,8 +253,20 @@ export function useTerminalSetup({
       setTimeout(() => {
         fit.fit();
         const { cols: toCols, rows: toRows } = t;
-        if (toCols > 0 && toRows > 0 && ptyIdRef.current) {
-          safePtyInvoke(invoke("resize_pty", { id: ptyIdRef.current, rows: toRows, cols: toCols }));
+        const id = ptyIdRef.current;
+        if (toCols > 0 && toRows > 0 && id) {
+          // A remounted terminal only replays partial frames, so let full-screen programs repaint.
+          if (reattached) {
+            safePtyInvoke(
+              forceTerminalRedraw(
+                (cols, rows) => invoke("resize_pty", { id, rows, cols }),
+                toCols,
+                toRows,
+              ),
+            );
+          } else {
+            safePtyInvoke(invoke("resize_pty", { id, rows: toRows, cols: toCols }));
+          }
         }
       }, 100);
     }
