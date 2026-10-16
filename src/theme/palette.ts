@@ -99,6 +99,29 @@ const SHADOWS = {
   light: { sm: "0 4px 16px rgba(15, 23, 42, 0.10)", md: "0 12px 40px rgba(15, 23, 42, 0.18)" },
 };
 
+export interface AccentTints {
+  subtle: string;
+  glow: string;
+  focus: string;
+  selection: string;
+  active: string;
+  lineHighlight: string;
+}
+
+/** The translucent accent shades for hover, focus and selection states. */
+export function accentTints(accent: Rgba, mode: SupportedMode): AccentTints {
+  const dark = mode === "dark";
+  const alpha = (a: number) => formatColor(withAlpha({ ...accent, a: 1 }, a));
+  return {
+    subtle: alpha(dark ? 0.14 : 0.1),
+    glow: alpha(dark ? 0.3 : 0.25),
+    focus: alpha(dark ? 0.5 : 0.45),
+    selection: alpha(dark ? 0.22 : 0.16),
+    active: alpha(dark ? 0.14 : 0.1),
+    lineHighlight: alpha(dark ? 0.06 : 0.05),
+  };
+}
+
 export interface DerivedPalette {
   mode: SupportedMode;
   tokens: ThemeTokens;
@@ -126,6 +149,7 @@ export function derivePalette(palette: ThemePalette): DerivedPalette {
   const dark = mode === "dark";
   const accent = { ...color(palette.accent), a: 1 };
   const rawFg = color(palette.foreground);
+  const tints = accentTints(accent, mode);
 
   const surface = mix(bg, rawFg, 0.035);
   const elevated = dark ? mix(bg, rawFg, 0.065) : bg;
@@ -161,7 +185,7 @@ export function derivePalette(palette: ThemePalette): DerivedPalette {
           elevated: hex(elevated),
           input: hex(input),
           hover: alpha(fg, dark ? 0.06 : 0.05),
-          active: alpha(accent, dark ? 0.14 : 0.1),
+          active: tints.active,
           overlay: alpha(dark ? mix(bg, { r: 0, g: 0, b: 0, a: 1 }, 0.8) : fg, dark ? 0.62 : 0.35),
         },
         foreground: {
@@ -172,13 +196,13 @@ export function derivePalette(palette: ThemePalette): DerivedPalette {
         },
         accent: {
           default: hex(accent),
-          subtle: alpha(accent, dark ? 0.14 : 0.1),
-          glow: alpha(accent, dark ? 0.3 : 0.25),
+          subtle: tints.subtle,
+          glow: tints.glow,
         },
         border: {
           default: alpha(fg, dark ? 0.1 : 0.11),
           subtle: alpha(fg, dark ? 0.065 : 0.07),
-          focus: alpha(accent, dark ? 0.5 : 0.45),
+          focus: tints.focus,
         },
         status: {
           success: status.success,
@@ -203,7 +227,7 @@ export function derivePalette(palette: ThemePalette): DerivedPalette {
           conflict: status.conflict,
         },
         thread: { default: "{colors.accent.subtle}", active: "{colors.accent.default}" },
-        selection: alpha(accent, dark ? 0.22 : 0.16),
+        selection: tints.selection,
         scrollbar: {
           track: "transparent",
           thumb: alpha(fg, dark ? 0.09 : 0.14),
@@ -222,7 +246,7 @@ export function derivePalette(palette: ThemePalette): DerivedPalette {
         },
         line: {
           active: alpha(fg, dark ? 0.035 : 0.025),
-          highlight: alpha(accent, dark ? 0.06 : 0.05),
+          highlight: tints.lineHighlight,
         },
         syntax: {
           ...mapValues(SYNTAX[mode], readable),

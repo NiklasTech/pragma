@@ -24,6 +24,7 @@ import { useUiMetrics } from "./useUiMetrics";
 import { useEditorColors } from "./useEditorColors";
 import { useBackground } from "./useBackground";
 import { BackgroundLayer } from "./BackgroundLayer";
+import { withAccent } from "./accent";
 
 interface ThemeContextValue {
   /** The visible theme; follows the system appearance when `followSystemTheme` is on. */
@@ -101,10 +102,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useThemeFolderWatcher(showThemeFileErrors);
   useUiMetrics();
 
-  const theme = useMemo(
-    () => resolveTheme(requestedId, customThemes, fromFolder),
-    [requestedId, customThemes, fromFolder],
-  );
+  const accentColor = useSettingsStore((s) => s.appearance.accentColor);
+  const theme = useMemo(() => {
+    const resolved = resolveTheme(requestedId, customThemes, fromFolder);
+    return accentColor ? withAccent(resolved, accentColor) : resolved;
+  }, [requestedId, customThemes, fromFolder, accentColor]);
   const themeId = theme.metadata.id;
   const resolvedMode = themeMode(theme);
 

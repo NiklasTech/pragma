@@ -10,6 +10,10 @@ Each theme decides whether Pragma runs in light or dark mode through its `appear
 
 Turn on **Follow system appearance** in **Settings > Appearance > Theme** (or choose **System** during onboarding) to switch between a light and a dark theme with the appearance of macOS, Windows or Linux. While it is on, selecting a light theme makes it the theme for light mode and selecting a dark theme makes it the theme for dark mode. Pragma switches without a restart when the system appearance changes.
 
+### Accent color
+
+**Settings > Appearance > Theme > Accent Color** sets one accent for every theme: **Theme Default**, one of the presets or any color from the picker. Pragma derives the hover, focus, selection and active shades from it with the same rules as the [palette format](#base-colors). If the color would leave too little contrast for text on accent buttons (4.5:1) or against the background (3:1), Pragma lightens or darkens it and says so next to the picker. The accent stays when you switch themes.
+
 ## Built-in themes
 
 | Id                 | Name             | Mode  |
