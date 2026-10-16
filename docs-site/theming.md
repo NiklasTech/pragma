@@ -6,20 +6,61 @@ Pragma ships with built-in themes and supports importing custom themes as JSON. 
 
 Each theme decides whether Pragma runs in light or dark mode through its `appearance.defaultMode`. Selecting a light theme switches Pragma to light mode, selecting a dark theme to dark mode.
 
+### Follow system appearance
+
+Turn on **Follow system appearance** in **Settings > Appearance > Theme** (or choose **System** during onboarding) to switch between a light and a dark theme with the appearance of macOS, Windows or Linux. While it is on, selecting a light theme makes it the theme for light mode and selecting a dark theme makes it the theme for dark mode. Pragma switches without a restart when the system appearance changes.
+
 ## Built-in themes
 
-| Id              | Name          | Mode  |
-| --------------- | ------------- | ----- |
-| `dark-default`  | Dark Default  | Dark  |
-| `light-default` | Light Default | Light |
-| `catppuccin`    | Catppuccin    | Dark  |
-| `tokyo-night`   | Tokyo Night   | Dark  |
-| `gruvbox`       | Gruvbox       | Dark  |
-| `nord`          | Nord          | Dark  |
-| `rose-pine`     | Rosé Pine     | Dark  |
-| `everforest`    | Everforest    | Dark  |
-| `arctic-light`  | Arctic Light  | Light |
-| `paper-light`   | Paper Light   | Light |
+| Id                 | Name             | Mode  |
+| ------------------ | ---------------- | ----- |
+| `dark-default`     | Dark Default     | Dark  |
+| `light-default`    | Light Default    | Light |
+| `catppuccin`       | Catppuccin       | Dark  |
+| `tokyo-night`      | Tokyo Night      | Dark  |
+| `gruvbox`          | Gruvbox          | Dark  |
+| `nord`             | Nord             | Dark  |
+| `rose-pine`        | Rosé Pine        | Dark  |
+| `everforest`       | Everforest       | Dark  |
+| `arctic-light`     | Arctic Light     | Light |
+| `paper-light`      | Paper Light      | Light |
+| `one-dark`         | One Dark         | Dark  |
+| `dracula`          | Dracula          | Dark  |
+| `solarized-dark`   | Solarized Dark   | Dark  |
+| `solarized-light`  | Solarized Light  | Light |
+| `github-dark`      | GitHub Dark      | Dark  |
+| `github-light`     | GitHub Light     | Light |
+| `kanagawa`         | Kanagawa         | Dark  |
+| `ayu-dark`         | Ayu Dark         | Dark  |
+| `ayu-light`        | Ayu Light        | Light |
+| `catppuccin-latte` | Catppuccin Latte | Light |
+| `gruvbox-light`    | Gruvbox Light    | Light |
+| `everforest-light` | Everforest Light | Light |
+| `rose-pine-dawn`   | Rosé Pine Dawn   | Light |
+| `tokyo-night-day`  | Tokyo Night Day  | Light |
+
+The themes from One Dark onward are written in the short palette format described below. Their syntax colors come from the original themes and are lifted where needed so code stays readable (at least 4.5:1 against the background).
+
+### Credits
+
+These themes are based on the following originals; each theme also lists its author, license and source in `metadata`.
+
+| Theme            | Original by        | License | Source                                                              |
+| ---------------- | ------------------ | ------- | ------------------------------------------------------------------- |
+| One Dark         | GitHub Inc.        | MIT     | <https://github.com/atom/atom/tree/master/packages/one-dark-syntax> |
+| Dracula          | Zeno Rocha         | MIT     | <https://draculatheme.com>                                          |
+| Solarized Dark   | Ethan Schoonover   | MIT     | <https://ethanschoonover.com/solarized/>                            |
+| Solarized Light  | Ethan Schoonover   | MIT     | <https://ethanschoonover.com/solarized/>                            |
+| GitHub Dark      | GitHub Inc.        | MIT     | <https://github.com/primer/github-vscode-theme>                     |
+| GitHub Light     | GitHub Inc.        | MIT     | <https://github.com/primer/github-vscode-theme>                     |
+| Kanagawa         | Tommaso Laurenzi   | MIT     | <https://github.com/rebelot/kanagawa.nvim>                          |
+| Ayu Dark         | Konstantin Pschera | MIT     | <https://github.com/ayu-theme/ayu-colors>                           |
+| Ayu Light        | Konstantin Pschera | MIT     | <https://github.com/ayu-theme/ayu-colors>                           |
+| Catppuccin Latte | Catppuccin         | MIT     | <https://catppuccin.com>                                            |
+| Gruvbox Light    | Pavel Pertsev      | MIT     | <https://github.com/morhetz/gruvbox>                                |
+| Everforest Light | Sainnhe Park       | MIT     | <https://github.com/sainnhe/everforest>                             |
+| Rosé Pine Dawn   | Rosé Pine          | MIT     | <https://rosepinetheme.com>                                         |
+| Tokyo Night Day  | enkia              | MIT     | <https://github.com/enkia/tokyo-night-vscode-theme>                 |
 
 ## Custom themes
 

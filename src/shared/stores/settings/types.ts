@@ -207,6 +207,10 @@ export interface SettingsState {
   terminal: TerminalSettings;
   ai: AISettings;
   theme: string;
+  /** When on, `lightTheme` or `darkTheme` follows the system appearance instead of `theme`. */
+  followSystemTheme: boolean;
+  lightTheme: string;
+  darkTheme: string;
   keymap: string;
   layout: LayoutSettings;
   workspace: WorkspaceSettings;
@@ -234,6 +238,9 @@ export interface SettingsActions {
   setShowThinking: (enabled: boolean) => void;
   setShowUnavailableProviders: (enabled: boolean) => void;
   setTheme: (theme: string) => void;
+  setSystemTheme: (
+    settings: Partial<Pick<SettingsState, "followSystemTheme" | "lightTheme" | "darkTheme">>,
+  ) => void;
   addRecentFolder: (path: string) => void;
   addRecentFile: (path: string) => void;
   addFavoriteFolder: (path: string) => void;

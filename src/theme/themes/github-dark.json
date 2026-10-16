@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "github-dark",
+    "name": "GitHub Dark",
+    "author": "GitHub Inc.",
+    "description": "GitHub's dark default theme with near-black surfaces and a bright blue accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/primer/github-vscode-theme"
+  },
+  "palette": {
+    "background": "#0d1117",
+    "foreground": "#e6edf3",
+    "accent": "#2f81f7",
+    "success": "#3fb950",
+    "warning": "#d29922",
+    "error": "#f85149",
+    "info": "#58a6ff"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#ff7b72",
+        "string": "#a5d6ff",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#d2a8ff",
+        "variable": "#ffa657",
+        "number": "#79c0ff",
+        "type": "#ffa657",
+        "tag": "{colors.status.error}",
+        "attribute": "#79c0ff",
+        "property": "#79c0ff",
+        "operator": "#ff7b72"
+      }
+    }
+  }
+}

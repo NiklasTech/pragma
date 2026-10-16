@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "rose-pine-dawn",
+    "name": "Rosé Pine Dawn",
+    "author": "Rosé Pine",
+    "description": "The light Rosé Pine variant with soft blush surfaces and an iris accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://rosepinetheme.com"
+  },
+  "palette": {
+    "background": "#faf4ed",
+    "foreground": "#575279",
+    "accent": "#907aa9",
+    "success": "#286983",
+    "warning": "#ea9d34",
+    "error": "#b4637a",
+    "info": "#56949f"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#7a6890",
+        "string": "#986622",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#975b58",
+        "variable": "#575279",
+        "number": "#a2596e",
+        "type": "#45767f",
+        "tag": "{colors.status.error}",
+        "attribute": "#7a6890",
+        "property": "#a2596e",
+        "operator": "#7a6890"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "solarized-dark",
+    "name": "Solarized Dark",
+    "author": "Ethan Schoonover",
+    "description": "The precision dark palette with deep teal surfaces and balanced accents.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://ethanschoonover.com/solarized/"
+  },
+  "palette": {
+    "background": "#002b36",
+    "foreground": "#839496",
+    "accent": "#268bd2",
+    "success": "#859900",
+    "warning": "#b58900",
+    "error": "#dc322f",
+    "info": "#2aa198"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#859900",
+        "string": "#2aa198",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#3c97d7",
+        "variable": "#b58900",
+        "number": "#de68a1",
+        "type": "#d87850",
+        "tag": "{colors.status.error}",
+        "attribute": "#93a1a1",
+        "property": "#3c97d7",
+        "operator": "#859900"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "ayu-light",
+    "name": "Ayu Light",
+    "author": "Konstantin Pschera",
+    "description": "A clean light theme with soft white surfaces and an orange accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/ayu-theme/ayu-colors"
+  },
+  "palette": {
+    "background": "#fcfcfc",
+    "foreground": "#5c6166",
+    "accent": "#fa8d3e",
+    "success": "#6cbf43",
+    "warning": "#f2ae49",
+    "error": "#e65050",
+    "info": "#399ee6"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#a35c28",
+        "string": "#5e7d00",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#91682c",
+        "variable": "#5c6166",
+        "number": "#8262a3",
+        "type": "#2b77ad",
+        "tag": "{colors.status.error}",
+        "attribute": "#91682c",
+        "property": "#37758a",
+        "operator": "#9a6042"
+      }
+    }
+  }
+}

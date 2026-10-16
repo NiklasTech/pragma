@@ -155,6 +155,7 @@ export function derivePalette(palette: ThemePalette): DerivedPalette {
     tokens: {
       colors: {
         background: {
+          chrome: hex(mix(bg, { r: 0, g: 0, b: 0, a: 1 }, 0.12)),
           root: hex(bg),
           surface: hex(surface),
           elevated: hex(elevated),

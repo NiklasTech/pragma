@@ -67,6 +67,7 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
     })),
 
   setTheme: (theme) => set({ theme }),
+  setSystemTheme: (settings) => set(settings),
 
   addRecentFolder: (path) =>
     set((state) => ({
@@ -191,6 +192,9 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       terminal: mergePartial(defaultSettings.terminal, partial.terminal),
       ai: mergePartial(defaultSettings.ai, partial.ai),
       theme: partial.theme ?? state.theme,
+      followSystemTheme: partial.followSystemTheme ?? state.followSystemTheme,
+      lightTheme: partial.lightTheme ?? state.lightTheme,
+      darkTheme: partial.darkTheme ?? state.darkTheme,
       keymap: partial.keymap ?? state.keymap,
       layout: mergePartial(defaultSettings.layout, partial.layout),
       workspace: mergePartial(defaultSettings.workspace, partial.workspace),

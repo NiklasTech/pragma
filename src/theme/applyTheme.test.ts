@@ -45,7 +45,19 @@ describe("theme mode", () => {
       .filter((theme) => themeMode(theme) === "light")
       .map((theme) => theme.metadata.id)
       .sort();
-    expect(light).toEqual(["arctic-light", "light-default", "paper-light"]);
+    expect(light).toEqual([
+      "arctic-light",
+      "ayu-light",
+      "catppuccin-latte",
+      "everforest-light",
+      "github-light",
+      "gruvbox-light",
+      "light-default",
+      "paper-light",
+      "rose-pine-dawn",
+      "solarized-light",
+      "tokyo-night-day",
+    ]);
   });
 
   it("falls back to the first supported mode for a system theme", () => {
