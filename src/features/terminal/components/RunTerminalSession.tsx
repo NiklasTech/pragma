@@ -12,7 +12,7 @@ import {
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTheme } from "@/theme";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
-import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
+import { getXtermTheme, terminalAllowsTransparency } from "@/shared/lib/theme/xterm-theme";
 import { dispatchTerminalSelection } from "@/shared/lib/terminal-events";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { registerTerminalOutput } from "../terminalOutput";
@@ -49,7 +49,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
   const scrollback = useTerminalStore((s) => s.scrollback);
   const lineHeight = useSettingsStore((s) => s.terminal.lineHeight);
   const terminalFontFamily = fontId || fontFamily;
-  const { themeId, resolvedMode, terminalThemeId } = useTheme();
+  const { themeId, resolvedMode, terminalColorsKey } = useTheme();
 
   useEffect(() => {
     let disposed = false;
@@ -76,6 +76,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
         convertEol: true,
         scrollback,
         theme: getXtermTheme(),
+        allowTransparency: terminalAllowsTransparency(),
         allowProposedApi: true,
       });
       const fit = new FitAddon();
@@ -154,7 +155,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       termRef.current.refresh(0, termRef.current.rows - 1);
     });
     return () => cancelAnimationFrame(frame);
-  }, [themeId, resolvedMode, terminalThemeId]);
+  }, [themeId, resolvedMode, terminalColorsKey]);
 
   useEffect(() => {
     if (isActive && termRef.current && fitRef.current) {

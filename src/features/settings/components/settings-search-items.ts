@@ -209,6 +209,12 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "appearance",
   },
   {
+    id: "background-image",
+    label: "Background Image",
+    keywords: "background image wallpaper transparency translucency blur dim vibrancy mica acrylic",
+    category: "appearance",
+  },
+  {
     id: "ui-density",
     label: "Density",
     keywords: "density compact comfortable spacing row height",

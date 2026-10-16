@@ -155,6 +155,7 @@ export function mergeWithDefaults(
     agent: mergePartial(defaults.agent, partial.agent),
     notifications: mergePartial(defaults.notifications, partial.notifications),
     appearance: mergePartial(defaults.appearance, partial.appearance),
+    background: mergePartial(defaults.background, partial.background),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
     extensions: { ...defaults.extensions, ...partial.extensions },
     shortcuts: migrateShortcuts(defaults.shortcuts, partial.shortcuts),

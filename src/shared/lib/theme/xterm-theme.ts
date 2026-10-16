@@ -1,4 +1,5 @@
 import type { ITheme } from "@xterm/xterm";
+import { formatColor, parseColor, withAlpha } from "@/theme/color";
 
 function readCssVar(name: string, fallback: string): string {
   if (typeof document === "undefined") return fallback;
@@ -6,9 +7,23 @@ function readCssVar(name: string, fallback: string): string {
   return value || fallback;
 }
 
+/** The terminal background, translucent when the background setting lets it show through. */
+function terminalBackground(): string {
+  const background = readCssVar("--terminal-bg", "#0b0d10");
+  const alpha = Number(readCssVar("--terminal-surface-alpha", "1"));
+  const parsed = parseColor(background);
+  if (!parsed || !Number.isFinite(alpha) || alpha >= 1) return background;
+  return formatColor(withAlpha(parsed, Math.max(0, alpha)));
+}
+
+/** xterm only draws translucent backgrounds when created with allowTransparency. */
+export function terminalAllowsTransparency(): boolean {
+  return Number(readCssVar("--terminal-surface-alpha", "1")) < 1;
+}
+
 export function getXtermTheme(): ITheme {
   return {
-    background: readCssVar("--terminal-bg", "#0b0d10"),
+    background: terminalBackground(),
     foreground: readCssVar("--terminal-fg", "#e8eaee"),
     cursor: readCssVar("--terminal-cursor", "#6e7bf2"),
     cursorAccent: readCssVar("--terminal-cursor-accent", "#6e7bf2"),

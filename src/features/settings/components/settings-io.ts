@@ -30,6 +30,7 @@ export async function exportSettings(): Promise<void> {
       lsp: state.lsp,
       experimental: state.experimental,
       appearance: state.appearance,
+      background: state.background,
       customThemes: state.customThemes,
     },
     null,
