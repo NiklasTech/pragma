@@ -20,6 +20,7 @@ import { terminalEnvRoot } from "../terminalRepository";
 import { takeTerminalScrollback } from "../terminalScrollback";
 import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } from "../ptyOutput";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
+import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 
 interface TerminalSetupOptions {
   session: TerminalSessionType;
@@ -92,10 +93,10 @@ export function useTerminalSetup({
       fitRef.current = fit;
       t.loadAddon(fit);
       t.loadAddon(
-        new WebLinksAddon((event: MouseEvent, uri: string) => {
-          event.preventDefault();
-          void invoke("open_external_url", { url: uri });
-        }),
+        new WebLinksAddon(urlLinkHandler((url) => void invoke("open_external_url", { url }))),
+      );
+      t.registerLinkProvider(
+        pathLinkProvider(t, () => session.cwd ?? useFileExplorerStore.getState().rootPath),
       );
       t.open(containerRef.current);
       loadRenderAddons(t);

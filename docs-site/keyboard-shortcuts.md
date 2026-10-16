@@ -68,6 +68,15 @@ Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Wi
 | Step Out                   | `Shift + F11` |
 | Toggle Breakpoint          | `F9`          |
 
+## Terminal links
+
+In every terminal, including coding CLI sessions such as Claude Code, `Cmd + Click` on macOS or `Ctrl + Click` on Windows and Linux opens what is under the pointer:
+
+- **File paths** open in the editor, at the line and column when the path has one, for example `src/app.tsx:12:5` or `src/lib.rs(7,3)`. Relative paths are resolved against the terminal's working directory; absolute paths, `~/` and Windows paths work too.
+- **URLs** open in the browser.
+
+A plain click only selects text.
+
 ## Customize shortcuts
 
 1. Open **Settings > Keyboard**.
