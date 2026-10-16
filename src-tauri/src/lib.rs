@@ -48,6 +48,7 @@ pub fn run() {
         .manage(window::OpenFolders::default())
         .manage(modules::attention_badge::AttentionBadges::default())
         .manage(modules::fs_watcher::WorkspaceWatchers::default())
+        .manage(modules::theme_files::ThemeFilesWatcher::default())
         .manage(modules::parakeet::ParakeetState::default())
         .manage(modules::whisper_models::WhisperState::default())
         .plugin(tauri_plugin_dialog::init())
@@ -137,6 +138,11 @@ pub fn run() {
             modules::fonts::import_font_file,
             modules::fonts::delete_font,
             modules::fonts::list_fonts,
+            modules::theme_files::theme_files_list,
+            modules::theme_files::theme_files_write,
+            modules::theme_files::theme_files_delete,
+            modules::theme_files::theme_files_open_folder,
+            modules::theme_files::theme_files_watch,
             modules::fs::read_text_file,
             modules::fs::write_text_file,
             modules::fs::list_directory,

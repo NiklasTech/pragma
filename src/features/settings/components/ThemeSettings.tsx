@@ -1,173 +1,96 @@
 "use client";
 
 import * as React from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { useTheme, builtInThemeList } from "@/theme";
+import { useThemeFolderStore } from "@/theme/themeFolderStore";
 import type { Theme } from "@/theme/types";
-import { Check, Trash, UploadSimple } from "@phosphor-icons/react";
-import { cn } from "@/shared/lib/utils";
+import { FolderOpen, UploadSimple } from "@phosphor-icons/react";
 import { SettingSection } from "./ui/SettingSection";
-import { parseThemeImport, themeImportErrorLines } from "./theme-import";
-
-function getThemePreviewColors(theme: Theme): [string, string, string, string] {
-  const tokens = theme.tokens;
-  const bg = tokens.colors?.background?.root ?? tokens.editor?.background ?? "#1a1b26";
-  const fg = tokens.colors?.foreground?.default ?? tokens.editor?.foreground ?? "#c0caf5";
-  const primary = tokens.colors?.accent?.default ?? "#7aa2f7";
-  const accent = tokens.colors?.accent?.subtle ?? "#565f89";
-  return [bg, fg, primary, accent];
-}
+import { ThemeCard } from "./ThemeCard";
+import {
+  deleteFolderTheme,
+  duplicateTheme,
+  exportTheme,
+  importTheme,
+  openThemesFolder,
+} from "./theme-actions";
 
 export function ThemeSettings() {
-  const { themeId, setTheme, availableThemes, addCustomTheme, deleteCustomTheme } = useTheme();
+  const { themeId, setTheme, availableThemes, deleteCustomTheme } = useTheme();
+  const folderEntries = useThemeFolderStore((s) => s.entries);
+  const brokenFiles = React.useMemo(
+    () => Object.values(folderEntries).filter((entry) => !entry.theme && entry.errors.length > 0),
+    [folderEntries],
+  );
 
   const builtInIds = React.useMemo(() => new Set(builtInThemeList.map((t) => t.metadata.id)), []);
   const builtInThemes = availableThemes.filter((t) => builtInIds.has(t.metadata.id));
   const customThemeList = availableThemes.filter((t) => !builtInIds.has(t.metadata.id));
 
-  const handleDeleteCustom = (id: string) => {
-    deleteCustomTheme(id);
-    if (themeId === id) {
-      setTheme("dark-default");
-    }
+  const handleDeleteCustom = async (theme: Theme) => {
+    const id = theme.metadata.id;
+    if (!(await deleteFolderTheme(theme))) deleteCustomTheme(id);
+    if (themeId === id) setTheme("dark-default");
   };
 
-  const handleImport = async () => {
-    const selected = await open({
-      multiple: false,
-      filters: [{ name: "JSON", extensions: ["json"] }],
-    });
-
-    if (!selected || Array.isArray(selected)) return;
-
-    let content: string;
-    try {
-      content = (await invoke<{ content: string }>("read_text_file", { path: selected })).content;
-    } catch (err) {
-      toast.error("Could not read the theme file", { description: String(err) });
-      return;
-    }
-
-    const result = parseThemeImport(content);
-    if (!result.ok) {
-      toast.error("Could not import the theme", {
-        description: (
-          <div className="flex flex-col gap-0.5">
-            {themeImportErrorLines(result.errors).map((line) => (
-              <span key={line}>{line}</span>
-            ))}
-          </div>
-        ),
-      });
-      return;
-    }
-
-    addCustomTheme(result.theme);
-    setTheme(result.theme.metadata.id);
+  const selectWhenCreated = (id: string | null) => {
+    if (id) setTheme(id);
   };
+
+  const renderCard = (theme: Theme, deletable: boolean) => (
+    <ThemeCard
+      key={theme.metadata.id}
+      theme={theme}
+      active={themeId === theme.metadata.id}
+      onSelect={() => setTheme(theme.metadata.id)}
+      onDuplicate={() => void duplicateTheme(theme, availableThemes).then(selectWhenCreated)}
+      onExport={() => void exportTheme(theme)}
+      onDelete={deletable ? () => void handleDeleteCustom(theme) : undefined}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-8">
       <SettingSection
         title="Theme"
         action={
-          <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
-            <UploadSimple size={12} />
-            Import Theme
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="xs" onClick={openThemesFolder} className="gap-1">
+              <FolderOpen size={12} />
+              Open Themes Folder
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => void importTheme(availableThemes).then(selectWhenCreated)}
+              className="gap-1"
+            >
+              <UploadSimple size={12} />
+              Import Theme
+            </Button>
+          </div>
         }
       >
         <div className="flex flex-col gap-3 py-4">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-            {builtInThemes.map((theme) => (
-              <ThemeCard
-                key={theme.metadata.id}
-                theme={theme}
-                active={themeId === theme.metadata.id}
-                onSelect={() => setTheme(theme.metadata.id)}
-              />
-            ))}
+            {builtInThemes.map((theme) => renderCard(theme, false))}
           </div>
         </div>
       </SettingSection>
 
-      {customThemeList.length > 0 && (
+      {(customThemeList.length > 0 || brokenFiles.length > 0) && (
         <SettingSection title="Custom Themes">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 py-3">
-            {customThemeList.map((theme) => (
-              <ThemeCard
-                key={theme.metadata.id}
-                theme={theme}
-                active={themeId === theme.metadata.id}
-                onSelect={() => setTheme(theme.metadata.id)}
-                onDelete={() => handleDeleteCustom(theme.metadata.id)}
-              />
-            ))}
+            {customThemeList.map((theme) => renderCard(theme, true))}
           </div>
+          {brokenFiles.map((entry) => (
+            <p key={entry.fileName} className="px-1 text-ui-xs text-status-error">
+              {entry.fileName}: {entry.errors[0]}
+            </p>
+          ))}
         </SettingSection>
       )}
     </div>
-  );
-}
-
-interface ThemeCardProps {
-  theme: Theme;
-  active: boolean;
-  onSelect: () => void;
-  onDelete?: () => void;
-}
-
-function ThemeCard({ theme, active, onSelect, onDelete }: ThemeCardProps) {
-  const [bg, fg, primary, accent] = getThemePreviewColors(theme);
-
-  return (
-    <div
-      className={cn(
-        "relative flex flex-col overflow-hidden rounded-lg border transition-colors",
-        active ? "border-primary" : "border-border/60 hover:border-border",
-      )}
-    >
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-pressed={active}
-        className="flex flex-col gap-2 p-2 text-left"
-      >
-        <span
-          className="flex h-14 w-full items-center justify-center gap-1.5 rounded-md border border-border/30"
-          style={{ backgroundColor: bg }}
-        >
-          <ColorSwatch color={fg} />
-          <ColorSwatch color={primary} />
-          <ColorSwatch color={accent} />
-        </span>
-        <span className="flex min-w-0 items-center justify-between gap-1.5">
-          <span className="truncate text-ui-sm text-fg-default">{theme.metadata.name}</span>
-          {active && <Check size={14} weight="bold" className="shrink-0 text-primary" />}
-        </span>
-      </button>
-      {onDelete && (
-        <button
-          type="button"
-          onClick={onDelete}
-          aria-label={`Delete ${theme.metadata.name}`}
-          className="absolute top-1.5 right-1.5 flex size-5 items-center justify-center rounded bg-bg-surface/80 text-fg-muted backdrop-blur-sm transition-colors hover:text-status-error"
-        >
-          <Trash size={12} />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ColorSwatch({ color }: { color: string }) {
-  return (
-    <span
-      className="size-3 rounded-sm border border-border/30"
-      style={{ backgroundColor: color }}
-    />
   );
 }
