@@ -85,6 +85,16 @@ Every open repository gets its own color, handed out from a fixed palette in the
 
 Change the active repository's color with **Repository Color** in the workspace menu: **Automatic**, a preset or a custom color. **Use as Accent Color** makes the active repository's color the accent color while it is active, adjusted for contrast like the accent color. Repository colors are personal settings stored per repository path in the app settings, not in `.pragma/settings.json`.
 
+### Accessibility
+
+| Setting                            | Default       | Notes                                                                                                           |
+| ---------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
+| Reduce motion                      | Follow System | Follows the operating system's reduce motion setting or forces it on or off; removes transitions and animations |
+| Always show focus outlines         | Off           | A thick outline on the focused control, also after mouse clicks                                                 |
+| Color blind friendly status colors | Off           | Git, diff and status colors that stay apart with red-green color vision deficiency                              |
+
+Status is never shown by color alone: the explorer and the git panel show a letter per file, diff views mark lines with `+` and `-`, and in the editor gutter deleted lines use a triangle. With color blind friendly colors on, modified lines also get a striped marker. For low vision, pick High Contrast Dark or High Contrast Light.
+
 ## Agents
 
 See [AI Provider Setup](./ai-providers.md) for provider and model configuration. The Agents category also contains:

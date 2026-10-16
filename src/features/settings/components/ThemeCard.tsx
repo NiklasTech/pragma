@@ -1,4 +1,4 @@
-import { Check, Copy, DotsThree, Export, Trash } from "@phosphor-icons/react";
+import { Check, Copy, DotsThree, Export, Trash, WarningCircle } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,8 @@ interface ThemeCardProps {
   onDuplicate: () => void;
   onExport: () => void;
   onDelete?: () => void;
+  /** Contrast problems of the theme, shown as a warning. */
+  warnings?: string[];
 }
 
 export function ThemeCard({
@@ -34,6 +36,7 @@ export function ThemeCard({
   onDuplicate,
   onExport,
   onDelete,
+  warnings = [],
 }: ThemeCardProps) {
   const [bg, fg, primary, accent] = getThemePreviewColors(theme);
 
@@ -60,6 +63,16 @@ export function ThemeCard({
         </span>
         <span className="flex min-w-0 items-center justify-between gap-1.5 pr-6">
           <span className="truncate text-ui-sm text-fg-default">{theme.metadata.name}</span>
+          {warnings.length > 0 && (
+            <WarningCircle
+              size={14}
+              weight="fill"
+              className="shrink-0 text-status-warning"
+              aria-label={warnings.join(". ")}
+            >
+              <title>{warnings.join(". ")}</title>
+            </WarningCircle>
+          )}
           {active && <Check size={14} weight="bold" className="shrink-0 text-primary" />}
         </span>
       </button>

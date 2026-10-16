@@ -48,6 +48,7 @@ describe("theme mode", () => {
       "everforest-light",
       "github-light",
       "gruvbox-light",
+      "high-contrast-light",
       "light-default",
       "paper-light",
       "rose-pine-dawn",

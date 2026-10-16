@@ -25,6 +25,8 @@ import { useEditorColors } from "./useEditorColors";
 import { useBackground } from "./useBackground";
 import { BackgroundLayer } from "./BackgroundLayer";
 import { withAccent } from "./accent";
+import { withColorBlindStatus } from "./accessibility";
+import { useAccessibility } from "./useAccessibility";
 import {
   useRepositoryAccent,
   useRepositoryColorAssignment,
@@ -110,10 +112,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const repositoryAccentColor = useRepositoryAccent();
   const ownAccent = useSettingsStore((s) => s.appearance.accentColor);
   const accentColor = repositoryAccentColor || ownAccent;
+  const colorBlindStatus = useSettingsStore((s) => s.appearance.colorBlindStatus);
+  useAccessibility();
   const theme = useMemo(() => {
     const resolved = resolveTheme(requestedId, customThemes, fromFolder);
-    return accentColor ? withAccent(resolved, accentColor) : resolved;
-  }, [requestedId, customThemes, fromFolder, accentColor]);
+    const accented = accentColor ? withAccent(resolved, accentColor) : resolved;
+    return colorBlindStatus ? withColorBlindStatus(accented) : accented;
+  }, [requestedId, customThemes, fromFolder, accentColor, colorBlindStatus]);
   const themeId = theme.metadata.id;
   const resolvedMode = themeMode(theme);
 

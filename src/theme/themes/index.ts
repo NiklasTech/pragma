@@ -22,6 +22,8 @@ import gruvboxLight from "./gruvbox-light.json";
 import everforestLight from "./everforest-light.json";
 import rosePineDawn from "./rose-pine-dawn.json";
 import tokyoNightDay from "./tokyo-night-day.json";
+import highContrastDark from "./high-contrast-dark.json";
+import highContrastLight from "./high-contrast-light.json";
 import { resolveThemeFile } from "../themeFile";
 import { lookupIn } from "../themeFolder";
 import type { Theme } from "../types";
@@ -55,6 +57,8 @@ export const shortThemeFiles: unknown[] = [
   everforestLight,
   rosePineDawn,
   tokyoNightDay,
+  highContrastDark,
+  highContrastLight,
 ];
 
 function resolveShortThemes(): Theme[] {

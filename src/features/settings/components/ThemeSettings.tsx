@@ -5,6 +5,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
 import { useTheme, builtInThemeList, themeMode } from "@/theme";
 import { useThemeFolderStore } from "@/theme/themeFolderStore";
+import { themeContrastIssues } from "@/theme/accessibility";
 import type { Theme } from "@/theme/types";
 import { FolderOpen, UploadSimple } from "@phosphor-icons/react";
 import { AccentColorSetting } from "./AccentColorSetting";
@@ -65,6 +66,7 @@ export function ThemeSettings() {
       onDuplicate={() => void duplicateTheme(theme, availableThemes).then(selectWhenCreated)}
       onExport={() => void exportTheme(theme)}
       onDelete={deletable ? () => void handleDeleteCustom(theme) : undefined}
+      warnings={themeContrastIssues(theme)}
     />
   );
 

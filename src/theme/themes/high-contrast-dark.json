@@ -1,0 +1,43 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "high-contrast-dark",
+    "name": "High Contrast Dark",
+    "author": "Pragma Team",
+    "description": "Black background, white text and opaque outlines for low vision; at least 7:1 for text.",
+    "version": "1.0.0",
+    "license": "MIT"
+  },
+  "palette": {
+    "background": "#000000",
+    "foreground": "#ffffff",
+    "accent": "#3fb6ff",
+    "success": "#4ade80",
+    "warning": "#ffd23f",
+    "error": "#ff6b6b",
+    "info": "#7cc4ff"
+  },
+  "tokens": {
+    "colors": {
+      "foreground": {
+        "muted": "#e0e0e0",
+        "subtle": "#b8b8b8"
+      },
+      "border": {
+        "default": "#a0a0a0",
+        "subtle": "#7a7a7a",
+        "focus": "#ffd23f"
+      },
+      "background": {
+        "hover": "rgba(255, 255, 255, 0.16)",
+        "active": "rgba(63, 182, 255, 0.32)"
+      },
+      "selection": "rgba(63, 182, 255, 0.45)",
+      "scrollbar": {
+        "thumb": "#8a8a8a",
+        "thumbHover": "#c0c0c0"
+      }
+    }
+  }
+}
