@@ -139,8 +139,6 @@ export interface StatusbarSettings {
   migrationRevision?: number;
 }
 
-export type ThemeMode = "dark" | "light" | "system";
-
 export type McpTransport = "stdio" | "http";
 
 export interface McpServerConfig {
@@ -209,7 +207,6 @@ export interface SettingsState {
   terminal: TerminalSettings;
   ai: AISettings;
   theme: string;
-  themeMode: ThemeMode;
   keymap: string;
   layout: LayoutSettings;
   workspace: WorkspaceSettings;
@@ -237,7 +234,6 @@ export interface SettingsActions {
   setShowThinking: (enabled: boolean) => void;
   setShowUnavailableProviders: (enabled: boolean) => void;
   setTheme: (theme: string) => void;
-  setThemeMode: (mode: ThemeMode) => void;
   addRecentFolder: (path: string) => void;
   addRecentFile: (path: string) => void;
   addFavoriteFolder: (path: string) => void;

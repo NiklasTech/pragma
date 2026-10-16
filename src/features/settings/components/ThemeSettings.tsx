@@ -3,13 +3,14 @@
 import * as React from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { useTheme, builtInThemeList } from "@/theme";
-import { validateTheme } from "@/theme/validateTheme";
-import type { Theme, ThemeInput } from "@/theme/types";
+import type { Theme } from "@/theme/types";
 import { Check, Trash, UploadSimple } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { SettingSection } from "./ui/SettingSection";
+import { parseThemeImport, themeImportErrorLines } from "./theme-import";
 
 function getThemePreviewColors(theme: Theme): [string, string, string, string] {
   const tokens = theme.tokens;
@@ -42,23 +43,36 @@ export function ThemeSettings() {
 
     if (!selected || Array.isArray(selected)) return;
 
-    const fileResult = await invoke<{ content: string }>("read_text_file", { path: selected });
-    const content = fileResult.content;
-    const parsed = JSON.parse(content) as unknown;
-    const result = validateTheme(parsed as ThemeInput);
-    if (!result.valid) {
+    let content: string;
+    try {
+      content = (await invoke<{ content: string }>("read_text_file", { path: selected })).content;
+    } catch (err) {
+      toast.error("Could not read the theme file", { description: String(err) });
       return;
     }
 
-    const theme = parsed as Theme;
-    addCustomTheme(theme);
-    setTheme(theme.metadata.id);
+    const result = parseThemeImport(content);
+    if (!result.ok) {
+      toast.error("Could not import the theme", {
+        description: (
+          <div className="flex flex-col gap-0.5">
+            {themeImportErrorLines(result.errors).map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </div>
+        ),
+      });
+      return;
+    }
+
+    addCustomTheme(result.theme);
+    setTheme(result.theme.metadata.id);
   };
 
   return (
     <div className="flex flex-col gap-8">
       <SettingSection
-        title="Built-in Themes"
+        title="Theme"
         action={
           <Button variant="outline" size="xs" onClick={handleImport} className="gap-1">
             <UploadSimple size={12} />

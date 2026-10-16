@@ -1,4 +1,4 @@
-import { useTheme, type ThemeMode } from "@/theme";
+import { useTheme } from "@/theme";
 import { builtInThemeList } from "@/theme/themes";
 import { Check } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
@@ -13,14 +13,8 @@ function getThemePreviewColors(theme: Theme): [string, string, string, string] {
   return [bg, fg, primary, accent];
 }
 
-const MODES: { value: ThemeMode; label: string }[] = [
-  { value: "dark", label: "Dark" },
-  { value: "light", label: "Light" },
-  { value: "system", label: "System" },
-];
-
 export function ThemeStep() {
-  const { themeId, mode, setTheme, setMode } = useTheme();
+  const { themeId, setTheme } = useTheme();
 
   return (
     <div className="flex flex-col gap-6">
@@ -29,24 +23,6 @@ export function ThemeStep() {
         <p className="text-ui-sm text-fg-muted">
           You can always change this later in the settings.
         </p>
-      </div>
-
-      <div className="flex justify-center rounded-md border border-border/30 p-1">
-        {MODES.map((m) => (
-          <button
-            key={m.value}
-            type="button"
-            onClick={() => setMode(m.value)}
-            className={cn(
-              "flex-1 rounded px-4 py-1.5 text-ui-sm font-medium transition-colors",
-              mode === m.value
-                ? "bg-bg-surface text-fg-default shadow-sm"
-                : "text-fg-muted hover:text-fg-default",
-            )}
-          >
-            {m.label}
-          </button>
-        ))}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

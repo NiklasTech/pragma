@@ -3,7 +3,7 @@ import { AgentSettings } from "./AgentSettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { EditorSettings } from "./EditorSettings";
 import { TerminalSettings } from "./TerminalSettings";
-import { ThemeSettings } from "./ThemeSettings";
+import { AppearanceSettings } from "./AppearanceSettings";
 import { McpSettings } from "./McpSettings";
 import { LayoutSettings } from "./LayoutSettings";
 import { KeyboardSettings } from "./KeyboardSettings";
@@ -27,7 +27,7 @@ export function SettingsCategoryContent({ category }: { category: Category }) {
         </div>
       )}
       {category === "voice" && <VoiceSettings />}
-      {category === "theme" && <ThemeSettings />}
+      {category === "appearance" && <AppearanceSettings />}
       {category === "mcp" && <McpSettings />}
       {category === "layout" && <LayoutSettings />}
       {category === "keyboard" && <KeyboardSettings />}

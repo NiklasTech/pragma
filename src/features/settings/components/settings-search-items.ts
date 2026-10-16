@@ -197,16 +197,10 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "voice",
   },
   {
-    id: "theme-mode",
-    label: "Theme Mode",
-    keywords: "theme dark light system mode",
-    category: "theme",
-  },
-  {
     id: "theme-select",
     label: "Theme",
-    keywords: "theme color scheme appearance",
-    category: "theme",
+    keywords: "theme color scheme appearance dark light",
+    category: "appearance",
   },
   {
     id: "mcp-servers",
