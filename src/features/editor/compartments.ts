@@ -17,6 +17,10 @@ const cursorCompartment = new Compartment();
 const lineHeightCompartment = new Compartment();
 const ligaturesCompartment = new Compartment();
 const overviewCompartment = new Compartment();
+const textStyleCompartment = new Compartment();
+const paddingCompartment = new Compartment();
+const activeLineCompartment = new Compartment();
+const scrollPastEndCompartment = new Compartment();
 const externalUpdate = StateEffect.define<void>();
 
 export {
@@ -37,5 +41,9 @@ export {
   lineHeightCompartment,
   ligaturesCompartment,
   overviewCompartment,
+  textStyleCompartment,
+  paddingCompartment,
+  activeLineCompartment,
+  scrollPastEndCompartment,
   externalUpdate,
 };

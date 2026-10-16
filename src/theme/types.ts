@@ -15,7 +15,6 @@ export interface ThemeMetadata {
 export interface ThemeAppearance {
   defaultMode: ThemeMode;
   supportedModes: SupportedMode[];
-  preferredEditorTheme?: string;
 }
 
 export interface BackgroundTokens {

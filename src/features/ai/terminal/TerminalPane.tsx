@@ -38,7 +38,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
   const fontId = useTerminalStore((s) => s.fontId);
   const scrollback = useTerminalStore((s) => s.scrollback);
   const terminalFontFamily = fontId || fontFamily;
-  const { themeId, resolvedMode } = useTheme();
+  const { themeId, resolvedMode, terminalThemeId } = useTheme();
   const cliManifests = useAIStore((state) => state.cliManifests);
   const manifest = session.cliProviderId
     ? cliManifests.find((item) => item.id === session.cliProviderId)
@@ -147,7 +147,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
       termRef.current.refresh(0, termRef.current.rows - 1);
     });
     return () => cancelAnimationFrame(frame);
-  }, [themeId, resolvedMode]);
+  }, [themeId, resolvedMode, terminalThemeId]);
 
   return (
     <div

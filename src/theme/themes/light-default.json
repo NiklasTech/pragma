@@ -13,8 +13,7 @@
 
   "appearance": {
     "defaultMode": "light",
-    "supportedModes": ["light"],
-    "preferredEditorTheme": "dark-default"
+    "supportedModes": ["light"]
   },
 
   "tokens": {

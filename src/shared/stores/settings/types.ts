@@ -1,5 +1,6 @@
 import type { Theme } from "@/theme/types";
 import type { UiMetricsSettings } from "@/theme/uiMetrics";
+import type { EditorColorOverrides } from "@/theme/editorColors";
 import type { ShortcutActionId, ShortcutBinding, ShortcutMap } from "@/shared/lib/shortcuts";
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
@@ -30,6 +31,17 @@ export interface EditorSettings {
   cursorBlinking: boolean;
   lineHeight: number;
   fontLigatures: boolean;
+  /** CSS font weight of the editor text, 100 to 900. */
+  fontWeight: number;
+  /** Extra space between characters in pixels. */
+  letterSpacing: number;
+  /** Space above and below the text in pixels. */
+  padding: number;
+  highlightActiveLine: boolean;
+  scrollPastEnd: boolean;
+  /** Theme whose editor and syntax colors the editor uses; empty follows the UI theme. */
+  colorTheme: string;
+  colorOverrides: EditorColorOverrides;
   trimTrailingWhitespace: boolean;
   insertFinalNewline: boolean;
   overviewMarkers: boolean;
@@ -53,6 +65,8 @@ export interface TerminalSettings {
   cursorBlink: boolean;
   copyOnSelect: boolean;
   lineHeight: number;
+  /** Theme whose terminal colors terminals use; empty follows the UI theme. */
+  colorTheme: string;
   /** Workspace root path -> environment variables for shells started in that workspace. */
   envByWorkspace: Record<string, TerminalEnvVar[]>;
   restoreScrollback: boolean;

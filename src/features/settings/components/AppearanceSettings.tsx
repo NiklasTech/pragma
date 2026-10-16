@@ -1,3 +1,4 @@
+import { EditorAppearanceSettings } from "./EditorAppearanceSettings";
 import { InterfaceSettings } from "./InterfaceSettings";
 import { ThemeSettings } from "./ThemeSettings";
 
@@ -6,6 +7,7 @@ export function AppearanceSettings() {
     <div className="flex flex-col gap-8">
       <ThemeSettings />
       <InterfaceSettings />
+      <EditorAppearanceSettings />
     </div>
   );
 }

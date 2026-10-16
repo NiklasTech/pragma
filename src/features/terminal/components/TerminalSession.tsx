@@ -48,7 +48,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   const aiSuggestions = useTerminalStore((s) => s.aiSuggestions);
   const lineHeight = useSettingsStore((s) => s.terminal.lineHeight);
   const terminalFontFamily = fontId || fontFamily;
-  const { themeId, resolvedMode } = useTheme();
+  const { themeId, resolvedMode, terminalThemeId } = useTheme();
 
   const suggestions = useTerminalSuggestions({
     term: termState,
@@ -93,7 +93,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [themeId, resolvedMode]);
+  }, [themeId, resolvedMode, terminalThemeId]);
 
   useEffect(() => {
     if (isActive && termRef.current && fitRef.current) {

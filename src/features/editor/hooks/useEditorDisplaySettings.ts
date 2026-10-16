@@ -8,7 +8,11 @@ import {
   ligaturesCompartment,
   lineHeightCompartment,
   overviewCompartment,
+  paddingCompartment,
   rulersCompartment,
+  scrollPastEndCompartment,
+  textStyleCompartment,
+  activeLineCompartment,
   whitespaceCompartment,
 } from "@/features/editor/compartments";
 import {
@@ -21,6 +25,12 @@ import {
 import { indentGuidesExtension } from "@/features/editor/components/extensions/indent-guides";
 import { bracketColorsExtension } from "@/features/editor/components/extensions/bracket-colors";
 import { overviewRulerExtension } from "@/features/editor/components/extensions/overview-ruler";
+import {
+  activeLineExtension,
+  paddingExtension,
+  scrollPastEndExtension,
+  textStyleExtension,
+} from "@/features/editor/components/extensions/text-display";
 import { useEditorSetting } from "@/shared/stores/workspaceSettings/effective";
 
 /** Applies the editor display settings to a mounted view without recreating it. */
@@ -34,6 +44,11 @@ export function useEditorDisplaySettings(view: EditorView | null): void {
   const lineHeight = useSettingsStore((state) => state.editor.lineHeight);
   const fontLigatures = useSettingsStore((state) => state.editor.fontLigatures);
   const overviewMarkers = useSettingsStore((state) => state.editor.overviewMarkers);
+  const fontWeight = useSettingsStore((state) => state.editor.fontWeight);
+  const letterSpacing = useSettingsStore((state) => state.editor.letterSpacing);
+  const padding = useSettingsStore((state) => state.editor.padding);
+  const highlightActive = useSettingsStore((state) => state.editor.highlightActiveLine);
+  const pastEnd = useSettingsStore((state) => state.editor.scrollPastEnd);
 
   useEffect(() => {
     view?.dispatch({
@@ -78,4 +93,26 @@ export function useEditorDisplaySettings(view: EditorView | null): void {
       effects: overviewCompartment.reconfigure(overviewMarkers ? overviewRulerExtension() : []),
     });
   }, [view, overviewMarkers]);
+
+  useEffect(() => {
+    view?.dispatch({
+      effects: textStyleCompartment.reconfigure(textStyleExtension(fontWeight, letterSpacing)),
+    });
+  }, [view, fontWeight, letterSpacing]);
+
+  useEffect(() => {
+    view?.dispatch({ effects: paddingCompartment.reconfigure(paddingExtension(padding)) });
+  }, [view, padding]);
+
+  useEffect(() => {
+    view?.dispatch({
+      effects: activeLineCompartment.reconfigure(activeLineExtension(highlightActive)),
+    });
+  }, [view, highlightActive]);
+
+  useEffect(() => {
+    view?.dispatch({
+      effects: scrollPastEndCompartment.reconfigure(scrollPastEndExtension(pastEnd)),
+    });
+  }, [view, pastEnd]);
 }
