@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "tokyo-night-day",
+    "name": "Tokyo Night Day",
+    "author": "enkia",
+    "description": "The light Tokyo Night variant with cool gray surfaces and a blue accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/enkia/tokyo-night-vscode-theme"
+  },
+  "palette": {
+    "background": "#e1e2e7",
+    "foreground": "#3760bf",
+    "accent": "#2e7de9",
+    "success": "#587539",
+    "warning": "#8c6c3e",
+    "error": "#f52a65",
+    "info": "#007197"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#7a43c1",
+        "string": "#4f6933",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#235eaf",
+        "variable": "#775c35",
+        "number": "#964e00",
+        "type": "#006b8f",
+        "tag": "{colors.status.error}",
+        "attribute": "#235eaf",
+        "property": "#0e705d",
+        "operator": "#006a83"
+      }
+    }
+  }
+}

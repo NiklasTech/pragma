@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "gruvbox-light",
+    "name": "Gruvbox Light",
+    "author": "Pavel Pertsev",
+    "description": "A warm, retro light theme on cream paper, inspired by Gruvbox Light.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/morhetz/gruvbox"
+  },
+  "palette": {
+    "background": "#fbf1c7",
+    "foreground": "#3c3836",
+    "accent": "#076678",
+    "success": "#79740e",
+    "warning": "#b57614",
+    "error": "#9d0006",
+    "info": "#076678"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#8f3f71",
+        "string": "#736e0d",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#076678",
+        "variable": "#3c3836",
+        "number": "#af3a03",
+        "type": "#3f7554",
+        "tag": "{colors.status.error}",
+        "attribute": "#076678",
+        "property": "#915e10",
+        "operator": "#af3a03"
+      }
+    }
+  }
+}

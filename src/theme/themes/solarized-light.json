@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "solarized-light",
+    "name": "Solarized Light",
+    "author": "Ethan Schoonover",
+    "description": "The precision light palette with warm cream surfaces and balanced accents.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://ethanschoonover.com/solarized/"
+  },
+  "palette": {
+    "background": "#fdf6e3",
+    "foreground": "#586e75",
+    "accent": "#268bd2",
+    "success": "#859900",
+    "warning": "#b58900",
+    "error": "#dc322f",
+    "info": "#2aa198"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#647300",
+        "string": "#207972",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#2076b3",
+        "variable": "#886700",
+        "number": "#c8337c",
+        "type": "#c14715",
+        "tag": "{colors.status.error}",
+        "attribute": "#5b6f76",
+        "property": "#2076b3",
+        "operator": "#647300"
+      }
+    }
+  }
+}

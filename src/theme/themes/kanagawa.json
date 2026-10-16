@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "kanagawa",
+    "name": "Kanagawa",
+    "author": "Tommaso Laurenzi",
+    "description": "A dark theme inspired by Katsushika Hokusai's The Great Wave, in ink and muted wave colors.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/rebelot/kanagawa.nvim"
+  },
+  "palette": {
+    "background": "#1f1f28",
+    "foreground": "#dcd7ba",
+    "accent": "#7e9cd8",
+    "success": "#98bb6c",
+    "warning": "#ff9e3b",
+    "error": "#e82424",
+    "info": "#7fb4ca"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#957fb8",
+        "string": "#98bb6c",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#7e9cd8",
+        "variable": "#dcd7ba",
+        "number": "#d27e99",
+        "type": "#7aa89f",
+        "tag": "{colors.status.error}",
+        "attribute": "#e6c384",
+        "property": "#e6c384",
+        "operator": "#c0a36e"
+      }
+    }
+  }
+}

@@ -1,6 +1,13 @@
 import { useCommandPaletteStore, type CommandPaletteItem } from "@/shared/stores/commandPalette";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { applyTheme, defaultThemeId, getBuiltInTheme, type Theme } from "@/theme";
+import {
+  applyThemeChoice,
+  currentThemeChoice,
+  effectiveThemeId,
+  getSystemMode,
+  themeSelection,
+} from "@/theme/systemTheme";
 import { folderThemes, mergeThemeLists, useThemeFolderStore } from "@/theme/themeFolderStore";
 import { useRegisterPaletteCommands } from "./useRegisterPaletteCommands";
 
@@ -17,7 +24,7 @@ function findTheme(themes: Theme[], id: string): Theme | undefined {
 
 function pickTheme(): void {
   const themes = availableThemes();
-  const savedId = useSettingsStore.getState().theme;
+  const savedId = effectiveThemeId(currentThemeChoice(), getSystemMode());
   const preview = (id: string) => {
     const theme = findTheme(themes, id);
     if (theme) applyTheme(theme);
@@ -37,7 +44,8 @@ function pickTheme(): void {
     onSelect: (item) => {
       // The provider skips re-applying when the saved theme is chosen again after a preview.
       preview(item.id);
-      useSettingsStore.getState().setTheme(item.id);
+      const selected = themes.find((theme) => theme.metadata.id === item.id);
+      if (selected) applyThemeChoice(themeSelection(currentThemeChoice(), selected));
     },
   });
 }

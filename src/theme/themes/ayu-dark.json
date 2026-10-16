@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "ayu-dark",
+    "name": "Ayu Dark",
+    "author": "Konstantin Pschera",
+    "description": "A bright-on-dark theme with deep blue-black surfaces and a golden accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/ayu-theme/ayu-colors"
+  },
+  "palette": {
+    "background": "#0b0e14",
+    "foreground": "#bfbdb6",
+    "accent": "#e6b450",
+    "success": "#7fd962",
+    "warning": "#ffb454",
+    "error": "#d95757",
+    "info": "#59c2ff"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#ff8f40",
+        "string": "#aad94c",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#ffb454",
+        "variable": "#bfbdb6",
+        "number": "#d2a6ff",
+        "type": "#59c2ff",
+        "tag": "{colors.status.error}",
+        "attribute": "#ffb454",
+        "property": "#39bae6",
+        "operator": "#f29668"
+      }
+    }
+  }
+}

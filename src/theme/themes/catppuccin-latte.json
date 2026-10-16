@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "catppuccin-latte",
+    "name": "Catppuccin Latte",
+    "author": "Catppuccin",
+    "description": "The light Catppuccin flavor with pale surfaces and a vivid blue accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://catppuccin.com"
+  },
+  "palette": {
+    "background": "#eff1f5",
+    "foreground": "#4c4f69",
+    "accent": "#1e66f5",
+    "success": "#40a02b",
+    "warning": "#df8e1d",
+    "error": "#d20f39",
+    "info": "#04a5e5"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#8839ef",
+        "string": "#307820",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#1d61e9",
+        "variable": "#c43b47",
+        "number": "#b24608",
+        "type": "#12757a",
+        "tag": "{colors.status.error}",
+        "attribute": "#1d61e9",
+        "property": "#0374a0",
+        "operator": "#0374a0"
+      }
+    }
+  }
+}

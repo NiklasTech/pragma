@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "github-light",
+    "name": "GitHub Light",
+    "author": "GitHub Inc.",
+    "description": "GitHub's light default theme with crisp white surfaces and a blue accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/primer/github-vscode-theme"
+  },
+  "palette": {
+    "background": "#ffffff",
+    "foreground": "#1f2328",
+    "accent": "#0969da",
+    "success": "#1a7f37",
+    "warning": "#9a6700",
+    "error": "#d1242f",
+    "info": "#0969da"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#cf222e",
+        "string": "#0a3069",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#8250df",
+        "variable": "#953800",
+        "number": "#0550ae",
+        "type": "#953800",
+        "tag": "{colors.status.error}",
+        "attribute": "#0550ae",
+        "property": "#0550ae",
+        "operator": "#cf222e"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "everforest-light",
+    "name": "Everforest Light",
+    "author": "Sainnhe Park",
+    "description": "A forest-inspired light theme with warm parchment surfaces and a moss accent.",
+    "version": "1.0.0",
+    "license": "MIT",
+    "homepage": "https://github.com/sainnhe/everforest"
+  },
+  "palette": {
+    "background": "#fdf6e3",
+    "foreground": "#5c6a72",
+    "accent": "#8da101",
+    "success": "#8da101",
+    "warning": "#dfa000",
+    "error": "#f85552",
+    "info": "#3a94c5"
+  },
+  "tokens": {
+    "editor": {
+      "syntax": {
+        "keyword": "#c64442",
+        "string": "#637101",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#287d5d",
+        "variable": "#5c6a72",
+        "number": "#a74f8c",
+        "type": "#916800",
+        "tag": "{colors.status.error}",
+        "attribute": "#637101",
+        "property": "#2e769e",
+        "operator": "#ac581b"
+      }
+    }
+  }
+}

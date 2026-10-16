@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { Button } from "@/shared/components/ui/button";
-import { useTheme, builtInThemeList } from "@/theme";
+import { Switch } from "@/shared/components/ui/switch";
+import { useTheme, builtInThemeList, themeMode } from "@/theme";
 import { useThemeFolderStore } from "@/theme/themeFolderStore";
 import type { Theme } from "@/theme/types";
 import { FolderOpen, UploadSimple } from "@phosphor-icons/react";
+import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 import { ThemeCard } from "./ThemeCard";
 import {
@@ -17,7 +19,16 @@ import {
 } from "./theme-actions";
 
 export function ThemeSettings() {
-  const { themeId, setTheme, availableThemes, deleteCustomTheme } = useTheme();
+  const {
+    themeId,
+    setTheme,
+    availableThemes,
+    deleteCustomTheme,
+    followSystemTheme,
+    lightThemeId,
+    darkThemeId,
+    setFollowSystemTheme,
+  } = useTheme();
   const folderEntries = useThemeFolderStore((s) => s.entries);
   const brokenFiles = React.useMemo(
     () => Object.values(folderEntries).filter((entry) => !entry.theme && entry.errors.length > 0),
@@ -26,6 +37,12 @@ export function ThemeSettings() {
 
   const builtInIds = React.useMemo(() => new Set(builtInThemeList.map((t) => t.metadata.id)), []);
   const builtInThemes = availableThemes.filter((t) => builtInIds.has(t.metadata.id));
+  const darkThemes = builtInThemes.filter((t) => themeMode(t) === "dark");
+  const lightThemes = builtInThemes.filter((t) => themeMode(t) === "light");
+  const nameOf = (id: string) =>
+    availableThemes.find((t) => t.metadata.id === id)?.metadata.name ?? id;
+  const isSelected = (id: string) =>
+    followSystemTheme ? id === lightThemeId || id === darkThemeId : id === themeId;
   const customThemeList = availableThemes.filter((t) => !builtInIds.has(t.metadata.id));
 
   const handleDeleteCustom = async (theme: Theme) => {
@@ -42,7 +59,7 @@ export function ThemeSettings() {
     <ThemeCard
       key={theme.metadata.id}
       theme={theme}
-      active={themeId === theme.metadata.id}
+      active={isSelected(theme.metadata.id)}
       onSelect={() => setTheme(theme.metadata.id)}
       onDuplicate={() => void duplicateTheme(theme, availableThemes).then(selectWhenCreated)}
       onExport={() => void exportTheme(theme)}
@@ -72,10 +89,27 @@ export function ThemeSettings() {
           </div>
         }
       >
-        <div className="flex flex-col gap-3 py-4">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-            {builtInThemes.map((theme) => renderCard(theme, false))}
-          </div>
+        <SettingRow
+          label="Follow system appearance"
+          description={
+            followSystemTheme
+              ? `Uses ${nameOf(lightThemeId)} in light mode and ${nameOf(darkThemeId)} in dark mode. Select a theme to use it for its mode.`
+              : "Switch between a light and a dark theme when the system appearance changes."
+          }
+          control={<Switch checked={followSystemTheme} onCheckedChange={setFollowSystemTheme} />}
+        />
+        <div className="flex flex-col gap-4 pb-4">
+          {[
+            { label: "Dark", themes: darkThemes },
+            { label: "Light", themes: lightThemes },
+          ].map((group) => (
+            <div key={group.label} className="flex flex-col gap-2">
+              <h4 className="px-1 text-ui-xs text-fg-subtle">{group.label}</h4>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+                {group.themes.map((theme) => renderCard(theme, false))}
+              </div>
+            </div>
+          ))}
         </div>
       </SettingSection>
 

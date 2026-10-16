@@ -11,14 +11,27 @@ import {
   useThemeFolderStore,
   useThemeFolderWatcher,
 } from "./themeFolderStore";
+import {
+  applyThemeChoice,
+  currentThemeChoice,
+  effectiveThemeId,
+  followSystemSelection,
+  themeSelection,
+  useSystemMode,
+} from "./systemTheme";
 import type { Theme } from "./types";
 
 interface ThemeContextValue {
+  /** The visible theme; follows the system appearance when `followSystemTheme` is on. */
   themeId: string;
   theme: Theme;
   resolvedMode: "dark" | "light";
   availableThemes: Theme[];
+  followSystemTheme: boolean;
+  lightThemeId: string;
+  darkThemeId: string;
   setTheme: (id: string) => void;
+  setFollowSystemTheme: (enabled: boolean) => void;
   addCustomTheme: (theme: Theme) => void;
   deleteCustomTheme: (id: string) => void;
 }
@@ -61,8 +74,15 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const themeId = useSettingsStore((s) => s.theme);
-  const setThemeId = useSettingsStore((s) => s.setTheme);
+  const storedThemeId = useSettingsStore((s) => s.theme);
+  const followSystemTheme = useSettingsStore((s) => s.followSystemTheme);
+  const lightThemeId = useSettingsStore((s) => s.lightTheme);
+  const darkThemeId = useSettingsStore((s) => s.darkTheme);
+  const systemMode = useSystemMode();
+  const requestedId = effectiveThemeId(
+    { theme: storedThemeId, followSystemTheme, lightTheme: lightThemeId, darkTheme: darkThemeId },
+    systemMode,
+  );
 
   const customThemes = useSettingsStore((s) => s.customThemes);
   const addCustomTheme = useSettingsStore((s) => s.addCustomTheme);
@@ -73,9 +93,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useThemeFolderWatcher(showThemeFileErrors);
 
   const theme = useMemo(
-    () => resolveTheme(themeId, customThemes, fromFolder),
-    [themeId, customThemes, fromFolder],
+    () => resolveTheme(requestedId, customThemes, fromFolder),
+    [requestedId, customThemes, fromFolder],
   );
+  const themeId = theme.metadata.id;
   const resolvedMode = themeMode(theme);
 
   // Apply theme colors and its dark/light class whenever it changes.
@@ -83,16 +104,22 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     applyTheme(theme);
   }, [theme]);
 
-  const handleSetTheme = useCallback(
-    (id: string) => {
-      setThemeId(id);
-    },
-    [setThemeId],
-  );
-
   const availableThemes = useMemo(
     () => mergeThemeLists(fromFolder, customThemes),
     [customThemes, fromFolder],
+  );
+
+  const handleSetTheme = useCallback(
+    (id: string) => {
+      const selected = availableThemes.find((t) => t.metadata.id === id);
+      if (selected) applyThemeChoice(themeSelection(currentThemeChoice(), selected));
+    },
+    [availableThemes],
+  );
+
+  const handleFollowSystem = useCallback(
+    (enabled: boolean) => applyThemeChoice(followSystemSelection(enabled, theme)),
+    [theme],
   );
 
   // One-time migration: legacy custom themes stored in localStorage are
@@ -115,7 +142,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     theme,
     resolvedMode,
     availableThemes,
+    followSystemTheme,
+    lightThemeId,
+    darkThemeId,
     setTheme: handleSetTheme,
+    setFollowSystemTheme: handleFollowSystem,
     addCustomTheme,
     deleteCustomTheme,
   };
