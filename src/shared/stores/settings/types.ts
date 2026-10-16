@@ -3,6 +3,7 @@ import type { UiMetricsSettings } from "@/theme/uiMetrics";
 import type { EditorColorOverrides } from "@/theme/editorColors";
 import type { BackgroundSettings } from "@/theme/background";
 import type { RepositoryColorSettings } from "@/shared/lib/repositoryColors";
+import type { ReduceMotionSetting } from "@/theme/accessibility";
 import type { ShortcutActionId, ShortcutBinding, ShortcutMap } from "@/shared/lib/shortcuts";
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
@@ -251,6 +252,11 @@ export interface SettingsState {
 export interface AppearanceSettings extends UiMetricsSettings {
   /** Accent color for every theme; empty uses the theme's own accent. */
   accentColor: string;
+  /** Git, diff and status colors that red-green color vision tells apart. */
+  colorBlindStatus: boolean;
+  /** Keeps a strong focus outline on every focused control, also after mouse clicks. */
+  alwaysShowFocus: boolean;
+  reduceMotion: ReduceMotionSetting;
 }
 
 export interface FontSelection {

@@ -678,3 +678,40 @@ button:disabled,
     animation: none;
   }
 }
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+html[data-reduce-motion] {
+  --motion-fast: 0ms !important;
+  --motion-base: 0ms !important;
+  --motion-slow: 0ms !important;
+  --motion-layout: 0ms !important;
+}
+
+html[data-reduce-motion] *,
+html[data-reduce-motion] *::before,
+html[data-reduce-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* The editor and terminal show their own caret instead of an outline. */
+html[data-focus-always] *:focus:not(.cm-content, .xterm-helper-textarea) {
+  outline: 2px solid var(--fg-default) !important;
+  outline-offset: 2px !important;
+}
+
+/* Modified lines get a striped marker so they differ from added lines by shape too. */
+html[data-colorblind-status] .cm-git-change-modified {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--color-git-modified) 0 3px,
+    transparent 3px 5px
+  ) !important;
+}

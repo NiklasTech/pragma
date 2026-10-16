@@ -39,7 +39,10 @@ describe("built-in themes", () => {
     for (const { metadata } of shortThemes) {
       expect(metadata.author, metadata.id).toBeTruthy();
       expect(metadata.license, metadata.id).toBe("MIT");
-      expect(metadata.homepage, metadata.id).toMatch(/^https:\/\//);
+      // Pragma's own themes have no upstream source.
+      if (metadata.author !== "Pragma Team") {
+        expect(metadata.homepage, metadata.id).toMatch(/^https:\/\//);
+      }
     }
   });
 

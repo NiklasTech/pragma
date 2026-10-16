@@ -16,34 +16,36 @@ Turn on **Follow system appearance** in **Settings > Appearance > Theme** (or ch
 
 ## Built-in themes
 
-| Id                 | Name             | Mode  |
-| ------------------ | ---------------- | ----- |
-| `dark-default`     | Dark Default     | Dark  |
-| `light-default`    | Light Default    | Light |
-| `catppuccin`       | Catppuccin       | Dark  |
-| `tokyo-night`      | Tokyo Night      | Dark  |
-| `gruvbox`          | Gruvbox          | Dark  |
-| `nord`             | Nord             | Dark  |
-| `rose-pine`        | Rosé Pine        | Dark  |
-| `everforest`       | Everforest       | Dark  |
-| `arctic-light`     | Arctic Light     | Light |
-| `paper-light`      | Paper Light      | Light |
-| `one-dark`         | One Dark         | Dark  |
-| `dracula`          | Dracula          | Dark  |
-| `solarized-dark`   | Solarized Dark   | Dark  |
-| `solarized-light`  | Solarized Light  | Light |
-| `github-dark`      | GitHub Dark      | Dark  |
-| `github-light`     | GitHub Light     | Light |
-| `kanagawa`         | Kanagawa         | Dark  |
-| `ayu-dark`         | Ayu Dark         | Dark  |
-| `ayu-light`        | Ayu Light        | Light |
-| `catppuccin-latte` | Catppuccin Latte | Light |
-| `gruvbox-light`    | Gruvbox Light    | Light |
-| `everforest-light` | Everforest Light | Light |
-| `rose-pine-dawn`   | Rosé Pine Dawn   | Light |
-| `tokyo-night-day`  | Tokyo Night Day  | Light |
+| Id                    | Name                | Mode  |
+| --------------------- | ------------------- | ----- |
+| `dark-default`        | Dark Default        | Dark  |
+| `light-default`       | Light Default       | Light |
+| `catppuccin`          | Catppuccin          | Dark  |
+| `tokyo-night`         | Tokyo Night         | Dark  |
+| `gruvbox`             | Gruvbox             | Dark  |
+| `nord`                | Nord                | Dark  |
+| `rose-pine`           | Rosé Pine           | Dark  |
+| `everforest`          | Everforest          | Dark  |
+| `arctic-light`        | Arctic Light        | Light |
+| `paper-light`         | Paper Light         | Light |
+| `one-dark`            | One Dark            | Dark  |
+| `dracula`             | Dracula             | Dark  |
+| `solarized-dark`      | Solarized Dark      | Dark  |
+| `solarized-light`     | Solarized Light     | Light |
+| `github-dark`         | GitHub Dark         | Dark  |
+| `github-light`        | GitHub Light        | Light |
+| `kanagawa`            | Kanagawa            | Dark  |
+| `ayu-dark`            | Ayu Dark            | Dark  |
+| `ayu-light`           | Ayu Light           | Light |
+| `catppuccin-latte`    | Catppuccin Latte    | Light |
+| `gruvbox-light`       | Gruvbox Light       | Light |
+| `everforest-light`    | Everforest Light    | Light |
+| `rose-pine-dawn`      | Rosé Pine Dawn      | Light |
+| `tokyo-night-day`     | Tokyo Night Day     | Light |
+| `high-contrast-dark`  | High Contrast Dark  | Dark  |
+| `high-contrast-light` | High Contrast Light | Light |
 
-The themes from One Dark onward are written in the short palette format described below. Their syntax colors come from the original themes and are lifted where needed so code stays readable (at least 4.5:1 against the background).
+The two High Contrast themes reach at least 7:1 for text and 3:1 for borders and controls. A theme whose text stays below 4.5:1 shows a warning in the theme list. The themes from One Dark onward are written in the short palette format described below. Their syntax colors come from the original themes and are lifted where needed so code stays readable (at least 4.5:1 against the background).
 
 ### Credits
 

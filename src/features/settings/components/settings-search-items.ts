@@ -215,6 +215,12 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "appearance",
   },
   {
+    id: "accessibility",
+    label: "Accessibility",
+    keywords: "accessibility reduce motion animation focus outline color blind high contrast",
+    category: "appearance",
+  },
+  {
     id: "ui-density",
     label: "Density",
     keywords: "density compact comfortable spacing row height",

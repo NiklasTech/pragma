@@ -1,0 +1,43 @@
+{
+  "$schema": "https://pragma.dev/theme-schema/v1.json",
+  "format": "pragma-theme-v1",
+  "metadata": {
+    "id": "high-contrast-light",
+    "name": "High Contrast Light",
+    "author": "Pragma Team",
+    "description": "White background, black text and opaque outlines for low vision; at least 7:1 for text.",
+    "version": "1.0.0",
+    "license": "MIT"
+  },
+  "palette": {
+    "background": "#ffffff",
+    "foreground": "#000000",
+    "accent": "#0047a3",
+    "success": "#0a6b2e",
+    "warning": "#7a4d00",
+    "error": "#b00020",
+    "info": "#0047a3"
+  },
+  "tokens": {
+    "colors": {
+      "foreground": {
+        "muted": "#262626",
+        "subtle": "#4a4a4a"
+      },
+      "border": {
+        "default": "#595959",
+        "subtle": "#767676",
+        "focus": "#0047a3"
+      },
+      "background": {
+        "hover": "rgba(0, 0, 0, 0.10)",
+        "active": "rgba(0, 71, 163, 0.20)"
+      },
+      "selection": "rgba(0, 71, 163, 0.28)",
+      "scrollbar": {
+        "thumb": "#595959",
+        "thumbHover": "#262626"
+      }
+    }
+  }
+}

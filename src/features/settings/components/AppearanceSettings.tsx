@@ -1,3 +1,4 @@
+import { AccessibilitySettings } from "./AccessibilitySettings";
 import { BackgroundSettings } from "./BackgroundSettings";
 import { EditorAppearanceSettings } from "./EditorAppearanceSettings";
 import { InterfaceSettings } from "./InterfaceSettings";
@@ -10,6 +11,7 @@ export function AppearanceSettings() {
       <InterfaceSettings />
       <EditorAppearanceSettings />
       <BackgroundSettings />
+      <AccessibilitySettings />
     </div>
   );
 }
