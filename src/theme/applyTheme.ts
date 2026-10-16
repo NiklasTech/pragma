@@ -1,5 +1,4 @@
 import type { SupportedMode, Theme } from "./types";
-import { FIXED_TOKENS } from "./fixedTokens";
 import { ADDITIONAL_ALIASES, cssVarName, withTokenUnit } from "./cssVariableMap";
 import { shadcnAliasVariables } from "./shadcnAliases";
 import { flattenTokens, resolveValue, type CssVariableMapping } from "./tokenResolution";
@@ -10,9 +9,10 @@ export function generateCssVariables(theme: Theme): CssVariableMapping[] {
   const mappings: CssVariableMapping[] = [];
   const resolve = (value: string) => resolveValue(value, theme.tokens);
 
-  // Picked explicitly so layout, typography and motion in older theme files stay ignored.
+  // Picked explicitly so layout, typography and motion in older theme files stay ignored;
+  // sizes come from applyUiMetrics.
   const { colors, editor, terminal, shadows } = theme.tokens;
-  flattenTokens("", { colors, editor, terminal, ...FIXED_TOKENS, shadows }, mappings, resolve);
+  flattenTokens("", { colors, editor, terminal, shadows }, mappings, resolve);
 
   // Convert flattened paths to CSS variables and add aliases
   const cssVars: CssVariableMapping[] = [];

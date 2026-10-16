@@ -26,6 +26,7 @@ import { useElementWidth } from "./git-graph/useElementWidth";
 import { normalizeError } from "./git-graph/format";
 import type { ConfirmDialogState, GitLogEntry, LoadStatus } from "./git-graph/types";
 import { useGraphLayout } from "./git-graph/useGraphLayout";
+import { useUiSize } from "@/theme/useUiMetrics";
 
 export function GitGraph() {
   const {
@@ -70,13 +71,14 @@ export function GitGraph() {
   const compact = width > 0 && width < COMPACT_BREAKPOINT_PX;
 
   const { graphByCommit, maxLaneCount } = useGraphLayout(commits);
+  const uiSize = useUiSize();
 
   const virtualizer = useVirtualizer({
     count: commits.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => (compact ? COMPACT_ROW_HEIGHT : ROW_HEIGHT),
+    estimateSize: () => uiSize(compact ? COMPACT_ROW_HEIGHT : ROW_HEIGHT),
     overscan: 8,
-    scrollMargin: compact ? 0 : TABLE_HEADER_HEIGHT,
+    scrollMargin: compact ? 0 : uiSize(TABLE_HEADER_HEIGHT),
     getItemKey: (index) => commits[index]?.sha ?? index,
   });
 
@@ -170,7 +172,7 @@ export function GitGraph() {
 
   useEffect(() => {
     virtualizer.measure();
-  }, [compact, virtualizer]);
+  }, [compact, virtualizer, uiSize]);
 
   const toggleCol = useCallback((key: ColumnKey) => {
     setCollapsedCols((prev) => {

@@ -106,7 +106,7 @@ export const CATEGORIES: CategoryDef[] = [
     label: "Appearance",
     icon: Palette,
     group: "Appearance",
-    description: "Themes and the look of Pragma.",
+    description: "Themes, density, scale and the interface font.",
   },
   {
     id: "extensions",

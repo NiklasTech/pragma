@@ -9,6 +9,7 @@ import { CommitTableHeader } from "./CommitTableHeader";
 import type { ColumnKey } from "./columns";
 import { MIN_TABLE_WIDTH, TABLE_HEADER_HEIGHT } from "./constants";
 import type { GitLogEntry, LoadStatus } from "./types";
+import { useUiSize } from "@/theme/useUiMetrics";
 
 export function CommitTable({
   virtualizer,
@@ -55,6 +56,7 @@ export function CommitTable({
   onCreateTag: (sha: string) => void;
   onDeleteTag: (tag: string) => void;
 }) {
+  const uiSize = useUiSize();
   return (
     <div
       ref={scrollRef}
@@ -85,7 +87,7 @@ export function CommitTable({
                   left: 0,
                   width: "100%",
                   height: virtualRow.size,
-                  transform: `translateY(${virtualRow.start - TABLE_HEADER_HEIGHT}px)`,
+                  transform: `translateY(${virtualRow.start - uiSize(TABLE_HEADER_HEIGHT)}px)`,
                 }}
               >
                 <ContextMenu>

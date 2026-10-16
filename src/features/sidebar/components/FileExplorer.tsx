@@ -29,6 +29,7 @@ import { useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
 import { movePaths } from "@/features/sidebar/lib/fileTreeActions";
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
 import { useRepositoryTree } from "@/features/sidebar/hooks/useRepositoryTree";
+import { useUiSize } from "@/theme/useUiMetrics";
 import { FileTreeNode } from "./FileTreeNode";
 
 const ROW_HEIGHT = 26;
@@ -87,12 +88,17 @@ export function FileExplorer() {
   const rootDrop = useFileTreeDrop(rootPath ?? "", handleMove);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const rowHeight = useUiSize()(ROW_HEIGHT);
   const virtualizer = useVirtualizer({
     count: visibleNodes.length,
     getScrollElement: () => containerRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: OVERSCAN,
   });
+
+  useEffect(() => {
+    virtualizer.measure();
+  }, [virtualizer, rowHeight]);
 
   if (!rootPath) {
     return (
@@ -163,7 +169,7 @@ export function FileExplorer() {
                       key={virtualItem.key}
                       className="absolute left-0 right-0 overflow-hidden"
                       style={{
-                        height: `${ROW_HEIGHT}px`,
+                        height: `${rowHeight}px`,
                         transform: `translateY(${virtualItem.start}px)`,
                       }}
                     >

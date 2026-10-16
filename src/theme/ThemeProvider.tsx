@@ -20,6 +20,7 @@ import {
   useSystemMode,
 } from "./systemTheme";
 import type { Theme } from "./types";
+import { useUiMetrics } from "./useUiMetrics";
 
 interface ThemeContextValue {
   /** The visible theme; follows the system appearance when `followSystemTheme` is on. */
@@ -91,6 +92,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const folderEntries = useThemeFolderStore((s) => s.entries);
   const fromFolder = useMemo(() => folderThemes(folderEntries), [folderEntries]);
   useThemeFolderWatcher(showThemeFileErrors);
+  useUiMetrics();
 
   const theme = useMemo(
     () => resolveTheme(requestedId, customThemes, fromFolder),

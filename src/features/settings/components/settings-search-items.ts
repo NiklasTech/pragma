@@ -203,6 +203,24 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "appearance",
   },
   {
+    id: "ui-density",
+    label: "Density",
+    keywords: "density compact comfortable spacing row height",
+    category: "appearance",
+  },
+  {
+    id: "ui-scale",
+    label: "UI Scale",
+    keywords: "ui scale zoom size bigger smaller",
+    category: "appearance",
+  },
+  {
+    id: "ui-font",
+    label: "UI Font",
+    keywords: "ui font interface typeface",
+    category: "appearance",
+  },
+  {
     id: "mcp-servers",
     label: "MCP Servers",
     keywords: "mcp servers model context protocol",

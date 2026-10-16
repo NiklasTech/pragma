@@ -1,4 +1,5 @@
 import type { Theme } from "@/theme/types";
+import type { UiMetricsSettings } from "@/theme/uiMetrics";
 import type { ShortcutActionId, ShortcutBinding, ShortcutMap } from "@/shared/lib/shortcuts";
 
 export type AutoSave = "off" | "onFocusChange" | "afterDelay";
@@ -220,6 +221,8 @@ export interface SettingsState {
   experimental: ExperimentalSettings;
   agent: AgentSettings;
   notifications: NotificationSettings;
+  /** Density, UI scale and UI font; independent of the theme. */
+  appearance: UiMetricsSettings;
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
@@ -251,6 +254,7 @@ export interface SettingsActions {
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
   setAgentSettings: (settings: Partial<AgentSettings>) => void;
   setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
+  setAppearanceSettings: (settings: Partial<UiMetricsSettings>) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => string;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;
   removeMcpServer: (id: string) => void;

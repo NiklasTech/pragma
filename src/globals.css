@@ -35,8 +35,7 @@
      Typography
      -------------------------------------------------------------------------- */
   --font-heading: var(--font-sans);
-  --font-sans:
-    "Geist Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: var(--font-ui);
   --font-mono:
     "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -329,6 +328,7 @@
   /* --------------------------------------------------------------------------
      Typography values
      -------------------------------------------------------------------------- */
+  --font-ui: "Geist Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --text-ui-2xs: 11px;
   --text-ui-xs: 12px;
   --text-ui-sm: 13px;
