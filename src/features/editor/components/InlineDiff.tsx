@@ -269,7 +269,7 @@ export const InlineDiff = memo(function InlineDiff({
   const [state, setState] = useState<LoadState>({ kind: "idle" });
   const [internalViewMode, setInternalViewMode] = useState<DiffViewMode>(viewMode);
 
-  const { resolvedMode } = useTheme();
+  const { editorMode } = useTheme();
   const effectiveViewMode = onViewModeChange ? viewMode : internalViewMode;
 
   useEffect(() => {
@@ -398,7 +398,7 @@ export const InlineDiff = memo(function InlineDiff({
             original={original}
             modified={modified}
             filePath={filePath}
-            theme={resolvedMode}
+            theme={editorMode}
           />
         ) : canShowUnified ? (
           <UnifiedDiffView patchText={patchText} />
@@ -407,7 +407,7 @@ export const InlineDiff = memo(function InlineDiff({
             original={original}
             modified={modified}
             filePath={filePath}
-            theme={resolvedMode}
+            theme={editorMode}
           />
         )}
       </div>

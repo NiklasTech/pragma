@@ -17,19 +17,24 @@ Pragma is configured through the in-app settings panel. Open it with `Cmd/Ctrl +
 
 ## Editor
 
-| Setting         | Default         | Notes                                             |
-| --------------- | --------------- | ------------------------------------------------- |
-| VIM mode        | Off             | Enables VIM keybindings in the editor             |
-| Font size       | 14              |                                                   |
-| Font family     | JetBrains Mono  | Selectable from the font manager                  |
-| Tab size        | 2               |                                                   |
-| Insert spaces   | On              |                                                   |
-| Word wrap       | Off             |                                                   |
-| Line numbers    | On              |                                                   |
-| Auto save       | On focus change | Off, on focus change or after a delay             |
-| Auto save delay | 1000 ms         | Used when auto save is set to after a delay       |
-| Format on save  | Off             |                                                   |
-| Sticky lines    | Off             | Keeps the enclosing scope visible while scrolling |
+| Setting                | Default         | Notes                                             |
+| ---------------------- | --------------- | ------------------------------------------------- |
+| VIM mode               | Off             | Enables VIM keybindings in the editor             |
+| Font size              | 14              |                                                   |
+| Font family            | JetBrains Mono  | Selectable from the font manager                  |
+| Tab size               | 2               |                                                   |
+| Insert spaces          | On              |                                                   |
+| Word wrap              | Off             |                                                   |
+| Line numbers           | On              |                                                   |
+| Auto save              | On focus change | Off, on focus change or after a delay             |
+| Auto save delay        | 1000 ms         | Used when auto save is set to after a delay       |
+| Format on save         | Off             |                                                   |
+| Sticky lines           | Off             | Keeps the enclosing scope visible while scrolling |
+| Font weight            | 400             | 100 to 900                                        |
+| Letter spacing         | 0 px            | -2 to 4 px                                        |
+| Editor padding         | 8 px            | Space above and below the text, 0 to 48 px        |
+| Highlight current line | Off             |                                                   |
+| Scroll past end        | Off             | Lets the last line scroll up to the top           |
 
 ## Terminal
 
@@ -52,6 +57,12 @@ Themes are described in the [Theming Guide](./theming.md). The **Interface** sec
 | UI font  | Geist   | Any installed font or a custom font name; empty uses the default                            |
 
 `Cmd/Ctrl + Plus`, `Cmd/Ctrl + Minus` and `Cmd/Ctrl + 0` change and reset the UI scale. While the editor or a terminal has focus, the same keys change their own font size instead.
+
+The **Editor** section gives the editor and the terminals their own colors:
+
+- **Editor theme**: "Same as UI theme" (default) or the editor and syntax colors of any other theme, so a light editor can sit in a dark UI and the other way round. It changes the editor, its gutters and the diff views, not the UI.
+- **Terminal theme**: "Same as UI theme" or the terminal colors of another theme.
+- **Colors**: override the editor background or single syntax colors (keywords, strings, comments, functions, variables, numbers, types, tags, attributes, properties and operators). Overrides are kept when you switch themes and can be reset one by one or all at once.
 
 ## Agents
 

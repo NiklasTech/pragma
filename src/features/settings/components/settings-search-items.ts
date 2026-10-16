@@ -203,6 +203,12 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "appearance",
   },
   {
+    id: "editor-theme",
+    label: "Editor Theme",
+    keywords: "editor theme syntax colors terminal theme override background",
+    category: "appearance",
+  },
+  {
     id: "ui-density",
     label: "Density",
     keywords: "density compact comfortable spacing row height",

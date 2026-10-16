@@ -41,6 +41,10 @@ import {
   lineHeightCompartment,
   ligaturesCompartment,
   overviewCompartment,
+  textStyleCompartment,
+  paddingCompartment,
+  activeLineCompartment,
+  scrollPastEndCompartment,
 } from "@/features/editor/compartments";
 
 export interface EditorExtensionsContext {
@@ -142,6 +146,10 @@ export function useEditorExtensions({
         lineHeightCompartment.of([]),
         ligaturesCompartment.of([]),
         overviewCompartment.of([]),
+        textStyleCompartment.of([]),
+        paddingCompartment.of([]),
+        activeLineCompartment.of([]),
+        scrollPastEndCompartment.of([]),
         docSyncExtension(onChangeValue),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

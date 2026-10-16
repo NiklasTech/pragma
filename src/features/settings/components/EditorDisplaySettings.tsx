@@ -19,6 +19,13 @@ import {
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 import { parseRulers } from "./editor-rulers";
+import {
+  clampEditorFontWeight,
+  clampEditorLetterSpacing,
+  clampEditorPadding,
+} from "@/features/editor/components/extensions/text-display";
+
+const FONT_WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 
 const WHITESPACE_LABELS: Record<RenderWhitespace, string> = {
   none: "None",
@@ -148,6 +155,81 @@ export function EditorDisplaySettings() {
               setEditorSettings({ lineHeight: Number.isNaN(value) ? 1.6 : value });
             }}
             className="max-w-[180px]"
+          />
+        }
+      />
+      <SettingRow
+        label="Font Weight"
+        control={
+          <Select
+            value={String(clampEditorFontWeight(editor.fontWeight))}
+            onValueChange={(v) =>
+              setEditorSettings({ fontWeight: clampEditorFontWeight(Number(v)) })
+            }
+          >
+            <SelectTrigger className="max-w-[200px]">
+              <SelectValue>{clampEditorFontWeight(editor.fontWeight)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {FONT_WEIGHTS.map((weight) => (
+                <SelectItem key={weight} value={String(weight)}>
+                  {weight}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
+      <SettingRow
+        label="Letter Spacing"
+        description="Extra space between characters in pixels, from -2 to 4"
+        control={
+          <Input
+            type="number"
+            min={-2}
+            max={4}
+            step={0.1}
+            value={editor.letterSpacing}
+            onChange={(e) =>
+              setEditorSettings({ letterSpacing: clampEditorLetterSpacing(Number(e.target.value)) })
+            }
+            className="max-w-[180px]"
+          />
+        }
+      />
+      <SettingRow
+        label="Editor Padding"
+        description="Space above and below the text in pixels, from 0 to 48"
+        control={
+          <Input
+            type="number"
+            min={0}
+            max={48}
+            step={1}
+            value={editor.padding}
+            onChange={(e) =>
+              setEditorSettings({ padding: clampEditorPadding(Number(e.target.value)) })
+            }
+            className="max-w-[180px]"
+          />
+        }
+      />
+      <SettingRow
+        label="Highlight Current Line"
+        control={
+          <Switch
+            checked={editor.highlightActiveLine}
+            onCheckedChange={(v) => setEditorSettings({ highlightActiveLine: v })}
+          />
+        }
+      />
+      <SettingRow
+        label="Scroll Past End"
+        description="Scroll the last line up to the top of the editor"
+        control={
+          <Switch
+            checked={editor.scrollPastEnd}
+            onCheckedChange={(v) => setEditorSettings({ scrollPastEnd: v })}
           />
         }
       />

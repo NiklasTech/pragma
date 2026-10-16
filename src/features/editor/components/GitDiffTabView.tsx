@@ -22,7 +22,7 @@ interface DiffContent {
 
 /** A working tree diff tab that reloads with the git status and acts on hunks and lines. */
 export function GitDiffTabView({ tab, repoPath }: { tab: DiffTab; repoPath: string }) {
-  const { resolvedMode } = useTheme();
+  const { editorMode } = useTheme();
   const snapshot = useGitStore((s) => s.snapshot);
   const busy = useGitStore((s) => s.actionBusy !== null);
   const applyLines = useGitStore((s) => s.applyLines);
@@ -103,7 +103,7 @@ export function GitDiffTabView({ tab, repoPath }: { tab: DiffTab; repoPath: stri
             original={content.original}
             modified={content.modified}
             filePath={tab.path}
-            theme={resolvedMode}
+            theme={editorMode}
           />
         ) : (
           <GitHunkDiffView

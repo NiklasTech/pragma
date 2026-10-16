@@ -129,7 +129,6 @@ A full theme file has three top-level objects. Themes that use `extends` or `pal
 
 - `metadata.id` must contain only lowercase letters, numbers and hyphens.
 - `appearance.defaultMode` is `dark`, `light` or `system` and sets the mode Pragma runs in. `system` uses the first entry of `supportedModes`. `supportedModes` is a non-empty array of `dark` and/or `light`.
-- `appearance.preferredEditorTheme` optionally names the editor syntax theme to use.
 
 ### Token groups
 

@@ -21,12 +21,17 @@ import {
 } from "./systemTheme";
 import type { Theme } from "./types";
 import { useUiMetrics } from "./useUiMetrics";
+import { useEditorColors } from "./useEditorColors";
 
 interface ThemeContextValue {
   /** The visible theme; follows the system appearance when `followSystemTheme` is on. */
   themeId: string;
   theme: Theme;
   resolvedMode: "dark" | "light";
+  /** Mode of the editor's colors; differs from `resolvedMode` with another editor theme. */
+  editorMode: "dark" | "light";
+  /** Theme terminals take their colors from; terminals refresh when it changes. */
+  terminalThemeId: string;
   availableThemes: Theme[];
   followSystemTheme: boolean;
   lightThemeId: string;
@@ -111,6 +116,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     [customThemes, fromFolder],
   );
 
+  const { editorMode, terminalThemeId } = useEditorColors(theme, availableThemes);
+
   const handleSetTheme = useCallback(
     (id: string) => {
       const selected = availableThemes.find((t) => t.metadata.id === id);
@@ -143,6 +150,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     themeId,
     theme,
     resolvedMode,
+    editorMode,
+    terminalThemeId,
     availableThemes,
     followSystemTheme,
     lightThemeId,
