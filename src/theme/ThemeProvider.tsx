@@ -1,8 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { toast } from "sonner";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { applyTheme, themeMode } from "./applyTheme";
-import { builtInThemeList, defaultThemeId, getBuiltInTheme } from "./themes";
+import { defaultThemeId, getBuiltInTheme } from "./themes";
 import { loadCustomThemes } from "./customThemes";
+import { themeErrorLines, type ThemeFolderEntry } from "./themeFolder";
+import {
+  folderThemes,
+  mergeThemeLists,
+  useThemeFolderStore,
+  useThemeFolderWatcher,
+} from "./themeFolderStore";
 import type { Theme } from "./types";
 
 interface ThemeContextValue {
@@ -17,9 +25,12 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function resolveTheme(id: string, customThemes: Record<string, Theme>): Theme {
+function resolveTheme(id: string, customThemes: Record<string, Theme>, folder: Theme[]): Theme {
   const builtIn = getBuiltInTheme(id);
   if (builtIn) return builtIn;
+
+  const fromFolder = folder.find((theme) => theme.metadata.id === id);
+  if (fromFolder) return fromFolder;
 
   const custom = customThemes[id];
   if (custom) return custom;
@@ -28,6 +39,21 @@ function resolveTheme(id: string, customThemes: Record<string, Theme>): Theme {
   if (fallback) return fallback;
 
   throw new Error(`[pragma.theme] Built-in default theme "${defaultThemeId}" not found`);
+}
+
+function showThemeFileErrors(entries: ThemeFolderEntry[]): void {
+  for (const entry of entries) {
+    const kept = entry.theme ? " The last valid version stays active." : "";
+    toast.error(`${entry.fileName} has errors.${kept}`, {
+      description: (
+        <div className="flex flex-col gap-0.5">
+          {themeErrorLines(entry.errors).map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </div>
+      ),
+    });
+  }
 }
 
 interface ThemeProviderProps {
@@ -42,7 +68,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const addCustomTheme = useSettingsStore((s) => s.addCustomTheme);
   const deleteCustomTheme = useSettingsStore((s) => s.deleteCustomTheme);
 
-  const theme = useMemo(() => resolveTheme(themeId, customThemes), [themeId, customThemes]);
+  const folderEntries = useThemeFolderStore((s) => s.entries);
+  const fromFolder = useMemo(() => folderThemes(folderEntries), [folderEntries]);
+  useThemeFolderWatcher(showThemeFileErrors);
+
+  const theme = useMemo(
+    () => resolveTheme(themeId, customThemes, fromFolder),
+    [themeId, customThemes, fromFolder],
+  );
   const resolvedMode = themeMode(theme);
 
   // Apply theme colors and its dark/light class whenever it changes.
@@ -57,9 +90,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     [setThemeId],
   );
 
-  const availableThemes = useMemo(() => {
-    return [...builtInThemeList, ...Object.values(customThemes)];
-  }, [customThemes]);
+  const availableThemes = useMemo(
+    () => mergeThemeLists(fromFolder, customThemes),
+    [customThemes, fromFolder],
+  );
 
   // One-time migration: legacy custom themes stored in localStorage are
   // imported into the synchronized settings store.

@@ -1,10 +1,14 @@
 import { useCommandPaletteStore, type CommandPaletteItem } from "@/shared/stores/commandPalette";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { applyTheme, builtInThemeList, defaultThemeId, getBuiltInTheme, type Theme } from "@/theme";
+import { applyTheme, defaultThemeId, getBuiltInTheme, type Theme } from "@/theme";
+import { folderThemes, mergeThemeLists, useThemeFolderStore } from "@/theme/themeFolderStore";
 import { useRegisterPaletteCommands } from "./useRegisterPaletteCommands";
 
 function availableThemes(): Theme[] {
-  return [...builtInThemeList, ...Object.values(useSettingsStore.getState().customThemes)];
+  return mergeThemeLists(
+    folderThemes(useThemeFolderStore.getState().entries),
+    useSettingsStore.getState().customThemes,
+  );
 }
 
 function findTheme(themes: Theme[], id: string): Theme | undefined {

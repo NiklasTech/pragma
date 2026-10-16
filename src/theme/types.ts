@@ -176,3 +176,27 @@ export type ThemeInput = Omit<Theme, "format"> & { format?: string };
 export interface ResolvedTheme extends Theme {
   tokens: ThemeTokens;
 }
+
+/** Base colors a theme file can give instead of every token. */
+export interface ThemePalette {
+  background: string;
+  foreground: string;
+  accent: string;
+  success?: string;
+  warning?: string;
+  error?: string;
+  info?: string;
+}
+
+export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
+
+/** A theme as written on disk: a full theme, an `extends` override or a `palette`. */
+export interface ThemeFile {
+  $schema?: string;
+  format?: string;
+  metadata: ThemeMetadata;
+  appearance?: ThemeAppearance;
+  extends?: string;
+  palette?: ThemePalette;
+  tokens?: DeepPartial<ThemeTokens>;
+}

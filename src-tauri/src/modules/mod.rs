@@ -23,6 +23,7 @@ pub mod run;
 pub mod shell_integration;
 pub mod stt;
 pub mod text_encoding;
+pub mod theme_files;
 pub mod voice_access;
 pub mod voice_hardware;
 pub mod whisper_models;
