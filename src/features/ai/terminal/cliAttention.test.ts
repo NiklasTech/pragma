@@ -37,4 +37,11 @@ describe("claudeAttentionSettings", () => {
     expect(settings).toContain("\\\\033]777;notify;Pragma;finished\\\\007");
     expect(settings).toContain("\\\\033]777;notify;Pragma;input\\\\007");
   });
+
+  it("writes to the terminal of the CLI because hooks run without one", () => {
+    const settings = claudeAttentionSettings();
+    expect(settings).toContain("ps -o tty= -p $PPID");
+    expect(settings).toContain('> \\"/dev/$t\\"');
+    expect(settings).not.toContain("/dev/tty");
+  });
 });
