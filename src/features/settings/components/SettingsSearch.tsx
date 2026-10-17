@@ -1,16 +1,16 @@
 import * as React from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { Input } from "@/shared/components/ui/input";
-import { CATEGORIES, type Category } from "./settings-categories";
-import { SEARCH_ITEMS } from "./settings-search-items";
+import { CATEGORIES } from "./settings-categories";
+import { SEARCH_ITEMS, type SearchItem } from "./settings-search-items";
 
 interface SettingsSearchProps {
   query: string;
   onQueryChange: (query: string) => void;
-  onSelectCategory: (category: Category) => void;
+  onSelectResult: (item: SearchItem) => void;
 }
 
-export function SettingsSearch({ query, onQueryChange, onSelectCategory }: SettingsSearchProps) {
+export function SettingsSearch({ query, onQueryChange, onSelectResult }: SettingsSearchProps) {
   const filteredItems = React.useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return [];
@@ -41,7 +41,7 @@ export function SettingsSearch({ query, onQueryChange, onSelectCategory }: Setti
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onSelectCategory(item.category)}
+                onClick={() => onSelectResult(item)}
                 className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
               >
                 <span className="text-ui-sm text-fg-default">{item.label}</span>
