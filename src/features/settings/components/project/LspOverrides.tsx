@@ -1,6 +1,7 @@
 "use client";
 
 import { listLspLanguages } from "@/shared/lib/lsp-servers";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { SettingRow } from "../ui/SettingRow";
 import { SettingSection } from "../ui/SettingSection";
@@ -13,6 +14,7 @@ export function LspOverrides({
   value: Record<string, boolean>;
   onChange: (value: Record<string, boolean>) => void;
 }) {
+  const personal = useSettingsStore((state) => state.lsp.enabled);
   const set = (language: string, enabled: boolean | undefined) => {
     const next = { ...value };
     if (enabled === undefined) delete next[language];
@@ -30,6 +32,7 @@ export function LspOverrides({
             <InheritSelect
               label={`${language} language server`}
               value={value[language]}
+              personal={personal[language] ?? true}
               onChange={(enabled) => set(language, enabled)}
             />
           }
