@@ -8,33 +8,34 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 
-const OPTIONS = [
-  { value: "inherit", label: "Inherit" },
-  { value: "on", label: "On" },
-  { value: "off", label: "Off" },
-] as const;
-
-/// On, Off, or Inherit to leave the value to each user's own settings.
+/// On, Off, or "Use my setting" to leave the value to each person's own settings; `personal` is this user's value.
 export function InheritSelect({
   label,
   value,
+  personal,
   onChange,
 }: {
   label: string;
   value: boolean | undefined;
+  personal: boolean;
   onChange: (value: boolean | undefined) => void;
 }) {
+  const options = [
+    { value: "inherit", label: `Use my setting (${personal ? "On" : "Off"})` },
+    { value: "on", label: "On" },
+    { value: "off", label: "Off" },
+  ];
   const current = value === undefined ? "inherit" : value ? "on" : "off";
   return (
     <Select
       value={current}
       onValueChange={(next) => onChange(next === "inherit" ? undefined : next === "on")}
     >
-      <SelectTrigger aria-label={label} className="w-28">
-        <SelectValue>{OPTIONS.find((option) => option.value === current)?.label}</SelectValue>
+      <SelectTrigger aria-label={label} className="w-44">
+        <SelectValue>{options.find((option) => option.value === current)?.label}</SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {OPTIONS.map((option) => (
+        {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}
           </SelectItem>

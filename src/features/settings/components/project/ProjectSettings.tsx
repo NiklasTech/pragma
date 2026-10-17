@@ -10,6 +10,7 @@ import { Input } from "@/shared/components/ui/input";
 import { GroupEnvironmentSelect } from "@/features/ai/sessions/GroupEnvironmentSelect";
 import { DEFAULT_GROUP_ENVIRONMENT } from "@/features/ai/sessions/group";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
 import type { WorkspaceSettings } from "@/shared/stores/workspaceSettings/types";
@@ -34,6 +35,8 @@ export function ProjectSettings() {
   const save = useWorkspaceSettingsStore((state) => state.save);
   const trustedRoot = useFolderTrustStore((state) => state.rootPath);
   const folderTrusted = useFolderTrustStore((state) => state.trusted);
+  const personalEditor = useSettingsStore((state) => state.editor);
+  const personalStepLimit = useSettingsStore((state) => state.agent.stepLimit);
 
   const [draft, setDraft] = React.useState<WorkspaceSettings>({});
   const [newCommand, setNewCommand] = React.useState("");
@@ -81,8 +84,8 @@ export function ProjectSettings() {
   return (
     <div className="flex flex-col gap-8">
       <p className="text-ui-xs text-fg-subtle">
-        Stored in .pragma/settings.json and shared with everyone who opens this folder. Empty or
-        Inherit uses your own setting.
+        Stored in .pragma/settings.json and shared with everyone who opens this folder. An empty
+        field or Use my setting leaves the value to each person's own settings.
       </p>
       {error && (
         <Alert variant="destructive">
@@ -101,9 +104,9 @@ export function ProjectSettings() {
               min={1}
               max={16}
               value={editor.tabSize ?? ""}
-              placeholder="Inherit"
+              placeholder={`My setting: ${personalEditor.tabSize}`}
               aria-label="Tab size"
-              className="h-7 w-28 text-ui-sm"
+              className="h-7 w-36 text-ui-sm"
               onChange={(event) => setEditor({ tabSize: parsePositiveInt(event.target.value, 16) })}
             />
           }
@@ -123,6 +126,7 @@ export function ProjectSettings() {
               <InheritSelect
                 label={label}
                 value={editor[key]}
+                personal={personalEditor[key]}
                 onChange={(value) => setEditor({ [key]: value })}
               />
             }
@@ -135,9 +139,9 @@ export function ProjectSettings() {
             <Input
               defaultValue={editor.rulers?.join(", ") ?? ""}
               key={editor.rulers?.join(",") ?? "none"}
-              placeholder="Inherit"
+              placeholder={`My setting: ${personalEditor.rulers.join(", ") || "none"}`}
               aria-label="Rulers"
-              className="h-7 w-40 text-ui-sm"
+              className="h-7 w-44 text-ui-sm"
               onBlur={(event) => setEditor({ rulers: parseNumberList(event.target.value, 500) })}
             />
           }
@@ -155,9 +159,9 @@ export function ProjectSettings() {
               type="number"
               min={1}
               value={draft.agent?.stepLimit ?? ""}
-              placeholder="Inherit"
+              placeholder={`My setting: ${personalStepLimit ?? "no limit"}`}
               aria-label="Project step limit"
-              className="h-7 w-28 text-ui-sm"
+              className="h-7 w-44 text-ui-sm"
               onChange={(event) =>
                 setAgent({ stepLimit: parsePositiveInt(event.target.value, 10_000) })
               }
