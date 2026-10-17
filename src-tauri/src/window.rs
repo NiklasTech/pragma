@@ -64,6 +64,37 @@ fn apply_window_chrome<'a, R: tauri::Runtime, M: Manager<R>>(
     }
 }
 
+const MIN_HEADER_HEIGHT: u32 = 20;
+const MAX_HEADER_HEIGHT: u32 = 96;
+
+fn validate_header_height(height: u32) -> Result<(), String> {
+    if (MIN_HEADER_HEIGHT..=MAX_HEADER_HEIGHT).contains(&height) {
+        Ok(())
+    } else {
+        Err(format!(
+            "Header height must be between {MIN_HEADER_HEIGHT} and {MAX_HEADER_HEIGHT}"
+        ))
+    }
+}
+
+/// Centers the macOS traffic lights in the webview header of every window.
+#[tauri::command]
+#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+pub fn set_window_header_height(app: AppHandle, height: u32) -> Result<(), String> {
+    validate_header_height(height)?;
+    #[cfg(target_os = "macos")]
+    {
+        crate::macos_chrome::set_header_height(height);
+        for window in app.webview_windows().into_values() {
+            let target = window.clone();
+            window
+                .run_on_main_thread(move || crate::macos_chrome::align_webview(&target))
+                .map_err(|err| err.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 /// Creates a new external floating window for the given layout node.
 #[tauri::command]
 pub fn create_external_window(
@@ -400,6 +431,14 @@ mod tests {
         assert_eq!(folders.label_for(a), None);
         assert_eq!(folders.label_for(b), Some("main".to_string()));
         assert_eq!(folders.label_for(c), Some("workspace-2".to_string()));
+    }
+
+    #[test]
+    fn header_height_outside_the_range_is_rejected() {
+        assert!(super::validate_header_height(19).is_err());
+        assert!(super::validate_header_height(20).is_ok());
+        assert!(super::validate_header_height(96).is_ok());
+        assert!(super::validate_header_height(97).is_err());
     }
 
     #[test]

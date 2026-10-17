@@ -102,6 +102,12 @@ export function uiFontStack(settings: UiMetricsSettings): string {
   return family ? `"${family}", ${UI_FONT_FALLBACK}` : UI_FONT_FALLBACK;
 }
 
+/** The title bar height in pixels for the density and UI scale. */
+export function uiHeaderHeight(settings: UiMetricsSettings): number {
+  const { density, scale } = normalize(settings);
+  return Math.round(density.headerHeight * scale);
+}
+
 /** CSS variables for sizes, UI text, motion and the UI font; the theme only sets colors. */
 export function uiMetricVariables(settings: UiMetricsSettings): CssVariableMapping[] {
   const { density, scale } = normalize(settings);
@@ -111,7 +117,7 @@ export function uiMetricVariables(settings: UiMetricsSettings): CssVariableMappi
   const tokens = {
     layout: {
       ...layout,
-      headerHeight: px(density.headerHeight),
+      headerHeight: uiHeaderHeight(settings),
       tabHeight: px(density.tabHeight),
       statusbarHeight: px(density.statusbarHeight),
       breadcrumbHeight: px(density.breadcrumbHeight),

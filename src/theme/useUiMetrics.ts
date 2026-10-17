@@ -1,6 +1,14 @@
 import { useCallback, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { getIsMac } from "@/shared/lib/shortcuts";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { applyUiMetrics, scaleUiSize, stepUiScale, UI_SCALE_DEFAULT } from "./uiMetrics";
+import {
+  applyUiMetrics,
+  scaleUiSize,
+  stepUiScale,
+  uiHeaderHeight,
+  UI_SCALE_DEFAULT,
+} from "./uiMetrics";
 
 // The editor and the terminal handle these keys themselves for their own font size.
 const OWN_ZOOM_SELECTOR = ".cm-editor, .xterm";
@@ -21,9 +29,17 @@ export function uiZoomAction(
 export function useUiMetrics(): void {
   const appearance = useSettingsStore((s) => s.appearance);
 
+  const headerHeight = uiHeaderHeight(appearance);
+
   useEffect(() => {
     applyUiMetrics(appearance);
   }, [appearance]);
+
+  // The native traffic lights are centered in the header, so they follow its height.
+  useEffect(() => {
+    if (!getIsMac()) return;
+    void invoke("set_window_header_height", { height: headerHeight }).catch(() => {});
+  }, [headerHeight]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

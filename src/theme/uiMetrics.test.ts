@@ -5,6 +5,7 @@ import {
   DENSITY_TABLE,
   scaleUiSize,
   stepUiScale,
+  uiHeaderHeight,
   uiMetricVariables,
   type UiMetricsSettings,
 } from "./uiMetrics";
@@ -103,6 +104,13 @@ describe("UI scale", () => {
     expect(stepUiScale(100, -1)).toBe(90);
     expect(stepUiScale(150, 1)).toBe(150);
     expect(stepUiScale(80, -1)).toBe(80);
+  });
+
+  it("gives the title bar height that the header variable uses", () => {
+    expect(uiHeaderHeight(defaults)).toBe(40);
+    expect(uiHeaderHeight({ ...defaults, density: "compact", uiScale: 90 })).toBe(32);
+    expect(uiHeaderHeight({ ...defaults, density: "comfortable", uiScale: 150 })).toBe(69);
+    expect(vars({ density: "compact", uiScale: 90 }).get("--chrome-header-h")).toBe("32px");
   });
 
   it("scales virtualized row heights by density and scale", () => {

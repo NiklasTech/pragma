@@ -417,6 +417,7 @@ pub fn run() {
             cli::get_cli_project_path,
             window::create_external_window,
             window::close_external_window,
+            window::set_window_header_height,
             window::update_window_folder,
             app_menu::macos_menu_set_recent,
             app_menu::macos_menu_set_enabled,
