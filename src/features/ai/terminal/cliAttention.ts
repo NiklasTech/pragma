@@ -1,9 +1,14 @@
 import { PRAGMA_NOTIFY_TITLE, type TerminalAttention } from "./attentionSignals";
 
 function notifyHook(attention: TerminalAttention): { type: "command"; command: string } {
-  // Hooks run without the TUI's stdout, so the sequence goes to the controlling terminal.
+  // Claude Code runs hooks without a terminal, so /dev/tty fails; the sequence goes to the
+  // terminal of the CLI itself ($PPID), which is the PTY Pragma reads.
   const sequence = `\\033]777;notify;${PRAGMA_NOTIFY_TITLE};${attention}\\007`;
-  return { type: "command", command: `printf "${sequence}" 2>/dev/null >/dev/tty || true` };
+  const tty = `t=$(ps -o tty= -p $PPID 2>/dev/null | tr -d " "); case "$t" in ""|"??") exit 0;; esac`;
+  return {
+    type: "command",
+    command: `${tty}; printf "${sequence}" > "/dev/$t" 2>/dev/null || true`,
+  };
 }
 
 /// Claude Code only notifies in terminals it recognizes, so Pragma adds hooks for its events.
