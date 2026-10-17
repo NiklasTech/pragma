@@ -62,7 +62,7 @@ The **Editor** section gives the editor and the terminals their own colors:
 
 - **Editor theme**: "Same as UI theme" (default) or the editor and syntax colors of any other theme, so a light editor can sit in a dark UI and the other way round. It changes the editor, its gutters and the diff views, not the UI.
 - **Terminal theme**: "Same as UI theme" or the terminal colors of another theme.
-- **Colors**: override the editor background or single syntax colors (keywords, strings, comments, functions, variables, numbers, types, tags, attributes, properties and operators). Overrides are kept when you switch themes and can be reset one by one or all at once.
+- **Editor colors**: **Customize** opens a dialog to override the editor background or single syntax colors (keywords, strings, comments, functions, variables, numbers, types, tags, attributes, properties and operators). Overrides are kept when you switch themes and can be reset one by one or all at once.
 
 ### Repository colors
 
