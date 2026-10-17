@@ -441,7 +441,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
+  /* Leaves 4px above and below in tab bars, whose height follows density and UI scale. */
+  height: calc(var(--chrome-tab-h) - 8px);
   padding: 0 8px 0 10px;
   border-radius: var(--radius-sm);
   font-size: var(--text-ui-sm);
