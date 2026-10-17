@@ -93,7 +93,9 @@ export const SHORTCUT_ACTIONS = [
     id: "view.toggleTerminal" as const,
     label: "Toggle Terminal",
     category: "view" as const,
-    default: (): ShortcutBinding => ({ ctrl: true, code: "Backquote" }),
+    // Backquote sits on a different key on ISO Mac keyboards, so macOS uses Cmd+J like VS Code.
+    default: (isMac: boolean): ShortcutBinding =>
+      isMac ? { meta: true, code: "KeyJ" } : { ctrl: true, code: "Backquote" },
   },
   {
     id: "view.newTerminalTab" as const,
@@ -117,13 +119,19 @@ export const SHORTCUT_ACTIONS = [
     id: "view.switchToAgents" as const,
     label: "Switch to Agents",
     category: "view" as const,
-    default: (): ShortcutBinding | null => null,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit2",
+    }),
   },
   {
     id: "view.switchToEditor" as const,
     label: "Switch to Editor",
     category: "view" as const,
-    default: (): ShortcutBinding | null => null,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit1",
+    }),
   },
   {
     id: "view.toggleUiMode" as const,
@@ -158,10 +166,9 @@ export const SHORTCUT_ACTIONS = [
     id: "search.replace" as const,
     label: "Replace in File",
     category: "search" as const,
-    default: (isMac: boolean): ShortcutBinding => ({
-      [isMac ? "meta" : "ctrl"]: true,
-      code: "KeyH",
-    }),
+    // Cmd+H hides the app on macOS.
+    default: (isMac: boolean): ShortcutBinding =>
+      isMac ? { meta: true, alt: true, code: "KeyF" } : { ctrl: true, code: "KeyH" },
   },
   {
     id: "ai.toggle" as const,

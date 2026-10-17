@@ -1,6 +1,6 @@
 # Keyboard Shortcuts
 
-Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Windows and Linux the same binding uses `Ctrl`.
+Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Windows and Linux the same binding uses `Ctrl`. Where macOS and the other platforms differ, both bindings are listed.
 
 ## File
 
@@ -22,32 +22,32 @@ Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Wi
 
 ## View
 
-| Action                 | Default                |
-| ---------------------- | ---------------------- |
-| Toggle Sidebar         | `Cmd/Ctrl + B`         |
-| Toggle Terminal        | `` Ctrl + ` ``         |
-| New Terminal Tab       | `Cmd/Ctrl + T`         |
-| Open Settings          | `Cmd/Ctrl + ,`         |
-| Open Command Palette   | `Cmd/Ctrl + Shift + P` |
-| Toggle Agents / Editor | `Cmd/Ctrl + Shift + E` |
-| Split Editor           | `Cmd/Ctrl + \`         |
-| Toggle Problems        | `Cmd/Ctrl + Shift + M` |
-| Toggle Preview         | `Cmd/Ctrl + Shift + V` |
-| Switch to Agents       | None                   |
-| Switch to Editor       | None                   |
-| Next Tab               | `Ctrl + Tab`           |
-| Previous Tab           | `Ctrl + Shift + Tab`   |
-| Zoom In (UI scale)     | `Cmd/Ctrl + Plus`      |
-| Zoom Out (UI scale)    | `Cmd/Ctrl + Minus`     |
-| Reset Zoom (UI scale)  | `Cmd/Ctrl + 0`         |
+| Action                 | Default                                           |
+| ---------------------- | ------------------------------------------------- |
+| Toggle Sidebar         | `Cmd/Ctrl + B`                                    |
+| Toggle Terminal        | macOS `Cmd + J`, Windows and Linux `` Ctrl + ` `` |
+| New Terminal Tab       | `Cmd/Ctrl + T`                                    |
+| Open Settings          | `Cmd/Ctrl + ,`                                    |
+| Open Command Palette   | `Cmd/Ctrl + Shift + P`                            |
+| Toggle Agents / Editor | `Cmd/Ctrl + Shift + E`                            |
+| Split Editor           | `Cmd/Ctrl + \`                                    |
+| Toggle Problems        | `Cmd/Ctrl + Shift + M`                            |
+| Toggle Preview         | `Cmd/Ctrl + Shift + V`                            |
+| Switch to Agents       | `Cmd/Ctrl + 2`                                    |
+| Switch to Editor       | `Cmd/Ctrl + 1`                                    |
+| Next Tab               | `Ctrl + Tab`                                      |
+| Previous Tab           | `Ctrl + Shift + Tab`                              |
+| Zoom In (UI scale)     | `Cmd/Ctrl + Plus`                                 |
+| Zoom Out (UI scale)    | `Cmd/Ctrl + Minus`                                |
+| Reset Zoom (UI scale)  | `Cmd/Ctrl + 0`                                    |
 
 ## Search
 
-| Action          | Default                |
-| --------------- | ---------------------- |
-| Find in Files   | `Cmd/Ctrl + Shift + F` |
-| Find in File    | `Cmd/Ctrl + F`         |
-| Replace in File | `Cmd/Ctrl + H`         |
+| Action          | Default                                                |
+| --------------- | ------------------------------------------------------ |
+| Find in Files   | `Cmd/Ctrl + Shift + F`                                 |
+| Find in File    | `Cmd/Ctrl + F`                                         |
+| Replace in File | macOS `Cmd + Option + F`, Windows and Linux `Ctrl + H` |
 
 ## AI and chat
 
@@ -84,4 +84,6 @@ A plain click only selects text.
 3. Record a new binding in the dialog. Press `Escape` to cancel.
 4. If the binding conflicts with another action, Pragma reports the conflict before it is saved.
 
-Each action can be reset to its default, and all shortcuts can be reset at once. Editor VIM keybindings are separate and configured with the VIM mode toggle in the editor settings.
+Each action can be reset to its default, and all shortcuts can be reset at once. On macOS the menu bar shows your shortcuts and uses them too.
+
+When a default changes in an update, a shortcut you never changed moves to the new default. A shortcut you set yourself is kept. Editor VIM keybindings are separate and configured with the VIM mode toggle in the editor settings.

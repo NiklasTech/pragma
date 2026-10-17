@@ -421,6 +421,7 @@ pub fn run() {
             app_menu::macos_menu_set_recent,
             app_menu::macos_menu_set_enabled,
             app_menu::macos_menu_set_checked,
+            app_menu::macos_menu_set_shortcuts,
         ])
         .build(context);
 

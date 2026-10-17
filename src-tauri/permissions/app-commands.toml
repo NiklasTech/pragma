@@ -214,6 +214,7 @@ permissions = [
   "allow-macos-menu-set-checked",
   "allow-macos-menu-set-enabled",
   "allow-macos-menu-set-recent",
+  "allow-macos-menu-set-shortcuts",
   "allow-mcp-call-tool",
   "allow-mcp-get-prompt",
   "allow-mcp-import-candidates",

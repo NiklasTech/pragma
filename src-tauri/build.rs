@@ -212,6 +212,7 @@ const COMMANDS: &[&str] = &[
     "macos_menu_set_checked",
     "macos_menu_set_enabled",
     "macos_menu_set_recent",
+    "macos_menu_set_shortcuts",
     "mcp_call_tool",
     "mcp_get_prompt",
     "mcp_import_candidates",

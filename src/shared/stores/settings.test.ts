@@ -146,6 +146,48 @@ describe("migrateShortcuts", () => {
     expect(migrated["view.toggleTerminal"]).toEqual(custom);
   });
 
+  it("moves stored previous Mac defaults to the new ones once", () => {
+    const mac = getDefaultShortcuts(true);
+    const migrated = migrateShortcuts(
+      mac,
+      {
+        "view.toggleTerminal": { ctrl: true, code: "Backquote" },
+        "search.replace": { meta: true, code: "KeyH" },
+        "view.switchToEditor": null,
+        "file.reopenClosedTab": mac["file.reopenClosedTab"],
+      },
+      0,
+      true,
+    );
+    expect(migrated["view.toggleTerminal"]).toEqual({ meta: true, code: "KeyJ" });
+    expect(migrated["search.replace"]).toEqual({ meta: true, alt: true, code: "KeyF" });
+    expect(migrated["view.switchToEditor"]).toEqual({ meta: true, code: "Digit1" });
+  });
+
+  it("keeps custom bindings and bindings stored after the new defaults", () => {
+    const mac = getDefaultShortcuts(true);
+    const custom = { meta: true, alt: true, code: "KeyT" };
+    const old = { ctrl: true, code: "Backquote" };
+    const migrated = migrateShortcuts(mac, { "view.toggleTerminal": custom }, 0, true);
+    expect(migrated["view.toggleTerminal"]).toEqual(custom);
+    const current = migrateShortcuts(mac, { "view.toggleTerminal": old }, 1, true);
+    expect(current["view.toggleTerminal"]).toEqual(old);
+  });
+
+  it("keeps an old default when another action uses the new one", () => {
+    const mac = getDefaultShortcuts(true);
+    const migrated = migrateShortcuts(
+      mac,
+      {
+        "view.toggleTerminal": { ctrl: true, code: "Backquote" },
+        "ai.toggle": { meta: true, code: "KeyJ" },
+      },
+      0,
+      true,
+    );
+    expect(migrated["view.toggleTerminal"]).toEqual({ ctrl: true, code: "Backquote" });
+  });
+
   it("leaves bindings alone once Reopen Closed Tab is stored", () => {
     const old = { ctrl: true, shift: true, code: "KeyT" };
     const migrated = migrateShortcuts(defaults, {
