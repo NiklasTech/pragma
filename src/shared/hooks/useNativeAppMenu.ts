@@ -7,6 +7,7 @@ import { useUpdaterStore } from "@/features/settings/updater/updaterStore";
 import { useLayoutStore } from "@/shell/layout";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { getIsMac, SHORTCUT_ACTIONS, type ShortcutActionId } from "@/shared/lib/shortcuts";
+import { menuAccelerators } from "@/shared/lib/menuAccelerators";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { wrapWithGuard, type NativeMenuPayload } from "@/shared/lib/menuAction";
 import type { ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
@@ -39,6 +40,12 @@ export function useNativeAppMenu(actions: ShortcutActions): void {
   const sidebarCollapsed = useLayoutStore((state) => state.sidebar.collapsed);
   const terminalMode = useLayoutStore((state) => state.terminal.mode);
   const aiMode = useLayoutStore((state) => state.ai.mode);
+  const shortcuts = useSettingsStore((state) => state.shortcuts);
+
+  useEffect(() => {
+    if (!isMac) return;
+    void invoke("macos_menu_set_shortcuts", { shortcuts: menuAccelerators(shortcuts) });
+  }, [isMac, shortcuts]);
 
   useEffect(() => {
     if (!isMac) return;

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use tauri::AppHandle;
 
 #[cfg(target_os = "macos")]
@@ -118,6 +120,36 @@ struct AppMenuState {
     toggle_sidebar_item: CheckMenuItem<Wry>,
     toggle_terminal_item: CheckMenuItem<Wry>,
     toggle_ai_item: CheckMenuItem<Wry>,
+    /// Menu items whose key equivalent follows the shortcut settings.
+    shortcut_items: Vec<(&'static str, ShortcutItem)>,
+}
+
+#[cfg(target_os = "macos")]
+enum ShortcutItem {
+    Plain(MenuItem<Wry>),
+    Check(CheckMenuItem<Wry>),
+}
+
+#[cfg(target_os = "macos")]
+impl ShortcutItem {
+    fn set_accelerator(&self, accelerator: Option<&str>) -> tauri::Result<()> {
+        match self {
+            Self::Plain(item) => item.set_accelerator(accelerator),
+            Self::Check(item) => item.set_accelerator(accelerator),
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn shortcut_item(
+    app: &AppHandle,
+    items: &mut Vec<(&'static str, ShortcutItem)>,
+    id: &'static str,
+    label: &str,
+) -> tauri::Result<MenuItem<Wry>> {
+    let item = MenuItem::with_id(app, id, label, true, None::<&str>)?;
+    items.push((id, ShortcutItem::Plain(item.clone())));
+    Ok(item)
 }
 
 #[cfg(target_os = "macos")]
@@ -156,31 +188,42 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         ..Default::default()
     };
 
-    let save_item = MenuItem::with_id(app, "file.save", "Save", false, Some("CmdOrCtrl+S"))?;
+    let mut shortcut_items = Vec::new();
+    let save_item = MenuItem::with_id(app, "file.save", "Save", false, None::<&str>)?;
+    shortcut_items.push(("file.save", ShortcutItem::Plain(save_item.clone())));
     let toggle_sidebar_item = CheckMenuItem::with_id(
         app,
         "view.toggleSidebar",
         "Toggle Sidebar",
         true,
         false,
-        Some("CmdOrCtrl+B"),
+        None::<&str>,
     )?;
+    shortcut_items.push((
+        "view.toggleSidebar",
+        ShortcutItem::Check(toggle_sidebar_item.clone()),
+    ));
     let toggle_terminal_item = CheckMenuItem::with_id(
         app,
         "view.toggleTerminal",
         "Toggle Terminal",
         true,
         false,
-        Some("Ctrl+Backquote"),
+        None::<&str>,
     )?;
+    shortcut_items.push((
+        "view.toggleTerminal",
+        ShortcutItem::Check(toggle_terminal_item.clone()),
+    ));
     let toggle_ai_item = CheckMenuItem::with_id(
         app,
         "ai.toggle",
         "Toggle AI Chat",
         true,
         false,
-        Some("CmdOrCtrl+Shift+A"),
+        None::<&str>,
     )?;
+    shortcut_items.push(("ai.toggle", ShortcutItem::Check(toggle_ai_item.clone())));
 
     let recent_menu = SubmenuBuilder::with_id(app, "file.openRecentMenu", "Open Recent")
         .item(&MenuItem::with_id(
@@ -206,12 +249,11 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             None::<&str>,
         )?)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.openSettings",
             "Settings…",
-            true,
-            Some("CmdOrCtrl+,"),
         )?)
         .separator()
         .item(&PredefinedMenuItem::services(app, None)?)
@@ -224,37 +266,33 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .build()?;
 
     let file = SubmenuBuilder::new(app, "File")
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "file.open",
             "Open File",
-            true,
-            Some("CmdOrCtrl+O"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "file.openFolder",
             "Open Folder",
-            true,
-            None::<&str>,
         )?)
         .item(&recent_menu)
         .separator()
         .item(&save_item)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "file.closeTab",
             "Close Tab",
-            true,
-            Some("CmdOrCtrl+W"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "file.reopenClosedTab",
             "Reopen Closed Tab",
-            true,
-            Some("CmdOrCtrl+Shift+T"),
         )?)
         .build()?;
 
@@ -267,110 +305,97 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .item(&PredefinedMenuItem::paste(app, None)?)
         .item(&PredefinedMenuItem::select_all(app, None)?)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "search.find",
             "Find",
-            true,
-            Some("CmdOrCtrl+F"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "search.replace",
             "Replace",
-            true,
-            Some("CmdOrCtrl+H"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "search.findInFiles",
             "Find in Files",
-            true,
-            Some("CmdOrCtrl+Shift+F"),
         )?)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "editor.formatDocument",
             "Format Document",
-            true,
-            Some("Shift+Alt+F"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "edit.editWithAI",
             "Edit Selection with AI",
-            true,
-            Some("CmdOrCtrl+L"),
         )?)
         .build()?;
 
     let view = SubmenuBuilder::new(app, "View")
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.commandPalette",
             "Command Palette",
-            true,
-            Some("CmdOrCtrl+Shift+P"),
         )?)
         .separator()
         .item(&toggle_sidebar_item)
         .item(&toggle_terminal_item)
         .item(&toggle_ai_item)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.toggleProblems",
             "Toggle Problems",
-            true,
-            Some("CmdOrCtrl+Shift+M"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.togglePreview",
             "Toggle Preview",
-            true,
-            Some("CmdOrCtrl+Shift+V"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.splitEditor",
             "Split Editor",
-            true,
-            Some("CmdOrCtrl+\\"),
         )?)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.switchToAgents",
             "Switch to Agents",
-            true,
-            None::<&str>,
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.switchToEditor",
             "Switch to Editor",
-            true,
-            None::<&str>,
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.toggleUiMode",
             "Toggle Agents / Editor",
-            true,
-            Some("CmdOrCtrl+Shift+E"),
         )?)
         .separator()
         .item(&PredefinedMenuItem::fullscreen(app, None)?)
         .build()?;
 
     let go = SubmenuBuilder::new(app, "Go")
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "file.goToFile",
             "Go to File",
-            true,
-            Some("CmdOrCtrl+P"),
         )?)
         .item(&MenuItem::with_id(
             app,
@@ -389,66 +414,58 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .build()?;
 
     let run = SubmenuBuilder::new(app, "Run")
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.currentFile",
             "Start / Continue",
-            true,
-            Some("F5"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.stop",
             "Stop",
-            true,
-            Some("Shift+F5"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.attach",
             "Attach to Process…",
-            true,
-            None::<&str>,
         )?)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.stepOver",
             "Step Over",
-            true,
-            Some("F10"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.stepInto",
             "Step Into",
-            true,
-            Some("F11"),
         )?)
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.stepOut",
             "Step Out",
-            true,
-            Some("Shift+F11"),
         )?)
         .separator()
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "debug.toggleBreakpoint",
             "Toggle Breakpoint",
-            true,
-            Some("F9"),
         )?)
         .build()?;
 
     let terminal = SubmenuBuilder::new(app, "Terminal")
-        .item(&MenuItem::with_id(
+        .item(&shortcut_item(
             app,
+            &mut shortcut_items,
             "view.newTerminalTab",
             "New Terminal Tab",
-            true,
-            Some("CmdOrCtrl+T"),
         )?)
         .item(&MenuItem::with_id(
             app,
@@ -493,6 +510,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         toggle_sidebar_item,
         toggle_terminal_item,
         toggle_ai_item,
+        shortcut_items,
     });
 
     Ok(())
@@ -557,6 +575,49 @@ pub fn macos_menu_set_checked(app: AppHandle, id: String, checked: bool) -> Resu
     }
 }
 
+const MAX_ACCELERATOR_CHARS: usize = 64;
+const MAX_SHORTCUTS: usize = 256;
+
+fn validate_shortcuts(shortcuts: &HashMap<String, Option<String>>) -> Result<(), String> {
+    if shortcuts.len() > MAX_SHORTCUTS {
+        return Err("too many shortcuts".to_string());
+    }
+    if shortcuts
+        .values()
+        .flatten()
+        .any(|accelerator| accelerator.chars().count() > MAX_ACCELERATOR_CHARS)
+    {
+        return Err("shortcut is too long".to_string());
+    }
+    Ok(())
+}
+
+/// Sets the key equivalents of the menu items to the shortcut settings, keyed by action id.
+#[tauri::command]
+#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+pub fn macos_menu_set_shortcuts(
+    app: AppHandle,
+    shortcuts: HashMap<String, Option<String>>,
+) -> Result<(), String> {
+    validate_shortcuts(&shortcuts)?;
+    #[cfg(target_os = "macos")]
+    {
+        let state = menu_state(&app)?;
+        for (id, item) in &state.shortcut_items {
+            let accelerator = shortcuts.get(*id).and_then(Option::as_deref);
+            // A binding the menu cannot show leaves the item without one; the webview still handles it.
+            if item.set_accelerator(accelerator).is_err() {
+                item.set_accelerator(None).map_err(|e| e.to_string())?;
+            }
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(())
+    }
+}
+
 #[cfg(target_os = "macos")]
 fn set_recent(app: &AppHandle, paths: &[String]) -> Result<(), String> {
     let state = menu_state(app)?;
@@ -589,7 +650,29 @@ fn set_recent(app: &AppHandle, paths: &[String]) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_recent_menu_id, resolve_menu_event, TOGGLE_TERMINAL_MENU_ID};
+    use std::collections::HashMap;
+
+    use super::{
+        parse_recent_menu_id, resolve_menu_event, validate_shortcuts, MAX_SHORTCUTS,
+        TOGGLE_TERMINAL_MENU_ID,
+    };
+
+    #[test]
+    fn validates_shortcut_count_and_length() {
+        let mut shortcuts = HashMap::from([
+            ("file.open".to_string(), Some("Cmd+KeyO".to_string())),
+            ("file.openFolder".to_string(), None),
+        ]);
+        assert!(validate_shortcuts(&shortcuts).is_ok());
+
+        shortcuts.insert("file.save".to_string(), Some("Cmd+".repeat(20)));
+        assert!(validate_shortcuts(&shortcuts).is_err());
+
+        let many = (0..=MAX_SHORTCUTS)
+            .map(|index| (index.to_string(), None))
+            .collect::<HashMap<_, _>>();
+        assert!(validate_shortcuts(&many).is_err());
+    }
 
     #[test]
     fn parses_recent_prefix_and_preserves_extra_colons() {

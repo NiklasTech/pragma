@@ -1,5 +1,6 @@
 import { getDefaultShortcuts, getIsMac } from "@/shared/lib/shortcuts";
 import type { SettingsState } from "./types";
+import { SHORTCUTS_REVISION } from "./migrations";
 import { REPOSITORY_COLOR_DEFAULTS } from "@/shared/lib/repositoryColors";
 
 export const defaultSettings: SettingsState = {
@@ -176,4 +177,5 @@ export const defaultSettings: SettingsState = {
   customThemes: {},
   extensions: {},
   shortcuts: getDefaultShortcuts(getIsMac()),
+  shortcutsRevision: SHORTCUTS_REVISION,
 };

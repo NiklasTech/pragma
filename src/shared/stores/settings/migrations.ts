@@ -1,5 +1,12 @@
 import { extractSecretLikeEnv, withoutSecretValues } from "@/shared/lib/mcpSecretEnv";
-import { isConflict, type ShortcutMap } from "@/shared/lib/shortcuts";
+import {
+  findConflictingAction,
+  getIsMac,
+  isConflict,
+  type ShortcutActionId,
+  type ShortcutBinding,
+  type ShortcutMap,
+} from "@/shared/lib/shortcuts";
 import type {
   AISettings,
   McpSettings,
@@ -104,10 +111,29 @@ export function migrateStatusbarSettings(statusbar: StatusbarSettings): Statusba
   return { ...statusbar, items, migrationRevision: STATUSBAR_REVISION };
 }
 
+export const SHORTCUTS_REVISION = 1;
+
+/// Defaults before revision 1, for the actions whose default changed.
+const PREVIOUS_SHORTCUT_DEFAULTS: Array<
+  [ShortcutActionId, (isMac: boolean) => ShortcutBinding | null]
+> = [
+  ["view.toggleTerminal", () => ({ ctrl: true, code: "Backquote" })],
+  ["view.switchToAgents", () => null],
+  ["view.switchToEditor", () => null],
+  ["search.replace", (isMac) => ({ [isMac ? "meta" : "ctrl"]: true, code: "KeyH" })],
+];
+
+function isSameBinding(a: ShortcutBinding | null | undefined, b: ShortcutBinding | null): boolean {
+  return a && b ? isConflict(a, b) : !a && !b;
+}
+
 /// Cmd/Ctrl+Shift+T moved from Toggle Terminal to Reopen Closed Tab; a stored old default must not shadow it.
+/// A stored previous default takes the new one once, unless another action already uses it.
 export function migrateShortcuts(
   defaults: ShortcutMap,
   persisted: Partial<ShortcutMap> | undefined,
+  revision = 0,
+  isMac = getIsMac(),
 ): ShortcutMap {
   const merged = { ...defaults, ...persisted };
   if (
@@ -116,6 +142,12 @@ export function migrateShortcuts(
     isConflict(persisted["view.toggleTerminal"], defaults["file.reopenClosedTab"])
   ) {
     merged["view.toggleTerminal"] = defaults["view.toggleTerminal"];
+  }
+  if (!persisted || revision >= SHORTCUTS_REVISION) return merged;
+  for (const [id, previous] of PREVIOUS_SHORTCUT_DEFAULTS) {
+    if (!(id in persisted) || !isSameBinding(persisted[id], previous(isMac))) continue;
+    if (findConflictingAction(id, defaults[id], merged)) continue;
+    merged[id] = defaults[id];
   }
   return merged;
 }
@@ -158,6 +190,7 @@ export function mergeWithDefaults(
     repositoryColors: mergePartial(defaults.repositoryColors, partial.repositoryColors),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
     extensions: { ...defaults.extensions, ...partial.extensions },
-    shortcuts: migrateShortcuts(defaults.shortcuts, partial.shortcuts),
+    shortcuts: migrateShortcuts(defaults.shortcuts, partial.shortcuts, partial.shortcutsRevision),
+    shortcutsRevision: SHORTCUTS_REVISION,
   };
 }

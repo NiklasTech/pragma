@@ -8,6 +8,7 @@ import {
   isModifierKey,
   isValidBinding,
   matchShortcut,
+  type ShortcutActionId,
   type ShortcutBinding,
   type ShortcutMap,
 } from "./shortcuts";
@@ -135,6 +136,39 @@ describe("getDefaultShortcuts", () => {
     expect(defaults["file.open"]).toEqual({ meta: true, code: "KeyO" });
     expect(defaults["ai.toggle"]).toEqual({ meta: true, shift: true, code: "KeyA" });
     expect(defaults["view.splitEditor"]).toEqual({ meta: true, code: "Backslash" });
+  });
+
+  it("uses Mac conventions for the terminal and replace", () => {
+    const mac = getDefaultShortcuts(true);
+    expect(mac["view.toggleTerminal"]).toEqual({ meta: true, code: "KeyJ" });
+    expect(mac["search.replace"]).toEqual({ meta: true, alt: true, code: "KeyF" });
+    const other = getDefaultShortcuts(false);
+    expect(other["view.toggleTerminal"]).toEqual({ ctrl: true, code: "Backquote" });
+    expect(other["search.replace"]).toEqual({ ctrl: true, code: "KeyH" });
+  });
+
+  it("switches between editor and agents with Cmd or Ctrl and a digit", () => {
+    expect(getDefaultShortcuts(true)["view.switchToEditor"]).toEqual({
+      meta: true,
+      code: "Digit1",
+    });
+    expect(getDefaultShortcuts(true)["view.switchToAgents"]).toEqual({
+      meta: true,
+      code: "Digit2",
+    });
+    expect(getDefaultShortcuts(false)["view.switchToAgents"]).toEqual({
+      ctrl: true,
+      code: "Digit2",
+    });
+  });
+
+  it("has no conflicting defaults", () => {
+    for (const isMac of [true, false]) {
+      const defaults = getDefaultShortcuts(isMac);
+      for (const id of Object.keys(defaults) as ShortcutActionId[]) {
+        expect(findConflictingAction(id, defaults[id], defaults), id).toBeNull();
+      }
+    }
   });
 
   it("contains all registered actions", () => {

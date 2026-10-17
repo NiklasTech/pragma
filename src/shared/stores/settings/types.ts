@@ -244,6 +244,8 @@ export interface SettingsState {
   customThemes: Record<string, Theme>;
   extensions: Record<string, ExtensionSettings>;
   shortcuts: ShortcutMap;
+  /** The shortcut defaults revision the stored shortcuts were migrated to. */
+  shortcutsRevision: number;
 }
 
 export interface AppearanceSettings extends UiMetricsSettings {
