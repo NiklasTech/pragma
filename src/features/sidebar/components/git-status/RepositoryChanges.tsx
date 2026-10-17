@@ -8,7 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/components/ui/collapsible";
-import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import { selectRootFolder } from "@/shared/hooks/useFileExplorer";
 import { useCloseRepository } from "@/shared/hooks/useOpenRepositories";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
@@ -51,8 +51,8 @@ function RepositoryLine({ summary }: { summary: GitRepositorySummary }) {
   );
 }
 
+// Mounting useFileExplorer here would reset the Git status this panel shows, so the plain function is used.
 function RepositoryActions({ summary }: { summary: GitRepositorySummary }) {
-  const { selectRoot } = useFileExplorer();
   const closeRepository = useCloseRepository();
 
   return (
@@ -63,7 +63,7 @@ function RepositoryActions({ summary }: { summary: GitRepositorySummary }) {
           size="icon-xs"
           title="Make active"
           aria-label={`Make ${summary.name} the active repository`}
-          onClick={() => void selectRoot(summary.path)}
+          onClick={() => void selectRootFolder(summary.path)}
         >
           <ArrowsLeftRight size={12} />
         </Button>
