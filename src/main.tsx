@@ -67,7 +67,12 @@ function formatErrorDetail(error: unknown): string {
 }
 
 window.addEventListener("error", (event) => {
-  const detail = formatErrorDetail(event.error);
+  // WebKit reports this harmless layout notice while the window is resized, with no error object.
+  if (event.message?.includes("ResizeObserver loop")) {
+    event.preventDefault();
+    return;
+  }
+  const detail = event.error ? formatErrorDetail(event.error) : event.message;
   if (detail.includes("Pragma: full-reload blocked")) {
     // This is an intentional dev-only guard, not a real runtime error.
     event.preventDefault();
