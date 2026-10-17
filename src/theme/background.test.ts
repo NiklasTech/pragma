@@ -7,6 +7,8 @@ import {
   clampBlur,
   clampDim,
   clampTransparency,
+  imageVisibility,
+  measureImageTones,
   surfaceAlpha,
   type BackgroundSettings,
 } from "./background";
@@ -139,9 +141,67 @@ describe("background settings", () => {
     expect(clampBlur(-3)).toBe(0);
     expect(clampBlur(99)).toBe(40);
     expect(clampDim(120)).toBe(90);
-    expect(clampDim(Number.NaN)).toBe(60);
+    expect(clampDim(Number.NaN)).toBe(30);
     expect(clampTransparency(95)).toBe(80);
     expect(clampTransparency(-1)).toBe(0);
     expect(clampTransparency(33.4)).toBe(33);
+  });
+});
+
+describe("image tones", () => {
+  function pixels(colors: [number, number, number][]): Uint8ClampedArray {
+    return new Uint8ClampedArray(colors.flatMap(([r, g, b]) => [r, g, b, 255]));
+  }
+
+  it("averages the darkest and lightest five percent", () => {
+    const colors: [number, number, number][] = [
+      ...Array.from({ length: 95 }, (): [number, number, number] => [120, 120, 120]),
+      ...Array.from({ length: 5 }, (): [number, number, number] => [250, 250, 250]),
+    ];
+    const tones = measureImageTones(pixels(colors));
+    expect(tones?.[0]).toEqual({ r: 120, g: 120, b: 120, a: 1 });
+    expect(tones?.[1]).toEqual({ r: 250, g: 250, b: 250, a: 1 });
+  });
+
+  it("returns null for an empty image", () => {
+    expect(measureImageTones(new Uint8ClampedArray())).toBeNull();
+  });
+
+  it("lets an image that matches the theme show through much more", () => {
+    const root = color("--bg-root");
+    const darkPhoto: [Rgba, Rgba] = [
+      { r: 10, g: 12, b: 20, a: 1 },
+      { r: 70, g: 80, b: 100, a: 1 },
+    ];
+    const unknown = surfaceAlpha(
+      root,
+      color("--fg-default"),
+      color("--fg-muted"),
+      70,
+      image,
+      30,
+      root,
+    );
+    const measured = surfaceAlpha(
+      root,
+      color("--fg-default"),
+      color("--fg-muted"),
+      70,
+      { ...image, tones: darkPhoto },
+      30,
+      root,
+    );
+    expect(measured).toBeLessThan(unknown);
+    expect(imageVisibility(measured, 30)).toBeGreaterThan(imageVisibility(unknown, 30));
+    for (const tone of darkPhoto) {
+      const shown = mix(mix(tone, root, 0.3), root, measured);
+      expect(contrastRatio(color("--fg-default"), shown)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("reports how much of the image shows through", () => {
+    expect(imageVisibility(0.6, 60)).toBe(16);
+    expect(imageVisibility(1, 0)).toBe(0);
+    expect(imageVisibility(0.3, 0)).toBe(70);
   });
 });

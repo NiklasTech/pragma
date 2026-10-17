@@ -71,13 +71,13 @@ The **Background** section shows an image behind the interface and lets it, or t
 | Background image     | None          | PNG, JPEG, WebP or GIF up to 25 MB; Pragma copies it into its application data directory                        |
 | Fit and position     | Cover, center | Cover, contain, tile or center; center, top, bottom, left or right                                              |
 | Blur                 | 0 px          | 0 to 40 px                                                                                                      |
-| Dim                  | 60%           | How much of the theme's background color covers the image                                                       |
+| Dim                  | 30%           | How much of the theme's background color covers the image                                                       |
 | Transparency         | 0%            | How much the background shows through sidebar, panels and bars, up to 80%; limited so text keeps 4.5:1 contrast |
 | Transparent editor   | Off           | Lets the background show through the editor too                                                                 |
 | Transparent terminal | Off           | Lets the background show through terminals opened after the change                                              |
 | Window translucency  | Off           | macOS vibrancy (Sidebar, Under Window, HUD) or Windows Mica or Acrylic; takes effect after a restart            |
 
-Menus and dialogs stay opaque. Window translucency is not available on Linux.
+Pragma measures how dark and light the image is and limits the transparency so text keeps 4.5:1 contrast over it. An image close in brightness to the theme can show through strongly; a dark image behind a light theme (or the other way round) shows only faintly. The Transparency row tells you how much of the image currently shows. Menus and dialogs stay opaque. Window translucency is not available on Linux.
 
 ### Repository colors
 

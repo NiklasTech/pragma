@@ -34,7 +34,7 @@ export const BACKGROUND_DEFAULTS: BackgroundSettings = {
   fit: "cover",
   position: "center",
   blur: 0,
-  dim: 60,
+  dim: 30,
   transparency: 0,
   transparentEditor: false,
   transparentTerminal: false,
@@ -69,13 +69,55 @@ export function isBackgroundPosition(value: unknown): value is BackgroundPositio
 export interface Backdrop {
   image: boolean;
   window: boolean;
+  /** Darkest and lightest tones measured in the image; unknown tones count as black and white. */
+  tones?: [Rgba, Rgba] | null;
 }
 
 /** The darkest and lightest colors the backdrop can show under a surface. */
 function backdropExtremes(backdrop: Backdrop, dim: number, dimColor: Rgba): Rgba[] {
   if (!backdrop.image) return [BLACK, WHITE];
   const cover = clampDim(dim) / 100;
-  return [mix(BLACK, dimColor, cover), mix(WHITE, dimColor, cover)];
+  const [dark, light] = backdrop.tones ?? [BLACK, WHITE];
+  return [mix(dark, dimColor, cover), mix(light, dimColor, cover)];
+}
+
+const TONE_SHARE = 0.05;
+
+function pixelLuminance(r: number, g: number, b: number): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * The average color of the darkest and of the lightest 5 percent of an image's RGBA pixels,
+ * so readability is judged against the image itself instead of pure black and white.
+ */
+export function measureImageTones(pixels: Uint8ClampedArray): [Rgba, Rgba] | null {
+  const count = Math.floor(pixels.length / 4);
+  if (count === 0) return null;
+  const order = Array.from({ length: count }, (_, i) => i).sort(
+    (a, b) =>
+      pixelLuminance(pixels[a * 4], pixels[a * 4 + 1], pixels[a * 4 + 2]) -
+      pixelLuminance(pixels[b * 4], pixels[b * 4 + 1], pixels[b * 4 + 2]),
+  );
+  const take = Math.max(1, Math.round(count * TONE_SHARE));
+  const average = (indices: number[]): Rgba => {
+    const sum = indices.reduce(
+      (acc, i) => [acc[0] + pixels[i * 4], acc[1] + pixels[i * 4 + 1], acc[2] + pixels[i * 4 + 2]],
+      [0, 0, 0],
+    );
+    return {
+      r: sum[0] / indices.length,
+      g: sum[1] / indices.length,
+      b: sum[2] / indices.length,
+      a: 1,
+    };
+  };
+  return [average(order.slice(0, take)), average(order.slice(-take))];
+}
+
+/** How much of the image shows through a surface of the given opacity, in percent. */
+export function imageVisibility(alpha: number, dim: number): number {
+  return Math.round((1 - alpha) * (1 - clampDim(dim) / 100) * 100);
 }
 
 /**

@@ -20,16 +20,22 @@ import {
   clampBlur,
   clampDim,
   clampTransparency,
+  imageVisibility,
   isBackgroundFit,
   isBackgroundPosition,
   MAX_DIM,
   MAX_TRANSPARENCY,
+  surfaceAlpha,
   type BackgroundFit,
   type BackgroundPosition,
 } from "@/theme/background";
 import { useWindowTranslucencyStore, type WindowMaterial } from "@/theme/windowTranslucency";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
+import { useMemo } from "react";
+import { generateCssVariables, useTheme } from "@/theme";
+import { parseColor } from "@/theme/color";
+import { useBackgroundImageStore } from "@/theme/backgroundImage";
 
 const FIT_LABELS: Record<BackgroundFit, string> = {
   cover: "Cover",
@@ -55,7 +61,7 @@ const MATERIAL_LABELS: Record<WindowMaterial, string> = {
 };
 
 // A new image would stay hidden behind opaque surfaces, so picking one starts with some transparency.
-const TRANSPARENCY_WITH_IMAGE = 40;
+const TRANSPARENCY_WITH_IMAGE = 60;
 
 function percentSteps(max: number): number[] {
   return Array.from({ length: max / 10 + 1 }, (_, i) => i * 10);
@@ -145,10 +151,40 @@ function WindowTranslucencyRows() {
   );
 }
 
+/** How strongly the image shows through the root surface, and whether readability limits it. */
+function useImageVisibility(): { percent: number; limited: boolean } | null {
+  const { theme } = useTheme();
+  const background = useSettingsStore((s) => s.background);
+  const tones = useBackgroundImageStore((s) => s.tones);
+  return useMemo(() => {
+    if (!background.image) return null;
+    const vars = new Map(generateCssVariables(theme).map(({ name, value }) => [name, value]));
+    const root = parseColor(vars.get("--bg-root") ?? "");
+    const text = parseColor(vars.get("--fg-default") ?? "");
+    const muted = parseColor(vars.get("--fg-muted") ?? "");
+    if (!root || !text || !muted) return null;
+    const transparency = clampTransparency(background.transparency);
+    const alpha = surfaceAlpha(
+      root,
+      text,
+      muted,
+      transparency,
+      { image: true, window: false, tones },
+      background.dim,
+      root,
+    );
+    return {
+      percent: imageVisibility(alpha, background.dim),
+      limited: alpha > 1 - transparency / 100 + 0.005,
+    };
+  }, [theme, background, tones]);
+}
+
 export function BackgroundSettings() {
   const background = useSettingsStore((s) => s.background);
   const setBackground = useSettingsStore((s) => s.setBackgroundSettings);
   const hasImage = Boolean(background.image);
+  const visibility = useImageVisibility();
 
   const chooseImage = async () => {
     const selected = await open({
@@ -297,7 +333,15 @@ export function BackgroundSettings() {
       />
       <SettingRow
         label="Transparency"
-        description="How much the image or the window shows through sidebar, panels and bars. Pragma limits it where text would become hard to read."
+        description={
+          visibility
+            ? `The image shows through at about ${visibility.percent}%.${
+                visibility.limited
+                  ? " Pragma limits it so text stays readable. An image closer in brightness to the theme, or less Dim, shows more."
+                  : ""
+              }`
+            : "How much the image or the window shows through sidebar, panels and bars. Pragma limits it where text would become hard to read."
+        }
         control={
           <PercentSelect
             value={clampTransparency(background.transparency)}
