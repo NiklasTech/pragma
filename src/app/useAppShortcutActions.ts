@@ -23,6 +23,7 @@ import { useDebugStore } from "@/features/debug/store";
 import { useAttachDialogStore } from "@/features/debug/attachProcess";
 import { useAgentStore } from "@/features/agent/store";
 import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
+import { leaveAgentsForTerminal, toggleTerminalFromShortcut } from "./terminalShortcuts";
 
 function cycleTab(delta: 1 | -1): void {
   const { tabs, activeTabId, setActiveTab } = useEditorStore.getState();
@@ -74,9 +75,10 @@ export function useAppShortcutActions(): ShortcutActions {
         useLayoutStore.getState().toggleSidebar();
       },
       "view.toggleTerminal": () => {
-        useLayoutStore.getState().toggleTerminal();
+        toggleTerminalFromShortcut();
       },
       "view.newTerminalTab": () => {
+        leaveAgentsForTerminal();
         const layout = useLayoutStore.getState();
         if (layout.terminal.mode === "hidden") {
           layout.toggleTerminal();
