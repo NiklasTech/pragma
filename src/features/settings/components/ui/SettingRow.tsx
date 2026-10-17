@@ -12,6 +12,7 @@ interface SettingRowProps {
 export function SettingRow({ label, description, control, disabled }: SettingRowProps) {
   return (
     <div
+      data-setting-row
       className={cn(
         "flex w-full flex-row items-center justify-between gap-6 py-3",
         disabled && "opacity-50",

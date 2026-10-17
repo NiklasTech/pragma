@@ -11,16 +11,32 @@ import { SettingsSearch } from "./SettingsSearch";
 import { SettingsNav } from "./SettingsNav";
 import { SettingsActions } from "./SettingsActions";
 import { SettingsCategoryContent } from "./SettingsCategoryContent";
+import { revealSetting } from "./revealSetting";
+import type { SearchItem } from "./settings-search-items";
 
 export function Settings() {
   const [activeCategory, setActiveCategory] = React.useState<Category>("editor");
   const [query, setQuery] = React.useState("");
   const [saveIndicator, setSaveIndicator] = React.useState<"idle" | "saved">("idle");
+  // A new object per selection, so picking the same result again scrolls to it again.
+  const [reveal, setReveal] = React.useState<{ target: string } | null>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   const handleSelectCategory = (category: Category) => {
     setActiveCategory(category);
     setQuery("");
+    setReveal(null);
   };
+
+  const handleSelectResult = (item: SearchItem) => {
+    handleSelectCategory(item.category);
+    setReveal({ target: item.target ?? item.label });
+  };
+
+  React.useEffect(() => {
+    if (!reveal || !contentRef.current) return;
+    return revealSetting(contentRef.current, reveal.target);
+  }, [reveal]);
 
   const activeCategoryDef = CATEGORIES.find((c) => c.id === activeCategory);
   const activeLabel = activeCategoryDef?.label ?? "Settings";
@@ -59,7 +75,7 @@ export function Settings() {
             <SettingsSearch
               query={query}
               onQueryChange={setQuery}
-              onSelectCategory={handleSelectCategory}
+              onSelectResult={handleSelectResult}
             />
             <SettingsNav activeCategory={activeCategory} onSelectCategory={handleSelectCategory} />
             <SettingsActions />
@@ -87,7 +103,7 @@ export function Settings() {
               </span>
             </div>
             <ScrollArea className="min-h-0 flex-1">
-              <div className="mx-auto w-full max-w-3xl px-8 pb-10">
+              <div ref={contentRef} className="mx-auto w-full max-w-3xl px-8 pb-10">
                 <SettingsCategoryContent category={activeCategory} />
               </div>
             </ScrollArea>

@@ -1,10 +1,12 @@
 import type { Category } from "./settings-categories";
 
-interface SearchItem {
+export interface SearchItem {
   id: string;
   label: string;
   keywords: string;
   category: Category;
+  /** The text on the settings page to jump to, when it differs from `label`. */
+  target?: string;
 }
 
 export const SEARCH_ITEMS: SearchItem[] = [
@@ -19,12 +21,14 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "Editor Font Size",
     keywords: "font size editor text",
     category: "editor",
+    target: "Font Size",
   },
   {
     id: "editor-font-family",
     label: "Editor Font Family",
     keywords: "font family editor mono",
     category: "editor",
+    target: "Font Family",
   },
   {
     id: "editor-tab-size",
@@ -111,6 +115,7 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "Editor Line Height",
     keywords: "line height spacing editor",
     category: "editor",
+    target: "Line Height",
   },
   {
     id: "editor-font-ligatures",
@@ -129,54 +134,63 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "Terminal Shell",
     keywords: "shell zsh bash terminal",
     category: "terminal",
+    target: "Default Shell",
   },
   {
     id: "terminal-font-size",
     label: "Terminal Font Size",
     keywords: "font size terminal",
     category: "terminal",
+    target: "Font Size",
   },
   {
     id: "terminal-font-family",
     label: "Terminal Font Family",
     keywords: "font family terminal mono",
     category: "terminal",
+    target: "Font Family",
   },
   {
     id: "terminal-ai-suggestions",
     label: "Terminal AI Suggestions",
     keywords: "ai suggestions terminal command",
     category: "terminal",
+    target: "Command Suggestions",
   },
   {
     id: "terminal-scrollback",
     label: "Terminal Scrollback",
     keywords: "scrollback buffer terminal history",
     category: "terminal",
+    target: "Scrollback",
   },
   {
     id: "ai-provider",
     label: "AI Provider",
     keywords: "ai provider model openai anthropic ollama",
     category: "agents",
+    target: "Default Provider",
   },
   {
     id: "ai-inline-completion",
     label: "Inline Completion",
     keywords: "inline completion ghost text ai",
     category: "agents",
+    target: "Inline Completion",
   },
   {
     id: "ai-debounce",
     label: "Completion Debounce",
     keywords: "debounce ai completion delay",
     category: "agents",
+    target: "Debounce",
   },
   {
     id: "ai-next-edit",
     label: "Next Edit Prediction",
     keywords: "next edit prediction suggestion ai rename",
     category: "agents",
+    target: "Next edit prediction",
   },
   {
     id: "agent-mode",
@@ -195,6 +209,7 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "Voice Input",
     keywords: "voice dictation dictate microphone speech whisper parakeet push to talk hold",
     category: "voice",
+    target: "Voice input",
   },
   {
     id: "theme-select",
@@ -237,6 +252,7 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "MCP Servers",
     keywords: "mcp servers model context protocol",
     category: "mcp",
+    target: "Servers",
   },
   {
     id: "lsp-servers",
@@ -249,12 +265,14 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "Reset Panel Sizes",
     keywords: "layout reset panels size",
     category: "layout",
+    target: "Reset Layout",
   },
   {
     id: "statusbar-items",
     label: "Statusbar Items",
     keywords: "statusbar items layout",
     category: "layout",
+    target: "Statusbar",
   },
   {
     id: "keyboard-shortcuts",
@@ -267,11 +285,13 @@ export const SEARCH_ITEMS: SearchItem[] = [
     label: "Version",
     keywords: "about version update release pragma",
     category: "about",
+    target: "Application",
   },
   {
     id: "about-license",
     label: "License",
     keywords: "about license legal copyright apache",
     category: "about",
+    target: "Legal",
   },
 ];
