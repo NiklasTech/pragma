@@ -97,7 +97,9 @@ export function useFileExplorer() {
     if (rootPath) {
       const runConfig = useRunConfigStore.getState();
       runConfig.setWorkspaceRoot(rootPath);
-      useGitStore.getState().setRepoPath(rootPath);
+      // Every component that mounts this hook runs the effect; resetting an unchanged repository clears its status.
+      const git = useGitStore.getState();
+      if (git.repoPath !== rootPath) git.setRepoPath(rootPath);
       useDockerStore.getState().setWorkspaceRoot(rootPath);
       void runConfig.loadConfigs();
       void runConfig.detectConfigs();

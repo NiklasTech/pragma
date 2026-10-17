@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
+import { selectRootFolder, useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { isWorkspaceWindow } from "@/shared/lib/windowScope";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -15,23 +15,19 @@ import {
 const ACTIVATE_REPOSITORY_EVENT = "pragma:workspace:activate-repository";
 
 /// Closes a repository; closing the active one activates the next, closing the last one shows the Agents home.
+/// Uses `selectRootFolder` directly: mounting `useFileExplorer` resets the Git status of the active repository.
 export function useCloseRepositoryNow(): (path: string) => Promise<void> {
-  const { selectRoot } = useFileExplorer();
-
-  return useCallback(
-    async (path: string) => {
-      const repositories = useOpenRepositoriesStore.getState();
-      const previousActive = repositories.activePath;
-      const closed = findRepository(repositories.paths, path) ?? path;
-      const nextActive = repositories.remove(path);
-      if (nextActive !== previousActive && !(nextActive && (await selectRoot(nextActive)))) {
-        useFileExplorerStore.getState().setRootPath(null);
-        useUiModeStore.getState().setUiMode("agents");
-      }
-      useFileExplorerStore.getState().forgetRepository(closed);
-    },
-    [selectRoot],
-  );
+  return useCallback(async (path: string) => {
+    const repositories = useOpenRepositoriesStore.getState();
+    const previousActive = repositories.activePath;
+    const closed = findRepository(repositories.paths, path) ?? path;
+    const nextActive = repositories.remove(path);
+    if (nextActive !== previousActive && !(nextActive && (await selectRootFolder(nextActive)))) {
+      useFileExplorerStore.getState().setRootPath(null);
+      useUiModeStore.getState().setUiMode("agents");
+    }
+    useFileExplorerStore.getState().forgetRepository(closed);
+  }, []);
 }
 
 /// Closes a repository, or asks first when sessions still run in it.
