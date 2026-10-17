@@ -57,7 +57,9 @@ export function agentFileName(agent: Pick<Agent, "name">): string {
   return `${slug || "agent"}.agent.json`;
 }
 
-type Parsed = { ok: true; agent: Agent; droppedFolders: number } | { ok: false; error: string };
+export type Parsed =
+  | { ok: true; agent: Agent; droppedFolders: number }
+  | { ok: false; error: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

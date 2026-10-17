@@ -103,8 +103,16 @@ An agent that runs on a coding CLI receives its brief, memory and skill list at 
 
 The export menu of an agent offers:
 
-- **Export** and **Export with memory**: a `<name>.agent.json` file. Import it with the import button next to **New agent**; imported agents are personal and their folders are not imported.
+- **Export** and **Export with memory**: a `<name>.agent.json` file.
 - **Export as Markdown**: the project agent format above. Folders outside the open workspace are left out.
+
+The import button next to **New agent** accepts:
+
+- a `.agent.json` file from the export above
+- a Markdown file in the project agent format above
+- a coding CLI subagent file such as `.claude/agents/<name>.md` or `.github/agents/<name>.agent.md`. Its name, description and instructions are used; tool-specific fields such as `tools` or `model` are ignored, and the agent runs on the built-in engine with your current provider and model.
+
+Imported agents are personal, and their folders are not imported.
 
 ## Storage
 
