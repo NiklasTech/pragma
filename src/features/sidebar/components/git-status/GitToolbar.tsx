@@ -34,7 +34,7 @@ function SyncButton({
       disabled={disabled || busy}
       title={count > 0 ? `${label} ${count} commit${count === 1 ? "" : "s"}` : label}
       className={cn(
-        "flex h-7 items-center gap-1.5 rounded-md border px-2 text-ui-xs font-medium transition-colors disabled:pointer-events-none",
+        "flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md border px-2 text-ui-xs font-medium transition-colors disabled:pointer-events-none @min-[340px]:flex-none",
         count > 0
           ? "border-primary/30 bg-accent-subtle text-primary hover:bg-primary/20"
           : "border-border-subtle text-fg-muted hover:bg-bg-hover hover:text-fg-default disabled:opacity-50",
@@ -109,11 +109,12 @@ export function GitToolbar({
         onClick={onFetch}
       />
       {ahead === 0 && behind === 0 && (
-        <span className="hidden truncate pl-1 text-ui-2xs text-fg-subtle @min-[280px]:inline">
+        <span className="hidden truncate pl-1 text-ui-2xs text-fg-subtle @min-[420px]:inline">
           Up to date
         </span>
       )}
-      <div className="ml-auto flex items-center gap-0.5">
+      {/* A narrow panel puts the tools on their own row, spread to the width of the sync buttons. */}
+      <div className="flex w-full items-center justify-between @min-[340px]:ml-auto @min-[340px]:w-auto @min-[340px]:justify-start @min-[340px]:gap-0.5">
         <ToolbarButton
           icon={ArrowsClockwise}
           label="Refresh local status (does not fetch)"
