@@ -22,8 +22,6 @@ import {
 import type { Theme } from "./types";
 import { useUiMetrics } from "./useUiMetrics";
 import { useEditorColors } from "./useEditorColors";
-import { useBackground } from "./useBackground";
-import { BackgroundLayer } from "./BackgroundLayer";
 import { withAccent } from "./accent";
 import { withColorBlindStatus } from "./accessibility";
 import { useAccessibility } from "./useAccessibility";
@@ -39,8 +37,8 @@ interface ThemeContextValue {
   resolvedMode: "dark" | "light";
   /** Mode of the editor's colors; differs from `resolvedMode` with another editor theme. */
   editorMode: "dark" | "light";
-  /** Changes whenever the terminal colors change, so terminals know to refresh. */
-  terminalColorsKey: string;
+  /** Theme terminals take their colors from; terminals refresh when it changes. */
+  terminalThemeId: string;
   availableThemes: Theme[];
   followSystemTheme: boolean;
   lightThemeId: string;
@@ -133,8 +131,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   );
 
   const { editorMode, terminalThemeId } = useEditorColors(theme, availableThemes);
-  const { terminalAlpha } = useBackground(theme);
-  const terminalColorsKey = `${terminalThemeId}:${terminalAlpha}`;
 
   const handleSetTheme = useCallback(
     (id: string) => {
@@ -169,7 +165,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     theme,
     resolvedMode,
     editorMode,
-    terminalColorsKey,
+    terminalThemeId,
     availableThemes,
     followSystemTheme,
     lightThemeId,
@@ -180,12 +176,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     deleteCustomTheme,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      <BackgroundLayer theme={theme} />
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 /** The theme context, or null outside a ThemeProvider. */

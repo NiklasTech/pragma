@@ -19,11 +19,9 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": false,
-        "visible": false,
-        "create": false
+        "visible": false
       }
     ],
-    "macOSPrivateApi": true,
     "security": {
       "csp": "default-src 'self'; connect-src 'self' http://localhost:* https:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob: mediastream:; frame-src 'self' http: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
     }

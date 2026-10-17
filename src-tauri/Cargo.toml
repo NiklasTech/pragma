@@ -24,7 +24,7 @@ encoding_rs = "0.8.35"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11.2", features = ["image-png", "unstable", "macos-private-api"] }
+tauri = { version = "2.11.2", features = ["image-png", "unstable"] }
 tauri-plugin-log = "2.9"
 portable-pty = "0.9"
 uuid = { version = "1.16", features = ["v4"] }
@@ -94,7 +94,6 @@ objc2-app-kit = { version = "0.3.2", features = [
   "NSView",
   "NSWindow",
 ] }
-window-vibrancy = "0.6"
 objc2-user-notifications = { version = "0.3.2", default-features = false, features = [
   "std",
   "block2",
@@ -105,7 +104,6 @@ objc2-user-notifications = { version = "0.3.2", default-features = false, featur
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3.6.3", features = ["windows-native"] }
 webview2-com = "0.38"
-window-vibrancy = "0.6"
 windows = { version = "0.61", features = [
   "Win32_Foundation",
   "Win32_System_Com",

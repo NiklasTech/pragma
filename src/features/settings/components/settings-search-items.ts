@@ -209,12 +209,6 @@ export const SEARCH_ITEMS: SearchItem[] = [
     category: "appearance",
   },
   {
-    id: "background-image",
-    label: "Background Image",
-    keywords: "background image wallpaper transparency translucency blur dim vibrancy mica acrylic",
-    category: "appearance",
-  },
-  {
     id: "accessibility",
     label: "Accessibility",
     keywords: "accessibility reduce motion animation focus outline color blind high contrast",
