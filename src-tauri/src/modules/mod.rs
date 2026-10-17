@@ -1,7 +1,6 @@
 pub mod agent;
 pub mod app_state;
 pub mod attention_badge;
-pub mod background_image;
 pub mod browser_pane;
 pub mod cli_sync;
 pub mod dap;
@@ -28,7 +27,6 @@ pub mod theme_files;
 pub mod voice_access;
 pub mod voice_hardware;
 pub mod whisper_models;
-pub mod window_translucency;
 pub mod workspace;
 pub mod workspace_settings;
 pub mod workspace_trust;

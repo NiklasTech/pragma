@@ -6,7 +6,7 @@ use tauri_plugin_store::Store;
 const STORE_NAME: &str = "app.dat";
 const ONBOARDING_COMPLETED_KEY: &str = "onboardingCompleted";
 
-pub(crate) fn load_store(app: &tauri::AppHandle) -> Result<Arc<Store<tauri::Wry>>, String> {
+fn load_store(app: &tauri::AppHandle) -> Result<Arc<Store<tauri::Wry>>, String> {
     let path = app
         .path()
         .app_config_dir()

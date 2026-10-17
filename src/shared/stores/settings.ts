@@ -133,9 +133,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
   setAppearanceSettings: (settings) =>
     set((state) => ({ appearance: { ...state.appearance, ...settings } })),
 
-  setBackgroundSettings: (settings) =>
-    set((state) => ({ background: { ...state.background, ...settings } })),
-
   setRepositoryColorSettings: (settings) =>
     set((state) => ({ repositoryColors: { ...state.repositoryColors, ...settings } })),
 
@@ -214,7 +211,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       agent: mergePartial(defaultSettings.agent, partial.agent),
       notifications: mergePartial(defaultSettings.notifications, partial.notifications),
       appearance: mergePartial(defaultSettings.appearance, partial.appearance),
-      background: mergePartial(defaultSettings.background, partial.background),
       repositoryColors: mergePartial(defaultSettings.repositoryColors, partial.repositoryColors),
       customThemes: { ...state.customThemes, ...partial.customThemes },
       extensions: { ...state.extensions, ...partial.extensions },

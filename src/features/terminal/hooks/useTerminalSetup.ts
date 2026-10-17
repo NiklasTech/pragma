@@ -10,7 +10,7 @@ import {
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { getXtermTheme, terminalAllowsTransparency } from "@/shared/lib/theme/xterm-theme";
+import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { safePtyInvoke } from "../safePtyInvoke";
 import { registerTerminalOutput } from "../terminalOutput";
@@ -86,7 +86,6 @@ export function useTerminalSetup({
         convertEol: true,
         scrollback,
         theme: getXtermTheme(),
-        allowTransparency: terminalAllowsTransparency(),
         allowProposedApi: true,
       });
       const fit = new FitAddon();

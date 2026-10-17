@@ -62,22 +62,7 @@ The **Editor** section gives the editor and the terminals their own colors:
 
 - **Editor theme**: "Same as UI theme" (default) or the editor and syntax colors of any other theme, so a light editor can sit in a dark UI and the other way round. It changes the editor, its gutters and the diff views, not the UI.
 - **Terminal theme**: "Same as UI theme" or the terminal colors of another theme.
-- **Colors**: override the editor background or single syntax colors (keywords, strings, comments, functions, variables, numbers, types, tags, attributes, properties and operators). Overrides are kept when you switch themes and can be reset one by one or all at once.
-
-The **Background** section shows an image behind the interface and lets it, or the desktop, show through:
-
-| Setting              | Default       | Notes                                                                                                           |
-| -------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| Background image     | None          | PNG, JPEG, WebP or GIF up to 25 MB; Pragma copies it into its application data directory                        |
-| Fit and position     | Cover, center | Cover, contain, tile or center; center, top, bottom, left or right                                              |
-| Blur                 | 0 px          | 0 to 40 px                                                                                                      |
-| Dim                  | 60%           | How much of the theme's background color covers the image                                                       |
-| Transparency         | 0%            | How much the background shows through sidebar, panels and bars, up to 80%; limited so text keeps 4.5:1 contrast |
-| Transparent editor   | Off           | Lets the background show through the editor too                                                                 |
-| Transparent terminal | Off           | Lets the background show through terminals opened after the change                                              |
-| Window translucency  | Off           | macOS vibrancy (Sidebar, Under Window, HUD) or Windows Mica or Acrylic; takes effect after a restart            |
-
-Menus and dialogs stay opaque. Window translucency is not available on Linux.
+- **Editor colors**: **Customize** opens a dialog to override the editor background or single syntax colors (keywords, strings, comments, functions, variables, numbers, types, tags, attributes, properties and operators). Overrides are kept when you switch themes and can be reset one by one or all at once.
 
 ### Repository colors
 

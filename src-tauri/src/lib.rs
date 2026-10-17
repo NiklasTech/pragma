@@ -102,18 +102,6 @@ pub fn run() {
                 .and_then(|matches| cli::extract_project_path(&matches));
             app.manage(cli::CliArgs { project_path });
 
-            // The main window is built here so it can be transparent when translucency is on.
-            let translucency = modules::window_translucency::load_settings(app.handle());
-            let session = modules::window_translucency::session_for(translucency);
-            let transparent = session.transparent();
-            app.manage(session);
-            if let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") {
-                let builder = tauri::WebviewWindowBuilder::from_config(app.handle(), config)?;
-                let main =
-                    modules::window_translucency::prepare_builder(builder, transparent).build()?;
-                modules::window_translucency::apply_to_window(app.handle(), &main);
-            }
-
             #[cfg(target_os = "macos")]
             if let Some(main) = app.get_webview_window("main") {
                 crate::macos_chrome::align_webview(&main);
@@ -155,11 +143,6 @@ pub fn run() {
             modules::theme_files::theme_files_delete,
             modules::theme_files::theme_files_open_folder,
             modules::theme_files::theme_files_watch,
-            modules::background_image::background_image_set,
-            modules::background_image::background_image_read,
-            modules::background_image::background_image_clear,
-            modules::window_translucency::window_translucency_get,
-            modules::window_translucency::window_translucency_set,
             modules::fs::read_text_file,
             modules::fs::write_text_file,
             modules::fs::list_directory,

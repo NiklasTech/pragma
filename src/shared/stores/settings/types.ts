@@ -1,7 +1,6 @@
 import type { Theme } from "@/theme/types";
 import type { UiMetricsSettings } from "@/theme/uiMetrics";
 import type { EditorColorOverrides } from "@/theme/editorColors";
-import type { BackgroundSettings } from "@/theme/background";
 import type { RepositoryColorSettings } from "@/shared/lib/repositoryColors";
 import type { ReduceMotionSetting } from "@/theme/accessibility";
 import type { ShortcutActionId, ShortcutBinding, ShortcutMap } from "@/shared/lib/shortcuts";
@@ -240,8 +239,6 @@ export interface SettingsState {
   notifications: NotificationSettings;
   /** Density, UI scale, UI font and accent color; independent of the theme. */
   appearance: AppearanceSettings;
-  /** Background image and how much of it shows through the surfaces. */
-  background: BackgroundSettings;
   /** Personal colors per repository path; not written to the workspace settings. */
   repositoryColors: RepositoryColorSettings;
   customThemes: Record<string, Theme>;
@@ -286,7 +283,6 @@ export interface SettingsActions {
   setAgentSettings: (settings: Partial<AgentSettings>) => void;
   setNotificationSettings: (settings: Partial<NotificationSettings>) => void;
   setAppearanceSettings: (settings: Partial<AppearanceSettings>) => void;
-  setBackgroundSettings: (settings: Partial<BackgroundSettings>) => void;
   setRepositoryColorSettings: (settings: Partial<RepositoryColorSettings>) => void;
   addMcpServer: (server: Omit<McpServerConfig, "id">) => string;
   updateMcpServer: (id: string, server: Partial<Omit<McpServerConfig, "id">>) => void;

@@ -8,7 +8,7 @@ import "@xterm/xterm/css/xterm.css";
 import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
-import { getXtermTheme, terminalAllowsTransparency } from "@/shared/lib/theme/xterm-theme";
+import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -40,7 +40,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
   const fontId = useTerminalStore((s) => s.fontId);
   const scrollback = useTerminalStore((s) => s.scrollback);
   const terminalFontFamily = fontId || fontFamily;
-  const { themeId, resolvedMode, terminalColorsKey } = useTheme();
+  const { themeId, resolvedMode, terminalThemeId } = useTheme();
   const cliManifests = useAIStore((state) => state.cliManifests);
   const manifest = session.cliProviderId
     ? cliManifests.find((item) => item.id === session.cliProviderId)
@@ -71,7 +71,6 @@ export function TerminalPane({ session }: TerminalPaneProps) {
       convertEol: true,
       scrollback,
       theme: getXtermTheme(),
-      allowTransparency: terminalAllowsTransparency(),
       allowProposedApi: true,
     });
     const fit = new FitAddon();
@@ -157,7 +156,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
       termRef.current.refresh(0, termRef.current.rows - 1);
     });
     return () => cancelAnimationFrame(frame);
-  }, [themeId, resolvedMode, terminalColorsKey]);
+  }, [themeId, resolvedMode, terminalThemeId]);
 
   return (
     <div
