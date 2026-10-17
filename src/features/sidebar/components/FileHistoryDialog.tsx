@@ -89,7 +89,7 @@ export function FileHistoryDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-full min-h-[220px] rounded border border-border bg-bg-root">
+        <ScrollArea className="min-h-[220px] flex-1 rounded border border-border bg-bg-root">
           <div className="p-1">
             {loading && (
               <div className="flex items-center gap-2 px-2 py-3 text-ui-xs text-fg-muted">
