@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { clampBlur, clampDim, measureImageTones, type BackgroundFit } from "./background";
 import { useBackgroundImageStore } from "./backgroundImage";
@@ -14,6 +15,19 @@ const FIT_STYLES: Record<BackgroundFit, CSSProperties> = {
 };
 
 const SAMPLE_SIZE = 64;
+
+const IMAGE_TYPES: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
+// WebKit may not render a blob in CSS without a media type.
+function imageType(fileName: string): string {
+  return IMAGE_TYPES[fileName.split(".").pop()?.toLowerCase() ?? ""] ?? "image/png";
+}
 
 /** Downscales the image and measures its darkest and lightest tones. */
 function measureTones(url: string): Promise<ReturnType<typeof measureImageTones>> {
@@ -49,12 +63,16 @@ function useImageUrl(fileName: string): string | null {
     invoke<ArrayBuffer>("background_image_read", { fileName })
       .then(async (bytes) => {
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(new Blob([bytes]));
+        objectUrl = URL.createObjectURL(new Blob([bytes], { type: imageType(fileName) }));
         setUrl(objectUrl);
         const tones = await measureTones(objectUrl);
         if (!cancelled) useBackgroundImageStore.getState().setTones(tones);
       })
-      .catch(() => setUrl(null));
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setUrl(null);
+        toast.error("Could not show the background image", { description: String(err) });
+      });
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
