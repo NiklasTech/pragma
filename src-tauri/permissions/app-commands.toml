@@ -262,6 +262,7 @@ permissions = [
   "allow-search-workspace",
   "allow-set-attention-badge",
   "allow-set-onboarding-completed",
+  "allow-set-window-header-height",
   "allow-stt-cancel-download",
   "allow-stt-download",
   "allow-stt-remove",
