@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import "@xterm/xterm/css/xterm.css";
 
 import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
-import { matchShortcut } from "@/shared/lib/shortcuts";
+import { getIsMac, matchShortcut } from "@/shared/lib/shortcuts";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
@@ -18,6 +18,7 @@ import { loadRenderAddons } from "@/features/terminal/terminalAddons";
 import { sessionCwd } from "../worktree/cwd";
 import { quoteShellPath } from "./buffer";
 import { terminalLaunchCommand } from "./cliAttention";
+import { handleMacCliKey } from "./cliKeymap";
 import {
   ensureTerminal,
   getTerminalBuffer,
@@ -82,8 +83,14 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     term.open(container);
     loadRenderAddons(term);
     const removeDeadKeyFix = fixWebKitDeadKeys(term, container);
+    const isMac = getIsMac();
     // The hold-to-dictate key belongs to dictation, so xterm must not type it.
-    term.attachCustomKeyEventHandler((event) => !matchShortcut(event, dictateBindingRef.current));
+    term.attachCustomKeyEventHandler((event) => {
+      if (matchShortcut(event, dictateBindingRef.current)) return false;
+      return !(
+        isMac && handleMacCliKey(term, event, (data) => void writeTerminal(session.id, data))
+      );
+    });
     termRef.current = term;
 
     const replayBase = getTerminalBuffer(session.id);
