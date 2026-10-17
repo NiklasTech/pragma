@@ -3,12 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { toGoToFileEntry } from "./goToFileSearch";
 
-interface DirEntry {
-  path: string;
-  name: string;
-  is_directory: boolean;
-  is_file: boolean;
+interface WorkspaceFiles {
+  files: string[];
 }
 
 export function useGoToFile(): void {
@@ -22,24 +20,29 @@ export function useGoToFile(): void {
     if (!isOpen) return;
 
     if (!rootPath) {
-      setFiles([]);
+      setFiles(null, []);
       setError("No folder is open.");
       return;
     }
 
     let cancelled = false;
 
-    async function loadFiles() {
-      setLoading(true);
+    async function loadFiles(root: string) {
+      // The last listing of this folder stays visible while it refreshes.
+      const hasListing = useGoToFileStore.getState().filesRoot === root;
+      if (!hasListing) setFiles(root, []);
+      setLoading(!hasListing);
       setError(null);
 
       try {
-        const entries = await invoke<DirEntry[]>("list_directory_recursive", { path: rootPath });
+        const result = await invoke<WorkspaceFiles>("list_workspace_files", {
+          workspaceRoot: root,
+        });
         if (cancelled) return;
-        const files = entries
-          .filter((entry) => entry.is_file)
-          .map((entry) => ({ path: entry.path, name: entry.name }));
-        setFiles(files);
+        const files = result.files
+          .map((relativePath) => toGoToFileEntry(root, relativePath))
+          .sort((a, b) => (a.pathKey < b.pathKey ? -1 : a.pathKey > b.pathKey ? 1 : 0));
+        setFiles(root, files);
       } catch (err) {
         if (cancelled) return;
         setError(String(err));
@@ -49,7 +52,7 @@ export function useGoToFile(): void {
       }
     }
 
-    void loadFiles();
+    void loadFiles(rootPath);
 
     return () => {
       cancelled = true;

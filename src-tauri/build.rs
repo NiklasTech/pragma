@@ -184,6 +184,7 @@ const COMMANDS: &[&str] = &[
     "list_directory_recursive",
     "list_fonts",
     "list_workspace_dir",
+    "list_workspace_files",
     "local_history_delete_older_than",
     "local_history_diff",
     "local_history_entries",

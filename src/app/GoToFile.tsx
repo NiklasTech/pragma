@@ -1,5 +1,5 @@
 import { useShallow } from "zustand/react/shallow";
-import { useMemo } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { SmileySad } from "@phosphor-icons/react";
@@ -10,13 +10,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/shared/components/ui/command";
-import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { detectLanguage } from "@/shared/lib/language";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useGoToFile } from "./useGoToFile";
+import { rankFiles } from "./goToFileSearch";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
 
 interface FileReadResult {
@@ -26,14 +26,8 @@ interface FileReadResult {
   encoding: string;
 }
 
-function getRelativePath(path: string, rootPath: string | null): string {
-  if (!rootPath) return path;
-  if (path.startsWith(rootPath)) {
-    const relative = path.slice(rootPath.length);
-    return relative.startsWith("/") || relative.startsWith("\\") ? relative.slice(1) : relative;
-  }
-  return path;
-}
+// Rendering every file of a large folder freezes the dialog, so only the best matches are shown.
+const MAX_RESULTS = 100;
 
 export function GoToFile() {
   useGoToFile();
@@ -43,13 +37,20 @@ export function GoToFile() {
   const files = useGoToFileStore((state) => state.files);
   const isLoading = useGoToFileStore((state) => state.isLoading);
   const error = useGoToFileStore((state) => state.error);
-  const rootPath = useFileExplorerStore((state) => state.rootPath);
   const editorPanelId = useEditorPanelId();
   const { openFile } = useEditorStore(useShallow((s) => ({ openFile: s.openFile })));
 
-  const sortedFiles = useMemo(() => {
-    return [...files].sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-  }, [files]);
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
+  const results = useMemo(
+    () => rankFiles(files, deferredQuery, MAX_RESULTS),
+    [files, deferredQuery],
+  );
+
+  // The shortcut can also close the dialog, so the query resets on every close.
+  useEffect(() => {
+    if (!isOpen) setQuery("");
+  }, [isOpen]);
 
   async function handleSelect(path: string) {
     close();
@@ -85,8 +86,9 @@ export function GoToFile() {
       className="sm:max-w-xl"
       title="Go to File"
       description="Search for a file to open"
+      commandProps={{ shouldFilter: false }}
     >
-      <CommandInput placeholder="Search files..." />
+      <CommandInput placeholder="Search files..." value={query} onValueChange={setQuery} />
       <CommandList>
         <CommandEmpty>
           <div className="flex flex-col items-center gap-2">
@@ -94,15 +96,10 @@ export function GoToFile() {
             <span>{emptyMessage}</span>
           </div>
         </CommandEmpty>
-        {sortedFiles.map((file) => {
-          const relativePath = getRelativePath(file.path, rootPath);
+        {results.map((file) => {
+          const { relativePath } = file;
           return (
-            <CommandItem
-              key={file.path}
-              value={file.path}
-              keywords={[file.name, relativePath]}
-              onSelect={() => handleSelect(file.path)}
-            >
+            <CommandItem key={file.path} value={file.path} onSelect={() => handleSelect(file.path)}>
               <img
                 src={getFileIconPath(file.name)}
                 alt=""

@@ -186,6 +186,7 @@ permissions = [
   "allow-list-directory-recursive",
   "allow-list-fonts",
   "allow-list-workspace-dir",
+  "allow-list-workspace-files",
   "allow-local-history-delete-older-than",
   "allow-local-history-diff",
   "allow-local-history-entries",
