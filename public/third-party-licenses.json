@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-11T00:45:34.669Z",
-  "total": 92,
+  "generatedAt": "2026-10-18T00:36:28.523Z",
+  "total": 95,
   "entries": [
     {
       "name": "@emmetio/codemirror6-plugin",
@@ -11,9 +11,9 @@
     },
     {
       "name": "@types/node",
-      "version": "26.6.2",
+      "version": "26.6.5",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/node/v/26.6.2",
+      "url": "https://www.npmjs.com/package/@types/node/v/26.6.5",
       "source": "npm"
     },
     {
@@ -32,9 +32,9 @@
     },
     {
       "name": "@vitejs/plugin-react",
-      "version": "6.1.1",
+      "version": "6.1.2",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@vitejs/plugin-react/v/6.1.1",
+      "url": "https://www.npmjs.com/package/@vitejs/plugin-react/v/6.1.2",
       "source": "npm"
     },
     {
@@ -46,9 +46,9 @@
     },
     {
       "name": "ai",
-      "version": "7.0.114",
+      "version": "7.0.137",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.114",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.137",
       "source": "npm"
     },
     {
@@ -235,9 +235,9 @@
     },
     {
       "name": "material-icon-theme",
-      "version": "5.38.1",
+      "version": "5.39.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.38.1",
+      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.39.0",
       "source": "npm"
     },
     {
@@ -273,6 +273,13 @@
       "version": "0.3.2",
       "license": "MIT",
       "url": "https://crates.io/crates/objc2-foundation/0.3.2",
+      "source": "rust"
+    },
+    {
+      "name": "objc2-user-notifications",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "url": "https://crates.io/crates/objc2-user-notifications/0.3.2",
       "source": "rust"
     },
     {
@@ -333,9 +340,9 @@
     },
     {
       "name": "react-resizable-panels",
-      "version": "4.13.3",
+      "version": "4.14.4",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.13.3",
+      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.14.4",
       "source": "npm"
     },
     {
@@ -395,6 +402,13 @@
       "source": "rust"
     },
     {
+      "name": "smol-toml",
+      "version": "1.9.1",
+      "license": "BSD-3-Clause",
+      "url": "https://www.npmjs.com/package/smol-toml/v/1.9.1",
+      "source": "npm"
+    },
+    {
       "name": "sonner",
       "version": "2.0.8",
       "license": "MIT",
@@ -403,9 +417,9 @@
     },
     {
       "name": "streamdown",
-      "version": "2.6.0",
+      "version": "2.7.0",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/streamdown/v/2.6.0",
+      "url": "https://www.npmjs.com/package/streamdown/v/2.7.0",
       "source": "npm"
     },
     {
@@ -630,6 +644,13 @@
       "version": "multiple",
       "license": "MIT",
       "url": "https://www.npmjs.com/search?q=XTerm",
+      "source": "npm"
+    },
+    {
+      "name": "yaml",
+      "version": "2.9.1",
+      "license": "ISC",
+      "url": "https://www.npmjs.com/package/yaml/v/2.9.1",
       "source": "npm"
     },
     {
