@@ -15,7 +15,6 @@ import {
   runBrowserScreenshotTool,
   runOpenBrowserTool,
 } from "@/features/ai/browser/agentTool";
-import { runSpawnTool } from "@/features/ai/children/spawn";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
 
@@ -336,6 +335,7 @@ export async function executeAgentTool(
       );
 
   if (call.toolName === AGENT_TOOL_NAMES.spawnSession) {
+    const { runSpawnTool } = await import("@/features/ai/children/spawn");
     const outcome = await runSpawnTool(
       call.toolCallId,
       call.toolName,

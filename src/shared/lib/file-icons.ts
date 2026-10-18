@@ -1,4 +1,5 @@
-import iconTheme from "material-icon-theme/dist/material-icons.json";
+// Named imports let the bundler drop the manifest parts the explorer never reads.
+import { file, fileExtensions, fileNames } from "material-icon-theme/dist/material-icons.json";
 
 const BASE_PATH = "/icons/material-icon-theme";
 
@@ -8,7 +9,7 @@ interface MaterialIconTheme {
   fileExtensions?: Record<string, string>;
 }
 
-const theme = iconTheme as MaterialIconTheme;
+const theme: MaterialIconTheme = { file, fileNames, fileExtensions };
 
 export function getFileIconPath(name: string): string {
   const lowerName = name.toLowerCase();

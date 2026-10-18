@@ -4,6 +4,8 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { isLspDocumentSynced, markLspDocumentSynced, unmarkLspDocument } from "./lspDocuments";
 import { findClosedFilePaths, startLspDidCloseWatcher } from "./didClose";
+import type { LspFeatureFlags } from "./client";
+import { getLspFeatureFlags, setLspFeatureFlags } from "./lspFlags";
 
 const TEST_PATH = "C:/project/src/a.ts";
 
@@ -78,5 +80,15 @@ describe("startLspDidCloseWatcher", () => {
     useEditorStore.getState().closeTab(TEST_PATH);
 
     expect(calls).toEqual([]);
+  });
+
+  it("forgets the LSP feature flags of a closed file tab", () => {
+    stops.push(startLspDidCloseWatcher(() => Promise.resolve()));
+
+    openTestFile();
+    setLspFeatureFlags(TEST_PATH, { definition: false } as LspFeatureFlags);
+    useEditorStore.getState().closeTab(TEST_PATH);
+
+    expect(getLspFeatureFlags(TEST_PATH)).toBeUndefined();
   });
 });

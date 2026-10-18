@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
 import { isLspDocumentSynced, unmarkLspDocument, type LspInvokeFn } from "./lspDocuments";
+import { clearLspFeatureFlags } from "./lspFlags";
 import { isLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
 export type { LspInvokeFn } from "./lspDocuments";
@@ -30,6 +31,7 @@ export function startLspDidCloseWatcher(invokeFn: LspInvokeFn = invoke): () => v
     previousPaths = nextPaths;
 
     for (const filePath of closedPaths) {
+      clearLspFeatureFlags(filePath);
       if (!isLspDocumentSynced(filePath)) {
         continue;
       }
