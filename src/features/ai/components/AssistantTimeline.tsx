@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { AGENT_TOOL_NAMES } from "@/features/agent/tools";
 import { ChildSessionCard } from "@/features/ai/children/ChildSessionCard";
-import { readSpawnOutput } from "@/features/ai/children/spawn";
+import { readSpawnOutput } from "@/features/ai/children/spawnOutput";
 
 import { buildAssistantTimeline, taskCompleteSummary, type TimelineItem } from "./timelineItems";
 import { MessageResponse } from "./Message";

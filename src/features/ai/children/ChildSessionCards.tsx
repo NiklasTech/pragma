@@ -8,7 +8,7 @@ import { useAIStore } from "@/shared/stores/ai";
 import { Message, MessageContent } from "../components/Message";
 import { ChildSessionCard } from "./ChildSessionCard";
 import { childSessions } from "./limits";
-import { readSpawnOutput } from "./spawn";
+import { readSpawnOutput } from "./spawnOutput";
 
 export function inlineChildIds(messages: UIMessage[]): string[] {
   const ids: string[] = [];

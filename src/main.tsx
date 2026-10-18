@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
 import { error as logError } from "@tauri-apps/plugin-log";
@@ -8,7 +8,6 @@ import App from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
 import { ThemeProvider } from "./theme";
 import { Toaster } from "@/shared/components/ui/sonner";
-import { ExternalPanelApp } from "@/shell/external/ExternalPanelApp";
 import { getFloatingContext } from "@/shared/lib/windowScope";
 import { initRunConfigListeners } from "@/shared/stores/runConfig";
 import { initDebugListeners } from "@/features/debug/client";
@@ -95,13 +94,20 @@ window.addEventListener("unhandledrejection", (event) => {
 
 const floating = getFloatingContext();
 
+// Only floating panel windows render this, so workspace windows never load it.
+const ExternalPanelApp = lazy(() =>
+  import("@/shell/external/ExternalPanelApp").then((m) => ({ default: m.ExternalPanelApp })),
+);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
       {floating.nodeId ? (
         <ThemeProvider>
           <Toaster position="bottom-right" />
-          <ExternalPanelApp nodeId={floating.nodeId} />
+          <Suspense fallback={null}>
+            <ExternalPanelApp nodeId={floating.nodeId} />
+          </Suspense>
         </ThemeProvider>
       ) : (
         <App />
