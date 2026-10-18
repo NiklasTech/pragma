@@ -178,7 +178,7 @@ export function GitCompareDialog() {
           </datalist>
         </form>
 
-        <ScrollArea className="min-h-[200px] flex-1 rounded border border-border bg-bg-root">
+        <ScrollArea className="flex max-h-96 min-h-[200px] flex-1 flex-col rounded border border-border bg-bg-root">
           <div className="p-1">
             {loading && (
               <div className="flex items-center gap-2 px-2 py-3 text-ui-xs text-fg-muted">
