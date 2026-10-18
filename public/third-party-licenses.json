@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T00:36:28.523Z",
+  "generatedAt": "2026-10-18T19:55:28.867Z",
   "total": 95,
   "entries": [
     {
@@ -466,9 +466,9 @@
     },
     {
       "name": "tauri",
-      "version": "2.11.6",
+      "version": "2.12.4",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri/2.11.6",
+      "url": "https://crates.io/crates/tauri/2.12.4",
       "source": "rust"
     },
     {
@@ -487,30 +487,30 @@
     },
     {
       "name": "tauri-plugin-clipboard-manager",
-      "version": "2.3.3",
+      "version": "2.4.2",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-clipboard-manager/2.3.3",
+      "url": "https://crates.io/crates/tauri-plugin-clipboard-manager/2.4.2",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-dialog",
-      "version": "2.7.3",
+      "version": "2.8.3",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-dialog/2.7.3",
+      "url": "https://crates.io/crates/tauri-plugin-dialog/2.8.3",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-log",
-      "version": "2.9.2",
+      "version": "2.10.1",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-log/2.9.2",
+      "url": "https://crates.io/crates/tauri-plugin-log/2.10.1",
       "source": "rust"
     },
     {
       "name": "tauri-plugin-notification",
-      "version": "2.4.0",
+      "version": "2.6.0",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-notification/2.4.0",
+      "url": "https://crates.io/crates/tauri-plugin-notification/2.6.0",
       "source": "rust"
     },
     {
@@ -522,9 +522,9 @@
     },
     {
       "name": "tauri-plugin-process",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-process/2.3.1",
+      "url": "https://crates.io/crates/tauri-plugin-process/2.4.0",
       "source": "rust"
     },
     {
@@ -543,9 +543,9 @@
     },
     {
       "name": "tauri-plugin-updater",
-      "version": "2.12.0",
+      "version": "2.13.3",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-updater/2.12.0",
+      "url": "https://crates.io/crates/tauri-plugin-updater/2.13.3",
       "source": "rust"
     },
     {
@@ -613,9 +613,9 @@
     },
     {
       "name": "webview2-com",
-      "version": "0.38.2",
+      "version": "0.39.1",
       "license": "MIT",
-      "url": "https://crates.io/crates/webview2-com/0.38.2",
+      "url": "https://crates.io/crates/webview2-com/0.39.1",
       "source": "rust"
     },
     {
