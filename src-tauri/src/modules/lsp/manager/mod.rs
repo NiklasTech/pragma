@@ -3,6 +3,8 @@ mod config;
 mod lifecycle;
 mod notifications;
 mod project;
+mod pull_diagnostics;
+mod resolve;
 mod sync;
 
 pub use config::resolve_command;
@@ -10,6 +12,7 @@ pub use project::resolve_project_root;
 
 use crate::modules::lsp::client::LspClient;
 use crate::modules::lsp::types::{LspServerStatus, LspStatusEvent, ServerCapabilities};
+use resolve::LocalCandidate;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
@@ -22,6 +25,7 @@ struct ServerEntry {
     args: &'static [&'static str],
     install_program: Option<&'static str>,
     install_args: &'static [&'static str],
+    local: &'static [LocalCandidate],
 }
 
 const SERVERS: &[ServerEntry] = &[
@@ -31,6 +35,10 @@ const SERVERS: &[ServerEntry] = &[
         args: &["--stdio"],
         install_program: Some("npm"),
         install_args: &["install", "-g", "typescript-language-server"],
+        local: &[
+            LocalCandidate::TypeScriptNativeLsp,
+            LocalCandidate::NodeModulesBin,
+        ],
     },
     ServerEntry {
         language: "javascript",
@@ -38,6 +46,10 @@ const SERVERS: &[ServerEntry] = &[
         args: &["--stdio"],
         install_program: Some("npm"),
         install_args: &["install", "-g", "typescript-language-server"],
+        local: &[
+            LocalCandidate::TypeScriptNativeLsp,
+            LocalCandidate::NodeModulesBin,
+        ],
     },
     ServerEntry {
         language: "rust",
@@ -45,6 +57,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: Some("rustup"),
         install_args: &["component", "add", "rust-analyzer"],
+        local: &[LocalCandidate::RustupToolchain],
     },
     ServerEntry {
         language: "python",
@@ -52,6 +65,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: Some("pip"),
         install_args: &["install", "python-lsp-server"],
+        local: &[LocalCandidate::PythonVenv],
     },
     ServerEntry {
         language: "go",
@@ -59,6 +73,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: Some("go"),
         install_args: &["install", "golang.org/x/tools/gopls@latest"],
+        local: &[],
     },
     ServerEntry {
         language: "java",
@@ -66,6 +81,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: Some("npm"),
         install_args: &["install", "-g", "jdtls"],
+        local: &[],
     },
     ServerEntry {
         language: "c",
@@ -73,6 +89,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: None,
         install_args: &[],
+        local: &[],
     },
     ServerEntry {
         language: "cpp",
@@ -80,6 +97,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: None,
         install_args: &[],
+        local: &[],
     },
     ServerEntry {
         language: "html",
@@ -87,6 +105,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &["--stdio"],
         install_program: Some("npm"),
         install_args: &["install", "-g", "vscode-langservers-extracted"],
+        local: &[LocalCandidate::NodeModulesBin],
     },
     ServerEntry {
         language: "css",
@@ -94,6 +113,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &["--stdio"],
         install_program: Some("npm"),
         install_args: &["install", "-g", "vscode-langservers-extracted"],
+        local: &[LocalCandidate::NodeModulesBin],
     },
     ServerEntry {
         language: "shell",
@@ -101,6 +121,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &["start"],
         install_program: Some("npm"),
         install_args: &["install", "-g", "bash-language-server"],
+        local: &[LocalCandidate::NodeModulesBin],
     },
     ServerEntry {
         language: "ruby",
@@ -108,6 +129,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: Some("gem"),
         install_args: &["install", "ruby-lsp"],
+        local: &[LocalCandidate::ProjectBin],
     },
     ServerEntry {
         language: "toml",
@@ -115,6 +137,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &["lsp", "stdio"],
         install_program: Some("cargo"),
         install_args: &["install", "taplo-cli", "--locked", "--features", "lsp"],
+        local: &[],
     },
     ServerEntry {
         language: "csharp",
@@ -122,6 +145,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: Some("dotnet"),
         install_args: &["tool", "install", "--global", "csharp-ls"],
+        local: &[],
     },
     ServerEntry {
         language: "swift",
@@ -129,6 +153,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: None,
         install_args: &[],
+        local: &[],
     },
     ServerEntry {
         language: "zig",
@@ -136,6 +161,7 @@ const SERVERS: &[ServerEntry] = &[
         args: &[],
         install_program: None,
         install_args: &[],
+        local: &[],
     },
 ];
 
@@ -153,7 +179,7 @@ pub(crate) struct RunningServer {
 pub struct LspManager {
     app_handle: AppHandle,
     pub(crate) servers: RwLock<HashMap<(String, String), RunningServer>>,
-    pub(crate) document_versions: Mutex<HashMap<String, i32>>,
+    pub(crate) document_versions: Arc<Mutex<HashMap<String, i32>>>,
     start_lock: Mutex<()>,
 }
 
@@ -162,7 +188,7 @@ impl LspManager {
         Self {
             app_handle,
             servers: RwLock::new(HashMap::new()),
-            document_versions: Mutex::new(HashMap::new()),
+            document_versions: Arc::new(Mutex::new(HashMap::new())),
             start_lock: Mutex::new(()),
         }
     }
