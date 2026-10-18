@@ -203,6 +203,7 @@ pub(super) fn wait_loop(
                 } else {
                     // Process was stopped while sleeping; kill the orphan we just spawned.
                     let _ = new_child.kill();
+                    let _ = new_child.wait();
                     break;
                 }
                 drop(processes);

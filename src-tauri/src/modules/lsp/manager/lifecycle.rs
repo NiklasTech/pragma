@@ -14,6 +14,12 @@ const SUPERVISE_POLL_INTERVAL: Duration = Duration::from_millis(500);
 const EXIT_WAIT_TIMEOUT: Duration = Duration::from_secs(1);
 const SHUTDOWN_ALL_TIMEOUT: Duration = Duration::from_secs(3);
 
+// Dropping a killed child without waiting leaves it as a zombie until something reaps it.
+async fn kill_and_reap(child: &mut Child) {
+    let _ = child.start_kill();
+    let _ = tokio::time::timeout(EXIT_WAIT_TIMEOUT, child.wait()).await;
+}
+
 impl LspManager {
     pub async fn start_server(
         &self,
@@ -101,7 +107,7 @@ impl LspManager {
         let initialize_result = match client.initialize(params).await {
             Ok(result) => result,
             Err(e) => {
-                let _ = child.lock().await.start_kill();
+                kill_and_reap(&mut *child.lock().await).await;
                 notification_handle.abort();
                 supervisor_handle.abort();
                 log_handle.abort();
@@ -128,7 +134,7 @@ impl LspManager {
         };
 
         if let Err(e) = client.initialized().await {
-            let _ = child.lock().await.start_kill();
+            kill_and_reap(&mut *child.lock().await).await;
             notification_handle.abort();
             supervisor_handle.abort();
             log_handle.abort();
@@ -203,8 +209,7 @@ impl LspManager {
         .await;
 
         if exited.is_err() {
-            let mut child = server.child.lock().await;
-            let _ = child.start_kill();
+            kill_and_reap(&mut *server.child.lock().await).await;
         }
 
         server.notification_handle.abort();
@@ -279,5 +284,35 @@ impl LspManager {
                 expected: Some(false),
             },
         );
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::kill_and_reap;
+
+    #[tokio::test]
+    async fn kill_and_reap_collects_the_killed_child() {
+        let mut child = tokio::process::Command::new("sleep")
+            .arg("30")
+            .spawn()
+            .expect("spawn sleep");
+
+        kill_and_reap(&mut child).await;
+
+        assert!(matches!(child.try_wait(), Ok(Some(_))));
+    }
+
+    #[tokio::test]
+    async fn kill_and_reap_collects_a_child_that_already_exited() {
+        let mut child = tokio::process::Command::new("sh")
+            .args(["-c", "exit 1"])
+            .spawn()
+            .expect("spawn sh");
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+        kill_and_reap(&mut child).await;
+
+        assert!(matches!(child.try_wait(), Ok(Some(status)) if !status.success()));
     }
 }
