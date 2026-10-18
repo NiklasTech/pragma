@@ -2,11 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { useSettingsStore } from "@/shared/stores/settings";
-import {
-  CommandTracker,
-  isFailure,
-  type FinishedCommand,
-} from "../shellIntegration/commandTracker";
+import { CommandTracker, type FinishedCommand } from "../shellIntegration/commandTracker";
 
 export interface ShellIntegration {
   failure: FinishedCommand | null;
@@ -25,7 +21,8 @@ export function useShellIntegration(
     if (!term) return;
     const tracker = new CommandTracker(term, {
       onCommandStart: () => setFailure(null),
-      onCommandEnd: (command) => setFailure(isFailure(command) ? command : null),
+      // The shell already prints the error, so the actions only open from the red gutter mark.
+      onCommandEnd: () => {},
       onSelect: setFailure,
     });
     trackerRef.current = tracker;
