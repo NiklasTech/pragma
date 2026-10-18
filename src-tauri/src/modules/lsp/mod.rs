@@ -1,6 +1,7 @@
 pub mod client;
 pub mod manager;
 pub mod requests;
+mod server_requests;
 pub mod types;
 pub mod uris;
 

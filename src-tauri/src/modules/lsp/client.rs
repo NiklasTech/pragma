@@ -1,5 +1,6 @@
 use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::manager::resolve_command;
+use crate::modules::lsp::server_requests::server_request_reply;
 use crate::modules::lsp::types::{
     InitializeParams, InitializeResult, InitializedParams, LspServerConfig,
 };
@@ -436,6 +437,11 @@ async fn process_incoming_message(
         if let Some(sender) = pending.remove(&response.id) {
             let _ = sender.send(result);
         }
+        return;
+    }
+
+    if let Some(reply) = server_request_reply(message) {
+        let _ = inner.outgoing_tx.send(reply).await;
         return;
     }
 

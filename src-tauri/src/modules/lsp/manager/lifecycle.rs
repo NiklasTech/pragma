@@ -1,5 +1,5 @@
 use super::capabilities::client_capabilities;
-use super::config::server_config_for_language;
+use super::resolve::resolve_server_config;
 use super::{LspManager, RunningServer};
 use crate::modules::lsp::client::{is_expected_start_error, LspClient};
 use crate::modules::lsp::types::{InitializeParams, LspServerStatus, LspStatusEvent};
@@ -44,7 +44,8 @@ impl LspManager {
             }
         }
 
-        let config = server_config_for_language(language)
+        let config = resolve_server_config(language, project_root)
+            .await
             .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
 
         self.emit_status(

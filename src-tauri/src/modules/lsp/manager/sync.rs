@@ -40,7 +40,11 @@ impl LspManager {
                 Some(serde_json::to_value(params).map_err(|e| e.to_string())?),
             )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        self.pull_diagnostics(language, project_root, file_path)
+            .await;
+        Ok(())
     }
 
     pub async fn did_change(
@@ -94,7 +98,11 @@ impl LspManager {
                 Some(serde_json::to_value(params).map_err(|e| e.to_string())?),
             )
             .await
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+
+        self.pull_diagnostics(language, project_root, file_path)
+            .await;
+        Ok(())
     }
 
     pub async fn did_save(
