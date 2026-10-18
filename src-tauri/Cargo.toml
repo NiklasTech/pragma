@@ -33,7 +33,7 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-store = "2"
 tauri-plugin-opener = "2"
-tauri-plugin-updater = "2"
+tauri-plugin-updater = "~2.13"
 tauri-plugin-process = "2"
 
 libc = "0.2"
@@ -52,12 +52,12 @@ sysinfo = "0.39"
 bollard = "0.21"
 ignore = "0.4"
 regex = "1.0"
-tauri-plugin-clipboard-manager = "2"
+tauri-plugin-clipboard-manager = "~2.4"
 base64 = "0.23"
 flate2 = "1"
 tar = "0.4"
 ort = { version = "=2.0.0-rc.13", default-features = false, features = ["std", "load-dynamic"] }
-tauri-plugin-notification = "~2.4"
+tauri-plugin-notification = "~2.6"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3.6.3", features = ["linux-native"] }
