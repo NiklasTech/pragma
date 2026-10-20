@@ -54,7 +54,7 @@ export function DebugConsoleSection() {
       </div>
       <div
         ref={scrollRef}
-        className="max-h-48 overflow-y-auto rounded-md border border-border bg-bg-surface px-2 py-1 font-mono text-ui-xs"
+        className="max-h-48 overflow-y-auto rounded-md border border-border bg-bg-surface px-2 py-1 font-mono text-ui-xs select-text"
       >
         {entries.length === 0 ? (
           <div className="py-1 text-fg-subtle">

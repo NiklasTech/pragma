@@ -451,7 +451,9 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
         {setupLog && (
           <div className="mb-2 flex items-start gap-2 rounded-xl border border-status-error/30 bg-status-error/5 px-3 py-2 text-ui-xs text-status-error">
             <Warning size={14} className="mt-0.5 shrink-0" />
-            <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{setupLog}</span>
+            <span className="min-w-0 flex-1 break-words whitespace-pre-wrap select-text">
+              {setupLog}
+            </span>
           </div>
         )}
 

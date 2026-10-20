@@ -194,7 +194,7 @@ export default function ProblemsPanel() {
                             >
                               <Icon size={16} className={cn("mt-0.5 shrink-0", config.color)} />
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-ui-sm text-fg-default">
+                                <p className="truncate text-ui-sm text-fg-default select-text">
                                   {problem.message}
                                 </p>
                                 <p className="mt-0.5 flex items-center gap-1 text-ui-xs text-fg-muted">

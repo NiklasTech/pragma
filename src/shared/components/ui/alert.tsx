@@ -57,7 +57,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<"div">) 
     <div
       data-slot="alert-description"
       className={cn(
-        "text-ui-sm text-balance text-fg-default md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-fg-default [&_p:not(:last-child)]:mb-3",
+        "text-ui-sm text-balance text-fg-default select-text md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-fg-default [&_p:not(:last-child)]:mb-3",
         className,
       )}
       {...props}

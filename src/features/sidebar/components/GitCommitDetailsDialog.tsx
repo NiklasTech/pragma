@@ -161,7 +161,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
 
         {!loading && details && (
           <>
-            <DialogHeader className="shrink-0 px-5 pt-5">
+            <DialogHeader className="shrink-0 px-5 pt-5 select-text">
               <DialogTitle className="line-clamp-2 text-ui-base">{details.subject}</DialogTitle>
               {details.body && (
                 <p className="max-h-[120px] overflow-y-auto whitespace-pre-wrap text-ui-xs text-fg-muted">

@@ -116,7 +116,10 @@ export function RunOutputPanel() {
       </div>
 
       {/* Output */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-3 font-mono text-ui-xs">
+      <div
+        ref={scrollRef}
+        className="flex-1 min-h-0 overflow-auto p-3 font-mono text-ui-xs select-text"
+      >
         {activeProcess.output.length === 0 ? (
           <span className="italic text-fg-muted">No output yet...</span>
         ) : (

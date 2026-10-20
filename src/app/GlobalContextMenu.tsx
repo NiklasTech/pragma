@@ -24,6 +24,7 @@ import {
   type EditorDefinitionAvailabilityEventDetail,
 } from "@/shared/lib/editor-events";
 import { useLayoutStore } from "@/shell/layout";
+import { selectAllWithin } from "@/shared/lib/textSelection";
 import {
   acceptTerminalSuggestion,
   dismissTerminalSuggestion,
@@ -53,6 +54,7 @@ type ContextType = "editor" | "terminal" | "input" | "generic";
 interface MenuState {
   contextType: ContextType;
   selection: string;
+  target: EventTarget | null;
   position: { clientX: number; clientY: number } | null;
 }
 
@@ -139,6 +141,7 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
       setMenu({
         contextType,
         selection: contextType === "terminal" ? terminalSelection : getActiveSelection(),
+        target: event.target,
         position:
           contextType === "editor" ? { clientX: event.clientX, clientY: event.clientY } : null,
       });
@@ -213,9 +216,9 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   }, [closeMenu]);
 
   const handleSelectAll = useCallback(() => {
-    document.execCommand("selectAll");
+    selectAllWithin(menu?.target ?? null);
     closeMenu();
-  }, [closeMenu]);
+  }, [menu, closeMenu]);
 
   const handleAskAI = useCallback(() => {
     if (!menu || !hasSelection) return;
