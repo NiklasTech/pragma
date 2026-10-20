@@ -15,6 +15,7 @@ import { Onboarding } from "@/components/onboarding/Onboarding";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useExternalWindowManager } from "@/shared/stores/sync/useExternalWindowManager";
 import { useDisableBrowserBehaviors } from "@/shared/hooks/useDisableBrowserBehaviors";
+import { useScopedSelectAll } from "@/shared/hooks/useScopedSelectAll";
 import { useWorkspaceRestore } from "@/shared/hooks/useWorkspaceRestore";
 import { useWorkspaceWatcher } from "@/shared/hooks/useWorkspaceWatcher";
 import { useGitStateSync } from "@/shared/hooks/useGitStateSync";
@@ -62,6 +63,7 @@ export default function App() {
   useMemoryStats();
   useExternalWindowManager();
   useDisableBrowserBehaviors();
+  useScopedSelectAll();
   useWorkspaceRestore();
   useOpenRepositoriesSync();
   useOpenRepositorySessions();
