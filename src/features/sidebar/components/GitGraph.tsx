@@ -24,6 +24,7 @@ import {
 } from "./git-graph/constants";
 import { useElementWidth } from "./git-graph/useElementWidth";
 import { normalizeError } from "./git-graph/format";
+import { refreshLimit, shouldRefreshGraph } from "./git-graph/graphRefresh";
 import type { ConfirmDialogState, GitLogEntry, LoadStatus } from "./git-graph/types";
 import { useGraphLayout } from "./git-graph/useGraphLayout";
 import { useUiSize } from "@/theme/useUiMetrics";
@@ -66,6 +67,8 @@ export function GitGraph() {
   const requestIdRef = useRef(0);
   const loadMoreRequestIdRef = useRef(0);
   const inflightMoreRef = useRef(false);
+  const loadedCountRef = useRef(0);
+  const lastSnapshotRef = useRef(snapshot);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [rootRef, width] = useElementWidth<HTMLDivElement>();
   const compact = width > 0 && width < COMPACT_BREAKPOINT_PX;
@@ -82,26 +85,29 @@ export function GitGraph() {
     getItemKey: (index) => commits[index]?.sha ?? index,
   });
 
-  const loadInitial = useCallback(async () => {
-    if (!repoPath) return;
-    const requestId = ++requestIdRef.current;
-    setLoadStatus("initial");
-    setError(null);
-    try {
-      const result = await invoke<{ entries: GitLogEntry[] }>("git_log_entries", {
-        repoPath,
-        limit: PAGE_SIZE,
-      });
-      if (requestId !== requestIdRef.current) return;
-      setCommits(result.entries);
-      setLoadStatus("idle");
-      setEndReached(result.entries.length < PAGE_SIZE);
-    } catch (err) {
-      if (requestId !== requestIdRef.current) return;
-      setError(normalizeError(err));
-      setLoadStatus("error");
-    }
-  }, [repoPath]);
+  const loadInitial = useCallback(
+    async (limit: number = PAGE_SIZE) => {
+      if (!repoPath) return;
+      const requestId = ++requestIdRef.current;
+      setLoadStatus("initial");
+      setError(null);
+      try {
+        const result = await invoke<{ entries: GitLogEntry[] }>("git_log_entries", {
+          repoPath,
+          limit,
+        });
+        if (requestId !== requestIdRef.current) return;
+        setCommits(result.entries);
+        setLoadStatus("idle");
+        setEndReached(result.entries.length < limit);
+      } catch (err) {
+        if (requestId !== requestIdRef.current) return;
+        setError(normalizeError(err));
+        setLoadStatus("error");
+      }
+    },
+    [repoPath],
+  );
 
   const loadMore = useCallback(async () => {
     if (!repoPath || inflightMoreRef.current || endReached) return;
@@ -147,9 +153,19 @@ export function GitGraph() {
   }, [repoPath, loadInitial]);
 
   useEffect(() => {
-    if (!repoPath || !snapshot || loadStatus !== "idle" || commits.length === 0) return;
-    void loadInitial();
-  }, [snapshot, repoPath, loadStatus, commits.length, loadInitial]);
+    loadedCountRef.current = commits.length;
+  }, [commits.length]);
+
+  useEffect(() => {
+    const previousSnapshot = lastSnapshotRef.current;
+    lastSnapshotRef.current = snapshot;
+    if (!repoPath || !shouldRefreshGraph(previousSnapshot, snapshot, loadedCountRef.current)) {
+      return;
+    }
+    ++loadMoreRequestIdRef.current;
+    inflightMoreRef.current = false;
+    void loadInitial(refreshLimit(loadedCountRef.current));
+  }, [snapshot, repoPath, loadInitial]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
