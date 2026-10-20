@@ -34,7 +34,7 @@ export function ActivityBlock({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         title={hint}
-        className="group/activity -mx-2 flex min-h-7 items-center gap-2 rounded-md px-2 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+        className="group/activity -mx-2 flex min-h-7 items-center gap-2 rounded-md px-2 text-left text-ui-xs text-fg-muted transition-colors select-none hover:bg-bg-hover hover:text-fg-default"
       >
         {icon && <span className="flex size-4 shrink-0 items-center justify-center">{icon}</span>}
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">

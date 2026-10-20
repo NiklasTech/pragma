@@ -24,7 +24,7 @@ export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
 export const MessageContent = ({ children, className, ...props }: MessageContentProps) => (
   <div
     className={cn(
-      "flex w-full min-w-0 flex-col gap-3 text-ui-sm leading-relaxed",
+      "flex w-full min-w-0 flex-col gap-3 text-ui-sm leading-relaxed select-text",
       "text-fg-default",
       "group-[.is-user]:rounded-l-sm group-[.is-user]:rounded-r-xl group-[.is-user]:bg-bg-surface group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:shadow-[inset_2px_0_0_var(--color-accent)]",
       className,
@@ -57,7 +57,7 @@ export const MessageResponse = memo(
     <ChatStreamingProvider value={streaming}>
       <Streamdown
         className={cn(
-          "size-full text-ui-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          "size-full text-ui-sm leading-relaxed select-text [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
           className,
         )}
         components={streamdownComponents}

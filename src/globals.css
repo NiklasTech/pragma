@@ -392,7 +392,16 @@
   }
 
   body {
-    @apply bg-bg-root text-fg-default;
+    @apply bg-bg-root text-fg-default select-none;
+  }
+
+  input,
+  textarea,
+  [contenteditable]:not([contenteditable="false"]),
+  .cm-content,
+  .cm-tooltip-hover,
+  .cm-tooltip-lint {
+    @apply select-text;
   }
 
   html,

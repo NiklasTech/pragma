@@ -35,7 +35,7 @@ export default function MarkdownPanel() {
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {activeTab?.kind === "file" ? (
           <Streamdown
-            className="prose prose-invert max-w-none text-ui-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+            className="prose prose-invert max-w-none text-ui-sm leading-relaxed select-text [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
             components={streamdownComponents}
             mode="static"
           >
