@@ -17,9 +17,7 @@
   <a href="https://discord.gg/VYBaBvcpGp">Discord</a>
 </p>
 
-<p align="center">
-  <img src="public/pragma_homescreen.png" alt="Pragma editor with file tree, code and terminal" width="960">
-</p>
+https://github.com/user-attachments/assets/18ff609d-72d4-415a-a2bd-91329dec9f4d
 
 ---
 
@@ -51,6 +49,10 @@ Both modes share the same project, the same terminal and the same AI providers. 
 Pragma is built with Tauri and Rust instead of Electron, stores API keys in the operating system keychain and can use your existing coding CLI subscriptions such as Claude Code, Codex or Gemini CLI.
 
 Pragma is in active development (0.x). Expect breaking changes between minor versions.
+
+<p align="center">
+  <img src="public/pragma_homescreen.png" alt="Pragma editor with file tree, code and terminal" width="960">
+</p>
 
 ---
 
