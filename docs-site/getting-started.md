@@ -2,6 +2,8 @@
 
 Pragma is a desktop code editor designed for developers who want AI assistance without the bloat of a browser-based IDE. It is built with Tauri 2, Rust, React 19, TypeScript and CodeMirror 6.
 
+To see Pragma in action before you install it, watch the [3-minute walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8).
+
 ## Install a release
 
 Pre-built installers for Windows, macOS and Linux are available on the [Releases](https://github.com/NiklasTech/pragma/releases) page.

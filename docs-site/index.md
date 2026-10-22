@@ -27,3 +27,11 @@ features:
   - title: Hackable
     details: Built-in and custom themes, configurable keyboard shortcuts and MCP server support.
 ---
+
+## See it in action
+
+<div style="position: relative; aspect-ratio: 16 / 9; margin-top: 16px; border-radius: 12px; overflow: hidden;">
+  <iframe src="https://www.youtube-nocookie.com/embed/1v0JitLk-8E" title="Pragma trailer" style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0;" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+Want the full tour? The [3-minute walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit without leaving Pragma.

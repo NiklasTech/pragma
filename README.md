@@ -19,6 +19,11 @@
 
 https://github.com/user-attachments/assets/18ff609d-72d4-415a-a2bd-91329dec9f4d
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=1v0JitLk-8E">Watch the trailer on YouTube</a> ·
+  <a href="https://www.youtube.com/watch?v=KRmWK-zc-c8">3-minute walkthrough</a>
+</p>
+
 ---
 
 ## Contents
@@ -238,6 +243,8 @@ A local build keeps the version from `package.json`. Once a newer release exists
 ---
 
 ## Quick start
+
+Prefer to watch first? The [3-minute walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit.
 
 1. Start Pragma and complete the onboarding.
 2. Choose a theme and connect an AI provider, either with an API key or by signing in to a coding CLI.
