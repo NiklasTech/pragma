@@ -24,6 +24,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
+          check-latest: true
 
       - name: Post release to Discord
         run: node scripts/discord-release.mjs
