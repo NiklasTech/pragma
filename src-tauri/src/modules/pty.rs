@@ -426,6 +426,16 @@ pub fn create_pty_command(
     cmd.env("TERM", "xterm-256color");
     cmd.env("COLORTERM", "truecolor");
 
+    // Find the same CLIs here as the status check does.
+    #[cfg(target_os = "windows")]
+    {
+        let path = cmd
+            .get_env("PATH")
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        cmd.env("PATH", crate::ai::cli::manager::extend_path(&path));
+    }
+
     if let Some(cwd) = cwd {
         let path = std::path::PathBuf::from(cwd);
         if path.is_dir() {

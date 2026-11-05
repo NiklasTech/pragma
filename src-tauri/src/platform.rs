@@ -313,7 +313,7 @@ pub fn kill_process_by_port(port: u16) -> Result<(), String> {
 pub(crate) fn kill_process_tree(pid: u32) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        let output = std::process::Command::new("taskkill")
+        let output = new_std_command("taskkill")
             .args(["/T", "/F", "/PID", &pid.to_string()])
             .output()
             .map_err(|e| e.to_string())?;
