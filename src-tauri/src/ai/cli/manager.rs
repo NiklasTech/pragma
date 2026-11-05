@@ -3,13 +3,16 @@ use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
 
-use crate::platform::new_tokio_command_on_path;
+use crate::platform::{kill_process_tree, new_tokio_command_on_path};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::time::timeout;
 
 use super::manifest::{get_manifest, CLIManifest, OutputFormat};
 use crate::ai::error::AIError;
+
+const VERSION_CHECK_TIMEOUT: Duration = Duration::from_secs(10);
+const AUTH_CHECK_TIMEOUT: Duration = Duration::from_secs(15);
 
 // ─── Status Types ────────────────────────────────────────────────────────────
 
@@ -52,7 +55,11 @@ pub struct CLIManager;
 /// are discoverable even when the app is launched from a desktop environment
 /// with a restricted PATH.
 pub fn enriched_path() -> String {
-    let current = env::var("PATH").unwrap_or_default();
+    extend_path(&env::var("PATH").unwrap_or_default())
+}
+
+/// Adds the user bin directories to `current`; on Windows after it, to start the same binary as a terminal.
+pub fn extend_path(current: &str) -> String {
     let home = if cfg!(target_os = "windows") {
         env::var("USERPROFILE").unwrap_or_default()
     } else {
@@ -79,7 +86,9 @@ pub fn enriched_path() -> String {
         .join(&separator.to_string());
 
     if extra_str.is_empty() {
-        current
+        current.to_string()
+    } else if cfg!(target_os = "windows") {
+        format!("{}{}{}", current, separator, extra_str)
     } else {
         format!("{}{}{}", extra_str, separator, current)
     }
@@ -89,14 +98,30 @@ fn user_bin_directories(home: &str) -> Vec<PathBuf> {
     let home = PathBuf::from(home);
 
     if cfg!(target_os = "windows") {
-        vec![
+        let roaming = home.join("AppData").join("Roaming");
+        let local = home.join("AppData").join("Local");
+        let mut dirs = vec![
             // npm global default on Windows
-            home.join("AppData").join("Roaming").join("npm"),
+            roaming.join("npm"),
             // pnpm global default on Windows
-            home.join("AppData").join("Local").join("pnpm"),
+            local.join("pnpm"),
+            local.join("pnpm").join("bin"),
             // cargo
             home.join(".cargo").join("bin"),
-        ]
+            // native installers
+            home.join(".local").join("bin"),
+            // Scoop
+            home.join("scoop").join("shims"),
+            // WinGet
+            local.join("Microsoft").join("WinGet").join("Links"),
+            // Volta
+            local.join("Volta").join("bin"),
+            // fnm default Node.js, only on PATH in shells that ran `fnm env`
+            roaming.join("fnm").join("aliases").join("default"),
+        ];
+        // nvm-windows active Node.js
+        dirs.extend(env::var_os("NVM_SYMLINK").map(PathBuf::from));
+        dirs
     } else {
         vec![
             // npm global (default)
@@ -143,7 +168,7 @@ impl CLIManager {
         let mut status = CLIStatus {
             provider_id: provider_id.to_string(),
             installed,
-            version: version.ok(),
+            version: version.ok().flatten(),
             authenticated: false,
             user: None,
             error: None,
@@ -179,23 +204,15 @@ impl CLIManager {
             // Spawn each check in its own task so they run in parallel
             let handle = tokio::spawn(async move {
                 let manager = CLIManager::new();
-                match timeout(Duration::from_secs(10), manager.check_status(&id)).await {
-                    Ok(Ok(status)) => status,
-                    Ok(Err(e)) => CLIStatus {
+                match manager.check_status(&id).await {
+                    Ok(status) => status,
+                    Err(e) => CLIStatus {
                         provider_id: id,
                         installed: false,
                         version: None,
                         authenticated: false,
                         user: None,
                         error: Some(e.to_string()),
-                    },
-                    Err(_) => CLIStatus {
-                        provider_id: id,
-                        installed: false,
-                        version: None,
-                        authenticated: false,
-                        user: None,
-                        error: Some("status check timed out".to_string()),
                     },
                 }
             });
@@ -348,7 +365,8 @@ impl CLIManager {
 
     // ── Internal Helpers ─────────────────────────────────────────────────────
 
-    async fn run_check_cmd(&self, manifest: &CLIManifest) -> Result<String, AIError> {
+    /// The CLI's version, or `None` if it started but is too slow to report one.
+    async fn run_check_cmd(&self, manifest: &CLIManifest) -> Result<Option<String>, AIError> {
         let parts = shellwords::split(&manifest.check_cmd)
             .map_err(|e| AIError::Provider(format!("invalid check command: {e}")))?;
 
@@ -357,21 +375,21 @@ impl CLIManager {
         }
 
         let path_var = enriched_path();
-        let output = new_tokio_command_on_path(&parts[0], &path_var)
-            .args(&parts[1..])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .env("PATH", path_var)
-            .output()
+        let mut cmd = new_tokio_command_on_path(&parts[0], &path_var);
+        cmd.args(&parts[1..]).env("PATH", path_var);
+        let Some(output) = output_within(cmd, VERSION_CHECK_TIMEOUT)
             .await
-            .map_err(|e| AIError::Provider(format!("check failed: {e}")))?;
+            .map_err(|e| AIError::Provider(format!("check failed: {e}")))?
+        else {
+            return Ok(None);
+        };
 
         if !output.status.success() {
             return Err(AIError::Provider("not installed".to_string()));
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        Ok(stdout.trim().to_string())
+        Ok(Some(stdout.trim().to_string()))
     }
 
     async fn run_auth_check(
@@ -387,14 +405,15 @@ impl CLIManager {
         }
 
         let path_var = enriched_path();
-        let output = new_tokio_command_on_path(&parts[0], &path_var)
-            .args(&parts[1..])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .env("PATH", path_var)
-            .output()
+        let mut cmd = new_tokio_command_on_path(&parts[0], &path_var);
+        cmd.args(&parts[1..]).env("PATH", path_var);
+        let Some(output) = output_within(cmd, AUTH_CHECK_TIMEOUT)
             .await
-            .map_err(|e| AIError::Provider(format!("auth check failed: {e}")))?;
+            .map_err(|e| AIError::Provider(format!("auth check failed: {e}")))?
+        else {
+            // Same as a CLI without an auth check: auth issues surface when chatting.
+            return Ok((true, None));
+        };
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -415,6 +434,29 @@ impl CLIManager {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/// Runs a status command without stdin; after `limit` it stops its process tree and returns `None`.
+async fn output_within(
+    mut cmd: tokio::process::Command,
+    limit: Duration,
+) -> std::io::Result<Option<std::process::Output>> {
+    let child = cmd
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    let pid = child.id();
+
+    match timeout(limit, child.wait_with_output()).await {
+        Ok(output) => output.map(Some),
+        Err(_) => {
+            if let Some(pid) = pid {
+                let _ = tokio::task::spawn_blocking(move || kill_process_tree(pid)).await;
+            }
+            Ok(None)
+        }
+    }
+}
 
 fn build_prompt(req: &CLIChatRequest) -> String {
     req.messages
@@ -594,8 +636,75 @@ mod tests {
         let result = enriched_path();
         let current = env::var("PATH").unwrap_or_default();
         assert!(
-            result.ends_with(&current),
-            "enriched PATH should end with the current PATH"
+            result.contains(&current),
+            "enriched PATH should contain the current PATH"
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn user_bin_directories_contains_windows_install_locations() {
+        let dirs = user_bin_directories(r"C:\Users\test");
+        for expected in [
+            r"C:\Users\test\.local\bin",
+            r"C:\Users\test\scoop\shims",
+            r"C:\Users\test\AppData\Local\Microsoft\WinGet\Links",
+            r"C:\Users\test\AppData\Local\Volta\bin",
+            r"C:\Users\test\AppData\Roaming\fnm\aliases\default",
+        ] {
+            let expected = PathBuf::from(expected);
+            assert!(
+                dirs.contains(&expected),
+                "expected {expected:?} in {dirs:?}"
+            );
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn extend_path_keeps_existing_entries_first_on_windows() {
+        let current = r"C:\first;C:\second";
+        assert!(extend_path(current).starts_with(current));
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn output_within_stops_a_hanging_cmd_shim() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("hanging-cli.cmd"),
+            "@ping -n 30 127.0.0.1\r\n",
+        )
+        .unwrap();
+        let path_var = format!("{};{}", dir.path().display(), env::var("PATH").unwrap());
+        let cmd = new_tokio_command_on_path("hanging-cli", &path_var);
+
+        let started = std::time::Instant::now();
+        let output = output_within(cmd, Duration::from_millis(500))
+            .await
+            .unwrap();
+
+        assert!(output.is_none());
+        assert!(started.elapsed() < Duration::from_secs(10));
+    }
+
+    #[tokio::test]
+    async fn output_within_returns_the_output_of_a_fast_command() {
+        let cmd = if cfg!(windows) {
+            let mut cmd = crate::platform::new_tokio_command("cmd");
+            cmd.args(["/c", "echo", "ok"]);
+            cmd
+        } else {
+            let mut cmd = crate::platform::new_tokio_command("echo");
+            cmd.arg("ok");
+            cmd
+        };
+
+        let output = output_within(cmd, Duration::from_secs(30))
+            .await
+            .unwrap()
+            .expect("command finishes in time");
+
+        assert!(String::from_utf8_lossy(&output.stdout).contains("ok"));
     }
 }

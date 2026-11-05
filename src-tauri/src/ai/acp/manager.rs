@@ -91,8 +91,7 @@ impl AcpSessionManager {
         }
 
         let path_var = enriched_path();
-        let mut env: HashMap<String, String> = std::env::vars().collect();
-        env.insert("PATH".to_string(), path_var.clone());
+        let mut env = process_env_with_path(&path_var);
         if let Some(manifest_env) = &manifest.env {
             for (key, value) in manifest_env {
                 env.insert(key.clone(), value.clone());
@@ -409,6 +408,15 @@ impl ConfigOptionsSink {
     }
 }
 
+/// The process environment with `path_var` as its only PATH, since Windows spells the inherited one `Path`.
+fn process_env_with_path(path_var: &str) -> HashMap<String, String> {
+    let mut env: HashMap<String, String> = std::env::vars()
+        .filter(|(key, _)| !key.eq_ignore_ascii_case("PATH"))
+        .collect();
+    env.insert("PATH".to_string(), path_var.to_string());
+    env
+}
+
 fn spawn_notification_handler(
     chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
     acp_session_id: String,
@@ -636,6 +644,18 @@ pub struct AcpSessionHandle {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn process_env_with_path_has_a_single_path_entry() {
+        let env = process_env_with_path("enriched");
+
+        let paths: Vec<_> = env
+            .iter()
+            .filter(|(key, _)| key.eq_ignore_ascii_case("PATH"))
+            .collect();
+        assert_eq!(paths.len(), 1);
+        assert_eq!(env.get("PATH").map(String::as_str), Some("enriched"));
+    }
 
     fn chunk(update: Value) -> StreamChunk {
         session_update_to_chunk(serde_json::from_value(update).unwrap())
