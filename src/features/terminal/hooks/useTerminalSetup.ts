@@ -19,6 +19,7 @@ import { terminalEnvFor } from "../terminalEnv";
 import { terminalEnvRoot } from "../terminalRepository";
 import { takeTerminalScrollback } from "../terminalScrollback";
 import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } from "../ptyOutput";
+import { replayWithoutReplies } from "../replayOutput";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 
@@ -112,6 +113,7 @@ export function useTerminalSetup({
       da1Handler = t.parser.registerCsiHandler({ final: "c" }, (params) => {
         // DA1: CSI c or CSI 0 c
         if (params.length > 0 && params[0] !== 0) return false;
+        if (t.options.disableStdin) return true;
 
         const ptyId = ptyIdRef.current;
         if (ptyId) {
@@ -141,7 +143,8 @@ export function useTerminalSetup({
         detachOutput = attachPtyOutput(
           ptyId,
           (replay) => {
-            t.write(replay);
+            if (reattached) replayWithoutReplies(t, replay);
+            else t.write(replay);
             lastOutputRef.current = replay.slice(-1000);
           },
           writeOutput,
