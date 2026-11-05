@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-10-24T01:21:10.293Z",
-  "total": 95,
+  "generatedAt": "2026-11-05T21:59:45.836Z",
+  "total": 96,
   "entries": [
     {
       "name": "@emmetio/codemirror6-plugin",
-      "version": "0.4.1",
-      "license": "Unknown",
-      "url": "https://www.npmjs.com/package/@emmetio/codemirror6-plugin/v/0.4.1",
+      "version": "0.4.2",
+      "license": "MIT",
+      "url": "https://www.npmjs.com/package/@emmetio/codemirror6-plugin/v/0.4.2",
       "source": "npm"
     },
     {
       "name": "@types/node",
-      "version": "26.6.5",
+      "version": "26.6.6",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/@types/node/v/26.6.5",
+      "url": "https://www.npmjs.com/package/@types/node/v/26.6.6",
       "source": "npm"
     },
     {
@@ -46,9 +46,9 @@
     },
     {
       "name": "ai",
-      "version": "7.0.142",
+      "version": "7.0.158",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/ai/v/7.0.142",
+      "url": "https://www.npmjs.com/package/ai/v/7.0.158",
       "source": "npm"
     },
     {
@@ -235,9 +235,9 @@
     },
     {
       "name": "material-icon-theme",
-      "version": "5.39.0",
+      "version": "5.40.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.39.0",
+      "url": "https://www.npmjs.com/package/material-icon-theme/v/5.40.0",
       "source": "npm"
     },
     {
@@ -340,9 +340,9 @@
     },
     {
       "name": "react-resizable-panels",
-      "version": "4.14.5",
+      "version": "4.15.3",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.14.5",
+      "url": "https://www.npmjs.com/package/react-resizable-panels/v/4.15.3",
       "source": "npm"
     },
     {
@@ -417,9 +417,9 @@
     },
     {
       "name": "streamdown",
-      "version": "2.7.0",
+      "version": "2.7.1",
       "license": "Apache-2.0",
-      "url": "https://www.npmjs.com/package/streamdown/v/2.7.0",
+      "url": "https://www.npmjs.com/package/streamdown/v/2.7.1",
       "source": "npm"
     },
     {
@@ -487,9 +487,9 @@
     },
     {
       "name": "tauri-plugin-clipboard-manager",
-      "version": "2.4.2",
+      "version": "2.5.0",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-clipboard-manager/2.4.2",
+      "url": "https://crates.io/crates/tauri-plugin-clipboard-manager/2.5.0",
       "source": "rust"
     },
     {
@@ -508,9 +508,9 @@
     },
     {
       "name": "tauri-plugin-notification",
-      "version": "2.6.0",
+      "version": "2.8.0",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-notification/2.6.0",
+      "url": "https://crates.io/crates/tauri-plugin-notification/2.8.0",
       "source": "rust"
     },
     {
@@ -543,9 +543,9 @@
     },
     {
       "name": "tauri-plugin-updater",
-      "version": "2.13.3",
+      "version": "2.14.1",
       "license": "Apache-2.0 OR MIT",
-      "url": "https://crates.io/crates/tauri-plugin-updater/2.13.3",
+      "url": "https://crates.io/crates/tauri-plugin-updater/2.14.1",
       "source": "rust"
     },
     {
@@ -661,10 +661,17 @@
       "source": "rust"
     },
     {
-      "name": "zustand",
-      "version": "5.0.15",
+      "name": "zip",
+      "version": "9.4.0",
       "license": "MIT",
-      "url": "https://www.npmjs.com/package/zustand/v/5.0.15",
+      "url": "https://crates.io/crates/zip/9.4.0",
+      "source": "rust"
+    },
+    {
+      "name": "zustand",
+      "version": "5.0.16",
+      "license": "MIT",
+      "url": "https://www.npmjs.com/package/zustand/v/5.0.16",
       "source": "npm"
     }
   ]
