@@ -56,7 +56,7 @@ tauri-plugin-clipboard-manager = "~2.5"
 base64 = "0.23"
 flate2 = "1"
 tar = "0.4"
-ort = { version = "=2.0.0-rc.13", default-features = false, features = ["std", "load-dynamic"] }
+ort = { version = "=2.0.0-rc.15", default-features = false, features = ["std", "load-dynamic"] }
 tauri-plugin-notification = "~2.8"
 
 [target.'cfg(target_os = "linux")'.dependencies]
