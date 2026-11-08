@@ -6,7 +6,7 @@ use crate::modules::git::process::{
     ensure_git_available, ensure_success, git_show_text, read_text_file, run_git,
 };
 use crate::modules::git::types::{
-    GitDiffContentResult, GitDiffResult, TextSource, DEFAULT_TIMEOUT_SECS,
+    GitDiffContentResult, GitDiffResult, GitOutput, TextSource, DEFAULT_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{authorized_repo_root, pathspec, resolve_within_repo};
 
@@ -37,6 +37,12 @@ fn diff_inner(repo_root: &Path, path: Option<&str>, staged: bool) -> Result<GitD
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git diff failed")?;
+    let output = match pathspec_opt.as_deref() {
+        Some(spec) if !staged && output.stdout.is_empty() => {
+            untracked_file_diff(repo_root, spec)?.unwrap_or(output)
+        }
+        _ => output,
+    };
 
     let diff_text = match String::from_utf8(output.stdout) {
         Ok(text) => text,
@@ -46,6 +52,43 @@ fn diff_inner(repo_root: &Path, path: Option<&str>, staged: bool) -> Result<GitD
         diff_text,
         truncated: output.truncated,
     })
+}
+
+/// `git diff` skips untracked files, so diff such a file against an empty one.
+fn untracked_file_diff(repo_root: &Path, spec: &str) -> Result<Option<GitOutput>> {
+    let root = repo_root.to_string_lossy();
+    if !repo_root.join(spec).is_file() {
+        return Ok(None);
+    }
+    let in_index = run_git(
+        Some(&root),
+        [
+            OsString::from("cat-file"),
+            OsString::from("-e"),
+            OsString::from(format!(":{spec}")),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    if in_index.exit_code == Some(0) {
+        return Ok(None);
+    }
+    let output = run_git(
+        Some(&root),
+        [
+            "diff",
+            "--no-ext-diff",
+            "--no-index",
+            "--",
+            "/dev/null",
+            spec,
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    // --no-index exits with 1 when the files differ.
+    if output.exit_code != Some(1) {
+        ensure_success(&output, "git diff failed")?;
+    }
+    Ok(Some(output))
 }
 
 pub fn diff_content(
@@ -161,6 +204,31 @@ mod tests {
     }
 
     #[test]
+    fn diff_shows_an_untracked_file_as_added() {
+        let repo = TestRepo::new();
+        repo.write("new file.txt", "first\nsecond\n");
+
+        let result = diff(&repo.root, Some("new file.txt"), false).unwrap();
+
+        assert!(result.diff_text.contains("new file mode"));
+        assert!(result.diff_text.contains("+first\n+second"));
+        assert!(diff(&repo.root, Some("new file.txt"), true)
+            .unwrap()
+            .diff_text
+            .is_empty());
+    }
+
+    #[test]
+    fn diff_stays_empty_for_an_unchanged_tracked_file() {
+        let repo = TestRepo::new();
+
+        assert!(diff(&repo.root, Some("file.txt"), false)
+            .unwrap()
+            .diff_text
+            .is_empty());
+    }
+
+    #[test]
     fn diff_rejects_paths_outside_the_repository() {
         let repo = TestRepo::new();
         std::fs::write(repo.outside_path("outside.txt"), "secret\n").unwrap();
@@ -238,6 +306,7 @@ mod tests {
 
         assert_eq!(result.original_content, "");
         assert_eq!(result.modified_content, "new\n");
+        assert!(result.fallback_patch.contains("+new"));
     }
 
     #[test]
