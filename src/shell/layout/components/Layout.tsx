@@ -13,9 +13,10 @@ import { LayoutTreeRenderer } from "./LayoutTreeRenderer";
 import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
-import { Titlebar } from "@/shell/chrome/Titlebar";
+import { Strip } from "@/shell/chrome/Strip";
 import { Statusbar } from "@/shell/chrome/Statusbar";
 import { useUiMode } from "@/shell/mode";
+import { useTabModeSync } from "@/shell/mode/tabModeSync";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
 
 const AgentsWorkspace = lazy(() =>
@@ -31,6 +32,7 @@ export function Layout() {
   const root = useLayoutStore((s) => s.root);
   const setSidebarWidth = useLayoutStore((s) => s.setSidebarWidth);
   const uiMode = useUiMode();
+  useTabModeSync();
 
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
   const sidebarSizeRef = useRef<number>(sidebar.width);
@@ -67,7 +69,7 @@ export function Layout() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-chrome text-fg-default">
       <DiagnosticsHost />
-      <Titlebar />
+      <Strip />
 
       {uiMode === "agents" ? (
         <div className="relative flex min-h-0 flex-1 overflow-hidden">

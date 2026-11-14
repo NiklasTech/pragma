@@ -4,7 +4,6 @@ import {
   FileText,
   FolderOpen,
   FolderSimpleMinus,
-  GitBranch,
   Plus,
   Star,
   X,
@@ -63,21 +62,23 @@ export function WorkspaceMenu() {
         render={
           <button
             type="button"
-            className="flex h-7 max-w-[280px] min-w-0 items-center gap-2 rounded-full pr-2.5 pl-1.5 text-ui-sm transition-colors hover:bg-bg-hover"
-            title={rootPath ?? "Open folder or file"}
+            aria-label={`Switch space, current: ${workspaceName || "none"}`}
+            className="flex h-7.5 max-w-[260px] min-w-0 shrink-0 items-center gap-2 rounded-control pr-2 pl-1.5 text-ui-sm font-semibold text-fg-default transition-colors hover:bg-bg-hover"
+            title={branch ? `${rootPath} (${branch})` : (rootPath ?? "Open folder or file")}
           >
-            <PragmaMark variant="compact" className="size-4 shrink-0 text-fg-default" />
-            <RepositoryColorDot path={activeRepository} />
-            <span className="min-w-0 truncate font-semibold text-fg-default">
-              {workspaceName || "Open Folder"}
-            </span>
-            {branch && (
-              <span className="flex min-w-0 items-center gap-1 text-ui-xs text-fg-subtle">
-                <GitBranch size={12} className="shrink-0" />
-                <span className="truncate">{branch}</span>
+            {workspaceName ? (
+              <span
+                aria-hidden="true"
+                className="flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-bg-active text-[11px] text-fg-muted"
+              >
+                {workspaceName.charAt(0).toUpperCase()}
               </span>
+            ) : (
+              <PragmaMark variant="compact" className="size-4 shrink-0 text-fg-default" />
             )}
-            <CaretDown size={10} weight="bold" className="shrink-0 text-fg-subtle" />
+            <RepositoryColorDot path={activeRepository} />
+            <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
+            <CaretDown size={12} className="shrink-0 text-fg-subtle" />
           </button>
         }
       />

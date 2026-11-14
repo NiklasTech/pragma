@@ -2,9 +2,12 @@ import { create, type StateCreator } from "zustand";
 import { persist, type PersistOptions } from "zustand/middleware";
 import { isPathInside, normalizePath } from "@/features/ai/named-agents/folders";
 import { getWindowScope } from "@/shared/lib/windowScope";
+import { UI_MODE_STORAGE_KEY } from "@/shell/mode/store";
 import {
   activateTab,
+  activateTabKind,
   addTab,
+  addTabKinds,
   closeTab,
   createSpace,
   findSpaceByFolder,
@@ -13,6 +16,7 @@ import {
   renameTab,
   type Space,
   type SpacesSnapshot,
+  type SpaceTabKind,
 } from "./spaces/model";
 
 interface OpenRepositoriesState extends SpacesSnapshot {
@@ -30,7 +34,9 @@ interface OpenRepositoriesActions {
   remove: (path: string) => string | null;
   clear: () => void;
   /** Adds a tab to the space and activates it; returns the new tab id. */
-  addTab: (spaceId: string, name: string) => string | null;
+  addTab: (spaceId: string, name: string, kind?: SpaceTabKind) => string | null;
+  /** Shows the first tab of the kind in the active space, adding one when it has none. */
+  activateTabKind: (kind: SpaceTabKind) => void;
   activateTab: (spaceId: string, tabId: string) => void;
   closeTab: (spaceId: string, tabId: string) => void;
   renameTab: (spaceId: string, tabId: string, name: string) => void;
@@ -117,11 +123,16 @@ export const openRepositoriesStoreCreator: StateCreator<OpenRepositoriesStore> =
 
     clear: () => set(withPaths([], null)),
 
-    addTab: (spaceId, name) => {
+    addTab: (spaceId, name, kind = "agents") => {
       if (!get().spaces.some((space) => space.id === spaceId)) return null;
       const id = crypto.randomUUID();
-      updateSpace(spaceId, (space) => addTab(space, name, id));
+      updateSpace(spaceId, (space) => addTab(space, name, kind, id));
       return id;
+    },
+
+    activateTabKind: (kind) => {
+      const { activeSpaceId } = get();
+      if (activeSpaceId) updateSpace(activeSpaceId, (space) => activateTabKind(space, kind));
     },
 
     activateTab: (spaceId, tabId) => updateSpace(spaceId, (space) => activateTab(space, tabId)),
@@ -136,18 +147,37 @@ interface LegacyOpenRepositories {
   activePath?: string | null;
 }
 
+/** The Agents/Editor mode of earlier versions; with a folder open it defaulted to the editor. */
+function legacyTabKind(): SpaceTabKind {
+  try {
+    const raw = globalThis.localStorage?.getItem(UI_MODE_STORAGE_KEY);
+    const mode = raw
+      ? (JSON.parse(raw) as { state?: { uiMode?: string | null } }).state?.uiMode
+      : null;
+    return mode === "agents" ? "agents" : "code";
+  } catch {
+    return "code";
+  }
+}
+
 export const openRepositoriesPersistOptions: Omit<
   PersistOptions<OpenRepositoriesStore, SpacesSnapshot>,
   "name"
 > = {
-  version: 1,
+  version: 2,
   partialize: (state) => ({ spaces: state.spaces, activeSpaceId: state.activeSpaceId }),
-  // Version 0 stored a flat list of folders; each becomes a space with one tab.
   migrate: (persisted, version) => {
+    // Version 0 stored a flat list of folders; each becomes a space.
     if (version === 0) {
       const legacy = (persisted ?? {}) as LegacyOpenRepositories;
-      return migrateOpenRepositories(legacy.paths ?? [], legacy.activePath ?? null);
+      return migrateOpenRepositories(
+        legacy.paths ?? [],
+        legacy.activePath ?? null,
+        legacyTabKind(),
+      );
     }
+    // Version 1 tabs had no kind and spaces no code tab.
+    if (version === 1) return addTabKinds(persisted as SpacesSnapshot, legacyTabKind());
     return persisted as SpacesSnapshot;
   },
   merge: (persisted, current) => {
