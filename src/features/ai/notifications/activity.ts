@@ -41,13 +41,6 @@ export function resolveSessionActivity(input: ActivityInput): SessionActivity {
   };
 }
 
-export function formatActivitySummary(activity: SessionActivity): string {
-  const parts: string[] = [];
-  if (activity.running.length > 0) parts.push(`${activity.running.length} running`);
-  if (activity.waiting.length > 0) parts.push(`${activity.waiting.length} waiting`);
-  return parts.join(", ");
-}
-
 /// Child runs that just finished or failed; a stopped run was the user's own doing.
 export function childRunOutcomes(
   previous: Record<string, ChildRun>,

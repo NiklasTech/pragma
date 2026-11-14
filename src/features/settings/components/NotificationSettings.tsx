@@ -38,11 +38,6 @@ const ROWS: Array<{ key: keyof Settings; label: string; description: string }> =
     label: "Dock badge",
     description: "Show the number of sessions waiting for approval on the app icon.",
   },
-  {
-    key: "statusSummary",
-    label: "Status bar summary",
-    description: "Show running and waiting sessions in the status bar.",
-  },
 ];
 
 export function NotificationSettings() {

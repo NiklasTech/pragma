@@ -7,13 +7,7 @@ import {
   type ShortcutBinding,
   type ShortcutMap,
 } from "@/shared/lib/shortcuts";
-import type {
-  AISettings,
-  McpSettings,
-  SettingsActions,
-  SettingsState,
-  StatusbarSettings,
-} from "./types";
+import type { AISettings, McpSettings, SettingsActions, SettingsState } from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
   if (!partial || typeof partial !== "object") {
@@ -98,19 +92,6 @@ export function migrateMcpSettings(mcp: McpSettings): McpSettings {
   };
 }
 
-const STATUSBAR_REVISION = 1;
-
-export function migrateStatusbarSettings(statusbar: StatusbarSettings): StatusbarSettings {
-  // Revision 1 shows the new subscription usage item next to the AI provider; removing it later sticks.
-  if ((statusbar.migrationRevision ?? 0) >= STATUSBAR_REVISION) return statusbar;
-  const items = [...statusbar.items];
-  if (!items.includes("subscriptionUsage")) {
-    const provider = items.indexOf("aiProvider");
-    items.splice(provider === -1 ? items.length : provider + 1, 0, "subscriptionUsage");
-  }
-  return { ...statusbar, items, migrationRevision: STATUSBAR_REVISION };
-}
-
 export const SHORTCUTS_REVISION = 1;
 
 /// Defaults before revision 1, for the actions whose default changed.
@@ -157,6 +138,7 @@ const REMOVED_KEYS = {
   workspace: ["recentFiles"],
   ai: ["terminalSuggestions"],
   agent: ["enabled"],
+  notifications: ["statusSummary"],
 } as const;
 
 export function withoutRemovedKeys<T extends object>(
@@ -185,6 +167,7 @@ export function mergeWithDefaults(
     themeMode: _removedThemeMode,
     layout: _removedLayout,
     keymap: _removedKeymap,
+    statusbar: _removedStatusbar,
     ...restPartial
   } = partial;
 
@@ -197,12 +180,14 @@ export function mergeWithDefaults(
     terminal: mergePartial(defaults.terminal, partial.terminal),
     ai: withoutRemovedKeys("ai", mergePartial(defaults.ai, migratedAi)),
     workspace: withoutRemovedKeys("workspace", mergePartial(defaults.workspace, partial.workspace)),
-    statusbar: migrateStatusbarSettings(mergePartial(defaults.statusbar, partial.statusbar)),
     mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
     lsp: mergePartial(defaults.lsp, partial.lsp),
     experimental: mergePartial(defaults.experimental, partial.experimental),
     agent: withoutRemovedKeys("agent", mergePartial(defaults.agent, partial.agent)),
-    notifications: mergePartial(defaults.notifications, partial.notifications),
+    notifications: withoutRemovedKeys(
+      "notifications",
+      mergePartial(defaults.notifications, partial.notifications),
+    ),
     appearance: mergePartial(defaults.appearance, partial.appearance),
     repositoryColors: mergePartial(defaults.repositoryColors, partial.repositoryColors),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },

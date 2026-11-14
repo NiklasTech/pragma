@@ -14,7 +14,6 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { useLayoutStore } from "@/shell/layout";
 import { defaultPresetId, presetLabels } from "@/shell/layout/presets";
-import { StatusbarSettings } from "./StatusbarSettings";
 import { ArrowCounterClockwise } from "@phosphor-icons/react";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
@@ -58,8 +57,6 @@ export function LayoutSettings() {
           }
         />
       </SettingSection>
-
-      <StatusbarSettings />
     </div>
   );
 }

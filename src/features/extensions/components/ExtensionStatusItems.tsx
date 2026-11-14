@@ -6,7 +6,7 @@ import { useExtensionsStore } from "../store";
 const CHIP_CLASSES =
   "flex h-5 max-w-[200px] items-center rounded-full px-2 text-ui-2xs text-fg-subtle";
 
-/// Status bar items contributed by extensions on one side of the bar.
+/// Status items contributed by extensions, shown in the top strip.
 export function ExtensionStatusItems({ alignment }: { alignment: "left" | "right" }) {
   const items = useExtensionsStore((state) => state.statusBarItems);
 

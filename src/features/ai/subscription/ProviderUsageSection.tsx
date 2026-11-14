@@ -23,7 +23,12 @@ import {
   type ProviderSessions,
   type UsageLevel,
 } from "./summary";
-import { USAGE_LEVEL_TEXT } from "./SubscriptionUsageStatus";
+
+const USAGE_LEVEL_TEXT: Record<UsageLevel, string> = {
+  normal: "",
+  high: "text-status-warning",
+  critical: "text-status-error",
+};
 
 const LEVEL_BAR: Record<UsageLevel, string> = {
   normal: "",

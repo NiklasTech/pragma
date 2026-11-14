@@ -11,7 +11,6 @@ const GROUPS = new Set([
   "terminal",
   "ai",
   "workspace",
-  "statusbar",
   "mcp",
   "lsp",
   "experimental",
@@ -22,11 +21,7 @@ const GROUPS = new Set([
 ]);
 
 // Optional markers are missing from the defaults but still stored.
-const OPTIONAL_KEYS = [
-  "ai.migrationRevision",
-  "statusbar.migrationRevision",
-  "mcp.migrationRevision",
-];
+const OPTIONAL_KEYS = ["ai.migrationRevision", "mcp.migrationRevision"];
 
 function storedKeys(): string[] {
   const keys = Object.entries(defaultSettings).flatMap(([name, value]) =>

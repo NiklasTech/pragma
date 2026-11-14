@@ -6,7 +6,6 @@ type Nested =
   | "terminal"
   | "ai"
   | "workspace"
-  | "statusbar"
   | "mcp"
   | "lsp"
   | "experimental"
@@ -650,16 +649,6 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     scope: "global",
     effect: NOTIFICATIONS,
   },
-  {
-    id: "notify-status-summary",
-    keys: ["notifications.statusSummary"],
-    label: "Status bar summary",
-    description: "Summarize session states in the status bar",
-    keywords: "notifications status bar summary",
-    category: "agents",
-    scope: "global",
-    effect: "src/shell/chrome/Statusbar.tsx",
-  },
   // Voice
   {
     id: "voice-input",
@@ -814,18 +803,7 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     scope: "global",
     effect: "src/theme/ThemeProvider.tsx",
   },
-  // Layout, languages, MCP, keyboard
-  {
-    id: "statusbar-visible",
-    keys: ["statusbar.visible", "statusbar.items"],
-    label: "Show Statusbar",
-    searchLabel: "Statusbar",
-    description: "Display the statusbar and choose its items",
-    keywords: "statusbar items layout bottom bar",
-    category: "layout",
-    scope: "global",
-    effect: "src/shell/chrome/Statusbar.tsx",
-  },
+  // Languages, MCP, keyboard
   {
     id: "lsp-enabled",
     keys: ["experimental.lsp"],
@@ -894,7 +872,6 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
 /** Stored values that are not settings: state, migration markers and values set elsewhere. */
 export const NOT_SETTINGS: Partial<Record<SettingKey, string>> = {
   "ai.migrationRevision": "Migration marker.",
-  "statusbar.migrationRevision": "Migration marker.",
   "mcp.migrationRevision": "Migration marker.",
   shortcutsRevision: "Migration marker.",
   "workspace.recentFolders": "History, shown in the welcome page and workspace menu.",
