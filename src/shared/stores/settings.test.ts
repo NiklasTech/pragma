@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { getDefaultShortcuts } from "@/shared/lib/shortcuts";
 import { migrateAISettings, migrateMcpSettings, useSettingsStore } from "./settings";
-import { migrateShortcuts, migrateStatusbarSettings } from "./settings/migrations";
+import {
+  mergeWithDefaults,
+  migrateShortcuts,
+  migrateStatusbarSettings,
+} from "./settings/migrations";
 
 describe("migrateAISettings", () => {
   const currentAI = useSettingsStore.getState().ai;
@@ -195,5 +199,31 @@ describe("migrateShortcuts", () => {
       "file.reopenClosedTab": null,
     });
     expect(migrated["view.toggleTerminal"]).toEqual(old);
+  });
+});
+
+describe("removed settings", () => {
+  it("drops the unused layout and recent files but keeps the user's other values", () => {
+    const stored = {
+      layout: { sidebarWidth: 300, terminalHeight: "40%", chatPanelWidth: 420 },
+      workspace: {
+        recentFolders: ["/projects/pragma"],
+        recentFiles: ["/projects/pragma/README.md"],
+        favoriteFolders: ["/projects"],
+      },
+      editor: { fontSize: 16, formatOnSave: true },
+      theme: "light-default",
+    };
+
+    const restored = mergeWithDefaults(stored, useSettingsStore.getState());
+
+    expect(restored).not.toHaveProperty("layout");
+    expect(restored.workspace).toEqual({
+      recentFolders: ["/projects/pragma"],
+      favoriteFolders: ["/projects"],
+    });
+    expect(restored.editor.fontSize).toBe(16);
+    expect(restored.editor.formatOnSave).toBe(true);
+    expect(restored.theme).toBe("light-default");
   });
 });

@@ -13,6 +13,7 @@ import type {
   SettingsActions,
   SettingsState,
   StatusbarSettings,
+  WorkspaceSettings,
 } from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
@@ -152,6 +153,14 @@ export function migrateShortcuts(
   return merged;
 }
 
+/// Recent files were stored but never shown; older settings still carry the list.
+export function withoutRemovedWorkspaceKeys(workspace: WorkspaceSettings): WorkspaceSettings {
+  const { recentFiles: _removedRecentFiles, ...rest } = workspace as WorkspaceSettings & {
+    recentFiles?: unknown;
+  };
+  return rest;
+}
+
 export function mergeWithDefaults(
   persisted: unknown,
   defaults: SettingsState & SettingsActions,
@@ -167,6 +176,7 @@ export function mergeWithDefaults(
     git: _,
     mcpRunningServerIds: _removedMcpRunningServerIds,
     themeMode: _removedThemeMode,
+    layout: _removedLayout,
     ...restPartial
   } = partial;
 
@@ -178,8 +188,7 @@ export function mergeWithDefaults(
     editor: mergePartial(defaults.editor, partial.editor),
     terminal: mergePartial(defaults.terminal, partial.terminal),
     ai: mergePartial(defaults.ai, migratedAi),
-    layout: mergePartial(defaults.layout, partial.layout),
-    workspace: mergePartial(defaults.workspace, partial.workspace),
+    workspace: withoutRemovedWorkspaceKeys(mergePartial(defaults.workspace, partial.workspace)),
     statusbar: migrateStatusbarSettings(mergePartial(defaults.statusbar, partial.statusbar)),
     mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
     lsp: mergePartial(defaults.lsp, partial.lsp),

@@ -11,6 +11,7 @@ import { isChangedOnDiskError, sha256Hex } from "@/shared/lib/fileDisk";
 import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
 import { notifyFileSaved } from "@/features/extensions/events";
 import { getEditorSettings } from "@/shared/stores/workspaceSettings/effective";
+import { formatForSave } from "@/features/editor/lsp/formatOnSave";
 
 interface SaveFileOptions {
   /// Autosave skips the conflict toast; the editor notice already shows the conflict.
@@ -39,7 +40,14 @@ export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
     const editorSettings = getEditorSettings();
     // Delayed autosave fires while typing; trimming would remove the space just typed.
     const transform = !auto || editorSettings.autoSave !== "afterDelay";
-    const content = transform ? applySaveTransforms(tab.content, editorSettings) : tab.content;
+    let source = tab.content;
+    if (transform && editorSettings.formatOnSave) {
+      const formatted = await formatForSave(tab.content, tab.language, tab.path, editorSettings);
+      // Keystrokes that arrived while the server formatted win over the formatted text.
+      const current = useEditorStore.getState().tabs.find((t) => t.id === tab.id);
+      if (current?.kind === "file" && current.content === tab.content) source = formatted;
+    }
+    const content = transform ? applySaveTransforms(source, editorSettings) : source;
     if (content !== tab.content) useEditorStore.getState().updateFileContent(tab.id, content);
     try {
       await invoke("write_text_file", {

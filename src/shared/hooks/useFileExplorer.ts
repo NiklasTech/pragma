@@ -160,7 +160,6 @@ export function useFileExplorer() {
           editorPanelId,
         );
         useFileExplorerStore.getState().setSelectedPath(path);
-        useSettingsStore.getState().addRecentFile(path);
       } catch (err) {
         if (openNonTextFile(path, editorPanelId, err)) return;
         toast.error(String(err));

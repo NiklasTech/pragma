@@ -124,15 +124,8 @@ export interface AISettings {
   migrationRevision?: number;
 }
 
-export interface LayoutSettings {
-  sidebarWidth: number;
-  terminalHeight: string;
-  chatPanelWidth: number;
-}
-
 export interface WorkspaceSettings {
   recentFolders: string[];
-  recentFiles: string[];
   favoriteFolders: string[];
 }
 
@@ -229,7 +222,6 @@ export interface SettingsState {
   lightTheme: string;
   darkTheme: string;
   keymap: string;
-  layout: LayoutSettings;
   workspace: WorkspaceSettings;
   statusbar: StatusbarSettings;
   mcp: McpSettings;
@@ -275,7 +267,6 @@ export interface SettingsActions {
     settings: Partial<Pick<SettingsState, "followSystemTheme" | "lightTheme" | "darkTheme">>,
   ) => void;
   addRecentFolder: (path: string) => void;
-  addRecentFile: (path: string) => void;
   addFavoriteFolder: (path: string) => void;
   removeFavoriteFolder: (path: string) => void;
   setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;

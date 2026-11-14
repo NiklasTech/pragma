@@ -23,7 +23,6 @@ export async function exportSettings(): Promise<void> {
       darkTheme: state.darkTheme,
       keymap: state.keymap,
       shortcuts: state.shortcuts,
-      layout: state.layout,
       statusbar: state.statusbar,
       workspace: state.workspace,
       mcp: { ...state.mcp, servers: state.mcp.servers.map(withoutSecretValues) },
