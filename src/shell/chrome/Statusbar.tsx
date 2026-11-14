@@ -21,6 +21,7 @@ import { useSessionActivity } from "@/features/ai/notifications/useSessionActivi
 import { useSubscriptionUsageProviders } from "@/features/ai/subscription/providers";
 import { SubscriptionUsageStatus } from "@/features/ai/subscription/SubscriptionUsageStatus";
 import { cn } from "@/shared/lib/utils";
+import { useOptionalTheme } from "@/theme";
 
 const LEADING_ITEMS = new Set<StatusbarItem>(["gitBranch", "gitSync", "problems"]);
 
@@ -54,7 +55,8 @@ function StatusChip({
 /// Workspace-level status. Editor details (cursor, encoding, …) live in the editor card.
 export function Statusbar() {
   const statusbar = useSettingsStore((state) => state.statusbar);
-  const theme = useSettingsStore((state) => state.theme);
+  // The visible theme's name; the stored id differs and ignores Follow system appearance.
+  const themeName = useOptionalTheme()?.theme.metadata.name;
   const snapshot = useGitStore((state) => state.snapshot);
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
@@ -160,7 +162,7 @@ export function Statusbar() {
         return (
           <StatusChip key={item}>
             <Palette size={12} />
-            <span className="capitalize">{theme}</span>
+            <span>{themeName}</span>
           </StatusChip>
         );
 
