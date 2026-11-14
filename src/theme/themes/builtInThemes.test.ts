@@ -46,6 +46,40 @@ describe("built-in themes", () => {
     }
   });
 
+  for (const id of ["dark-default", "light-default"]) {
+    it(`keeps every text level of ${id} readable on ground, wells and sheets`, () => {
+      const theme = builtInThemeList.find((entry) => entry.metadata.id === id);
+      if (!theme) throw new Error(`missing theme ${id}`);
+      const css = new Map(generateCssVariables(theme).map(({ name, value }) => [name, value]));
+      const surfaces = ["--bg-chrome", "--bg-root", "--bg-surface", "--bg-elevated", "--bg-input"];
+      const texts = [
+        "--fg-default",
+        "--fg-muted",
+        "--fg-subtle",
+        "--color-accent",
+        "--color-status-success",
+        "--color-status-warning",
+        "--color-status-error",
+        "--color-status-info",
+      ];
+      for (const surface of surfaces) {
+        for (const text of texts) {
+          expect(
+            ratio(css.get(text), css.get(surface)),
+            `${text} on ${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(ratio(css.get("--fg-inverse"), css.get("--color-accent"))).toBeGreaterThanOrEqual(4.5);
+      for (const token of SYNTAX) {
+        expect(
+          ratio(css.get(`--syntax-${token}`), css.get("--editor-bg")),
+          token,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+  }
+
   for (const theme of shortThemes) {
     it(`keeps ${theme.metadata.id} readable`, () => {
       const css = new Map(generateCssVariables(theme).map(({ name, value }) => [name, value]));

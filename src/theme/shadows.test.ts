@@ -55,8 +55,8 @@ describe("theme shadow tokens", () => {
     const vars = new Map(
       generateCssVariables(darkTheme() as Theme).map(({ name, value }) => [name, value]),
     );
-    expect(vars.get("--shadow-sm")).toBe("0 4px 16px rgba(0, 0, 0, 0.28)");
-    expect(vars.get("--shadow-md")).toBe("0 12px 40px rgba(0, 0, 0, 0.45)");
+    expect(vars.get("--shadow-sm")).toBe("0 4px 16px rgba(0, 0, 0, 0.35)");
+    expect(vars.get("--shadow-md")).toBe("0 24px 64px rgba(0, 0, 0, 0.55)");
   });
 
   it("maps softer light shadows", () => {
@@ -65,7 +65,9 @@ describe("theme shadow tokens", () => {
         ({ name, value }) => [name, value],
       ),
     );
-    expect(vars.get("--shadow-sm")).toBe("0 4px 16px rgba(15, 23, 42, 0.10)");
-    expect(vars.get("--shadow-md")).toBe("0 12px 40px rgba(15, 23, 42, 0.18)");
+    expect(vars.get("--shadow-sm")).toBe(
+      "0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08)",
+    );
+    expect(vars.get("--shadow-md")).toBe("0 20px 50px rgba(0, 0, 0, 0.16)");
   });
 });

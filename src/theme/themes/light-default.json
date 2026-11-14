@@ -1,58 +1,55 @@
 {
   "$schema": "https://pragma.dev/theme-schema/v1.json",
   "format": "pragma-theme-v1",
-
   "metadata": {
     "id": "light-default",
-    "name": "Light Default",
+    "name": "Pragma Light",
     "author": "Pragma Team",
-    "description": "White work surfaces in a soft grey frame with a clear azure accent.",
-    "version": "1.1.0",
+    "description": "Warm paper ground with raised white wells; a deep Pragma orange marks what needs you.",
+    "version": "2.0.0",
     "license": "MIT"
   },
-
   "appearance": {
     "defaultMode": "light",
     "supportedModes": ["light"]
   },
-
   "tokens": {
     "colors": {
       "background": {
-        "chrome": "#e8ecf2",
-        "root": "#ffffff",
-        "surface": "#f5f7fb",
+        "chrome": "#e9e7e1",
+        "root": "#fbfaf7",
+        "surface": "#f3f1ec",
         "elevated": "#ffffff",
         "input": "#ffffff",
-        "hover": "rgba(15, 23, 42, 0.05)",
-        "active": "rgba(10, 110, 230, 0.10)",
-        "overlay": "rgba(15, 23, 42, 0.35)"
+        "hover": "rgba(0, 0, 0, 0.05)",
+        "active": "rgba(0, 0, 0, 0.07)",
+        "overlay": "rgba(28, 27, 25, 0.35)"
       },
       "foreground": {
-        "default": "#1c1f26",
-        "muted": "#5a6270",
-        "subtle": "#828b99",
+        "default": "#1c1b19",
+        "muted": "#57544e",
+        "subtle": "#67645e",
         "inverse": "#ffffff"
       },
       "accent": {
-        "default": "#0a6ee6",
-        "subtle": "rgba(10, 110, 230, 0.10)",
-        "glow": "rgba(10, 110, 230, 0.25)"
+        "default": "#b23c0a",
+        "subtle": "rgba(255, 122, 61, 0.16)",
+        "glow": "rgba(255, 122, 61, 0.3)"
       },
       "border": {
-        "default": "rgba(15, 23, 42, 0.11)",
-        "subtle": "rgba(15, 23, 42, 0.07)",
-        "focus": "rgba(10, 110, 230, 0.45)"
+        "default": "rgba(0, 0, 0, 0.1)",
+        "subtle": "rgba(0, 0, 0, 0.07)",
+        "focus": "rgba(178, 60, 10, 0.55)"
       },
       "status": {
-        "success": "#1f9d6e",
-        "successBg": "rgba(31, 157, 110, 0.10)",
-        "warning": "#c28a1f",
-        "warningBg": "rgba(194, 138, 31, 0.10)",
-        "error": "#d6455a",
-        "errorBg": "rgba(214, 69, 90, 0.10)",
-        "info": "#3b7fe0",
-        "infoBg": "rgba(59, 127, 224, 0.10)"
+        "success": "#27702b",
+        "successBg": "rgba(63, 154, 69, 0.12)",
+        "warning": "#8f5a00",
+        "warningBg": "rgba(143, 90, 0, 0.1)",
+        "error": "#b3261e",
+        "errorBg": "rgba(179, 38, 30, 0.1)",
+        "info": "#2b5fb4",
+        "infoBg": "rgba(43, 95, 180, 0.1)"
       },
       "git": {
         "added": "{colors.status.success}",
@@ -64,20 +61,19 @@
         "untracked": "{colors.status.info}",
         "untrackedBg": "{colors.status.infoBg}",
         "ignored": "{colors.foreground.subtle}",
-        "conflict": "#7c5cd6"
+        "conflict": "#6b4fd1"
       },
       "thread": {
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(10, 110, 230, 0.16)",
+      "selection": "rgba(43, 95, 180, 0.16)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "rgba(15, 23, 42, 0.14)",
-        "thumbHover": "rgba(15, 23, 42, 0.24)"
+        "thumb": "rgba(0, 0, 0, 0.14)",
+        "thumbHover": "rgba(0, 0, 0, 0.24)"
       }
     },
-
     "editor": {
       "background": "{colors.background.root}",
       "foreground": "{colors.foreground.default}",
@@ -89,55 +85,53 @@
         "activeBackground": "{colors.background.surface}"
       },
       "line": {
-        "active": "rgba(15, 23, 42, 0.025)",
-        "highlight": "rgba(10, 110, 230, 0.05)"
+        "active": "rgba(0, 0, 0, 0.035)",
+        "highlight": "rgba(43, 95, 180, 0.06)"
       },
       "syntax": {
-        "keyword": "#7c5cd6",
-        "string": "#1f8a55",
+        "keyword": "#9b2c74",
+        "string": "#3d7a1a",
         "comment": "{colors.foreground.subtle}",
-        "function": "#3b6fd4",
-        "variable": "#1e40af",
-        "number": "#c2600c",
-        "type": "#2b6cb0",
-        "tag": "{colors.status.error}",
-        "attribute": "{colors.accent.default}",
-        "property": "#0f766e",
-        "operator": "#6d28d9"
+        "function": "#6f4400",
+        "variable": "#2a2926",
+        "number": "#8a5a00",
+        "type": "#0e6a85",
+        "tag": "#b3261e",
+        "attribute": "#8a5a00",
+        "property": "#0e6a85",
+        "operator": "#57544e"
       }
     },
-
     "terminal": {
       "background": "{colors.background.root}",
       "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
-      "cursorAccent": "{colors.accent.default}",
+      "cursorAccent": "{colors.background.root}",
       "selection": "{colors.selection}",
       "ansi": {
-        "black": "#1c1f26",
-        "red": "#d6455a",
-        "green": "#1f9d6e",
-        "yellow": "#c28a1f",
-        "blue": "#0a6ee6",
-        "magenta": "#7c5cd6",
-        "cyan": "#0e8fa3",
-        "white": "#5a6270"
+        "black": "#1c1b19",
+        "red": "#b3261e",
+        "green": "#27702b",
+        "yellow": "#8f5a00",
+        "blue": "#2b5fb4",
+        "magenta": "#6b4fd1",
+        "cyan": "#0f7b6c",
+        "white": "#57544e"
       },
       "ansiBright": {
-        "black": "#4a5160",
-        "red": "#e35d6a",
-        "green": "#3fb68b",
-        "yellow": "#e0a94e",
-        "blue": "#6e7bf2",
-        "magenta": "#a78bfa",
-        "cyan": "#22b8cf",
-        "white": "#1c1f26"
+        "black": "#67645e",
+        "red": "#c9372c",
+        "green": "#327a36",
+        "yellow": "#9a6408",
+        "blue": "#3a6cbd",
+        "magenta": "#7c5fdc",
+        "cyan": "#107f70",
+        "white": "#1c1b19"
       }
     },
-
     "shadows": {
-      "sm": "0 4px 16px rgba(15, 23, 42, 0.10)",
-      "md": "0 12px 40px rgba(15, 23, 42, 0.18)"
+      "sm": "0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.08)",
+      "md": "0 20px 50px rgba(0, 0, 0, 0.16)"
     }
   }
 }

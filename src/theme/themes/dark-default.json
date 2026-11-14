@@ -1,58 +1,55 @@
 {
   "$schema": "https://pragma.dev/theme-schema/v1.json",
   "format": "pragma-theme-v1",
-
   "metadata": {
     "id": "dark-default",
-    "name": "Dark Default",
+    "name": "Pragma Dark",
     "author": "Pragma Team",
-    "description": "Ink-dark surfaces in a deep frame, signed with the Pragma blue-to-cyan gradient.",
-    "version": "3.0.0",
+    "description": "Calm graphite ground with darker wells for panes; Pragma orange marks what needs you.",
+    "version": "4.0.0",
     "license": "MIT"
   },
-
   "appearance": {
     "defaultMode": "dark",
     "supportedModes": ["dark"]
   },
-
   "tokens": {
     "colors": {
       "background": {
-        "chrome": "#06080c",
-        "root": "#0d1016",
-        "surface": "#131720",
-        "elevated": "#191e29",
-        "input": "#151922",
-        "hover": "rgba(160, 185, 255, 0.06)",
-        "active": "rgba(47, 155, 255, 0.14)",
-        "overlay": "rgba(2, 4, 10, 0.62)"
+        "chrome": "#141517",
+        "root": "#0c0d0f",
+        "surface": "#131417",
+        "elevated": "#1a1b1f",
+        "input": "#111214",
+        "hover": "rgba(255, 255, 255, 0.05)",
+        "active": "rgba(255, 255, 255, 0.08)",
+        "overlay": "rgba(6, 6, 8, 0.6)"
       },
       "foreground": {
-        "default": "#e7ecf5",
-        "muted": "#9ca6ba",
-        "subtle": "#6c768b",
-        "inverse": "#06080c"
+        "default": "#ecebe7",
+        "muted": "#a6a39c",
+        "subtle": "#8f8c85",
+        "inverse": "#141517"
       },
       "accent": {
-        "default": "#2f9bff",
-        "subtle": "rgba(47, 155, 255, 0.14)",
-        "glow": "rgba(47, 155, 255, 0.30)"
+        "default": "#ff7a3d",
+        "subtle": "rgba(255, 122, 61, 0.14)",
+        "glow": "rgba(255, 122, 61, 0.3)"
       },
       "border": {
-        "default": "rgba(150, 175, 235, 0.10)",
-        "subtle": "rgba(150, 175, 235, 0.065)",
-        "focus": "rgba(47, 155, 255, 0.50)"
+        "default": "rgba(255, 255, 255, 0.08)",
+        "subtle": "rgba(255, 255, 255, 0.055)",
+        "focus": "rgba(255, 122, 61, 0.6)"
       },
       "status": {
-        "success": "#3fb68b",
-        "successBg": "rgba(63, 182, 139, 0.12)",
-        "warning": "#e0a94e",
-        "warningBg": "rgba(224, 169, 78, 0.12)",
-        "error": "#e35d6a",
-        "errorBg": "rgba(227, 93, 106, 0.12)",
-        "info": "#5b9cf5",
-        "infoBg": "rgba(91, 156, 245, 0.12)"
+        "success": "#86c98a",
+        "successBg": "rgba(134, 201, 138, 0.12)",
+        "warning": "#e5b77f",
+        "warningBg": "rgba(229, 183, 127, 0.12)",
+        "error": "#e88f87",
+        "errorBg": "rgba(232, 143, 135, 0.12)",
+        "info": "#8fb3ef",
+        "infoBg": "rgba(143, 179, 239, 0.12)"
       },
       "git": {
         "added": "{colors.status.success}",
@@ -64,20 +61,19 @@
         "untracked": "{colors.status.info}",
         "untrackedBg": "{colors.status.infoBg}",
         "ignored": "{colors.foreground.subtle}",
-        "conflict": "#a78bfa"
+        "conflict": "#b9a3f5"
       },
       "thread": {
         "default": "{colors.accent.subtle}",
         "active": "{colors.accent.default}"
       },
-      "selection": "rgba(47, 155, 255, 0.22)",
+      "selection": "rgba(143, 179, 239, 0.22)",
       "scrollbar": {
         "track": "transparent",
-        "thumb": "rgba(160, 185, 255, 0.09)",
-        "thumbHover": "rgba(160, 185, 255, 0.18)"
+        "thumb": "rgba(255, 255, 255, 0.08)",
+        "thumbHover": "rgba(255, 255, 255, 0.16)"
       }
     },
-
     "editor": {
       "background": "{colors.background.root}",
       "foreground": "{colors.foreground.default}",
@@ -89,55 +85,53 @@
         "activeBackground": "{colors.background.surface}"
       },
       "line": {
-        "active": "rgba(160, 185, 255, 0.035)",
-        "highlight": "rgba(47, 155, 255, 0.06)"
+        "active": "rgba(255, 255, 255, 0.035)",
+        "highlight": "rgba(143, 179, 239, 0.08)"
       },
       "syntax": {
-        "keyword": "#c792ea",
-        "string": "#c3e88d",
-        "comment": "#6d7690",
-        "function": "#82aaff",
-        "variable": "#b6d6ff",
-        "number": "#f78c6c",
-        "type": "#ffcb6b",
-        "tag": "#f07178",
-        "attribute": "#c3e88d",
-        "property": "#f07178",
-        "operator": "#89ddff"
+        "keyword": "#d39fc4",
+        "string": "#b4cf91",
+        "comment": "{colors.foreground.subtle}",
+        "function": "#ebe5d4",
+        "variable": "#d4d1ca",
+        "number": "#e5b77f",
+        "type": "#8fc3d6",
+        "tag": "#e88f87",
+        "attribute": "#e5b77f",
+        "property": "#8fc3d6",
+        "operator": "#a6a39c"
       }
     },
-
     "terminal": {
       "background": "{colors.background.root}",
       "foreground": "{colors.foreground.default}",
       "cursor": "{colors.accent.default}",
-      "cursorAccent": "{colors.accent.default}",
+      "cursorAccent": "{colors.background.root}",
       "selection": "{colors.selection}",
       "ansi": {
-        "black": "#0b0d10",
-        "red": "#e35d6a",
-        "green": "#3fb68b",
-        "yellow": "#e0a94e",
-        "blue": "#2f9bff",
-        "magenta": "#a78bfa",
-        "cyan": "#4ec9d8",
-        "white": "#9ba3af"
+        "black": "#2a2b30",
+        "red": "#e88f87",
+        "green": "#86c98a",
+        "yellow": "#e5b77f",
+        "blue": "#8fb3ef",
+        "magenta": "#b9a3f5",
+        "cyan": "#6cc7b5",
+        "white": "#bdbab3"
       },
       "ansiBright": {
-        "black": "#2a2f3a",
-        "red": "#ed7f8b",
-        "green": "#5fcfa5",
-        "yellow": "#edbf72",
-        "blue": "#6cb8ff",
-        "magenta": "#bba5f9",
-        "cyan": "#7adbe7",
-        "white": "#e8eaee"
+        "black": "#77746d",
+        "red": "#f0aaa3",
+        "green": "#a3d8a6",
+        "yellow": "#efcc9f",
+        "blue": "#adc8f4",
+        "magenta": "#cdbcf8",
+        "cyan": "#8fd8c9",
+        "white": "#ecebe7"
       }
     },
-
     "shadows": {
-      "sm": "0 4px 16px rgba(0, 0, 0, 0.28)",
-      "md": "0 12px 40px rgba(0, 0, 0, 0.45)"
+      "sm": "0 4px 16px rgba(0, 0, 0, 0.35)",
+      "md": "0 24px 64px rgba(0, 0, 0, 0.55)"
     }
   }
 }
