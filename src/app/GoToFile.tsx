@@ -101,7 +101,12 @@ export function GoToFile() {
         {results.map((file) => {
           const { relativePath } = file;
           return (
-            <CommandItem key={file.path} value={file.path} onSelect={() => handleSelect(file.path)}>
+            <CommandItem
+              key={file.path}
+              value={file.path}
+              onSelect={() => handleSelect(file.path)}
+              className="h-auto min-h-9 py-1.5"
+            >
               <img
                 src={getFileIconPath(file.name)}
                 alt=""
