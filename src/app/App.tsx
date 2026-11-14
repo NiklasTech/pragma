@@ -47,7 +47,7 @@ import { useRunPaletteCommands } from "./useRunPaletteCommands";
 import { useRecentFolderPaletteCommand } from "./useRecentFolderPaletteCommand";
 import { useRepositoryPaletteCommands } from "./useRepositoryPaletteCommands";
 import { CommandPalette } from "./CommandPalette";
-import { GoToFile } from "./GoToFile";
+import { OverlayHost } from "./OverlayHost";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
 import { CodeActionsDialog } from "@/features/editor/components/CodeActionsDialog";
 import { SymbolDialog } from "@/features/editor/components/SymbolDialog";
@@ -115,7 +115,7 @@ export default function App() {
         <Layout />
         {!onboardingLoading && !onboardingCompleted && <Onboarding />}
         <CommandPalette />
-        <GoToFile />
+        <OverlayHost />
         <RenameDialog />
         <CodeActionsDialog />
         <SymbolDialog />

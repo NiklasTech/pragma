@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { useOverlayOpen } from "@/shared/stores/overlays";
 import { toGoToFileEntry } from "./goToFileSearch";
 
 interface WorkspaceFiles {
@@ -10,7 +11,7 @@ interface WorkspaceFiles {
 }
 
 export function useGoToFile(): void {
-  const isOpen = useGoToFileStore((state) => state.isOpen);
+  const isOpen = useOverlayOpen("goTo");
   const setFiles = useGoToFileStore((state) => state.setFiles);
   const setLoading = useGoToFileStore((state) => state.setLoading);
   const setError = useGoToFileStore((state) => state.setError);

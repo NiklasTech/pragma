@@ -3,7 +3,7 @@ import { FileText, MagnifyingGlass, Robot } from "@phosphor-icons/react";
 
 import { PragmaMark } from "@/shared/components/PragmaMark";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { useOverlayStore } from "@/shared/stores/overlays";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { formatShortcut, getIsMac, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { Kbd } from "@/shared/components/ui/kbd";
@@ -20,7 +20,7 @@ interface StartAction {
 export function EditorEmptyState() {
   const shortcuts = useSettingsStore((s) => s.shortcuts);
   const openFile = useOpenFile();
-  const openGoToFile = useGoToFileStore((s) => s.open);
+  const openOverlay = useOverlayStore((s) => s.open);
   const setUiMode = useUiModeStore((s) => s.setUiMode);
   const isMac = getIsMac();
 
@@ -30,7 +30,7 @@ export function EditorEmptyState() {
       hint: "Jump to any file in this folder",
       icon: MagnifyingGlass,
       shortcut: "file.goToFile",
-      run: openGoToFile,
+      run: () => openOverlay("goTo"),
     },
     {
       label: "Open file",

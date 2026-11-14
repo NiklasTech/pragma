@@ -10,7 +10,7 @@ import { dispatchTerminalFind, isTerminalFindFocused } from "@/shared/lib/termin
 import { useLayoutStore } from "@/shell/layout";
 import { resolveUiMode, useUiModeStore } from "@/shell/mode";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
-import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { useOverlayStore } from "@/shared/stores/overlays";
 import {
   dispatchEditorFind,
   dispatchEditorFormatDocument,
@@ -127,7 +127,7 @@ export function useAppShortcutActions(): ShortcutActions {
         useCommandPaletteStore.getState().toggle();
       },
       "file.goToFile": () => {
-        useGoToFileStore.getState().toggle();
+        useOverlayStore.getState().toggle("goTo");
       },
       "editor.formatDocument": () => {
         dispatchEditorFormatDocument();
