@@ -6,7 +6,6 @@ import { isCommandAllowed, matchesCommandPattern, resolveAgentApproval } from ".
 import { AGENT_TOOL_NAMES } from "./tools";
 
 const baseSettings: AgentSettings = {
-  enabled: true,
   autoApprove: "never",
   allowedCommands: [],
   useProjectRules: true,

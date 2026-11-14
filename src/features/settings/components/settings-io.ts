@@ -21,7 +21,6 @@ export async function exportSettings(): Promise<void> {
       followSystemTheme: state.followSystemTheme,
       lightTheme: state.lightTheme,
       darkTheme: state.darkTheme,
-      keymap: state.keymap,
       shortcuts: state.shortcuts,
       statusbar: state.statusbar,
       workspace: state.workspace,

@@ -52,7 +52,6 @@ const initialState: AIState = {
   inlineCompletion: true,
   completionDebounce: 500,
   completionTriggerCharacters: [],
-  terminalSuggestions: true,
   terminalSuggestionProvider: null,
   terminalSuggestionModel: null,
   providers: { ...defaultProviders },

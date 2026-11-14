@@ -166,7 +166,6 @@ export interface AIState {
   inlineCompletion: boolean;
   completionDebounce: number;
   completionTriggerCharacters: string[];
-  terminalSuggestions: boolean;
   terminalSuggestionProvider: AIProvider | null;
   terminalSuggestionModel: string | null;
   providers: Record<AIProvider, ProviderConfig>;
@@ -193,7 +192,6 @@ export interface AIActions {
   setInlineCompletion: (enabled: boolean) => void;
   setCompletionDebounce: (ms: number) => void;
   setCompletionTriggerCharacters: (chars: string[]) => void;
-  setTerminalSuggestions: (enabled: boolean) => void;
   setTerminalSuggestionProvider: (provider: AIProvider | null) => void;
   setTerminalSuggestionModel: (model: string | null) => void;
   updateProviderConfig: (provider: AIProvider, config: Partial<ProviderConfig>) => void;

@@ -11,7 +11,6 @@ const SYNCED_FIELDS = {
   providers: "providers",
   inlineCompletion: "inlineCompletion",
   completionDebounce: "completionDebounce",
-  terminalSuggestions: "terminalSuggestions",
   terminalSuggestionProvider: "terminalSuggestionProvider",
   terminalSuggestionModel: "terminalSuggestionModel",
 } as const satisfies Partial<

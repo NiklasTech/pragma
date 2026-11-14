@@ -907,9 +907,6 @@ export const NOT_SETTINGS: Partial<Record<SettingKey, string>> = {
 
 /** Stored values without a visible effect or without a UI; the settings audit resolves each. */
 export const OPEN_AUDIT: Partial<Record<SettingKey, string>> = {
-  keymap: "Stored and exported, never read.",
-  "agent.enabled": "Stored, never read.",
-  "ai.terminalSuggestions": "Copied to the AI store, never read; terminal.aiSuggestions is used.",
   "ai.terminalSuggestionProvider": "Read by terminal suggestions, but no UI sets it.",
   "ai.terminalSuggestionModel": "Read by terminal suggestions, but no UI sets it.",
 };

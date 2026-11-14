@@ -59,7 +59,6 @@ export const defaultSettings: SettingsState = {
     inlineCompletion: true,
     completionDebounce: 500,
     nextEditPrediction: false,
-    terminalSuggestions: true,
     terminalSuggestionProvider: null,
     terminalSuggestionModel: null,
     yoloMode: false,
@@ -90,7 +89,6 @@ export const defaultSettings: SettingsState = {
   followSystemTheme: false,
   lightTheme: "light-default",
   darkTheme: "dark-default",
-  keymap: "default",
   workspace: {
     recentFolders: [],
     favoriteFolders: [],
@@ -139,7 +137,6 @@ export const defaultSettings: SettingsState = {
     acp: true,
   },
   agent: {
-    enabled: true,
     autoApprove: "never",
     allowedCommands: [],
     useProjectRules: true,

@@ -3,11 +3,7 @@ import { persist } from "zustand/middleware";
 import { crossWindowSync } from "./sync/crossWindowSync";
 import { getDefaultShortcuts, getIsMac } from "@/shared/lib/shortcuts";
 import { defaultSettings } from "./settings/defaults";
-import {
-  mergePartial,
-  mergeWithDefaults,
-  withoutRemovedWorkspaceKeys,
-} from "./settings/migrations";
+import { mergePartial, mergeWithDefaults, withoutRemovedKeys } from "./settings/migrations";
 import type { SettingsActions, SettingsState } from "./settings/types";
 
 export type {
@@ -191,20 +187,20 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       ...state,
       editor: mergePartial(defaultSettings.editor, partial.editor),
       terminal: mergePartial(defaultSettings.terminal, partial.terminal),
-      ai: mergePartial(defaultSettings.ai, partial.ai),
+      ai: withoutRemovedKeys("ai", mergePartial(defaultSettings.ai, partial.ai)),
       theme: partial.theme ?? state.theme,
       followSystemTheme: partial.followSystemTheme ?? state.followSystemTheme,
       lightTheme: partial.lightTheme ?? state.lightTheme,
       darkTheme: partial.darkTheme ?? state.darkTheme,
-      keymap: partial.keymap ?? state.keymap,
-      workspace: withoutRemovedWorkspaceKeys(
+      workspace: withoutRemovedKeys(
+        "workspace",
         mergePartial(defaultSettings.workspace, partial.workspace),
       ),
       statusbar: mergePartial(defaultSettings.statusbar, partial.statusbar),
       mcp: mergePartial(defaultSettings.mcp, partial.mcp),
       lsp: mergePartial(defaultSettings.lsp, partial.lsp),
       experimental: mergePartial(defaultSettings.experimental, partial.experimental),
-      agent: mergePartial(defaultSettings.agent, partial.agent),
+      agent: withoutRemovedKeys("agent", mergePartial(defaultSettings.agent, partial.agent)),
       notifications: mergePartial(defaultSettings.notifications, partial.notifications),
       appearance: mergePartial(defaultSettings.appearance, partial.appearance),
       repositoryColors: mergePartial(defaultSettings.repositoryColors, partial.repositoryColors),

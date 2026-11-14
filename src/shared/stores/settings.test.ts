@@ -226,4 +226,21 @@ describe("removed settings", () => {
     expect(restored.editor.formatOnSave).toBe(true);
     expect(restored.theme).toBe("light-default");
   });
+
+  it("drops the unread keymap, agent switch and AI terminal suggestion flag", () => {
+    const restored = mergeWithDefaults(
+      {
+        keymap: "default",
+        agent: { enabled: false, stepLimit: 25 },
+        ai: { terminalSuggestions: false, inlineCompletion: false },
+      },
+      useSettingsStore.getState(),
+    );
+
+    expect(restored).not.toHaveProperty("keymap");
+    expect(restored.agent).not.toHaveProperty("enabled");
+    expect(restored.agent.stepLimit).toBe(25);
+    expect(restored.ai).not.toHaveProperty("terminalSuggestions");
+    expect(restored.ai.inlineCompletion).toBe(false);
+  });
 });
