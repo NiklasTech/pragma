@@ -7,7 +7,6 @@ import {
   Browser,
   ChatCircle,
   DotsThree,
-  GitBranch,
   PencilSimple,
   Plus,
   Robot,
@@ -15,6 +14,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 
+import { AgentMark } from "@/shared/components/ui/agent-mark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
+import { AGENT_STATE_LABELS, StatusDot } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -41,73 +43,50 @@ import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
 import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
-import { PaneCloseButton } from "./PaneCloseButton";
 import { PaneRepositoryLabel } from "./PaneRepositoryLabel";
 import { usePaneHeaderDrag } from "./paneDrag";
-import { providerAccent } from "./providerAccent";
-import { ProviderLogo } from "./ProviderLogo";
+import { agentPaneState, terminalPaneLabel, terminalPaneState } from "./paneState";
 
-const PANE_ICON_BUTTON =
-  "flex size-6 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-[color,background-color,transform] duration-150 enabled:hover:bg-bg-hover enabled:hover:text-fg-default enabled:active:scale-90 disabled:opacity-40";
+const PANE_BUTTON =
+  "flex size-7 shrink-0 items-center justify-center rounded-[7px] text-fg-subtle transition-colors duration-(--motion-fast) enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
 
-const STATUS_LABELS: Record<AgentStatus, string> = {
-  idle: "Idle",
-  running: "Running",
-  "waiting-approval": "Waiting",
-  done: "Done",
-  error: "Error",
-  cancelled: "Cancelled",
-};
+// Details stay out of sight until the pane is focused, hovered or reached by keyboard.
+const QUIET =
+  "transition-opacity duration-(--motion-base) ease-(--motion-ease-out) group-hover/pane:opacity-100 group-focus-within/pane:opacity-100";
 
-const STATUS_DOTS: Record<AgentStatus, string> = {
-  idle: "bg-fg-subtle",
-  running: "bg-linear-to-r from-brand-from to-brand-to animate-pulse",
-  "waiting-approval": "bg-status-warning",
-  done: "bg-status-success",
-  error: "bg-status-error",
-  cancelled: "bg-fg-subtle",
-};
-
-interface PaneIdentity {
-  title: string;
-  icon: React.ReactNode;
-  showTitle: boolean;
+function PaneMark({
+  leaf,
+  session,
+  manifest,
+}: {
+  leaf: Leaf;
+  session: ChatSession | undefined;
+  manifest: CLIManifest | undefined;
+}) {
+  const icon = "shrink-0 text-fg-muted";
+  if (leaf.browser) return <Browser size={ICON_SIZE.sm} className={icon} aria-hidden="true" />;
+  if (!session) return null;
+  if (session.cliProviderId) {
+    return <AgentMark agentId={session.cliProviderId} name={manifest?.name ?? "Terminal"} />;
+  }
+  if (session.kind === "ask") {
+    return <ChatCircle size={ICON_SIZE.sm} className={icon} aria-hidden="true" />;
+  }
+  return <Robot size={ICON_SIZE.sm} className={icon} aria-hidden="true" />;
 }
 
-function identify(
+function paneTitle(
   leaf: Leaf,
   session: ChatSession | undefined,
   manifest: CLIManifest | undefined,
-  accentText: string,
-): PaneIdentity {
-  if (leaf.browser) {
-    return { title: "Browser", icon: <Browser size={14} className="shrink-0" />, showTitle: true };
-  }
-  if (!session) return { title: "Empty pane", icon: null, showTitle: true };
-
-  const logo = session.cliProviderId ? (
-    <ProviderLogo
-      providerId={session.cliProviderId}
-      name={manifest?.name ?? "Terminal"}
-      size={14}
-      className={accentText}
-    />
-  ) : null;
-
+): string {
+  if (leaf.browser) return "Browser";
+  if (!session) return "Empty pane";
   if (session.kind === "terminal") {
     const name = manifest?.name ?? "Terminal";
-    const named = !isGeneratedTerminalTitle(session.title, name);
-    return { title: named ? session.title : name, icon: logo, showTitle: named };
+    return isGeneratedTerminalTitle(session.title, name) ? name : session.title;
   }
-
-  const icon =
-    logo ??
-    (session.kind === "ask" ? (
-      <ChatCircle size={14} weight="fill" className={cn("shrink-0", accentText)} />
-    ) : (
-      <Robot size={14} weight="fill" className={cn("shrink-0", accentText)} />
-    ));
-  return { title: session.title, icon, showTitle: true };
+  return session.title;
 }
 
 function startLike(
@@ -120,35 +99,6 @@ function startLike(
     void actions.startConversation(manifest);
   else if (session.kind === "ask") void actions.startAsk();
   else void actions.startAgentCheckout();
-}
-
-function StatusDot({ color, live, label }: { color: string; live: boolean; label: string }) {
-  return (
-    <span className="relative flex size-2 shrink-0 items-center justify-center" title={label}>
-      {live && (
-        <span
-          className={cn("absolute inset-0 animate-ping rounded-full opacity-60", color)}
-          aria-hidden="true"
-        />
-      )}
-      <span className={cn("relative size-1.5 rounded-full", color)} role="img" aria-label={label} />
-    </span>
-  );
-}
-
-function terminalStatusLook(
-  status: "running" | "exited" | "cancelled",
-  exitCode: number | null,
-  active: boolean,
-): { color: string; label: string } {
-  if (status === "running") {
-    return { color: "bg-status-success", label: active ? "Working" : "Running" };
-  }
-  if (status === "cancelled") return { color: "bg-fg-subtle", label: "Cancelled" };
-  if (exitCode !== null && exitCode !== 0) {
-    return { color: "bg-status-error", label: `Exited (${exitCode})` };
-  }
-  return { color: "bg-fg-subtle", label: exitCode !== null ? `Exited (${exitCode})` : "Exited" };
 }
 
 function TerminalMic({ sessionId }: { sessionId: string }) {
@@ -178,6 +128,7 @@ interface PaneHeaderProps {
   onDropOn: (targetLeafId: string) => void;
 }
 
+/** The pane's title line: state, agent and title; branch and actions show on focus or hover. */
 export function PaneHeader({
   leaf,
   focused,
@@ -205,32 +156,27 @@ export function PaneHeader({
   const drag = usePaneHeaderDrag(leaf.id, onDropOn);
   const [renaming, setRenaming] = useState(false);
 
-  const accent = providerAccent(session);
-  const identity = identify(leaf, session, manifest, accent.text);
   const terminal = session?.kind === "terminal" ? session : null;
   const terminalStatus = useTerminalStatus(terminal?.id ?? null);
   const terminalActive = useTerminalActivity(terminal?.id ?? null);
   const runningTerminal = terminal !== null && terminalStatus.status === "running";
-  const working = terminal
-    ? terminalActive && terminalStatus.status === "running"
-    : status === "running";
-  const look = terminal
-    ? terminalStatusLook(terminalStatus.status, terminalStatus.exitCode, terminalActive)
-    : { color: STATUS_DOTS[status], label: STATUS_LABELS[status] };
+  const terminalLook = { ...terminalStatus, active: terminalActive };
+  const state = terminal ? terminalPaneState(terminalLook) : agentPaneState(status);
+  const stateLabel = terminal ? terminalPaneLabel(terminalLook) : AGENT_STATE_LABELS[state];
+
   const environment = useSessionEnvironment(session);
   const worktree = environment?.kind === "worktree" ? environment : undefined;
   const branch = worktree?.branch ?? null;
-  const maximizeLabel = maximized ? "Restore" : "Maximize";
+  const title = paneTitle(leaf, session, manifest);
+  const maximizeLabel = maximized ? "Restore" : "Zoom";
   const newLabel = terminal && manifest ? `New ${manifest.name}` : "New session";
   const canStartLike = session !== undefined && rootPath !== null;
+  const shown = focused ? "opacity-100" : "opacity-0";
 
   return (
     <>
       <div
-        className={cn(
-          "@container/pane-header relative flex h-8 shrink-0 cursor-grab touch-none items-center gap-1.5 border-b border-border-subtle bg-linear-to-r to-transparent to-60% pr-1 pl-2.5 select-none active:cursor-grabbing",
-          accent.tint,
-        )}
+        className="@container/pane-header flex h-8.5 shrink-0 cursor-grab touch-none items-center gap-2 pr-1 pl-3 select-none active:cursor-grabbing"
         onDoubleClick={(event) => {
           const target = event.target;
           if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
@@ -239,51 +185,51 @@ export function PaneHeader({
         }}
         {...drag}
       >
-        <StatusDot color={look.color} live={working} label={look.label} />
-        <span
-          className="flex min-w-0 items-center gap-1.5"
-          title={identity.title}
-          aria-label={identity.showTitle ? undefined : identity.title}
-        >
-          {identity.icon}
-          {identity.showTitle && (
-            <span
-              className={cn(
-                "truncate text-ui-xs font-semibold transition-colors",
-                focused ? "text-fg-default" : "text-fg-muted",
-              )}
-            >
-              {identity.title}
-            </span>
-          )}
-        </span>
-        <PaneRepositoryLabel rootPath={session?.rootPath ?? rootPath} />
-        {branch && (
-          <span
-            className="flex min-w-0 shrink items-center gap-1 text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"
-            title={worktree ? `${branch} ${worktree.path}` : branch}
-          >
-            <GitBranch size={11} className="shrink-0" />
-            <span className="truncate">{branch}</span>
-            <SharersBadge environmentId={worktree?.id} />
+        {!leaf.browser && session && (
+          <span className="flex size-3 shrink-0 items-center justify-center" title={stateLabel}>
+            <StatusDot state={state} className="size-1.75" />
           </span>
         )}
+        <PaneMark leaf={leaf} session={session} manifest={manifest} />
+        <span
+          className={cn(
+            "min-w-0 shrink truncate text-ui-sm font-medium transition-colors duration-(--motion-base)",
+            focused ? "text-fg-default" : "text-fg-muted",
+          )}
+          title={title}
+        >
+          {title}
+        </span>
+
+        <span className={cn("flex min-w-0 shrink-[2] items-center gap-2", QUIET, shown)}>
+          {branch && (
+            <span
+              className="flex min-w-0 items-center gap-1 font-mono text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"
+              title={worktree ? `${branch} ${worktree.path}` : branch}
+            >
+              <span className="truncate">{branch}</span>
+              <SharersBadge environmentId={worktree?.id} />
+            </span>
+          )}
+          <PaneRepositoryLabel rootPath={session?.rootPath ?? rootPath} />
+        </span>
 
         <span className="flex-1" />
 
-        <span data-pane-actions="">
-          <SessionUsageBadge usage={session?.usage} className="@max-[300px]/pane-header:hidden" />
-        </span>
-
         <div
-          className={cn(
-            "flex shrink-0 items-center gap-0.5 transition-opacity duration-150 group-hover/pane:opacity-100",
-            focused ? "opacity-100" : "opacity-60",
-          )}
+          className={cn("flex shrink-0 items-center gap-0.5", QUIET, shown)}
           data-pane-actions=""
         >
+          <SessionUsageBadge usage={session?.usage} className="@max-[300px]/pane-header:hidden" />
           {terminal && focused && <TerminalMic sessionId={terminal.id} />}
-          {session && <OpenInBrowserButton session={session} className={PANE_ICON_BUTTON} />}
+          {session && <OpenInBrowserButton session={session} className={PANE_BUTTON} />}
+          <IconButton
+            icon={maximized ? ArrowsInSimple : ArrowsOutSimple}
+            label={maximizeLabel}
+            size="sm"
+            className="size-7 text-fg-subtle @max-[220px]/pane-header:hidden"
+            onClick={onToggleMaximize}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -291,35 +237,39 @@ export function PaneHeader({
                   type="button"
                   aria-label="Pane actions"
                   title="Pane actions"
-                  className={PANE_ICON_BUTTON}
+                  className={PANE_BUTTON}
                 >
-                  <DotsThree size={14} weight="bold" />
+                  <DotsThree size={ICON_SIZE.md} weight="bold" />
                 </button>
               }
             />
-            <DropdownMenuContent align="end" className="min-w-[180px]">
+            <DropdownMenuContent align="end" className="min-w-[190px]">
               {session && (
                 <DropdownMenuItem onClick={() => setRenaming(true)}>
-                  <PencilSimple size={13} />
+                  <PencilSimple size={ICON_SIZE.sm} />
                   <span>Rename</span>
                 </DropdownMenuItem>
               )}
               {session && <CompactSessionMenuItem session={session} />}
               {session && <ExportSessionMenu session={session} />}
-              <DropdownMenuItem onClick={onToggleMaximize}>
-                {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
-                <span>{maximizeLabel}</span>
-              </DropdownMenuItem>
               {canStartLike && (
                 <DropdownMenuItem
                   disabled={atCap}
                   title={atCap ? MAX_PANES_TITLE : undefined}
                   onClick={() => startLike(session, manifest, actions)}
                 >
-                  <Plus size={13} />
+                  <Plus size={ICON_SIZE.sm} />
                   <span>{newLabel}</span>
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem onClick={onToggleMaximize}>
+                {maximized ? (
+                  <ArrowsInSimple size={ICON_SIZE.sm} />
+                ) : (
+                  <ArrowsOutSimple size={ICON_SIZE.sm} />
+                )}
+                <span>{maximizeLabel}</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled={!hasOtherPanes} onClick={onCloseOthers}>
                 <span>Close other panes</span>
@@ -327,64 +277,23 @@ export function PaneHeader({
               {runningTerminal ? (
                 <>
                   <DropdownMenuItem variant="destructive" onClick={() => onCloseTerminal(true)}>
-                    <Stop size={13} />
+                    <Stop size={ICON_SIZE.sm} />
                     <span>Stop process and close</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onCloseTerminal(false)}>
-                    <X size={13} />
+                    <X size={ICON_SIZE.sm} />
                     <span>Close, keep running</span>
                   </DropdownMenuItem>
                 </>
               ) : (
                 <DropdownMenuItem onClick={onClose}>
-                  <X size={13} />
+                  <X size={ICON_SIZE.sm} />
                   <span>Close pane</span>
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            type="button"
-            onClick={onToggleMaximize}
-            aria-label={maximizeLabel}
-            title={maximizeLabel}
-            className={cn(PANE_ICON_BUTTON, "@max-[240px]/pane-header:hidden")}
-          >
-            {maximized ? <ArrowsInSimple size={13} /> : <ArrowsOutSimple size={13} />}
-          </button>
-          {canStartLike && (
-            <button
-              type="button"
-              onClick={() => startLike(session, manifest, actions)}
-              disabled={atCap}
-              aria-label={newLabel}
-              title={atCap ? MAX_PANES_TITLE : newLabel}
-              className={cn(PANE_ICON_BUTTON, "@max-[240px]/pane-header:hidden")}
-            >
-              <Plus size={13} />
-            </button>
-          )}
-          <PaneCloseButton
-            runningTerminal={runningTerminal}
-            className={PANE_ICON_BUTTON}
-            onClose={onClose}
-            onCloseTerminal={onCloseTerminal}
-          />
         </div>
-
-        {working && (
-          <span
-            className="pointer-events-none absolute inset-x-0 -bottom-px h-0.5 overflow-hidden"
-            aria-hidden="true"
-          >
-            <span
-              className={cn(
-                "pragma-pane-sweep block h-full w-1/2 bg-linear-to-r from-transparent to-transparent",
-                accent.sweep,
-              )}
-            />
-          </span>
-        )}
       </div>
 
       {session && (
@@ -393,7 +302,7 @@ export function PaneHeader({
           onOpenChange={setRenaming}
           title="Rename session"
           label="Name"
-          defaultValue={identity.showTitle ? session.title : ""}
+          defaultValue={terminal && title === manifest?.name ? "" : session.title}
           confirmLabel="Rename"
           onConfirm={(value) => void renameChatSession(session.id, value)}
         />

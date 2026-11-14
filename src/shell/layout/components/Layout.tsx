@@ -78,7 +78,7 @@ export function Layout() {
           </Suspense>
         </div>
       ) : (
-        <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5">
+        <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5 pb-1.5">
           {aiVisible && aiDrawerLeft && <AIChatHost />}
 
           {sidebarExpanded ? (

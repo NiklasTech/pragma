@@ -73,6 +73,13 @@ export function useAppShortcutActions(): ShortcutActions {
         void reopenClosedTab(editorPanelId);
       },
       "view.toggleSidebar": () => {
+        const { uiMode } = useUiModeStore.getState();
+        const hasRootPath = useFileExplorerStore.getState().rootPath !== null;
+        // The agents tab has no file sidebar; its thread list takes the shortcut.
+        if (resolveUiMode(uiMode, hasRootPath) === "agents") {
+          useAgentsUiStore.getState().toggleThreads();
+          return;
+        }
         useLayoutStore.getState().toggleSidebar();
       },
       "view.toggleTerminal": () => {

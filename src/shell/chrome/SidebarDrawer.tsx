@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 
+import { useDrawerDismiss } from "@/shared/hooks/useDrawerDismiss";
 import { usePresence } from "@/shared/hooks/usePresence";
 
 import { cn } from "@/shared/lib/utils";
@@ -10,10 +11,6 @@ import { SidebarContent } from "./Sidebar";
 // Matches --motion-slow, so the drawer unmounts once it has slid out.
 const SLIDE_MS = 250;
 
-// Clicks inside menus, dialogs and toasts the drawer opened must not close it.
-const KEEP_OPEN_SELECTOR =
-  "[data-sidebar-toggle], [role='menu'], [role='dialog'], [role='listbox'], [data-sonner-toaster]";
-
 /// The unpinned sidebar: a sheet over the workspace that closes on Escape or a click outside.
 export function SidebarDrawer() {
   const sidebar = useLayoutStore((s) => s.sidebar);
@@ -22,26 +19,8 @@ export function SidebarDrawer() {
   const open = !sidebar.pinned && !sidebar.collapsed && sidebar.position !== "hidden";
   const { mounted, shown } = usePresence(open, SLIDE_MS);
   const fromRight = sidebar.position === "right";
-
-  useEffect(() => {
-    if (!open) return;
-    const close = () => setSidebarCollapsed(true);
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (ref.current?.contains(target) || target.closest(KEEP_OPEN_SELECTOR)) return;
-      close();
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !event.defaultPrevented) close();
-    };
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, setSidebarCollapsed]);
+  const close = useCallback(() => setSidebarCollapsed(true), [setSidebarCollapsed]);
+  useDrawerDismiss(ref, open, close);
 
   if (!mounted) return null;
 

@@ -14,6 +14,12 @@ interface AgentsUiState {
   contextPaneCollapsed: boolean;
   setContextPaneWidth: (width: number) => void;
   setContextPaneCollapsed: (collapsed: boolean) => void;
+  /** The thread list stands beside the panes instead of sliding in over them. */
+  threadsPinned: boolean;
+  threadsOpen: boolean;
+  setThreadsPinned: (pinned: boolean) => void;
+  setThreadsOpen: (open: boolean) => void;
+  toggleThreads: () => void;
 }
 
 function clampWidth(width: number): number {
@@ -38,12 +44,20 @@ export const useAgentsUiStore = create<AgentsUiState>()(
       contextPaneCollapsed: true,
       setContextPaneWidth: (width) => set({ contextPaneWidth: clampWidth(width) }),
       setContextPaneCollapsed: (collapsed) => set({ contextPaneCollapsed: collapsed }),
+      threadsPinned: false,
+      threadsOpen: false,
+      setThreadsPinned: (pinned) => set({ threadsPinned: pinned, threadsOpen: true }),
+      setThreadsOpen: (open) => set({ threadsOpen: open }),
+      toggleThreads: () => set((state) => ({ threadsOpen: !state.threadsOpen })),
     }),
     {
       name: AGENTS_UI_STORAGE_KEY,
       partialize: (state) => ({
         contextPaneWidth: state.contextPaneWidth,
         contextPaneCollapsed: state.contextPaneCollapsed,
+        threadsPinned: state.threadsPinned,
+        // An unpinned drawer always starts closed.
+        threadsOpen: state.threadsPinned && state.threadsOpen,
       }),
     },
   ),

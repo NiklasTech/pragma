@@ -20,6 +20,7 @@ import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { ICON_SIZE } from "@/shared/components/ui/icon-button";
 import { RunConfigWidget } from "@/features/run-config/components";
 import { ContextPaneToggle } from "@/features/ai/components/ContextPaneToggle";
+import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
 import { ExtensionStatusItems } from "@/features/extensions/components/ExtensionStatusItems";
 import { cn } from "@/shared/lib/utils";
 
@@ -45,6 +46,8 @@ export function Strip() {
   const addFloatingPanel = useLayoutStore((s) => s.addFloatingPanel);
   const sidebar = useLayoutStore((s) => s.sidebar);
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar);
+  const threadsOpen = useAgentsUiStore((s) => s.threadsOpen);
+  const toggleThreads = useAgentsUiStore((s) => s.toggleThreads);
   const aiOpen = useLayoutStore((s) => s.ai.mode !== "hidden");
   const toggleAI = useLayoutStore((s) => s.toggleAI);
   const inEditor = useUiMode() === "editor";
@@ -87,13 +90,27 @@ export function Strip() {
           <button
             type="button"
             onClick={toggleSidebar}
-            data-sidebar-toggle
+            data-drawer-toggle
             aria-label={sidebar.collapsed ? "Show sidebar" : "Hide sidebar"}
             aria-pressed={!sidebar.collapsed}
             title={`${sidebar.collapsed ? "Show" : "Hide"} Sidebar (${formatShortcut(shortcuts["view.toggleSidebar"], isMac)})`}
             className={cn(ICON_BUTTON, !sidebar.collapsed && "text-fg-default")}
           >
             <SidebarSimple size={ICON_SIZE.md} weight={sidebar.collapsed ? "regular" : "fill"} />
+          </button>
+        )}
+
+        {!isMac && !inEditor && (
+          <button
+            type="button"
+            onClick={toggleThreads}
+            data-drawer-toggle
+            aria-label={threadsOpen ? "Hide threads" : "Show threads"}
+            aria-pressed={threadsOpen}
+            title={`${threadsOpen ? "Hide" : "Show"} Threads (${formatShortcut(shortcuts["view.toggleSidebar"], isMac)})`}
+            className={cn(ICON_BUTTON, threadsOpen && "text-fg-default")}
+          >
+            <SidebarSimple size={ICON_SIZE.md} weight={threadsOpen ? "fill" : "regular"} />
           </button>
         )}
 

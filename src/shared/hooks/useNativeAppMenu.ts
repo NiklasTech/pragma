@@ -7,6 +7,8 @@ import { useUpdaterStore } from "@/features/settings/updater/updaterStore";
 import { runTaskByName } from "@/features/run-config/runTasks";
 import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { useLayoutStore } from "@/shell/layout";
+import { useUiMode } from "@/shell/mode";
+import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { getIsMac, SHORTCUT_ACTIONS, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { menuAccelerators } from "@/shared/lib/menuAccelerators";
@@ -40,6 +42,9 @@ export function useNativeAppMenu(actions: ShortcutActions): void {
     return tab?.kind === "file" ? tab.isModified : false;
   });
   const sidebarCollapsed = useLayoutStore((state) => state.sidebar.collapsed);
+  const threadsOpen = useAgentsUiStore((state) => state.threadsOpen);
+  const inAgents = useUiMode() === "agents";
+  const sidebarShown = inAgents ? threadsOpen : !sidebarCollapsed;
   const terminalMode = useLayoutStore((state) => state.terminal.mode);
   const aiMode = useLayoutStore((state) => state.ai.mode);
   const shortcuts = useSettingsStore((state) => state.shortcuts);
@@ -96,8 +101,8 @@ export function useNativeAppMenu(actions: ShortcutActions): void {
 
   useEffect(() => {
     if (!isMac) return;
-    void invoke("macos_menu_set_checked", { id: "view.toggleSidebar", checked: !sidebarCollapsed });
-  }, [isMac, sidebarCollapsed]);
+    void invoke("macos_menu_set_checked", { id: "view.toggleSidebar", checked: sidebarShown });
+  }, [isMac, sidebarShown]);
 
   useEffect(() => {
     if (!isMac) return;
