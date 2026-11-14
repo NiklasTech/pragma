@@ -6,7 +6,7 @@ import type { ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { findBrowserLeaf, MAX_PANES_TITLE } from "../panes/operations";
-import { selectRoot, useAgentsPanesStore } from "../panes/store";
+import { selectRoot, useAgentsPanesStore, usePaneTreeKey } from "../panes/store";
 import { canOpenBrowserPane, openUrlInBrowser } from "./open";
 import { useLatestLocalUrl } from "./useLatestLocalUrl";
 
@@ -18,7 +18,8 @@ export function OpenInBrowserButton({
   className: string;
 }) {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
+  const treeKey = usePaneTreeKey(rootPath);
+  const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
   const url = useLatestLocalUrl(session);
 
   if (!url) return null;

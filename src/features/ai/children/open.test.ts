@@ -4,11 +4,12 @@ import { countLeaves, findLeaf, findLeafBySession, MAX_PANES } from "../panes/op
 import { useAgentsPanesStore } from "../panes/store";
 
 import { showSessionInPane } from "./open";
+import { firstTabId } from "@/shared/stores/spaces/model";
 
 const ROOT = "/workspace";
 
 function entry() {
-  return useAgentsPanesStore.getState().trees[ROOT];
+  return useAgentsPanesStore.getState().trees[firstTabId(ROOT)];
 }
 
 function focusedSession(): string | null {

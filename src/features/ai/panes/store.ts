@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { activeTabIdFor, firstTabId } from "@/shared/stores/spaces/model";
+
 import { useBrowserHistoryStore } from "../browser/history";
 import {
   assignLeafSession,
@@ -45,8 +48,18 @@ interface AgentsPanesState {
 
 const EMPTY_ENTRY: PaneTreeEntry = { root: null, focusedLeafId: null, focusOrder: [] };
 
+/** Pane layouts belong to the active tab of the folder's space. */
+export function paneTreeKey(rootPath: string): string {
+  return activeTabIdFor(useOpenRepositoriesStore.getState().spaces, rootPath);
+}
+
+/** The pane layout key of a folder; changes when its space switches tabs. */
+export function usePaneTreeKey(rootPath: string): string {
+  return useOpenRepositoriesStore((state) => activeTabIdFor(state.spaces, rootPath));
+}
+
 function getEntry(trees: Record<string, PaneTreeEntry>, rootPath: string): PaneTreeEntry {
-  return trees[rootPath] ?? EMPTY_ENTRY;
+  return trees[paneTreeKey(rootPath)] ?? EMPTY_ENTRY;
 }
 
 function setEntry(
@@ -54,7 +67,7 @@ function setEntry(
   rootPath: string,
   entry: PaneTreeEntry,
 ): Record<string, PaneTreeEntry> {
-  return { ...trees, [rootPath]: entry };
+  return { ...trees, [paneTreeKey(rootPath)]: entry };
 }
 
 function promoteFocusOrder(focusOrder: string[], sessionId: string): string[] {
@@ -66,6 +79,22 @@ function orderedSessions(focusOrder: string[], sessionIds: string[]): string[] {
   const known = focusOrder.filter((id) => sessionIds.includes(id));
   const rest = sessionIds.filter((id) => !known.includes(id));
   return [...known, ...rest];
+}
+
+/** Stored layouts of earlier versions, moved to the current shape. */
+export function migratePaneTrees(
+  persisted: unknown,
+  version: number,
+): { trees: Record<string, PaneTreeEntry> } {
+  const trees = (persisted as { trees?: Record<string, PaneTreeEntry> } | null)?.trees ?? {};
+  const migrated: Record<string, PaneTreeEntry> = {};
+  for (const [key, entry] of Object.entries(trees)) {
+    // Version 0 stored free splits and tab groups; every pane now sits in the automatic grid.
+    const layout = version < 1 ? { ...entry, root: autoLayout(collectLeaves(entry.root)) } : entry;
+    // Up to version 1 layouts were keyed by folder; they move to the folder's first tab.
+    migrated[version < 2 ? firstTabId(key) : key] = layout;
+  }
+  return { trees: migrated };
 }
 
 export const useAgentsPanesStore = create<AgentsPanesState>()(
@@ -251,31 +280,32 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
     }),
     {
       name: AGENTS_PANES_STORAGE_KEY,
-      version: 1,
+      version: 2,
       partialize: (state) => ({ trees: state.trees }),
-      // Version 0 stored free splits and tab groups; every pane now sits in the automatic grid.
-      migrate: (persisted) => {
-        const trees = (persisted as { trees?: Record<string, PaneTreeEntry> } | null)?.trees ?? {};
-        const migrated: Record<string, PaneTreeEntry> = {};
-        for (const [rootPath, entry] of Object.entries(trees)) {
-          migrated[rootPath] = { ...entry, root: autoLayout(collectLeaves(entry.root)) };
-        }
-        return { trees: migrated };
-      },
+      migrate: migratePaneTrees,
     },
   ),
 );
 
-export function selectRoot(state: AgentsPanesState, rootPath: string): PaneRoot {
-  return state.trees[rootPath]?.root ?? null;
+// Selectors take a pane layout key from `paneTreeKey` or `usePaneTreeKey`, not a folder.
+export function selectEntry(state: AgentsPanesState, treeKey: string): PaneTreeEntry | undefined {
+  return state.trees[treeKey];
 }
 
-export function selectFocusedSessionId(state: AgentsPanesState, rootPath: string): string | null {
-  const entry = state.trees[rootPath];
+export function selectRoot(state: AgentsPanesState, treeKey: string): PaneRoot {
+  return state.trees[treeKey]?.root ?? null;
+}
+
+export function selectFocusedLeafId(state: AgentsPanesState, treeKey: string): string | null {
+  return state.trees[treeKey]?.focusedLeafId ?? null;
+}
+
+export function selectFocusedSessionId(state: AgentsPanesState, treeKey: string): string | null {
+  const entry = state.trees[treeKey];
   if (!entry || !entry.focusedLeafId) return null;
   return findLeaf(entry.root, entry.focusedLeafId)?.sessionId ?? null;
 }
 
-export function selectLeafCount(state: AgentsPanesState, rootPath: string): number {
-  return countLeaves(state.trees[rootPath]?.root ?? null);
+export function selectLeafCount(state: AgentsPanesState, treeKey: string): number {
+  return countLeaves(state.trees[treeKey]?.root ?? null);
 }

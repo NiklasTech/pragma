@@ -5,13 +5,13 @@ import {
   MAX_PANES,
   type PaneRoot,
 } from "../panes/operations";
-import { useAgentsPanesStore } from "../panes/store";
+import { paneTreeKey, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { useBrowserHistoryStore } from "./history";
 
 export type BrowserOpenResult = "navigated" | "opened" | "full";
 
 function currentRoot(rootPath: string): PaneRoot {
-  return useAgentsPanesStore.getState().trees[rootPath]?.root ?? null;
+  return selectRoot(useAgentsPanesStore.getState(), paneTreeKey(rootPath));
 }
 
 export function canOpenBrowserPane(root: PaneRoot): boolean {

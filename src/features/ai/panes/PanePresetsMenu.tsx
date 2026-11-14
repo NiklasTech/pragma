@@ -18,13 +18,14 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { openBrowserPane } from "../browser/open";
 import { LaunchCliDialog } from "./LaunchCliDialog";
 import { MAX_PANES, MAX_PANES_TITLE } from "./operations";
-import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
+import { selectLeafCount, selectRoot, useAgentsPanesStore, usePaneTreeKey } from "./store";
 
 export function PanePresetsMenu() {
   const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
   const rootPath = workspaceRoot ?? "default";
-  const hasPanes = useAgentsPanesStore((state) => selectRoot(state, rootPath) !== null);
-  const atCap = useAgentsPanesStore((state) => selectLeafCount(state, rootPath) >= MAX_PANES);
+  const treeKey = usePaneTreeKey(rootPath);
+  const hasPanes = useAgentsPanesStore((state) => selectRoot(state, treeKey) !== null);
+  const atCap = useAgentsPanesStore((state) => selectLeafCount(state, treeKey) >= MAX_PANES);
   const applyPreset = useAgentsPanesStore((state) => state.applyPreset);
   const chatSessions = useRepositorySessions(rootPath);
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);

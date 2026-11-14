@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { repositorySessions, useAIStore, type ChatSession } from "@/shared/stores/ai";
 
 import { collectLeaves } from "../panes/layout";
-import { useAgentsPanesStore } from "../panes/store";
+import { paneTreeKey, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { releaseWorktrees } from "../worktree/cleanup";
 import { getTerminalEntryStatus, subscribeTerminalStatus } from "./runner";
 import { staleTerminalIds } from "./staleTerminals";
@@ -13,7 +13,7 @@ function isRunning(sessionId: string): boolean {
 }
 
 function openSessionIds(rootPath: string): Set<string> {
-  const root = useAgentsPanesStore.getState().trees[rootPath]?.root ?? null;
+  const root = selectRoot(useAgentsPanesStore.getState(), paneTreeKey(rootPath));
   return new Set(collectLeaves(root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])));
 }
 

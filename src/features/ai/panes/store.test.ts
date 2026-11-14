@@ -7,7 +7,9 @@ import {
   type PaneNode,
   type PaneRoot,
 } from "./operations";
-import { useAgentsPanesStore } from "./store";
+import { migratePaneTrees, paneTreeKey, selectRoot, useAgentsPanesStore } from "./store";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { firstTabId } from "@/shared/stores/spaces/model";
 
 const ROOT = "/workspace";
 
@@ -18,7 +20,7 @@ function sessionsInOrder(root: PaneRoot): Array<string | null> {
 }
 
 function entry() {
-  return useAgentsPanesStore.getState().trees[ROOT];
+  return useAgentsPanesStore.getState().trees[firstTabId(ROOT)];
 }
 
 describe("agents panes store", () => {
@@ -111,10 +113,43 @@ describe("agents panes store", () => {
     store.openSession("/two", "b");
 
     expect(
-      findLeafBySession(useAgentsPanesStore.getState().trees["/one"].root, "a"),
+      findLeafBySession(useAgentsPanesStore.getState().trees[firstTabId("/one")].root, "a"),
     ).not.toBeNull();
     expect(
-      findLeafBySession(useAgentsPanesStore.getState().trees["/two"].root, "b"),
+      findLeafBySession(useAgentsPanesStore.getState().trees[firstTabId("/two")].root, "b"),
     ).not.toBeNull();
+  });
+});
+
+describe("pane layouts per tab", () => {
+  beforeEach(() => {
+    useAgentsPanesStore.setState({ trees: {} });
+    useOpenRepositoriesStore.getState().clear();
+    useOpenRepositoriesStore.getState().add(ROOT);
+  });
+
+  it("keeps a separate layout for each tab of a space", () => {
+    const panes = useAgentsPanesStore.getState();
+    panes.openSession(ROOT, "a");
+
+    const spaceId = useOpenRepositoriesStore.getState().spaces[0].id;
+    const review = useOpenRepositoriesStore.getState().addTab(spaceId, "Review") ?? "";
+    expect(paneTreeKey(ROOT)).toBe(review);
+    expect(selectRoot(useAgentsPanesStore.getState(), review)).toBeNull();
+
+    panes.openSession(ROOT, "b");
+    useOpenRepositoriesStore.getState().activateTab(spaceId, firstTabId(ROOT));
+
+    const state = useAgentsPanesStore.getState();
+    expect(sessionsInOrder(selectRoot(state, firstTabId(ROOT)))).toEqual(["a"]);
+    expect(sessionsInOrder(selectRoot(state, review))).toEqual(["b"]);
+  });
+
+  it("moves layouts stored per folder to the folder's first tab", () => {
+    const layout = { root: null, focusedLeafId: null, focusOrder: ["a"] };
+
+    const migrated = migratePaneTrees({ trees: { [ROOT]: layout } }, 1);
+
+    expect(migrated.trees).toEqual({ [firstTabId(ROOT)]: layout });
   });
 });

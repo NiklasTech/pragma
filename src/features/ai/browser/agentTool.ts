@@ -3,7 +3,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { AGENT_TOOL_NAMES } from "@/features/agent/tools";
 
 import { findBrowserLeaf } from "../panes/operations";
-import { useAgentsPanesStore } from "../panes/store";
+import { paneTreeKey, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { formatConsole, requestFrameConsole } from "./console";
 import { loadedBrowserFrame } from "./frames";
 import { currentUrl, useBrowserHistoryStore } from "./history";
@@ -46,7 +46,7 @@ export function runOpenBrowserTool(input: unknown): string {
 }
 
 function currentBrowserPage(): { leafId: string; url: string } {
-  const root = useAgentsPanesStore.getState().trees[workspaceRoot()]?.root ?? null;
+  const root = selectRoot(useAgentsPanesStore.getState(), paneTreeKey(workspaceRoot()));
   const leaf = findBrowserLeaf(root);
   const url = leaf ? currentUrl(useBrowserHistoryStore.getState().byLeaf[leaf.id]) : null;
   if (!leaf || !url) {

@@ -10,7 +10,12 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { focusAttentionSession } from "../notifications/focusSession";
 import { collectLeaves } from "../panes/layout";
-import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
+import {
+  selectFocusedSessionId,
+  selectRoot,
+  useAgentsPanesStore,
+  usePaneTreeKey,
+} from "../panes/store";
 import { ProviderUsageSection } from "../subscription/ProviderUsageSection";
 import { useRepositorySessions } from "../sessions/repositorySessions";
 import { getTerminalEntryStatus } from "../terminal/runner";
@@ -52,8 +57,9 @@ export function ActivityDashboard() {
   const activeProvider = useAIStore((state) => state.activeProvider);
   const activeModel = useAIStore((state) => state.activeModel);
   const entries = useActivityStore((state) => state.entries);
-  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
-  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, rootPath));
+  const treeKey = usePaneTreeKey(rootPath);
+  const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
+  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, treeKey));
   const now = useNow();
 
   const openIds = useMemo(() => new Set(collectLeaves(root).map((leaf) => leaf.sessionId)), [root]);
