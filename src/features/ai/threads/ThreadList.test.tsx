@@ -45,7 +45,7 @@ vi.mock("@/shared/stores/ai", () => ({
 }));
 
 const repositories = vi.hoisted(() => ({
-  state: { paths: [] as string[], activePath: null as string | null },
+  state: { paths: [] as string[], activePath: null as string | null, spaces: [] as never[] },
 }));
 
 vi.mock("@/shared/stores/openRepositories", () => ({
@@ -84,7 +84,7 @@ describe("ThreadList", () => {
     agent.status = "idle";
     agent.runSessionId = null;
     agent.modeActive = false;
-    repositories.state = { paths: [], activePath: null };
+    repositories.state = { paths: [], activePath: null, spaces: [] };
   });
 
   it("marks the active thread as selected", () => {
@@ -137,7 +137,11 @@ describe("ThreadList", () => {
   });
 
   it("keeps the active repository's threads by default when several repositories are open", () => {
-    repositories.state = { paths: ["/workspace", "/other", "/third"], activePath: "/workspace" };
+    repositories.state = {
+      paths: ["/workspace", "/other", "/third"],
+      activePath: "/workspace",
+      spaces: [],
+    };
     ai.state.chatSessions = [
       session("a", "Session A", 1),
       { ...session("b", "Session B", 2), rootPath: "/other" },
@@ -152,7 +156,7 @@ describe("ThreadList", () => {
   });
 
   it("hides the scope switch with one repository open", () => {
-    repositories.state = { paths: ["/workspace"], activePath: "/workspace" };
+    repositories.state = { paths: ["/workspace"], activePath: "/workspace", spaces: [] };
 
     expect(renderToStaticMarkup(<ThreadList />)).not.toContain("All repositories");
   });

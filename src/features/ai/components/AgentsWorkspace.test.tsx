@@ -56,6 +56,9 @@ vi.mock("../panes/store", () => ({
   selectRoot: () => panes.root,
   selectFocusedSessionId: () => panes.focusedSessionId,
   selectLeafCount: () => panes.leafCount,
+  selectFocusedLeafId: (state: typeof panes.state, key: string) =>
+    state.trees[key]?.focusedLeafId ?? null,
+  usePaneTreeKey: (rootPath: string) => rootPath,
 }));
 
 import { useAgentStore } from "@/features/agent/store";

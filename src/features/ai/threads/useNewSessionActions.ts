@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import type { CLIManifest } from "@/shared/stores/ai";
 import { createTerminalSession } from "../panes/launch";
 import { findLeaf } from "../panes/operations";
-import { useAgentsPanesStore } from "../panes/store";
+import { paneTreeKey, selectEntry, useAgentsPanesStore } from "../panes/store";
 import { activateRepository } from "../sessions/openInRepository";
 import { startSession, type StartSessionRequest } from "../sessions/start";
 import type { SessionMenuCliAction } from "./session-menu";
@@ -43,7 +43,7 @@ export function useNewSessionActions(
         return;
       }
 
-      const entry = useAgentsPanesStore.getState().trees[rootPath];
+      const entry = selectEntry(useAgentsPanesStore.getState(), paneTreeKey(rootPath));
       const focusedLeafId = entry?.focusedLeafId ?? null;
       const leaf = focusedLeafId ? findLeaf(entry?.root ?? null, focusedLeafId) : null;
       if (leaf && leaf.sessionId === null) {

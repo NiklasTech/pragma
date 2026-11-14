@@ -15,7 +15,7 @@ import { sessionCwd, sessionEnvironment } from "@/features/ai/worktree/cwd";
 
 import { ActivityDashboard } from "../activity/ActivityDashboard";
 import { ActivityTabBadge } from "../activity/ActivityTabBadge";
-import { selectFocusedSessionId, useAgentsPanesStore } from "../panes/store";
+import { selectFocusedSessionId, useAgentsPanesStore, usePaneTreeKey } from "../panes/store";
 import { ReviewFilesList } from "../review/ReviewFilesList";
 import type { ReviewRow } from "../review/rows";
 import { useReviewSelectionStore } from "../review/selection";
@@ -75,9 +75,8 @@ export function AgentsContextPane() {
   const [tab, setTab] = useState<ContextTab>("review");
 
   const workspacePath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const focusedSessionId = useAgentsPanesStore((state) =>
-    selectFocusedSessionId(state, workspacePath),
-  );
+  const treeKey = usePaneTreeKey(workspacePath);
+  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, treeKey));
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
   const workEnvironments = useAIStore((state) => state.workEnvironments);

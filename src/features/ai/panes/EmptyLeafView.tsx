@@ -14,7 +14,7 @@ import { NewSessionButton } from "../threads/NewSessionButton";
 import { collectLeaves } from "./layout";
 import { providerAccent } from "./providerAccent";
 import { ProviderLogo } from "./ProviderLogo";
-import { selectRoot, useAgentsPanesStore } from "./store";
+import { selectRoot, useAgentsPanesStore, usePaneTreeKey } from "./store";
 
 const RECENT_LIMIT = 6;
 
@@ -22,7 +22,8 @@ export function EmptyLeafView({ leafId }: { leafId: string }) {
   const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
   const rootPath = workspaceRoot ?? "default";
   const chatSessions = useRepositorySessions(rootPath);
-  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
+  const treeKey = usePaneTreeKey(rootPath);
+  const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
   const assignSession = useAgentsPanesStore((state) => state.assignSession);
   const [query, setQuery] = useState("");
   const staleTerminals = useStaleTerminalIds(chatSessions);

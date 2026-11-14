@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useRepositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 import { useAgentStore } from "@/features/agent/store";
 import { MAX_PANES, MAX_PANES_TITLE } from "../panes/operations";
-import { selectLeafCount, useAgentsPanesStore } from "../panes/store";
+import { selectLeafCount, useAgentsPanesStore, usePaneTreeKey } from "../panes/store";
 import { defaultEnvironment } from "../sessions/environment";
 import { useRepositorySessions } from "../sessions/repositorySessions";
 import { RepositoryMenuPicker } from "../sessions/RepositoryPicker";
@@ -40,9 +40,8 @@ export function NewSessionButton({
   const chatSessions = useRepositorySessions(rootPath ?? undefined);
   const setting = useRepositoryWorkspaceSettings(rootPath)?.agent?.writingSessions;
   const actions = useNewSessionActions(rootPath, targetLeafId);
-  const atCap = useAgentsPanesStore(
-    (state) => selectLeafCount(state, rootPath ?? "default") >= MAX_PANES,
-  );
+  const treeKey = usePaneTreeKey(rootPath ?? "default");
+  const atCap = useAgentsPanesStore((state) => selectLeafCount(state, treeKey) >= MAX_PANES);
   const [repoCheck, setRepoCheck] = useState<RepoCheckResult | null>(null);
 
   useEffect(() => {

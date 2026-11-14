@@ -4,11 +4,12 @@ import { countLeaves, findBrowserLeaf, MAX_PANES } from "../panes/operations";
 import { useAgentsPanesStore } from "../panes/store";
 import { currentUrl, useBrowserHistoryStore } from "./history";
 import { openBrowserPane, openUrlInBrowser } from "./open";
+import { firstTabId } from "@/shared/stores/spaces/model";
 
 const ROOT = "/workspace";
 
 function root() {
-  return useAgentsPanesStore.getState().trees[ROOT]?.root ?? null;
+  return useAgentsPanesStore.getState().trees[firstTabId(ROOT)]?.root ?? null;
 }
 
 function urlOf(leafId: string): string | null {
@@ -23,7 +24,7 @@ describe("browser pane opening", () => {
 
   it("splits the focused pane and opens the URL there", () => {
     useAgentsPanesStore.getState().openSession(ROOT, "a");
-    const focusedBefore = useAgentsPanesStore.getState().trees[ROOT].focusedLeafId;
+    const focusedBefore = useAgentsPanesStore.getState().trees[firstTabId(ROOT)].focusedLeafId;
 
     expect(openUrlInBrowser(ROOT, "http://localhost:5173/", false)).toBe("opened");
 
@@ -31,7 +32,9 @@ describe("browser pane opening", () => {
     expect(browser).not.toBeNull();
     expect(countLeaves(root())).toBe(2);
     expect(urlOf(browser!.id)).toBe("http://localhost:5173/");
-    expect(useAgentsPanesStore.getState().trees[ROOT].focusedLeafId).toBe(focusedBefore);
+    expect(useAgentsPanesStore.getState().trees[firstTabId(ROOT)].focusedLeafId).toBe(
+      focusedBefore,
+    );
   });
 
   it("navigates and focuses the open browser pane", () => {
@@ -43,7 +46,7 @@ describe("browser pane opening", () => {
     const browser = findBrowserLeaf(root())!;
     expect(countLeaves(root())).toBe(2);
     expect(urlOf(browser.id)).toBe("http://localhost:4000/");
-    expect(useAgentsPanesStore.getState().trees[ROOT].focusedLeafId).toBe(browser.id);
+    expect(useAgentsPanesStore.getState().trees[firstTabId(ROOT)].focusedLeafId).toBe(browser.id);
   });
 
   it("counts toward the pane cap", () => {

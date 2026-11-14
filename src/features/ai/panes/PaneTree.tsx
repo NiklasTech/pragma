@@ -48,7 +48,13 @@ import {
   type TabsNode,
 } from "./operations";
 import { usePaneDragStore } from "./paneDrag";
-import { selectLeafCount, selectRoot, useAgentsPanesStore } from "./store";
+import {
+  selectFocusedLeafId,
+  selectLeafCount,
+  selectRoot,
+  useAgentsPanesStore,
+  usePaneTreeKey,
+} from "./store";
 
 const MIN_PANE_SIZE = `${160}px`;
 
@@ -73,10 +79,9 @@ function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
 
 function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }) {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
-  const focusedLeafId = useAgentsPanesStore(
-    (state) => state.trees[rootPath]?.focusedLeafId ?? null,
-  );
+  const treeKey = usePaneTreeKey(rootPath);
+  const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
+  const focusedLeafId = useAgentsPanesStore((state) => selectFocusedLeafId(state, treeKey));
   const focusLeaf = useAgentsPanesStore((state) => state.focusLeaf);
   const closeLeaf = useAgentsPanesStore((state) => state.closeLeaf);
   const swapPanes = useAgentsPanesStore((state) => state.swapPanes);
@@ -288,11 +293,10 @@ function isTextEntry(target: EventTarget | null): boolean {
 
 export function PaneTree() {
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
-  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
-  const totalLeaves = useAgentsPanesStore((state) => selectLeafCount(state, rootPath));
-  const focusedLeafId = useAgentsPanesStore(
-    (state) => state.trees[rootPath]?.focusedLeafId ?? null,
-  );
+  const treeKey = usePaneTreeKey(rootPath);
+  const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
+  const totalLeaves = useAgentsPanesStore((state) => selectLeafCount(state, treeKey));
+  const focusedLeafId = useAgentsPanesStore((state) => selectFocusedLeafId(state, treeKey));
   const maximizedGroupId = usePaneMaximizeStore((state) => state.maximized[rootPath] ?? null);
   const restore = usePaneMaximizeStore((state) => state.restore);
 

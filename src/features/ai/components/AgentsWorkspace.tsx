@@ -24,7 +24,12 @@ import { openInRepository } from "../sessions/openInRepository";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { removeOrphanWorktrees } from "../worktree/orphans";
 import { usePullRequestChecks } from "../worktree/usePullRequestChecks";
-import { selectFocusedSessionId, selectRoot, useAgentsPanesStore } from "../panes/store";
+import {
+  selectFocusedSessionId,
+  selectRoot,
+  useAgentsPanesStore,
+  usePaneTreeKey,
+} from "../panes/store";
 import { shouldAutoOpenContextPane, useAgentsUiStore } from "../store/agentsUi";
 
 export function AgentsWorkspace() {
@@ -34,8 +39,9 @@ export function AgentsWorkspace() {
   const loadSessions = useAIStore((state) => state.loadSessions);
   const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
 
-  const root = useAgentsPanesStore((state) => selectRoot(state, rootPath));
-  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, rootPath));
+  const treeKey = usePaneTreeKey(rootPath);
+  const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
+  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, treeKey));
   const syncSessions = useAgentsPanesStore((state) => state.syncSessions);
 
   const agentStatus = useAgentStore((state) => state.status);
