@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
-import { openRepositoriesStoreCreator, type OpenRepositoriesStore } from "./openRepositories";
+import {
+  openRepositoriesPersistOptions,
+  openRepositoriesStoreCreator,
+  type OpenRepositoriesStore,
+} from "./openRepositories";
+import { firstTabId, type SpacesSnapshot } from "./spaces/model";
 
 function memoryStorage(): StateStorage {
   const values = new Map<string, string>();
@@ -16,8 +21,8 @@ function createStore(storage: StateStorage = memoryStorage()) {
   return create<OpenRepositoriesStore>()(
     persist(openRepositoriesStoreCreator, {
       name: "test.open-repositories",
-      storage: createJSONStorage(() => storage),
-      partialize: (state) => ({ paths: state.paths, activePath: state.activePath }),
+      ...openRepositoriesPersistOptions,
+      storage: createJSONStorage<SpacesSnapshot>(() => storage),
     }),
   );
 }
@@ -112,5 +117,88 @@ describe("open repositories store", () => {
 
     expect(second.getState().paths).toEqual(["/a", "/b"]);
     expect(second.getState().activePath).toBe("/a");
+  });
+});
+
+describe("spaces", () => {
+  it("opens a space with one tab for each repository", () => {
+    const store = createStore();
+    store.getState().add("/work/pragma");
+
+    const [space] = store.getState().spaces;
+    expect(space).toMatchObject({ name: "pragma", folders: ["/work/pragma"] });
+    expect(space.tabs).toEqual([{ id: firstTabId("/work/pragma"), name: "Main" }]);
+    expect(space.activeTabId).toBe(firstTabId("/work/pragma"));
+    expect(store.getState().activeSpaceId).toBe(space.id);
+  });
+
+  it("adds, activates, renames and closes tabs but keeps the last one", () => {
+    const store = createStore();
+    store.getState().add("/a");
+    const spaceId = store.getState().spaces[0].id;
+
+    const review = store.getState().addTab(spaceId, "Review");
+    expect(review).not.toBeNull();
+    expect(store.getState().spaces[0].activeTabId).toBe(review);
+
+    store.getState().activateTab(spaceId, firstTabId("/a"));
+    expect(store.getState().spaces[0].activeTabId).toBe(firstTabId("/a"));
+
+    store.getState().renameTab(spaceId, review ?? "", "  Agents  ");
+    expect(store.getState().spaces[0].tabs.map((tab) => tab.name)).toEqual(["Main", "Agents"]);
+
+    store.getState().closeTab(spaceId, firstTabId("/a"));
+    expect(store.getState().spaces[0].tabs.map((tab) => tab.id)).toEqual([review]);
+    expect(store.getState().spaces[0].activeTabId).toBe(review);
+
+    store.getState().closeTab(spaceId, review ?? "");
+    expect(store.getState().spaces[0].tabs).toHaveLength(1);
+  });
+
+  it("returns null when adding a tab to an unknown space", () => {
+    expect(createStore().getState().addTab("missing", "Tab")).toBeNull();
+  });
+
+  it("restores spaces, tabs and the active tab after a restart", async () => {
+    const storage = memoryStorage();
+    const first = createStore(storage);
+    first.getState().add("/a");
+    first.getState().add("/b");
+    const spaceId = first.getState().spaces[0].id;
+    const tabId = first.getState().addTab(spaceId, "Agents");
+    first.getState().activate("/a");
+
+    const second = createStore(storage);
+    await second.persist.rehydrate();
+
+    expect(second.getState().spaces).toEqual(first.getState().spaces);
+    expect(second.getState().activeSpaceId).toBe(spaceId);
+    expect(second.getState().spaces[0].activeTabId).toBe(tabId);
+    expect(second.getState().paths).toEqual(["/a", "/b"]);
+    expect(second.getState().activePath).toBe("/a");
+  });
+
+  it("migrates the open repositories of earlier versions into spaces", async () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      "test.open-repositories",
+      JSON.stringify({ state: { paths: ["/a", "/b"], activePath: "/b" }, version: 0 }),
+    );
+
+    const store = createStore(storage);
+    await store.persist.rehydrate();
+
+    expect(store.getState().paths).toEqual(["/a", "/b"]);
+    expect(store.getState().activePath).toBe("/b");
+    expect(store.getState().spaces.map((space) => space.tabs[0].id)).toEqual([
+      firstTabId("/a"),
+      firstTabId("/b"),
+    ]);
+  });
+
+  it("keeps an empty list when nothing was stored", async () => {
+    const store = createStore();
+    await store.persist.rehydrate();
+    expect(store.getState()).toMatchObject({ spaces: [], activeSpaceId: null, paths: [] });
   });
 });
