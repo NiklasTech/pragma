@@ -1,11 +1,11 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
+  CornersIn,
+  CornersOut,
   FloppyDisk,
   GearSix,
   Minus,
-  CornersOut,
-  CornersIn,
   SidebarSimple,
   Sparkle,
   X,
@@ -16,19 +16,22 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout";
 import { useUiMode } from "@/shell/mode";
-import { ModeSwitch } from "@/shell/chrome/ModeSwitch";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
+import { ICON_SIZE } from "@/shared/components/ui/icon-button";
 import { RunConfigWidget } from "@/features/run-config/components";
 import { ContextPaneToggle } from "@/features/ai/components/ContextPaneToggle";
 import { cn } from "@/shared/lib/utils";
 
-import { CommandCenter } from "./CommandCenter";
+import { GoToButton } from "./GoToButton";
+import { SpaceTabs } from "./SpaceTabs";
+import { StatusPill } from "./StatusPill";
 import { WorkspaceMenu } from "./WorkspaceMenu";
 
 const ICON_BUTTON =
-  "flex size-7 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default";
+  "flex size-7 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default";
 
-export function Titlebar() {
+/// The only permanent chrome: the space, its tabs, the agent status, Go to and the window controls.
+export function Strip() {
   const [isMaximized, setIsMaximized] = useState(false);
   const win = getCurrentWindow();
   const saveFile = useSaveFile();
@@ -42,9 +45,8 @@ export function Titlebar() {
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar);
   const aiOpen = useLayoutStore((s) => s.ai.mode !== "hidden");
   const toggleAI = useLayoutStore((s) => s.toggleAI);
-  const uiMode = useUiMode();
+  const inEditor = useUiMode() === "editor";
   const isMac = getIsMac();
-  const inEditor = uiMode === "editor";
 
   useEffect(() => {
     const unlisten = win.onResized(() => {
@@ -56,25 +58,27 @@ export function Titlebar() {
     };
   }, [win]);
 
-  const handleMinimize = useCallback(() => {
-    void win.minimize();
-  }, [win]);
-
-  const handleToggleMaximize = useCallback(() => {
-    void win.toggleMaximize();
-  }, [win]);
-
-  const handleClose = useCallback(() => {
-    void win.close();
-  }, [win]);
+  const handleMinimize = useCallback(() => void win.minimize(), [win]);
+  const handleToggleMaximize = useCallback(() => void win.toggleMaximize(), [win]);
+  const handleClose = useCallback(() => void win.close(), [win]);
 
   return (
     <div
       data-tauri-drag-region
-      className="relative z-[60] grid h-header shrink-0 grid-cols-[1fr_minmax(0,540px)_1fr] items-center gap-3 bg-bg-chrome px-2 select-none"
+      className="relative z-[60] flex h-header shrink-0 items-center gap-1 bg-bg-ground pr-2 pl-2.5 select-none"
     >
-      <div data-tauri-drag-region className="flex min-w-0 items-center gap-1">
+      <div data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-1">
         {isMac && <div data-tauri-drag-region className="w-[68px] shrink-0 self-stretch" />}
+        <WorkspaceMenu />
+        <span aria-hidden="true" className="mx-1 h-4.5 w-px shrink-0 bg-border" />
+        <SpaceTabs />
+      </div>
+
+      <div data-tauri-drag-region className="flex shrink-0 items-center gap-1.5">
+        <StatusPill />
+        <GoToButton />
+        <RunConfigWidget />
+
         {inEditor && sidebar.position !== "hidden" && (
           <button
             type="button"
@@ -84,33 +88,20 @@ export function Titlebar() {
             title={`${sidebar.collapsed ? "Show" : "Hide"} Sidebar (${formatShortcut(shortcuts["view.toggleSidebar"], isMac)})`}
             className={cn(ICON_BUTTON, !sidebar.collapsed && "text-fg-default")}
           >
-            <SidebarSimple size={16} weight={sidebar.collapsed ? "regular" : "fill"} />
+            <SidebarSimple size={ICON_SIZE.md} weight={sidebar.collapsed ? "regular" : "fill"} />
           </button>
         )}
-        {!isMac && <WorkspaceMenu />}
-      </div>
 
-      <div
-        data-tauri-drag-region
-        className="flex h-8 min-w-0 items-center gap-1 rounded-full border border-border bg-bg-root p-0.5 shadow-[var(--shadow-sm)]"
-      >
-        <ModeSwitch />
-        <div aria-hidden="true" className="h-4 w-px shrink-0 bg-border" />
-        <CommandCenter />
-      </div>
-
-      <div data-tauri-drag-region className="flex min-w-0 items-center justify-end gap-1">
-        <RunConfigWidget />
-
-        {!isMac && (
+        {!isMac && inEditor && (
           <button
             type="button"
             onClick={saveFile}
             disabled={!canSave}
+            aria-label="Save file"
             className={cn(ICON_BUTTON, "disabled:cursor-not-allowed disabled:opacity-40")}
             title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
           >
-            <FloppyDisk size={15} />
+            <FloppyDisk size={ICON_SIZE.md} />
           </button>
         )}
 
@@ -123,13 +114,13 @@ export function Titlebar() {
             aria-pressed={aiOpen}
             title={`AI Chat (${formatShortcut(shortcuts["ai.toggle"], isMac)})`}
             className={cn(
-              "flex h-7 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium transition-colors",
+              "flex h-7 items-center gap-1.5 rounded-control px-2.5 text-ui-xs font-medium transition-colors",
               aiOpen
-                ? "bg-accent-subtle text-primary"
+                ? "bg-bg-active text-fg-default"
                 : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
             )}
           >
-            <Sparkle size={14} weight={aiOpen ? "fill" : "regular"} />
+            <Sparkle size={ICON_SIZE.sm} weight={aiOpen ? "fill" : "regular"} />
             Chat
           </button>
         )}
@@ -137,10 +128,11 @@ export function Titlebar() {
         <button
           type="button"
           onClick={() => addFloatingPanel("settings")}
+          aria-label="Settings"
           className={ICON_BUTTON}
           title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
         >
-          <GearSix size={16} />
+          <GearSix size={ICON_SIZE.md} />
         </button>
 
         {!isMac && (
@@ -152,7 +144,7 @@ export function Titlebar() {
               className={ICON_BUTTON}
               aria-label="Minimize"
             >
-              <Minus size={15} weight="bold" />
+              <Minus size={ICON_SIZE.sm} weight="bold" />
             </button>
             <button
               type="button"
@@ -161,18 +153,18 @@ export function Titlebar() {
               aria-label={isMaximized ? "Restore" : "Maximize"}
             >
               {isMaximized ? (
-                <CornersIn size={15} weight="bold" />
+                <CornersIn size={ICON_SIZE.sm} weight="bold" />
               ) : (
-                <CornersOut size={15} weight="bold" />
+                <CornersOut size={ICON_SIZE.sm} weight="bold" />
               )}
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="flex size-7 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+              className="flex size-7 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
               aria-label="Close"
             >
-              <X size={15} weight="bold" />
+              <X size={ICON_SIZE.sm} weight="bold" />
             </button>
           </>
         )}

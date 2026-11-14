@@ -44,6 +44,8 @@ interface AgentsPanesState {
   applyPreset: (rootPath: string, preset: PanePreset, sessionIds: string[]) => void;
   syncSessions: (rootPath: string, sessionIds: string[]) => void;
   setSplitSizes: (rootPath: string, splitId: string, sizes: number[]) => void;
+  /** Forgets the layout of a closed tab; its sessions keep running. */
+  removeTree: (treeKey: string) => void;
 }
 
 const EMPTY_ENTRY: PaneTreeEntry = { root: null, focusedLeafId: null, focusOrder: [] };
@@ -266,6 +268,13 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           return {
             trees: setEntry(state.trees, rootPath, { root, focusedLeafId, focusOrder }),
           };
+        }),
+
+      removeTree: (treeKey) =>
+        set((state) => {
+          if (!(treeKey in state.trees)) return {};
+          const { [treeKey]: _removed, ...trees } = state.trees;
+          return { trees };
         }),
 
       setSplitSizes: (rootPath, splitId, sizes) =>

@@ -877,7 +877,7 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     keywords: "keyboard shortcuts keymap hotkey bindings",
     category: "keyboard",
     scope: "global",
-    effect: "src/shell/chrome/CommandCenter.tsx",
+    effect: "src/shell/chrome/GoToButton.tsx",
   },
   {
     id: "extensions",

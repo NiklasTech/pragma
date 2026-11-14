@@ -127,7 +127,7 @@ describe("spaces", () => {
 
     const [space] = store.getState().spaces;
     expect(space).toMatchObject({ name: "pragma", folders: ["/work/pragma"] });
-    expect(space.tabs).toEqual([{ id: firstTabId("/work/pragma"), name: "Main" }]);
+    expect(space.tabs.map((tab) => tab.kind)).toEqual(["agents", "code"]);
     expect(space.activeTabId).toBe(firstTabId("/work/pragma"));
     expect(store.getState().activeSpaceId).toBe(space.id);
   });
@@ -144,15 +144,27 @@ describe("spaces", () => {
     store.getState().activateTab(spaceId, firstTabId("/a"));
     expect(store.getState().spaces[0].activeTabId).toBe(firstTabId("/a"));
 
-    store.getState().renameTab(spaceId, review ?? "", "  Agents  ");
-    expect(store.getState().spaces[0].tabs.map((tab) => tab.name)).toEqual(["Main", "Agents"]);
-
-    store.getState().closeTab(spaceId, firstTabId("/a"));
-    expect(store.getState().spaces[0].tabs.map((tab) => tab.id)).toEqual([review]);
-    expect(store.getState().spaces[0].activeTabId).toBe(review);
+    store.getState().renameTab(spaceId, review ?? "", "  Planning  ");
+    expect(store.getState().spaces[0].tabs.map((tab) => tab.name)).toEqual([
+      "Agents",
+      "Code",
+      "Planning",
+    ]);
 
     store.getState().closeTab(spaceId, review ?? "");
+    store.getState().closeTab(spaceId, firstTabId("/a"));
+    expect(store.getState().spaces[0].tabs.map((tab) => tab.kind)).toEqual(["code"]);
+
+    store.getState().closeTab(spaceId, store.getState().spaces[0].tabs[0].id);
     expect(store.getState().spaces[0].tabs).toHaveLength(1);
+  });
+
+  it("shows the first tab of a kind in the active space", () => {
+    const store = createStore();
+    store.getState().add("/a");
+    store.getState().activateTabKind("code");
+    const [space] = store.getState().spaces;
+    expect(space.tabs.find((tab) => tab.id === space.activeTabId)?.kind).toBe("code");
   });
 
   it("returns null when adding a tab to an unknown space", () => {
