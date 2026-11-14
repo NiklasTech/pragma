@@ -31,7 +31,7 @@ import {
   removeMountedAIPanel,
   toggleAIPlacement,
 } from "./aiPlacement";
-import { normalizeSidebarTab } from "./sidebar-tab";
+import { normalizeSidebar, normalizeSidebarTab } from "./sidebar-tab";
 import { useEditorStore } from "@/shared/stores/editor";
 import { getWindowScope } from "@/shared/lib/windowScope";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -83,6 +83,8 @@ const layoutStoreCreator: StateCreator<FullLayoutTreeState> = crossWindowSync<Fu
       sidebar: { ...s.sidebar, tab: normalizeSidebarTab(tab) },
       ...markCustomized(s),
     })),
+  setSidebarPinned: (pinned) =>
+    set((s) => ({ sidebar: { ...s.sidebar, pinned }, ...markCustomized(s) })),
   toggleSidebar: () =>
     set((s) => ({
       sidebar: { ...s.sidebar, collapsed: !s.sidebar.collapsed },
@@ -386,7 +388,7 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
       return {
         ...merged,
         ...panels,
-        sidebar: { ...merged.sidebar, tab: normalizeSidebarTab(merged.sidebar.tab) },
+        sidebar: normalizeSidebar(merged.sidebar),
         ai: {
           ...current.ai,
           ...merged.ai,

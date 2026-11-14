@@ -86,6 +86,7 @@ export function Strip() {
           <button
             type="button"
             onClick={toggleSidebar}
+            data-sidebar-toggle
             aria-label={sidebar.collapsed ? "Show sidebar" : "Hide sidebar"}
             aria-pressed={!sidebar.collapsed}
             title={`${sidebar.collapsed ? "Show" : "Hide"} Sidebar (${formatShortcut(shortcuts["view.toggleSidebar"], isMac)})`}
