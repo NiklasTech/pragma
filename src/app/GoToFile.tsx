@@ -12,6 +12,7 @@ import {
 } from "@/shared/components/ui/command";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { useOverlayOpen, useOverlayStore } from "@/shared/stores/overlays";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { detectLanguage } from "@/shared/lib/language";
 import { getFileIconPath } from "@/shared/lib/file-icons";
@@ -32,8 +33,9 @@ const MAX_RESULTS = 100;
 export function GoToFile() {
   useGoToFile();
 
-  const isOpen = useGoToFileStore((state) => state.isOpen);
-  const close = useGoToFileStore((state) => state.close);
+  const isOpen = useOverlayOpen("goTo");
+  const closeOverlay = useOverlayStore((state) => state.close);
+  const close = () => closeOverlay("goTo");
   const files = useGoToFileStore((state) => state.files);
   const isLoading = useGoToFileStore((state) => state.isLoading);
   const error = useGoToFileStore((state) => state.error);

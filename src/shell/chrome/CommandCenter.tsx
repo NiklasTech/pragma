@@ -4,19 +4,19 @@ import { Kbd } from "@/shared/components/ui/kbd";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
-import { useGoToFileStore } from "@/shared/stores/goToFile";
+import { useOverlayStore } from "@/shared/stores/overlays";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 export function CommandCenter() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
   const shortcut = useSettingsStore((s) => s.shortcuts["file.goToFile"]);
-  const openGoToFile = useGoToFileStore((s) => s.open);
+  const openOverlay = useOverlayStore((s) => s.open);
   const workspaceName = getWorkspaceName(rootPath);
 
   return (
     <button
       type="button"
-      onClick={openGoToFile}
+      onClick={() => openOverlay("goTo")}
       aria-label="Go to file"
       className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-full px-3 text-ui-xs text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-muted"
     >
