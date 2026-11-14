@@ -8,6 +8,7 @@ import { repositorySessions, useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useAgentStore } from "@/features/agent/store";
 import { ThreadList } from "@/features/ai/threads/ThreadList";
+import { ThreadsDrawer } from "@/features/ai/threads/ThreadsDrawer";
 import { AgentForm } from "@/features/ai/named-agents/AgentForm";
 import { AgentPage } from "@/features/ai/named-agents/AgentPage";
 import { createAgentChat } from "@/features/ai/named-agents/createChat";
@@ -50,6 +51,7 @@ export function AgentsWorkspace() {
 
   const contextPaneCollapsed = useAgentsUiStore((state) => state.contextPaneCollapsed);
   const setContextPaneCollapsed = useAgentsUiStore((state) => state.setContextPaneCollapsed);
+  const threadsColumn = useAgentsUiStore((state) => state.threadsPinned && state.threadsOpen);
 
   const agents = useNamedAgentsStore((state) => state.agents);
   const view = useNamedAgentsUiStore((state) => state.view);
@@ -141,6 +143,8 @@ export function AgentsWorkspace() {
   const showAgentPage =
     !showForm && view === "agents" && selectedAgent !== null && !focusedBelongsToSelected;
   const showBoard = boardOpen && view === "sessions";
+  // Panes are wells on the ground; everything else keeps its card.
+  const showWells = !showForm && !showAgentPage && !showBoard && root !== null;
 
   const handleNewChat = (agentId: string, chatRoot: string) => {
     const agent = agents.find((item) => item.id === agentId);
@@ -151,12 +155,17 @@ export function AgentsWorkspace() {
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5">
-      <aside aria-label="Threads" className="flex h-full w-[256px] shrink-0 flex-col">
-        <ThreadList />
-      </aside>
+    <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5 pb-1.5">
+      {threadsColumn && (
+        <aside aria-label="Threads" className="flex h-full w-[256px] shrink-0 flex-col">
+          <ThreadList />
+        </aside>
+      )}
 
-      <section aria-label="Transcript" className={cn(CARD_CLASS, "flex min-w-0 flex-1 flex-col")}>
+      <section
+        aria-label="Transcript"
+        className={cn(!showWells && CARD_CLASS, "flex min-w-0 flex-1 flex-col")}
+      >
         {showForm ? (
           <AgentForm
             agent={formAgent ?? undefined}
@@ -186,6 +195,7 @@ export function AgentsWorkspace() {
       </section>
 
       <AgentsContextPane />
+      <ThreadsDrawer />
     </div>
   );
 }

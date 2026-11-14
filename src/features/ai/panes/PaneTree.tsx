@@ -159,12 +159,10 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       data-pane-maximized={maximized ? "true" : undefined}
       ref={cardRef}
       className={cn(
-        "group/pane flex min-h-0 flex-col overflow-hidden rounded-lg border bg-bg-root transition-[border-color,box-shadow,opacity,scale] duration-200 ease-(--motion-ease-out)",
-        focused
-          ? "border-border-focus shadow-[0_0_0_1px_var(--color-accent-subtle),0_12px_32px_-20px_var(--color-accent-glow)]"
-          : "border-border hover:border-fg-subtle/40",
+        "group/pane flex min-h-0 flex-col overflow-hidden rounded-well bg-bg-well ring-1 transition-[box-shadow,opacity,scale] duration-(--motion-base) ease-(--motion-ease-out) ring-inset",
+        focused ? "ring-fg-default/25" : "ring-border-subtle hover:ring-border",
         dragging && "scale-[0.98] opacity-50",
-        maximized ? "absolute inset-0 z-30 shadow-[var(--shadow-md)]" : "relative h-full",
+        maximized ? "absolute inset-0 z-30" : "relative h-full",
       )}
     >
       <PaneHeader
@@ -203,7 +201,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
 
       {dropTarget && (
         <div
-          className="pointer-events-none absolute inset-0 z-20 animate-in rounded-lg border-2 border-primary bg-primary/10 duration-150 fade-in-0"
+          className="pointer-events-none absolute inset-0 z-20 animate-in rounded-well bg-fg-default/5 ring-2 ring-fg-default/40 duration-(--motion-fast) ring-inset fade-in-0"
           aria-hidden="true"
         />
       )}
@@ -268,7 +266,7 @@ function SplitView({ node, totalLeaves }: { node: SplitNode; totalLeaves: number
         index < node.children.length - 1 ? (
           <ResizableHandle
             key={`${child.id}-handle`}
-            className="w-1.5 rounded-full bg-transparent hover:bg-primary/30 data-[resize-handle-active]:bg-primary/50 aria-[orientation=horizontal]:h-1.5 aria-[orientation=horizontal]:w-full"
+            className="w-pane rounded-full bg-transparent transition-colors duration-(--motion-fast) hover:bg-fg-subtle/20 data-[resize-handle-active]:bg-fg-subtle/35 aria-[orientation=horizontal]:h-pane aria-[orientation=horizontal]:w-full"
           />
         ) : null,
       ])}
@@ -325,7 +323,7 @@ export function PaneTree() {
   if (!root) return null;
 
   return (
-    <div className="relative min-h-0 flex-1 p-1.5">
+    <div className="relative min-h-0 flex-1">
       <div className="relative h-full w-full">
         <PaneNodeView node={root} totalLeaves={totalLeaves} />
       </div>

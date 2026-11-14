@@ -97,10 +97,10 @@ describe("AgentsWorkspace", () => {
     });
   });
 
-  it("renders thread list and transcript, keeping the collapsed context pane hidden", () => {
+  it("renders the transcript alone, with the thread drawer and context pane closed", () => {
     const html = renderToStaticMarkup(<AgentsWorkspace />);
 
-    expect(html).toContain('aria-label="Threads"');
+    expect(html).not.toContain('aria-label="Threads"');
     expect(html).toContain('aria-label="Transcript"');
     expect(html).not.toContain('aria-label="Context"');
   });

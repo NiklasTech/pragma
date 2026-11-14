@@ -44,6 +44,7 @@ import { ThreadGroupList } from "./ThreadGroupList";
 import { ThreadRow } from "./ThreadRow";
 import { ThreadScopeSwitch } from "./ThreadScopeSwitch";
 import { ThreadSelectionBar } from "./ThreadSelectionBar";
+import { ThreadsPinButton } from "./ThreadsPinButton";
 import { useScopedThreads, type ThreadScope } from "./useScopedThreads";
 import { useThreadSelection } from "./useThreadSelection";
 
@@ -309,24 +310,28 @@ export function ThreadList() {
     >
       <div className="flex shrink-0 flex-col gap-2 pb-1">
         <RepositoryOverview variant="compact" />
-        <Tabs
-          value={view}
-          onValueChange={(value: NamedAgentsView) => {
-            if (value === "agents") selection.exit();
-            setView(value);
-          }}
-        >
-          <TabsList className="w-full">
-            <TabsTrigger value="sessions" className="data-active:[&_svg]:text-primary">
-              <ChatsCircle weight={view === "sessions" ? "fill" : "regular"} />
-              Sessions
-            </TabsTrigger>
-            <TabsTrigger value="agents" className="data-active:[&_svg]:text-primary">
-              <Robot weight={view === "agents" ? "fill" : "regular"} />
-              Agents
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-1">
+          <Tabs
+            value={view}
+            className="min-w-0 flex-1"
+            onValueChange={(value: NamedAgentsView) => {
+              if (value === "agents") selection.exit();
+              setView(value);
+            }}
+          >
+            <TabsList className="w-full">
+              <TabsTrigger value="sessions" className="data-active:[&_svg]:text-primary">
+                <ChatsCircle weight={view === "sessions" ? "fill" : "regular"} />
+                Sessions
+              </TabsTrigger>
+              <TabsTrigger value="agents" className="data-active:[&_svg]:text-primary">
+                <Robot weight={view === "agents" ? "fill" : "regular"} />
+                Agents
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <ThreadsPinButton />
+        </div>
 
         {view === "sessions" ? (
           <>
