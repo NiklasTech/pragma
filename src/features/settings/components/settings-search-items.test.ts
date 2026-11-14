@@ -14,11 +14,11 @@ function sources(dir: string): string[] {
 }
 
 const pages = sources(join(process.cwd(), "src/features/settings/components"));
-// Labels appear as label="..." props, title="..." props or text between tags.
+// Labels appear as label="..." props, title="..." props, label: "..." in row lists or text between tags.
 const visibleTexts = new Set(
   pages.flatMap((source) =>
-    [...source.matchAll(/(?:label|title)="([^"]+)"|>\s*([A-Z][^<>{}\n]*?)\s*</g)].map((match) =>
-      normalizeSettingText(match[1] ?? match[2] ?? ""),
+    [...source.matchAll(/(?:label|title)(?:=|: )"([^"]+)"|>\s*([A-Z][^<>{}\n]*?)\s*</g)].map(
+      (match) => normalizeSettingText(match[1] ?? match[2] ?? ""),
     ),
   ),
 );
