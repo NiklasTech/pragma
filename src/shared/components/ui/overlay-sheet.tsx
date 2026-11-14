@@ -14,7 +14,7 @@ const OverlaySheetTrigger = DialogPrimitive.Trigger;
 const OverlaySheetClose = DialogPrimitive.Close;
 
 const overlaySheetVariants = cva(
-  "fixed inset-x-0 z-[70] mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-sheet bg-bg-sheet text-ui-sm text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border outline-none opacity-0 transition-opacity duration-150 data-[open]:opacity-100",
+  "fixed inset-x-0 z-[70] mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-sheet bg-bg-sheet text-ui-sm text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border outline-none transition-[opacity,translate,scale] duration-(--motion-base) ease-(--motion-ease-out) data-starting-style:translate-y-2 data-starting-style:scale-[0.98] data-starting-style:opacity-0 data-ending-style:translate-y-1 data-ending-style:scale-[0.98] data-ending-style:opacity-0",
   {
     variants: {
       placement: {
@@ -37,7 +37,7 @@ function OverlaySheetContent({
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
         data-slot="overlay-sheet-scrim"
-        className="fixed inset-0 z-[70] bg-bg-overlay opacity-0 backdrop-blur-[2px] transition-opacity duration-150 data-[open]:opacity-100"
+        className="fixed inset-0 z-[70] bg-bg-overlay backdrop-blur-[2px] transition-opacity duration-(--motion-base) ease-(--motion-ease-out) data-starting-style:opacity-0 data-ending-style:opacity-0"
       />
       <DialogPrimitive.Popup
         data-slot="overlay-sheet-content"
