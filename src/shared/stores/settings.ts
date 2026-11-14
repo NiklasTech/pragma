@@ -26,8 +26,6 @@ export type {
   ProviderSettings,
   RenderWhitespace,
   SettingsState,
-  StatusbarItem,
-  StatusbarSettings,
   TerminalCursorStyle,
   TerminalEnvVar,
   TerminalSettings,
@@ -97,9 +95,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
         favoriteFolders: state.workspace.favoriteFolders.filter((p) => p !== path),
       },
     })),
-
-  setStatusbarSettings: (settings) =>
-    set((state) => ({ statusbar: { ...state.statusbar, ...settings } })),
 
   setMcpSettings: (settings) => set((state) => ({ mcp: { ...state.mcp, ...settings } })),
 
@@ -196,12 +191,14 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
         "workspace",
         mergePartial(defaultSettings.workspace, partial.workspace),
       ),
-      statusbar: mergePartial(defaultSettings.statusbar, partial.statusbar),
       mcp: mergePartial(defaultSettings.mcp, partial.mcp),
       lsp: mergePartial(defaultSettings.lsp, partial.lsp),
       experimental: mergePartial(defaultSettings.experimental, partial.experimental),
       agent: withoutRemovedKeys("agent", mergePartial(defaultSettings.agent, partial.agent)),
-      notifications: mergePartial(defaultSettings.notifications, partial.notifications),
+      notifications: withoutRemovedKeys(
+        "notifications",
+        mergePartial(defaultSettings.notifications, partial.notifications),
+      ),
       appearance: mergePartial(defaultSettings.appearance, partial.appearance),
       repositoryColors: mergePartial(defaultSettings.repositoryColors, partial.repositoryColors),
       customThemes: { ...state.customThemes, ...partial.customThemes },

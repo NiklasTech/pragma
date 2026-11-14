@@ -20,6 +20,7 @@ import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { ICON_SIZE } from "@/shared/components/ui/icon-button";
 import { RunConfigWidget } from "@/features/run-config/components";
 import { ContextPaneToggle } from "@/features/ai/components/ContextPaneToggle";
+import { ExtensionStatusItems } from "@/features/extensions/components/ExtensionStatusItems";
 import { cn } from "@/shared/lib/utils";
 
 import { GoToButton } from "./GoToButton";
@@ -75,6 +76,8 @@ export function Strip() {
       </div>
 
       <div data-tauri-drag-region className="flex shrink-0 items-center gap-1.5">
+        <ExtensionStatusItems alignment="left" />
+        <ExtensionStatusItems alignment="right" />
         <StatusPill />
         <GoToButton />
         <RunConfigWidget />

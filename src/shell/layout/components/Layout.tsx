@@ -14,7 +14,6 @@ import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Strip } from "@/shell/chrome/Strip";
-import { Statusbar } from "@/shell/chrome/Statusbar";
 import { useUiMode } from "@/shell/mode";
 import { useTabModeSync } from "@/shell/mode/tabModeSync";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
@@ -118,7 +117,6 @@ export function Layout() {
         </div>
       )}
 
-      <Statusbar />
       <TerminalFloatingHost />
       <FloatingHost />
     </div>

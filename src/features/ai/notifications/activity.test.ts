@@ -6,7 +6,6 @@ import type { ChildRun, ChildRunStatus } from "../children/runStore";
 import {
   attentionMessage,
   childRunOutcomes,
-  formatActivitySummary,
   resolveSessionActivity,
   type ActivityInput,
 } from "./activity";
@@ -66,16 +65,6 @@ describe("resolveSessionActivity", () => {
       spawnApprovals: { parent: [approval], other: [] },
     });
     expect(activity).toEqual({ running: [], waiting: ["parent"] });
-  });
-});
-
-describe("formatActivitySummary", () => {
-  it("leaves out empty parts", () => {
-    expect(formatActivitySummary({ running: ["a", "b", "c"], waiting: ["d"] })).toBe(
-      "3 running, 1 waiting",
-    );
-    expect(formatActivitySummary({ running: ["a"], waiting: [] })).toBe("1 running");
-    expect(formatActivitySummary({ running: [], waiting: ["a", "b"] })).toBe("2 waiting");
   });
 });
 

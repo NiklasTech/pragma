@@ -128,26 +128,6 @@ export interface WorkspaceSettings {
   favoriteFolders: string[];
 }
 
-export type StatusbarItem =
-  | "vimMode"
-  | "cursor"
-  | "fileType"
-  | "encoding"
-  | "eol"
-  | "gitBranch"
-  | "gitSync"
-  | "problems"
-  | "aiProvider"
-  | "subscriptionUsage"
-  | "theme";
-
-export interface StatusbarSettings {
-  visible: boolean;
-  items: StatusbarItem[];
-  /** Internal marker for one-time migrations. */
-  migrationRevision?: number;
-}
-
 export type McpTransport = "stdio" | "http";
 
 export interface McpServerConfig {
@@ -200,7 +180,6 @@ export interface NotificationSettings {
   sessionFailed: boolean;
   approvalNeeded: boolean;
   badge: boolean;
-  statusSummary: boolean;
   playSound: boolean;
   inAppPopups: boolean;
 }
@@ -220,7 +199,6 @@ export interface SettingsState {
   lightTheme: string;
   darkTheme: string;
   workspace: WorkspaceSettings;
-  statusbar: StatusbarSettings;
   mcp: McpSettings;
   lsp: LspSettings;
   experimental: ExperimentalSettings;
@@ -266,7 +244,6 @@ export interface SettingsActions {
   addRecentFolder: (path: string) => void;
   addFavoriteFolder: (path: string) => void;
   removeFavoriteFolder: (path: string) => void;
-  setStatusbarSettings: (settings: Partial<StatusbarSettings>) => void;
   setMcpSettings: (settings: Partial<McpSettings>) => void;
   setLspEnabled: (language: string, enabled: boolean) => void;
   setExperimentalEnabled: (feature: keyof ExperimentalSettings, enabled: boolean) => void;
