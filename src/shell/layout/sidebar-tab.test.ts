@@ -21,6 +21,14 @@ describe("normalizeSidebar", () => {
     expect(normalizeSidebar(docked)).toEqual({ ...docked, collapsed: true, pinned: false });
   });
 
+  it("starts an unpinned drawer closed even when it was open", () => {
+    expect(normalizeSidebar({ ...docked, pinned: false })).toEqual({
+      ...docked,
+      collapsed: true,
+      pinned: false,
+    });
+  });
+
   it("keeps a sidebar the user pinned", () => {
     expect(normalizeSidebar({ ...docked, pinned: true })).toEqual({ ...docked, pinned: true });
   });

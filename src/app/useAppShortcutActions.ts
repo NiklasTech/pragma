@@ -22,6 +22,7 @@ import { debugCurrentFile } from "@/features/debug/debugCurrentFile";
 import { useDebugStore } from "@/features/debug/store";
 import { useAttachDialogStore } from "@/features/debug/attachProcess";
 import { useAgentStore } from "@/features/agent/store";
+import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
 import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
 import { leaveAgentsForTerminal, toggleTerminalFromShortcut } from "./terminalShortcuts";
 
@@ -95,6 +96,20 @@ export function useAppShortcutActions(): ShortcutActions {
       },
       "view.openSettings": () => {
         useLayoutStore.getState().addFloatingPanel("settings");
+      },
+      "view.toggleContextPane": () => {
+        const agentsUi = useAgentsUiStore.getState();
+        const { uiMode, setUiMode } = useUiModeStore.getState();
+        const hasRootPath = useFileExplorerStore.getState().rootPath !== null;
+        const visible =
+          resolveUiMode(uiMode, hasRootPath) === "agents" && !agentsUi.contextPaneCollapsed;
+        // Only a pane in view collapses; otherwise the agents tab comes forward with the pane open.
+        if (visible) {
+          agentsUi.setContextPaneCollapsed(true);
+          return;
+        }
+        setUiMode("agents");
+        agentsUi.setContextPaneCollapsed(false);
       },
       "view.switchToAgents": () => {
         useUiModeStore.getState().setUiMode("agents");

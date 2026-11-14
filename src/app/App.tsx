@@ -57,6 +57,7 @@ import { GitCompareDialog } from "@/features/sidebar/components/GitCompareDialog
 import { FileHistoryDialog } from "@/features/sidebar/components/FileHistoryDialog";
 import { CloseRepositoryDialog } from "@/shell/chrome/CloseRepositoryDialog";
 import { UpdateDialog } from "./UpdateDialog";
+import { useNativeRunMenu } from "@/features/run-config/useNativeRunMenu";
 
 export default function App() {
   useAIInit();
@@ -90,6 +91,7 @@ export default function App() {
 
   useGlobalShortcuts(actions);
   useNativeAppMenu(actions);
+  useNativeRunMenu();
   useCommandPaletteCommands();
   useLspSymbolCommands();
   useGitPaletteCommands();

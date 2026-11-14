@@ -4,6 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useUpdaterStore } from "@/features/settings/updater/updaterStore";
+import { runTaskByName } from "@/features/run-config/runTasks";
+import { useRunConfigStore } from "@/shared/stores/runConfig";
 import { useLayoutStore } from "@/shell/layout";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { getIsMac, SHORTCUT_ACTIONS, type ShortcutActionId } from "@/shared/lib/shortcuts";
@@ -55,6 +57,14 @@ export function useNativeAppMenu(actions: ShortcutActions): void {
 
       if (action === "file.openRecent") {
         if (path) void selectRoot(path);
+        return;
+      }
+      if (action === "run.startTask") {
+        if (path) void runTaskByName(path);
+        return;
+      }
+      if (action === "run.stopTask") {
+        if (path) void useRunConfigStore.getState().stopProcess(path);
         return;
       }
       if (action === "app.checkForUpdates") {

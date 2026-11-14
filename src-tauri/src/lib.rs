@@ -421,6 +421,7 @@ pub fn run() {
             window::set_window_header_height,
             window::update_window_folder,
             app_menu::macos_menu_set_recent,
+            app_menu::macos_menu_set_run_tasks,
             app_menu::macos_menu_set_enabled,
             app_menu::macos_menu_set_checked,
             app_menu::macos_menu_set_shortcuts,

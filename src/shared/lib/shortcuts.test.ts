@@ -173,7 +173,8 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(37);
+    expect(Object.keys(defaults)).toHaveLength(38);
+    expect(defaults["view.toggleContextPane"]).toEqual({ ctrl: true, alt: true, code: "Digit0" });
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
     expect(defaults["terminal.previousCommand"]).toEqual({ ctrl: true, key: "ArrowUp" });
     expect(defaults["terminal.nextCommand"]).toEqual({ ctrl: true, key: "ArrowDown" });

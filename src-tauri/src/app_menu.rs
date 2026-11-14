@@ -24,6 +24,12 @@ const APP_CREDITS: &str = "A lightweight, AI-native desktop IDE.";
 #[cfg(target_os = "macos")]
 const MENU_EVENT: &str = "pragma:menu";
 const RECENT_PREFIX: &str = "recent:";
+const RUN_START_PREFIX: &str = "run.start:";
+const RUN_STOP_PREFIX: &str = "run.stop:";
+#[cfg(target_os = "macos")]
+const RUN_START_EMPTY_ID: &str = "run.startMenu.empty";
+#[cfg(target_os = "macos")]
+const RUN_STOP_EMPTY_ID: &str = "run.stopMenu.empty";
 #[cfg(target_os = "macos")]
 const RECENT_EMPTY_ID: &str = "file.openRecentMenu.empty";
 const TOGGLE_TERMINAL_MENU_ID: &str = "view.toggleTerminalMenu";
@@ -46,6 +52,7 @@ const MENU_ACTION_IDS: &[&str] = &[
     "edit.editWithAI",
     "view.commandPalette",
     "view.toggleSidebar",
+    "view.toggleContextPane",
     "view.toggleTerminal",
     "view.toggleProblems",
     "view.togglePreview",
@@ -72,6 +79,12 @@ fn parse_recent_menu_id(id: &str) -> Option<&str> {
 fn resolve_menu_event(id: &str) -> Option<(&str, Option<String>)> {
     if let Some(path) = parse_recent_menu_id(id) {
         return Some(("file.openRecent", Some(path.to_string())));
+    }
+    if let Some(name) = id.strip_prefix(RUN_START_PREFIX) {
+        return Some(("run.startTask", Some(name.to_string())));
+    }
+    if let Some(process) = id.strip_prefix(RUN_STOP_PREFIX) {
+        return Some(("run.stopTask", Some(process.to_string())));
     }
     if id == TOGGLE_TERMINAL_MENU_ID {
         return Some(("view.toggleTerminal", None));
@@ -116,6 +129,8 @@ struct MenuPayload {
 #[cfg(target_os = "macos")]
 struct AppMenuState {
     recent_menu: Submenu<Wry>,
+    run_start_menu: Submenu<Wry>,
+    run_stop_menu: Submenu<Wry>,
     save_item: MenuItem<Wry>,
     toggle_sidebar_item: CheckMenuItem<Wry>,
     toggle_terminal_item: CheckMenuItem<Wry>,
@@ -230,6 +245,25 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             app,
             RECENT_EMPTY_ID,
             "No Recent Folders",
+            false,
+            None::<&str>,
+        )?)
+        .build()?;
+
+    let run_start_menu = SubmenuBuilder::with_id(app, "run.startMenu", "Run Task")
+        .item(&MenuItem::with_id(
+            app,
+            RUN_START_EMPTY_ID,
+            "No Run Configurations",
+            false,
+            None::<&str>,
+        )?)
+        .build()?;
+    let run_stop_menu = SubmenuBuilder::with_id(app, "run.stopMenu", "Stop Task")
+        .item(&MenuItem::with_id(
+            app,
+            RUN_STOP_EMPTY_ID,
+            "No Running Tasks",
             false,
             None::<&str>,
         )?)
@@ -352,6 +386,12 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .item(&shortcut_item(
             app,
             &mut shortcut_items,
+            "view.toggleContextPane",
+            "Toggle Review Pane",
+        )?)
+        .item(&shortcut_item(
+            app,
+            &mut shortcut_items,
             "view.toggleProblems",
             "Toggle Problems",
         )?)
@@ -372,19 +412,19 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             app,
             &mut shortcut_items,
             "view.switchToAgents",
-            "Switch to Agents",
+            "Show Agents Tab",
         )?)
         .item(&shortcut_item(
             app,
             &mut shortcut_items,
             "view.switchToEditor",
-            "Switch to Editor",
+            "Show Code Tab",
         )?)
         .item(&shortcut_item(
             app,
             &mut shortcut_items,
             "view.toggleUiMode",
-            "Toggle Agents / Editor",
+            "Switch Between Agents and Code",
         )?)
         .separator()
         .item(&PredefinedMenuItem::fullscreen(app, None)?)
@@ -458,6 +498,9 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             "debug.toggleBreakpoint",
             "Toggle Breakpoint",
         )?)
+        .separator()
+        .item(&run_start_menu)
+        .item(&run_stop_menu)
         .build()?;
 
     let terminal = SubmenuBuilder::new(app, "Terminal")
@@ -506,6 +549,8 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
 
     app.manage(AppMenuState {
         recent_menu,
+        run_start_menu,
+        run_stop_menu,
         save_item,
         toggle_sidebar_item,
         toggle_terminal_item,
@@ -573,6 +618,96 @@ pub fn macos_menu_set_checked(app: AppHandle, id: String, checked: bool) -> Resu
     {
         Ok(())
     }
+}
+
+/// A run configuration or running process shown in the Run menu.
+#[derive(Debug, serde::Deserialize)]
+pub struct RunMenuEntry {
+    id: String,
+    label: String,
+}
+
+const MAX_RUN_ENTRIES: usize = 64;
+const MAX_RUN_ENTRY_CHARS: usize = 256;
+
+fn validate_run_entries(entries: &[RunMenuEntry]) -> Result<(), String> {
+    if entries.len() > MAX_RUN_ENTRIES {
+        return Err("too many run menu entries".to_string());
+    }
+    let invalid = entries.iter().any(|entry| {
+        entry.id.is_empty()
+            || entry.id.chars().count() > MAX_RUN_ENTRY_CHARS
+            || entry.label.chars().count() > MAX_RUN_ENTRY_CHARS
+    });
+    if invalid {
+        return Err("invalid run menu entry".to_string());
+    }
+    Ok(())
+}
+
+/// Fills Run > Run Task with the run configurations and Run > Stop Task with the running processes.
+#[tauri::command]
+#[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
+pub fn macos_menu_set_run_tasks(
+    app: AppHandle,
+    start: Vec<RunMenuEntry>,
+    stop: Vec<RunMenuEntry>,
+) -> Result<(), String> {
+    validate_run_entries(&start)?;
+    validate_run_entries(&stop)?;
+    #[cfg(target_os = "macos")]
+    {
+        let state = menu_state(&app)?;
+        fill_submenu(
+            &app,
+            &state.run_start_menu,
+            RUN_START_PREFIX,
+            &start,
+            (RUN_START_EMPTY_ID, "No Run Configurations"),
+        )?;
+        fill_submenu(
+            &app,
+            &state.run_stop_menu,
+            RUN_STOP_PREFIX,
+            &stop,
+            (RUN_STOP_EMPTY_ID, "No Running Tasks"),
+        )?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn fill_submenu(
+    app: &AppHandle,
+    menu: &Submenu<Wry>,
+    prefix: &str,
+    entries: &[RunMenuEntry],
+    (empty_id, empty_label): (&str, &str),
+) -> Result<(), String> {
+    while !menu.items().map_err(|e| e.to_string())?.is_empty() {
+        menu.remove_at(0).map_err(|e| e.to_string())?;
+    }
+    if entries.is_empty() {
+        let empty = MenuItem::with_id(app, empty_id, empty_label, false, None::<&str>)
+            .map_err(|e| e.to_string())?;
+        return menu.append(&empty).map_err(|e| e.to_string());
+    }
+    for entry in entries {
+        let item = MenuItem::with_id(
+            app,
+            format!("{prefix}{}", entry.id),
+            &entry.label,
+            true,
+            None::<&str>,
+        )
+        .map_err(|e| e.to_string())?;
+        menu.append(&item).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 const MAX_ACCELERATOR_CHARS: usize = 64;
@@ -653,8 +788,8 @@ mod tests {
     use std::collections::HashMap;
 
     use super::{
-        parse_recent_menu_id, resolve_menu_event, validate_shortcuts, MAX_SHORTCUTS,
-        TOGGLE_TERMINAL_MENU_ID,
+        parse_recent_menu_id, resolve_menu_event, validate_run_entries, validate_shortcuts,
+        RunMenuEntry, MAX_RUN_ENTRIES, MAX_SHORTCUTS, TOGGLE_TERMINAL_MENU_ID,
     };
 
     #[test]
@@ -704,5 +839,36 @@ mod tests {
             Some(("file.openRecent", Some("/tmp/demo".to_string())))
         );
         assert_eq!(resolve_menu_event("nsmenu.about"), None);
+    }
+
+    #[test]
+    fn resolve_maps_run_task_entries() {
+        assert_eq!(
+            resolve_menu_event("run.start:dev server"),
+            Some(("run.startTask", Some("dev server".to_string())))
+        );
+        assert_eq!(
+            resolve_menu_event("run.stop:proc-1"),
+            Some(("run.stopTask", Some("proc-1".to_string())))
+        );
+        assert_eq!(
+            resolve_menu_event("view.toggleContextPane"),
+            Some(("view.toggleContextPane", None))
+        );
+    }
+
+    #[test]
+    fn validates_run_menu_entries() {
+        let entry = |id: &str, label: &str| RunMenuEntry {
+            id: id.to_string(),
+            label: label.to_string(),
+        };
+        assert!(validate_run_entries(&[entry("dev", "dev")]).is_ok());
+        assert!(validate_run_entries(&[entry("", "empty id")]).is_err());
+        assert!(validate_run_entries(&[entry("dev", &"x".repeat(300))]).is_err());
+        let many = (0..=MAX_RUN_ENTRIES)
+            .map(|index| entry(&index.to_string(), "task"))
+            .collect::<Vec<_>>();
+        assert!(validate_run_entries(&many).is_err());
     }
 }

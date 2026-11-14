@@ -16,6 +16,7 @@ import { useDebugStore } from "@/features/debug/store";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout/store";
 import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
+import { startRunConfig } from "../runTasks";
 
 function StatusDot({ status }: { status: RunStatus }) {
   const colorClass =
@@ -68,7 +69,12 @@ function RunningProcessBadge({
   );
 }
 
-export function RunConfigWidget() {
+interface RunConfigWidgetProps {
+  /** Shows only the running processes; macOS starts tasks from the Run menu instead. */
+  runningOnly?: boolean;
+}
+
+export function RunConfigWidget({ runningOnly = false }: RunConfigWidgetProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const {
@@ -77,7 +83,6 @@ export function RunConfigWidget() {
     workspaceRoot,
     activeProcessId,
     setActiveProcess,
-    startConfig,
     stopProcess,
     restartProcess,
     removeProcess,
@@ -88,7 +93,6 @@ export function RunConfigWidget() {
       workspaceRoot: s.workspaceRoot,
       activeProcessId: s.activeProcessId,
       setActiveProcess: s.setActiveProcess,
-      startConfig: s.startConfig,
       stopProcess: s.stopProcess,
       restartProcess: s.restartProcess,
       removeProcess: s.removeProcess,
@@ -111,18 +115,7 @@ export function RunConfigWidget() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleStart = useCallback(
-    async (config: RunConfig) => {
-      const processId = await startConfig(config);
-      if (processId) {
-        if (terminal.mode === "hidden") {
-          setTerminalMode("docked-bottom");
-        }
-        addRunSession(processId, config.name, config.command, resolveDefaultTerminalPanelId());
-      }
-    },
-    [startConfig, addRunSession, terminal.mode, setTerminalMode],
-  );
+  const handleStart = useCallback((config: RunConfig) => void startRunConfig(config), []);
 
   const handleStop = useCallback(
     (id: string) => {
@@ -180,7 +173,7 @@ export function RunConfigWidget() {
       ))}
 
       {/* Dropdown for all configs + stopped processes */}
-      <div className="relative">
+      <div className={runningOnly ? "hidden" : "relative"}>
         <button
           type="button"
           onClick={() => setDropdownOpen(!dropdownOpen)}
