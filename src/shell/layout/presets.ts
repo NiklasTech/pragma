@@ -30,6 +30,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       width: 260,
       collapsed: true,
       tab: "explorer",
+      pinned: false,
     },
     ai: { mode: "hidden", placement: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
@@ -47,8 +48,9 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
     sidebar: {
       position: "left",
       width: 260,
-      collapsed: false,
+      collapsed: true,
       tab: "explorer",
+      pinned: false,
     },
     ai: { mode: "hidden", placement: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
@@ -66,8 +68,9 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
     sidebar: {
       position: "left",
       width: 220,
-      collapsed: false,
+      collapsed: true,
       tab: "explorer",
+      pinned: false,
     },
     ai: { mode: "drawer-right", placement: "right", floating: { ...DEFAULT_FLOATING }, size: 380 },
     terminal: {
@@ -87,6 +90,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       width: 260,
       collapsed: true,
       tab: "explorer",
+      pinned: false,
     },
     ai: { mode: "floating", placement: "floating", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {
@@ -106,6 +110,7 @@ export const layoutPresets: Record<string, LayoutTreeState> = {
       width: 280,
       collapsed: false,
       tab: "debug",
+      pinned: false,
     },
     ai: { mode: "hidden", placement: "hidden", floating: { ...DEFAULT_FLOATING }, size: 360 },
     terminal: {

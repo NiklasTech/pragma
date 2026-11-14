@@ -22,6 +22,8 @@ export interface SidebarState {
   width: number;
   collapsed: boolean;
   tab: SidebarTab;
+  /** Docked beside the workspace; unpinned it opens as a drawer over the workspace. */
+  pinned: boolean;
 }
 
 export interface FloatingState {
@@ -121,6 +123,7 @@ export interface LayoutTreeActions {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setSidebarTab: (tab: SidebarTab) => void;
   toggleSidebar: () => void;
+  setSidebarPinned: (pinned: boolean) => void;
 
   setAIMode: (mode: AIMode) => void;
   setAIPlacement: (placement: AIPlacement) => void;

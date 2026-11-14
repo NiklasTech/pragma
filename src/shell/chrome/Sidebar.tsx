@@ -63,6 +63,7 @@ export function SidebarContent() {
 
   return (
     <div className="@container flex h-full min-h-0 flex-col">
+      <ViewShelf />
       <div className="min-h-0 flex-1 overflow-hidden pt-1">
         <Suspense fallback={null}>
           <SidebarViewContent tab={tab} />
@@ -74,10 +75,6 @@ export function SidebarContent() {
           <LocalHistoryPanel filePath={activeFilePath} isOpen={isOpen} onClose={closePanel} />
         </Suspense>
       )}
-
-      <div className="flex shrink-0 justify-center px-2 pt-1 pb-2">
-        <ViewShelf />
-      </div>
     </div>
   );
 }

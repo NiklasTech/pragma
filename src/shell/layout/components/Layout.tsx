@@ -9,6 +9,7 @@ import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useLayoutStore } from "../store";
 import { SidebarContent } from "@/shell/chrome/Sidebar";
+import { SidebarDrawer } from "@/shell/chrome/SidebarDrawer";
 import { LayoutTreeRenderer } from "./LayoutTreeRenderer";
 import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
@@ -41,7 +42,7 @@ export function Layout() {
   };
 
   const showSidebar = sidebar.position !== "hidden";
-  const sidebarExpanded = showSidebar && !sidebar.collapsed;
+  const sidebarExpanded = showSidebar && !sidebar.collapsed && sidebar.pinned;
   const aiVisible = ai.mode !== "hidden";
   const aiDrawerLeft = ai.mode === "drawer-left";
 
@@ -110,7 +111,10 @@ export function Layout() {
               )}
             </ResizablePanelGroup>
           ) : (
-            <div className="min-h-0 flex-1 overflow-hidden">{workspace}</div>
+            <div className="relative min-h-0 flex-1 overflow-hidden">
+              {workspace}
+              <SidebarDrawer />
+            </div>
           )}
 
           {aiVisible && !aiDrawerLeft && <AIChatHost />}
