@@ -91,14 +91,8 @@ export const defaultSettings: SettingsState = {
   lightTheme: "light-default",
   darkTheme: "dark-default",
   keymap: "default",
-  layout: {
-    sidebarWidth: 250,
-    terminalHeight: "50%",
-    chatPanelWidth: 380,
-  },
   workspace: {
     recentFolders: [],
-    recentFiles: [],
     favoriteFolders: [],
   },
   statusbar: {

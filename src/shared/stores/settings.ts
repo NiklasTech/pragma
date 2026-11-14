@@ -3,7 +3,11 @@ import { persist } from "zustand/middleware";
 import { crossWindowSync } from "./sync/crossWindowSync";
 import { getDefaultShortcuts, getIsMac } from "@/shared/lib/shortcuts";
 import { defaultSettings } from "./settings/defaults";
-import { mergePartial, mergeWithDefaults } from "./settings/migrations";
+import {
+  mergePartial,
+  mergeWithDefaults,
+  withoutRemovedWorkspaceKeys,
+} from "./settings/migrations";
 import type { SettingsActions, SettingsState } from "./settings/types";
 
 export type {
@@ -17,7 +21,6 @@ export type {
   ExperimentalSettings,
   ExtensionSettings,
   FontSelection,
-  LayoutSettings,
   LspSettings,
   McpServerConfig,
   McpSettings,
@@ -77,14 +80,6 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
           0,
           20,
         ),
-      },
-    })),
-
-  addRecentFile: (path) =>
-    set((state) => ({
-      workspace: {
-        ...state.workspace,
-        recentFiles: [path, ...state.workspace.recentFiles.filter((p) => p !== path)].slice(0, 50),
       },
     })),
 
@@ -202,8 +197,9 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       lightTheme: partial.lightTheme ?? state.lightTheme,
       darkTheme: partial.darkTheme ?? state.darkTheme,
       keymap: partial.keymap ?? state.keymap,
-      layout: mergePartial(defaultSettings.layout, partial.layout),
-      workspace: mergePartial(defaultSettings.workspace, partial.workspace),
+      workspace: withoutRemovedWorkspaceKeys(
+        mergePartial(defaultSettings.workspace, partial.workspace),
+      ),
       statusbar: mergePartial(defaultSettings.statusbar, partial.statusbar),
       mcp: mergePartial(defaultSettings.mcp, partial.mcp),
       lsp: mergePartial(defaultSettings.lsp, partial.lsp),

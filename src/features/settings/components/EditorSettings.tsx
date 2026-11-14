@@ -149,7 +149,7 @@ export function EditorSettings() {
         )}
         <SettingRow
           label="Format on Save"
-          description="Run formatter when saving files"
+          description="Format with the language server when saving. Needs language servers turned on."
           control={
             <Switch
               checked={editor.formatOnSave}
