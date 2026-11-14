@@ -107,6 +107,16 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "view.toggleContextPane" as const,
+    label: "Toggle Review Pane",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      alt: true,
+      code: "Digit0",
+    }),
+  },
+  {
     id: "view.openSettings" as const,
     label: "Open Settings",
     category: "view" as const,
@@ -117,7 +127,7 @@ export const SHORTCUT_ACTIONS = [
   },
   {
     id: "view.switchToAgents" as const,
-    label: "Switch to Agents",
+    label: "Show Agents Tab",
     category: "view" as const,
     default: (isMac: boolean): ShortcutBinding => ({
       [isMac ? "meta" : "ctrl"]: true,
@@ -126,7 +136,7 @@ export const SHORTCUT_ACTIONS = [
   },
   {
     id: "view.switchToEditor" as const,
-    label: "Switch to Editor",
+    label: "Show Code Tab",
     category: "view" as const,
     default: (isMac: boolean): ShortcutBinding => ({
       [isMac ? "meta" : "ctrl"]: true,
@@ -135,7 +145,7 @@ export const SHORTCUT_ACTIONS = [
   },
   {
     id: "view.toggleUiMode" as const,
-    label: "Toggle Agents / Editor",
+    label: "Switch Between Agents and Code",
     category: "view" as const,
     default: (isMac: boolean): ShortcutBinding => ({
       [isMac ? "meta" : "ctrl"]: true,

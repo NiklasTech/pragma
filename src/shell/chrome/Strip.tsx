@@ -31,7 +31,8 @@ import { WorkspaceMenu } from "./WorkspaceMenu";
 const ICON_BUTTON =
   "flex size-7 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default";
 
-/// The only permanent chrome: the space, its tabs, the agent status, Go to and the window controls.
+/// The only permanent chrome: the space, its tabs, the agent status and Go to. macOS keeps the other
+/// controls in the native menu bar; Windows and Linux show them here with the window controls.
 export function Strip() {
   const [isMaximized, setIsMaximized] = useState(false);
   const win = getCurrentWindow();
@@ -80,9 +81,9 @@ export function Strip() {
         <ExtensionStatusItems alignment="right" />
         <StatusPill />
         <GoToButton />
-        <RunConfigWidget />
+        <RunConfigWidget runningOnly={isMac} />
 
-        {inEditor && sidebar.position !== "hidden" && (
+        {!isMac && inEditor && sidebar.position !== "hidden" && (
           <button
             type="button"
             onClick={toggleSidebar}
@@ -109,9 +110,9 @@ export function Strip() {
           </button>
         )}
 
-        {!inEditor && <ContextPaneToggle />}
+        {!isMac && !inEditor && <ContextPaneToggle />}
 
-        {inEditor && (
+        {!isMac && inEditor && (
           <button
             type="button"
             onClick={toggleAI}
@@ -129,18 +130,17 @@ export function Strip() {
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={() => addFloatingPanel("settings")}
-          aria-label="Settings"
-          className={ICON_BUTTON}
-          title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
-        >
-          <GearSix size={ICON_SIZE.md} />
-        </button>
-
         {!isMac && (
           <>
+            <button
+              type="button"
+              onClick={() => addFloatingPanel("settings")}
+              aria-label="Settings"
+              className={ICON_BUTTON}
+              title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
+            >
+              <GearSix size={ICON_SIZE.md} />
+            </button>
             <div className="mx-1 h-4 w-px bg-border" />
             <button
               type="button"

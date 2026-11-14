@@ -279,21 +279,17 @@ fn canonical_existing_ancestor(path: &Path) -> Option<PathBuf> {
 }
 
 fn executable(path: &Path) -> bool {
-    let metadata = match std::fs::metadata(path) {
-        Ok(metadata) => metadata,
-        Err(_) => return false,
-    };
-    if !metadata.is_file() {
+    let Ok(metadata) = std::fs::metadata(path) else {
         return false;
-    }
+    };
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        metadata.permissions().mode() & 0o111 != 0
+        metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
     }
     #[cfg(not(unix))]
     {
-        true
+        metadata.is_file()
     }
 }
 
