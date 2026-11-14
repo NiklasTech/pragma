@@ -8,7 +8,6 @@ export const createCoreSlice: AISlice<
     | "setInlineCompletion"
     | "setCompletionDebounce"
     | "setCompletionTriggerCharacters"
-    | "setTerminalSuggestions"
     | "setTerminalSuggestionProvider"
     | "setTerminalSuggestionModel"
     | "updateProviderConfig"
@@ -19,7 +18,6 @@ export const createCoreSlice: AISlice<
   setInlineCompletion: (enabled) => set({ inlineCompletion: enabled }),
   setCompletionDebounce: (ms) => set({ completionDebounce: ms }),
   setCompletionTriggerCharacters: (chars) => set({ completionTriggerCharacters: chars }),
-  setTerminalSuggestions: (enabled) => set({ terminalSuggestions: enabled }),
   setTerminalSuggestionProvider: (provider) => set({ terminalSuggestionProvider: provider }),
   setTerminalSuggestionModel: (model) => set({ terminalSuggestionModel: model }),
 

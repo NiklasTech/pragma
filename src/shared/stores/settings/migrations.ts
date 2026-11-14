@@ -13,7 +13,6 @@ import type {
   SettingsActions,
   SettingsState,
   StatusbarSettings,
-  WorkspaceSettings,
 } from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
@@ -153,12 +152,20 @@ export function migrateShortcuts(
   return merged;
 }
 
-/// Recent files were stored but never shown; older settings still carry the list.
-export function withoutRemovedWorkspaceKeys(workspace: WorkspaceSettings): WorkspaceSettings {
-  const { recentFiles: _removedRecentFiles, ...rest } = workspace as WorkspaceSettings & {
-    recentFiles?: unknown;
-  };
-  return rest;
+// Stored once but never read; older settings still carry them.
+const REMOVED_KEYS = {
+  workspace: ["recentFiles"],
+  ai: ["terminalSuggestions"],
+  agent: ["enabled"],
+} as const;
+
+export function withoutRemovedKeys<T extends object>(
+  group: keyof typeof REMOVED_KEYS,
+  value: T,
+): T {
+  const result: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+  for (const key of REMOVED_KEYS[group]) delete result[key];
+  return result as T;
 }
 
 export function mergeWithDefaults(
@@ -177,6 +184,7 @@ export function mergeWithDefaults(
     mcpRunningServerIds: _removedMcpRunningServerIds,
     themeMode: _removedThemeMode,
     layout: _removedLayout,
+    keymap: _removedKeymap,
     ...restPartial
   } = partial;
 
@@ -187,13 +195,13 @@ export function mergeWithDefaults(
     ...restPartial,
     editor: mergePartial(defaults.editor, partial.editor),
     terminal: mergePartial(defaults.terminal, partial.terminal),
-    ai: mergePartial(defaults.ai, migratedAi),
-    workspace: withoutRemovedWorkspaceKeys(mergePartial(defaults.workspace, partial.workspace)),
+    ai: withoutRemovedKeys("ai", mergePartial(defaults.ai, migratedAi)),
+    workspace: withoutRemovedKeys("workspace", mergePartial(defaults.workspace, partial.workspace)),
     statusbar: migrateStatusbarSettings(mergePartial(defaults.statusbar, partial.statusbar)),
     mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
     lsp: mergePartial(defaults.lsp, partial.lsp),
     experimental: mergePartial(defaults.experimental, partial.experimental),
-    agent: mergePartial(defaults.agent, partial.agent),
+    agent: withoutRemovedKeys("agent", mergePartial(defaults.agent, partial.agent)),
     notifications: mergePartial(defaults.notifications, partial.notifications),
     appearance: mergePartial(defaults.appearance, partial.appearance),
     repositoryColors: mergePartial(defaults.repositoryColors, partial.repositoryColors),

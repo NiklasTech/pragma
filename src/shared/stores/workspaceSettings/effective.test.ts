@@ -6,7 +6,6 @@ import { defaultSettings } from "@/shared/stores/settings/defaults";
 import { lspEnabledFor, mergeAgentSettings, mergeEditorSettings } from "./effective";
 
 const agent: AgentSettings = {
-  enabled: true,
   autoApprove: "never",
   allowedCommands: ["git status"],
   useProjectRules: true,

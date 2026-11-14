@@ -167,7 +167,6 @@ describe("agent tools", () => {
 
   it("follows the approval settings of built-in tools", () => {
     const settings: AgentSettings = {
-      enabled: true,
       autoApprove: "edits",
       allowedCommands: [],
       stepLimit: null,

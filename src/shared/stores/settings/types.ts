@@ -109,7 +109,6 @@ export interface AISettings {
   completionDebounce: number;
   /** Suggest the next edit elsewhere in the file after a change. */
   nextEditPrediction: boolean;
-  terminalSuggestions: boolean;
   terminalSuggestionProvider: AIProvider | null;
   terminalSuggestionModel: string | null;
   yoloMode: boolean;
@@ -187,7 +186,6 @@ export interface ExperimentalSettings {
 export type AgentAutoApprove = "never" | "edits" | "all";
 
 export interface AgentSettings {
-  enabled: boolean;
   autoApprove: AgentAutoApprove;
   allowedCommands: string[];
   useProjectRules: boolean;
@@ -221,7 +219,6 @@ export interface SettingsState {
   followSystemTheme: boolean;
   lightTheme: string;
   darkTheme: string;
-  keymap: string;
   workspace: WorkspaceSettings;
   statusbar: StatusbarSettings;
   mcp: McpSettings;
