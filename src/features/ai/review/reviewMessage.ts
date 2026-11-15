@@ -27,3 +27,15 @@ export function buildReviewMessage(comments: readonly ReviewComment[]): string {
   });
   return ["Please address these review comments on your changes:", ...items].join("\n\n");
 }
+
+/** The same comments on one line, for a terminal CLI that would submit at the first line break. */
+export function buildReviewLine(comments: readonly ReviewComment[]): string {
+  const sorted = [...comments].sort(
+    (a, b) => a.path.localeCompare(b.path) || a.line - b.line || a.side.localeCompare(b.side),
+  );
+  const items = sorted.map(
+    (comment, index) =>
+      `(${index + 1}) ${commentLocation(comment)}, at "${comment.code.trim()}": ${comment.body.trim().replace(/\s+/g, " ")}`,
+  );
+  return `Please address these review comments on your changes: ${items.join(" ")}`;
+}

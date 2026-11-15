@@ -220,7 +220,11 @@ function PeekBody({ session, onClose }: { session: ChatSession; onClose: () => v
             Stop
           </Button>
           {tab === "session" && (
-            <Button variant="secondary" size="sm" onClick={() => setTab("changes")}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => useOverlayStore.getState().open("review", session.id)}
+            >
               Review
             </Button>
           )}

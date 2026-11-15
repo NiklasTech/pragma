@@ -3,6 +3,7 @@ import type { OverlayId } from "@/shared/stores/overlays";
 import { AgentsOverview } from "@/features/ai/overview/AgentsOverview";
 import { AgentPeek } from "@/features/ai/peek/AgentPeek";
 import { QuickStartDialog } from "@/features/ai/quickStart/QuickStartDialog";
+import { ReviewOverlay } from "@/features/ai/review/ReviewOverlay";
 import { SpacesOverlay } from "@/shell/spaces/SpacesOverlay";
 import { GoTo } from "./goTo/GoTo";
 
@@ -14,6 +15,7 @@ export const HOSTED_OVERLAYS: ReadonlyArray<readonly [OverlayId, ComponentType]>
   ["quickStart", QuickStartDialog],
   ["overview", AgentsOverview],
   ["peek", AgentPeek],
+  ["review", ReviewOverlay],
 ];
 
 export function OverlayHost() {
