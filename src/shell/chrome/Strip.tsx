@@ -17,7 +17,8 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout";
 import { useUiMode } from "@/shell/mode";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
-import { ICON_SIZE } from "@/shared/components/ui/icon-button";
+import { Button } from "@/shared/components/ui/button";
+import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
 import { RunConfigWidget } from "@/features/run-config/components";
 import { ContextPaneToggle } from "@/features/ai/components/ContextPaneToggle";
 import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
@@ -28,9 +29,6 @@ import { GoToButton } from "./GoToButton";
 import { SpaceTabs } from "./SpaceTabs";
 import { StatusPill } from "./StatusPill";
 import { WorkspaceMenu } from "./WorkspaceMenu";
-
-const ICON_BUTTON =
-  "flex size-7 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default";
 
 /// The only permanent chrome: the space, its tabs, the agent status and Go to. macOS keeps the other
 /// controls in the native menu bar; Windows and Linux show them here with the window controls.
@@ -87,106 +85,90 @@ export function Strip() {
         <RunConfigWidget runningOnly={isMac} />
 
         {!isMac && inEditor && sidebar.position !== "hidden" && (
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            data-drawer-toggle
-            aria-label={sidebar.collapsed ? "Show sidebar" : "Hide sidebar"}
+          <IconButton
+            icon={SidebarSimple}
+            weight={sidebar.collapsed ? "regular" : "fill"}
+            label={sidebar.collapsed ? "Show sidebar" : "Hide sidebar"}
+            shortcut={formatShortcut(shortcuts["view.toggleSidebar"], isMac)}
             aria-pressed={!sidebar.collapsed}
-            title={`${sidebar.collapsed ? "Show" : "Hide"} Sidebar (${formatShortcut(shortcuts["view.toggleSidebar"], isMac)})`}
-            className={cn(ICON_BUTTON, !sidebar.collapsed && "text-fg-default")}
-          >
-            <SidebarSimple size={ICON_SIZE.md} weight={sidebar.collapsed ? "regular" : "fill"} />
-          </button>
+            data-drawer-toggle
+            className={cn(!sidebar.collapsed && "text-fg-default")}
+            onClick={toggleSidebar}
+          />
         )}
 
         {!isMac && !inEditor && (
-          <button
-            type="button"
-            onClick={toggleThreads}
-            data-drawer-toggle
-            aria-label={threadsOpen ? "Hide threads" : "Show threads"}
+          <IconButton
+            icon={SidebarSimple}
+            weight={threadsOpen ? "fill" : "regular"}
+            label={threadsOpen ? "Hide threads" : "Show threads"}
+            shortcut={formatShortcut(shortcuts["view.toggleSidebar"], isMac)}
             aria-pressed={threadsOpen}
-            title={`${threadsOpen ? "Hide" : "Show"} Threads (${formatShortcut(shortcuts["view.toggleSidebar"], isMac)})`}
-            className={cn(ICON_BUTTON, threadsOpen && "text-fg-default")}
-          >
-            <SidebarSimple size={ICON_SIZE.md} weight={threadsOpen ? "fill" : "regular"} />
-          </button>
+            data-drawer-toggle
+            className={cn(threadsOpen && "text-fg-default")}
+            onClick={toggleThreads}
+          />
         )}
 
         {!isMac && inEditor && (
-          <button
-            type="button"
-            onClick={saveFile}
+          <IconButton
+            icon={FloppyDisk}
+            label="Save file"
+            shortcut={formatShortcut(shortcuts["file.save"], isMac)}
             disabled={!canSave}
-            aria-label="Save file"
-            className={cn(ICON_BUTTON, "disabled:cursor-not-allowed disabled:opacity-40")}
-            title={`Save File (${formatShortcut(shortcuts["file.save"], isMac)})`}
-          >
-            <FloppyDisk size={ICON_SIZE.md} />
-          </button>
+            onClick={saveFile}
+          />
         )}
 
         {!isMac && !inEditor && <ContextPaneToggle />}
 
         {!isMac && inEditor && (
-          <button
-            type="button"
-            onClick={toggleAI}
+          <Button
+            variant="ghost"
+            size="sm"
             aria-pressed={aiOpen}
             title={`AI Chat (${formatShortcut(shortcuts["ai.toggle"], isMac)})`}
-            className={cn(
-              "flex h-7 items-center gap-1.5 rounded-control px-2.5 text-ui-xs font-medium transition-colors",
-              aiOpen
-                ? "bg-bg-active text-fg-default"
-                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-            )}
+            className={cn(aiOpen && "bg-bg-active text-fg-default")}
+            onClick={toggleAI}
           >
             <Sparkle size={ICON_SIZE.sm} weight={aiOpen ? "fill" : "regular"} />
             Chat
-          </button>
+          </Button>
         )}
 
         {!isMac && (
           <>
-            <button
-              type="button"
+            <IconButton
+              icon={GearSix}
+              label="Settings"
+              shortcut={formatShortcut(shortcuts["view.openSettings"], isMac)}
               onClick={() => addFloatingPanel("settings")}
-              aria-label="Settings"
-              className={ICON_BUTTON}
-              title={`Settings (${formatShortcut(shortcuts["view.openSettings"], isMac)})`}
-            >
-              <GearSix size={ICON_SIZE.md} />
-            </button>
+            />
             <div className="mx-1 h-4 w-px bg-border" />
-            <button
-              type="button"
+            <IconButton
+              icon={Minus}
+              weight="bold"
+              size="sm"
+              label="Minimize"
+              className="size-7"
               onClick={handleMinimize}
-              className={ICON_BUTTON}
-              aria-label="Minimize"
-            >
-              <Minus size={ICON_SIZE.sm} weight="bold" />
-            </button>
-            <button
-              type="button"
+            />
+            <IconButton
+              icon={isMaximized ? CornersIn : CornersOut}
+              weight="bold"
+              size="sm"
+              label={isMaximized ? "Restore" : "Maximize"}
+              className="size-7"
               onClick={handleToggleMaximize}
-              className={ICON_BUTTON}
-              aria-label={isMaximized ? "Restore" : "Maximize"}
-            >
-              {isMaximized ? (
-                <CornersIn size={ICON_SIZE.sm} weight="bold" />
-              ) : (
-                <CornersOut size={ICON_SIZE.sm} weight="bold" />
-              )}
-            </button>
-            <button
-              type="button"
+            />
+            <IconButton
+              icon={X}
+              weight="bold"
+              size="sm"
+              label="Close"
+              className="size-7 hover:bg-status-error hover:text-fg-inverse"
               onClick={handleClose}
-              className="flex size-7 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
-              aria-label="Close"
-            >
-              <X size={ICON_SIZE.sm} weight="bold" />
-            </button>
+            />
           </>
         )}
       </div>

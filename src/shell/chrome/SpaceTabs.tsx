@@ -3,6 +3,7 @@ import { Plus, X } from "@phosphor-icons/react";
 import { collectLeaves } from "@/features/ai/panes/layout";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
+import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
 import { StatusDot } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
@@ -30,33 +31,31 @@ function TabButton({ space, tab, waiting }: { space: Space; tab: SpaceTab; waiti
           : "text-fg-muted hover:text-fg-default",
       )}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         role="tab"
         aria-selected={active}
         onClick={() => activateTab(space.id, tab.id)}
         className={cn(
-          "flex h-full items-center gap-1.75 rounded-control pl-2.75 outline-none focus-visible:ring-2 focus-visible:ring-border-focus",
+          "h-full gap-1.75 pl-2.75 font-normal text-inherit hover:bg-transparent hover:text-inherit",
           closable ? "pr-1" : "pr-2.75",
         )}
       >
         {waiting && <StatusDot state="needs-you" decorative className="size-1.5" />}
         {tab.name}
         {waiting && <span className="sr-only">, needs you</span>}
-      </button>
+      </Button>
       {closable && (
-        <button
-          type="button"
-          aria-label={`Close ${tab.name} tab`}
-          title="Close tab"
+        <IconButton
+          icon={X}
+          size="sm"
+          label={`Close ${tab.name} tab`}
           onClick={() => {
             closeTab(space.id, tab.id);
             removeTree(tab.id);
           }}
-          className="mr-1 flex size-5 items-center justify-center rounded-[5px] text-fg-subtle opacity-0 transition-opacity group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-default focus-visible:opacity-100"
-        >
-          <X size={12} />
-        </button>
+          className="mr-1 size-5 rounded-[5px] text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+        />
       )}
     </div>
   );

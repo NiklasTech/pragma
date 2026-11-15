@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { SquaresFour } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
+import { ICON_SIZE } from "@/shared/components/ui/icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,14 +38,15 @@ export function PanePresetsMenu() {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label="Pane layout"
               title="Pane layout"
-              className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="text-fg-subtle"
             >
-              <SquaresFour size={15} />
-            </button>
+              <SquaresFour size={ICON_SIZE.md} />
+            </Button>
           }
         />
         <DropdownMenuContent align="start" className="min-w-[180px]">

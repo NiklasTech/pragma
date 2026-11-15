@@ -1,4 +1,4 @@
-import type { Icon } from "@phosphor-icons/react";
+import type { Icon, IconWeight } from "@phosphor-icons/react";
 
 import { cn } from "@/shared/lib/utils";
 import { Button } from "./button";
@@ -16,6 +16,8 @@ interface IconButtonProps extends Omit<ButtonProps, "children" | "size" | "varia
   size?: keyof typeof ICON_SIZE;
   /** Shortcut shown after the label in the tooltip, for example "⌘K". */
   shortcut?: string;
+  /** Filled icons mark a toggle that is on. */
+  weight?: IconWeight;
 }
 
 /** A ghost button with only an icon; the label is its accessible name and tooltip. */
@@ -24,6 +26,7 @@ export function IconButton({
   label,
   size = "md",
   shortcut,
+  weight,
   className,
   ...props
 }: IconButtonProps) {
@@ -42,7 +45,7 @@ export function IconButton({
           />
         }
       >
-        <IconComponent size={ICON_SIZE[size]} aria-hidden="true" />
+        <IconComponent size={ICON_SIZE[size]} weight={weight} aria-hidden="true" />
       </TooltipTrigger>
       <TooltipContent>
         {label}
