@@ -21,7 +21,7 @@ interface FileReadResult {
   content: string;
 }
 
-async function loadWrittenDiff(cwd: string, row: ReviewRow): Promise<ReviewDiffData> {
+export async function loadWrittenDiff(cwd: string, row: ReviewRow): Promise<ReviewDiffData> {
   const entry = row.gitEntry;
   if (!entry) return { original: "", modified: "", patchText: "" };
 

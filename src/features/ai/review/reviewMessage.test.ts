@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import type { ReviewComment } from "./comments";
-import { buildReviewMessage, commentLocation } from "./reviewMessage";
+import { buildReviewLine, buildReviewMessage, commentLocation } from "./reviewMessage";
 
 function comment(patch: Partial<ReviewComment>): ReviewComment {
   return {
@@ -45,5 +45,18 @@ describe("buildReviewMessage", () => {
     const message = buildReviewMessage([comment({ code: "const s = ```x```;" })]);
 
     expect(message).toContain("````\nconst s = ```x```;\n````");
+  });
+});
+
+describe("buildReviewLine", () => {
+  it("puts every comment on one line, sorted by file and line", () => {
+    const line = buildReviewLine([
+      comment({ path: "src/b.ts", line: 3, code: "  b()", body: "Why\nthis?" }),
+      comment({ line: 9, code: "late()", body: "Remove." }),
+    ]);
+    expect(line).toBe(
+      'Please address these review comments on your changes: (1) src/a.ts:9, at "late()": Remove. (2) src/b.ts:3, at "b()": Why this?',
+    );
+    expect(line).not.toContain("\n");
   });
 });
