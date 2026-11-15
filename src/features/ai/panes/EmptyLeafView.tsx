@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChatCircle, Robot, SquaresFour } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { cn } from "@/shared/lib/utils";
@@ -73,11 +74,11 @@ export function EmptyLeafView({ leafId }: { leafId: string }) {
                 <p className="px-2.5 py-1.5 text-ui-xs text-fg-subtle">No threads match.</p>
               ) : (
                 visible.map((session) => (
-                  <button
+                  <Button
                     key={session.id}
-                    type="button"
+                    variant="ghost"
                     onClick={() => assignSession(rootPath, leafId, session.id)}
-                    className="group flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                    className="group h-auto min-w-0 justify-start gap-2 px-2.5 py-1.5 text-left text-ui-xs font-normal"
                   >
                     <span
                       className={cn(
@@ -99,7 +100,7 @@ export function EmptyLeafView({ leafId }: { leafId: string }) {
                       )}
                     </span>
                     <span className="truncate">{session.title}</span>
-                  </button>
+                  </Button>
                 ))
               )}
             </div>

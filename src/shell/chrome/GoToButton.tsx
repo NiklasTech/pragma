@@ -1,5 +1,6 @@
 import { MagnifyingGlass } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { ICON_SIZE } from "@/shared/components/ui/icon-button";
 import { Kbd } from "@/shared/components/ui/kbd";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
@@ -11,14 +12,14 @@ export function GoToButton() {
   const openOverlay = useOverlayStore((state) => state.open);
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={() => openOverlay("goTo")}
-      className="flex h-7.5 items-center gap-2 rounded-control px-2.25 text-ui-xs text-fg-muted transition-colors outline-none hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-border-focus"
+      className="px-2.25 text-ui-xs font-normal"
     >
       <MagnifyingGlass size={ICON_SIZE.sm} />
       Go to
       {shortcut && <Kbd>{formatShortcut(shortcut, getIsMac())}</Kbd>}
-    </button>
+    </Button>
   );
 }

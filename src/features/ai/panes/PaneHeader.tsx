@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 
 import { AgentMark } from "@/shared/components/ui/agent-mark";
+import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,9 +47,6 @@ import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { PaneRepositoryLabel } from "./PaneRepositoryLabel";
 import { usePaneHeaderDrag } from "./paneDrag";
 import { agentPaneState, terminalPaneLabel, terminalPaneState } from "./paneState";
-
-const PANE_BUTTON =
-  "flex size-7 shrink-0 items-center justify-center rounded-[7px] text-fg-subtle transition-colors duration-(--motion-fast) enabled:hover:bg-bg-hover enabled:hover:text-fg-default disabled:opacity-40";
 
 // Details stay out of sight until the pane is focused, hovered or reached by keyboard.
 const QUIET =
@@ -222,7 +220,7 @@ export function PaneHeader({
         >
           <SessionUsageBadge usage={session?.usage} className="@max-[300px]/pane-header:hidden" />
           {terminal && focused && <TerminalMic sessionId={terminal.id} />}
-          {session && <OpenInBrowserButton session={session} className={PANE_BUTTON} />}
+          {session && <OpenInBrowserButton session={session} />}
           <IconButton
             icon={maximized ? ArrowsInSimple : ArrowsOutSimple}
             label={maximizeLabel}
@@ -233,14 +231,15 @@ export function PaneHeader({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label="Pane actions"
                   title="Pane actions"
-                  className={PANE_BUTTON}
+                  className="text-fg-subtle"
                 >
                   <DotsThree size={ICON_SIZE.md} weight="bold" />
-                </button>
+                </Button>
               }
             />
             <DropdownMenuContent align="end" className="min-w-[190px]">

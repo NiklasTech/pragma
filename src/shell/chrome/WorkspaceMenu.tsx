@@ -11,6 +11,7 @@ import {
 import { open } from "@tauri-apps/plugin-dialog";
 
 import { PragmaMark } from "@/shared/components/PragmaMark";
+import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,10 +61,10 @@ export function WorkspaceMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             aria-label={`Switch space, current: ${workspaceName || "none"}`}
-            className="flex h-7.5 max-w-[260px] min-w-0 shrink-0 items-center gap-2 rounded-control pr-2 pl-1.5 text-ui-sm font-semibold text-fg-default transition-colors hover:bg-bg-hover"
+            className="max-w-[260px] min-w-0 justify-start pr-2 pl-1.5 font-semibold text-fg-default"
             title={branch ? `${rootPath} (${branch})` : (rootPath ?? "Open folder or file")}
           >
             {workspaceName ? (
@@ -79,7 +80,7 @@ export function WorkspaceMenu() {
             <RepositoryColorDot path={activeRepository} />
             <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
             <CaretDown size={12} className="shrink-0 text-fg-subtle" />
-          </button>
+          </Button>
         }
       />
       <DropdownMenuContent align="start" className="min-w-[240px]">
@@ -111,17 +112,19 @@ export function WorkspaceMenu() {
                     <RepositoryColorDot path={path} />
                     <span className="truncate">{getWorkspaceName(path)}</span>
                   </span>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Close repository"
+                    title="Close repository"
                     onClick={(e) => {
                       e.stopPropagation();
                       void closeRepository(path);
                     }}
-                    className="ml-2 rounded p-0.5 text-fg-subtle opacity-0 transition-opacity hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
-                    title="Close repository"
+                    className="ml-2 text-fg-subtle opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-status-error"
                   >
                     <X size={12} />
-                  </button>
+                  </Button>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
@@ -153,17 +156,19 @@ export function WorkspaceMenu() {
                 className="group justify-between"
               >
                 <span className="truncate">{path}</span>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Remove favorite"
+                  title="Remove favorite"
                   onClick={(e) => {
                     e.stopPropagation();
                     removeFavoriteFolder(path);
                   }}
-                  className="ml-2 rounded p-0.5 text-fg-subtle opacity-0 transition-opacity hover:bg-bg-hover hover:text-status-error group-focus-within:opacity-100 group-hover:opacity-100"
-                  title="Remove favorite"
+                  className="ml-2 text-fg-subtle opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:text-status-error"
                 >
                   <X size={12} />
-                </button>
+                </Button>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />

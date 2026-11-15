@@ -1,5 +1,6 @@
 import { focusAttentionSession } from "@/features/ai/notifications/focusSession";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
+import { Button } from "@/shared/components/ui/button";
 import { StatusDot, type AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 
@@ -18,17 +19,17 @@ export function StatusPill() {
         : "All quiet";
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       disabled={!target}
       onClick={() => target && focusAttentionSession(target)}
       title={target ? "Show the session that needs you first" : "No agent is running"}
-      className="flex h-7.5 items-center gap-2 rounded-full bg-bg-well pr-3 pl-2.5 text-ui-xs text-fg-muted ring-1 ring-border ring-inset transition-shadow outline-none hover:ring-fg-subtle focus-visible:ring-2 focus-visible:ring-border-focus disabled:cursor-default disabled:hover:ring-border"
+      className="rounded-full bg-bg-well pr-3 pl-2.5 text-ui-xs font-normal ring-1 ring-border ring-inset hover:bg-bg-well hover:ring-fg-subtle disabled:pointer-events-auto disabled:cursor-default disabled:opacity-100 disabled:hover:ring-border"
     >
       <StatusDot state={state} decorative />
       <span className={cn(state === "needs-you" && "font-medium text-state-needs-you")}>
         {label}
       </span>
-    </button>
+    </Button>
   );
 }
