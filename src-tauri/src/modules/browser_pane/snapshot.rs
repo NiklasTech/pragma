@@ -12,15 +12,19 @@ type SnapshotResult = Result<Vec<u8>, String>;
 /// Captures the visible content of the calling webview as a PNG, cross-origin frames included.
 #[tauri::command]
 pub async fn browser_pane_snapshot(webview: Webview) -> Result<Response, String> {
+    capture_png(&webview).await.map(Response::new)
+}
+
+/// Captures the visible content of a webview as PNG bytes.
+pub async fn capture_png(webview: &Webview) -> SnapshotResult {
     let (tx, rx) = mpsc::channel::<SnapshotResult>();
     webview
         .with_webview(move |platform| capture(platform, tx))
         .map_err(|e| format!("Failed to access the webview: {e}"))?;
-    let png = tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(SNAPSHOT_TIMEOUT))
+    tauri::async_runtime::spawn_blocking(move || rx.recv_timeout(SNAPSHOT_TIMEOUT))
         .await
         .map_err(|e| format!("The snapshot task failed: {e}"))?
-        .map_err(|_| "The webview did not return a snapshot in time".to_string())??;
-    Ok(Response::new(png))
+        .map_err(|_| "The webview did not return a snapshot in time".to_string())?
 }
 
 #[cfg(target_os = "macos")]

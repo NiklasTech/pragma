@@ -68,6 +68,8 @@ vp run tauri dev --config src-tauri/tauri.dev.conf.json
 > pnpm run test         # run tests once
 > ```
 
+> **Coding agents:** Pragma Dev includes a debug-only dev bridge. With it, an agent such as Claude Code can click through the running app, type, take screenshots, and read its logs through the `pragma-dev` MCP server in `.mcp.json`. See [docs/DEV_BRIDGE.md](docs/DEV_BRIDGE.md).
+
 > Pragma targets a binary size under 15 MB. Keep that in mind when pulling in new dependencies.
 
 ---

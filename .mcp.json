@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pragma-dev": {
+      "command": "node",
+      "args": ["scripts/dev-bridge-mcp.mjs"]
+    }
+  }
+}
