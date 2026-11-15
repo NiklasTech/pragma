@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { CaretRight, CaretDown, Spinner } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
 import { getFileIconPath } from "@/shared/lib/file-icons";
@@ -50,6 +50,8 @@ interface FileTreeNodeProps {
   onMove: (paths: string[], targetDir: string) => void;
   onShowLocalHistory?: (path: string) => void;
   decoration?: GitDecoration;
+  /** Shown before the git letter, for example the agent that changed the file. */
+  changeMark?: ReactNode;
   hasChanges?: boolean;
 }
 
@@ -67,6 +69,7 @@ export function FileTreeNode({
   onMove,
   onShowLocalHistory,
   decoration,
+  changeMark,
   hasChanges = false,
 }: FileTreeNodeProps) {
   const activeTabId = useEditorStore((s) => s.activeTabId);
@@ -209,10 +212,12 @@ export function FileTreeNode({
         {node.name}
       </span>
 
+      {changeMark && <span className="ml-auto flex shrink-0 items-center">{changeMark}</span>}
       {decoration && (
         <span
           className={cn(
-            "ml-auto shrink-0 font-mono text-ui-2xs font-semibold",
+            "shrink-0 font-mono text-ui-2xs font-semibold",
+            !changeMark && "ml-auto",
             DECORATION_TEXT[decoration.kind],
             "no-underline",
           )}
