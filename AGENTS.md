@@ -88,6 +88,10 @@ Every new Tauri command must:
 - `pnpm run check` and `pnpm run test` must pass.
 - For Rust changes: `cd src-tauri && cargo check && cargo clippy && cargo fmt --check`.
 
+## Seeing the Running App
+
+Debug builds include a dev bridge that lets agents drive Pragma Dev like Playwright: inspect the UI, click, type, press shortcuts, take screenshots, and read console and backend logs. Start the app with `pnpm run dev:desktop`, then use the `pragma_*` tools of the `pragma-dev` MCP server from `.mcp.json` (`node scripts/dev-bridge-mcp.mjs` for other MCP clients). Use it to confirm UI changes in the real app. Details: `docs/DEV_BRIDGE.md`.
+
 ## Git and Pull Requests
 
 - **Branches**: from an up-to-date `main`, kebab-case, one of `feat/`, `fix/`, `chore/`, `docs/`, `perf/`, `security/`. Example: `fix/terminal-split-focus`.

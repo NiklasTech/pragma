@@ -36,10 +36,13 @@ pub fn run() {
         std::process::exit(1);
     }
     let dev_url = context.config().build.dev_url.clone();
-    let result = tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+    let builder =
+        tauri::Builder::default().plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             cli::handle_second_instance(app, &argv, &cwd);
-        }))
+        }));
+    #[cfg(debug_assertions)]
+    let builder = builder.plugin(modules::dev_bridge::init(dev_url.as_ref()));
+    let result = builder
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_cli::init())
         .plugin(modules::browser_pane::init(dev_url.as_ref()))

@@ -4,6 +4,8 @@ pub mod attention_badge;
 pub mod browser_pane;
 pub mod cli_sync;
 pub mod dap;
+#[cfg(debug_assertions)]
+pub mod dev_bridge;
 pub mod env_loader;
 pub mod extensions;
 pub mod file_preview;

@@ -15,7 +15,7 @@ const BUNDLED_APP_ORIGINS: [&str; 3] = [
 ];
 
 /// Origins the app page is served from; the dev server only in debug builds.
-fn app_origins(dev_url: Option<&Url>) -> Vec<String> {
+pub(crate) fn app_origins(dev_url: Option<&Url>) -> Vec<String> {
     let mut origins: Vec<String> = BUNDLED_APP_ORIGINS.iter().map(|o| o.to_string()).collect();
     if cfg!(debug_assertions) {
         if let Some(url) = dev_url {
