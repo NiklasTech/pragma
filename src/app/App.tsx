@@ -29,6 +29,7 @@ import { useExtensions } from "@/features/extensions/useExtensions";
 import { useAcpBrowserRequests } from "@/features/ai/browser/acpBrowser";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
+import { useAgentStateFeed } from "@/features/ai/state/useAgentStateFeed";
 import { useActivityTracker } from "@/features/ai/activity/useActivityTracker";
 import { useOpenRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useSubscriptionUsagePoller } from "@/features/ai/subscription/useSubscriptionUsagePoller";
@@ -82,6 +83,7 @@ export default function App() {
   useAcpSpawnRequests();
   useAcpBrowserRequests();
   useSessionNotifications();
+  useAgentStateFeed();
   useActivityTracker();
   useSubscriptionUsagePoller();
   useTaskAutomation();

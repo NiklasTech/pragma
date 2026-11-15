@@ -19,6 +19,7 @@ import { setAttentionBadge, showSystemNotification } from "./notifier";
 import { subscribeSessionOutcomes } from "./outcomes";
 import { readSessionInView } from "./sessionInView";
 import { readSessionActivity } from "./useSessionActivity";
+import { summarizeAgentStates, useAgentStatesStore } from "../state/agentStates";
 
 const KIND_SETTINGS: Record<AttentionKind, keyof NotificationSettings> = {
   finished: "sessionFinished",
@@ -66,7 +67,8 @@ export function useSessionNotifications(): void {
       }
       waiting = new Set(activity.waiting);
       const showBadge = useSettingsStore.getState().notifications.badge;
-      setAttentionBadge(showBadge ? activity.waiting.length : 0);
+      const { needsYou } = summarizeAgentStates(useAgentStatesStore.getState().entries);
+      setAttentionBadge(showBadge ? needsYou.length : 0);
     };
 
     const unsubscribes = [
@@ -82,6 +84,7 @@ export function useSessionNotifications(): void {
       useSettingsStore.subscribe((state, previous) => {
         if (state.notifications !== previous.notifications) refresh();
       }),
+      useAgentStatesStore.subscribe(refresh),
       subscribeSessionOutcomes(notify),
       subscribeTerminalAttention(notify),
     ];
