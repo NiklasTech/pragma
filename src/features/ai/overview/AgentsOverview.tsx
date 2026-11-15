@@ -182,6 +182,7 @@ function OverviewBody({ onClose }: { onClose: () => void }) {
       spaceName={group === "status" ? spaceName(item.spaceId) : null}
       now={now}
       onOpen={open}
+      onPeek={(sessionId) => openOverlay("peek", sessionId)}
     />
   );
   const builtIn = savedId === null && spaceId === null;

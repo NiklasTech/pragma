@@ -3,7 +3,7 @@ import { Terminal } from "@xterm/xterm";
 
 import type { ChatSession } from "@/shared/stores/ai";
 
-import { getTerminalBuffer, subscribeTerminalOutput } from "../terminal/runner";
+import { getTerminalBuffer, getTerminalSize, subscribeTerminalOutput } from "../terminal/runner";
 import { snippetLines } from "./overviewModel";
 
 const LINES = 5;
@@ -39,7 +39,14 @@ export function useTileSnippet(session: ChatSession): string[] {
   useEffect(() => {
     if (!isTerminal) return;
     // An unopened xterm parses output into its buffer without touching the DOM.
-    const term = new Terminal({ cols: COLS, rows: ROWS, scrollback: 200, allowProposedApi: true });
+    // Render at the PTY's own width, or the CLI's cursor moves land in the wrong columns.
+    const size = getTerminalSize(sessionId);
+    const term = new Terminal({
+      cols: size?.cols ?? COLS,
+      rows: size?.rows ?? ROWS,
+      scrollback: 200,
+      allowProposedApi: true,
+    });
     let dirty = true;
     term.write(getTerminalBuffer(sessionId));
     const unsubscribe = subscribeTerminalOutput(sessionId, (data) => {
@@ -47,6 +54,11 @@ export function useTileSnippet(session: ChatSession): string[] {
       dirty = true;
     });
     const refresh = () => {
+      const current = getTerminalSize(sessionId);
+      if (current && (current.cols !== term.cols || current.rows !== term.rows)) {
+        term.resize(current.cols, current.rows);
+        dirty = true;
+      }
       if (!dirty) return;
       dirty = false;
       // write() parses asynchronously; read once the queued output is in the buffer.
