@@ -28,6 +28,7 @@ import {
 } from "./runner";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
+import { isPaneShortcut } from "../panes/paneCommands";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -86,7 +87,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     const isMac = getIsMac();
     // The hold-to-dictate key belongs to dictation, so xterm must not type it.
     term.attachCustomKeyEventHandler((event) => {
-      if (matchShortcut(event, dictateBindingRef.current)) return false;
+      if (matchShortcut(event, dictateBindingRef.current) || isPaneShortcut(event)) return false;
       return !(
         isMac && handleMacCliKey(term, event, (data) => void writeTerminal(session.id, data))
       );
