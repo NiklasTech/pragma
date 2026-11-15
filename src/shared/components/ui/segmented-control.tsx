@@ -46,7 +46,7 @@ export function SegmentedControl<Value extends string>({
         <Toggle<Value>
           key={option.value}
           value={option.value}
-          className="inline-flex h-6.5 items-center gap-1.5 rounded-[7px] px-2.5 text-ui-sm whitespace-nowrap text-fg-muted transition-colors outline-none hover:text-fg-default focus-visible:ring-2 focus-visible:ring-border-focus data-[pressed]:bg-bg-active data-[pressed]:text-fg-default"
+          className="inline-flex h-6.5 items-center gap-1.5 rounded-[7px] px-2.5 text-ui-sm whitespace-nowrap text-fg-muted transition-colors outline-none hover:text-fg-default focus-visible:ring-2 focus-visible:ring-border-focus data-[pressed]:bg-control data-[pressed]:text-fg-default"
         >
           {option.label}
           {option.count !== undefined && (
