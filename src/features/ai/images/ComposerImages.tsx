@@ -1,5 +1,6 @@
 import { X } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { imageToFilePart } from "@/shared/lib/ai/images";
 
 import type { ComposerImage } from "./useComposerImages";
@@ -29,15 +30,16 @@ export function ComposerImages({ images, onRemove, unsupportedReason }: Composer
               className="size-8 shrink-0 rounded-md object-cover"
             />
             <span className="min-w-0 flex-1 truncate text-ui-2xs text-fg-muted">{image.name}</span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => onRemove(image.id)}
               aria-label={`Remove ${image.name}`}
               title="Remove image"
-              className="flex size-5 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="rounded-full text-fg-subtle"
             >
               <X size={10} weight="bold" />
-            </button>
+            </Button>
           </span>
         ))}
       </div>

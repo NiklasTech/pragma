@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { CaretRight } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { Shimmer } from "./Shimmer";
 
@@ -29,12 +30,12 @@ export function ActivityBlock({
 
   return (
     <div className="flex animate-in flex-col duration-200 fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         title={hint}
-        className="group/activity -mx-2 flex min-h-7 items-center gap-2 rounded-md px-2 text-left text-ui-xs text-fg-muted transition-colors select-none hover:bg-bg-hover hover:text-fg-default"
+        className="group/activity -mx-2 h-auto min-h-7 justify-start gap-2 px-2 text-left text-ui-xs font-normal"
       >
         {icon && <span className="flex size-4 shrink-0 items-center justify-center">{icon}</span>}
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
@@ -55,7 +56,7 @@ export function ActivityBlock({
             open && "rotate-90 opacity-100",
           )}
         />
-      </button>
+      </Button>
       {open && (
         <div
           data-state={streaming ? "streaming" : "done"}

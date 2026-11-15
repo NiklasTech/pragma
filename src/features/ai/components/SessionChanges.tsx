@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useState } from "react";
 
+import { Button } from "@/shared/components/ui/button";
 import { openGitDiffInSplit } from "@/features/sidebar/lib/gitDiffSplit";
 import { statusLetter } from "@/features/sidebar/components/git-status/FileRow";
 import { basename, dirname } from "@/features/sidebar/components/git-status/utils";
@@ -109,12 +110,13 @@ export function SessionChanges({ cwd, action }: { cwd: string; action: "diff" | 
         const letter = statusLetter(entry.status_code);
         const dir = dirname(entry.path);
         return (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             key={entry.path}
-            type="button"
             onClick={() => void open(entry)}
             title={entry.path}
-            className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-bg-hover"
+            className="min-w-0 justify-start gap-2 px-1.5 text-left font-normal text-fg-default"
           >
             <img src={getFileIconPath(basename(entry.path))} alt="" className="size-3.5 shrink-0" />
             <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
@@ -126,7 +128,7 @@ export function SessionChanges({ cwd, action }: { cwd: string; action: "diff" | 
             >
               {letter.text}
             </span>
-          </button>
+          </Button>
         );
       })}
     </div>

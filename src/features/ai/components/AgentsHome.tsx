@@ -198,14 +198,15 @@ export function AgentsHome() {
         {rootPath && !prompt && (
           <div className="flex flex-wrap justify-center gap-2">
             {STARTERS.map((starter) => (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 key={starter}
-                type="button"
                 onClick={() => setPrompt(starter)}
-                className="rounded-full border border-border-subtle bg-bg-surface px-3 py-1.5 text-ui-xs text-fg-muted transition-colors hover:border-border hover:bg-bg-hover hover:text-fg-default"
+                className="rounded-full px-3 font-normal text-fg-muted hover:text-fg-default"
               >
                 {starter}
-              </button>
+              </Button>
             ))}
           </div>
         )}

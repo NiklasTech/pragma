@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PaperPlaneRight, Plug, Plus, Stop } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
+import { IconButton } from "@/shared/components/ui/icon-button";
+import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { cn } from "@/shared/lib/utils";
 import { matchShortcut } from "@/shared/lib/shortcuts";
@@ -249,13 +251,9 @@ export function ChatComposer({
           <span className="min-w-[160px] flex-1 text-ui-xs text-fg-muted">
             Connect an AI provider to start working with Pragma.
           </span>
-          <button
-            type="button"
-            onClick={openSettings}
-            className="ml-auto shrink-0 rounded-full bg-fg-default px-3 py-1 text-ui-xs font-medium text-bg-root transition-colors hover:bg-fg-default/85"
-          >
+          <Button size="sm" onClick={openSettings} className="ml-auto">
             Configure a provider in Settings
-          </button>
+          </Button>
         </div>
       )}
       <form
@@ -304,15 +302,15 @@ export function ChatComposer({
           />
         </div>
         <div className="flex flex-nowrap items-center gap-1 px-2 pb-2">
-          <button
-            type="button"
+          <IconButton
+            icon={Plus}
+            weight="bold"
+            size="sm"
+            label="Add context"
+            shortcut="@"
+            className="size-7 rounded-full"
             onClick={insertContextMention}
-            aria-label="Add context"
-            title="Add files and context (@)"
-            className="flex size-7 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <Plus size={13} weight="bold" />
-          </button>
+          />
           <ComposerImageButton support={imageSupport} onPick={attachImages} />
           {cliSession ? (
             <CliSessionOptionsMenu session={cliSession} />
@@ -331,18 +329,19 @@ export function ChatComposer({
               />
             )}
             {isInFlight && (
-              <button
-                type="button"
+              <Button
+                variant="destructive"
+                size="icon"
                 onClick={onStop}
                 aria-label="Stop"
                 title="Stop"
-                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-status-error/15 text-status-error transition-colors hover:bg-status-error/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-error/40"
+                className="rounded-full"
               >
                 <Stop size={12} weight="fill" />
-              </button>
+              </Button>
             )}
             {(!isInFlight || hasContent) && (
-              <button
+              <Button
                 type="submit"
                 aria-label="Send"
                 title="Send"
@@ -352,10 +351,11 @@ export function ChatComposer({
                   !mcpLoaded ||
                   (images.length > 0 && unsupportedReason !== null)
                 }
-                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fg-default text-bg-root transition-colors hover:bg-fg-default/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:bg-bg-hover disabled:text-fg-subtle"
+                size="icon"
+                className="rounded-full disabled:bg-control disabled:text-fg-subtle"
               >
                 <PaperPlaneRight size={13} weight="bold" />
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
 } from "react";
 import { ChatText } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 import { promptCommand, promptTemplate, type McpPrompt } from "./prompts";
@@ -105,19 +106,19 @@ export const PromptPicker = forwardRef<PromptPickerRef, PromptPickerProps>(funct
   return (
     <div className="absolute bottom-full left-0 right-0 z-50 mb-1 max-h-64 overflow-auto rounded-md border border-border bg-popover p-1 shadow-lg">
       {matches.map((entry, index) => (
-        <button
+        <Button
+          variant="ghost"
           key={`${entry.serverId}:${entry.item.name}`}
           ref={(el) => {
             itemRefs.current[index] = el;
           }}
-          type="button"
           onMouseDown={(event) => {
             event.preventDefault();
             select(entry);
           }}
           onMouseEnter={() => setSelectedIndex(index)}
           className={cn(
-            "flex w-full items-start gap-2 rounded-[4px] px-2 py-1.5 text-left text-ui-base outline-hidden select-none",
+            "w-full items-start justify-start gap-2 rounded-[7px] px-2 py-1.5 text-left text-fg-default h-auto whitespace-normal font-normal hover:bg-transparent",
             index === selectedIndex && "bg-bg-active text-fg-default",
           )}
         >
@@ -130,7 +131,7 @@ export const PromptPicker = forwardRef<PromptPickerRef, PromptPickerProps>(funct
               <span className="truncate text-ui-xs text-fg-subtle">{entry.item.description}</span>
             )}
           </span>
-        </button>
+        </Button>
       ))}
     </div>
   );

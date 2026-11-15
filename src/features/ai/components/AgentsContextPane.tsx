@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import type { Icon } from "@phosphor-icons/react";
 import { CaretDoubleRight, Files, ListChecks, MagicWand, Pulse } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -125,15 +126,16 @@ export function AgentsContextPane() {
             ))}
           </TabsList>
         </Tabs>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setCollapsed(true)}
           aria-label="Collapse context pane"
           title="Collapse context pane"
-          className="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="ml-auto text-fg-subtle"
         >
           <CaretDoubleRight size={15} />
-        </button>
+        </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

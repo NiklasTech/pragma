@@ -14,6 +14,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 
 import {
@@ -73,10 +74,10 @@ export function TaskCard({
       }}
       className="group flex animate-in cursor-grab items-start gap-1 rounded-lg border border-border-subtle bg-bg-surface py-2 pr-1 pl-2.5 shadow-[var(--shadow-sm)] transition-[border-color,translate] duration-150 fade-in-0 hover:-translate-y-px hover:border-border active:cursor-grabbing"
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={onEdit}
-        className="flex min-w-0 flex-1 flex-col gap-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+        className="min-w-0 flex-1 flex-col items-stretch gap-1 p-0 text-left h-auto whitespace-normal font-normal hover:bg-transparent"
       >
         <span className="line-clamp-3 text-ui-sm text-fg-default wrap-break-word">
           {task.title}
@@ -120,19 +121,20 @@ export function TaskCard({
             <span className="truncate">{agentName}</span>
           </span>
         )}
-      </button>
+      </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               aria-label="Task actions"
               title="Task actions"
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 transition-colors outline-none group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-default focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:opacity-100"
+              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
             >
               <DotsThree size={15} weight="bold" />
-            </button>
+            </Button>
           }
         />
         <DropdownMenuContent align="end" className="min-w-[160px]">

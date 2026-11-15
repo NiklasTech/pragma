@@ -180,15 +180,16 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
           {agent ? "Edit agent" : "New agent"}
         </h2>
         <span className="flex-1" />
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label="Close agent form"
           title="Close"
           onClick={onCancel}
-          className="flex size-6 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="text-fg-subtle"
         >
           <X size={14} />
-        </button>
+        </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">

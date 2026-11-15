@@ -155,15 +155,16 @@ export function TaskBoard() {
           <Plus size={13} weight="bold" />
           New task
         </Button>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label="Close tasks"
           title="Close"
           onClick={closeBoard}
-          className="flex size-6 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="text-fg-subtle"
         >
           <X size={14} />
-        </button>
+        </Button>
       </div>
 
       {!rootPath || loadFailed ? (

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 
+import { Button } from "@/shared/components/ui/button";
 import { currentModelName, sortConfigOptions, type AcpConfigOption } from "./sessionOptions";
 import type { CliSessionOptions } from "./useCliSessionOptions";
 
@@ -53,10 +54,11 @@ export function CliSessionOptionsMenu({ session }: { session: CliSessionOptions 
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             title={`${session.providerName} / ${label}`}
-            className="inline-flex h-7 min-w-0 max-w-[170px] items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors outline-none hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-7 max-w-[170px] min-w-0 gap-1.5 rounded-full px-2.5"
           >
             {session.loading ? (
               <Spinner size={13} className="shrink-0 animate-spin" />
@@ -65,7 +67,7 @@ export function CliSessionOptionsMenu({ session }: { session: CliSessionOptions 
             )}
             <span className="min-w-0 max-w-[110px] truncate">{label}</span>
             <CaretDown size={10} className="shrink-0 text-fg-subtle" />
-          </button>
+          </Button>
         }
       />
       <DropdownMenuContent align="start" side="top" sideOffset={6} className="w-52">

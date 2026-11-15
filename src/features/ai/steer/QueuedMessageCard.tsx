@@ -1,4 +1,5 @@
 import { X } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 
 interface QueuedMessageCardProps {
   text: string;
@@ -12,15 +13,16 @@ export function QueuedMessageCard({ text, onRemove }: QueuedMessageCardProps) {
       <span className="min-w-0 flex-1 truncate text-ui-xs text-fg-muted" title={text}>
         {text}
       </span>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-sm"
         onClick={onRemove}
         aria-label="Remove queued message"
         title="Remove queued message"
-        className="flex size-6 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="rounded-full text-fg-subtle"
       >
         <X size={12} weight="bold" />
-      </button>
+      </Button>
     </div>
   );
 }

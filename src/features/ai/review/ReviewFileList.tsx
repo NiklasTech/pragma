@@ -1,5 +1,6 @@
 import { FileMinus, FilePlus, FileText } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 import type { ReviewFileKind, ReviewRow } from "./rows";
@@ -34,14 +35,15 @@ export function ReviewFileList({
   return (
     <div className="flex flex-col gap-0.5 p-1.5">
       {rows.map((row) => (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           key={row.id}
-          type="button"
           onClick={() => onActivate(row)}
           title={row.path}
           className={cn(
-            "flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors",
-            row.id === selectedRowId ? "bg-accent-subtle" : "hover:bg-bg-hover",
+            "min-w-0 justify-start gap-1.5 px-1.5 text-left font-normal text-fg-default",
+            row.id === selectedRowId && "bg-bg-active",
           )}
         >
           <KindIcon kind={row.fileKind} />
@@ -49,7 +51,7 @@ export function ReviewFileList({
           <span className={cn("shrink-0 text-ui-2xs", KIND_CLASS[row.fileKind])}>
             {row.fileKind}
           </span>
-        </button>
+        </Button>
       ))}
     </div>
   );

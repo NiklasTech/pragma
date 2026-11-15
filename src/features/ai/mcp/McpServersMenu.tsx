@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { Button } from "@/shared/components/ui/button";
 import { useAIStore } from "@/shared/stores/ai";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 
@@ -55,15 +56,16 @@ export function McpServersMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             aria-label={label}
             title={label}
-            className="flex h-7 items-center gap-1 rounded-full px-2 text-ui-xs font-medium text-fg-muted transition-colors outline-none hover:bg-bg-hover hover:text-fg-default focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="h-7 gap-1 rounded-full px-2"
           >
             <Plugs size={13} weight="bold" className="shrink-0" />
             <span className="@max-[320px]:hidden">{enabledCount}</span>
-          </button>
+          </Button>
         }
       />
       <DropdownMenuContent align="start" side="top" sideOffset={6} className="w-60">

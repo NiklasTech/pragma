@@ -2,6 +2,7 @@
 
 import { Kanban } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
@@ -18,15 +19,13 @@ export function TasksEntry() {
   const openBoard = useTasksUiStore((state) => state.openBoard);
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={() => openBoard()}
       aria-current={boardOpen ? "page" : undefined}
       className={cn(
-        "group flex h-8 w-full items-center gap-2 rounded-lg px-3.5 text-ui-sm transition-colors",
-        boardOpen
-          ? "bg-bg-root font-medium text-fg-default shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
-          : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+        "group h-8 w-full justify-start gap-2 px-3.5 font-normal",
+        boardOpen && "bg-bg-active font-medium text-fg-default",
       )}
     >
       <Kanban
@@ -40,6 +39,6 @@ export function TasksEntry() {
           {openCount}
         </span>
       )}
-    </button>
+    </Button>
   );
 }

@@ -1,5 +1,6 @@
 import { Check, CircleDashed, Prohibit, Stop, Warning } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { AgentTodoList } from "@/features/agent/components/AgentTodoList";
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 import { useAgentStop } from "@/features/ai/steer/useSteerQueue";
@@ -81,16 +82,17 @@ export function AgentRunBar() {
           <span className="text-ui-xs text-fg-subtle tabular-nums">{formatElapsed(seconds)}</span>
         )}
         {canStop && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={stopAgent}
             aria-label="Stop agent"
             title="Stop agent"
-            className="ml-auto flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors outline-none hover:bg-status-error/10 hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="ml-auto h-6 gap-1.5 rounded-full px-2.5 text-ui-xs hover:bg-status-error/10 hover:text-status-error"
           >
             <Stop size={11} weight="fill" />
             Stop
-          </button>
+          </Button>
         )}
       </div>
 

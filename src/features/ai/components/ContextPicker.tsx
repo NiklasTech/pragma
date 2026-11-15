@@ -11,6 +11,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { Database, FileText, Folder } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { resourceMention, type McpResource } from "@/features/ai/mcp/resources";
 import { useMcpCatalog, type McpCatalogEntry } from "@/features/ai/mcp/useMcpCatalog";
@@ -269,18 +270,18 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
           return (
             <Fragment key={item.key}>
               {showHeader && sectionHeader(section)}
-              <button
+              <Button
+                variant="ghost"
                 ref={(el) => {
                   itemRefs.current[index] = el;
                 }}
-                type="button"
                 onMouseDown={(event) => {
                   event.preventDefault();
                   selectEntry(item);
                 }}
                 onMouseEnter={() => setSelectedIndex(index)}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-[4px] px-2 py-1.5 text-left text-ui-base outline-hidden select-none",
+                  "w-full justify-start gap-2 rounded-[7px] px-2 py-1.5 text-left text-fg-default h-auto whitespace-normal font-normal hover:bg-transparent",
                   isSelected && "bg-bg-active text-fg-default",
                 )}
               >
@@ -304,7 +305,7 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
                     {item.entry.detail}
                   </span>
                 )}
-              </button>
+              </Button>
             </Fragment>
           );
         })}
