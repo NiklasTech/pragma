@@ -14,11 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { useRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 
 import { openBrowserPane } from "../browser/open";
 import { LaunchCliDialog } from "./LaunchCliDialog";
+import { captureLayout, useLayoutPresetsStore } from "./layoutPresets";
+import { SavedLayoutsItems } from "./SavedLayoutsItems";
 import { MAX_PANES, MAX_PANES_TITLE } from "./operations";
 import { selectLeafCount, selectRoot, useAgentsPanesStore, usePaneTreeKey } from "./store";
 
@@ -32,6 +35,15 @@ export function PanePresetsMenu() {
   const chatSessions = useRepositorySessions(rootPath);
   const sessionIds = useMemo(() => chatSessions.map((session) => session.id), [chatSessions]);
   const [launchOpen, setLaunchOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const presetCount = useLayoutPresetsStore((state) => state.presets.length);
+  const savePreset = useLayoutPresetsStore((state) => state.save);
+
+  const saveLayout = (name: string) => {
+    const root = selectRoot(useAgentsPanesStore.getState(), treeKey);
+    const layout = captureLayout(root, chatSessions);
+    if (layout && name.trim()) savePreset(name, layout);
+  };
 
   return (
     <>
@@ -78,10 +90,24 @@ export function PanePresetsMenu() {
               </DropdownMenuItem>
             </>
           )}
+          <SavedLayoutsItems
+            rootPath={rootPath}
+            canSave={hasPanes}
+            onSave={() => setSaving(true)}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
 
       {workspaceRoot && <LaunchCliDialog open={launchOpen} onOpenChange={setLaunchOpen} />}
+      <InputDialog
+        open={saving}
+        onOpenChange={setSaving}
+        title="Save tab as layout"
+        label="Name"
+        defaultValue={`Layout ${presetCount + 1}`}
+        confirmLabel="Save"
+        onConfirm={saveLayout}
+      />
     </>
   );
 }

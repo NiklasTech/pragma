@@ -55,6 +55,8 @@ interface AgentsPanesState {
   applyPreset: (rootPath: string, preset: PanePreset, sessionIds: string[]) => void;
   syncSessions: (rootPath: string, sessionIds: string[]) => void;
   setSplitSizes: (rootPath: string, splitId: string, sizes: number[]) => void;
+  /** Gives a tab a ready-made layout, such as an opened layout preset. */
+  placeLayout: (treeKey: string, root: PaneRoot) => void;
   /** Forgets the layout of a closed tab; its sessions keep running. */
   removeTree: (treeKey: string) => void;
 }
@@ -322,6 +324,19 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             trees: setEntry(state.trees, rootPath, { ...entry, root, focusedLeafId, focusOrder }),
           };
         }),
+
+      placeLayout: (treeKey, root) =>
+        set((state) => ({
+          trees: {
+            ...state.trees,
+            [treeKey]: {
+              root,
+              focusedLeafId: firstLeaf(root)?.id ?? null,
+              focusOrder: [],
+              manual: true,
+            },
+          },
+        })),
 
       removeTree: (treeKey) =>
         set((state) => {
