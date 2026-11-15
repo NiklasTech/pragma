@@ -4,12 +4,12 @@ import { AgentsOverview } from "@/features/ai/overview/AgentsOverview";
 import { AgentPeek } from "@/features/ai/peek/AgentPeek";
 import { QuickStartDialog } from "@/features/ai/quickStart/QuickStartDialog";
 import { SpacesOverlay } from "@/shell/spaces/SpacesOverlay";
-import { GoToFile } from "./GoToFile";
+import { GoTo } from "./goTo/GoTo";
 
 // Each overlay reads its own open state from the overlay store, so closing keeps its exit animation.
 // Overlays render in a portal beside the workspace and never unmount panes, terminals or agents.
 export const HOSTED_OVERLAYS: ReadonlyArray<readonly [OverlayId, ComponentType]> = [
-  ["goTo", GoToFile],
+  ["goTo", GoTo],
   ["spaces", SpacesOverlay],
   ["quickStart", QuickStartDialog],
   ["overview", AgentsOverview],
