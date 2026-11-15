@@ -10,6 +10,8 @@ export interface ActivityInput {
   runSessionId: string | null;
   runs: Record<string, ChildRun>;
   spawnApprovals: Record<string, AgentApproval[]>;
+  /** Permission requests from coding CLIs, by session. */
+  acpApprovals: Record<string, readonly unknown[]>;
 }
 
 export interface SessionActivity {
@@ -30,8 +32,10 @@ export function resolveSessionActivity(input: ActivityInput): SessionActivity {
     if (run.status === "waiting-approval") waiting.add(sessionId);
     else if (run.status === "running") running.add(sessionId);
   }
-  for (const [sessionId, approvals] of Object.entries(input.spawnApprovals)) {
-    if (approvals.length > 0) waiting.add(sessionId);
+  for (const approvals of [input.spawnApprovals, input.acpApprovals]) {
+    for (const [sessionId, pending] of Object.entries(approvals)) {
+      if (pending.length > 0) waiting.add(sessionId);
+    }
   }
   if (input.liveSessionId) running.add(input.liveSessionId);
 

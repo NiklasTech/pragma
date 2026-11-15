@@ -38,6 +38,7 @@ import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { CompactSessionMenuItem } from "../compaction/CompactSessionMenuItem";
 import { ExportSessionMenu } from "../export/ExportSessionMenu";
 import { ComposerMicButton } from "../components/ComposerMicButton";
+import { selectAgentState, useAgentStatesStore } from "../state/agentStates";
 import { useForegroundCli } from "../terminal/foregroundCli";
 import { isShellSession, SHELL_TITLE } from "../terminal/shell";
 import { isGeneratedTerminalTitle } from "../terminal/title";
@@ -184,10 +185,15 @@ export function PaneHeader({
   const shellCli = useForegroundCli(terminal?.id ?? "", shell && runningTerminal);
   const shownManifest = shell ? (shellCli ?? undefined) : manifest;
   const terminalLook = { ...terminalStatus, active: terminalActive };
-  const state = terminal ? terminalPaneState(terminalLook) : agentPaneState(status);
+  const sharedState = useAgentStatesStore(selectAgentState(session?.id));
+  const ownState = terminal ? terminalPaneState(terminalLook) : agentPaneState(status);
+  // The shared model knows about questions the pane cannot see, such as a CLI hook asking.
+  const asked = sharedState === "needs-you" && ownState !== "needs-you";
+  const state = asked ? sharedState : ownState;
   // A plain shell shows no state until a CLI runs in it or it fails.
   const showState = !shell || shellCli !== null || state === "needs-you";
-  const stateLabel = terminal ? terminalPaneLabel(terminalLook) : AGENT_STATE_LABELS[state];
+  const stateLabel =
+    terminal && !asked ? terminalPaneLabel(terminalLook) : AGENT_STATE_LABELS[state];
 
   const environment = useSessionEnvironment(session);
   const worktree = environment?.kind === "worktree" ? environment : undefined;

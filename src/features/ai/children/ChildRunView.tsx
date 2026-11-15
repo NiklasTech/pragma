@@ -1,7 +1,7 @@
 import { CircleDashed, Stop } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
-import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
+import { ApprovalBar } from "@/features/agent/components/ApprovalBar";
 import { stepLabel } from "@/features/agent/executor";
 import { getMessageText } from "@/shared/lib/ai/protocol";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -15,15 +15,16 @@ import {
 import { Message, MessageContent } from "../components/Message";
 import { PulseDot } from "../components/PulseDot";
 import { Shimmer } from "../components/Shimmer";
+import { SessionApprovals, useHasSessionApprovals } from "../panes/SessionApprovals";
 import { ChildSessionCards, inlineChildIds } from "./ChildSessionCards";
 import { stopChildRun } from "./runner";
-import { SpawnApprovals } from "./SpawnApprovals";
 import { isRunLive, resolveChildApproval, useChildRunsStore } from "./runStore";
 
 /// A child conversation that is working in the background, shown live in its pane.
 export function ChildRunView({ sessionId }: { sessionId: string }) {
   const run = useChildRunsStore((state) => state.runs[sessionId]);
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
+  const sessionAsks = useHasSessionApprovals(sessionId);
 
   if (!run) return null;
   const live = isRunLive(run);
@@ -60,26 +61,22 @@ export function ChildRunView({ sessionId }: { sessionId: string }) {
       </div>
 
       <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-4">
-        <SpawnApprovals sessionId={sessionId} />
+        <SessionApprovals sessionId={sessionId} takesEnter />
 
-        {run.approvals.length > 0 && (
-          <div className="mb-2 flex flex-col gap-2">
-            {run.approvals.map((approval) => {
-              const { label, detail } = stepLabel(approval.toolName, approval.args);
-              return (
-                <ApprovalCard
-                  key={approval.toolCallId}
-                  title={`Allow: ${label}`}
-                  detail={detail}
-                  description={approval.description}
-                  args={detail ? undefined : approval.args}
-                  onDeny={() => resolveChildApproval(sessionId, approval.toolCallId, false)}
-                  onAllow={() => resolveChildApproval(sessionId, approval.toolCallId, true)}
-                />
-              );
-            })}
-          </div>
-        )}
+        {run.approvals.map((approval, index) => {
+          const { label, detail } = stepLabel(approval.toolName, approval.args);
+          return (
+            <ApprovalBar
+              key={approval.toolCallId}
+              title={`The child session wants to ${label.toLowerCase()}`}
+              request={detail ?? JSON.stringify(approval.args ?? {})}
+              description={approval.description}
+              takesEnter={!sessionAsks && index === 0}
+              onDeny={() => resolveChildApproval(sessionId, approval.toolCallId, false)}
+              onAllow={() => resolveChildApproval(sessionId, approval.toolCallId, true)}
+            />
+          );
+        })}
 
         <div className="flex h-9 items-center gap-2 rounded-xl border border-border bg-bg-surface pr-1.5 pl-3">
           {run.status === "waiting-approval" ? (
