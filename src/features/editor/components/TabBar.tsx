@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
-import { GitCommit, GitDiff, SquareSplitHorizontal, X } from "@phosphor-icons/react";
+import { FolderSimple, GitCommit, GitDiff, SquareSplitHorizontal, X } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useEditorStore } from "@/shared/stores/editor";
+import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
@@ -41,6 +43,11 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
   const reorderTabs = useEditorStore((s) => s.reorderTabs);
   const repositories = useOpenRepositoriesStore((s) => s.paths);
   const activeRoot = useFileExplorerStore((s) => s.rootPath);
+  const filesOpen = useLayoutStore(
+    (s) => !s.sidebar.collapsed && s.sidebar.position !== "hidden" && s.sidebar.tab === "explorer",
+  );
+  const filesBinding = useSettingsStore((s) => s.shortcuts["view.toggleSidebar"]);
+  const filesShortcut = filesBinding ? formatShortcut(filesBinding, getIsMac()) : undefined;
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -92,6 +99,21 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
 
   return (
     <div className="flex h-10.5 min-w-0 shrink-0 items-center">
+      {panelId && (
+        <IconButton
+          icon={FolderSimple}
+          label="Files"
+          shortcut={filesShortcut}
+          weight={filesOpen ? "fill" : "regular"}
+          className="ml-1.5 shrink-0"
+          onClick={() => {
+            const layout = useLayoutStore.getState();
+            if (layout.sidebar.tab !== "explorer") layout.setSidebarTab("explorer");
+            if (layout.sidebar.tab === "explorer" || layout.sidebar.collapsed)
+              layout.toggleSidebar();
+          }}
+        />
+      )}
       <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
         {tabs.map((tab, index) => {
           const isActive = activeTabId === tab.id;

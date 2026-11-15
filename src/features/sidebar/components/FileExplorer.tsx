@@ -6,10 +6,13 @@ import {
   FolderOpen,
   FolderPlus,
   Files,
-  Folders,
+  MagnifyingGlass,
   Spinner,
 } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
+import { IconButton } from "@/shared/components/ui/icon-button";
+import { Input } from "@/shared/components/ui/input";
+import { SegmentedControl } from "@/shared/components/ui/segmented-control";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -28,6 +31,8 @@ import { buildGitDecorations } from "@/features/sidebar/lib/gitDecorations";
 import { useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
 import { movePaths } from "@/features/sidebar/lib/fileTreeActions";
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
+import { filterWorkspaceFiles } from "@/features/sidebar/lib/treeFilter";
+import { useWorkspaceFileList } from "@/features/sidebar/hooks/useWorkspaceFileList";
 import { useRepositoryTree } from "@/features/sidebar/hooks/useRepositoryTree";
 import { useUiSize } from "@/theme/useUiMetrics";
 import { FileTreeNode } from "./FileTreeNode";
@@ -61,7 +66,16 @@ export function FileExplorer() {
 
   const rootName = rootPath ? rootPath.replace(/\\/g, "/").split("/").pop() || rootPath : null;
 
-  const visibleNodes = useMemo(() => getVisibleNodes(tree, expandedDirs), [tree, expandedDirs]);
+  const [filter, setFilter] = useState("");
+  const filtering = filter.trim() !== "";
+  const workspaceFiles = useWorkspaceFileList(rootPath, filtering);
+  const visibleNodes = useMemo(
+    () =>
+      filtering && rootPath
+        ? filterWorkspaceFiles(rootPath, workspaceFiles ?? [], filter)
+        : getVisibleNodes(tree, expandedDirs),
+    [tree, expandedDirs, filter, filtering, rootPath, workspaceFiles],
+  );
 
   useEffect(() => {
     useFileSelectionStore.getState().reset(null);
@@ -84,6 +98,17 @@ export function FileExplorer() {
     useFileSelectionStore.getState().reset(null);
     void movePaths(paths, targetDir);
   }, []);
+
+  // While filtering, every folder that holds a match shows open.
+  const shownOpen = useMemo(
+    () =>
+      filtering
+        ? new Set(
+            visibleNodes.filter((item) => item.node.isDirectory).map((item) => item.node.path),
+          )
+        : expandedDirs,
+    [filtering, visibleNodes, expandedDirs],
+  );
 
   const rootDrop = useFileTreeDrop(rootPath ?? "", handleMove);
 
@@ -119,44 +144,58 @@ export function FileExplorer() {
     <ContextMenu>
       <ContextMenuTrigger className="h-full">
         <div className="flex h-full flex-col">
-          <div className="flex h-8 shrink-0 items-center gap-0.5 pr-1.5 pl-3">
-            <span
-              className="min-w-0 flex-1 truncate text-ui-xs font-semibold text-fg-default"
-              title={rootPath}
-            >
-              {showAll ? "Repositories" : (rootName ?? "Workspace")}
+          <div className="flex h-11 shrink-0 items-center gap-2 pr-1.5 pl-3.5">
+            <span className="text-ui-sm font-semibold text-fg-default" title={rootPath}>
+              Files
             </span>
             {(showAll || repositoryCount > 1) && (
-              <HeaderAction
-                label={showAll ? "Show the active repository" : "Show all repositories"}
-                onClick={() => setShowAll(!showAll)}
-              >
-                <Folders size={14} weight={showAll ? "fill" : "regular"} />
-              </HeaderAction>
+              <SegmentedControl<"space" | "all">
+                label="Show files from"
+                value={showAll ? "all" : "space"}
+                onValueChange={(value) => setShowAll(value === "all")}
+                options={[
+                  { value: "space", label: "This space" },
+                  { value: "all", label: "All spaces" },
+                ]}
+              />
             )}
-            <HeaderAction
-              label="New file"
-              onClick={() => setCreateAtRoot({ open: true, isDirectory: false })}
-            >
-              <FilePlus size={14} />
-            </HeaderAction>
-            <HeaderAction
-              label="New folder"
-              onClick={() => setCreateAtRoot({ open: true, isDirectory: true })}
-            >
-              <FolderPlus size={14} />
-            </HeaderAction>
-            <HeaderAction label="Collapse all folders" onClick={collapseAll}>
-              <ArrowsInLineVertical size={14} />
-            </HeaderAction>
+            <span className="ml-auto flex items-center">
+              <IconButton
+                icon={ArrowsInLineVertical}
+                label="Collapse all folders"
+                onClick={collapseAll}
+              />
+            </span>
           </div>
+          <label className="mx-2.5 mb-1.5 flex h-7.5 shrink-0 items-center gap-2 rounded-control bg-control px-2.5 text-fg-subtle">
+            <MagnifyingGlass size={13} aria-hidden="true" />
+            <Input
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape" && filter) {
+                  event.stopPropagation();
+                  setFilter("");
+                }
+              }}
+              placeholder={`Filter files in ${rootName ?? "the folder"}`}
+              aria-label="Filter files"
+              className="h-full min-w-0 flex-1 bg-transparent px-0 ring-0 hover:ring-0 focus-visible:ring-0"
+            />
+          </label>
           <div ref={containerRef} className="min-h-0 flex-1 overflow-auto" {...rootDrop.handlers}>
             {showTreeLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Spinner size={20} className="animate-spin text-fg-muted" />
               </div>
             ) : visibleNodes.length === 0 ? (
-              <div className="px-3 py-2 text-ui-sm text-fg-muted">Empty folder</div>
+              <div className="px-3.5 py-2 text-ui-sm text-fg-muted">
+                {filtering
+                  ? workspaceFiles === null
+                    ? "Searching…"
+                    : "No file matches."
+                  : "Empty folder"}
+              </div>
             ) : (
               <div
                 className="relative w-full"
@@ -176,7 +215,7 @@ export function FileExplorer() {
                       <FileTreeNode
                         node={node}
                         depth={depth}
-                        expandedDirs={expandedDirs}
+                        expandedDirs={shownOpen}
                         selectedPath={selectedPath}
                         onToggleDir={toggleDirectory}
                         onOpenFile={openFileByPath}
@@ -223,28 +262,5 @@ export function FileExplorer() {
         }}
       />
     </ContextMenu>
-  );
-}
-
-function HeaderAction({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="text-fg-subtle"
-    >
-      {children}
-    </Button>
   );
 }
