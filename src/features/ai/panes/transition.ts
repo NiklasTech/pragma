@@ -24,8 +24,35 @@ function insetBetween(outer: DOMRect, inner: DOMRect): string {
   return `inset(${top}px ${right}px ${bottom}px ${left}px round ${RADIUS})`;
 }
 
+const EXIT_MS = 150;
+// How far a split pane travels as it slides out of the pane it was split from.
+const ENTER_OFFSET_PX = 18;
+
+export interface PaneEnter {
+  leafId: string;
+  /** The side the new pane grows from: it was split off the pane on that side. */
+  from: "left" | "top";
+}
+
+function enterKeyframes(enter: PaneEnter | undefined, leafId: string | undefined): Keyframe[] {
+  if (enter && enter.leafId === leafId) {
+    const offset =
+      enter.from === "left"
+        ? `translateX(-${ENTER_OFFSET_PX}px)`
+        : `translateY(-${ENTER_OFFSET_PX}px)`;
+    return [
+      { opacity: 0, transform: offset },
+      { opacity: 1, transform: "none" },
+    ];
+  }
+  return [
+    { opacity: 0, transform: "scale(0.97)" },
+    { opacity: 1, transform: "none" },
+  ];
+}
+
 /// Applies a pane layout change and slides every card from its old place (FLIP), without snapshots.
-export function animatePanes(update: () => void): void {
+export function animatePanes(update: () => void, enter?: PaneEnter): void {
   if (!canAnimate()) {
     update();
     return;
@@ -42,13 +69,7 @@ export function animatePanes(update: () => void): void {
     const timing = { duration: DURATION_MS, easing: EASING };
 
     if (!first) {
-      card.animate(
-        [
-          { opacity: 0, transform: "scale(0.97)" },
-          { opacity: 1, transform: "none" },
-        ],
-        timing,
-      );
+      card.animate(enterKeyframes(enter, card.dataset.paneLeaf), timing);
       continue;
     }
     // A growing maximized card is revealed from its old slot, so the terminal never scales.
@@ -84,4 +105,23 @@ export function animateRestore(card: HTMLElement | null, update: () => void): vo
     flushSync(update);
     animation.cancel();
   };
+}
+
+/// Fades a closing card out on its place, then applies the change so the others slide over.
+export function animatePaneExit(leafId: string, update: () => void): void {
+  const card = canAnimate()
+    ? document.querySelector<HTMLElement>(`[data-pane-leaf="${CSS.escape(leafId)}"]`)
+    : null;
+  if (!card) {
+    animatePanes(update);
+    return;
+  }
+  const animation = card.animate(
+    [
+      { opacity: 1, transform: "none" },
+      { opacity: 0, transform: "scale(0.97)" },
+    ],
+    { duration: EXIT_MS, easing: EASING, fill: "forwards" },
+  );
+  animation.onfinish = () => animatePanes(update);
 }

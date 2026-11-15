@@ -153,3 +153,35 @@ describe("pane layouts per tab", () => {
     expect(migrated.trees).toEqual({ [firstTabId(ROOT)]: layout });
   });
 });
+
+describe("split panes", () => {
+  beforeEach(() => {
+    useAgentsPanesStore.setState({ trees: {} });
+  });
+
+  it("splits beside a pane and keeps the split when another pane opens or closes", () => {
+    const store = useAgentsPanesStore.getState();
+    store.openSession(ROOT, "a");
+    const first = entry()?.focusedLeafId ?? "";
+    store.splitPane(ROOT, first, "vertical");
+    expect(entry()?.manual).toBe(true);
+    const split = entry()?.root;
+    expect(split?.type === "split" && split.direction).toBe("vertical");
+
+    // The empty pane has focus; a new session opens across it, to its right.
+    store.openSession(ROOT, "b");
+    expect(countLeaves(entry()?.root ?? null)).toBe(3);
+    store.closeLeaf(ROOT, findLeafBySession(entry()?.root ?? null, "b")?.id ?? "");
+    const root = entry()?.root;
+    expect(root?.type === "split" && root.direction).toBe("vertical");
+    expect(countLeaves(root ?? null)).toBe(2);
+  });
+
+  it("returns to the automatic grid when a preset is applied", () => {
+    const store = useAgentsPanesStore.getState();
+    store.openSession(ROOT, "a");
+    store.splitPane(ROOT, entry()?.focusedLeafId ?? "", "horizontal");
+    store.applyPreset(ROOT, "pair", ["a"]);
+    expect(entry()?.manual).toBeUndefined();
+  });
+});

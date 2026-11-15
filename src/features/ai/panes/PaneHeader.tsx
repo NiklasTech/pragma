@@ -10,6 +10,8 @@ import {
   PencilSimple,
   Plus,
   Robot,
+  SquareSplitHorizontal,
+  SquareSplitVertical,
   Stop,
   X,
 } from "@phosphor-icons/react";
@@ -47,6 +49,7 @@ import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { PaneRepositoryLabel } from "./PaneRepositoryLabel";
 import { usePaneHeaderDrag } from "./paneDrag";
 import { agentPaneState, terminalPaneLabel, terminalPaneState } from "./paneState";
+import type { SplitDirection } from "./split";
 
 // Details stay out of sight until the pane is focused, hovered or reached by keyboard.
 const QUIET =
@@ -123,6 +126,7 @@ interface PaneHeaderProps {
   onCloseTerminal: (stop: boolean) => void;
   onCloseOthers: () => void;
   onToggleMaximize: () => void;
+  onSplit: (direction: SplitDirection) => void;
   onDropOn: (targetLeafId: string) => void;
 }
 
@@ -138,6 +142,7 @@ export function PaneHeader({
   onCloseTerminal,
   onCloseOthers,
   onToggleMaximize,
+  onSplit,
   onDropOn,
 }: PaneHeaderProps) {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
@@ -268,6 +273,22 @@ export function PaneHeader({
                   <ArrowsOutSimple size={ICON_SIZE.sm} />
                 )}
                 <span>{maximizeLabel}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={atCap}
+                title={atCap ? MAX_PANES_TITLE : undefined}
+                onClick={() => onSplit("horizontal")}
+              >
+                <SquareSplitHorizontal size={ICON_SIZE.sm} />
+                <span>Split right</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={atCap}
+                title={atCap ? MAX_PANES_TITLE : undefined}
+                onClick={() => onSplit("vertical")}
+              >
+                <SquareSplitVertical size={ICON_SIZE.sm} />
+                <span>Split down</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled={!hasOtherPanes} onClick={onCloseOthers}>

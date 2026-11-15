@@ -18,7 +18,14 @@ import {
   type PaneRoot,
 } from "./operations";
 import { autoLayout, collectLeaves, swapLeaves } from "./layout";
-import { animatePanes } from "./transition";
+import {
+  nextSplitDirection,
+  removeLeaf,
+  splitBeside,
+  swapInPlace,
+  type SplitDirection,
+} from "./split";
+import { animatePaneExit, animatePanes } from "./transition";
 
 export const AGENTS_PANES_STORAGE_KEY = "pragma.agents.panes.v1";
 
@@ -30,6 +37,8 @@ export interface PaneTreeEntry {
   root: PaneRoot;
   focusedLeafId: string | null;
   focusOrder: string[];
+  /** Set once the tab was split by hand; from then on its splits stay as they are. */
+  manual?: boolean;
 }
 
 interface AgentsPanesState {
@@ -41,6 +50,8 @@ interface AgentsPanesState {
   closeLeaf: (rootPath: string, leafId: string) => void;
   addPane: (rootPath: string, leaf: Leaf, focus: boolean) => void;
   swapPanes: (rootPath: string, sourceLeafId: string, targetLeafId: string) => void;
+  /** Opens an empty pane beside a pane: "horizontal" to its right, "vertical" below it. */
+  splitPane: (rootPath: string, leafId: string, direction: SplitDirection) => void;
   applyPreset: (rootPath: string, preset: PanePreset, sessionIds: string[]) => void;
   syncSessions: (rootPath: string, sessionIds: string[]) => void;
   setSplitSizes: (rootPath: string, splitId: string, sizes: number[]) => void;
@@ -70,6 +81,25 @@ function setEntry(
   entry: PaneTreeEntry,
 ): Record<string, PaneTreeEntry> {
   return { ...trees, [paneTreeKey(rootPath)]: entry };
+}
+
+/** Adds a pane: into the automatic grid, or beside the focused pane once the tab was split. */
+function placeLeaf(entry: PaneTreeEntry, leaf: Leaf): PaneRoot {
+  if (!entry.manual) return autoLayout([...collectLeaves(entry.root), leaf], entry.root);
+  const leaves = collectLeaves(entry.root);
+  const target = entry.focusedLeafId ?? leaves[leaves.length - 1]?.id;
+  if (!target) return autoLayout([leaf]);
+  return splitBeside(entry.root, target, leaf, nextSplitDirection(entry.root, target));
+}
+
+function withoutLeaves(entry: PaneTreeEntry, leafIds: string[]): PaneRoot {
+  if (!entry.manual) {
+    return autoLayout(
+      collectLeaves(entry.root).filter((leaf) => !leafIds.includes(leaf.id)),
+      entry.root,
+    );
+  }
+  return leafIds.reduce<PaneRoot>((root, leafId) => removeLeaf(root, leafId), entry.root);
 }
 
 function promoteFocusOrder(focusOrder: string[], sessionId: string): string[] {
@@ -115,9 +145,8 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             const leaf = existing ?? createLeaf(sessionId);
             return {
               trees: setEntry(state.trees, rootPath, {
-                root: existing
-                  ? entry.root
-                  : autoLayout([...collectLeaves(entry.root), leaf], entry.root),
+                ...entry,
+                root: existing ? entry.root : placeLeaf(entry, leaf),
                 focusedLeafId: leaf.id,
                 focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
               }),
@@ -174,7 +203,7 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         ),
 
       closeLeaf: (rootPath, leafId) => {
-        animatePanes(() =>
+        animatePaneExit(leafId, () =>
           set((state) => {
             const entry = getEntry(state.trees, rootPath);
             const leaves = collectLeaves(entry.root);
@@ -189,7 +218,7 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             return {
               trees: setEntry(state.trees, rootPath, {
                 ...entry,
-                root: autoLayout(remaining, entry.root),
+                root: withoutLeaves(entry, [leafId]),
                 focusedLeafId,
               }),
             };
@@ -206,7 +235,7 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             return {
               trees: setEntry(state.trees, rootPath, {
                 ...entry,
-                root: autoLayout([...collectLeaves(entry.root), leaf], entry.root),
+                root: placeLeaf(entry, leaf),
                 focusedLeafId: focus || !entry.focusedLeafId ? leaf.id : entry.focusedLeafId,
               }),
             };
@@ -217,7 +246,9 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         animatePanes(() =>
           set((state) => {
             const entry = getEntry(state.trees, rootPath);
-            const root = swapLeaves(entry.root, sourceLeafId, targetLeafId);
+            const root = entry.manual
+              ? swapInPlace(entry.root, sourceLeafId, targetLeafId)
+              : swapLeaves(entry.root, sourceLeafId, targetLeafId);
             if (root === entry.root) return {};
             return {
               trees: setEntry(state.trees, rootPath, {
@@ -228,6 +259,27 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             };
           }),
         ),
+
+      splitPane: (rootPath, leafId, direction) => {
+        const entry = getEntry(get().trees, rootPath);
+        if (!findLeaf(entry.root, leafId) || countLeaves(entry.root) >= MAX_PANES) return;
+        const leaf = createLeaf(null);
+        animatePanes(
+          () =>
+            set((state) => {
+              const current = getEntry(state.trees, rootPath);
+              return {
+                trees: setEntry(state.trees, rootPath, {
+                  ...current,
+                  root: splitBeside(current.root, leafId, leaf, direction),
+                  focusedLeafId: leaf.id,
+                  manual: true,
+                }),
+              };
+            }),
+          { leafId: leaf.id, from: direction === "horizontal" ? "left" : "top" },
+        );
+      },
 
       applyPreset: (rootPath, preset, sessionIds) =>
         animatePanes(() =>
@@ -260,13 +312,14 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             return {};
           }
 
-          const root = kept.length === leaves.length ? entry.root : autoLayout(kept, entry.root);
+          const dropped = leaves.filter((leaf) => !kept.includes(leaf)).map((leaf) => leaf.id);
+          const root = dropped.length === 0 ? entry.root : withoutLeaves(entry, dropped);
           const focusedLeafId =
             entry.focusedLeafId && findLeaf(root, entry.focusedLeafId)
               ? entry.focusedLeafId
               : (firstLeaf(root)?.id ?? null);
           return {
-            trees: setEntry(state.trees, rootPath, { root, focusedLeafId, focusOrder }),
+            trees: setEntry(state.trees, rootPath, { ...entry, root, focusedLeafId, focusOrder }),
           };
         }),
 

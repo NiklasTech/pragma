@@ -86,6 +86,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const focusLeaf = useAgentsPanesStore((state) => state.focusLeaf);
   const closeLeaf = useAgentsPanesStore((state) => state.closeLeaf);
   const swapPanes = useAgentsPanesStore((state) => state.swapPanes);
+  const splitPane = useAgentsPanesStore((state) => state.splitPane);
   const maximized = usePaneMaximizeStore((state) => state.maximized[rootPath] === node.id);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
@@ -180,6 +181,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         }}
         onCloseOthers={() => requestClose(otherLeafIds)}
         onToggleMaximize={() => togglePaneZoom(rootPath, leaf.id)}
+        onSplit={(direction) => splitPane(rootPath, leaf.id, direction)}
         onDropOn={(targetLeafId) => swapPanes(rootPath, leaf.id, targetLeafId)}
       />
 

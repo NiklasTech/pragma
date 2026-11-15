@@ -23,7 +23,11 @@ import { useDebugStore } from "@/features/debug/store";
 import { useAttachDialogStore } from "@/features/debug/attachProcess";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
-import { focusPaneInDirection, toggleFocusedPaneZoom } from "@/features/ai/panes/paneCommands";
+import {
+  focusPaneInDirection,
+  splitFocusedPane,
+  toggleFocusedPaneZoom,
+} from "@/features/ai/panes/paneCommands";
 import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
 import { leaveAgentsForTerminal, toggleTerminalFromShortcut } from "./terminalShortcuts";
 
@@ -129,6 +133,8 @@ export function useAppShortcutActions(): ShortcutActions {
       "pane.focusUp": () => inAgentsTab() && focusPaneInDirection("up"),
       "pane.focusDown": () => inAgentsTab() && focusPaneInDirection("down"),
       "pane.toggleZoom": () => inAgentsTab() && toggleFocusedPaneZoom(),
+      "pane.splitRight": () => inAgentsTab() && splitFocusedPane("horizontal"),
+      "pane.splitDown": () => inAgentsTab() && splitFocusedPane("vertical"),
       "view.switchToAgents": () => {
         useUiModeStore.getState().setUiMode("agents");
       },
