@@ -4,30 +4,30 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/shared/lib/utils";
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-ui-sm font-medium whitespace-nowrap transition-all duration-200 outline-none select-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-root active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center rounded-control text-ui-sm font-medium whitespace-nowrap transition-[background-color,color,box-shadow,opacity] duration-(--motion-fast) ease-(--motion-ease) outline-none select-none focus-visible:ring-2 focus-visible:ring-border-focus disabled:pointer-events-none disabled:opacity-40 aria-invalid:ring-2 aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
   {
     variants: {
       variant: {
-        default: "bg-fg-default text-bg-root hover:bg-fg-default/85",
-        outline:
-          "border-border bg-transparent text-fg-default hover:border-border hover:bg-bg-hover aria-expanded:bg-bg-hover",
+        // The one main action of a view.
+        default: "bg-primary font-semibold text-primary-foreground hover:bg-primary/90",
         secondary:
-          "bg-bg-elevated text-fg-default border border-border hover:bg-bg-hover hover:border-border aria-expanded:bg-bg-hover",
+          "bg-control text-fg-default hover:bg-control-hover aria-expanded:bg-control-hover",
+        outline: "bg-control text-fg-default hover:bg-control-hover aria-expanded:bg-control-hover",
         ghost:
           "bg-transparent text-fg-muted hover:bg-bg-hover hover:text-fg-default aria-expanded:bg-bg-hover aria-expanded:text-fg-default",
         destructive:
-          "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
+          "bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default:
-          "h-7 gap-1.5 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-5 gap-1 rounded-sm px-2 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1",
-        sm: "h-6 gap-1.5 rounded-sm px-2.5 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5",
-        lg: "h-8 gap-2 px-4 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-7",
-        "icon-xs": "size-5 rounded-sm in-data-[slot=button-group]:rounded-lg",
-        "icon-sm": "size-6 rounded-sm in-data-[slot=button-group]:rounded-lg",
+          "h-7.5 gap-2 px-3 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
+        xs: "h-5.5 gap-1 rounded-[6px] px-2 text-ui-2xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5",
+        sm: "h-6.5 gap-1.5 rounded-[7px] px-2.25 text-ui-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.75 has-data-[icon=inline-start]:pl-1.75",
+        lg: "h-8 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        icon: "size-7 rounded-[7px]",
+        "icon-xs": "size-5 rounded-[5px] in-data-[slot=button-group]:rounded-lg",
+        "icon-sm": "size-6 rounded-[6px] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-8",
       },
     },

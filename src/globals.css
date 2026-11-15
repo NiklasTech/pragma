@@ -117,6 +117,14 @@
   --color-bg-sheet: var(--bg-elevated);
 
   /* --------------------------------------------------------------------------
+     Colors — control fills, mixed from the text color so every theme gets
+     matching buttons, selects and fields
+     -------------------------------------------------------------------------- */
+  --color-control: color-mix(in srgb, var(--fg-default) 10%, transparent);
+  --color-control-hover: color-mix(in srgb, var(--fg-default) 15%, transparent);
+  --color-field: color-mix(in srgb, var(--fg-default) 5%, transparent);
+
+  /* --------------------------------------------------------------------------
      Colors — agent states. Orange stays reserved for "needs you".
      -------------------------------------------------------------------------- */
   --color-state-needs-you: var(--color-accent);

@@ -42,14 +42,14 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-md border border-border bg-bg-input py-1 pr-1.5 pl-2 text-ui-base text-fg-default whitespace-nowrap transition-all duration-200 outline-none select-none hover:border-border hover:bg-bg-elevated focus-visible:border-primary/50 focus-visible:shadow-[0_0_0_3px_var(--color-accent-subtle)] disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-fg-subtle data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-md *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex w-fit cursor-pointer items-center justify-between gap-2 rounded-control bg-control py-1 pr-2 pl-2.5 text-ui-sm text-fg-default whitespace-nowrap transition-[background-color,box-shadow] duration-(--motion-fast) ease-(--motion-ease) outline-none select-none hover:bg-control-hover focus-visible:ring-2 focus-visible:ring-border-focus disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:ring-2 aria-invalid:ring-destructive/40 data-placeholder:text-fg-subtle data-popup-open:bg-control-hover data-[size=default]:h-7.5 data-[size=sm]:h-6.5 data-[size=sm]:rounded-[7px] data-[size=sm]:text-ui-xs *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon
-        render={<CaretDown className="pointer-events-none size-4 text-fg-subtle" />}
+        render={<CaretDown className="pointer-events-none size-3.5 text-fg-subtle" />}
       />
     </SelectPrimitive.Trigger>
   );
