@@ -52,6 +52,8 @@ export async function openLayoutPreset(
         const session = await createTerminalSession(rootPath, manifest, {
           activate: false,
           environment: options.environment,
+          // A CLI started for a task is named after it, as its tab is.
+          title: task ? options.tabName : undefined,
         });
         panes.assignSession(rootPath, leafId, session.id);
         if (task) deliverTerminalPrompt(session.id, task);

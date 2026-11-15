@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 
-import { focusAttentionSession } from "@/features/ai/notifications/focusSession";
 import { sessionAgentManifest } from "@/features/ai/sessions/sessionAgent";
 import { summarizeAgentStates, useAgentStatesStore } from "@/features/ai/state/agentStates";
 import { AgentMark } from "@/shared/components/ui/agent-mark";
@@ -8,6 +7,7 @@ import { Button } from "@/shared/components/ui/button";
 import { StatusDot, type AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { useOverlayStore } from "@/shared/stores/overlays";
 
 const MAX_MARKS = 4;
 
@@ -32,7 +32,7 @@ function useMarks(sessionIds: Array<[string, AgentState]>): PillMark[] {
   }, [sessionIds, chatSessions, cliManifests, activeCLIProvider]);
 }
 
-/// How the agents are doing at a glance; a click shows the session that needs you first.
+/// How the agents are doing at a glance; a click opens the overview of every agent.
 export function StatusPill() {
   const entries = useAgentStatesStore((store) => store.entries);
   const summary = useMemo(() => summarizeAgentStates(entries), [entries]);
@@ -46,7 +46,7 @@ export function StatusPill() {
     [summary],
   );
   const marks = useMarks(ordered);
-  const target = first;
+  const openOverlay = useOverlayStore((state) => state.open);
 
   const parts = [
     needsYou.length > 0 && `${needsYou.length} ${needsYou.length === 1 ? "needs" : "need"} you`,
@@ -57,11 +57,10 @@ export function StatusPill() {
   return (
     <Button
       variant="ghost"
-      disabled={!target}
-      onClick={() => target && focusAttentionSession(target)}
-      title={target ? "Show the session that needs you first" : "No agent is running"}
+      onClick={() => openOverlay("overview")}
+      title={first ? "Show every agent" : "No agent is running"}
       className={cn(
-        "rounded-full bg-bg-well pr-3 text-ui-xs font-normal ring-1 ring-border ring-inset hover:bg-bg-well hover:ring-fg-subtle disabled:pointer-events-auto disabled:cursor-default disabled:opacity-100 disabled:hover:ring-border",
+        "rounded-full bg-bg-well pr-3 text-ui-xs font-normal ring-1 ring-border ring-inset hover:bg-bg-well hover:ring-fg-subtle",
         marks.length > 0 ? "gap-2.5 pl-1.75" : "pl-2.5",
       )}
     >

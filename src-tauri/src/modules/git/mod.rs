@@ -7,6 +7,7 @@ pub mod last_commit;
 pub mod operations;
 pub mod parser;
 mod process;
+pub mod session_diff;
 pub mod session_finish;
 pub mod state_paths;
 pub mod types;

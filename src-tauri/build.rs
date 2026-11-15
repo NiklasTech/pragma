@@ -159,6 +159,7 @@ const COMMANDS: &[&str] = &[
     "git_session_finish_merge",
     "git_session_push_branch",
     "git_session_repo_check",
+    "git_session_diff_stat",
     "git_session_worktree_create",
     "git_session_worktree_dirty",
     "git_session_worktree_orphans",

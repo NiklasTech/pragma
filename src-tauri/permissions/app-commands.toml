@@ -162,6 +162,7 @@ permissions = [
   "allow-git-session-push-branch",
   "allow-git-session-repo-check",
   "allow-git-session-worktree-create",
+  "allow-git-session-diff-stat",
   "allow-git-session-worktree-dirty",
   "allow-git-session-worktree-orphans",
   "allow-git-session-worktree-remove",

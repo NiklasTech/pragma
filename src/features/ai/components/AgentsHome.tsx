@@ -28,7 +28,7 @@ import { isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
 import { createTerminalSession } from "../panes/launch";
 import { useAgentsPanesStore } from "../panes/store";
-import { quickAgents } from "../quickStart/quickStart";
+import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
 import { ChatToolbar } from "./ChatToolbar";
 
@@ -121,7 +121,9 @@ export function AgentsHome() {
       } else {
         const manifest = ready.find((item) => item.id === agent);
         if (!manifest) return;
-        const session = await createTerminalSession(rootPath, manifest);
+        const session = await createTerminalSession(rootPath, manifest, {
+          title: text ? taskTabTitle(text) : undefined,
+        });
         openSession(rootPath, session.id);
         if (text) deliverTerminalPrompt(session.id, text);
       }
