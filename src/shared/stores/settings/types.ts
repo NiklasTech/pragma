@@ -175,13 +175,16 @@ export interface AgentSettings {
   maxSessionDepth: number;
 }
 
+/** How Pragma pulls you in when an agent needs you, and which outcomes count. */
 export interface NotificationSettings {
+  /** A small card at the bottom right while Pragma is in front. */
+  card: boolean;
+  /** A system notification while Pragma is in the background. */
+  system: boolean;
+  /** A short tone with each card or notification. */
+  sound: boolean;
   sessionFinished: boolean;
   sessionFailed: boolean;
-  approvalNeeded: boolean;
-  badge: boolean;
-  playSound: boolean;
-  inAppPopups: boolean;
 }
 
 export interface ExtensionSettings {

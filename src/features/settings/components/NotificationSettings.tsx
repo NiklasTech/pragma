@@ -7,36 +7,30 @@ import { NotificationPermissionRow } from "./NotificationPermissionRow";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 
-const ROWS: Array<{ key: keyof Settings; label: string; description: string }> = [
+const WAYS: Array<{ key: keyof Settings; label: string; description: string }> = [
+  {
+    key: "card",
+    label: "Card",
+    description: "A small card at the bottom right while you work in Pragma.",
+  },
+  {
+    key: "system",
+    label: "System notification",
+    description: "Only when Pragma is in the background.",
+  },
+  { key: "sound", label: "Sound", description: "A short tone, once per request." },
+];
+
+const EVENTS: Array<{ key: keyof Settings; label: string; description: string }> = [
   {
     key: "sessionFinished",
-    label: "Session finished",
-    description: "Notify when a session completes or a CLI terminal reports that it is done.",
+    label: "When an agent finishes",
+    description: "Also pull you in when a session is done, not only when it waits for you.",
   },
   {
     key: "sessionFailed",
-    label: "Session failed",
-    description: "Notify when a session stops with an error or a CLI terminal exits with one.",
-  },
-  {
-    key: "approvalNeeded",
-    label: "Approval or input needed",
-    description: "Notify when a session waits for your approval or a CLI terminal asks for input.",
-  },
-  {
-    key: "inAppPopups",
-    label: "In-app popups",
-    description: "Show a popup while Pragma is focused but the session is not in view.",
-  },
-  {
-    key: "playSound",
-    label: "Play sound",
-    description: "Play a sound with system notifications while Pragma is in the background.",
-  },
-  {
-    key: "badge",
-    label: "Dock badge",
-    description: "Show the number of sessions waiting for approval on the app icon.",
+    label: "When an agent fails",
+    description: "Also pull you in when a session stops with an error.",
   },
 ];
 
@@ -44,22 +38,27 @@ export function NotificationSettings() {
   const notifications = useSettingsStore((state) => state.notifications);
   const setNotificationSettings = useSettingsStore((state) => state.setNotificationSettings);
 
-  return (
-    <SettingSection title="Notifications">
-      {ROWS.map((row) => (
-        <SettingRow
-          key={row.key}
-          label={row.label}
-          description={row.description}
-          control={
-            <Switch
-              checked={notifications[row.key]}
-              onCheckedChange={(checked) => setNotificationSettings({ [row.key]: checked })}
-            />
-          }
+  const row = ({ key, label, description }: (typeof WAYS)[number]) => (
+    <SettingRow
+      key={key}
+      label={label}
+      description={description}
+      control={
+        <Switch
+          checked={notifications[key]}
+          onCheckedChange={(checked) => setNotificationSettings({ [key]: checked })}
         />
-      ))}
-      <NotificationPermissionRow />
-    </SettingSection>
+      }
+    />
+  );
+
+  return (
+    <>
+      <SettingSection title="When an agent needs you">
+        {WAYS.map(row)}
+        <NotificationPermissionRow />
+      </SettingSection>
+      <SettingSection title="Also notify">{EVENTS.map(row)}</SettingSection>
+    </>
   );
 }

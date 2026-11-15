@@ -78,10 +78,11 @@ export function useAgentStateFeed(): void {
     const onTerminalOutput = (sessionId: string) => {
       if (!isCliTerminal(sessionId)) return;
       const lastInputAt = getTerminalLastInputAt(sessionId);
-      // A question stays open until the user typed an answer after it was asked.
+      // A question stays open, and a finished run stays done, until the user typed after it.
       const entry = store().entries[sessionId];
       const asked = entry?.state === "needs-you";
-      if (asked && lastInputAt < entry.changedAt) return;
+      const settled = asked || entry?.state === "done";
+      if (settled && lastInputAt < entry.changedAt) return;
       // A rejected request ends the turn at once, so its output arrives within the echo window.
       if (!asked && !isAgentOutput(Date.now(), lastInputAt)) return;
       apply(sessionId, "working");

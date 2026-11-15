@@ -206,7 +206,30 @@ describe("removed settings", () => {
 
     expect(restored).not.toHaveProperty("statusbar");
     expect(restored.notifications).not.toHaveProperty("statusSummary");
-    expect(restored.notifications.playSound).toBe(false);
+    expect(restored.notifications.sound).toBe(false);
+  });
+
+  it("carries the old popup and sound switches over to the card and sound", () => {
+    const restored = mergeWithDefaults(
+      {
+        notifications: {
+          inAppPopups: false,
+          playSound: true,
+          approvalNeeded: false,
+          badge: false,
+          sessionFailed: false,
+        },
+      },
+      useSettingsStore.getState(),
+    );
+
+    expect(restored.notifications).toEqual({
+      card: false,
+      system: true,
+      sound: true,
+      sessionFinished: true,
+      sessionFailed: false,
+    });
   });
 
   it("drops the unread keymap, agent switch and AI terminal suggestion flag", () => {

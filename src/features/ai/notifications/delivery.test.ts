@@ -6,7 +6,8 @@ const base: DeliveryInput = {
   enabled: true,
   windowFocused: true,
   sessionInView: false,
-  inAppPopups: true,
+  card: true,
+  system: true,
 };
 
 describe("resolveAttentionDelivery", () => {
@@ -17,19 +18,20 @@ describe("resolveAttentionDelivery", () => {
     );
   });
 
-  it("shows a popup while the session is out of view", () => {
-    expect(resolveAttentionDelivery(base)).toBe("popup");
+  it("shows a card while the session is out of view", () => {
+    expect(resolveAttentionDelivery(base)).toBe("card");
   });
 
   it("stays quiet for the session in view", () => {
     expect(resolveAttentionDelivery({ ...base, sessionInView: true })).toBe("none");
   });
 
-  it("respects the event and popup settings", () => {
+  it("respects the event, card and system settings", () => {
     expect(resolveAttentionDelivery({ ...base, enabled: false, windowFocused: false })).toBe(
       "none",
     );
-    expect(resolveAttentionDelivery({ ...base, inAppPopups: false })).toBe("none");
+    expect(resolveAttentionDelivery({ ...base, card: false })).toBe("none");
+    expect(resolveAttentionDelivery({ ...base, system: false, windowFocused: false })).toBe("none");
   });
 });
 

@@ -6,30 +6,14 @@ import { Button } from "@/shared/components/ui/button";
 import { StatusDot } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
-import { useAgentStore } from "@/features/agent/store";
 
-import { resolveAcpApproval, useAcpApprovalsStore } from "../acp/acpApprovals";
-import { resolveSpawnApproval, useSpawnApprovalsStore } from "../children/acpSpawn";
 import { sessionAgentManifest } from "../sessions/sessionAgent";
+import { useFirstRequest } from "../state/useFirstRequest";
 import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
 import { sinceLabel, type OverviewTile } from "./overviewModel";
 import { useDiffStat } from "./useDiffStat";
 import { useTileSnippet } from "./useTileSnippet";
-
-/** Answers the session's oldest open permission request with Allow, or returns null when none waits. */
-function useAllow(sessionId: string): (() => void) | null {
-  const acp = useAcpApprovalsStore((state) => state.bySession[sessionId]?.[0] ?? null);
-  const spawn = useSpawnApprovalsStore((state) => state.bySession[sessionId]?.[0] ?? null);
-  const agent = useAgentStore((state) =>
-    state.runSessionId === sessionId ? (state.pendingApprovals[0] ?? null) : null,
-  );
-  const resolveAgent = useAgentStore((state) => state.resolveApproval);
-  if (acp) return () => void resolveAcpApproval(sessionId, acp.toolCallId, "allow");
-  if (spawn) return () => resolveSpawnApproval(sessionId, spawn.toolCallId, true);
-  if (agent) return () => resolveAgent(agent.toolCallId, true);
-  return null;
-}
 
 interface OverviewTileCardProps {
   tile: OverviewTile;
@@ -53,7 +37,7 @@ export const OverviewTileCard = memo(function OverviewTileCard({
   const branch = environment?.kind === "worktree" ? environment.branch : null;
   const stat = useDiffStat(environment);
   const lines = useTileSnippet(session);
-  const allow = useAllow(session.id);
+  const allow = useFirstRequest(session.id)?.allow ?? null;
   const needsYou = state === "needs-you";
   const title =
     manifest && isGeneratedTerminalTitle(session.title, manifest.name)
