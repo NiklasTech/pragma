@@ -62,6 +62,13 @@ const MENU_ACTION_IDS: &[&str] = &[
     "view.toggleUiMode",
     "view.newTerminalTab",
     "view.openSettings",
+    "pane.splitRight",
+    "pane.splitDown",
+    "pane.toggleZoom",
+    "pane.focusLeft",
+    "pane.focusRight",
+    "pane.focusUp",
+    "pane.focusDown",
     "ai.toggle",
     "debug.currentFile",
     "debug.stop",
@@ -372,6 +379,19 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         )?)
         .build()?;
 
+    // Pane keys stay in the web view without menu accelerators, so the editor keeps keys like Cmd+D.
+    let pane_item = |id: &str, label: &str| MenuItem::with_id(app, id, label, true, None::<&str>);
+    let panes = SubmenuBuilder::new(app, "Panes")
+        .item(&pane_item("pane.splitRight", "Split Pane Right")?)
+        .item(&pane_item("pane.splitDown", "Split Pane Down")?)
+        .item(&pane_item("pane.toggleZoom", "Zoom Pane")?)
+        .separator()
+        .item(&pane_item("pane.focusLeft", "Focus Pane Left")?)
+        .item(&pane_item("pane.focusRight", "Focus Pane Right")?)
+        .item(&pane_item("pane.focusUp", "Focus Pane Above")?)
+        .item(&pane_item("pane.focusDown", "Focus Pane Below")?)
+        .build()?;
+
     let view = SubmenuBuilder::new(app, "View")
         .item(&shortcut_item(
             app,
@@ -426,6 +446,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             "view.toggleUiMode",
             "Switch Between Agents and Code",
         )?)
+        .item(&panes)
         .separator()
         .item(&PredefinedMenuItem::fullscreen(app, None)?)
         .build()?;
@@ -854,6 +875,10 @@ mod tests {
         assert_eq!(
             resolve_menu_event("view.toggleContextPane"),
             Some(("view.toggleContextPane", None))
+        );
+        assert_eq!(
+            resolve_menu_event("pane.splitRight"),
+            Some(("pane.splitRight", None))
         );
     }
 

@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 
 import { usePaneMaximizeStore } from "./maximize";
 import { pickNeighbor, type PaneDirection, type PlacedPane } from "./paneNeighbor";
+import type { SplitDirection } from "./split";
 import { findLeafGroup } from "./operations";
 import { paneTreeKey, useAgentsPanesStore } from "./store";
 import { animatePanes, animateRestore } from "./transition";
@@ -17,6 +18,8 @@ const PANE_SHORTCUTS: ShortcutActionId[] = [
   "pane.focusUp",
   "pane.focusDown",
   "pane.toggleZoom",
+  "pane.splitRight",
+  "pane.splitDown",
 ];
 
 /** True for keys that move between or zoom panes, which a terminal must not type. */
@@ -96,5 +99,14 @@ export function focusPaneInDirection(direction: PaneDirection): boolean {
     move();
   }
   focusPaneInput(target);
+  return true;
+}
+
+/** Opens an empty pane beside the focused one; false when the tab shows no panes. */
+export function splitFocusedPane(direction: SplitDirection): boolean {
+  const rootPath = currentRoot();
+  const leafId = useAgentsPanesStore.getState().trees[paneTreeKey(rootPath)]?.focusedLeafId;
+  if (!leafId || !paneCard(leafId)) return false;
+  useAgentsPanesStore.getState().splitPane(rootPath, leafId, direction);
   return true;
 }

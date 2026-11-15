@@ -157,6 +157,22 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "pane.splitRight" as const,
+    label: "Split Pane Right",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding =>
+      isMac ? { meta: true, code: "KeyD" } : { ctrl: true, alt: true, code: "KeyD" },
+  },
+  {
+    id: "pane.splitDown" as const,
+    label: "Split Pane Down",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding =>
+      isMac
+        ? { meta: true, shift: true, code: "KeyD" }
+        : { ctrl: true, alt: true, shift: true, code: "KeyD" },
+  },
+  {
     id: "pane.toggleZoom" as const,
     label: "Zoom Pane",
     category: "view" as const,
