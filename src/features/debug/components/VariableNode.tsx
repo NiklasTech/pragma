@@ -1,4 +1,5 @@
 import { CaretDown, CaretRight } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { useDebugStore } from "../store";
 import type { DebugVariable } from "../client";
 
@@ -19,10 +20,10 @@ export function VariableNode({
 
   return (
     <div>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={() => hasChildren && onToggle(variable.variablesReference)}
-        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-bg-hover"
+        className="w-full justify-start gap-1 rounded-[5px] px-1 py-0.5 text-left text-fg-default h-auto whitespace-normal font-normal"
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         {hasChildren ? (
@@ -36,7 +37,7 @@ export function VariableNode({
         )}
         <span className="truncate text-ui-xs text-fg-default">{variable.name}</span>
         <span className="truncate text-ui-xs text-fg-muted">{variable.value}</span>
-      </button>
+      </Button>
       {isExpanded &&
         children?.map((child) => (
           <VariableNode

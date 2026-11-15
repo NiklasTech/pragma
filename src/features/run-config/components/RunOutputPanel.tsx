@@ -1,6 +1,8 @@
 import { useShallow } from "zustand/react/shallow";
 import { useRef, useEffect } from "react";
 import { X, Circle, Terminal } from "@phosphor-icons/react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/components/ui/button";
 import { useRunConfigStore, type RunStatus } from "@/shared/stores/runConfig";
 
 function StatusBadge({ status }: { status: RunStatus }) {
@@ -66,15 +68,15 @@ export function RunOutputPanel() {
           {processes.length > 1 && (
             <div className="mr-2 flex items-center gap-1">
               {processes.map((p) => (
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   key={p.id}
-                  type="button"
                   onClick={() => setActiveProcess(p.id)}
-                  className={`flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs ${
-                    p.id === activeProcessId
-                      ? "bg-bg-active text-fg-default"
-                      : "text-fg-muted hover:bg-bg-hover"
-                  }`}
+                  className={cn(
+                    "h-5 gap-1 px-1.5 font-normal",
+                    p.id === activeProcessId && "bg-bg-active text-fg-default",
+                  )}
                 >
                   <Circle
                     size={5}
@@ -88,30 +90,33 @@ export function RunOutputPanel() {
                     }
                   />
                   {p.configName}
-                </button>
+                </Button>
               ))}
             </div>
           )}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={() => setActiveProcess(null)}
-            className="flex h-5 items-center gap-1 rounded px-1.5 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+            className="h-5 gap-1 px-1.5 font-normal"
             title="Back to Terminal"
           >
             <Terminal size={10} />
             <span>Terminal</span>
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Close"
             onClick={() => {
               setActiveProcess(null);
               removeProcess(activeProcess.id);
             }}
-            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-fg-default"
+            className="text-fg-muted"
             title="Close"
           >
             <X size={12} />
-          </button>
+          </Button>
         </div>
       </div>
 

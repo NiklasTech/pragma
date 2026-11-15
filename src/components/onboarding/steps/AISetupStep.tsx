@@ -173,14 +173,16 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
                   onChange={(e) => setKeyInput(e.target.value)}
                   placeholder={apiKeyRef ? "Key saved — enter new to replace" : "sk-..."}
                 />
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={showKey ? "Hide key" : "Show key"}
                   onClick={() => setShowKey((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
+                  className="absolute top-1/2 right-1.5 -translate-y-1/2 text-fg-muted"
                   tabIndex={-1}
                 >
                   {showKey ? <EyeSlash size={16} /> : <Eye size={16} />}
-                </button>
+                </Button>
               </div>
               <Button variant="outline" onClick={handleSaveKey} disabled={!keyInput.trim()}>
                 Save
@@ -191,13 +193,14 @@ export function AISetupStep({ onSkipStep }: AISetupStepProps) {
         )}
       </div>
 
-      <button
-        type="button"
+      <Button
+        variant="link"
+        size="sm"
         onClick={onSkipStep}
-        className="self-center text-ui-sm text-fg-muted underline-offset-4 hover:text-fg-default hover:underline"
+        className="self-center font-normal text-fg-muted hover:text-fg-default"
       >
         Skip AI setup
-      </button>
+      </Button>
     </div>
   );
 }

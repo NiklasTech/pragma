@@ -10,6 +10,8 @@ import {
   Trash,
   Terminal,
 } from "@phosphor-icons/react";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/components/ui/button";
 import { useRunConfigStore, type RunConfig, type RunStatus } from "@/shared/stores/runConfig";
 import { processLabel, repositoryProcesses } from "@/shared/stores/runProcesses";
 import { useDebugStore } from "@/features/debug/store";
@@ -48,23 +50,26 @@ function RunningProcessBadge({
         isActive ? "bg-bg-active" : "bg-bg-active/40"
       }`}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="xs"
         onClick={() => onOpenOutput(process.id)}
-        className="flex items-center gap-1.5"
+        className="gap-1.5 px-1 font-normal text-fg-default"
         title="Open output"
       >
         <StatusDot status={process.status} />
         <span className="text-ui-xs text-fg-default">{label}</span>
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Stop"
         onClick={() => onStop(process.id)}
-        className="flex h-5 w-5 items-center justify-center rounded text-fg-muted transition-colors hover:text-status-error"
+        className="text-fg-muted hover:text-status-error"
         title="Stop"
       >
         <Stop size={12} weight="fill" />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -174,14 +179,15 @@ export function RunConfigWidget({ runningOnly = false }: RunConfigWidgetProps) {
 
       {/* Dropdown for all configs + stopped processes */}
       <div className={runningOnly ? "hidden" : "relative"}>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          aria-expanded={dropdownOpen}
           onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="flex h-8 items-center gap-1.5 rounded-md px-3 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="h-8 gap-1.5 px-3 font-normal"
         >
           <span>Run</span>
           <CaretDown size={12} />
-        </button>
+        </Button>
 
         {dropdownOpen && (
           <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-md border border-border bg-popover shadow-lg">
@@ -201,42 +207,50 @@ export function RunConfigWidget({ runningOnly = false }: RunConfigWidgetProps) {
                     <div className="flex items-center gap-1">
                       {proc?.status === "running" ? (
                         <>
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label="Open output"
                             onClick={() => {
                               handleOpenOutput(proc.id);
                               setDropdownOpen(false);
                             }}
-                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-fg-default"
+                            className="text-fg-muted"
                             title="Open output"
                           >
                             <Terminal size={12} />
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label="Stop"
                             onClick={() => handleStop(proc.id)}
-                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-error"
+                            className="text-fg-muted hover:text-status-error"
                             title="Stop"
                           >
                             <Stop size={12} weight="fill" />
-                          </button>
+                          </Button>
                         </>
                       ) : (
                         <>
                           {config.debug && (
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              aria-label={`Debug with ${config.debug.adapter}`}
                               onClick={() => handleDebug(config)}
-                              className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-primary"
+                              className="text-fg-muted"
                               title={`Debug with ${config.debug.adapter}`}
                             >
                               <Bug size={12} />
-                            </button>
+                            </Button>
                           )}
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={proc ? "Restart" : "Start"}
                             onClick={() => (proc ? handleRestart(proc.id) : handleStart(config))}
-                            className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-success"
+                            className="text-fg-muted hover:text-status-success"
                             title={proc ? "Restart" : "Start"}
                           >
                             {proc ? (
@@ -244,7 +258,7 @@ export function RunConfigWidget({ runningOnly = false }: RunConfigWidgetProps) {
                             ) : (
                               <Play size={12} weight="fill" />
                             )}
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -257,16 +271,17 @@ export function RunConfigWidget({ runningOnly = false }: RunConfigWidgetProps) {
                 <div className="my-1 border-t border-border" />
               )}
               {stoppedProcesses.map((proc) => (
-                <button
+                <Button
+                  variant="ghost"
                   key={proc.id}
-                  type="button"
                   onClick={() => {
                     setActiveProcess(activeProcessId === proc.id ? null : proc.id);
                     setDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between px-3 py-1.5 hover:bg-bg-hover ${
-                    activeProcessId === proc.id ? "bg-bg-active/60" : ""
-                  }`}
+                  className={cn(
+                    "w-full justify-between rounded-none px-3 py-1.5 font-normal text-fg-default h-auto",
+                    activeProcessId === proc.id && "bg-bg-active",
+                  )}
                 >
                   <div className="flex items-center gap-2">
                     <StatusDot status={proc.status} />
@@ -276,30 +291,34 @@ export function RunConfigWidget({ runningOnly = false }: RunConfigWidgetProps) {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label="Restart"
                       onClick={(e) => {
                         e.stopPropagation();
                         void restartProcess(proc.id);
                       }}
-                      className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-success"
+                      className="text-fg-muted hover:text-status-success"
                       title="Restart"
                     >
                       <ArrowCounterClockwise size={12} />
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label="Remove"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeProcess(proc.id);
                       }}
-                      className="flex h-5 w-5 items-center justify-center rounded text-fg-muted hover:text-status-error"
+                      className="text-fg-muted hover:text-status-error"
                       title="Remove"
                     >
                       <Trash size={12} />
-                    </button>
+                    </Button>
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
           </div>

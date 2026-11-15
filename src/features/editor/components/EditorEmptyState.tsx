@@ -1,6 +1,7 @@
 import type { Icon } from "@phosphor-icons/react";
 import { FileText, MagnifyingGlass, Robot } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { PragmaMark } from "@/shared/components/PragmaMark";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useOverlayStore } from "@/shared/stores/overlays";
@@ -57,11 +58,11 @@ export function EditorEmptyState() {
 
       <div className="flex w-full max-w-[360px] flex-col gap-1.5">
         {actions.map((action) => (
-          <button
+          <Button
+            variant="secondary"
             key={action.label}
-            type="button"
             onClick={action.run}
-            className="group flex items-center gap-3 rounded-lg border border-border-subtle bg-bg-surface px-3 py-2.5 text-left transition-colors hover:border-border hover:bg-bg-hover"
+            className="group justify-start gap-3 px-3 py-2.5 text-left h-auto whitespace-normal font-normal"
           >
             <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-primary">
               <action.icon size={16} />
@@ -73,7 +74,7 @@ export function EditorEmptyState() {
             {action.shortcut && (
               <Kbd className="shrink-0">{formatShortcut(shortcuts[action.shortcut], isMac)}</Kbd>
             )}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

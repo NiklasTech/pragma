@@ -1,4 +1,5 @@
 import { ArrowCounterClockwise, DownloadSimple, UploadSimple } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { useSettingsStore } from "@/shared/stores/settings";
 import {
   AlertDialog,
@@ -30,32 +31,35 @@ export function SettingsActions() {
 
   return (
     <div className="flex shrink-0 flex-col gap-0.5 border-t border-border-subtle p-2">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleExport}
-        className="flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+        className="h-7 justify-start gap-2.5 px-2.5 font-normal"
       >
         <DownloadSimple size={14} />
         Export
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleImport}
-        className="flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+        className="h-7 justify-start gap-2.5 px-2.5 font-normal"
       >
         <UploadSimple size={14} />
         Import
-      </button>
+      </Button>
       <AlertDialog>
         <AlertDialogTrigger
           render={
-            <button
-              type="button"
-              className="flex h-7 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 justify-start gap-2.5 px-2.5 font-normal hover:text-status-error"
             >
               <ArrowCounterClockwise size={14} />
               Reset Defaults
-            </button>
+            </Button>
           }
         />
         <AlertDialogContent>

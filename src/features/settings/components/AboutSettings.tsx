@@ -127,26 +127,26 @@ export function AboutSettings() {
         <div className="flex flex-col gap-3 py-2">
           <p className="text-ui-xs text-fg-muted">
             © {new Date().getFullYear()}{" "}
-            <button
-              type="button"
+            <Button
+              variant="link"
               onClick={() => handleOpenUrl(`https://github.com/${GITHUB_OWNER}`)}
-              className="inline-flex items-center gap-0.5 text-primary hover:underline"
+              className="h-auto gap-0.5 p-0 text-[length:inherit] font-normal"
             >
               {GITHUB_OWNER}
               <ArrowSquareOut size={10} />
-            </button>
+            </Button>
             . All rights reserved.
           </p>
           <p className="text-ui-xs text-fg-muted">
             Pragma is licensed under the{" "}
-            <button
-              type="button"
+            <Button
+              variant="link"
               onClick={() => handleOpenUrl(`${REPO_URL}/blob/main/LICENSE`)}
-              className="inline-flex items-center gap-0.5 text-primary hover:underline"
+              className="h-auto gap-0.5 p-0 text-[length:inherit] font-normal"
             >
               Apache License 2.0
               <ArrowSquareOut size={10} />
-            </button>
+            </Button>
             .
           </p>
           <p className="text-ui-xs text-fg-muted">
@@ -189,14 +189,15 @@ export function AboutSettings() {
                         </span>
                         <span className="truncate text-fg-subtle">{entry.license}</span>
                       </div>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => handleOpenUrl(entry.url)}
-                        className="shrink-0 text-fg-muted hover:text-fg-default"
+                        className="text-fg-muted"
                         aria-label={`Open registry page for ${entry.name}`}
                       >
                         <ArrowSquareOut size={12} />
-                      </button>
+                      </Button>
                     </li>
                   ))}
                 </ul>

@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 import { sendExtensionCommand } from "../host";
@@ -24,15 +25,16 @@ export function ExtensionStatusItems({ alignment }: { alignment: "left" | "right
         );
       }
       return (
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           key={key}
-          type="button"
           title={item.tooltip}
           onClick={() => sendExtensionCommand(item.extensionId, command)}
-          className={cn(CHIP_CLASSES, "transition-colors hover:bg-bg-hover hover:text-fg-default")}
+          className={cn(CHIP_CLASSES, "font-normal")}
         >
           {text}
-        </button>
+        </Button>
       );
     });
 }

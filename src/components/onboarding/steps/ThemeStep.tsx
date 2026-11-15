@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { themeMode, useTheme } from "@/theme";
 import { builtInThemeList } from "@/theme/themes";
 import { Check } from "@phosphor-icons/react";
@@ -66,20 +67,15 @@ export function ThemeStep() {
 
       <div className="flex justify-center rounded-md border border-border/30 p-1">
         {MODES.map((m) => (
-          <button
+          <Button
+            variant="ghost"
             key={m.value}
-            type="button"
             onClick={() => chooseMode(m.value)}
             aria-pressed={mode === m.value}
-            className={cn(
-              "flex-1 rounded px-4 py-1.5 text-ui-sm font-medium transition-colors",
-              mode === m.value
-                ? "bg-bg-surface text-fg-default shadow-sm"
-                : "text-fg-muted hover:text-fg-default",
-            )}
+            className={cn("h-7 flex-1 px-4", mode === m.value && "bg-control text-fg-default")}
           >
             {m.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -114,14 +110,12 @@ function ThemeCard({ theme, active, onSelect }: ThemeCardProps) {
   const [bg, fg, primary, accent] = getThemePreviewColors(theme);
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={onSelect}
       className={cn(
-        "flex flex-col gap-2 rounded-md border p-3 text-left transition-colors",
-        active
-          ? "border-transparent ring-2 ring-primary"
-          : "border-border/30 bg-bg-root hover:border-border hover:bg-bg-hover",
+        "h-auto flex-col items-stretch gap-2 p-3 text-left font-normal whitespace-normal text-fg-default ring-1 ring-border ring-inset",
+        active && "ring-2 ring-fg-default",
       )}
     >
       <div className="flex items-center justify-between gap-2">
@@ -136,7 +130,7 @@ function ThemeCard({ theme, active, onSelect }: ThemeCardProps) {
         <ColorSwatch color={primary} />
         <ColorSwatch color={accent} />
       </div>
-    </button>
+    </Button>
   );
 }
 

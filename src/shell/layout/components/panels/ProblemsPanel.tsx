@@ -9,6 +9,7 @@ import {
   Warning,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useProblemsStore, type ProblemSeverity } from "@/shared/stores/problems";
 import { useEditorStore } from "@/shared/stores/editor";
@@ -113,33 +114,33 @@ export default function ProblemsPanel() {
             </span>
           )}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => void refreshProblems()}
           disabled={isLoading}
-          className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-50"
+          className="gap-1 px-2"
         >
           <ArrowsClockwise size={14} className={cn(isLoading && "animate-spin")} />
           Refresh
-        </button>
+        </Button>
       </div>
       <div className="flex shrink-0 items-center gap-1 border-b border-border-subtle px-3 py-1">
         {severityFilters.map((entry) => (
-          <button
+          <Button
+            variant="ghost"
+            size="xs"
             key={entry.id}
-            type="button"
             onClick={() => setFilter(entry.id)}
             aria-pressed={filter === entry.id}
             className={cn(
-              "rounded px-2 py-0.5 text-ui-xs transition-colors",
-              filter === entry.id
-                ? "bg-bg-hover text-fg-default"
-                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+              "px-2 font-normal",
+              filter === entry.id && "bg-bg-active text-fg-default",
             )}
           >
             {entry.label}
             <span className="ml-1 text-ui-2xs text-fg-subtle">{filterCounts[entry.id]}</span>
-          </button>
+          </Button>
         ))}
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
@@ -159,11 +160,11 @@ export default function ProblemsPanel() {
               const isCollapsed = collapsedFiles.includes(group.filePath);
               return (
                 <li key={group.filePath} className="border-b border-border-subtle last:border-b-0">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
                     onClick={() => toggleFile(group.filePath)}
                     aria-expanded={!isCollapsed}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                    className="w-full justify-start gap-2 rounded-none px-3 py-1.5 text-left text-fg-default h-auto whitespace-normal font-normal"
                   >
                     {isCollapsed ? (
                       <CaretRight size={12} className="shrink-0 text-fg-subtle" />
@@ -177,7 +178,7 @@ export default function ProblemsPanel() {
                     <span className="shrink-0 text-ui-2xs text-fg-subtle">
                       {group.problems.length}
                     </span>
-                  </button>
+                  </Button>
                   {!isCollapsed && (
                     <ul className="divide-y divide-border-subtle">
                       {group.problems.map((problem) => {
@@ -185,12 +186,12 @@ export default function ProblemsPanel() {
                         const Icon = config.icon;
                         return (
                           <li key={problem.id}>
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
                               onClick={() =>
                                 handleClick(problem.filePath, problem.line, problem.column)
                               }
-                              className="flex w-full items-start gap-3 py-2 pr-3 pl-8 text-left transition-colors hover:bg-bg-hover"
+                              className="w-full items-start justify-start gap-3 rounded-none py-2 pr-3 pl-8 text-left text-fg-default h-auto whitespace-normal font-normal"
                             >
                               <Icon size={16} className={cn("mt-0.5 shrink-0", config.color)} />
                               <div className="min-w-0 flex-1">
@@ -206,7 +207,7 @@ export default function ProblemsPanel() {
                                   </span>
                                 </p>
                               </div>
-                            </button>
+                            </Button>
                           </li>
                         );
                       })}

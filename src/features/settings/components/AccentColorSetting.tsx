@@ -41,21 +41,22 @@ export function AccentColorSetting() {
           {ACCENT_PRESETS.map((preset) => {
             const active = accentColor.toLowerCase() === preset;
             return (
-              <button
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 key={preset}
-                type="button"
                 title={preset}
                 aria-label={`Accent ${preset}`}
                 aria-pressed={active}
                 onClick={() => setAccent(preset)}
                 className={cn(
-                  "flex size-5 items-center justify-center rounded-full border border-border/40",
+                  "rounded-full ring-1 ring-border ring-inset",
                   active && "ring-2 ring-border-focus ring-offset-1 ring-offset-bg-root",
                 )}
                 style={{ backgroundColor: preset }}
               >
                 {active && <Check size={10} weight="bold" className="text-black/70" />}
-              </button>
+              </Button>
             );
           })}
           <Input

@@ -53,13 +53,15 @@ export function ApiKeyRow({
                 placeholder={apiKeyRef ? `Key saved (${apiKeyRef})` : "Enter API key"}
                 className="w-full pr-8"
               />
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={showKey ? "Hide key" : "Show key"}
                 onClick={onToggleShowKey}
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-fg-muted hover:text-fg-default"
+                className="absolute top-1/2 right-1.5 -translate-y-1/2 text-fg-muted"
               >
                 {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
-              </button>
+              </Button>
             </div>
             <Button size="sm" onClick={onSave} disabled={!value.trim()}>
               <FloppyDisk size={14} />

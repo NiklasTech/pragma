@@ -1,4 +1,5 @@
 import type { Icon } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 
 export function ToolbarButton({
   icon: Icon,
@@ -12,15 +13,17 @@ export function ToolbarButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      aria-label={title}
       disabled={disabled}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="text-fg-muted"
     >
       <Icon size={12} />
-    </button>
+    </Button>
   );
 }
 

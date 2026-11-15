@@ -7,6 +7,7 @@ import {
   useTerminalStore,
   type TerminalSession as TerminalSessionType,
 } from "@/shared/stores/terminal";
+import { Button } from "@/shared/components/ui/button";
 import { useTerminalSuggestions } from "@/shared/hooks/useTerminalSuggestions";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTheme } from "@/theme";
@@ -166,14 +167,16 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
           />
         )}
         {showScrollDown && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="icon"
+            aria-label="Scroll to Bottom"
             onClick={() => termRef.current?.scrollToBottom()}
-            className="flex size-7 items-center justify-center rounded-full border border-border bg-bg-elevated text-fg-muted shadow-md transition-colors hover:text-fg-default"
+            className="rounded-full bg-bg-sheet text-fg-muted shadow-[var(--shadow-sm)] ring-1 ring-border hover:bg-bg-sheet hover:text-fg-default"
             title="Scroll to Bottom"
           >
             <ArrowDown size={13} />
-          </button>
+          </Button>
         )}
       </div>
     </div>

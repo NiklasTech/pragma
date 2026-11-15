@@ -9,6 +9,7 @@ import {
   ListBullets,
 } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { detectLanguage } from "@/shared/lib/language";
 import { isLspSupported } from "@/shared/lib/lsp-servers";
@@ -122,15 +123,16 @@ export default function OutlinePanel() {
             </span>
           )}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => setRefreshToken((value) => value + 1)}
           disabled={!supported || status === "loading"}
-          className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-50"
+          className="gap-1 px-2"
         >
           <ArrowClockwise size={14} className={cn(status === "loading" && "animate-spin")} />
           Refresh
-        </button>
+        </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {!activeTab ? (
@@ -187,24 +189,26 @@ function OutlineTree({ nodes, parentKey, collapsed, onToggle, onSelect }: Outlin
           <li key={key}>
             <div className="flex w-full items-center gap-1 pr-3 pl-2 transition-colors hover:bg-bg-hover">
               {hasChildren ? (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => onToggle(key)}
                   aria-label={
                     isCollapsed ? `Expand ${node.item.name}` : `Collapse ${node.item.name}`
                   }
                   aria-expanded={!isCollapsed}
-                  className="flex size-5 shrink-0 items-center justify-center text-fg-subtle"
+                  className="text-fg-subtle"
                 >
                   {isCollapsed ? <CaretRight size={12} /> : <CaretDown size={12} />}
-                </button>
+                </Button>
               ) : (
                 <span className="size-5 shrink-0" />
               )}
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="xs"
                 onClick={() => onSelect(node)}
-                className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left"
+                className="min-w-0 flex-1 justify-start gap-2 px-0 text-left text-ui-sm font-normal text-fg-default hover:bg-transparent"
               >
                 <FunctionIcon size={14} className="shrink-0 text-fg-muted" />
                 <span className="truncate text-ui-sm text-fg-default">{node.item.name}</span>
@@ -214,7 +218,7 @@ function OutlineTree({ nodes, parentKey, collapsed, onToggle, onSelect }: Outlin
                 <span className="ml-auto shrink-0 rounded bg-bg-hover px-1.5 py-0.5 text-ui-2xs text-fg-subtle">
                   {symbolKindName(node.item.kind)}
                 </span>
-              </button>
+              </Button>
             </div>
             {hasChildren && !isCollapsed && (
               <OutlineTree

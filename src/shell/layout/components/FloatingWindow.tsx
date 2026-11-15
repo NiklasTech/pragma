@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { ArrowSquareOut } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 interface FloatingWindowProps {
@@ -135,22 +136,24 @@ export function FloatingWindow({
         {title}
         <div className="ml-auto flex items-center gap-2">
           {onExternalize && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               data-no-drag
               onClick={onExternalize}
-              className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+              className="text-fg-muted"
               aria-label="Move to native window"
             >
               <ArrowSquareOut size={14} />
-            </button>
+            </Button>
           )}
           {onClose && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               data-no-drag
               onClick={onClose}
-              className="rounded p-1 text-fg-muted hover:bg-bg-hover hover:text-fg-default transition-colors"
+              className="text-fg-muted"
               aria-label="Close"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
@@ -161,7 +164,7 @@ export function FloatingWindow({
                   strokeLinecap="round"
                 />
               </svg>
-            </button>
+            </Button>
           )}
         </div>
       </div>

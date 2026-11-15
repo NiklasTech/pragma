@@ -178,14 +178,15 @@ function ExtensionRow({ summary, runtime, enabled, onToggle, onRemove }: Extensi
             onCheckedChange={onToggle}
             aria-label={`Enable ${summary.name}`}
           />
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onRemove}
-            className="flex size-6 items-center justify-center rounded text-fg-muted hover:bg-bg-hover hover:text-status-error"
+            className="text-fg-muted hover:text-status-error"
             aria-label={`Remove ${summary.name}`}
           >
             <Trash size={14} />
-          </button>
+          </Button>
         </div>
       </div>
       {isError && error && <span className="text-ui-xs text-status-error">{error}</span>}

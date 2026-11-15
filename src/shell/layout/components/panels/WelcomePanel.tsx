@@ -38,15 +38,16 @@ export default function WelcomePanel() {
             Recent
           </span>
           {recentFolders.slice(0, 5).map((path) => (
-            <button
+            <Button
+              variant="ghost"
+              size="xs"
               key={path}
-              type="button"
               onClick={() => void selectRoot(path)}
               title={path}
-              className="truncate rounded-sm px-2 py-1 text-left text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="justify-start truncate px-2 text-left font-normal"
             >
               {getWorkspaceName(path)}
-            </button>
+            </Button>
           ))}
         </div>
       )}

@@ -9,6 +9,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStop } from "@/features/ai/steer/useSteerQueue";
@@ -112,16 +113,17 @@ export function AgentReviewPane() {
                 )}
               </span>
               {canStop && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={stopAgent}
                   title="Stop agent"
                   aria-label="Stop agent"
-                  className="flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors hover:bg-status-error/10 hover:text-status-error"
+                  className="h-6 gap-1.5 rounded-full px-2.5 text-ui-xs hover:bg-status-error/10 hover:text-status-error"
                 >
                   <Stop size={11} weight="fill" />
                   Stop
-                </button>
+                </Button>
               )}
             </div>
             {goal && (

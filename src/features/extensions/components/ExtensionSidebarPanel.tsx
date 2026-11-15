@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PuzzlePiece } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { buildPanelSrcDoc } from "../panelHtml";
 import { getPanelIcon } from "../panelIcons";
@@ -40,20 +41,16 @@ export function ExtensionSidebarPanel() {
             const PanelIcon = getPanelIcon(panel.icon);
             const isActive = panelKey(panel) === panelKey(selected);
             return (
-              <button
+              <Button
+                variant="ghost"
+                size="xs"
                 key={panelKey(panel)}
-                type="button"
                 onClick={() => setSelectedKey(panelKey(panel))}
-                className={cn(
-                  "flex items-center gap-1 rounded px-2 py-1 text-ui-xs transition-colors",
-                  isActive
-                    ? "bg-bg-hover text-fg-default"
-                    : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
-                )}
+                className={cn("gap-1 px-2 font-normal", isActive && "bg-bg-active text-fg-default")}
               >
                 <PanelIcon size={14} />
                 <span className="truncate">{panel.title}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
