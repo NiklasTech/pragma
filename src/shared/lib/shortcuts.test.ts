@@ -173,7 +173,7 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(46);
+    expect(Object.keys(defaults)).toHaveLength(47);
     expect(defaults["view.toggleContextPane"]).toEqual({ ctrl: true, alt: true, code: "Digit0" });
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
     expect(defaults["terminal.previousCommand"]).toEqual({ ctrl: true, key: "ArrowUp" });
@@ -183,6 +183,7 @@ describe("getDefaultShortcuts", () => {
     expect(defaults["view.toggleUiMode"]).toEqual({ ctrl: true, shift: true, code: "KeyE" });
     expect(defaults["file.goToFile"]).toEqual({ ctrl: true, code: "KeyP" });
     expect(defaults["session.quickStart"]).toEqual({ ctrl: true, code: "KeyN" });
+    expect(defaults["view.gitHistory"]).toEqual({ ctrl: true, shift: true, code: "KeyH" });
     expect(defaults["search.find"]).toEqual({ ctrl: true, code: "KeyF" });
     expect(defaults["search.replace"]).toEqual({ ctrl: true, code: "KeyH" });
     expect(defaults["editor.formatDocument"]).toEqual({ shift: true, alt: true, code: "KeyF" });

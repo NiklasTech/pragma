@@ -186,6 +186,7 @@ pub fn run() {
             modules::git::session_finish::git_session_commit_all,
             modules::git::session_finish::git_session_finish_merge,
             modules::git::session_finish::git_session_push_branch,
+            modules::git::commands::git_branch_log,
             modules::git::commands::git_branches,
             modules::git::commands::git_log,
             modules::git::commands::git_log_entries,

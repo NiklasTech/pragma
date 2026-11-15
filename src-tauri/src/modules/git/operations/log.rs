@@ -1,5 +1,6 @@
 use std::ffi::OsStr;
 
+use super::revision::ensure_ref_name;
 use crate::modules::git::errors::{GitError, Result};
 use crate::modules::git::process::{ensure_git_available, ensure_success, run_git};
 use crate::modules::git::types::{GitLogEntry, DEFAULT_TIMEOUT_SECS};
@@ -100,6 +101,43 @@ pub fn file_history(repo_root: &str, path: &str, limit: u32) -> Result<Vec<GitLo
     Ok(parse_log_stdout(stdout, bounded))
 }
 
+/// Commits on `branch` that `base` does not have, newest first; `base..branch`.
+pub fn branch_log(
+    repo_root: &str,
+    branch: &str,
+    base: &str,
+    limit: u32,
+) -> Result<Vec<GitLogEntry>> {
+    let repo_root = authorized_repo_root(repo_root)?;
+    ensure_git_available()?;
+    let root = repo_root.to_string_lossy().to_string();
+    ensure_ref_name(&root, "heads", branch)?;
+    ensure_ref_name(&root, "heads", base)?;
+    let bounded = limit.clamp(1, MAX_LOG_LIMIT);
+    let count_arg = format!("--max-count={bounded}");
+    let format_arg = format!("--format={LOG_FORMAT}");
+    let range = format!("refs/heads/{base}..refs/heads/{branch}");
+    let output = run_git(
+        Some(&root),
+        [
+            OsStr::new("log"),
+            OsStr::new("--no-color"),
+            OsStr::new("--shortstat"),
+            OsStr::new(&count_arg),
+            OsStr::new(&format_arg),
+            OsStr::new(&range),
+            OsStr::new("--"),
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    if output.timed_out {
+        return Err(GitError::TimedOut("git log"));
+    }
+    ensure_success(&output, "git log failed")?;
+    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    Ok(parse_log_stdout(stdout, bounded))
+}
+
 fn parse_log_stdout(stdout: &str, bounded: u32) -> Vec<GitLogEntry> {
     let mut entries: Vec<GitLogEntry> = Vec::with_capacity(bounded as usize);
 
@@ -188,7 +226,34 @@ fn parse_shortstat(tail: &str) -> (u32, u32, u32) {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_support::TestRepo;
     use super::*;
+
+    #[test]
+    fn branch_log_lists_only_the_commits_the_base_lacks() {
+        let repo = TestRepo::new();
+        repo.git(&["checkout", "-q", "-b", "pragma/fix-a1b2c3d4"]);
+        repo.write("a.txt", "a\n");
+        repo.commit_all("add a");
+        repo.write("b.txt", "b\n");
+        repo.commit_all("add b");
+        repo.git(&["checkout", "-q", "main"]);
+
+        let entries = branch_log(&repo.root, "pragma/fix-a1b2c3d4", "main", 50).unwrap();
+        let subjects: Vec<&str> = entries.iter().map(|entry| entry.subject.as_str()).collect();
+        assert_eq!(subjects, ["add b", "add a"]);
+        assert_eq!(entries[0].files_changed, 1);
+        assert!(branch_log(&repo.root, "main", "main", 50)
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn branch_log_rejects_names_that_are_not_branches() {
+        let repo = TestRepo::new();
+        assert!(branch_log(&repo.root, "--all", "main", 50).is_err());
+        assert!(branch_log(&repo.root, "main", "a..b", 50).is_err());
+    }
 
     #[test]
     fn parse_shortstat_pulls_three_counts() {

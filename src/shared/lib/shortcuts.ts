@@ -81,6 +81,16 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "view.gitHistory" as const,
+    label: "Show Git History",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      code: "KeyH",
+    }),
+  },
+  {
     id: "edit.editWithAI" as const,
     label: "Edit Selection with AI",
     category: "edit" as const,

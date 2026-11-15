@@ -9,6 +9,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
 import { cn } from "@/shared/lib/utils";
+import { useOverlayStore } from "@/shared/stores/overlays";
 import { useLayoutStore } from "@/shell/layout/store";
 
 import { primarySidebarViews, secondarySidebarViews } from "./sidebarViews";
@@ -36,7 +37,10 @@ export function ViewShelf() {
               variant="ghost"
               size="sm"
               aria-pressed={active}
-              onClick={() => setSidebarTab(view.id)}
+              onClick={() =>
+                // History opens as the git overlay, where agent branches have room next to the log.
+                view.id === "git" ? useOverlayStore.getState().open("git") : setSidebarTab(view.id)
+              }
               title={view.label}
               className={cn("px-2 font-normal", active && "bg-bg-active text-fg-default")}
             >

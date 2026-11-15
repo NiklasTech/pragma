@@ -96,6 +96,24 @@ pub async fn git_log_entries(
     .await
 }
 
+/// Commits an agent branch has that its base branch does not.
+#[tauri::command]
+pub async fn git_branch_log(
+    repo_path: String,
+    branch: String,
+    base: String,
+    limit: Option<u32>,
+) -> Result<GitLogEntriesResponse, String> {
+    if repo_path.is_empty() || branch.is_empty() || base.is_empty() {
+        return Err("Repository path, branch and base are required".to_string());
+    }
+    blocking(move || {
+        let entries = operations::branch_log(&repo_path, &branch, &base, limit.unwrap_or(50))?;
+        Ok(GitLogEntriesResponse { entries })
+    })
+    .await
+}
+
 #[tauri::command]
 pub async fn git_commit_files(
     repo_path: String,

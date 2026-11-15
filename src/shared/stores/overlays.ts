@@ -19,6 +19,7 @@ export type OverlayId = (typeof OVERLAY_IDS)[number];
 export const OVERLAY_SHORTCUTS: Partial<Record<OverlayId, ShortcutActionId>> = {
   goTo: "file.goToFile",
   quickStart: "session.quickStart",
+  git: "view.gitHistory",
 };
 
 interface OverlayState {
