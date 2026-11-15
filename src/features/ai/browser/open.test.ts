@@ -64,7 +64,7 @@ describe("browser pane opening", () => {
     openUrlInBrowser(ROOT, "http://localhost:5173/", false);
     const browser = findBrowserLeaf(root())!;
 
-    useAgentsPanesStore.getState().closeLeaf(ROOT, browser.id);
+    void useAgentsPanesStore.getState().closeLeaf(ROOT, browser.id);
 
     expect(findBrowserLeaf(root())).toBeNull();
     expect(useBrowserHistoryStore.getState().byLeaf[browser.id]).toBeUndefined();

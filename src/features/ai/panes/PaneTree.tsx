@@ -125,8 +125,10 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
 
       const confirm = buildCloseConfirm(targets, agentStatus, runSessionId);
       if (!confirm) {
-        for (const leafId of leafIds) closeLeaf(rootPath, leafId);
-        void purgeStaleTerminals(rootPath).catch(() => {});
+        // The panes leave after their exit animation; only then are their ended terminals unused.
+        void Promise.all(leafIds.map((leafId) => closeLeaf(rootPath, leafId)))
+          .then(() => purgeStaleTerminals(rootPath))
+          .catch(() => {});
         return;
       }
       setPendingClose({ leafIds, confirm });
@@ -136,8 +138,9 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
 
   const handleConfirmClose = useCallback(() => {
     if (!pendingClose) return;
-    for (const leafId of pendingClose.leafIds) closeLeaf(rootPath, leafId);
-    void purgeStaleTerminals(rootPath).catch(() => {});
+    void Promise.all(pendingClose.leafIds.map((leafId) => closeLeaf(rootPath, leafId)))
+      .then(() => purgeStaleTerminals(rootPath))
+      .catch(() => {});
     setPendingClose(null);
   }, [closeLeaf, pendingClose, rootPath]);
 
@@ -176,8 +179,9 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         onClose={() => requestClose([leaf.id])}
         onCloseTerminal={(stop) => {
           if (stop && leaf.sessionId) cancelTerminal(leaf.sessionId);
-          closeLeaf(rootPath, leaf.id);
-          void purgeStaleTerminals(rootPath).catch(() => {});
+          void closeLeaf(rootPath, leaf.id)
+            .then(() => purgeStaleTerminals(rootPath))
+            .catch(() => {});
         }}
         onCloseOthers={() => requestClose(otherLeafIds)}
         onToggleMaximize={() => togglePaneZoom(rootPath, leaf.id)}

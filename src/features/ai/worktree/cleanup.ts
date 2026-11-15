@@ -12,7 +12,8 @@ import { removeWorktreeEnvironment } from "./remove";
 
 export type WorktreeRelease = "removed" | "skipped" | "in-use" | "dirty" | "failed";
 
-const PRAGMA_BRANCH = /^pragma\/[0-9a-f]{8}(-\d+)?$/;
+// `pragma/<id>` or `pragma/<slug>-<id>`, each with an optional `-<counter>`; slug words are lowercase.
+const PRAGMA_BRANCH = /^pragma\/(?:[a-z0-9]+-)*[0-9a-f]{8}(?:-\d+)?$/;
 
 /** Mirrors `is_pragma_branch` on the Rust side. */
 export function isPragmaBranch(branch: string): boolean {

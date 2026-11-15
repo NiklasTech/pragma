@@ -13,6 +13,8 @@ export interface QuickStartRequest {
   /** The layout with the chosen agent already in place. */
   layout: PresetNode;
   where: QuickWhere;
+  /** The branch a new worktree starts from; unset is the checkout's HEAD. */
+  baseBranch?: string;
 }
 
 /** Starts a task: an optional worktree named after it, then the layout as a new tab. */
@@ -22,7 +24,7 @@ export async function startQuickTask(request: QuickStartRequest): Promise<void> 
   if (request.where === "worktree") {
     const worktree = await createWorktreeEnvironment(
       request.rootPath,
-      undefined,
+      request.baseBranch,
       task || undefined,
     );
     if (worktree.setupStatus !== "ready") {

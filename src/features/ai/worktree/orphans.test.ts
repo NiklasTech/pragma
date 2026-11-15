@@ -13,7 +13,7 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 vi.mock("sonner", () => ({ toast: { warning: mocks.toastWarning, error: mocks.toastError } }));
 vi.mock("./cleanup", () => ({
   autoRemoveWorktrees: () => mocks.removeWorktrees,
-  isPragmaBranch: (branch: string) => /^pragma\/[0-9a-f]{8}(-\d+)?$/.test(branch),
+  isPragmaBranch: (branch: string) => /^pragma\/(?:[a-z0-9]+-)*[0-9a-f]{8}(?:-\d+)?$/.test(branch),
   removeWorktree: mocks.removeWorktree,
 }));
 

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   toastWarning: vi.fn(),
   toastError: vi.fn(),
   updateChatSession: vi.fn(async () => {}),
-  deleteEnvironment: vi.fn(async () => {}),
+  deleteEnvironment: vi.fn(async (_root: string, _id: string) => {}),
   sessions: [] as ChatSession[],
   environments: [] as WorkEnvironment[],
   removeWorktrees: true,
@@ -75,6 +75,22 @@ describe("isPragmaBranch", () => {
     expect(isPragmaBranch("main")).toBe(false);
     expect(isPragmaBranch("pragma/feature")).toBe(false);
     expect(isPragmaBranch("feat/pragma/1a2b3c4d")).toBe(false);
+  });
+
+  it("matches the Rust rule for branches named after a task", () => {
+    for (const branch of ["pragma/fix-login-1a2b3c4d", "pragma/fix-2-login-1a2b3c4d-3"]) {
+      expect(isPragmaBranch(branch)).toBe(true);
+    }
+    for (const branch of [
+      "pragma/fix-login",
+      "pragma/Fix-1a2b3c4d",
+      "pragma/fix--1a2b3c4d",
+      "pragma/-1a2b3c4d",
+      "pragma/1a2b3c4d-",
+      "feat/1a2b3c4d",
+    ]) {
+      expect(isPragmaBranch(branch)).toBe(false);
+    }
   });
 });
 
@@ -243,5 +259,59 @@ describe("releaseWorktrees", () => {
     await releaseWorktrees("/repo", [session("a", { environmentId: "env-1" })]);
 
     expect(commands()).toContain("git_session_worktree_dirty");
+  });
+});
+
+describe("closing sessions in any order", () => {
+  const SHARED: WorkEnvironment = { ...WORKTREE, branch: "pragma/fix-login-1a2b3c4d" };
+  const OWN: WorkEnvironment = {
+    ...WORKTREE,
+    id: "env-2",
+    path: "/data/worktrees/env-2",
+    branch: "pragma/add-tests-5e6f7a8b",
+  };
+
+  function permutations<T>(items: readonly T[]): T[][] {
+    if (items.length <= 1) return [[...items]];
+    return items.flatMap((item, index) =>
+      permutations([...items.slice(0, index), ...items.slice(index + 1)]).map((rest) => [
+        item,
+        ...rest,
+      ]),
+    );
+  }
+
+  beforeEach(() => {
+    mocks.removeWorktrees = true;
+    mocks.runSessionId = null;
+    mocks.invoke.mockImplementation(async (command: string) => {
+      if (command === "git_session_worktree_teardown") return { ok: true, log: "" };
+      return false;
+    });
+    mocks.deleteEnvironment.mockImplementation(async (_root: string, id: string) => {
+      mocks.environments = mocks.environments.filter((environment) => environment.id !== id);
+    });
+  });
+
+  it("leaves no worktree behind and removes each one once", async () => {
+    const all = [
+      session("a", { environmentId: "env-1" }),
+      session("b", { environmentId: "env-1" }),
+      session("c", { environmentId: "env-2" }),
+    ];
+    for (const order of permutations(all)) {
+      mocks.invoke.mockClear();
+      mocks.sessions = [...all];
+      mocks.environments = [SHARED, OWN];
+      for (const closed of order) {
+        mocks.sessions = mocks.sessions.filter((item) => item.id !== closed.id);
+        await releaseWorktrees("/repo", [closed]);
+      }
+      const removed = mocks.invoke.mock.calls
+        .filter(([command]) => command === "git_session_worktree_remove")
+        .map(([, args]) => (args as { worktreePath: string }).worktreePath);
+      expect(mocks.environments).toEqual([]);
+      expect(removed.sort()).toEqual([OWN.path, SHARED.path].sort());
+    }
   });
 });

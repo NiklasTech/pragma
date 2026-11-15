@@ -42,7 +42,7 @@ describe("agents panes store", () => {
     const store = useAgentsPanesStore.getState();
     store.openSession(ROOT, "a");
     const leafId = findLeaf(entry().root, entry().focusedLeafId ?? "")?.id ?? "";
-    store.closeLeaf(ROOT, leafId);
+    void store.closeLeaf(ROOT, leafId);
 
     expect(entry().root).toBeNull();
     expect(entry().focusedLeafId).toBeNull();
@@ -91,7 +91,7 @@ describe("agents panes store", () => {
   it("re-tiles the grid when a pane closes", () => {
     const store = useAgentsPanesStore.getState();
     for (const id of ["a", "b", "c", "d"]) store.openSession(ROOT, id);
-    store.closeLeaf(ROOT, findLeafBySession(entry().root, "b")?.id ?? "");
+    void store.closeLeaf(ROOT, findLeafBySession(entry().root, "b")?.id ?? "");
 
     expect(entry().root?.id).toBe("row-0");
     expect(sessionsInOrder(entry().root)).toEqual(["a", "c", "d"]);
@@ -171,7 +171,7 @@ describe("split panes", () => {
     // The empty pane has focus; a new session opens across it, to its right.
     store.openSession(ROOT, "b");
     expect(countLeaves(entry()?.root ?? null)).toBe(3);
-    store.closeLeaf(ROOT, findLeafBySession(entry()?.root ?? null, "b")?.id ?? "");
+    void store.closeLeaf(ROOT, findLeafBySession(entry()?.root ?? null, "b")?.id ?? "");
     const root = entry()?.root;
     expect(root?.type === "split" && root.direction).toBe("vertical");
     expect(countLeaves(root ?? null)).toBe(2);
