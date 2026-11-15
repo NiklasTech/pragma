@@ -3,6 +3,7 @@ import type { Terminal as XTerm } from "@xterm/xterm";
 import { matchShortcut } from "@/shared/lib/shortcuts";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { CommandTracker, type FinishedCommand } from "../shellIntegration/commandTracker";
+import { useLastCommandStore } from "../shellIntegration/lastCommand";
 
 export interface ShellIntegration {
   failure: FinishedCommand | null;
@@ -22,7 +23,7 @@ export function useShellIntegration(
     const tracker = new CommandTracker(term, {
       onCommandStart: () => setFailure(null),
       // The shell already prints the error, so the actions only open from the red gutter mark.
-      onCommandEnd: () => {},
+      onCommandEnd: (command) => useLastCommandStore.getState().record(command),
       onSelect: setFailure,
     });
     trackerRef.current = tracker;

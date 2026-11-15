@@ -10,6 +10,7 @@ import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { useLayoutStore } from "../store";
 import { SidebarContent } from "@/shell/chrome/Sidebar";
 import { SidebarDrawer } from "@/shell/chrome/SidebarDrawer";
+import { EditorBottomLine } from "@/features/editor/components/EditorBottomLine";
 import { LayoutTreeRenderer } from "./LayoutTreeRenderer";
 import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
@@ -61,8 +62,11 @@ export function Layout() {
   );
 
   const workspace = (
-    <div className={cn(CARD_CLASS, "h-full min-h-0")}>
-      <LayoutTreeRenderer node={root} />
+    <div className={cn(CARD_CLASS, "flex h-full min-h-0 flex-col")}>
+      <div className="min-h-0 flex-1">
+        <LayoutTreeRenderer node={root} />
+      </div>
+      <EditorBottomLine />
     </div>
   );
 

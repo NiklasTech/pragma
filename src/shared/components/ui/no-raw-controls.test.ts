@@ -9,8 +9,6 @@ const UI_DIR = join("src", "shared", "components", "ui");
 /** Raw elements that are not controls; each needs a reason. */
 const ALLOWED: Record<string, string> = {
   "src/features/ai/review/ReviewHunkDiff.tsx": "a clickable diff line is code, not a control",
-  "src/features/editor/components/EditorBreadcrumb.tsx":
-    "breadcrumb links take their look from BreadcrumbLink",
   "src/shell/layout/components/TabsContainer.tsx":
     "file tabs share the pill tab look of the editor (#660)",
 };
