@@ -108,7 +108,7 @@ describe("AgentsWorkspace", () => {
   it("shows the home composer when the pane tree is empty", () => {
     const html = renderToStaticMarkup(<AgentsWorkspace />);
 
-    expect(html).toContain("Ask Pragma to work in this folder");
+    expect(html).toContain("Task for the agent");
     expect(html).not.toContain('data-region="chat-panel"');
   });
 
