@@ -177,6 +177,7 @@ pub fn run() {
             modules::git::worktree::git_session_repo_check,
             modules::git::worktree::git_session_worktree_create,
             modules::git::worktree::git_session_worktree_dirty,
+            modules::git::session_diff::git_session_diff_stat,
             modules::git::worktree::git_session_worktree_teardown,
             modules::git::worktree::git_session_worktree_remove,
             modules::git::worktree::git_session_branch_merged,
