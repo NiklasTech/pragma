@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use tauri::ipc::Channel;
 use tauri::State;
 
-use crate::ai::acp::{AcpSessionManager, PromptContent};
+use crate::ai::acp::{AcpSessionManager, ApprovalDecision, PromptContent};
 use crate::ai::cli::{built_in_manifests, CLIChatMessage, CLIChatRequest, CLIManager, CLIStatus};
 use crate::ai::image::{validate_images, ImageContent};
 use crate::commands::ai::StreamChunk;
@@ -45,7 +45,7 @@ pub struct AcpCancelRequest {
 #[derive(Debug, Deserialize)]
 pub struct AcpApproveRequest {
     pub tool_call_id: String,
-    pub approved: bool,
+    pub decision: ApprovalDecision,
 }
 
 #[derive(Debug, Serialize)]
@@ -322,7 +322,7 @@ pub async fn cli_acp_approve(
     }
 
     state
-        .approve(&req.tool_call_id, req.approved)
+        .approve(&req.tool_call_id, req.decision)
         .await
         .map_err(|e| e.to_string())
 }

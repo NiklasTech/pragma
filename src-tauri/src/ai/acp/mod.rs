@@ -9,7 +9,7 @@ pub mod tools_bridge;
 pub mod types;
 pub mod usage;
 
-pub use approval_bridge::ApprovalBridge;
+pub use approval_bridge::{ApprovalBridge, ApprovalDecision};
 pub use client::{AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest};
 pub use error::{AcpError, Result};
 pub use manager::{AcpSessionHandle, AcpSessionManager};

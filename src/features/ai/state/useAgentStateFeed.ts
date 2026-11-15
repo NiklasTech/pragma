@@ -6,6 +6,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useUiModeStore } from "@/shell/mode";
 
+import { useAcpApprovalsStore } from "../acp/acpApprovals";
 import { useSpawnApprovalsStore } from "../children/acpSpawn";
 import { useChildRunsStore } from "../children/runStore";
 import { childRunOutcomes, type AttentionKind } from "../notifications/activity";
@@ -118,6 +119,7 @@ export function useAgentStateFeed(): void {
       useAgentStore.subscribe(refreshRuns),
       useSessionRunsStore.subscribe(refreshRuns),
       useSpawnApprovalsStore.subscribe(refreshRuns),
+      useAcpApprovalsStore.subscribe(refreshRuns),
       useChildRunsStore.subscribe((state, previous) => {
         for (const outcome of childRunOutcomes(previous.runs, state.runs)) {
           apply(outcome.sessionId, OUTCOME_EVENTS[outcome.kind]);

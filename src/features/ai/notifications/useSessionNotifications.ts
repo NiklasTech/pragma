@@ -8,6 +8,7 @@ import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore, type NotificationSettings } from "@/shared/stores/settings";
 
+import { useAcpApprovalsStore } from "../acp/acpApprovals";
 import { useSpawnApprovalsStore } from "../children/acpSpawn";
 import { useChildRunsStore } from "../children/runStore";
 import { useSessionRunsStore } from "../tasks/sessionRuns";
@@ -75,6 +76,7 @@ export function useSessionNotifications(): void {
       useAgentStore.subscribe(refresh),
       useSessionRunsStore.subscribe(refresh),
       useSpawnApprovalsStore.subscribe(refresh),
+      useAcpApprovalsStore.subscribe(refresh),
       useChildRunsStore.subscribe((state, previous) => {
         for (const outcome of childRunOutcomes(previous.runs, state.runs)) {
           notify(outcome.sessionId, outcome.kind);

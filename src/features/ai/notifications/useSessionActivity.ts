@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { useAgentStore } from "@/features/agent/store";
 
+import { useAcpApprovalsStore } from "../acp/acpApprovals";
 import { useSpawnApprovalsStore } from "../children/acpSpawn";
 import { useChildRunsStore } from "../children/runStore";
 import { useSessionRunsStore } from "../tasks/sessionRuns";
@@ -15,6 +16,7 @@ export function readSessionActivity(): SessionActivity {
     runSessionId: agent.runSessionId,
     runs: useChildRunsStore.getState().runs,
     spawnApprovals: useSpawnApprovalsStore.getState().bySession,
+    acpApprovals: useAcpApprovalsStore.getState().bySession,
   });
 }
 
@@ -24,10 +26,18 @@ export function useSessionActivity(): SessionActivity {
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const runs = useChildRunsStore((state) => state.runs);
   const spawnApprovals = useSpawnApprovalsStore((state) => state.bySession);
+  const acpApprovals = useAcpApprovalsStore((state) => state.bySession);
 
   return useMemo(
     () =>
-      resolveSessionActivity({ liveSessionId, agentStatus, runSessionId, runs, spawnApprovals }),
-    [agentStatus, liveSessionId, runSessionId, runs, spawnApprovals],
+      resolveSessionActivity({
+        liveSessionId,
+        agentStatus,
+        runSessionId,
+        runs,
+        spawnApprovals,
+        acpApprovals,
+      }),
+    [agentStatus, liveSessionId, runSessionId, runs, spawnApprovals, acpApprovals],
   );
 }

@@ -26,6 +26,7 @@ const idle: ActivityInput = {
   runSessionId: null,
   runs: {},
   spawnApprovals: {},
+  acpApprovals: {},
 };
 
 describe("resolveSessionActivity", () => {
@@ -65,6 +66,15 @@ describe("resolveSessionActivity", () => {
       spawnApprovals: { parent: [approval], other: [] },
     });
     expect(activity).toEqual({ running: [], waiting: ["parent"] });
+  });
+
+  it("treats a coding CLI's permission request as waiting", () => {
+    const activity = resolveSessionActivity({
+      ...idle,
+      liveSessionId: "cli",
+      acpApprovals: { cli: [{ toolCallId: "t" }], quiet: [] },
+    });
+    expect(activity).toEqual({ running: [], waiting: ["cli"] });
   });
 });
 

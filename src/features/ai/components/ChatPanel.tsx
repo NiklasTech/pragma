@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Warning,
   Terminal,
@@ -10,27 +10,23 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { useAI, getMessageText } from "@/shared/hooks/useAI";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
-import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
+import { SessionApprovals, useHasSessionApprovals } from "@/features/ai/panes/SessionApprovals";
 import { useAgentStore } from "@/features/agent/store";
 import { useSteerQueue } from "@/features/ai/steer/useSteerQueue";
 import { QueuedMessageCard } from "@/features/ai/steer/QueuedMessageCard";
 import { useSessionRunReporter } from "@/features/ai/tasks/sessionRuns";
-import { SpawnApprovals } from "@/features/ai/children/SpawnApprovals";
 import { ChildSessionCards, inlineChildIds } from "@/features/ai/children/ChildSessionCards";
 import { useComposerImages } from "@/features/ai/images/useComposerImages";
 import { useSessionEnvironment } from "@/features/ai/worktree/useSessionEnvironment";
@@ -105,18 +101,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
   });
   const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
   const rootPath = activeSession?.rootPath ?? workspaceRoot;
-  const yoloMode = useSettingsStore((state) => state.ai.yoloMode);
   const showThinking = useSettingsStore((state) => state.ai.showThinking);
-  const [pendingApprovals, setPendingApprovals] = useState<
-    Array<{
-      sessionId: string;
-      toolCallId: string;
-      toolName: string;
-      args?: unknown;
-      description?: string;
-    }>
-  >([]);
-
+  const sessionAsks = useHasSessionApprovals(activeChatSessionId);
   const compacting = useCompactionStore((state) =>
     activeChatSessionId ? state.running[activeChatSessionId] === true : false,
   );
@@ -214,48 +200,6 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     }
   }, [status, edit, messages, receiveProposal, cancelEdit, openDiff]);
 
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    let active = true;
-
-    void (async () => {
-      unlisten = await listen<
-        Array<{
-          sessionId: string;
-          toolCallId: string;
-          toolName: string;
-          args?: unknown;
-          description?: string;
-        }>[number]
-      >("acp_request_permission", (event) => {
-        setPendingApprovals((prev) => [...prev, event.payload]);
-      });
-      if (!active) {
-        void unlistenQuietly(unlisten);
-        unlisten = undefined;
-      }
-    })();
-
-    return () => {
-      active = false;
-      void unlistenQuietly(unlisten);
-    };
-  }, []);
-
-  const handleApproval = useCallback(async (toolCallId: string, approved: boolean) => {
-    await invoke("cli_acp_approve", { req: { tool_call_id: toolCallId, approved } });
-    setPendingApprovals((prev) => prev.filter((a) => a.toolCallId !== toolCallId));
-  }, []);
-
-  // Auto-approve pending tool requests when Yolo mode is enabled.
-  useEffect(() => {
-    if (!yoloMode || pendingApprovals.length === 0) return;
-
-    for (const approval of pendingApprovals) {
-      void handleApproval(approval.toolCallId, true);
-    }
-  }, [yoloMode, pendingApprovals, handleApproval]);
-
   const handleRetry = useCallback(() => {
     void regenerate();
   }, [regenerate]);
@@ -292,7 +236,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     : "";
 
   return (
-    <div className="@container flex h-full flex-col">
+    <div data-chat-panel className="@container flex h-full flex-col">
       {!hideHeader && <ChatPanelHeader />}
 
       {/* Messages */}
@@ -481,24 +425,9 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           </div>
         )}
 
-        {pendingApprovals.length > 0 && (
-          <div className="mb-2 flex flex-col gap-2">
-            {pendingApprovals.map((approval) => (
-              <ApprovalCard
-                key={approval.toolCallId}
-                title={`Allow: ${approval.toolName}`}
-                description={approval.description}
-                args={approval.args}
-                onDeny={() => void handleApproval(approval.toolCallId, false)}
-                onAllow={() => void handleApproval(approval.toolCallId, true)}
-              />
-            ))}
-          </div>
-        )}
+        {activeChatSessionId && <SessionApprovals sessionId={activeChatSessionId} takesEnter />}
 
-        <SpawnApprovals sessionId={activeChatSessionId} />
-
-        {ownsRun && <AgentApprovals />}
+        {ownsRun && <AgentApprovals takesEnter={!sessionAsks} />}
 
         {!isCLIActive && ownsRun && <AgentRunBar />}
 

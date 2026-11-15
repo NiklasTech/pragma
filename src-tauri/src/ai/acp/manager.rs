@@ -8,7 +8,7 @@ use tokio::process::Child;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
 
-use super::approval_bridge::ApprovalBridge;
+use super::approval_bridge::{ApprovalBridge, ApprovalDecision};
 use super::client::{
     AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest, DEFAULT_TIMEOUT_MS,
 };
@@ -186,8 +186,12 @@ impl AcpSessionManager {
             },
         );
 
-        let reverse_rpc_handle =
-            spawn_reverse_rpc_handler(self.approval_bridge.clone(), cwd.clone(), reverse_requests);
+        let reverse_rpc_handle = spawn_reverse_rpc_handler(
+            self.approval_bridge.clone(),
+            cwd.clone(),
+            chat_session_id.to_string(),
+            reverse_requests,
+        );
 
         let session = AcpSession {
             client,
@@ -347,8 +351,8 @@ impl AcpSessionManager {
         Ok(stored.clone())
     }
 
-    pub async fn approve(&self, tool_call_id: &str, approved: bool) -> Result<()> {
-        self.approval_bridge.respond(tool_call_id, approved).await
+    pub async fn approve(&self, tool_call_id: &str, decision: ApprovalDecision) -> Result<()> {
+        self.approval_bridge.respond(tool_call_id, decision).await
     }
 
     /// The configured servers the session may use; `None` allows all of them.
@@ -613,6 +617,7 @@ fn extract_first_text(contents: &[ToolCallContent]) -> Option<String> {
 fn spawn_reverse_rpc_handler(
     approval_bridge: ApprovalBridge,
     cwd: String,
+    chat_session_id: String,
     mut reverse_requests: mpsc::Receiver<ReverseRpcRequest>,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
@@ -622,7 +627,9 @@ fn spawn_reverse_rpc_handler(
                     handle_fs_request(&req.method, req.params, &cwd)
                 }
                 "session/request_permission" => {
-                    approval_bridge.request_permission(req.params).await
+                    approval_bridge
+                        .request_permission(req.params, &chat_session_id)
+                        .await
                 }
                 "tools/call" => handle_tool_call(req.params, &cwd).await,
                 _ => Err(AcpError::Protocol(format!(

@@ -1,24 +1,24 @@
 import { stepLabel } from "../executor";
 import { useAgentStore } from "../store";
-import { ApprovalCard } from "./ApprovalCard";
+import { ApprovalBar } from "./ApprovalBar";
 
-export function AgentApprovals() {
+export function AgentApprovals({ takesEnter = false }: { takesEnter?: boolean }) {
   const pendingApprovals = useAgentStore((state) => state.pendingApprovals);
   const resolveApproval = useAgentStore((state) => state.resolveApproval);
 
   if (pendingApprovals.length === 0) return null;
 
   return (
-    <div className="mb-2 flex flex-col gap-2">
-      {pendingApprovals.map((approval) => {
+    <div className="flex flex-col">
+      {pendingApprovals.map((approval, index) => {
         const { label, detail } = stepLabel(approval.toolName, approval.args);
         return (
-          <ApprovalCard
+          <ApprovalBar
             key={approval.toolCallId}
-            title={`Allow: ${label}`}
-            detail={detail}
+            title={`Pragma wants to ${label.toLowerCase()}`}
+            request={detail ?? JSON.stringify(approval.args ?? {})}
             description={approval.description}
-            args={detail ? undefined : approval.args}
+            takesEnter={takesEnter && index === 0}
             onDeny={() => resolveApproval(approval.toolCallId, false)}
             onAllow={() => resolveApproval(approval.toolCallId, true)}
           />

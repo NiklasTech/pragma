@@ -5,6 +5,7 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useUiModeStore } from "@/shell/mode";
 
+import { useAcpApprovalsStore } from "../acp/acpApprovals";
 import { useSpawnApprovalsStore } from "../children/acpSpawn";
 import { useChildRunsStore } from "../children/runStore";
 import { childRunOutcomes, type AttentionKind } from "../notifications/activity";
@@ -75,6 +76,7 @@ export function useActivityTracker(): void {
       useAgentStore.subscribe(refresh),
       useSessionRunsStore.subscribe(refresh),
       useSpawnApprovalsStore.subscribe(refresh),
+      useAcpApprovalsStore.subscribe(refresh),
       useChildRunsStore.subscribe((state, previous) => {
         for (const outcome of childRunOutcomes(previous.runs, state.runs)) {
           recordOutcome(outcome.sessionId, outcome.kind);
