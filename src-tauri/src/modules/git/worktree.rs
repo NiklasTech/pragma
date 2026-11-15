@@ -65,6 +65,7 @@ pub async fn git_session_worktree_create(
     repo_path: String,
     environment_id: String,
     base_branch: Option<String>,
+    label: Option<String>,
 ) -> Result<SessionWorktreeCreate, String> {
     if repo_path.is_empty() {
         return Err("Repository path is required".to_string());
@@ -75,11 +76,12 @@ pub async fn git_session_worktree_create(
         .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
     blocking(move || {
         let scripts_trusted = ensure_trusted(&app, &repo_path)?;
-        create_worktree(
+        create_labeled_worktree(
             &app_data_dir,
             &repo_path,
             &environment_id,
             base_branch.as_deref(),
+            label.as_deref(),
             scripts_trusted,
         )
     })
@@ -215,6 +217,25 @@ fn branch_exists(repo_path: &str, branch: &str) -> Result<bool, String> {
     Ok(output.exit_code == Some(0))
 }
 
+const MAX_LABEL_LEN: usize = 40;
+
+/// A branch-safe slug of a task label: lowercase ASCII words joined by hyphens.
+fn label_slug(label: &str) -> Option<String> {
+    let mut slug = String::new();
+    for c in label.chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.push(c.to_ascii_lowercase());
+        } else if !slug.is_empty() && !slug.ends_with('-') {
+            slug.push('-');
+        }
+        if slug.len() >= MAX_LABEL_LEN {
+            break;
+        }
+    }
+    let slug = slug.trim_end_matches('-').to_string();
+    (!slug.is_empty()).then_some(slug)
+}
+
 fn unique_branch(repo_path: &str, suffix: &str) -> Result<String, String> {
     let mut branch = format!("pragma/{suffix}");
     let mut counter = 2u32;
@@ -346,11 +367,31 @@ fn run_script(script: &Path, cwd: &Path) -> (bool, String) {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn create_worktree(
     app_data_dir: &Path,
     repo_path: &str,
     environment_id: &str,
     base: Option<&str>,
+    scripts_trusted: bool,
+) -> Result<SessionWorktreeCreate, String> {
+    create_labeled_worktree(
+        app_data_dir,
+        repo_path,
+        environment_id,
+        base,
+        None,
+        scripts_trusted,
+    )
+}
+
+/// Creates a worktree whose branch carries a slug of `label`, for example `pragma/fix-login-1a2b3c4d`.
+pub(crate) fn create_labeled_worktree(
+    app_data_dir: &Path,
+    repo_path: &str,
+    environment_id: &str,
+    base: Option<&str>,
+    label: Option<&str>,
     scripts_trusted: bool,
 ) -> Result<SessionWorktreeCreate, String> {
     validate_environment_id(environment_id)?;
@@ -373,7 +414,11 @@ pub(crate) fn create_worktree(
         }
     }
 
-    let suffix = branch_suffix(environment_id)?;
+    let id = branch_suffix(environment_id)?;
+    let suffix = match label.and_then(label_slug) {
+        Some(slug) => format!("{slug}-{id}"),
+        None => id,
+    };
     let branch = unique_branch(repo_path, &suffix)?;
     let (start_point, base_branch) = match base {
         Some(base) => (format!("refs/heads/{base}"), Some(base.to_string())),
@@ -513,25 +558,36 @@ pub(crate) fn branch_merged(repo_path: &str, branch: &str) -> Result<bool, Strin
     Ok(output.exit_code == Some(0))
 }
 
+fn is_branch_id(part: &str) -> bool {
+    part.len() == 8
+        && part
+            .chars()
+            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+}
+
+/// Branches Pragma made: `pragma/<id>` or `pragma/<slug>-<id>`, each with an optional `-<counter>`.
 pub(crate) fn is_pragma_branch(branch: &str) -> bool {
     let Some(rest) = branch.strip_prefix("pragma/") else {
         return false;
     };
-    let (hex, counter) = match rest.split_once('-') {
-        Some((hex, counter)) => (hex, Some(counter)),
-        None => (rest, None),
-    };
-    if hex.len() != 8
-        || !hex
-            .chars()
-            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
-    {
+    let mut parts: Vec<&str> = rest.split('-').collect();
+    if parts.len() > 1 {
+        let last = parts[parts.len() - 1];
+        let counted = !last.is_empty() && last.chars().all(|c| c.is_ascii_digit());
+        if counted && is_branch_id(parts[parts.len() - 2]) {
+            parts.pop();
+        }
+    }
+    let Some((id, slug)) = parts.split_last() else {
         return false;
-    }
-    match counter {
-        None => true,
-        Some(counter) => !counter.is_empty() && counter.chars().all(|c| c.is_ascii_digit()),
-    }
+    };
+    is_branch_id(id)
+        && slug.iter().all(|word| {
+            !word.is_empty()
+                && word
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        })
 }
 
 pub(crate) fn delete_branch(repo_path: &str, branch: &str) -> Result<(), String> {
@@ -653,6 +709,51 @@ mod tests {
 
         assert_eq!(first.branch, "pragma/11111111");
         assert_eq!(second.branch, "pragma/11111111-2");
+    }
+
+    #[test]
+    fn labeled_worktree_names_its_branch_after_the_task() {
+        let (_repo, repo_path) = init_repo();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let created = create_labeled_worktree(
+            app_data.path(),
+            &repo_path,
+            ENVIRONMENT_A,
+            None,
+            Some("Warn before opening files over 5 MB!"),
+            true,
+        )
+        .expect("create");
+        assert_eq!(
+            created.branch,
+            "pragma/warn-before-opening-files-over-5-mb-11111111"
+        );
+        assert!(is_pragma_branch(&created.branch));
+    }
+
+    #[test]
+    fn pragma_branches_are_recognized_with_and_without_a_slug() {
+        for branch in [
+            "pragma/1a2b3c4d",
+            "pragma/1a2b3c4d-2",
+            "pragma/fix-login-1a2b3c4d",
+            "pragma/fix-2-login-1a2b3c4d-3",
+        ] {
+            assert!(is_pragma_branch(branch), "{branch}");
+        }
+        for branch in [
+            "main",
+            "pragma/fix-login",
+            "pragma/Fix-1a2b3c4d",
+            "pragma/fix--1a2b3c4d",
+            "pragma/-1a2b3c4d",
+            "pragma/1a2b3c4d-",
+            "feat/1a2b3c4d",
+        ] {
+            assert!(!is_pragma_branch(branch), "{branch}");
+        }
+        assert_eq!(label_slug("  --  "), None);
+        assert_eq!(label_slug("Ünïcode only"), Some("n-code-only".to_string()));
     }
 
     #[test]

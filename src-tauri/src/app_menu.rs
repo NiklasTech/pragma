@@ -37,6 +37,7 @@ const TOGGLE_TERMINAL_MENU_ID: &str = "view.toggleTerminalMenu";
 const MENU_ACTION_IDS: &[&str] = &[
     "app.checkForUpdates",
     "app.openGitHub",
+    "session.quickStart",
     "file.open",
     "file.openFolder",
     "file.save",
@@ -307,6 +308,13 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .build()?;
 
     let file = SubmenuBuilder::new(app, "File")
+        .item(&shortcut_item(
+            app,
+            &mut shortcut_items,
+            "session.quickStart",
+            "New Task...",
+        )?)
+        .separator()
         .item(&shortcut_item(
             app,
             &mut shortcut_items,

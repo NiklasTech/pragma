@@ -18,6 +18,7 @@ export type OverlayId = (typeof OVERLAY_IDS)[number];
 /** The shortcut that toggles each overlay; overlays without one open by click only. */
 export const OVERLAY_SHORTCUTS: Partial<Record<OverlayId, ShortcutActionId>> = {
   goTo: "file.goToFile",
+  quickStart: "session.quickStart",
 };
 
 interface OverlayState {

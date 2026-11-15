@@ -72,6 +72,15 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "session.quickStart" as const,
+    label: "Start a New Task",
+    category: "file" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "KeyN",
+    }),
+  },
+  {
     id: "edit.editWithAI" as const,
     label: "Edit Selection with AI",
     category: "edit" as const,

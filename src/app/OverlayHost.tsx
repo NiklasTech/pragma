@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { OverlayId } from "@/shared/stores/overlays";
+import { QuickStartDialog } from "@/features/ai/quickStart/QuickStartDialog";
 import { SpacesOverlay } from "@/shell/spaces/SpacesOverlay";
 import { GoToFile } from "./GoToFile";
 
@@ -8,6 +9,7 @@ import { GoToFile } from "./GoToFile";
 export const HOSTED_OVERLAYS: ReadonlyArray<readonly [OverlayId, ComponentType]> = [
   ["goTo", GoToFile],
   ["spaces", SpacesOverlay],
+  ["quickStart", QuickStartDialog],
 ];
 
 export function OverlayHost() {
