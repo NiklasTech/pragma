@@ -74,10 +74,12 @@ export function useAgentStateFeed(): void {
     const onTerminalOutput = (sessionId: string) => {
       if (!isCliTerminal(sessionId)) return;
       const lastInputAt = getTerminalLastInputAt(sessionId);
-      if (!isAgentOutput(Date.now(), lastInputAt)) return;
       // A question stays open until the user typed an answer after it was asked.
       const entry = store().entries[sessionId];
-      if (entry?.state === "needs-you" && lastInputAt < entry.changedAt) return;
+      const asked = entry?.state === "needs-you";
+      if (asked && lastInputAt < entry.changedAt) return;
+      // A rejected request ends the turn at once, so its output arrives within the echo window.
+      if (!asked && !isAgentOutput(Date.now(), lastInputAt)) return;
       apply(sessionId, "working");
       const previous = timers.get(sessionId);
       if (previous) clearTimeout(previous);
