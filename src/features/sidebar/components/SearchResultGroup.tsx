@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowsLeftRight, CaretRight } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { cn } from "@/shared/lib/utils";
 import type { SearchResult, SearchResultGroup } from "@/features/sidebar/lib/searchReplace";
@@ -51,11 +52,12 @@ export function SearchResultGroupView({
   return (
     <div className="flex flex-col">
       <div className="group/file flex h-7 items-center gap-1.5 rounded-md pr-1 pl-1 hover:bg-bg-hover">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-ui-xs"
+          className="min-w-0 flex-1 justify-start gap-1.5 px-0 text-left text-ui-xs font-normal text-fg-default hover:bg-transparent"
           title={group.relativePath}
         >
           <CaretRight
@@ -66,18 +68,19 @@ export function SearchResultGroupView({
           <img src={getFileIconPath(fileName)} alt="" className="size-3.5 shrink-0" />
           <span className="shrink-0 font-medium text-fg-default">{fileName}</span>
           {directory && <span className="min-w-0 truncate text-fg-subtle">{directory}</span>}
-        </button>
+        </Button>
         {showReplace && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={() => onReplaceAllInFile(group.path)}
             disabled={disabled}
             title={`Replace all matches in ${fileName}`}
             aria-label={`Replace all matches in ${fileName}`}
-            className="hidden size-5 shrink-0 items-center justify-center rounded text-fg-subtle group-hover/file:flex hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+            className="hidden text-fg-subtle group-hover/file:inline-flex"
           >
             <ArrowsLeftRight size={12} />
-          </button>
+          </Button>
         )}
         <span className="shrink-0 rounded-full bg-bg-hover px-1.5 text-ui-2xs text-fg-muted tabular-nums">
           {group.matches.length}
@@ -92,10 +95,11 @@ export function SearchResultGroupView({
               key={`${match.line}:${match.column}:${index}`}
               className="group/match flex h-6 items-center gap-1 rounded-md pr-1 pl-6 hover:bg-bg-hover"
             >
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="xs"
                 onClick={() => onOpenResult(match)}
-                className="flex min-w-0 flex-1 items-center gap-2 text-left text-ui-xs"
+                className="min-w-0 flex-1 justify-start gap-2 px-0 text-left text-ui-xs font-normal hover:bg-transparent"
                 title={`Line ${match.line}`}
               >
                 <span className="min-w-0 truncate text-fg-muted">
@@ -108,18 +112,19 @@ export function SearchResultGroupView({
                 <span className="ml-auto shrink-0 text-ui-2xs text-fg-subtle tabular-nums">
                   {match.line}
                 </span>
-              </button>
+              </Button>
               {showReplace && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => onReplaceOne(match)}
                   disabled={disabled}
                   title={`Replace this match in ${fileName}`}
                   aria-label={`Replace this match in ${fileName}`}
-                  className="hidden size-5 shrink-0 items-center justify-center rounded text-fg-subtle group-hover/match:flex hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+                  className="hidden text-fg-subtle group-hover/match:inline-flex"
                 >
                   <ArrowsLeftRight size={12} />
-                </button>
+                </Button>
               )}
             </div>
           );

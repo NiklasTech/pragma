@@ -76,14 +76,11 @@ export function BranchHeader({
 
   return (
     <div className="relative flex min-w-0 items-center gap-2 px-2.5 pt-2 pb-1.5" ref={menuRef}>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
         onClick={() => setOpen(!open)}
         disabled={actionBusy === "checkout"}
-        className={cn(
-          "inline-flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-bg-surface px-2.5 text-ui-sm font-medium transition-colors",
-          open ? "border-primary/40" : "hover:bg-bg-hover",
-        )}
+        className={cn("h-8 min-w-0 flex-1 justify-start gap-2 px-2.5", open && "bg-control-hover")}
       >
         {actionBusy === "checkout" ? (
           <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
@@ -97,7 +94,7 @@ export function BranchHeader({
             detached
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute inset-x-2.5 top-full z-50 mt-1 overflow-hidden rounded-lg border border-border bg-bg-elevated shadow-[var(--shadow-md)]">
@@ -116,14 +113,15 @@ export function BranchHeader({
                 >
                   <ContextMenu>
                     <ContextMenuTrigger className="flex min-w-0 flex-1">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="xs"
                         onClick={() => {
                           if (!isCurrent) onCheckout(branch.name);
                           setOpen(false);
                         }}
                         disabled={isCurrent}
-                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        className="min-w-0 flex-1 justify-start gap-2 px-0 text-left text-ui-sm font-normal text-fg-default hover:bg-transparent disabled:opacity-100"
                       >
                         {isCurrent ? (
                           <Check size={12} className="shrink-0 text-primary" weight="bold" />
@@ -131,7 +129,7 @@ export function BranchHeader({
                           <GitBranchIcon size={12} className="shrink-0 text-fg-muted" />
                         )}
                         <span className="truncate">{branch.name}</span>
-                      </button>
+                      </Button>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-56">
                       {!isCurrent && (
@@ -233,14 +231,15 @@ export function BranchHeader({
                 </Button>
               </div>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setCreating(true)}
-                className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+                className="w-full justify-start gap-1.5 px-2 text-ui-sm font-normal"
               >
                 <Plus size={12} />
                 Create new branch
-              </button>
+              </Button>
             )}
           </div>
         </div>

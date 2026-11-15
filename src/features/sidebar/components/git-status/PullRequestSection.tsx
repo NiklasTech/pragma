@@ -117,11 +117,12 @@ export function PullRequestSection() {
     <div className="flex min-w-0 items-center gap-1.5 px-2.5 pb-2">
       {pullRequest ? (
         <>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => void invoke("open_external_url", { url: pullRequest.url })}
             title={`Open #${pullRequest.number} on GitHub`}
-            className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1 py-1 text-left text-ui-xs transition-colors hover:bg-bg-hover"
+            className="min-w-0 flex-1 justify-start gap-1.5 px-1 text-left font-normal text-fg-default"
           >
             <GitPullRequest
               size={14}
@@ -136,7 +137,7 @@ export function PullRequestSection() {
               #{pullRequest.number}
             </span>
             <span className="min-w-0 truncate text-fg-default">{pullRequest.title}</span>
-          </button>
+          </Button>
           <StateBadge pr={pullRequest} />
           <ChecksStatus checks={pullRequest.checks} />
           <ToolbarButton

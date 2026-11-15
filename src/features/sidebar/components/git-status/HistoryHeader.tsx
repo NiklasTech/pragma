@@ -1,11 +1,13 @@
 import { CaretDown, CaretRight, ClockCounterClockwise } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 
 export function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      aria-expanded={expanded}
       onClick={onToggle}
-      className="flex h-7 w-full items-center gap-1.5 px-3 text-left transition-colors hover:bg-bg-hover"
+      className="h-7 w-full justify-start gap-1.5 rounded-none px-3 text-left font-normal text-fg-default"
     >
       {expanded ? (
         <CaretDown size={11} className="text-fg-muted" />
@@ -16,6 +18,6 @@ export function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onTog
       <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-fg-muted">
         Recent Commits
       </span>
-    </button>
+    </Button>
   );
 }

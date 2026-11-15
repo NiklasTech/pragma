@@ -1,4 +1,5 @@
 import { GitMerge } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import type { GitStatusEntry } from "@/shared/stores/git";
 import { basename, dirname } from "./git-status/utils";
 
@@ -19,13 +20,14 @@ export function ConflictFileRow({
         <span className="truncate text-ui-base leading-tight">{fileName}</span>
         {dir && <span className="truncate text-ui-sm text-fg-muted">{dir}</span>}
       </div>
-      <button
-        type="button"
+      <Button
+        variant="destructive"
+        size="xs"
         onClick={() => onOpen(entry)}
-        className="shrink-0 rounded px-1.5 py-0.5 text-ui-xs text-status-error transition-colors hover:bg-status-error/10"
+        className="px-1.5 text-ui-xs"
       >
         Resolve
-      </button>
+      </Button>
     </div>
   );
 }

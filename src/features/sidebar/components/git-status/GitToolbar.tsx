@@ -9,6 +9,7 @@ import {
   Tag,
   type Icon,
 } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { ToolbarButton } from "./ToolbarButton";
 
@@ -28,16 +29,15 @@ function SyncButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       disabled={disabled || busy}
       title={count > 0 ? `${label} ${count} commit${count === 1 ? "" : "s"}` : label}
       className={cn(
-        "flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md border px-2 text-ui-xs font-medium transition-colors disabled:pointer-events-none @min-[340px]:flex-none",
-        count > 0
-          ? "border-primary/30 bg-accent-subtle text-primary hover:bg-primary/20"
-          : "border-border-subtle text-fg-muted hover:bg-bg-hover hover:text-fg-default disabled:opacity-50",
+        "h-7 flex-1 gap-1.5 px-2 @min-[340px]:flex-none",
+        count > 0 ? "bg-control text-fg-default hover:bg-control-hover" : "text-fg-muted",
       )}
     >
       {busy ? (
@@ -47,7 +47,7 @@ function SyncButton({
       )}
       {label}
       {count > 0 && <span className="tabular-nums">{count}</span>}
-    </button>
+    </Button>
   );
 }
 

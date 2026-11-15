@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { Spinner } from "@phosphor-icons/react";
 
@@ -17,16 +18,14 @@ export function ToolbarButton({
   badge?: number | null;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon"
       onClick={onClick}
       disabled={disabled || busy}
       title={label}
       aria-label={label}
-      className={cn(
-        "relative flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors",
-        disabled ? "opacity-40" : "hover:bg-bg-hover hover:text-fg-default",
-      )}
+      className={cn("relative text-fg-subtle")}
     >
       {busy ? <Spinner size={14} className="animate-spin" /> : <Icon size={14} />}
       {badge !== undefined && badge !== null && (
@@ -34,6 +33,6 @@ export function ToolbarButton({
           {badge}
         </span>
       )}
-    </button>
+    </Button>
   );
 }

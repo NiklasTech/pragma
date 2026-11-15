@@ -1,4 +1,5 @@
 import { Tag } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { cn } from "@/shared/lib/utils";
 import { GraphRail } from "../GraphRail";
@@ -36,12 +37,12 @@ export function CommitRow({
   const changesCollapsed = collapsedCols.has("changes");
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={onClick}
       className={cn(
-        "group relative grid h-full w-full cursor-pointer items-center gap-5 rounded-md pr-3 text-left text-ui-base transition-colors",
-        active ? "bg-bg-active" : "hover:bg-bg-hover",
+        "group relative grid h-full w-full items-center justify-normal gap-5 pr-3 pl-0 text-left text-ui-base font-normal text-fg-default",
+        active && "bg-bg-active",
       )}
       style={{
         gridTemplateColumns: GRID_COLUMNS,
@@ -157,6 +158,6 @@ export function CommitRow({
           </>
         )}
       </span>
-    </button>
+    </Button>
   );
 }

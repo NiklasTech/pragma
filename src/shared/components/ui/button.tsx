@@ -9,7 +9,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // The one main action of a view.
-        default: "bg-primary font-semibold text-primary-foreground hover:bg-primary/90",
+        default:
+          "bg-primary font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-control disabled:text-fg-subtle disabled:opacity-100",
         secondary:
           "bg-control text-fg-default hover:bg-control-hover aria-expanded:bg-control-hover",
         outline: "bg-control text-fg-default hover:bg-control-hover aria-expanded:bg-control-hover",

@@ -50,13 +50,12 @@ export function SwitchWarningDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => onSmartSwitch()}
             disabled={pendingBranch !== null}
             className={cn(
-              "flex w-full items-center gap-3 rounded-md border border-border bg-bg-hover px-3 py-2.5 text-left transition-colors hover:bg-bg-active",
-              pendingBranch !== null && "opacity-60 cursor-not-allowed",
+              "h-auto w-full justify-start gap-3 px-3 py-2.5 text-left font-normal whitespace-normal",
             )}
           >
             <ArrowsClockwise size={18} className="shrink-0 text-primary" />
@@ -66,14 +65,13 @@ export function SwitchWarningDialog({
                 Stash changes, switch branch, then restore changes and workspace
               </div>
             </div>
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => onNormalSwitch()}
             disabled={pendingBranch !== null}
             className={cn(
-              "flex w-full items-center gap-3 rounded-md border border-border px-3 py-2.5 text-left transition-colors hover:bg-bg-hover",
-              pendingBranch !== null && "opacity-60 cursor-not-allowed",
+              "h-auto w-full justify-start gap-3 px-3 py-2.5 text-left font-normal whitespace-normal text-fg-default ring-1 ring-border ring-inset",
             )}
           >
             <GitBranch size={18} className="shrink-0 text-fg-muted" />
@@ -83,7 +81,7 @@ export function SwitchWarningDialog({
                 Switch branch without stashing (may fail or conflict)
               </div>
             </div>
-          </button>
+          </Button>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button

@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { type CheckState } from "@/shared/stores/git";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 
@@ -28,24 +29,26 @@ export function SectionHeader({
       </span>
       <div className="ml-auto flex items-center gap-1">
         {mode === "unstaged" && onStageAll && count > 0 && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={onStageAll}
             disabled={actionBusy !== null}
-            className="text-ui-xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
+            className="px-1.5 text-ui-xs"
           >
             Stage all
-          </button>
+          </Button>
         )}
         {mode === "staged" && onUnstageAll && count > 0 && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={onUnstageAll}
             disabled={actionBusy !== null}
-            className="text-ui-xs font-medium text-fg-muted transition-colors hover:text-fg-default disabled:opacity-40"
+            className="px-1.5 text-ui-xs"
           >
             Unstage all
-          </button>
+          </Button>
         )}
         <label className="ml-2 flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-ui-xs font-medium text-fg-muted hover:text-fg-default">
           <Checkbox

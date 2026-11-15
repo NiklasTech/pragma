@@ -236,14 +236,15 @@ function HeaderAction({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+      className="text-fg-subtle"
     >
       {children}
-    </button>
+    </Button>
   );
 }

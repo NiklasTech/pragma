@@ -1,4 +1,5 @@
 import { Tag } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { cn } from "@/shared/lib/utils";
 import { GraphRail } from "../GraphRail";
@@ -25,12 +26,12 @@ export function CompactCommitRow({
 }) {
   const uiSize = useUiSize();
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={onClick}
       className={cn(
-        "group flex h-full w-full cursor-pointer items-stretch gap-1 rounded-md pr-2 text-left transition-colors",
-        active ? "bg-accent-subtle" : "hover:bg-bg-hover",
+        "group h-full w-full items-stretch justify-start gap-1 pr-2 pl-0 text-left font-normal text-fg-default",
+        active && "bg-bg-active",
       )}
     >
       <div className="flex shrink-0 items-center">
@@ -78,6 +79,6 @@ export function CompactCommitRow({
           <span className="ml-auto shrink-0 font-mono">{commit.short_sha.slice(0, 7)}</span>
         </span>
       </div>
-    </button>
+    </Button>
   );
 }
