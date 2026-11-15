@@ -180,6 +180,7 @@ const COMMANDS: &[&str] = &[
     "import_font_file",
     "kill_process_by_port",
     "kill_pty",
+    "pty_foreground_process",
     "list_directory",
     "list_directory_recursive",
     "list_fonts",

@@ -13,6 +13,7 @@ import {
   SquareSplitHorizontal,
   SquareSplitVertical,
   Stop,
+  TerminalWindow,
   X,
 } from "@phosphor-icons/react";
 
@@ -37,6 +38,8 @@ import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
 import { CompactSessionMenuItem } from "../compaction/CompactSessionMenuItem";
 import { ExportSessionMenu } from "../export/ExportSessionMenu";
 import { ComposerMicButton } from "../components/ComposerMicButton";
+import { useForegroundCli } from "../terminal/foregroundCli";
+import { isShellSession, SHELL_TITLE } from "../terminal/shell";
 import { isGeneratedTerminalTitle } from "../terminal/title";
 import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
@@ -59,16 +62,26 @@ function PaneMark({
   leaf,
   session,
   manifest,
+  shell,
 }: {
   leaf: Leaf;
   session: ChatSession | undefined;
   manifest: CLIManifest | undefined;
+  shell: boolean;
 }) {
   const icon = "shrink-0 text-fg-muted";
   if (leaf.browser) return <Browser size={ICON_SIZE.sm} className={icon} aria-hidden="true" />;
   if (!session) return null;
+  if (shell && !manifest) {
+    return <TerminalWindow size={ICON_SIZE.sm} className={icon} aria-hidden="true" />;
+  }
   if (session.cliProviderId) {
-    return <AgentMark agentId={session.cliProviderId} name={manifest?.name ?? "Terminal"} />;
+    return (
+      <AgentMark
+        agentId={manifest?.id ?? session.cliProviderId}
+        name={manifest?.name ?? "Terminal"}
+      />
+    );
   }
   if (session.kind === "ask") {
     return <ChatCircle size={ICON_SIZE.sm} className={icon} aria-hidden="true" />;
@@ -80,9 +93,12 @@ function paneTitle(
   leaf: Leaf,
   session: ChatSession | undefined,
   manifest: CLIManifest | undefined,
+  shell: boolean,
 ): string {
   if (leaf.browser) return "Browser";
   if (!session) return "Empty pane";
+  // A renamed shell keeps its name; otherwise it is named after the CLI running in it.
+  if (shell) return session.title !== SHELL_TITLE ? session.title : (manifest?.name ?? SHELL_TITLE);
   if (session.kind === "terminal") {
     const name = manifest?.name ?? "Terminal";
     return isGeneratedTerminalTitle(session.title, name) ? name : session.title;
@@ -95,7 +111,8 @@ function startLike(
   manifest: CLIManifest | undefined,
   actions: NewSessionActions,
 ): void {
-  if (session.kind === "terminal" && manifest) void actions.startTerminal(manifest);
+  if (isShellSession(session)) void actions.startShell();
+  else if (session.kind === "terminal" && manifest) void actions.startTerminal(manifest);
   else if (session.agentEngine?.kind === "cli" && manifest)
     void actions.startConversation(manifest);
   else if (session.kind === "ask") void actions.startAsk();
@@ -163,16 +180,25 @@ export function PaneHeader({
   const terminalStatus = useTerminalStatus(terminal?.id ?? null);
   const terminalActive = useTerminalActivity(terminal?.id ?? null);
   const runningTerminal = terminal !== null && terminalStatus.status === "running";
+  const shell = terminal !== null && isShellSession(terminal);
+  const shellCli = useForegroundCli(terminal?.id ?? "", shell && runningTerminal);
+  const shownManifest = shell ? (shellCli ?? undefined) : manifest;
   const terminalLook = { ...terminalStatus, active: terminalActive };
   const state = terminal ? terminalPaneState(terminalLook) : agentPaneState(status);
+  // A plain shell shows no state until a CLI runs in it or it fails.
+  const showState = !shell || shellCli !== null || state === "needs-you";
   const stateLabel = terminal ? terminalPaneLabel(terminalLook) : AGENT_STATE_LABELS[state];
 
   const environment = useSessionEnvironment(session);
   const worktree = environment?.kind === "worktree" ? environment : undefined;
   const branch = worktree?.branch ?? null;
-  const title = paneTitle(leaf, session, manifest);
+  const title = paneTitle(leaf, session, shownManifest, shell);
   const maximizeLabel = maximized ? "Restore" : "Zoom";
-  const newLabel = terminal && manifest ? `New ${manifest.name}` : "New session";
+  const newLabel = shell
+    ? "New shell"
+    : terminal && manifest
+      ? `New ${manifest.name}`
+      : "New session";
   const canStartLike = session !== undefined && rootPath !== null;
   const shown = focused ? "opacity-100" : "opacity-0";
 
@@ -188,12 +214,12 @@ export function PaneHeader({
         }}
         {...drag}
       >
-        {!leaf.browser && session && (
+        {!leaf.browser && session && showState && (
           <span className="flex size-3 shrink-0 items-center justify-center" title={stateLabel}>
             <StatusDot state={state} className="size-1.75" />
           </span>
         )}
-        <PaneMark leaf={leaf} session={session} manifest={manifest} />
+        <PaneMark leaf={leaf} session={session} manifest={shownManifest} shell={shell} />
         <span
           className={cn(
             "min-w-0 shrink truncate text-ui-sm font-medium transition-colors duration-(--motion-base)",

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import type { CLIManifest } from "@/shared/stores/ai";
 import { createTerminalSession } from "../panes/launch";
+import { createShellSession } from "../terminal/shell";
 import { findLeaf } from "../panes/operations";
 import { paneTreeKey, selectEntry, useAgentsPanesStore } from "../panes/store";
 import { activateRepository } from "../sessions/openInRepository";
@@ -19,6 +20,7 @@ export interface NewSessionActions {
   startAgentCheckout: () => Promise<void>;
   startAgentWorktree: () => Promise<void>;
   startTerminal: (manifest: CLIManifest) => Promise<void>;
+  startShell: () => Promise<void>;
   startConversation: (manifest: CLIManifest) => Promise<void>;
   joinWorktree: (environmentId: string, target: JoinTarget) => Promise<void>;
 }
@@ -94,6 +96,16 @@ export function useNewSessionActions(
     [place, rootPath],
   );
 
+  const startShell = useCallback(async () => {
+    if (!rootPath) return;
+    try {
+      const session = await createShellSession(rootPath);
+      place(session.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not start a shell");
+    }
+  }, [place, rootPath]);
+
   const startConversation = useCallback(
     (manifest: CLIManifest) => start({ init: cliConversationInit(manifest) }),
     [start],
@@ -115,6 +127,7 @@ export function useNewSessionActions(
     startAgentCheckout,
     startAgentWorktree,
     startTerminal,
+    startShell,
     startConversation,
     joinWorktree,
   };

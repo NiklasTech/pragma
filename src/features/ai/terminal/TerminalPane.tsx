@@ -29,6 +29,7 @@ import {
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 import { isPaneShortcut } from "../panes/paneCommands";
+import { isShellSession, SHELL_TITLE } from "./shell";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -47,7 +48,15 @@ export function TerminalPane({ session }: TerminalPaneProps) {
   const manifest = session.cliProviderId
     ? cliManifests.find((item) => item.id === session.cliProviderId)
     : undefined;
-  const command = manifest ? terminalLaunchCommand(manifest.id, manifest.command) : "";
+  const shellSession = isShellSession(session);
+  // The shell is read once at start; changing the setting applies to the next shell pane.
+  const shellPath = useSettingsStore((state) => state.terminal.shell);
+  const shellRef = useRef(shellPath);
+  const command = shellSession
+    ? SHELL_TITLE
+    : manifest
+      ? terminalLaunchCommand(manifest.id, manifest.command)
+      : "";
   const workEnvironments = useAIStore((state) => state.workEnvironments);
   const cwd = sessionCwd(session, workEnvironments, session.rootPath);
   const [dropActive, setDropActive] = useState(false);
@@ -109,6 +118,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     const initialSize = { cols: term.cols, rows: term.rows };
     void ensureTerminal(session.id, {
       command,
+      shell: shellSession ? shellRef.current : undefined,
       cwd,
       cols: initialSize.cols,
       rows: initialSize.rows,
