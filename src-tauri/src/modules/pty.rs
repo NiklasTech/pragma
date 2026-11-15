@@ -28,6 +28,8 @@ struct PtyInstance {
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     killer: Arc<Mutex<Box<dyn ChildKiller + Send + Sync>>>,
     master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
+    /// The process started in the terminal, usually the shell.
+    pid: Option<u32>,
 }
 
 fn spawn_exit_watcher(
@@ -312,6 +314,7 @@ pub fn create_pty(
     let reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
     let killer = child.clone_killer();
+    let pid = child.process_id();
 
     let output_done = spawn_output_reader(app.clone(), id.clone(), reader);
 
@@ -324,10 +327,44 @@ pub fn create_pty(
             writer: Arc::new(Mutex::new(writer)),
             killer: Arc::new(Mutex::new(killer)),
             master: Arc::new(Mutex::new(pair.master)),
+            pid,
         },
     );
 
     Ok(id)
+}
+
+const MAX_PTY_ID_LEN: usize = 64;
+
+/// The names of the program in the foreground of a terminal, or `None` while its shell waits.
+#[tauri::command(async)]
+pub fn pty_foreground_process(
+    state: State<'_, PtyManager>,
+    id: String,
+) -> Result<Option<Vec<String>>, String> {
+    if id.is_empty() || id.len() > MAX_PTY_ID_LEN {
+        return Err("Invalid terminal id".to_string());
+    }
+    let (pid, master) = {
+        let ptys = state.ptys.lock().map_err(|e| e.to_string())?;
+        let Some(instance) = ptys.get(&id) else {
+            return Ok(None);
+        };
+        (instance.pid, Arc::clone(&instance.master))
+    };
+    #[cfg(unix)]
+    {
+        let leader = master
+            .lock()
+            .map_err(|e| e.to_string())?
+            .process_group_leader();
+        Ok(super::pty_foreground::foreground_names(pid, leader))
+    }
+    #[cfg(windows)]
+    {
+        drop(master);
+        Ok(super::pty_foreground::foreground_names(pid))
+    }
 }
 
 #[tauri::command]
@@ -451,6 +488,7 @@ pub fn create_pty_command(
     let reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
     let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
     let killer = child.clone_killer();
+    let pid = child.process_id();
 
     let output_done = spawn_output_reader(app.clone(), id.clone(), reader);
 
@@ -463,6 +501,7 @@ pub fn create_pty_command(
             writer: Arc::new(Mutex::new(writer)),
             killer: Arc::new(Mutex::new(killer)),
             master: Arc::new(Mutex::new(pair.master)),
+            pid,
         },
     );
 
@@ -609,6 +648,7 @@ mod tests {
                 writer: Arc::new(Mutex::new(pair.master.take_writer().unwrap())),
                 killer: Arc::new(Mutex::new(child.clone_killer())),
                 master: Arc::new(Mutex::new(pair.master)),
+                pid: None,
             },
         );
 

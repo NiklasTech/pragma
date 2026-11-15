@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { TerminalWindow } from "@phosphor-icons/react";
 
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
@@ -16,7 +17,7 @@ interface CliQuickStartProps {
   targetLeafId?: string;
 }
 
-/// One-click entry into the coding CLIs installed on this machine.
+/// One-click entry into a shell and the coding CLIs installed on this machine.
 export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
@@ -33,11 +34,20 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
     (row) => !row.disabled && row.items.some((item) => item.action === "terminal"),
   );
 
-  if (available.length === 0) return null;
-
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
-      <span className="text-ui-xs text-fg-subtle">Or open a coding CLI</span>
+      <span className="text-ui-xs text-fg-subtle">
+        {available.length > 0 ? "Or open a shell or coding CLI" : "Or open a shell"}
+      </span>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => void actions.startShell()}
+        className="gap-1.5 rounded-full px-3 text-fg-muted hover:text-fg-default"
+      >
+        <TerminalWindow size={13} />
+        Shell
+      </Button>
       {available.map((row) => (
         <Button
           variant="secondary"

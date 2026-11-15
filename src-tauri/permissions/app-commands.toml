@@ -245,6 +245,7 @@ permissions = [
   "allow-parakeet-remove",
   "allow-parakeet-status",
   "allow-parakeet-transcribe",
+  "allow-pty-foreground-process",
   "allow-read-chat-context",
   "allow-read-file-preview",
   "allow-read-image-file",

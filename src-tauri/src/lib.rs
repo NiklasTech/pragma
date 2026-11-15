@@ -169,6 +169,7 @@ pub fn run() {
             modules::pty::write_pty,
             modules::pty::resize_pty,
             modules::pty::kill_pty,
+            modules::pty::pty_foreground_process,
             modules::git::commands::git_status,
             modules::git::worktree::git_session_repo_check,
             modules::git::worktree::git_session_worktree_create,

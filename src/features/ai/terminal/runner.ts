@@ -26,6 +26,8 @@ interface TerminalEntry {
   sessionId: string;
   ptyId: string | null;
   command: string;
+  /** Set for a shell pane: the shell to start instead of a CLI command. */
+  shell: string | null;
   cwd: string | null;
   buffer: string;
   status: TerminalStatus;
@@ -37,6 +39,8 @@ interface TerminalEntry {
 
 export interface StartTerminalOptions {
   command: string;
+  /** Starts this shell like the code tab terminal does, instead of running `command`. */
+  shell?: string | null;
   cwd: string | null;
   cols: number;
   rows: number;
@@ -242,6 +246,7 @@ export async function ensureTerminal(
       sessionId,
       ptyId: null,
       command: options.command,
+      shell: options.shell ?? null,
       cwd: options.cwd,
       buffer: "",
       status: "running",
@@ -271,12 +276,19 @@ export async function ensureTerminal(
   const current = entry;
   const start = (async () => {
     try {
-      const ptyId = await invoke<string>("create_pty_command", {
-        command: current.command,
-        cwd: current.cwd,
-        cols: Math.max(options.cols, 10),
-        rows: Math.max(options.rows, 2),
-      });
+      const size = { cols: Math.max(options.cols, 10), rows: Math.max(options.rows, 2) };
+      const ptyId =
+        current.shell !== null
+          ? await invoke<string>("create_pty", {
+              shell: current.shell || null,
+              cwd: current.cwd,
+              ...size,
+            })
+          : await invoke<string>("create_pty_command", {
+              command: current.command,
+              cwd: current.cwd,
+              ...size,
+            });
       current.ptyId = ptyId;
 
       const pendingOutput = unclaimedOutput.get(ptyId);
@@ -311,6 +323,11 @@ export async function ensureTerminal(
       unclaimedExit.clear();
     }
   }
+}
+
+/** The PTY behind a session's terminal, once it has started. */
+export function getTerminalPtyId(sessionId: string): string | null {
+  return entries.get(sessionId)?.ptyId ?? null;
 }
 
 export function cancelTerminal(sessionId: string): void {
