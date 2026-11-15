@@ -23,6 +23,7 @@ import {
 import { insertTabBinding } from "@/features/editor/components/extensions/tab-keymap";
 import { searchExtension } from "@/features/editor/components/extensions/search";
 import { docSyncExtension } from "@/features/editor/components/extensions/doc-sync";
+import { inlineEditExtension } from "@/features/editor/inlineEdit/inlineEdit";
 import {
   languageCompartment,
   ghostTextCompartment,
@@ -130,6 +131,7 @@ export function useEditorExtensions({
         gitChangeCompartment.of([]),
         history(),
         ghostTextCompartment.of(ghostTextExtension(ghostConfig)),
+        inlineEditExtension(() => filePathRef.current),
         keymap.of([...defaultKeymap, ...historyKeymap, insertTabBinding, ...foldKeymap]),
         searchExtension(),
         codeFolding(),

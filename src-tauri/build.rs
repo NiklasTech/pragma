@@ -12,6 +12,7 @@ const COMMANDS: &[&str] = &[
     "ai_delete_session",
     "ai_generate_chat_title",
     "ai_inline_completion",
+    "ai_inline_edit",
     "ai_key_status",
     "ai_list_models",
     "ai_load_environments",

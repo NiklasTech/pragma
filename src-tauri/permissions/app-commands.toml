@@ -14,6 +14,7 @@ permissions = [
   "allow-ai-delete-session",
   "allow-ai-generate-chat-title",
   "allow-ai-inline-completion",
+  "allow-ai-inline-edit",
   "allow-ai-key-status",
   "allow-ai-list-models",
   "allow-ai-load-environments",

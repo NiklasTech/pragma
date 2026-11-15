@@ -368,6 +368,7 @@ pub fn run() {
             commands::work_environments::ai_delete_environment,
             commands::chat_search::ai_search_sessions,
             commands::ai::ai_inline_completion,
+            commands::ai::ai_inline_edit,
             commands::ai::ai_next_edit,
             commands::ai::ai_terminal_suggestion,
             commands::ai::ai_generate_chat_title,
