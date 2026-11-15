@@ -36,6 +36,7 @@ interface OverviewTileCardProps {
   spaceName: string | null;
   now: number;
   onOpen: (sessionId: string) => void;
+  onPeek: (sessionId: string) => void;
 }
 
 /// One agent in the overview: who, where, its latest lines, its changes and what you can do.
@@ -44,6 +45,7 @@ export const OverviewTileCard = memo(function OverviewTileCard({
   spaceName,
   now,
   onOpen,
+  onPeek,
 }: OverviewTileCardProps) {
   const { session, state } = tile;
   const manifest = useAIStore((store) => sessionAgentManifest(store, session.id));
@@ -102,6 +104,9 @@ export const OverviewTileCard = memo(function OverviewTileCard({
         )}
         <span>{sinceLabel(tile.since, now)}</span>
         <span className="ml-auto flex gap-1">
+          <Button variant="ghost" size="sm" onClick={() => onPeek(session.id)}>
+            Peek
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onOpen(session.id)}>
             Open
           </Button>

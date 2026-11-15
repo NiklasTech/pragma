@@ -13,15 +13,21 @@ function OverlaySheet(props: DialogPrimitive.Root.Props) {
 const OverlaySheetTrigger = DialogPrimitive.Trigger;
 const OverlaySheetClose = DialogPrimitive.Close;
 
+const FLOATING =
+  "inset-x-0 mx-auto w-full max-w-[calc(100%-2rem)] data-starting-style:translate-y-2 data-starting-style:scale-[0.98] data-ending-style:translate-y-1 data-ending-style:scale-[0.98]";
+
 const overlaySheetVariants = cva(
-  "fixed inset-x-0 z-[70] mx-auto flex w-full max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-sheet bg-bg-sheet text-ui-sm text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border outline-none transition-[opacity,translate,scale] duration-(--motion-base) ease-(--motion-ease-out) data-starting-style:translate-y-2 data-starting-style:scale-[0.98] data-starting-style:opacity-0 data-ending-style:translate-y-1 data-ending-style:scale-[0.98] data-ending-style:opacity-0",
+  "fixed z-[70] flex flex-col overflow-hidden rounded-sheet bg-bg-sheet text-ui-sm text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border outline-none transition-[opacity,translate,scale] duration-(--motion-base) ease-(--motion-ease-out) data-starting-style:opacity-0 data-ending-style:opacity-0",
   {
     variants: {
       placement: {
         /** Dialogs and detail views. */
-        center: "inset-y-0 my-auto h-fit max-h-[calc(100%-4rem)]",
+        center: `${FLOATING} inset-y-0 my-auto h-fit max-h-[calc(100%-4rem)]`,
         /** Pickers and command lists that grow downward while filtering. */
-        top: "top-[12vh] max-h-[76vh]",
+        top: `${FLOATING} top-[12vh] max-h-[76vh]`,
+        /** A session looked into from the side; it slides in from the right edge. */
+        right:
+          "inset-y-2 right-2 w-[min(760px,calc(100%-1rem))] data-starting-style:translate-x-10 data-ending-style:translate-x-6",
       },
     },
     defaultVariants: { placement: "center" },

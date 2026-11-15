@@ -50,6 +50,9 @@ export function useAgentStateFeed(): void {
       if (document.hasFocus() && readSessionInView(sessionId)) store().apply(sessionId, "seen");
     };
     const apply = (sessionId: string, event: AgentStateEvent) => {
+      // A terminal can still report after its session was deleted; such a state would never clear.
+      const known = useAIStore.getState().chatSessions.some((session) => session.id === sessionId);
+      if (!known) return;
       store().apply(sessionId, event);
       if (event === "done") markSeen(sessionId);
     };

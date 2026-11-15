@@ -222,9 +222,17 @@ export async function writeTerminal(sessionId: string, data: string): Promise<vo
   }
 }
 
+const sizes = new Map<string, { cols: number; rows: number }>();
+
+/** The size the PTY was last given, so a second view can hand it back when it closes. */
+export function getTerminalSize(sessionId: string): { cols: number; rows: number } | null {
+  return sizes.get(sessionId) ?? null;
+}
+
 export async function resizeTerminal(sessionId: string, cols: number, rows: number): Promise<void> {
   const entry = entries.get(sessionId);
   if (!entry?.ptyId) return;
+  sizes.set(sessionId, { cols, rows });
   try {
     await invoke("resize_pty", {
       id: entry.ptyId,
