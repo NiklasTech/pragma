@@ -6,7 +6,8 @@ import { OVERLAY_SHORTCUTS, useOverlayStore } from "@/shared/stores/overlays";
 
 const OVERLAY_ACTIONS = new Set<string>(Object.values(OVERLAY_SHORTCUTS));
 
-export type ShortcutActions = Partial<Record<ShortcutActionId, () => void>>;
+/** A handler that returns `false` did not apply here; the key then goes on to the focused element. */
+export type ShortcutActions = Partial<Record<ShortcutActionId, () => void | boolean>>;
 
 export function useGlobalShortcuts(actions: ShortcutActions): void {
   const shortcuts = useSettingsStore((state) => state.shortcuts);
@@ -26,8 +27,8 @@ export function useGlobalShortcuts(actions: ShortcutActions): void {
         // While an overlay is open, only overlay shortcuts work: they close it or switch to another.
         if (activeOverlay && !OVERLAY_ACTIONS.has(actionId)) continue;
 
+        if (handler() === false) continue;
         event.preventDefault();
-        handler();
         break;
       }
     }

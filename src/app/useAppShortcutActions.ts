@@ -23,8 +23,14 @@ import { useDebugStore } from "@/features/debug/store";
 import { useAttachDialogStore } from "@/features/debug/attachProcess";
 import { useAgentStore } from "@/features/agent/store";
 import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
+import { focusPaneInDirection, toggleFocusedPaneZoom } from "@/features/ai/panes/paneCommands";
 import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
 import { leaveAgentsForTerminal, toggleTerminalFromShortcut } from "./terminalShortcuts";
+
+function inAgentsTab(): boolean {
+  const { uiMode } = useUiModeStore.getState();
+  return resolveUiMode(uiMode, useFileExplorerStore.getState().rootPath !== null) === "agents";
+}
 
 function cycleTab(delta: 1 | -1): void {
   const { tabs, activeTabId, setActiveTab } = useEditorStore.getState();
@@ -118,6 +124,11 @@ export function useAppShortcutActions(): ShortcutActions {
         setUiMode("agents");
         agentsUi.setContextPaneCollapsed(false);
       },
+      "pane.focusLeft": () => inAgentsTab() && focusPaneInDirection("left"),
+      "pane.focusRight": () => inAgentsTab() && focusPaneInDirection("right"),
+      "pane.focusUp": () => inAgentsTab() && focusPaneInDirection("up"),
+      "pane.focusDown": () => inAgentsTab() && focusPaneInDirection("down"),
+      "pane.toggleZoom": () => inAgentsTab() && toggleFocusedPaneZoom(),
       "view.switchToAgents": () => {
         useUiModeStore.getState().setUiMode("agents");
       },

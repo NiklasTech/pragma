@@ -36,7 +36,8 @@ import { EmptyLeafView } from "./EmptyLeafView";
 import { collectLeaves } from "./layout";
 import { usePaneMaximizeStore } from "./maximize";
 import { PaneHeader } from "./PaneHeader";
-import { animatePanes, animateRestore } from "./transition";
+import { animateRestore } from "./transition";
+import { togglePaneZoom } from "./paneCommands";
 import { buildCloseConfirm, type CloseConfirm, type SessionCloseTarget } from "./sessionClose";
 import {
   findGroup,
@@ -86,7 +87,6 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const closeLeaf = useAgentsPanesStore((state) => state.closeLeaf);
   const swapPanes = useAgentsPanesStore((state) => state.swapPanes);
   const maximized = usePaneMaximizeStore((state) => state.maximized[rootPath] === node.id);
-  const toggleMaximize = usePaneMaximizeStore((state) => state.toggle);
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
   const chatSessions = useAIStore((state) => state.chatSessions);
@@ -179,16 +179,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
           void purgeStaleTerminals(rootPath).catch(() => {});
         }}
         onCloseOthers={() => requestClose(otherLeafIds)}
-        onToggleMaximize={() => {
-          if (maximized) {
-            animateRestore(cardRef.current, () => toggleMaximize(rootPath, node.id));
-            return;
-          }
-          animatePanes(() => {
-            focusLeaf(rootPath, leaf.id);
-            toggleMaximize(rootPath, node.id);
-          });
-        }}
+        onToggleMaximize={() => togglePaneZoom(rootPath, leaf.id)}
         onDropOn={(targetLeafId) => swapPanes(rootPath, leaf.id, targetLeafId)}
       />
 

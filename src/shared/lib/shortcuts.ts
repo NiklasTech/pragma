@@ -117,6 +117,56 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
+    id: "pane.focusLeft" as const,
+    label: "Focus Pane Left",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      alt: true,
+      key: "ArrowLeft",
+    }),
+  },
+  {
+    id: "pane.focusRight" as const,
+    label: "Focus Pane Right",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      alt: true,
+      key: "ArrowRight",
+    }),
+  },
+  {
+    id: "pane.focusUp" as const,
+    label: "Focus Pane Above",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      alt: true,
+      key: "ArrowUp",
+    }),
+  },
+  {
+    id: "pane.focusDown" as const,
+    label: "Focus Pane Below",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      alt: true,
+      key: "ArrowDown",
+    }),
+  },
+  {
+    id: "pane.toggleZoom" as const,
+    label: "Zoom Pane",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      shift: true,
+      key: "Enter",
+    }),
+  },
+  {
     id: "view.openSettings" as const,
     label: "Open Settings",
     category: "view" as const,
