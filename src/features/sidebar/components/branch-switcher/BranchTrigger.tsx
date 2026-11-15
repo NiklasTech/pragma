@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import type { GitProgress } from "@/shared/stores/git";
 import { ArrowDown, ArrowUp, GitBranch, Spinner } from "@phosphor-icons/react";
@@ -27,15 +28,12 @@ export function BranchTrigger({
 }: BranchTriggerProps) {
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={onToggle}
         disabled={isCheckoutBusy}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-md bg-bg-hover px-2 py-1 text-ui-xs font-medium transition-colors",
-          open ? "bg-bg-active" : "hover:bg-bg-hover",
-          isCheckoutBusy && "opacity-60",
-        )}
+        className={cn("gap-1.5 px-2", open && "bg-control-hover", isCheckoutBusy && "opacity-60")}
       >
         {isCheckoutBusy ? (
           <Spinner size={11} className="animate-spin text-fg-muted" />
@@ -48,7 +46,7 @@ export function BranchTrigger({
             detached
           </span>
         )}
-      </button>
+      </Button>
 
       {ahead > 0 || behind > 0 ? (
         <div className="flex items-center gap-0.5 text-ui-xs font-semibold text-fg-muted">

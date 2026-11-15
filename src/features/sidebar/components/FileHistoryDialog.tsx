@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Spinner } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   Dialog,
@@ -106,12 +107,13 @@ export function FileHistoryDialog() {
               </div>
             )}
             {entries.map((entry) => (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 key={entry.sha}
-                type="button"
                 onClick={() => void handleOpen(entry)}
                 disabled={loadingSha !== null}
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-ui-xs transition-colors hover:bg-bg-hover disabled:opacity-60"
+                className="w-full justify-start gap-2 px-2 text-left font-normal disabled:opacity-60"
               >
                 <span className="w-14 shrink-0 font-mono text-fg-muted">{entry.short_sha}</span>
                 <span className="min-w-0 flex-1 truncate text-fg-default" title={entry.subject}>
@@ -130,7 +132,7 @@ export function FileHistoryDialog() {
                     {relativeDate(entry.timestamp_secs)}
                   </span>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </ScrollArea>

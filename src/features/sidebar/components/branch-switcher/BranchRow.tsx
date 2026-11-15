@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import type { GitBranch } from "@/shared/stores/git";
 import { Check, GitBranch as GitBranchIcon, Spinner, Trash } from "@phosphor-icons/react";
@@ -28,11 +29,12 @@ export function BranchRow({
           : "text-fg-default hover:bg-bg-hover",
       )}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="xs"
         onClick={() => onSelect(branch.name)}
         disabled={isPending || isCurrent}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        className="min-w-0 flex-1 justify-start gap-2 px-0 text-left text-ui-sm font-normal text-fg-default hover:bg-transparent disabled:opacity-100"
       >
         {isPending ? (
           <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
@@ -42,18 +44,20 @@ export function BranchRow({
           <GitBranchIcon size={12} className="shrink-0 text-fg-muted" />
         )}
         <span className="truncate">{branch.name}</span>
-      </button>
+      </Button>
 
       {!isCurrent && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Delete branch"
           onClick={() => onDelete(branch.name)}
           disabled={isDeleteBusy}
-          className="shrink-0 rounded p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-status-error group-hover:opacity-100"
+          className="text-fg-muted opacity-0 group-hover:opacity-100 hover:text-status-error"
           title="Delete branch"
         >
           <Trash size={12} />
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -32,11 +32,12 @@ export function FileChangeRow({
   const fileName = slashIndex >= 0 ? file.path.slice(slashIndex + 1) : file.path;
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       disabled={loading}
-      className="group flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-ui-xs transition-colors hover:bg-bg-hover disabled:opacity-60"
+      className="group w-full justify-start gap-2 px-2 text-left font-normal text-fg-default disabled:opacity-60"
     >
       <span
         className={cn(
@@ -75,7 +76,7 @@ export function FileChangeRow({
       ) : file.is_binary ? (
         <span className="shrink-0 text-fg-subtle">binary</span>
       ) : null}
-    </button>
+    </Button>
   );
 }
 

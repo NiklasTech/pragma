@@ -29,15 +29,16 @@ export function StashPanel() {
 
   return (
     <div className="shrink-0 border-b border-border/60">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
-        className="flex w-full items-center gap-1.5 px-3 py-1.5 text-ui-xs text-fg-muted transition-colors hover:text-fg-default"
+        className="h-auto w-full justify-start gap-1.5 rounded-none px-3 py-1.5 text-ui-xs font-normal hover:bg-transparent"
       >
         {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
         <span className="font-medium">Stashes</span>
         <span className="text-fg-subtle">{stashes.length}</span>
-      </button>
+      </Button>
 
       {expanded && (
         <div className="flex flex-col gap-1 px-3 pb-2">

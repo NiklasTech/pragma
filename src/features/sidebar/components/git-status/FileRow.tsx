@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { type GitStatusEntry } from "@/shared/stores/git";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -37,18 +38,19 @@ function RowAction({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={(event) => {
         event.stopPropagation();
         onClick();
       }}
       title={label}
       aria-label={label}
-      className="flex size-6 items-center justify-center rounded text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+      className="text-fg-subtle"
     >
       {children}
-    </button>
+    </Button>
   );
 }
 

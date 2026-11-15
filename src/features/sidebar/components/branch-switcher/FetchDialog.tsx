@@ -46,19 +46,17 @@ export function FetchDialog({
         </DialogHeader>
 
         <div className="space-y-2 max-h-60 overflow-y-auto">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             onClick={() => onSelectBranch("")}
             className={cn(
-              "flex w-full items-center gap-2 rounded-md px-3 py-2 text-ui-sm transition-colors",
-              selectedFetchBranch === ""
-                ? "bg-bg-active font-medium text-fg-default"
-                : "text-fg-default hover:bg-bg-hover",
+              "h-8 w-full justify-start gap-2 px-3 font-normal text-fg-default",
+              selectedFetchBranch === "" && "bg-bg-active font-medium",
             )}
           >
             <ArrowsClockwise size={12} />
             Fetch all branches
-          </button>
+          </Button>
 
           {remoteBranches.length === 0 && (
             <p className="px-3 py-2 text-ui-xs text-fg-muted">
@@ -67,20 +65,18 @@ export function FetchDialog({
           )}
 
           {remoteBranches.map((rb) => (
-            <button
+            <Button
+              variant="ghost"
               key={rb.name}
-              type="button"
               onClick={() => onSelectBranch(rb.name)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-3 py-2 text-ui-sm transition-colors",
-                selectedFetchBranch === rb.name
-                  ? "bg-bg-active/50 font-medium text-fg-default"
-                  : "text-fg-default/90 hover:bg-bg-hover",
+                "h-8 w-full justify-start gap-2 px-3 font-normal text-fg-default",
+                selectedFetchBranch === rb.name && "bg-bg-active font-medium",
               )}
             >
               <GitBranch size={12} className="text-fg-muted" />
               {rb.name}
-            </button>
+            </Button>
           ))}
         </div>
 

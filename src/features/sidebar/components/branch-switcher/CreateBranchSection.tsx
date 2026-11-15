@@ -52,14 +52,15 @@ export function CreateBranchSection({
           </Button>
         </div>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onCreateClick}
-          className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-ui-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="w-full justify-start gap-1.5 px-2 text-ui-sm font-normal"
         >
           <Plus size={12} />
           Create new branch
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -144,15 +144,16 @@ function DockerActionButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="text-fg-muted"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
-    </button>
+    </Button>
   );
 }
 
@@ -300,19 +301,21 @@ export function DockerPanel() {
             : undefined
         }
         actions={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Refresh"
             onClick={() => void loadContainers()}
             disabled={isLoading}
             title="Refresh"
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
+            className="text-fg-muted sm:size-7"
           >
             {isLoading ? (
               <Spinner size={12} className="animate-spin" />
             ) : (
               <ArrowClockwise size={12} />
             )}
-          </button>
+          </Button>
         }
       />
 
@@ -404,16 +407,18 @@ export function DockerPanel() {
                   <span className="text-ui-xs font-semibold uppercase tracking-wider text-fg-muted">
                     Containers
                   </span>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    aria-pressed={statsEnabled}
                     onClick={() => setStatsEnabled((v) => !v)}
                     className={cn(
-                      "text-ui-xs transition-colors",
-                      statsEnabled ? "text-primary" : "text-fg-muted hover:text-fg-default",
+                      "px-1.5 font-normal",
+                      statsEnabled && "bg-bg-active text-fg-default",
                     )}
                   >
                     Stats
-                  </button>
+                  </Button>
                 </div>
                 {containers.length === 0 ? (
                   <PanelEmptyState

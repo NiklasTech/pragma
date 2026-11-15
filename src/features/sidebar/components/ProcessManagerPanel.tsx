@@ -12,6 +12,7 @@ import {
   Trash,
   Warning,
 } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Switch } from "@/shared/components/ui/switch";
 import { PanelHeader } from "@/shared/components/PanelHeader";
@@ -61,15 +62,16 @@ function ProcessActionButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       disabled={busy}
       onClick={onClick}
       title={title}
-      className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+      className="text-fg-muted"
     >
       {busy ? <Spinner size={12} className="animate-spin" /> : <Icon size={12} />}
-    </button>
+    </Button>
   );
 }
 
@@ -94,22 +96,26 @@ function DetectedConfigRow({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Add process"
           onClick={onAccept}
           title="Add process"
-          className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-success"
+          className="text-fg-muted hover:text-status-success"
         >
           <Plus size={12} weight="bold" />
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Ignore suggestion"
           onClick={onReject}
           title="Ignore suggestion"
-          className="flex h-6 w-6 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+          className="text-fg-muted hover:text-status-error"
         >
           <Trash size={12} />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -291,19 +297,21 @@ export function ProcessManagerPanel() {
             : undefined
         }
         actions={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Refresh"
             onClick={refresh}
             disabled={isDetecting}
             title="Refresh"
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40 sm:size-7 sm:rounded-lg"
+            className="text-fg-muted sm:size-7"
           >
             {isDetecting ? (
               <Spinner size={12} className="animate-spin" />
             ) : (
               <ArrowClockwise size={12} />
             )}
-          </button>
+          </Button>
         }
       />
 

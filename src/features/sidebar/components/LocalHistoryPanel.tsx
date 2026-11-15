@@ -129,14 +129,15 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
               ) : (
                 <div className="py-1">
                   {entries.map((entry) => (
-                    <button
+                    <Button
+                      variant="ghost"
                       key={`${entry.kind}-${entry.id}`}
                       onClick={() => handleSelect(entry)}
                       className={cn(
-                        "w-full text-left px-3 py-2 text-ui-xs flex flex-col gap-0.5 transition-colors",
-                        selectedEntry?.id === entry.id && selectedEntry?.kind === entry.kind
-                          ? "bg-bg-active text-fg-default"
-                          : "text-fg-default hover:bg-bg-hover",
+                        "w-full flex-col items-stretch gap-0.5 rounded-none px-3 py-2 text-left text-ui-xs text-fg-default h-auto whitespace-normal font-normal",
+                        selectedEntry?.id === entry.id &&
+                          selectedEntry?.kind === entry.kind &&
+                          "bg-bg-active",
                       )}
                     >
                       <span className="flex items-center gap-1.5 font-medium">
@@ -154,7 +155,7 @@ export function LocalHistoryPanel({ filePath, isOpen, onClose }: LocalHistoryPan
                         {entry.kind === "git" ? `${entry.author} • ` : ""}
                         {formatTime(entry.timestamp)}
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

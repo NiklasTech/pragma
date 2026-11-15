@@ -1,4 +1,5 @@
 import { CaretDown, CaretRight } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { ALL_COLUMNS, type ColumnKey } from "./columns";
 import { GRID_COLUMNS, TABLE_HEADER_HEIGHT } from "./constants";
@@ -24,12 +25,13 @@ export function CommitTableHeader({
       {ALL_COLUMNS.map((col) => {
         const isCollapsed = collapsedCols.has(col.key);
         return (
-          <button
+          <Button
+            variant="ghost"
+            size="xs"
             key={col.key}
-            type="button"
             onClick={() => onToggleCol(col.key)}
             className={cn(
-              "flex items-center gap-1 transition-colors hover:text-fg-default",
+              "h-auto justify-start gap-1 rounded-none p-0 text-ui-sm font-medium text-fg-muted hover:bg-transparent",
               col.align === "right" && "justify-end",
               col.key === "sha" && "pl-px",
               col.key === "author" && "justify-end",
@@ -46,7 +48,7 @@ export function CommitTableHeader({
               )}
             </span>
             <span className={cn(isCollapsed && "sr-only")}>{col.label}</span>
-          </button>
+          </Button>
         );
       })}
     </div>

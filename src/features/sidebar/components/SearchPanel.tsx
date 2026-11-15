@@ -12,6 +12,7 @@ import {
   X,
   type Icon,
 } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -205,17 +206,18 @@ export function SearchPanel() {
             className="min-w-0 flex-1 bg-transparent text-ui-sm text-fg-default outline-none placeholder:text-fg-subtle"
           />
           {query.length > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => {
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              className="flex size-5 shrink-0 items-center justify-center rounded text-fg-subtle hover:text-fg-default"
+              className="text-fg-subtle"
               aria-label="Clear search"
             >
               <X size={12} />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -229,16 +231,17 @@ export function SearchPanel() {
               aria-label="Replace with"
               className="min-w-0 flex-1 bg-transparent text-ui-sm text-fg-default outline-none placeholder:text-fg-subtle"
             />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={() => setReplaceAllOpen(true)}
               disabled={replacing || results.length === 0}
               title="Replace all matches"
               aria-label="Replace all matches"
-              className="flex h-5 shrink-0 items-center rounded px-1.5 text-ui-2xs font-medium text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:pointer-events-none disabled:opacity-40"
+              className="h-5 px-1.5"
             >
               Replace all
-            </button>
+            </Button>
           </div>
         )}
 
@@ -390,20 +393,16 @@ function OptionButton({
   icon: Icon;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       onClick={onClick}
       title={title}
       aria-label={title}
       aria-pressed={active}
-      className={cn(
-        "flex size-6 shrink-0 items-center justify-center rounded-md transition-colors",
-        active
-          ? "bg-accent-subtle text-primary"
-          : "text-fg-subtle hover:bg-bg-hover hover:text-fg-default",
-      )}
+      className={cn(active ? "bg-bg-active text-fg-default" : "text-fg-subtle")}
     >
       <Icon size={13} weight={active ? "bold" : "regular"} />
-    </button>
+    </Button>
   );
 }
