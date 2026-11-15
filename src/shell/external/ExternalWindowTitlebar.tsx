@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ArrowLineLeft, CornersIn, CornersOut, Minus, X } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { getIsMac } from "@/shared/lib/shortcuts";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 
@@ -53,28 +54,29 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
       </div>
 
       <div className="flex items-center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          aria-label="Dock into main window"
           onClick={handleDock}
-          className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+          className="h-auto w-12 self-stretch rounded-none text-fg-muted"
           title="Dock into main window"
         >
           <ArrowLineLeft size={16} />
-        </button>
+        </Button>
         {!isMac && (
           <>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onClick={handleMinimize}
-              className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="h-auto w-12 self-stretch rounded-none text-fg-muted"
               aria-label="Minimize"
             >
               <Minus size={18} weight="bold" />
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
               onClick={handleToggleMaximize}
-              className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="h-auto w-12 self-stretch rounded-none text-fg-muted"
               aria-label={isMaximized ? "Restore" : "Maximize"}
             >
               {isMaximized ? (
@@ -82,15 +84,15 @@ export function ExternalWindowTitlebar({ title }: ExternalWindowTitlebarProps) {
               ) : (
                 <CornersOut size={18} weight="bold" />
               )}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
               onClick={handleClose}
-              className="flex self-stretch w-12 items-center justify-center text-fg-muted transition-colors hover:bg-status-error hover:text-fg-inverse"
+              className="h-auto w-12 self-stretch rounded-none text-fg-muted hover:bg-status-error hover:text-fg-inverse"
               aria-label="Close"
             >
               <X size={18} weight="bold" />
-            </button>
+            </Button>
           </>
         )}
       </div>

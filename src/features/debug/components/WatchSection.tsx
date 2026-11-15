@@ -1,4 +1,6 @@
 import { Plus, X } from "@phosphor-icons/react";
+import { Input } from "@/shared/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useDebugStore } from "../store";
 import { SectionLabel, ToolbarButton } from "./DebugPanelParts";
@@ -22,7 +24,7 @@ export function WatchSection({ watchInput, onWatchInputChange }: WatchSectionPro
     <div className="space-y-1.5">
       <SectionLabel title="Watch" count={watches.length} />
       <div className="flex items-center gap-1 px-1">
-        <input
+        <Input
           type="text"
           value={watchInput}
           onChange={(e) => onWatchInputChange(e.target.value)}
@@ -30,7 +32,7 @@ export function WatchSection({ watchInput, onWatchInputChange }: WatchSectionPro
             if (e.key === "Enter") handleAddWatch();
           }}
           placeholder="Add expression"
-          className="h-6 min-w-0 flex-1 rounded-md border border-border bg-bg-surface px-2 text-ui-xs text-fg-default outline-none placeholder:text-fg-subtle focus:border-primary/50"
+          className="h-6 flex-1 px-2 text-ui-xs"
         />
         <ToolbarButton
           icon={Plus}
@@ -55,14 +57,16 @@ export function WatchSection({ watchInput, onWatchInputChange }: WatchSectionPro
             >
               {watch.error ?? watch.value ?? "..."}
             </span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Remove watch"
               onClick={() => removeWatch(watch.id)}
               title="Remove watch"
-              className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-fg-muted opacity-0 transition-opacity hover:text-status-error group-hover:opacity-100"
+              className="size-4 text-fg-muted opacity-0 group-hover:opacity-100 hover:text-status-error"
             >
               <X size={10} />
-            </button>
+            </Button>
           </div>
         ))}
       </div>

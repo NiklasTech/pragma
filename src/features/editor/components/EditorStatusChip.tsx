@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, GitBranch, Warning, XCircle } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { EncodingMenu } from "@/features/editor/encoding/EncodingMenu";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useGitStore } from "@/shared/stores/git";
@@ -65,17 +66,17 @@ export function EditorStatusChip({ panelId }: EditorStatusChipProps) {
     parts.push({
       key: "problems",
       node: (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={() => useLayoutStore.getState().addFloatingPanel("problems")}
           aria-label={`${errors} errors and ${warnings} warnings, open problems`}
-          className="flex items-center gap-1 rounded-[4px] px-0.5 transition-colors hover:text-fg-default"
+          className="h-auto gap-1 rounded-[4px] p-0 text-[length:inherit] font-normal text-inherit hover:bg-transparent hover:text-fg-default px-0.5"
         >
           {errors > 0 && <XCircle size={11} className="text-status-error" aria-hidden="true" />}
           {errors > 0 && errors}
           {warnings > 0 && <Warning size={11} className="text-status-warning" aria-hidden="true" />}
           {warnings > 0 && warnings}
-        </button>
+        </Button>
       ),
     });
   }

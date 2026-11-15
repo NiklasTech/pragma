@@ -109,44 +109,52 @@ export function Terminal({ panelId }: TerminalProps) {
           panelId={panelId}
         />
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Copy Output"
             onClick={dispatchTerminalCopyOutput}
             disabled={panelSessions.length === 0}
-            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            className="text-fg-muted"
             title="Copy Output"
           >
             <Copy size={13} />
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Clear Terminal"
             onClick={dispatchTerminalClear}
             disabled={panelSessions.length === 0}
-            className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+            className="text-fg-muted"
             title="Clear Terminal"
           >
             <Broom size={13} />
-          </button>
+          </Button>
           {panelId && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Split Terminal Right"
               onClick={handleSplit}
-              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="text-fg-muted"
               title="Split Terminal Right"
             >
               <SplitHorizontal size={13} />
-            </button>
+            </Button>
           )}
           <NewTerminalButton onCreate={handleNewSession} />
           {panelId && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Close Panel"
               onClick={handleClosePanel}
-              className="flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-status-error"
+              className="text-fg-muted hover:text-status-error"
               title="Close Panel"
             >
               <X size={13} weight="bold" />
-            </button>
+            </Button>
           )}
         </div>
       </div>

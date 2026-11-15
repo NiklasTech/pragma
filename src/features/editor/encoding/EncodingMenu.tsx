@@ -9,6 +9,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { Button } from "@/shared/components/ui/button";
 import type { FileTab } from "@/shared/stores/editor";
 
 import { reopenWithEncoding, saveWithEncoding } from "./encodingActions";
@@ -20,10 +21,10 @@ export function EncodingMenu({ tab }: { tab: FileTab }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             title="Change file encoding"
-            className="rounded-sm transition-colors hover:text-fg-default"
+            className="h-auto gap-1 rounded-[4px] p-0 text-[length:inherit] font-normal text-inherit hover:bg-transparent hover:text-fg-default"
           />
         }
       >

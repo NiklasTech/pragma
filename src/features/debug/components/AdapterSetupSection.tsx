@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DownloadSimple, Spinner } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { cn } from "@/shared/lib/utils";
 import { dapListAdapters, listenDapInstallProgress, type DapAdapterInfo } from "../client";
@@ -79,12 +80,13 @@ export function AdapterSetupSection() {
                 </span>
               </div>
               {!adapter.available && (
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="xs"
                   disabled={installingId !== null}
                   onClick={() => void handleInstall(adapter)}
                   title={adapter.install_hint ?? "Install adapter"}
-                  className="flex h-5 shrink-0 items-center gap-1 rounded-md border border-border px-1.5 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40"
+                  className="h-5 gap-1 px-1.5 font-normal"
                 >
                   {installingId === adapter.id ? (
                     <Spinner size={10} className="animate-spin" />
@@ -92,7 +94,7 @@ export function AdapterSetupSection() {
                     <DownloadSimple size={10} />
                   )}
                   Install
-                </button>
+                </Button>
               )}
             </div>
             {progress[adapter.id] && (

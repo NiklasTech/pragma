@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { PencilSimple, X } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { detectLanguage } from "@/shared/lib/language";
 import { cn } from "@/shared/lib/utils";
 import { useEditorStore } from "@/shared/stores/editor";
@@ -59,10 +60,11 @@ export function BreakpointsSection({ breakpointCount }: { breakpointCount: numbe
                 key={`${file}:${line}`}
                 className="group flex items-center justify-between gap-2 rounded px-2 py-0.5 hover:bg-bg-hover"
               >
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => void openFileAtLine(file, line)}
-                  className="flex min-w-0 items-center gap-2 text-left"
+                  className="min-w-0 justify-start gap-2 px-0 text-left font-normal text-fg-default hover:bg-transparent"
                   title={file}
                 >
                   <span
@@ -75,24 +77,28 @@ export function BreakpointsSection({ breakpointCount }: { breakpointCount: numbe
                     {file.split(/[\\/]/).pop() ?? file}:{line}
                   </span>
                   {detail && <span className="truncate text-ui-xs text-fg-muted">{detail}</span>}
-                </button>
+                </Button>
                 <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Edit breakpoint"
                     onClick={() => openEditor({ file, line })}
                     title="Edit breakpoint"
-                    className="flex h-4 w-4 items-center justify-center rounded text-fg-muted hover:text-fg-default"
+                    className="size-4 text-fg-muted"
                   >
                     <PencilSimple size={10} />
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Remove breakpoint"
                     onClick={() => toggleBreakpoint(file, line)}
                     title="Remove breakpoint"
-                    className="flex h-4 w-4 items-center justify-center rounded text-fg-muted hover:text-status-error"
+                    className="size-4 text-fg-muted hover:text-status-error"
                   >
                     <X size={10} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             );

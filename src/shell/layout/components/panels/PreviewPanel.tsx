@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { ComponentProps } from "react";
 import { Streamdown } from "streamdown";
 import { File, FileText, Copy, Check, ArrowsClockwise } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { MarkdownCode } from "@/features/ai/components/MarkdownCode";
 import { useEditorStore } from "@/shared/stores/editor";
 
@@ -75,32 +76,30 @@ export default function PreviewPanel() {
         </div>
         <div className="flex items-center gap-2">
           {html && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={() => setReloadKey((k) => k + 1)}
-              className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="gap-1 px-2"
             >
               <ArrowsClockwise size={14} />
               Reload
-            </button>
+            </Button>
           )}
           {!markdown && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={() => setShowRaw((v) => !v)}
-              className="rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="px-2"
             >
               {showRaw ? "Preview" : "Raw"}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="flex items-center gap-1 rounded px-2 py-1 text-ui-xs text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
-          >
+          <Button variant="ghost" size="xs" onClick={handleCopy} className="gap-1 px-2">
             {copied ? <Check size={14} className="text-status-success" /> : <Copy size={14} />}
             {copied ? "Copied" : "Copy"}
-          </button>
+          </Button>
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-4">

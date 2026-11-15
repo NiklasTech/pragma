@@ -6,6 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import type { Theme } from "@/theme/types";
 
@@ -47,11 +48,11 @@ export function ThemeCard({
         active ? "border-primary" : "border-border/60 hover:border-border",
       )}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={onSelect}
         aria-pressed={active}
-        className="flex flex-col gap-2 p-2 text-left"
+        className="h-auto flex-col items-stretch gap-2 p-2 text-left font-normal whitespace-normal text-fg-default hover:bg-transparent"
       >
         <span
           className="flex h-14 w-full items-center justify-center gap-1.5 rounded-md border border-border/30"
@@ -75,17 +76,18 @@ export function ThemeCard({
           )}
           {active && <Check size={14} weight="bold" className="shrink-0 text-primary" />}
         </span>
-      </button>
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               aria-label={`Actions for ${theme.metadata.name}`}
-              className="absolute right-1.5 bottom-1.5 flex size-5 items-center justify-center rounded text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default"
+              className="absolute right-1.5 bottom-1.5 text-fg-muted"
             >
               <DotsThree size={14} weight="bold" />
-            </button>
+            </Button>
           }
         />
         <DropdownMenuContent align="end" className="w-40">

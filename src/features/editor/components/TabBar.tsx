@@ -149,17 +149,19 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                     {tab.kind === "file" && tab.isModified && (
                       <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover/tab:hidden" />
                     )}
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={handleCloseTab(tab.id)}
                       className={cn(
-                        "shrink-0 rounded-sm p-0.5 text-fg-subtle transition-opacity hover:bg-bg-hover hover:text-fg-default",
+                        "size-4 text-fg-subtle",
                         isActive ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100",
                         tab.kind === "file" && tab.isModified && "hidden group-hover/tab:block",
                       )}
                       aria-label={`Close ${tab.name}`}
                     >
                       <X size={12} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               />

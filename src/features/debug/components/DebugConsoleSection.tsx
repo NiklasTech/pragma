@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Trash } from "@phosphor-icons/react";
+import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
 import { useDebugStore } from "../store";
 import { navigateConsoleHistory, type ConsoleEntryKind } from "../debugConsole";
@@ -71,7 +72,7 @@ export function DebugConsoleSection() {
           ))
         )}
       </div>
-      <input
+      <Input
         type="text"
         value={input}
         onChange={(e) => {
@@ -94,7 +95,7 @@ export function DebugConsoleSection() {
         placeholder={
           isRunning ? "Evaluate in the selected frame" : "Start a debug session to evaluate"
         }
-        className="h-6 w-full rounded-md border border-border bg-bg-surface px-2 font-mono text-ui-xs text-fg-default outline-none placeholder:text-fg-subtle focus:border-primary/50 disabled:opacity-40"
+        className="h-6 px-2 font-mono text-ui-xs"
       />
     </div>
   );

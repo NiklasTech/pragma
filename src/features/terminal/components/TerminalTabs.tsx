@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Command, Cube, Play, Terminal, TerminalWindow, X } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
+import { Input } from "@/shared/components/ui/input";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
@@ -74,7 +76,7 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
             {isRunning && <span className="size-1.5 shrink-0 rounded-full bg-status-success" />}
             <SessionIcon size={13} className="shrink-0 text-fg-muted" />
             {editingId === session.id ? (
-              <input
+              <Input
                 autoFocus
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -84,7 +86,7 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
                   if (e.key === "Escape") setEditingId(null);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-24 rounded-sm bg-bg-input px-1 py-0 text-ui-sm text-fg-default outline-none"
+                className="h-5 w-24 rounded-[5px] px-1 py-0"
               />
             ) : (
               <span className="max-w-[140px] truncate" title="Double-click to rename">
@@ -100,17 +102,18 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
                 <span className="truncate">{getWorkspaceName(repository)}</span>
               </span>
             )}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={(e) => {
                 e.stopPropagation();
                 void killSession(session.id);
               }}
-              className="ml-0.5 rounded-sm p-0.5 text-fg-muted opacity-0 transition-opacity hover:text-fg-default group-hover:opacity-100"
+              className="ml-0.5 size-4 text-fg-muted opacity-0 group-hover:opacity-100"
               aria-label={`Close ${session.name}`}
             >
               <X size={12} />
-            </button>
+            </Button>
           </div>
         );
       })}

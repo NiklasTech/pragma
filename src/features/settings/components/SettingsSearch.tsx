@@ -1,5 +1,6 @@
 import * as React from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { CATEGORIES } from "./settings-categories";
 import { SEARCH_ITEMS, type SearchItem } from "./settings-search-items";
@@ -38,17 +39,17 @@ export function SettingsSearch({ query, onQueryChange, onSelectResult }: Setting
         <div className="absolute top-full right-0 left-0 z-50 mx-3 -mt-1 rounded-lg border border-border bg-bg-elevated/95 p-1 shadow-[var(--shadow-md)] backdrop-blur-xl">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
-              <button
+              <Button
+                variant="ghost"
                 key={item.id}
-                type="button"
                 onClick={() => onSelectResult(item)}
-                className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                className="w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left h-auto whitespace-normal font-normal"
               >
                 <span className="text-ui-sm text-fg-default">{item.label}</span>
                 <span className="text-ui-xs text-fg-subtle">
                   {CATEGORIES.find((c) => c.id === item.category)?.label}
                 </span>
-              </button>
+              </Button>
             ))
           ) : (
             <div className="px-2 py-1.5 text-ui-xs text-fg-subtle">No settings found.</div>

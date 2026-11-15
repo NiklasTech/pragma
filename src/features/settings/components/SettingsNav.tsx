@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { CATEGORIES, CATEGORY_GROUPS, type Category } from "./settings-categories";
@@ -18,16 +19,14 @@ export function SettingsNav({ activeCategory, onSelectCategory }: SettingsNavPro
               const Icon = category.icon;
               const active = activeCategory === category.id;
               return (
-                <button
+                <Button
+                  variant="ghost"
                   key={category.id}
-                  type="button"
                   onClick={() => onSelectCategory(category.id)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-left text-ui-sm transition-colors",
-                    active
-                      ? "bg-bg-hover font-medium text-fg-default"
-                      : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+                    "h-8 justify-start gap-2.5 px-2.5 text-left font-normal",
+                    active && "bg-bg-active font-medium text-fg-default",
                   )}
                 >
                   <Icon
@@ -36,7 +35,7 @@ export function SettingsNav({ activeCategory, onSelectCategory }: SettingsNavPro
                     className={active ? "text-primary" : undefined}
                   />
                   {category.label}
-                </button>
+                </Button>
               );
             })}
           </div>

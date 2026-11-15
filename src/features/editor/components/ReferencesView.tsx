@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { FileText, Info } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { useEditorStore, type ReferenceLocation, type ReferencesTab } from "@/shared/stores/editor";
 import { navigateToLocation } from "@/features/editor/lsp/definition";
 
@@ -55,16 +56,16 @@ export function ReferencesView({ tab }: { tab: ReferencesTab }) {
                   <li
                     key={`${location.range.start.line}:${location.range.start.character}:${index}`}
                   >
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
                       onClick={() => handleClick(location)}
-                      className="flex w-full items-center gap-3 px-3 py-1.5 text-left transition-colors hover:bg-bg-hover"
+                      className="w-full justify-start gap-3 rounded-none px-3 py-1.5 text-left text-fg-default h-auto whitespace-normal font-normal"
                     >
                       <span className="w-16 shrink-0 text-ui-2xs text-fg-subtle">
                         {location.range.start.line + 1}:{location.range.start.character + 1}
                       </span>
                       <LocationLine location={location} />
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

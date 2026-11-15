@@ -197,13 +197,13 @@ export function SearchPanel() {
       <div className="flex shrink-0 flex-col gap-1.5 px-2.5 pt-1.5 pb-2">
         <div className={FIELD_CLASS}>
           <MagnifyingGlass size={14} className="shrink-0 text-fg-subtle" />
-          <input
+          <Input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search in files"
             aria-label="Search in workspace"
-            className="min-w-0 flex-1 bg-transparent text-ui-sm text-fg-default outline-none placeholder:text-fg-subtle"
+            className="h-auto min-w-0 flex-1 rounded-none bg-transparent p-0 ring-0 hover:ring-0 focus-visible:ring-0"
           />
           {query.length > 0 && (
             <Button
@@ -224,12 +224,12 @@ export function SearchPanel() {
         {showReplace && (
           <div className={FIELD_CLASS}>
             <ArrowsLeftRight size={14} className="shrink-0 text-fg-subtle" />
-            <input
+            <Input
               value={replacement}
               onChange={(e) => setReplacement(e.target.value)}
               placeholder="Replace with"
               aria-label="Replace with"
-              className="min-w-0 flex-1 bg-transparent text-ui-sm text-fg-default outline-none placeholder:text-fg-subtle"
+              className="h-auto min-w-0 flex-1 rounded-none bg-transparent p-0 ring-0 hover:ring-0 focus-visible:ring-0"
             />
             <Button
               variant="ghost"
@@ -379,7 +379,7 @@ export function SearchPanel() {
 }
 
 const FIELD_CLASS =
-  "flex h-8 min-w-0 items-center gap-1.5 rounded-lg border border-border bg-bg-input pr-1 pl-2.5 transition-colors focus-within:border-primary/50 focus-within:shadow-[0_0_0_3px_var(--color-accent-subtle)]";
+  "flex h-8 min-w-0 items-center gap-1.5 rounded-control bg-field pr-1 pl-2.5 ring-1 ring-transparent ring-inset transition-[box-shadow] duration-(--motion-fast) hover:ring-border focus-within:ring-2 focus-within:ring-border-focus";
 
 function OptionButton({
   active,

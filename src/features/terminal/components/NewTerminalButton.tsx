@@ -8,14 +8,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { Button } from "@/shared/components/ui/button";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 
 import { terminalRepositoryChoices } from "../terminalRepository";
-
-const BUTTON_CLASS =
-  "flex size-6 shrink-0 items-center justify-center rounded-sm text-fg-muted transition-colors hover:bg-bg-hover hover:text-fg-default disabled:opacity-40";
 
 /// Starts a terminal in the active repository, or asks for the repository once several are open.
 export function NewTerminalButton({ onCreate }: { onCreate: (rootPath: string | null) => void }) {
@@ -25,14 +23,16 @@ export function NewTerminalButton({ onCreate }: { onCreate: (rootPath: string | 
 
   if (choices.length < 2) {
     return (
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="New Session"
         onClick={() => onCreate(activeRoot)}
-        className={BUTTON_CLASS}
+        className="text-fg-muted"
         title="New Session"
       >
         <Plus size={13} weight="bold" />
-      </button>
+      </Button>
     );
   }
 
@@ -40,9 +40,16 @@ export function NewTerminalButton({ onCreate }: { onCreate: (rootPath: string | 
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button type="button" className={BUTTON_CLASS} title="New Session">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="New Session"
+            title="New Session"
+            type="button"
+            className="text-fg-muted"
+          >
             <Plus size={13} weight="bold" />
-          </button>
+          </Button>
         }
       />
       <DropdownMenuContent align="end" className="w-56">

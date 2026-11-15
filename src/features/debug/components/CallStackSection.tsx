@@ -1,3 +1,4 @@
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useDebugStore } from "../store";
 import { SectionLabel } from "./DebugPanelParts";
@@ -17,20 +18,21 @@ export function CallStackSection({ isRunning }: { isRunning: boolean }) {
           </div>
         ) : (
           frames.map((frame) => (
-            <button
+            <Button
+              variant="ghost"
+              size="xs"
               key={frame.id}
-              type="button"
               onClick={() => void selectFrame(frame.id)}
               className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left",
-                frame.id === selectedFrameId ? "bg-bg-active" : "hover:bg-bg-hover",
+                "h-6 w-full justify-between gap-2 px-2 text-left font-normal",
+                frame.id === selectedFrameId && "bg-bg-active",
               )}
             >
               <span className="truncate text-ui-xs text-fg-default">{frame.name}</span>
               <span className="shrink-0 text-ui-xs text-fg-muted">
                 {frame.source?.name ?? "unknown"}:{frame.line}
               </span>
-            </button>
+            </Button>
           ))
         )}
       </div>
