@@ -10,16 +10,21 @@ interface WorktreeCreateResponse {
   status: "ready" | "error";
 }
 
-/** Creates a worktree from `baseBranch` (default: the checkout's HEAD) and stores it as a work environment. */
+/**
+ * Creates a worktree from `baseBranch` (default: the checkout's HEAD) and stores it as a work environment.
+ * A `label`, such as the task, names the branch: `pragma/<slug>-<id>`.
+ */
 export async function createWorktreeEnvironment(
   rootPath: string,
   baseBranch?: string,
+  label?: string,
 ): Promise<WorkEnvironment> {
   const id = crypto.randomUUID();
   const created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
     repoPath: rootPath,
     environmentId: id,
     baseBranch: baseBranch ?? null,
+    label: label ?? null,
   });
   const environment: WorkEnvironment = {
     id,

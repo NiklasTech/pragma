@@ -35,6 +35,7 @@ describe("createWorktreeEnvironment", () => {
       repoPath: "/repo",
       environmentId: environment.id,
       baseBranch: null,
+      label: null,
     });
     expect(environment.baseBranch).toBe("main");
   });
@@ -56,5 +57,23 @@ describe("createWorktreeEnvironment", () => {
     );
     expect(environment.baseBranch).toBe("pragma/aaaaaaaa");
     expect(mocks.saveEnvironment).toHaveBeenCalledWith("/repo", environment);
+  });
+
+  it("passes a task label for the branch name", async () => {
+    mocks.invoke.mockResolvedValue({
+      branch: "pragma/fix-login-cccccccc",
+      base_branch: "main",
+      path: "/data/worktrees/z",
+      setup_log: "",
+      status: "ready",
+    });
+
+    const environment = await createWorktreeEnvironment("/repo", undefined, "Fix login");
+
+    expect(mocks.invoke).toHaveBeenCalledWith(
+      "git_session_worktree_create",
+      expect.objectContaining({ baseBranch: null, label: "Fix login" }),
+    );
+    expect(environment.branch).toBe("pragma/fix-login-cccccccc");
   });
 });

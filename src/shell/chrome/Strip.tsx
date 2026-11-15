@@ -26,6 +26,7 @@ import { ExtensionStatusItems } from "@/features/extensions/components/Extension
 import { cn } from "@/shared/lib/utils";
 
 import { GoToButton } from "./GoToButton";
+import { NewTaskButton } from "./NewTaskButton";
 import { SpaceTabs } from "./SpaceTabs";
 import { StatusPill } from "./StatusPill";
 import { SpaceButton } from "./SpaceButton";
@@ -82,6 +83,7 @@ export function Strip() {
         <ExtensionStatusItems alignment="right" />
         <StatusPill />
         <GoToButton />
+        <NewTaskButton />
         <RunConfigWidget runningOnly={isMac} />
 
         {!isMac && inEditor && sidebar.position !== "hidden" && (

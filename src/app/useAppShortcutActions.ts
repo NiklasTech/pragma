@@ -168,6 +168,9 @@ export function useAppShortcutActions(): ShortcutActions {
       "file.goToFile": () => {
         useOverlayStore.getState().toggle("goTo");
       },
+      "session.quickStart": () => {
+        useOverlayStore.getState().toggle("quickStart");
+      },
       "editor.formatDocument": () => {
         dispatchEditorFormatDocument();
       },
