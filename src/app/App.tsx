@@ -48,6 +48,7 @@ import { useThemePaletteCommand } from "./useThemePaletteCommand";
 import { useRunPaletteCommands } from "./useRunPaletteCommands";
 import { useRecentFolderPaletteCommand } from "./useRecentFolderPaletteCommand";
 import { useRepositoryPaletteCommands } from "./useRepositoryPaletteCommands";
+import { AttentionCard } from "@/features/ai/notifications/AttentionCard";
 import { CommandPalette } from "./CommandPalette";
 import { OverlayHost } from "./OverlayHost";
 import { RenameDialog } from "@/features/editor/components/RenameDialog";
@@ -131,6 +132,7 @@ export default function App() {
         <FileHistoryDialog />
         <UpdateDialog />
         <CloseRepositoryDialog />
+        <AttentionCard />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>
     </ThemeProvider>

@@ -7,7 +7,13 @@ import {
   type ShortcutBinding,
   type ShortcutMap,
 } from "@/shared/lib/shortcuts";
-import type { AISettings, McpSettings, SettingsActions, SettingsState } from "./types";
+import type {
+  AISettings,
+  McpSettings,
+  NotificationSettings,
+  SettingsActions,
+  SettingsState,
+} from "./types";
 
 export function mergePartial<T extends object>(defaults: T, partial?: Partial<T> | null): T {
   if (!partial || typeof partial !== "object") {
@@ -138,8 +144,27 @@ const REMOVED_KEYS = {
   workspace: ["recentFiles"],
   ai: ["terminalSuggestions"],
   agent: ["enabled"],
-  notifications: ["statusSummary"],
+  notifications: ["statusSummary", "approvalNeeded", "badge", "inAppPopups", "playSound"],
 } as const;
+
+/** Carries the old popup and sound switches over to the card and sound of the new three ways. */
+export function migrateNotificationSettings(
+  partial: unknown,
+): Partial<NotificationSettings> | undefined {
+  if (!partial || typeof partial !== "object") return undefined;
+  const legacy = partial as Partial<NotificationSettings> & {
+    inAppPopups?: unknown;
+    playSound?: unknown;
+  };
+  const migrated: Partial<NotificationSettings> = { ...legacy };
+  if (legacy.card === undefined && typeof legacy.inAppPopups === "boolean") {
+    migrated.card = legacy.inAppPopups;
+  }
+  if (legacy.sound === undefined && typeof legacy.playSound === "boolean") {
+    migrated.sound = legacy.playSound;
+  }
+  return migrated;
+}
 
 export function withoutRemovedKeys<T extends object>(
   group: keyof typeof REMOVED_KEYS,
@@ -186,7 +211,7 @@ export function mergeWithDefaults(
     agent: withoutRemovedKeys("agent", mergePartial(defaults.agent, partial.agent)),
     notifications: withoutRemovedKeys(
       "notifications",
-      mergePartial(defaults.notifications, partial.notifications),
+      mergePartial(defaults.notifications, migrateNotificationSettings(partial.notifications)),
     ),
     appearance: mergePartial(defaults.appearance, partial.appearance),
     repositoryColors: mergePartial(defaults.repositoryColors, partial.repositoryColors),

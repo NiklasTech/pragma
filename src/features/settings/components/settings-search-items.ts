@@ -15,7 +15,9 @@ const PAGE_ITEMS: SearchItem[] = [
   {
     id: "agent-notifications",
     label: "Notifications",
-    keywords: "notifications notify badge dock taskbar session finished failed approval status",
+    target: "When an agent needs you",
+    keywords:
+      "notifications notify card system sound badge dock session finished failed approval needs you",
     category: "agents",
   },
   {

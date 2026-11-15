@@ -1,20 +1,22 @@
 import type { UiMode } from "@/shell/mode";
 
-export type AttentionDelivery = "none" | "popup" | "system";
+export type AttentionDelivery = "none" | "card" | "system";
 
 export interface DeliveryInput {
+  /** Whether this kind of event notifies at all; a waiting agent always does. */
   enabled: boolean;
   windowFocused: boolean;
   sessionInView: boolean;
-  inAppPopups: boolean;
+  card: boolean;
+  system: boolean;
 }
 
-/// A system notification while Pragma is in the background, a popup while the session is out of view.
+/// A system notification while Pragma is in the background, a card while the session is out of view.
 export function resolveAttentionDelivery(input: DeliveryInput): AttentionDelivery {
   if (!input.enabled) return "none";
-  if (!input.windowFocused) return "system";
-  if (input.sessionInView || !input.inAppPopups) return "none";
-  return "popup";
+  if (!input.windowFocused) return input.system ? "system" : "none";
+  if (input.sessionInView || !input.card) return "none";
+  return "card";
 }
 
 export interface ViewState {

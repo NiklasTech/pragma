@@ -3,7 +3,12 @@ import { persist } from "zustand/middleware";
 import { crossWindowSync } from "./sync/crossWindowSync";
 import { getDefaultShortcuts, getIsMac } from "@/shared/lib/shortcuts";
 import { defaultSettings } from "./settings/defaults";
-import { mergePartial, mergeWithDefaults, withoutRemovedKeys } from "./settings/migrations";
+import {
+  mergePartial,
+  mergeWithDefaults,
+  migrateNotificationSettings,
+  withoutRemovedKeys,
+} from "./settings/migrations";
 import type { SettingsActions, SettingsState } from "./settings/types";
 
 export type {
@@ -197,7 +202,10 @@ const settingsStoreCreator: StateCreator<SettingsState & SettingsActions> = cros
       agent: withoutRemovedKeys("agent", mergePartial(defaultSettings.agent, partial.agent)),
       notifications: withoutRemovedKeys(
         "notifications",
-        mergePartial(defaultSettings.notifications, partial.notifications),
+        mergePartial(
+          defaultSettings.notifications,
+          migrateNotificationSettings(partial.notifications),
+        ),
       ),
       appearance: mergePartial(defaultSettings.appearance, partial.appearance),
       repositoryColors: mergePartial(defaultSettings.repositoryColors, partial.repositoryColors),

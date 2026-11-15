@@ -130,12 +130,11 @@ export const defaultSettings: SettingsState = {
     maxSessionDepth: 3,
   },
   notifications: {
+    card: true,
+    system: true,
+    sound: false,
     sessionFinished: true,
     sessionFailed: true,
-    approvalNeeded: true,
-    badge: true,
-    playSound: true,
-    inAppPopups: true,
   },
   appearance: {
     density: "default",
