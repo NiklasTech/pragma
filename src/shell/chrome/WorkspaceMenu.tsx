@@ -10,7 +10,6 @@ import {
 } from "@phosphor-icons/react";
 import { open } from "@tauri-apps/plugin-dialog";
 
-import { PragmaMark } from "@/shared/components/PragmaMark";
 import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
@@ -29,13 +28,13 @@ import { useCloseRepository } from "@/shared/hooks/useOpenRepositories";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
-import { useGitStore } from "@/shared/stores/git";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
 import { RepositoryColorMenu } from "./RepositoryColorMenu";
 
+/// Folders, files, repositories and favorites; sits at the bottom of the spaces overlay.
 export function WorkspaceMenu() {
   const openFile = useOpenFile();
   const { selectRoot } = useFileExplorer();
@@ -47,8 +46,6 @@ export function WorkspaceMenu() {
   const addFavoriteFolder = useSettingsStore((s) => s.addFavoriteFolder);
   const removeFavoriteFolder = useSettingsStore((s) => s.removeFavoriteFolder);
   const rootPath = useFileExplorerStore((s) => s.rootPath);
-  const workspaceName = getWorkspaceName(rootPath);
-  const branch = useGitStore((s) => s.snapshot?.repo.branch ?? null);
 
   const handleAddFavorite = async () => {
     const path = await open({ multiple: false, directory: true });
@@ -61,29 +58,14 @@ export function WorkspaceMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="ghost"
-            aria-label={`Switch space, current: ${workspaceName || "none"}`}
-            className="max-w-[260px] min-w-0 justify-start pr-2 pl-1.5 font-semibold text-fg-default"
-            title={branch ? `${rootPath} (${branch})` : (rootPath ?? "Open folder or file")}
-          >
-            {workspaceName ? (
-              <span
-                aria-hidden="true"
-                className="flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-bg-active text-[11px] text-fg-muted"
-              >
-                {workspaceName.charAt(0).toUpperCase()}
-              </span>
-            ) : (
-              <PragmaMark variant="compact" className="size-4 shrink-0 text-fg-default" />
-            )}
-            <RepositoryColorDot path={activeRepository} />
-            <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
-            <CaretDown size={12} className="shrink-0 text-fg-subtle" />
+          <Button variant="ghost" className="w-full justify-start gap-2 px-2.5 font-normal">
+            <FolderOpen size={14} />
+            Folders and files
+            <CaretDown size={12} className="ml-auto shrink-0 text-fg-subtle" />
           </Button>
         }
       />
-      <DropdownMenuContent align="start" className="min-w-[240px]">
+      <DropdownMenuContent align="start" side="top" className="min-w-[240px]">
         <DropdownMenuItem onClick={() => void selectRoot()}>
           <FolderOpen size={14} />
           Open Folder

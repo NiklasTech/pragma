@@ -28,7 +28,7 @@ import { cn } from "@/shared/lib/utils";
 import { GoToButton } from "./GoToButton";
 import { SpaceTabs } from "./SpaceTabs";
 import { StatusPill } from "./StatusPill";
-import { WorkspaceMenu } from "./WorkspaceMenu";
+import { SpaceButton } from "./SpaceButton";
 
 /// The only permanent chrome: the space, its tabs, the agent status and Go to. macOS keeps the other
 /// controls in the native menu bar; Windows and Linux show them here with the window controls.
@@ -72,7 +72,7 @@ export function Strip() {
     >
       <div data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-1">
         {isMac && <div data-tauri-drag-region className="w-[68px] shrink-0 self-stretch" />}
-        <WorkspaceMenu />
+        <SpaceButton />
         <span aria-hidden="true" className="mx-1 h-4.5 w-px shrink-0 bg-border" />
         <SpaceTabs />
       </div>
