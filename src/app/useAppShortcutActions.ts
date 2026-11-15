@@ -171,6 +171,9 @@ export function useAppShortcutActions(): ShortcutActions {
       "session.quickStart": () => {
         useOverlayStore.getState().toggle("quickStart");
       },
+      "view.gitHistory": () => {
+        useOverlayStore.getState().toggle("git");
+      },
       "editor.formatDocument": () => {
         dispatchEditorFormatDocument();
       },

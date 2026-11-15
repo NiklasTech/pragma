@@ -32,7 +32,7 @@ pub use compose::compose_file_changed_between_branches;
 pub use conflict::{conflict_sides, resolve_conflict};
 pub use diff::{diff, diff_content, index_content};
 pub use hunk::{apply_lines, LineAction, LineSelection};
-pub use log::{file_history, log};
+pub use log::{branch_log, file_history, log};
 pub use merge::{merge_branch, rebase_onto};
 pub use rebase::{
     abort_operation, continue_operation, operation_state, rebase_branch, GitOperationKind,

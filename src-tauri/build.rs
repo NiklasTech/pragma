@@ -115,6 +115,7 @@ const COMMANDS: &[&str] = &[
     "git_amend_commit",
     "git_apply_lines",
     "git_blame",
+    "git_branch_log",
     "git_branches",
     "git_checkout_branch",
     "git_checkout_commit",

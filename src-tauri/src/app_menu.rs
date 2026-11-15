@@ -60,6 +60,7 @@ const MENU_ACTION_IDS: &[&str] = &[
     "view.splitEditor",
     "view.switchToAgents",
     "view.switchToEditor",
+    "view.gitHistory",
     "view.toggleUiMode",
     "view.newTerminalTab",
     "view.openSettings",
@@ -465,6 +466,12 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
             &mut shortcut_items,
             "file.goToFile",
             "Go to File",
+        )?)
+        .item(&shortcut_item(
+            app,
+            &mut shortcut_items,
+            "view.gitHistory",
+            "Git History",
         )?)
         .item(&MenuItem::with_id(
             app,

@@ -117,6 +117,7 @@ permissions = [
   "allow-git-amend-commit",
   "allow-git-apply-lines",
   "allow-git-blame",
+  "allow-git-branch-log",
   "allow-git-branches",
   "allow-git-checkout-branch",
   "allow-git-checkout-commit",
