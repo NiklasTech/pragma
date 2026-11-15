@@ -47,7 +47,8 @@ interface AgentsPanesState {
   assignSession: (rootPath: string, leafId: string, sessionId: string) => void;
   focusLeaf: (rootPath: string, leafId: string) => void;
   replaceLayout: (rootPath: string, sessionIds: string[]) => void;
-  closeLeaf: (rootPath: string, leafId: string) => void;
+  /** Resolves once the pane is gone, after its exit animation. */
+  closeLeaf: (rootPath: string, leafId: string) => Promise<void>;
   addPane: (rootPath: string, leaf: Leaf, focus: boolean) => void;
   swapPanes: (rootPath: string, sourceLeafId: string, targetLeafId: string) => void;
   /** Opens an empty pane beside a pane: "horizontal" to its right, "vertical" below it. */
@@ -205,28 +206,31 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         ),
 
       closeLeaf: (rootPath, leafId) => {
-        animatePaneExit(leafId, () =>
-          set((state) => {
-            const entry = getEntry(state.trees, rootPath);
-            const leaves = collectLeaves(entry.root);
-            const index = leaves.findIndex((leaf) => leaf.id === leafId);
-            if (index === -1) return {};
+        useBrowserHistoryStore.getState().drop(leafId);
+        return new Promise<void>((resolve) =>
+          animatePaneExit(leafId, () => {
+            set((state) => {
+              const entry = getEntry(state.trees, rootPath);
+              const leaves = collectLeaves(entry.root);
+              const index = leaves.findIndex((leaf) => leaf.id === leafId);
+              if (index === -1) return {};
 
-            const remaining = leaves.filter((leaf) => leaf.id !== leafId);
-            const focusedLeafId =
-              entry.focusedLeafId === leafId
-                ? (remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
-                : entry.focusedLeafId;
-            return {
-              trees: setEntry(state.trees, rootPath, {
-                ...entry,
-                root: withoutLeaves(entry, [leafId]),
-                focusedLeafId,
-              }),
-            };
+              const remaining = leaves.filter((leaf) => leaf.id !== leafId);
+              const focusedLeafId =
+                entry.focusedLeafId === leafId
+                  ? (remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
+                  : entry.focusedLeafId;
+              return {
+                trees: setEntry(state.trees, rootPath, {
+                  ...entry,
+                  root: withoutLeaves(entry, [leafId]),
+                  focusedLeafId,
+                }),
+              };
+            });
+            resolve();
           }),
         );
-        useBrowserHistoryStore.getState().drop(leafId);
       },
 
       addPane: (rootPath, leaf, focus) =>

@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { useAIStore, type WorkEnvironment } from "@/shared/stores/ai";
 
+import { WorktreeError } from "./worktreeErrors";
+
 interface WorktreeCreateResponse {
   branch: string;
   base_branch: string | null;
@@ -20,12 +22,17 @@ export async function createWorktreeEnvironment(
   label?: string,
 ): Promise<WorkEnvironment> {
   const id = crypto.randomUUID();
-  const created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
-    repoPath: rootPath,
-    environmentId: id,
-    baseBranch: baseBranch ?? null,
-    label: label ?? null,
-  });
+  let created: WorktreeCreateResponse;
+  try {
+    created = await invoke<WorktreeCreateResponse>("git_session_worktree_create", {
+      repoPath: rootPath,
+      environmentId: id,
+      baseBranch: baseBranch ?? null,
+      label: label ?? null,
+    });
+  } catch (error) {
+    throw new WorktreeError(error instanceof Error ? error.message : String(error));
+  }
   const environment: WorkEnvironment = {
     id,
     rootPath,

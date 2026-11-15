@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { FolderSimple, GitBranch, TerminalWindow } from "@phosphor-icons/react";
+import { CaretDown, FolderSimple, GitBranch, TerminalWindow } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { AgentMark } from "@/shared/components/ui/agent-mark";
 import { Button } from "@/shared/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import { Kbd } from "@/shared/components/ui/kbd";
 import {
   OverlaySheet,
@@ -16,6 +22,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import type { GitBranch as GitBranchInfo } from "@/shared/stores/git";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useOverlayOpen, useOverlayStore } from "@/shared/stores/overlays";
@@ -34,6 +41,7 @@ import {
   withAgent,
   type QuickAgent,
 } from "./quickStart";
+import { WorktreeError } from "../worktree/worktreeErrors";
 import { startQuickTask, type QuickWhere } from "./startQuickTask";
 
 const CHOICE =
@@ -70,6 +78,8 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const [layoutId, setLayoutId] = useState(QUICK_LAYOUTS[0].id);
   const [isRepo, setIsRepo] = useState<boolean | null>(null);
   const [where, setWhere] = useState<QuickWhere>("worktree");
+  const [branches, setBranches] = useState<GitBranchInfo[]>([]);
+  const [baseBranch, setBaseBranch] = useState<string | null>(null);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
@@ -81,6 +91,9 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
     invoke<{ is_repo: boolean }>("git_session_repo_check", { repoPath: rootPath })
       .then((result) => live && setIsRepo(result.is_repo))
       .catch(() => live && setIsRepo(false));
+    invoke<{ branches: GitBranchInfo[] }>("git_branches", { repoPath: rootPath })
+      .then((result) => live && setBranches(result.branches))
+      .catch(() => live && setBranches([]));
     return () => {
       live = false;
     };
@@ -103,6 +116,8 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   ];
   const layout = layouts.find((item) => item.id === layoutId) ?? layouts[0];
   const inWorktree = isRepo === true && where === "worktree";
+  const headBranch = branches.find((branch) => branch.is_head)?.name ?? null;
+  const fromBranch = baseBranch ?? headBranch;
   const slug = taskSlug(task);
   const tabTitle = taskTabTitle(task);
   const isMac = getIsMac();
@@ -114,7 +129,12 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
       task,
       layout: layout.node,
       where: inWorktree ? "worktree" : "here",
+      baseBranch: inWorktree && baseBranch && baseBranch !== headBranch ? baseBranch : undefined,
     }).catch((err: unknown) => {
+      if (err instanceof WorktreeError) {
+        toast.error(err.title, { description: err.detail });
+        return;
+      }
       toast.error(err instanceof Error ? err.message : "Could not start the task");
     });
   };
@@ -253,6 +273,45 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
               },
             ]}
           />
+          {inWorktree && fromBranch && branches.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Base branch: ${fromBranch}`}
+                    className="h-8.5 max-w-50 shrink-0 gap-1.5 px-2.5 font-normal text-fg-muted"
+                  />
+                }
+              >
+                from
+                <span className="min-w-0 truncate font-mono text-ui-xs text-fg-default">
+                  {fromBranch}
+                </span>
+                <CaretDown size={11} aria-hidden="true" className="shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
+                {branches.map((branch) => (
+                  <DropdownMenuItem
+                    key={branch.name}
+                    onClick={() => setBaseBranch(branch.name)}
+                    className={cn(
+                      "font-mono text-ui-xs",
+                      branch.name === fromBranch && "bg-bg-hover",
+                    )}
+                  >
+                    <span className="min-w-0 truncate">{branch.name}</span>
+                    {branch.is_head && (
+                      <span className="ml-auto shrink-0 font-sans text-ui-2xs text-fg-subtle">
+                        checked out
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <span className="flex h-8.5 min-w-0 flex-1 items-center rounded-[9px] bg-bg-well px-2.5 font-mono text-ui-xs text-fg-muted ring-1 ring-border-subtle ring-inset">
             <span className="truncate">
               {inWorktree ? (

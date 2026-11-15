@@ -712,6 +712,49 @@ mod tests {
     }
 
     #[test]
+    fn five_agents_started_together_get_five_worktrees() {
+        let (_repo, repo_path) = init_repo();
+        let app_data = tempfile::tempdir().expect("tempdir");
+        let ids = [
+            "a1111111-1111-4111-8111-111111111111",
+            "b2222222-2222-4222-8222-222222222222",
+            "c3333333-3333-4333-8333-333333333333",
+            "d4444444-4444-4444-8444-444444444444",
+            "e5555555-5555-4555-8555-555555555555",
+        ];
+        let handles: Vec<_> = ids
+            .iter()
+            .map(|id| {
+                let repo = repo_path.clone();
+                let data = app_data.path().to_path_buf();
+                let id = id.to_string();
+                std::thread::spawn(move || {
+                    create_labeled_worktree(&data, &repo, &id, None, Some("Same task"), true)
+                })
+            })
+            .collect();
+        let created: Vec<SessionWorktreeCreate> = handles
+            .into_iter()
+            .map(|handle| handle.join().expect("thread").expect("create"))
+            .collect();
+
+        let mut branches: Vec<&str> = created.iter().map(|c| c.branch.as_str()).collect();
+        branches.sort_unstable();
+        branches.dedup();
+        assert_eq!(branches.len(), 5);
+        for worktree in &created {
+            assert!(Path::new(&worktree.path).join(".git").exists());
+        }
+        let listed = run_git(Some(&repo_path), ["worktree", "list", "--porcelain"], 30)
+            .expect("worktree list");
+        let count = String::from_utf8_lossy(&listed.stdout)
+            .lines()
+            .filter(|line| line.starts_with("worktree "))
+            .count();
+        assert_eq!(count, 6);
+    }
+
+    #[test]
     fn labeled_worktree_names_its_branch_after_the_task() {
         let (_repo, repo_path) = init_repo();
         let app_data = tempfile::tempdir().expect("tempdir");
