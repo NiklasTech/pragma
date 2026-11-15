@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, GitBranch, Warning, XCircle } from "@phosphor-icons
 
 import { Button } from "@/shared/components/ui/button";
 import { EncodingMenu } from "@/features/editor/encoding/EncodingMenu";
+import { encodingLabel } from "@/features/editor/encoding/encodings";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useGitStore } from "@/shared/stores/git";
 import { useProblemsStore } from "@/shared/stores/problems";
@@ -12,15 +13,11 @@ function detectEol(content: string): string {
   return content.includes("\r\n") ? "CRLF" : "LF";
 }
 
-function Dot() {
-  return <span aria-hidden="true" className="size-0.5 rounded-full bg-fg-subtle" />;
-}
-
 interface EditorStatusChipProps {
   panelId: string;
 }
 
-/// The editor line: branch, problems and the open file's details at the end of the breadcrumb row.
+/// The open file on the bottom line: problems, cursor, language, unusual encoding or line ends, branch.
 export function EditorStatusChip({ panelId }: EditorStatusChipProps) {
   const vimEnabled = useSettingsStore((s) => s.editor.vimMode);
   const activeTabId = useEditorStore((s) => s.getPanelActiveTabId(panelId));
@@ -83,20 +80,25 @@ export function EditorStatusChip({ panelId }: EditorStatusChipProps) {
   parts.push(
     { key: "cursor", node: `Ln ${cursor?.line ?? 1}, Col ${cursor?.column ?? 1}` },
     { key: "type", node: ext ? ext.toUpperCase() : "TXT" },
-    { key: "encoding", node: <EncodingMenu tab={activeTab} /> },
-    { key: "eol", node: detectEol(activeTab.content) },
   );
+  // UTF-8 with LF is the norm; only an exception earns a place on the line.
+  if (encodingLabel(activeTab.encoding) !== "UTF-8") {
+    parts.push({ key: "encoding", node: <EncodingMenu tab={activeTab} /> });
+  }
+  if (detectEol(activeTab.content) === "CRLF") parts.push({ key: "eol", node: "CRLF" });
+  // The branch closes the line, as on the board.
+  const branchPart = parts.find((part) => part.key === "branch");
+  const ordered = branchPart ? [...parts.filter((part) => part !== branchPart), branchPart] : parts;
 
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-2 pl-3 text-ui-2xs whitespace-nowrap text-fg-subtle tabular-nums">
+    <div className="ml-auto flex shrink-0 items-center gap-3.5 pr-1.5 pl-3 text-ui-xs whitespace-nowrap text-fg-muted tabular-nums">
       {vimEnabled && (
         <span className="rounded-full bg-bg-active px-1.5 font-semibold text-fg-default">
           {vimMode ? vimMode.toUpperCase() : "VIM"}
         </span>
       )}
-      {parts.map((part, index) => (
-        <span key={part.key} className="flex items-center gap-2">
-          {index > 0 && <Dot />}
+      {ordered.map((part) => (
+        <span key={part.key} className="flex items-center">
           {part.node}
         </span>
       ))}

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { TabBar } from "@/features/editor/components/TabBar";
-import { EditorBreadcrumb } from "@/features/editor/components/EditorBreadcrumb";
 import { Editor } from "@/features/editor/components/Editor";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useLayoutStore } from "@/shell/layout/store";
@@ -48,7 +47,6 @@ export default function EditorPanel({ panelId }: EditorPanelProps) {
         panelId={panelId}
         onClosePanel={isExtraEditor ? () => closePanel(panelId) : undefined}
       />
-      <EditorBreadcrumb panelId={panelId} />
       <div className="min-h-0 flex-1">
         <Editor panelId={panelId} />
       </div>

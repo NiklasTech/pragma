@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
-import { GitCommit, GitDiff, X } from "@phosphor-icons/react";
+import { GitCommit, GitDiff, SquareSplitHorizontal, X } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -10,6 +10,8 @@ import { useFileHistoryDialog } from "@/features/sidebar/lib/gitDialogs";
 import { cn } from "@/shared/lib/utils";
 import { otherTabRepository } from "@/features/editor/tabRepository";
 import { Button } from "@/shared/components/ui/button";
+import { IconButton } from "@/shared/components/ui/icon-button";
+import { useLayoutStore } from "@/shell/layout/store";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -17,6 +19,13 @@ import {
   ContextMenuSeparator,
 } from "@/shared/components/ui/context-menu";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
+
+/** The active file's folder relative to the open folder, as the tab row shows it. */
+function folderOf(path: string, root: string | null): string | null {
+  const relative = root && path.startsWith(`${root}/`) ? path.slice(root.length + 1) : path;
+  const slash = relative.lastIndexOf("/");
+  return slash > 0 ? relative.slice(0, slash) : null;
+}
 
 interface TabBarProps {
   panelId?: string;
@@ -78,8 +87,11 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
     return null;
   }
 
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
+  const activePath = activeTab ? folderOf(activeTab.path, activeRoot) : null;
+
   return (
-    <div className="flex h-tab min-w-0 shrink-0 items-center border-b border-border-subtle">
+    <div className="flex h-10.5 min-w-0 shrink-0 items-center">
       <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
         {tabs.map((tab, index) => {
           const isActive = activeTabId === tab.id;
@@ -145,7 +157,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                       <img src={fileIconPath ?? undefined} alt="" className="size-3.5 shrink-0" />
                     )}
                     {repository && <RepositoryColorDot path={repository} className="size-1.5" />}
-                    <span className="min-w-0 flex-1 truncate">{tab.name}</span>
+                    <span className="min-w-0 flex-1 truncate font-mono text-ui-xs">{tab.name}</span>
                     {tab.kind === "file" && tab.isModified && (
                       <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover/tab:hidden" />
                     )}
@@ -194,6 +206,23 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
           );
         })}
       </div>
+      <span className="flex shrink-0 items-center gap-0.5 pr-1.5 pl-2">
+        {activePath && (
+          <span
+            className="max-w-[260px] truncate pr-1.5 text-ui-2xs text-fg-subtle"
+            title={activePath}
+          >
+            {activePath}
+          </span>
+        )}
+        {panelId && (
+          <IconButton
+            icon={SquareSplitHorizontal}
+            label="Split editor"
+            onClick={() => useLayoutStore.getState().splitPanel(panelId, "horizontal", "editor")}
+          />
+        )}
+      </span>
       {onClosePanel && (
         <Button
           variant="ghost"
