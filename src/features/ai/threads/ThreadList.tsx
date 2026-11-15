@@ -10,12 +10,12 @@ import {
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
+import { IconButton } from "@/shared/components/ui/icon-button";
 import { Input } from "@/shared/components/ui/input";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { repositoryEnvironments, useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
-import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
 import { useFinishWorktree } from "@/features/ai/worktree/useFinishWorktree";
@@ -335,7 +335,7 @@ export function ThreadList() {
 
         {view === "sessions" ? (
           <>
-            <NewSessionButton className="h-8 w-full justify-start gap-2 rounded-full px-3.5 text-ui-sm shadow-[0_6px_18px_-10px_var(--color-accent-glow)]" />
+            <NewSessionButton variant="secondary" className="w-full justify-start" />
             <TasksEntry />
             {paths.length > 1 && <ThreadScopeSwitch value={scope} onChange={setScope} />}
           </>
@@ -379,30 +379,22 @@ export function ThreadList() {
             )}
             <span className="flex-1" />
             {view === "sessions" && hasWorktrees && (
-              <button
-                type="button"
-                aria-label="Group by worktree"
+              <IconButton
+                icon={TreeStructure}
+                weight={byWorktree ? "fill" : "regular"}
+                label="Group by worktree"
                 aria-pressed={byWorktree}
-                title="Group by worktree"
+                className={byWorktree ? "text-fg-default" : "text-fg-subtle"}
                 onClick={() => setByWorktree((current) => !current)}
-                className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-bg-hover hover:text-fg-default",
-                  byWorktree ? "text-primary" : "text-fg-subtle",
-                )}
-              >
-                <TreeStructure size={15} />
-              </button>
+              />
             )}
             {view === "sessions" && sessions.length > 0 && (
-              <button
-                type="button"
-                aria-label="Select threads"
-                title="Select threads"
+              <IconButton
+                icon={CheckSquare}
+                label="Select threads"
+                className="text-fg-subtle"
                 onClick={selection.start}
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
-              >
-                <CheckSquare size={15} />
-              </button>
+              />
             )}
             {view === "sessions" && <PanePresetsMenu />}
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Microphone } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 interface ComposerMicButtonProps {
@@ -34,18 +35,18 @@ export function ComposerMicButton({
   }, [metered, subscribeLevel]);
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon"
       onClick={onClick}
       disabled={disabled}
       aria-pressed={recording}
       aria-label={recording ? "Stop dictation" : "Dictate"}
       title={recording ? "Stop dictation" : "Dictate"}
       className={cn(
-        "relative flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
-        recording
-          ? "bg-status-error/15 text-status-error hover:bg-status-error/25"
-          : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+        "relative rounded-full",
+        recording &&
+          "bg-status-error/15 text-status-error hover:bg-status-error/25 hover:text-status-error",
         recording && !metered && "animate-pulse",
         disabled && "pointer-events-none opacity-40",
       )}
@@ -59,6 +60,6 @@ export function ComposerMicButton({
         />
       )}
       <Microphone size={13} weight={recording ? "fill" : "bold"} className="relative" />
-    </button>
+    </Button>
   );
 }

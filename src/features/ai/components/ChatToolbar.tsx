@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAgentStore } from "@/features/agent/store";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -31,15 +32,14 @@ export function ChatToolbar() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             aria-label={`Mode: ${modeLabel}`}
             title={modeLabel}
             className={cn(
-              "flex h-7 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              agentMode
-                ? "bg-primary/10 text-primary hover:bg-primary/15"
-                : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
+              "h-7 gap-1.5 rounded-full px-2.5",
+              agentMode && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
             )}
           >
             <ModeIcon size={13} weight={agentMode ? "fill" : "bold"} className="shrink-0" />
@@ -52,7 +52,7 @@ export function ChatToolbar() {
                 agentMode ? "text-primary/70" : "text-fg-subtle",
               )}
             />
-          </button>
+          </Button>
         }
       />
       <DropdownMenuContent align="start" side="top" sideOffset={6} className="w-48">

@@ -15,6 +15,7 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -201,8 +202,8 @@ export function ThreadRow({
           />
         </form>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={(event) => {
             const modified = event.metaKey || event.ctrlKey || event.shiftKey;
             if (onToggleSelect && (selectionMode || modified)) {
@@ -214,7 +215,7 @@ export function ThreadRow({
           onDoubleClick={selectionMode ? undefined : startRename}
           aria-current={isActive ? "true" : undefined}
           aria-pressed={selectionMode ? isSelected : undefined}
-          className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+          className="min-w-0 flex-1 flex-col items-stretch gap-0.5 rounded-md p-0 text-left h-auto whitespace-normal font-normal hover:bg-transparent"
         >
           <span
             className={cn(
@@ -264,21 +265,22 @@ export function ThreadRow({
               {formatRelativeTime(session.updatedAt)}
             </span>
           </span>
-        </button>
+        </Button>
       )}
 
       {!selectionMode && (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 aria-label="Thread actions"
                 title="Thread actions"
-                className="flex size-6 shrink-0 items-center justify-center rounded-md text-fg-muted opacity-0 transition-colors outline-none group-hover:opacity-100 hover:bg-bg-hover hover:text-fg-default focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 data-popup-open:opacity-100"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
               >
                 <DotsThree size={15} weight="bold" />
-              </button>
+              </Button>
             }
           />
           <DropdownMenuContent align="end" className="min-w-[180px]">

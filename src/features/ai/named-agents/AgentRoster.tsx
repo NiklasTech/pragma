@@ -81,16 +81,14 @@ export function AgentRoster({
           const isRunning = agentHasActiveChat(agent, chatSessions, agentStatus, runSessionId);
           const accent = seededAccent(agent.id);
           return (
-            <button
+            <Button
+              variant="ghost"
               key={agent.id}
-              type="button"
               onClick={() => onSelectAgent(agent.id)}
               aria-current={isActive ? "true" : undefined}
               className={cn(
-                "group flex items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-2 text-left transition-colors",
-                isActive
-                  ? "bg-bg-root shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
-                  : "hover:bg-bg-hover",
+                "group justify-start gap-2.5 py-1.5 pr-2 pl-2 text-left text-fg-default h-auto whitespace-normal font-normal",
+                isActive && "bg-bg-active",
               )}
             >
               <span
@@ -136,7 +134,7 @@ export function AgentRoster({
                   )}`}
                 </span>
               </span>
-            </button>
+            </Button>
           );
         })}
         {projectIssues.map((issue) => (

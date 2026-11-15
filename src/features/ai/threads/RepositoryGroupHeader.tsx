@@ -2,6 +2,7 @@
 
 import { CaretDown, CaretRight, FolderSimple } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 
@@ -23,12 +24,13 @@ export function RepositoryGroupHeader({
   onToggle,
 }: RepositoryGroupHeaderProps) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="xs"
       aria-expanded={!collapsed}
       title={path}
       onClick={onToggle}
-      className="flex items-center gap-1.5 rounded-md px-2 py-0.5 text-left text-ui-xs font-semibold text-fg-default transition-colors hover:bg-bg-hover"
+      className="justify-start gap-1.5 px-2 text-left text-ui-xs font-semibold text-fg-default"
     >
       {collapsed ? <CaretRight size={10} /> : <CaretDown size={10} />}
       <FolderSimple
@@ -41,6 +43,6 @@ export function RepositoryGroupHeader({
       <span className="rounded-full bg-bg-hover px-1.5 text-ui-2xs font-medium text-fg-muted tabular-nums">
         {count}
       </span>
-    </button>
+    </Button>
   );
 }

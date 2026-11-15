@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { FolderSimple } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card } from "@/shared/components/ui/card";
 import { cn } from "@/shared/lib/utils";
@@ -54,13 +55,13 @@ function RepositoryEntry({ summary, tasks, active, variant, onShow }: EntryProps
 
   const content = (
     <>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={() => onShow(summary)}
         title={summary.path}
         aria-current={active ? "true" : undefined}
         className={cn(
-          "flex min-w-0 items-center gap-1.5 rounded-md text-left",
+          "min-w-0 justify-start gap-1.5 text-left text-fg-default h-auto whitespace-normal font-normal hover:bg-transparent",
           full ? "px-3" : "px-2 pt-1",
           !hasBadges && !full && "pb-1",
         )}
@@ -89,7 +90,7 @@ function RepositoryEntry({ summary, tasks, active, variant, onShow }: EntryProps
             className="size-1.5 shrink-0 rounded-full bg-status-warning"
           />
         )}
-      </button>
+      </Button>
       {hasBadges && (
         <div className={cn("flex flex-wrap gap-1", full ? "px-3" : "pr-2 pb-1 pl-7")}>
           {states.map((state) => {
@@ -100,8 +101,9 @@ function RepositoryEntry({ summary, tasks, active, variant, onShow }: EntryProps
                 variant={STATE_BADGES[state]}
                 className="cursor-pointer tabular-nums"
                 render={
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     title={`Open the ${state} sessions of ${summary.name}`}
                     onClick={() => onShow(summary, summary.sessions[state])}
                   />
@@ -119,8 +121,9 @@ function RepositoryEntry({ summary, tasks, active, variant, onShow }: EntryProps
                 variant="outline"
                 className="cursor-pointer tabular-nums"
                 render={
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     title={`Open the tasks of ${summary.name}`}
                     onClick={() => showRepositoryTasks(summary.path)}
                   />

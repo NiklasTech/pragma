@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChatCircle, Export, PencilSimple, Plus, Robot, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
+import { IconButton } from "@/shared/components/ui/icon-button";
 import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
@@ -143,24 +144,23 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
           </div>
           <span className="flex-1" />
           {!readOnly && (
-            <button
-              type="button"
-              aria-label="Delete agent"
-              title="Delete agent"
+            <IconButton
+              icon={Trash}
+              label="Delete agent"
+              size="sm"
+              className="size-7 text-fg-subtle hover:text-status-error"
               onClick={() => setConfirmingDelete(true)}
-              className="flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-status-error"
-            >
-              <Trash size={14} />
-            </button>
+            />
           )}
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label="Export or copy agent"
                   title="Export or copy agent"
-                  className="flex size-7 items-center justify-center rounded-md text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+                  className="text-fg-subtle"
                 />
               }
             >

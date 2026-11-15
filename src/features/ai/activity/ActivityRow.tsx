@@ -3,6 +3,7 @@
 import type { Icon } from "@phosphor-icons/react";
 import { ChatCircle, FolderSimple, Robot, TerminalWindow } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
@@ -66,16 +67,14 @@ export function ActivityRow({
   const tokens = sessionTokens(session);
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={() => onSelect(session.id)}
       aria-current={focused ? "true" : undefined}
       data-activity-state={state}
       className={cn(
-        "group flex w-full items-center gap-2.5 rounded-lg py-1.5 pr-2 pl-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-        focused
-          ? "bg-bg-root shadow-[var(--shadow-sm)] ring-1 ring-border-subtle"
-          : "hover:bg-bg-hover",
+        "group w-full justify-start gap-2.5 py-1.5 pr-2 pl-2 text-left text-fg-default h-auto whitespace-normal font-normal",
+        focused && "bg-bg-active",
       )}
     >
       <span
@@ -137,6 +136,6 @@ export function ActivityRow({
           )}
         </span>
       </span>
-    </button>
+    </Button>
   );
 }

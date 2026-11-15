@@ -33,15 +33,16 @@ export function AgentFoldersTab({ folders, onChange }: AgentFoldersTabProps) {
             <span className="min-w-0 flex-1 truncate text-ui-xs text-fg-default" title={folder}>
               {folder}
             </span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               aria-label={`Remove ${folder}`}
               title="Remove folder"
               onClick={() => onChange(folders.filter((item) => item !== folder))}
-              className="shrink-0 rounded p-0.5 text-fg-subtle transition-colors hover:bg-bg-hover hover:text-status-error"
+              className="text-fg-subtle hover:text-status-error"
             >
               <X size={12} />
-            </button>
+            </Button>
           </div>
         ))}
       </div>

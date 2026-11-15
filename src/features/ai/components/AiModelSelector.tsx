@@ -1,6 +1,7 @@
 import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo, useState } from "react";
 
+import { Button } from "@/shared/components/ui/button";
 import { useAIStore, type AIProvider } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useAvailableModels } from "@/shared/hooks/useAvailableModels";
@@ -304,15 +305,14 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
               const isActive = provider === activeProvider;
               const available = availableMap[provider];
               return (
-                <button
+                <Button
                   key={provider}
-                  type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleProviderChange(provider)}
                   className={cn(
-                    "flex items-center justify-between rounded-md px-2 py-1.5 text-ui-xs transition-colors",
-                    isActive
-                      ? "bg-bg-active/50 font-medium text-fg-default"
-                      : "text-fg-default/90 hover:bg-bg-hover",
+                    "justify-between px-2 font-normal text-fg-default",
+                    isActive && "bg-bg-active font-medium",
                   )}
                 >
                   <span className="flex items-center gap-2">
@@ -330,7 +330,7 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
                     )}
                     title={available ? "Online" : "Offline"}
                   />
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -354,15 +354,14 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
                   {availableModels.map((model) => {
                     const isActive = model.id === activeModel;
                     return (
-                      <button
+                      <Button
                         key={model.id}
-                        type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleModelChange(model.id)}
                         className={cn(
-                          "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-ui-xs transition-colors",
-                          isActive
-                            ? "bg-bg-active/50 font-medium text-fg-default"
-                            : "text-fg-default/90 hover:bg-bg-hover",
+                          "justify-start px-2 text-left font-normal text-fg-default",
+                          isActive && "bg-bg-active font-medium",
                         )}
                       >
                         {isActive ? (
@@ -371,18 +370,19 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
                           <span className="w-2.5 shrink-0" />
                         )}
                         <span className="truncate">{model.name}</span>
-                      </button>
+                      </Button>
                     );
                   })}
                   {activeModel && !availableModels.some((m) => m.id === activeModel) && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleModelChange(activeModel)}
-                      className="flex items-center gap-2 rounded-md bg-bg-active/50 px-2 py-1.5 text-left text-ui-xs font-medium text-fg-default"
+                      className="justify-start bg-bg-active px-2 text-left text-fg-default"
                     >
                       <Check size={11} className="shrink-0 text-primary" weight="bold" />
                       <span className="truncate">{activeModel}</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -399,13 +399,14 @@ export function AiModelSelector({ variant = "default" }: { variant?: AiModelSele
                     placeholder="e.g. lmstudio-community/Meta-Llama-3-8B"
                     className="h-7 text-ui-xs"
                   />
-                  <button
+                  <Button
                     type="submit"
+                    size="xs"
                     disabled={!customModel.trim()}
-                    className="self-start rounded-md bg-primary px-2 py-1 text-ui-2xs font-medium text-primary-foreground disabled:opacity-50"
+                    className="self-start"
                   >
                     Use model
-                  </button>
+                  </Button>
                 </form>
               )}
 

@@ -54,7 +54,7 @@ export function EmptyLeafView({ leafId }: { leafId: string }) {
           <p className="text-ui-sm font-medium text-fg-default">Empty pane</p>
           <p className="text-ui-xs text-fg-subtle">Start something new or show another thread.</p>
         </div>
-        <NewSessionButton targetLeafId={leafId} size="sm" className="rounded-full" />
+        <NewSessionButton targetLeafId={leafId} size="sm" />
         {workspaceRoot && <CliQuickStart rootPath={workspaceRoot} targetLeafId={leafId} />}
 
         {candidates.length > 0 && (

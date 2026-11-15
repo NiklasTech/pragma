@@ -1,5 +1,6 @@
 import { CircleDashed, Stop } from "@phosphor-icons/react";
 
+import { Button } from "@/shared/components/ui/button";
 import { ApprovalCard } from "@/features/agent/components/ApprovalCard";
 import { stepLabel } from "@/features/agent/executor";
 import { getMessageText } from "@/shared/lib/ai/protocol";
@@ -94,16 +95,17 @@ export function ChildRunView({ sessionId }: { sessionId: string }) {
               </Shimmer>
             </>
           )}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={() => stopChildRun(sessionId)}
             aria-label="Stop session"
             title="Stop session"
-            className="ml-auto flex h-6 items-center gap-1.5 rounded-full px-2.5 text-ui-xs font-medium text-fg-muted transition-colors outline-none hover:bg-status-error/10 hover:text-status-error focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="ml-auto h-6 gap-1.5 rounded-full px-2.5 text-ui-xs hover:bg-status-error/10 hover:text-status-error"
           >
             <Stop size={11} weight="fill" />
             Stop
-          </button>
+          </Button>
         </div>
       </div>
     </div>

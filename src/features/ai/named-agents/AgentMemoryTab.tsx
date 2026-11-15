@@ -85,24 +85,26 @@ export function AgentMemoryTab({ agentId, memory }: AgentMemoryTabProps) {
               <div className="flex items-center gap-2">
                 <span className="text-ui-2xs text-fg-subtle">{entry.source}</span>
                 <span className="flex-1" />
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   aria-label="Edit memory"
                   title="Edit memory"
                   onClick={() => startEdit(entry)}
-                  className="rounded p-0.5 text-fg-subtle transition-colors hover:bg-bg-hover hover:text-fg-default"
+                  className="text-fg-subtle"
                 >
                   <PencilSimple size={12} />
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   aria-label="Delete memory"
                   title="Delete memory"
                   onClick={() => deleteMemory(agentId, entry.id)}
-                  className="rounded p-0.5 text-fg-subtle transition-colors hover:bg-bg-hover hover:text-status-error"
+                  className="text-fg-subtle hover:text-status-error"
                 >
                   <Trash size={12} />
-                </button>
+                </Button>
               </div>
             </>
           )}

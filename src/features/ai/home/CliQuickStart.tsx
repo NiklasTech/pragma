@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
 
@@ -38,14 +39,15 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
     <div className="flex flex-wrap items-center justify-center gap-2">
       <span className="text-ui-xs text-fg-subtle">Or open a coding CLI</span>
       {available.map((row) => (
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           key={row.manifestId}
-          type="button"
           onClick={() => {
             const manifest = manifests.find((item) => item.id === row.manifestId);
             if (manifest) void actions.startTerminal(manifest);
           }}
-          className="group flex items-center gap-1.5 rounded-full border border-border-subtle bg-bg-surface px-3 py-1.5 text-ui-xs font-medium text-fg-muted transition-[color,border-color,background-color,translate] duration-150 hover:-translate-y-px hover:border-border hover:bg-bg-hover hover:text-fg-default active:translate-y-0"
+          className="group gap-1.5 rounded-full px-3 text-fg-muted hover:text-fg-default"
         >
           <ProviderLogo
             providerId={row.manifestId}
@@ -57,7 +59,7 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
             )}
           />
           {row.name}
-        </button>
+        </Button>
       ))}
     </div>
   );
