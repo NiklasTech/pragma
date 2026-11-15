@@ -9,7 +9,7 @@ import { dispatchEditorDocumentSymbols } from "@/shared/lib/editor-events";
 import { useSymbolDialogStore } from "@/features/editor/lsp/symbols";
 import { isLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
-function activeLspContext(): { language: string; filePath: string } | null {
+export function activeLspContext(): { language: string; filePath: string } | null {
   const { tabs, activeTabId } = useEditorStore.getState();
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
   if (!activeTab || activeTab.kind !== "file") {
