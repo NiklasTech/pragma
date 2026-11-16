@@ -98,10 +98,10 @@ describe("color blind friendly status colors", () => {
   });
 
   it("leaves the built-in theme untouched", () => {
-    const nord = getBuiltInTheme("nord") as Theme;
-    const before = nord.tokens.colors.git.conflict;
-    withColorBlindStatus(nord);
-    expect(nord.tokens.colors.git.conflict).toBe(before);
+    const pragmaDark = getBuiltInTheme("dark-default") as Theme;
+    const before = pragmaDark.tokens.colors.git.conflict;
+    withColorBlindStatus(pragmaDark);
+    expect(pragmaDark.tokens.colors.git.conflict).toBe(before);
   });
 });
 

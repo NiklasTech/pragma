@@ -7,6 +7,7 @@ import {
   type ShortcutBinding,
   type ShortcutMap,
 } from "@/shared/lib/shortcuts";
+import { THEMES_REVISION, migrateRetiredThemes } from "./themeMigration";
 import type {
   AISettings,
   McpSettings,
@@ -198,12 +199,21 @@ export function mergeWithDefaults(
   } = partial;
 
   const migratedAi = migrateAISettings(partial.ai);
+  const themes = migrateRetiredThemes(
+    {
+      theme: partial.theme ?? defaults.theme,
+      lightTheme: partial.lightTheme ?? defaults.lightTheme,
+      darkTheme: partial.darkTheme ?? defaults.darkTheme,
+      editor: mergePartial(defaults.editor, partial.editor),
+      terminal: mergePartial(defaults.terminal, partial.terminal),
+    },
+    partial.themesRevision,
+  );
 
   return {
     ...defaults,
     ...restPartial,
-    editor: mergePartial(defaults.editor, partial.editor),
-    terminal: mergePartial(defaults.terminal, partial.terminal),
+    ...themes,
     ai: withoutRemovedKeys("ai", mergePartial(defaults.ai, migratedAi)),
     workspace: withoutRemovedKeys("workspace", mergePartial(defaults.workspace, partial.workspace)),
     mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
@@ -224,5 +234,6 @@ export function mergeWithDefaults(
     extensions: { ...defaults.extensions, ...partial.extensions },
     shortcuts: migrateShortcuts(defaults.shortcuts, partial.shortcuts, partial.shortcutsRevision),
     shortcutsRevision: SHORTCUTS_REVISION,
+    themesRevision: THEMES_REVISION,
   };
 }

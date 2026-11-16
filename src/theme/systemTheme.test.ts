@@ -8,11 +8,11 @@ import {
 import { getBuiltInTheme } from "./themes";
 import type { Theme } from "./types";
 
-const nord = getBuiltInTheme("nord") as Theme;
-const paper = getBuiltInTheme("paper-light") as Theme;
+const contrastDark = getBuiltInTheme("high-contrast-dark") as Theme;
+const contrastLight = getBuiltInTheme("high-contrast-light") as Theme;
 
 const fixed: ThemeChoice = {
-  theme: "nord",
+  theme: "high-contrast-dark",
   followSystemTheme: false,
   lightTheme: "light-default",
   darkTheme: "dark-default",
@@ -21,8 +21,8 @@ const following: ThemeChoice = { ...fixed, followSystemTheme: true };
 
 describe("theme from the system appearance", () => {
   it("uses the chosen theme while not following the system", () => {
-    expect(effectiveThemeId(fixed, "light")).toBe("nord");
-    expect(effectiveThemeId(fixed, "dark")).toBe("nord");
+    expect(effectiveThemeId(fixed, "light")).toBe("high-contrast-dark");
+    expect(effectiveThemeId(fixed, "dark")).toBe("high-contrast-dark");
   });
 
   it("switches between the light and the dark theme with the system", () => {
@@ -31,26 +31,26 @@ describe("theme from the system appearance", () => {
   });
 
   it("fills the slot of the selected theme's mode", () => {
-    expect(themeSelection(following, paper)).toEqual({ lightTheme: "paper-light" });
-    expect(themeSelection(following, nord)).toEqual({ darkTheme: "nord" });
-    expect(themeSelection(fixed, paper)).toEqual({
-      theme: "paper-light",
-      lightTheme: "paper-light",
+    expect(themeSelection(following, contrastLight)).toEqual({ lightTheme: "high-contrast-light" });
+    expect(themeSelection(following, contrastDark)).toEqual({ darkTheme: "high-contrast-dark" });
+    expect(themeSelection(fixed, contrastLight)).toEqual({
+      theme: "high-contrast-light",
+      lightTheme: "high-contrast-light",
     });
   });
 
   it("keeps the visible theme when following is switched on or off", () => {
-    expect(followSystemSelection(true, nord)).toEqual({
+    expect(followSystemSelection(true, contrastDark)).toEqual({
       followSystemTheme: true,
-      darkTheme: "nord",
+      darkTheme: "high-contrast-dark",
     });
-    expect(followSystemSelection(true, paper)).toEqual({
+    expect(followSystemSelection(true, contrastLight)).toEqual({
       followSystemTheme: true,
-      lightTheme: "paper-light",
+      lightTheme: "high-contrast-light",
     });
-    expect(followSystemSelection(false, paper)).toEqual({
+    expect(followSystemSelection(false, contrastLight)).toEqual({
       followSystemTheme: false,
-      theme: "paper-light",
+      theme: "high-contrast-light",
     });
   });
 });

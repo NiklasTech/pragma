@@ -9,8 +9,8 @@ import {
 import { getBuiltInTheme } from "./themes";
 import type { Theme } from "./types";
 
-const nord = getBuiltInTheme("nord") as Theme;
-const solarizedLight = getBuiltInTheme("solarized-light") as Theme;
+const pragmaDark = getBuiltInTheme("dark-default") as Theme;
+const pragmaLight = getBuiltInTheme("light-default") as Theme;
 
 function asMap(vars: { name: string; value: string }[]): Map<string, string> {
   return new Map(vars.map(({ name, value }) => [name, value]));
@@ -23,16 +23,16 @@ describe("editor colors", () => {
   });
 
   it("takes another theme's editor and syntax colors with references resolved", () => {
-    const vars = asMap(editorColorVariables(solarizedLight, {}));
-    const theme = asMap(generateCssVariables(solarizedLight));
-    expect(vars.get("--editor-bg")).toBe("#fdf6e3");
-    expect(vars.get("--editor-gutter-bg")).toBe("#fdf6e3");
+    const vars = asMap(editorColorVariables(pragmaLight, {}));
+    const theme = asMap(generateCssVariables(pragmaLight));
+    expect(vars.get("--editor-bg")).toBe("#fbfaf7");
+    expect(vars.get("--editor-gutter-bg")).toBe("#fbfaf7");
     expect(vars.get("--syntax-keyword")).toBe(theme.get("--syntax-keyword"));
     expect(vars.get("--editor-cursor")).toBe(theme.get("--color-accent"));
   });
 
   it("touches only editor and syntax variables, never the UI colors", () => {
-    for (const { name } of editorColorVariables(solarizedLight, { keyword: "#ff0000" })) {
+    for (const { name } of editorColorVariables(pragmaLight, { keyword: "#ff0000" })) {
       expect(name).toMatch(/^--(editor|syntax|color-editor|color-syntax)-/);
     }
   });
@@ -43,18 +43,20 @@ describe("editor colors", () => {
     expect(own.get("--color-syntax-keyword")).toBe("#ff0000");
     expect(own.has("--editor-bg")).toBe(false);
 
-    const onTheme = asMap(editorColorVariables(nord, { background: "#101010" }));
+    const onTheme = asMap(editorColorVariables(pragmaDark, { background: "#101010" }));
     expect(onTheme.get("--editor-bg")).toBe("#101010");
     expect(onTheme.get("--editor-gutter-bg")).toBe("#101010");
     expect(onTheme.get("--syntax-keyword")).toBe(
-      asMap(generateCssVariables(nord)).get("--syntax-keyword"),
+      asMap(generateCssVariables(pragmaDark)).get("--syntax-keyword"),
     );
   });
 
   it("keeps overrides when the editor theme changes", () => {
     const overrides = { string: "#00ff00" };
-    expect(asMap(editorColorVariables(nord, overrides)).get("--syntax-string")).toBe("#00ff00");
-    expect(asMap(editorColorVariables(solarizedLight, overrides)).get("--syntax-string")).toBe(
+    expect(asMap(editorColorVariables(pragmaDark, overrides)).get("--syntax-string")).toBe(
+      "#00ff00",
+    );
+    expect(asMap(editorColorVariables(pragmaLight, overrides)).get("--syntax-string")).toBe(
       "#00ff00",
     );
   });
@@ -74,14 +76,14 @@ describe("editor colors", () => {
 describe("terminal colors", () => {
   it("follows the UI theme unless another theme is chosen", () => {
     expect(terminalColorVariables(undefined)).toEqual([]);
-    const vars = asMap(terminalColorVariables(solarizedLight));
-    expect(vars.get("--terminal-bg")).toBe("#fdf6e3");
+    const vars = asMap(terminalColorVariables(pragmaLight));
+    expect(vars.get("--terminal-bg")).toBe("#fbfaf7");
     for (const name of vars.keys()) expect(name).toMatch(/^--(terminal|color-terminal)-/);
   });
 
   it("overrides the theme's root values for terminals", () => {
-    const css = editorColorsCss([], terminalColorVariables(solarizedLight));
+    const css = editorColorsCss([], terminalColorVariables(pragmaLight));
     expect(css).toContain(":root {");
-    expect(css).toContain("--terminal-bg: #fdf6e3 !important;");
+    expect(css).toContain("--terminal-bg: #fbfaf7 !important;");
   });
 });

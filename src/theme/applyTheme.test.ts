@@ -41,20 +41,7 @@ describe("theme mode", () => {
       .filter((theme) => themeMode(theme) === "light")
       .map((theme) => theme.metadata.id)
       .sort();
-    expect(light).toEqual([
-      "arctic-light",
-      "ayu-light",
-      "catppuccin-latte",
-      "everforest-light",
-      "github-light",
-      "gruvbox-light",
-      "high-contrast-light",
-      "light-default",
-      "paper-light",
-      "rose-pine-dawn",
-      "solarized-light",
-      "tokyo-night-day",
-    ]);
+    expect(light).toEqual(["high-contrast-light", "light-default"]);
   });
 
   it("falls back to the first supported mode for a system theme", () => {
