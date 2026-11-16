@@ -19,6 +19,7 @@ import { ApiKeyRow } from "./ai/ApiKeyRow";
 import { CliIntegrationSection } from "./ai/CliIntegrationSection";
 import { CopilotBlock } from "./ai/CopilotBlock";
 import { InlineCompletionSection } from "./ai/InlineCompletionSection";
+import { TerminalSuggestionSection } from "./ai/TerminalSuggestionSection";
 import { ProviderFields } from "./ai/ProviderFields";
 import { TestConnection } from "./ai/TestConnection";
 import type { ApiKeySaveStatus, ConnectionTestStatus } from "./ai/types";
@@ -238,6 +239,8 @@ export function AISettings() {
         onDebounceChange={(v) => settingsStore.setAISettings({ completionDebounce: v })}
         onNextEditChange={(v) => settingsStore.setAISettings({ nextEditPrediction: v })}
       />
+
+      <TerminalSuggestionSection />
 
       <ChatContextSettings />
 

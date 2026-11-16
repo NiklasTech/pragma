@@ -192,7 +192,7 @@ export function KeyboardSettings() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
-        <p className="text-ui-sm text-fg-muted">Shortcuts are active immediately after saving.</p>
+        <p className="text-ui-sm text-fg-muted">A changed shortcut works right away.</p>
         <Button variant="outline" size="sm" onClick={resetAllShortcuts}>
           Reset all
         </Button>
