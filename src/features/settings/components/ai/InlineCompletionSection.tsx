@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Switch } from "@/shared/components/ui/switch";
 
 import { SettingRow } from "../ui/SettingRow";
@@ -27,6 +28,8 @@ interface InlineCompletionSectionProps {
   enabled: boolean;
   debounce: number;
   nextEdit: boolean;
+  /** The chosen provider cannot serve suggestions yet: no key, or no URL for a custom endpoint. */
+  needsSetup: boolean;
   onEnabledChange: (enabled: boolean) => void;
   onDebounceChange: (debounce: number) => void;
   onNextEditChange: (enabled: boolean) => void;
@@ -36,6 +39,7 @@ export function InlineCompletionSection({
   enabled,
   debounce,
   nextEdit,
+  needsSetup,
   onEnabledChange,
   onDebounceChange,
   onNextEditChange,
@@ -47,6 +51,14 @@ export function InlineCompletionSection({
         description="Show AI ghost-text suggestions in the editor"
         control={<Switch checked={enabled} onCheckedChange={onEnabledChange} />}
       />
+      {enabled && needsSetup && (
+        <Alert variant="warning" className="my-2">
+          <AlertDescription className="text-ui-xs">
+            Suggestions stay off until a model is set up. Add an API key under Models above, or pick
+            Ollama to run a model locally.
+          </AlertDescription>
+        </Alert>
+      )}
       <SettingRow
         label="Wait before suggesting"
         description="How long you pause typing before a suggestion is requested"
