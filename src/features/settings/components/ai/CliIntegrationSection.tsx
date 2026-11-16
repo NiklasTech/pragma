@@ -10,7 +10,19 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import { SettingSection } from "../ui/SettingSection";
-import { CliProviderCard } from "./CliProviderCard";
+import { quickAgents } from "@/features/ai/quickStart/quickStart";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+
+import { SettingRow } from "../ui/SettingRow";
+import { CliTile } from "./CliTile";
+
+const NONE = "__none__";
 
 export function CliIntegrationSection() {
   const aiStore = useAIStore();
@@ -50,6 +62,25 @@ export function CliIntegrationSection() {
       settingsStore.setAISettings({ cliProvider: null });
       await aiStore.loadCLIStatuses();
     }
+  };
+
+  const clearDefault = () => {
+    aiStore.setActiveCLIProvider(null);
+    settingsStore.setAISettings({ cliProvider: null });
+  };
+
+  const { ready } = quickAgents(aiStore.cliManifests, aiStore.cliStatuses);
+  const isInstalled = (id: string) => aiStore.cliStatuses[id]?.installed === true;
+  // Quick start's order first, so the numbers read 1, 2, 3 across the grid.
+  const installed = [
+    ...ready,
+    ...aiStore.cliManifests.filter((m) => isInstalled(m.id) && !ready.includes(m)),
+  ];
+  const missing = aiStore.cliManifests.filter((m) => !isInstalled(m.id));
+  const signedIn = installed.filter((m) => aiStore.cliStatuses[m.id]?.authenticated);
+  const quickKeyOf = (id: string): number | null => {
+    const index = ready.findIndex((m) => m.id === id);
+    return index >= 0 && index < 9 ? index + 1 : null;
   };
 
   const handleSelectCLI = (providerId: string) => {
@@ -100,33 +131,59 @@ export function CliIntegrationSection() {
         </Tooltip>
       }
     >
-      <div className="flex flex-col divide-y divide-border-subtle">
-        {aiStore.cliManifests.length === 0 && (
-          <p className="py-3 text-ui-sm text-fg-muted">Loading providers...</p>
+      <div className="flex flex-col gap-3 py-3">
+        {aiStore.cliManifests.length === 0 ? (
+          <p className="text-ui-sm text-fg-muted">Looking for coding CLIs...</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {[...installed, ...missing].map((manifest) => (
+                <CliTile
+                  key={manifest.id}
+                  manifest={manifest}
+                  status={aiStore.cliStatuses[manifest.id]}
+                  quickKey={quickKeyOf(manifest.id)}
+                  busy={installing === manifest.id || loggingIn === manifest.id}
+                  onInstall={() => void handleInstallCLI(manifest.id)}
+                  onSignIn={() => void handleLoginCLI(manifest.id)}
+                  onSignOut={() => void handleLogoutCLI(manifest.id)}
+                />
+              ))}
+            </div>
+            <p className="text-ui-xs text-fg-subtle">
+              The number is the key that starts the CLI in New (⌘N).
+            </p>
+          </>
         )}
-
-        {aiStore.cliManifests.map((manifest) => {
-          const status = aiStore.cliStatuses[manifest.id];
-          const isActive = aiStore.activeCLIProvider === manifest.id;
-          const isInstalling = installing === manifest.id;
-          const isLoggingIn = loggingIn === manifest.id;
-
-          return (
-            <CliProviderCard
-              key={manifest.id}
-              manifest={manifest}
-              status={status}
-              isActive={isActive}
-              isInstalling={isInstalling}
-              isLoggingIn={isLoggingIn}
-              onInstall={() => handleInstallCLI(manifest.id)}
-              onLogin={() => handleLoginCLI(manifest.id)}
-              onSelect={() => handleSelectCLI(manifest.id)}
-              onLogout={() => handleLogoutCLI(manifest.id)}
-            />
-          );
-        })}
       </div>
+      <SettingRow
+        label="Default agent"
+        description="Runs tasks and the chat when you do not pick an agent."
+        control={
+          <Select
+            value={aiStore.activeCLIProvider ?? NONE}
+            onValueChange={(value) => {
+              if (value === NONE) clearDefault();
+              else if (typeof value === "string") handleSelectCLI(value);
+            }}
+          >
+            <SelectTrigger className="max-w-[220px]" aria-label="Default agent">
+              <SelectValue>
+                {signedIn.find((manifest) => manifest.id === aiStore.activeCLIProvider)?.name ??
+                  "None"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>None</SelectItem>
+              {signedIn.map((manifest) => (
+                <SelectItem key={manifest.id} value={manifest.id}>
+                  {manifest.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
     </SettingSection>
   );
 }
