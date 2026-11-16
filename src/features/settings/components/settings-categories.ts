@@ -64,7 +64,7 @@ export const CATEGORIES: CategoryDef[] = [
     id: "git",
     label: "Git and worktrees",
     icon: GitBranch,
-    description: "Where agents work and what happens to their worktrees.",
+    description: "What happens to the worktrees agents work in.",
   },
   {
     id: "spaces",

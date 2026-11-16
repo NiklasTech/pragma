@@ -14,7 +14,11 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
-import { useSettingsStore, type AgentAutoApprove } from "@/shared/stores/settings";
+import {
+  useSettingsStore,
+  type AgentAutoApprove,
+  type AgentStartIn,
+} from "@/shared/stores/settings";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { ChildSessionSettings } from "./ChildSessionSettings";
@@ -27,6 +31,15 @@ const AUTO_APPROVE_OPTIONS: Array<{ value: AgentAutoApprove; label: string }> = 
   { value: "edits", label: "Auto-approve file edits" },
   { value: "all", label: "Auto-approve everything" },
 ];
+
+const START_IN_OPTIONS: Array<{ value: AgentStartIn; label: string }> = [
+  { value: "worktree", label: "A new worktree" },
+  { value: "here", label: "This folder" },
+];
+
+function isStartIn(value: unknown): value is AgentStartIn {
+  return START_IN_OPTIONS.some((option) => option.value === value);
+}
 
 /** `agents` = approvals, nesting and allowed commands; `worktrees` = what happens to agent worktrees. */
 export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
@@ -92,6 +105,31 @@ export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
               </SelectTrigger>
               <SelectContent>
                 {AUTO_APPROVE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
+        <SettingRow
+          label="New agents start in"
+          description="A worktree keeps your main folder untouched. Folders without git always start in the folder."
+          control={
+            <Select
+              value={agent.startIn}
+              onValueChange={(value) => {
+                if (isStartIn(value)) setAgentSettings({ startIn: value });
+              }}
+            >
+              <SelectTrigger className="max-w-[220px]">
+                <SelectValue>
+                  {START_IN_OPTIONS.find((option) => option.value === agent.startIn)?.label}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {START_IN_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

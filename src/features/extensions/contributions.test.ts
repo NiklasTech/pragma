@@ -171,6 +171,7 @@ describe("agent tools", () => {
       allowedCommands: [],
       stepLimit: null,
       removeWorktrees: true,
+      startIn: "worktree",
       maxChildSessions: 4,
       maxSessionDepth: 3,
       useProjectRules: true,

@@ -26,6 +26,7 @@ import type { GitBranch as GitBranchInfo } from "@/shared/stores/git";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useOverlayOpen, useOverlayStore } from "@/shared/stores/overlays";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { findSpaceByFolder } from "@/shared/stores/spaces/model";
 
 import { useLayoutPresetsStore } from "../panes/layoutPresets";
@@ -77,7 +78,7 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const [picked, setPicked] = useState<QuickAgent | null>(null);
   const [layoutId, setLayoutId] = useState(QUICK_LAYOUTS[0].id);
   const [isRepo, setIsRepo] = useState<boolean | null>(null);
-  const [where, setWhere] = useState<QuickWhere>("worktree");
+  const [where, setWhere] = useState<QuickWhere>(() => useSettingsStore.getState().agent.startIn);
   const [branches, setBranches] = useState<GitBranchInfo[]>([]);
   const [baseBranch, setBaseBranch] = useState<string | null>(null);
 

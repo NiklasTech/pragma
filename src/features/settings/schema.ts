@@ -568,6 +568,16 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     effect: "src/shared/stores/workspaceSettings/effective.ts",
   },
   {
+    id: "agent-start-in",
+    keys: ["agent.startIn"],
+    label: "New agents start in",
+    description: "Whether ⌘N starts an agent in a new worktree or in the open folder",
+    keywords: "agent start worktree folder new quick start where",
+    category: "agents",
+    scope: "global",
+    effect: "src/features/ai/quickStart/QuickStartDialog.tsx",
+  },
+  {
     id: "agent-remove-worktrees",
     keys: ["agent.removeWorktrees"],
     label: "Remove worktrees automatically when a session is finished",
