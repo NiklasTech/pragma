@@ -108,8 +108,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   useRepositoryColorAssignment();
   const repositoryAccentColor = useRepositoryAccent();
-  const ownAccent = useSettingsStore((s) => s.appearance.accentColor);
-  const accentColor = repositoryAccentColor || ownAccent;
+  const accentColor = repositoryAccentColor;
   const colorBlindStatus = useSettingsStore((s) => s.appearance.colorBlindStatus);
   useAccessibility();
   const theme = useMemo(() => {

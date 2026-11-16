@@ -64,7 +64,7 @@ export function EditorDisplaySettings() {
   );
 
   return (
-    <SettingSection title="Display">
+    <SettingSection title="Display" collapsible>
       <SettingRow
         label="Render Whitespace"
         description="Show spaces and tabs. Boundary skips single spaces between words."

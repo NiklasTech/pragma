@@ -1,7 +1,6 @@
 import { useCommandPaletteStore, type CommandPaletteItem } from "@/shared/stores/commandPalette";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { applyTheme, defaultThemeId, getBuiltInTheme, type Theme } from "@/theme";
-import { withAccent } from "@/theme/accent";
 import {
   applyThemeChoice,
   currentThemeChoice,
@@ -28,8 +27,7 @@ function pickTheme(): void {
   const savedId = effectiveThemeId(currentThemeChoice(), getSystemMode());
   const preview = (id: string) => {
     const theme = findTheme(themes, id);
-    const accent = useSettingsStore.getState().appearance.accentColor;
-    if (theme) applyTheme(accent ? withAccent(theme, accent) : theme);
+    if (theme) applyTheme(theme);
   };
 
   useCommandPaletteStore.getState().openPicker({

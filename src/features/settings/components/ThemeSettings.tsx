@@ -8,7 +8,6 @@ import { useThemeFolderStore } from "@/theme/themeFolderStore";
 import { themeContrastIssues } from "@/theme/accessibility";
 import type { Theme } from "@/theme/types";
 import { FolderOpen, UploadSimple } from "@phosphor-icons/react";
-import { AccentColorSetting } from "./AccentColorSetting";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 import { ThemeCard } from "./ThemeCard";
@@ -92,7 +91,6 @@ export function ThemeSettings() {
           </div>
         }
       >
-        <AccentColorSetting />
         <SettingRow
           label="Follow system appearance"
           description={

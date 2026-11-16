@@ -43,7 +43,7 @@ export function WorkspaceOverrideNotice({ section }: { section: keyof WorkspaceS
       <Info />
       <AlertDescription className="text-ui-xs">
         This project sets {keys.join(", ")} in .pragma/settings.json. Those values apply on top of
-        the ones below; edit them under Project.
+        the ones below; edit them under Spaces and layouts.
       </AlertDescription>
     </Alert>
   );

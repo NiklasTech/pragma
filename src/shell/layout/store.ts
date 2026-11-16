@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { crossWindowSync } from "@/shared/stores/sync/crossWindowSync";
 import type {
   DropTarget,
+  FloatingNode,
   FloatingState,
   FullLayoutTreeState,
   LayoutNode,
@@ -388,6 +389,7 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
       return {
         ...merged,
         ...panels,
+        floating: withoutSettingsWindows(panels.floating),
         sidebar: normalizeSidebar(merged.sidebar),
         ai: {
           ...current.ai,
@@ -399,6 +401,11 @@ export const useLayoutStore = create<FullLayoutTreeState>()(
     },
   }),
 );
+
+/// Settings open as an overlay now; a settings window kept from before would show the old panel.
+export function withoutSettingsWindows(floating: FloatingNode[] | undefined): FloatingNode[] {
+  return (floating ?? []).filter((node) => !findPanelByKind(node.child, "settings"));
+}
 
 function extractFirstPanel(node: LayoutNode): LayoutNode | null {
   if (node.type === "panel") return node;

@@ -28,7 +28,8 @@ const AUTO_APPROVE_OPTIONS: Array<{ value: AgentAutoApprove; label: string }> = 
   { value: "all", label: "Auto-approve everything" },
 ];
 
-export function AgentSettings() {
+/** `agents` = approvals, nesting and allowed commands; `worktrees` = what happens to agent worktrees. */
+export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
   const { agent, setAgentSettings } = useSettingsStore(
     useShallow((s) => ({ agent: s.agent, setAgentSettings: s.setAgentSettings })),
   );
@@ -49,6 +50,25 @@ export function AgentSettings() {
       allowedCommands: agent.allowedCommands.filter((p) => p !== pattern),
     });
   };
+
+  if (part === "worktrees") {
+    return (
+      <div className="flex flex-col gap-8">
+        <SettingSection title="Worktrees">
+          <SettingRow
+            label="Remove worktrees automatically when a session is finished"
+            description="After a merge, or when a thread, task or session is deleted, archived or done. Worktrees with uncommitted changes are kept."
+            control={
+              <Switch
+                checked={agent.removeWorktrees}
+                onCheckedChange={(checked) => setAgentSettings({ removeWorktrees: checked })}
+              />
+            }
+          />
+        </SettingSection>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -102,19 +122,6 @@ export function AgentSettings() {
                 if (!Number.isInteger(value) || value < 1) return;
                 setAgentSettings({ stepLimit: value });
               }}
-            />
-          }
-        />
-      </SettingSection>
-
-      <SettingSection title="Worktrees">
-        <SettingRow
-          label="Remove worktrees automatically when a session is finished"
-          description="After a merge, or when a thread, task or session is deleted, archived or done. Worktrees with uncommitted changes are kept."
-          control={
-            <Switch
-              checked={agent.removeWorktrees}
-              onCheckedChange={(checked) => setAgentSettings({ removeWorktrees: checked })}
             />
           }
         />

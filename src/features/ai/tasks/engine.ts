@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 
+import { openSettings } from "@/features/settings/openSettings";
 import {
   engineCanChat,
   resolveEffectiveEngine,
@@ -7,7 +8,6 @@ import {
   type EngineDefaults,
 } from "@/shared/lib/ai/sessionEngine";
 import { useAIStore, type AgentEngine, type CLIManifest } from "@/shared/stores/ai";
-import { useLayoutStore } from "@/shell/layout/store";
 
 export const NO_TASK_ENGINE_MESSAGE = "No AI provider or coding CLI is set up";
 
@@ -41,7 +41,7 @@ export function toastNoTaskEngine(): void {
   toast.error(NO_TASK_ENGINE_MESSAGE, {
     action: {
       label: "Open Settings",
-      onClick: () => useLayoutStore.getState().addFloatingPanel("settings"),
+      onClick: () => openSettings("agents"),
     },
   });
 }

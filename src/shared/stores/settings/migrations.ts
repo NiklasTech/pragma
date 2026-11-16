@@ -145,6 +145,7 @@ const REMOVED_KEYS = {
   ai: ["terminalSuggestions"],
   agent: ["enabled"],
   notifications: ["statusSummary", "approvalNeeded", "badge", "inAppPopups", "playSound"],
+  appearance: ["accentColor"],
 } as const;
 
 /** Carries the old popup and sound switches over to the card and sound of the new three ways. */
@@ -207,13 +208,17 @@ export function mergeWithDefaults(
     workspace: withoutRemovedKeys("workspace", mergePartial(defaults.workspace, partial.workspace)),
     mcp: migrateMcpSettings(mergePartial(defaults.mcp, partial.mcp)),
     lsp: mergePartial(defaults.lsp, partial.lsp),
-    experimental: mergePartial(defaults.experimental, partial.experimental),
+    // CLIs are core now; the old experimental switch could have left them off.
+    experimental: { ...mergePartial(defaults.experimental, partial.experimental), acp: true },
     agent: withoutRemovedKeys("agent", mergePartial(defaults.agent, partial.agent)),
     notifications: withoutRemovedKeys(
       "notifications",
       mergePartial(defaults.notifications, migrateNotificationSettings(partial.notifications)),
     ),
-    appearance: mergePartial(defaults.appearance, partial.appearance),
+    appearance: withoutRemovedKeys(
+      "appearance",
+      mergePartial(defaults.appearance, partial.appearance),
+    ),
     repositoryColors: mergePartial(defaults.repositoryColors, partial.repositoryColors),
     customThemes: { ...defaults.customThemes, ...partial.customThemes },
     extensions: { ...defaults.extensions, ...partial.extensions },

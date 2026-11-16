@@ -4,7 +4,6 @@ import * as React from "react";
 
 import { Info } from "@phosphor-icons/react";
 
-import { Switch } from "@/shared/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { aiProviderForCLI } from "@/shared/lib/ai-providers";
 import { useAIStore } from "@/shared/stores/ai";
@@ -68,62 +67,39 @@ export function CliIntegrationSection() {
 
   return (
     <SettingSection
-      title="Local CLI Integration"
-      badge={{ label: "Experimental", variant: "warning" }}
+      title="Coding CLIs"
+      action={
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            delay={100}
+            aria-label="About coding CLIs"
+            className="flex items-center text-fg-subtle transition-colors hover:text-fg-default"
+          >
+            <Info size={14} />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm">
+            <span className="flex flex-col gap-2">
+              <span>
+                Pragma can speak the Agent Client Protocol (ACP) with supported CLIs running
+                locally. ACP turns use the subscription you signed into in the official CLI. API
+                keys under Editor, Models are a separate path: they stay in Pragma's own request
+                loop and are never handed to a CLI.
+              </span>
+              <span>
+                Nothing is installed or launched until you press Install, and a CLI only runs while
+                it is the active provider. Codex CLI is published by OpenAI, Claude Code by
+                Anthropic, Gemini CLI by Google, GitHub Copilot CLI by GitHub, Kimi Code by Moonshot
+                AI, Grok Build by xAI, Cursor CLI by Cursor, OpenCode by the OpenCode project,
+                Hermes Agent by Nous Research, and DeepSeek Harness by DeepSeek, each distributed
+                separately. Pragma runs the unmodified official CLIs and is not affiliated with any
+                of these vendors.
+              </span>
+            </span>
+          </TooltipContent>
+        </Tooltip>
+      }
     >
-      <div className="flex items-center justify-between gap-6 py-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="flex items-center gap-1.5 text-ui-sm font-medium text-fg-default">
-            Enable local CLI integration
-            <Tooltip>
-              <TooltipTrigger
-                type="button"
-                delay={100}
-                aria-label="About local CLI integration"
-                className="flex items-center text-fg-subtle transition-colors hover:text-fg-default"
-              >
-                <Info size={14} />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-sm">
-                <span className="flex flex-col gap-2">
-                  <span>
-                    Pragma can speak the Agent Client Protocol (ACP) with supported CLIs running
-                    locally. ACP turns use the subscription you signed into in the official CLI. API
-                    keys configured above are a separate path: they stay in Pragma's own request
-                    loop and are never handed to a CLI.
-                  </span>
-                  <span>
-                    Nothing is installed or launched until you press Install, and a CLI only runs
-                    while it is the active provider. Codex CLI is published by OpenAI, Claude Code
-                    by Anthropic, Gemini CLI by Google, GitHub Copilot CLI by GitHub, Kimi Code by
-                    Moonshot AI, Grok Build by xAI, Cursor CLI by Cursor, OpenCode by the OpenCode
-                    project, Hermes Agent by Nous Research, and DeepSeek Harness by DeepSeek, each
-                    distributed separately. Pragma runs the unmodified official CLIs and is not
-                    affiliated with any of these vendors.
-                  </span>
-                </span>
-              </TooltipContent>
-            </Tooltip>
-          </span>
-          <span className="text-ui-xs leading-relaxed text-fg-subtle">
-            Turn on experimental support for subscription CLIs like Codex, Claude Code, Gemini CLI,
-            GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, Hermes Agent, and
-            DeepSeek Harness.
-          </span>
-        </div>
-        <Switch
-          checked={settingsStore.experimental.acp}
-          onCheckedChange={(v) => settingsStore.setExperimentalEnabled("acp", v)}
-          aria-label="Enable experimental local CLI integration"
-        />
-      </div>
-
-      {!settingsStore.experimental.acp && (
-        <p className="py-3 text-ui-xs text-status-warning">
-          Local CLI integration is currently disabled. Enable the toggle above to use it.
-        </p>
-      )}
-
       <div className="flex flex-col divide-y divide-border-subtle">
         {aiStore.cliManifests.length === 0 && (
           <p className="py-3 text-ui-sm text-fg-muted">Loading providers...</p>

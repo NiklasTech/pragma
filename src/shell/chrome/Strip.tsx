@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { openSettings } from "@/features/settings/openSettings";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CornersIn,
@@ -42,7 +43,6 @@ export function Strip() {
     return tab?.kind === "file" ? tab.isModified : false;
   });
   const shortcuts = useSettingsStore((s) => s.shortcuts);
-  const addFloatingPanel = useLayoutStore((s) => s.addFloatingPanel);
   const sidebar = useLayoutStore((s) => s.sidebar);
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar);
   const threadsOpen = useAgentsUiStore((s) => s.threadsOpen);
@@ -144,7 +144,7 @@ export function Strip() {
               icon={GearSix}
               label="Settings"
               shortcut={formatShortcut(shortcuts["view.openSettings"], isMac)}
-              onClick={() => addFloatingPanel("settings")}
+              onClick={() => openSettings()}
             />
             <div className="mx-1 h-4 w-px bg-border" />
             <IconButton

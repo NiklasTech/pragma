@@ -25,7 +25,6 @@ import { TestConnection } from "./ai/TestConnection";
 import type { ApiKeySaveStatus, ConnectionTestStatus } from "./ai/types";
 import { ChatContextSettings } from "./ChatContextSettings";
 import { ProjectRulesSettings } from "./ProjectRulesSettings";
-import { SkillsSettings } from "./SkillsSettings";
 
 function isProviderConfigured(
   provider: AIProvider,
@@ -43,7 +42,8 @@ function isProviderConfigured(
   return Boolean(apiKeyRef);
 }
 
-export function AISettings() {
+/** `models` = the providers behind editor AI; `agents` = how CLIs and chats run. */
+export function AISettings({ part }: { part: "models" | "agents" }) {
   const aiStore = useAIStore();
   const settingsStore = useSettingsStore();
 
@@ -168,9 +168,19 @@ export function AISettings() {
     aiStore.cliStatuses,
   );
 
+  if (part === "agents") {
+    return (
+      <div className="flex flex-col gap-8">
+        <CliIntegrationSection />
+        <ChatContextSettings />
+        <ProjectRulesSettings />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
-      <SettingSection title="Provider">
+      <SettingSection title="Models">
         <ProviderFields
           provider={activeProvider}
           model={providerConfig.model}
@@ -229,8 +239,6 @@ export function AISettings() {
         )}
       </SettingSection>
 
-      <CliIntegrationSection />
-
       <InlineCompletionSection
         enabled={settingsStore.ai.inlineCompletion}
         debounce={settingsStore.ai.completionDebounce}
@@ -241,12 +249,6 @@ export function AISettings() {
       />
 
       <TerminalSuggestionSection />
-
-      <ChatContextSettings />
-
-      <ProjectRulesSettings />
-
-      <SkillsSettings />
     </div>
   );
 }

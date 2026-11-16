@@ -207,7 +207,7 @@ export interface SettingsState {
   experimental: ExperimentalSettings;
   agent: AgentSettings;
   notifications: NotificationSettings;
-  /** Density, UI scale, UI font and accent color; independent of the theme. */
+  /** Density, UI scale, UI font and accessibility; independent of the theme. */
   appearance: AppearanceSettings;
   /** Personal colors per repository path; not written to the workspace settings. */
   repositoryColors: RepositoryColorSettings;
@@ -219,8 +219,6 @@ export interface SettingsState {
 }
 
 export interface AppearanceSettings extends UiMetricsSettings {
-  /** Accent color for every theme; empty uses the theme's own accent. */
-  accentColor: string;
   /** Git, diff and status colors that red-green color vision tells apart. */
   colorBlindStatus: boolean;
   /** Keeps a strong focus outline on every focused control, also after mouse clicks. */

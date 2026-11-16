@@ -21,6 +21,13 @@ const PAGE_ITEMS: SearchItem[] = [
     category: "agents",
   },
   {
+    id: "coding-clis",
+    label: "Coding CLIs",
+    keywords:
+      "cli codex claude code gemini copilot opencode kimi cursor grok acp subscription install",
+    category: "agents",
+  },
+  {
     id: "accessibility",
     label: "Accessibility",
     keywords: "accessibility reduce motion animation focus outline color blind high contrast",
@@ -30,21 +37,21 @@ const PAGE_ITEMS: SearchItem[] = [
     id: "layout-reset",
     label: "Reset Panel Sizes",
     keywords: "layout reset panels size",
-    category: "layout",
+    category: "spaces",
     target: "Reset Layout",
   },
   {
     id: "about-version",
     label: "Version",
     keywords: "about version update release pragma",
-    category: "about",
+    category: "general",
     target: "Application",
   },
   {
     id: "about-license",
     label: "License",
     keywords: "about license legal copyright apache",
-    category: "about",
+    category: "general",
     target: "Legal",
   },
 ];
