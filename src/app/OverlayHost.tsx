@@ -5,6 +5,7 @@ import { AgentPeek } from "@/features/ai/peek/AgentPeek";
 import { QuickStartDialog } from "@/features/ai/quickStart/QuickStartDialog";
 import { ReviewOverlay } from "@/features/ai/review/ReviewOverlay";
 import { GitHistoryOverlay } from "@/features/gitHistory/GitHistoryOverlay";
+import { SettingsOverlay } from "@/features/settings/components/SettingsOverlay";
 import { SpacesOverlay } from "@/shell/spaces/SpacesOverlay";
 import { GoTo } from "./goTo/GoTo";
 
@@ -18,6 +19,7 @@ export const HOSTED_OVERLAYS: ReadonlyArray<readonly [OverlayId, ComponentType]>
   ["peek", AgentPeek],
   ["review", ReviewOverlay],
   ["git", GitHistoryOverlay],
+  ["settings", SettingsOverlay],
 ];
 
 export function OverlayHost() {

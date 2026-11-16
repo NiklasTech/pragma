@@ -6,6 +6,8 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Check } from "@phosphor-icons/react";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import { Button } from "@/shared/components/ui/button";
+import { Kbd } from "@/shared/components/ui/kbd";
 import { CATEGORIES, type Category } from "./settings-categories";
 import { SettingsSearch } from "./SettingsSearch";
 import { SettingsNav } from "./SettingsNav";
@@ -14,8 +16,15 @@ import { SettingsCategoryContent } from "./SettingsCategoryContent";
 import { revealSetting } from "./revealSetting";
 import type { SearchItem } from "./settings-search-items";
 
-export function Settings() {
-  const [activeCategory, setActiveCategory] = React.useState<Category>("editor");
+export function Settings({
+  initialCategory,
+  onClose,
+}: {
+  initialCategory?: Category;
+  /** Shows Close in the header; the overlay passes it. */
+  onClose?: () => void;
+}) {
+  const [activeCategory, setActiveCategory] = React.useState<Category>(initialCategory ?? "agents");
   const [query, setQuery] = React.useState("");
   const [saveIndicator, setSaveIndicator] = React.useState<"idle" | "saved">("idle");
   // A new object per selection, so picking the same result again scrolls to it again.
@@ -101,6 +110,11 @@ export function Settings() {
                 <Check size={12} />
                 Saved
               </span>
+              {onClose && (
+                <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0">
+                  Close <Kbd>Esc</Kbd>
+                </Button>
+              )}
             </div>
             <ScrollArea className="min-h-0 flex-1">
               <div ref={contentRef} className="mx-auto w-full max-w-3xl px-8 pb-10">

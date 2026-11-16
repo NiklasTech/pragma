@@ -1,5 +1,6 @@
 "use client";
 
+import { openSettings as openSettingsOverlay } from "@/features/settings/openSettings";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PaperPlaneRight, Plug, Plus, Stop } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -13,7 +14,6 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useSettingsStore } from "@/shared/stores/settings";
-import { useLayoutStore } from "@/shell/layout/store";
 import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
 import { useComposerDictation } from "@/features/ai/dictation/useComposerDictation";
 import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
@@ -131,7 +131,7 @@ export function ChatComposer({
   }, []);
 
   const openSettings = () => {
-    useLayoutStore.getState().addFloatingPanel("settings");
+    openSettingsOverlay("agents");
   };
 
   const moveCursor = useCallback((position: number) => {

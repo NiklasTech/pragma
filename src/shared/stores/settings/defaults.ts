@@ -141,7 +141,6 @@ export const defaultSettings: SettingsState = {
     uiScale: 100,
     uiFontId: "",
     uiFontFamily: "",
-    accentColor: "",
     colorBlindStatus: false,
     alwaysShowFocus: false,
     reduceMotion: "system",

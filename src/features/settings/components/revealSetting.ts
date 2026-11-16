@@ -30,6 +30,13 @@ export function revealSetting(root: HTMLElement, target: string): () => void {
       if (framesLeft > 0) frame = requestAnimationFrame(() => attempt(framesLeft - 1));
       return;
     }
+    const folded = label.closest<HTMLElement>("[hidden]");
+    if (folded) {
+      // Folded sections render with hidden="until-found" and open on beforematch.
+      folded.dispatchEvent(new Event("beforematch", { bubbles: true }));
+      if (framesLeft > 0) frame = requestAnimationFrame(() => attempt(framesLeft - 1));
+      return;
+    }
     const row = label.closest<HTMLElement>("[data-setting-row]") ?? label.parentElement ?? label;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     row.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });

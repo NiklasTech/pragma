@@ -1,127 +1,91 @@
 import type { Icon } from "@phosphor-icons/react";
 import {
   Code,
-  Terminal,
-  Robot,
-  Palette,
-  PlugsConnected,
-  Layout,
+  GearSix,
+  GitBranch,
   Keyboard,
-  Info,
-  BracketsAngle,
+  Palette,
   PuzzlePiece,
-  Microphone,
-  FolderSimple,
+  Robot,
+  Stack,
+  Terminal,
 } from "@phosphor-icons/react";
 
 export type Category =
+  | "general"
+  | "agents"
+  | "appearance"
   | "editor"
   | "terminal"
-  | "agents"
-  | "voice"
-  | "appearance"
-  | "mcp"
-  | "layout"
-  | "keyboard"
-  | "project"
-  | "languages"
-  | "extensions"
-  | "about";
+  | "git"
+  | "spaces"
+  | "keys"
+  | "extensions";
 
 interface CategoryDef {
   id: Category;
   label: string;
   icon: Icon;
-  group: string;
   description: string;
 }
 
 export const CATEGORIES: CategoryDef[] = [
   {
-    id: "editor",
-    label: "Editor",
-    icon: Code,
-    group: "Workspace",
-    description: "Typing, formatting and how code is displayed.",
-  },
-  {
-    id: "terminal",
-    label: "Terminal",
-    icon: Terminal,
-    group: "Workspace",
-    description: "Shell, fonts and suggestions in the integrated terminal.",
-  },
-  {
-    id: "layout",
-    label: "Layout",
-    icon: Layout,
-    group: "Workspace",
-    description: "Sidebar, panels and what the status bar shows.",
-  },
-  {
-    id: "keyboard",
-    label: "Keyboard",
-    icon: Keyboard,
-    group: "Workspace",
-    description: "Every shortcut in one place. Click a binding to change it.",
-  },
-  {
-    id: "project",
-    label: "Project",
-    icon: FolderSimple,
-    group: "Workspace",
-    description:
-      "Overrides for this folder, saved in .pragma/settings.json and shared with the repo.",
+    id: "general",
+    label: "General",
+    icon: GearSix,
+    description: "Version, updates and open source licenses.",
   },
   {
     id: "agents",
     label: "Agents",
     icon: Robot,
-    group: "Intelligence",
-    description: "AI providers, models and how agents ask before they act.",
-  },
-  {
-    id: "voice",
-    label: "Voice",
-    icon: Microphone,
-    group: "Intelligence",
-    description: "Dictate into the chat by click or by holding a shortcut.",
-  },
-  {
-    id: "mcp",
-    label: "MCP",
-    icon: PlugsConnected,
-    group: "Intelligence",
-    description: "Connect Model Context Protocol servers as extra tools.",
-  },
-  {
-    id: "languages",
-    label: "Languages",
-    icon: BracketsAngle,
-    group: "Intelligence",
-    description: "Language servers for completion, diagnostics and navigation.",
+    description: "Which coding CLIs Pragma starts, what they may do and how they reach you.",
   },
   {
     id: "appearance",
     label: "Appearance",
     icon: Palette,
-    group: "Appearance",
-    description: "Themes, density, scale and the interface font.",
+    description: "Theme, fonts, density and motion.",
+  },
+  {
+    id: "editor",
+    label: "Editor",
+    icon: Code,
+    description: "Typing, display, language servers and the models behind AI in the editor.",
+  },
+  {
+    id: "terminal",
+    label: "Terminal",
+    icon: Terminal,
+    description: "Shell, font, scrollback and environment of the integrated terminal.",
+  },
+  {
+    id: "git",
+    label: "Git and worktrees",
+    icon: GitBranch,
+    description: "Where agents work and what happens to their worktrees.",
+  },
+  {
+    id: "spaces",
+    label: "Spaces and layouts",
+    icon: Stack,
+    description: "The pane layout and the values this space sets in .pragma/settings.json.",
+  },
+  {
+    id: "keys",
+    label: "Keys",
+    icon: Keyboard,
+    description: "Every shortcut in one place. Click a binding to change it.",
   },
   {
     id: "extensions",
-    label: "Extensions",
+    label: "Extensions and tools",
     icon: PuzzlePiece,
-    group: "More",
-    description: "Install and manage Pragma extensions.",
-  },
-  {
-    id: "about",
-    label: "About",
-    icon: Info,
-    group: "More",
-    description: "Version, updates and open source licenses.",
+    description: "MCP servers, skills and Pragma extensions.",
   },
 ];
 
-export const CATEGORY_GROUPS = Array.from(new Set(CATEGORIES.map((category) => category.group)));
+export function isCategory(value: string | null | undefined): value is Category {
+  return CATEGORIES.some((category) => category.id === value);
+}

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { openSettings } from "@/features/settings/openSettings";
 import { useOpenFile } from "@/shared/hooks/useOpenFile";
 import { useSaveFile } from "@/shared/hooks/useSaveFile";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
@@ -112,7 +113,7 @@ export function useAppShortcutActions(): ShortcutActions {
         });
       },
       "view.openSettings": () => {
-        useLayoutStore.getState().addFloatingPanel("settings");
+        openSettings();
       },
       "view.toggleContextPane": () => {
         const agentsUi = useAgentsUiStore.getState();

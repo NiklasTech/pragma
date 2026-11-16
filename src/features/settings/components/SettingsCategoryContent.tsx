@@ -10,31 +10,58 @@ import { KeyboardSettings } from "./KeyboardSettings";
 import { AboutSettings } from "./AboutSettings";
 import { ExtensionSettings } from "./ExtensionSettings";
 import { LspSettings } from "./LspSettings";
+import { SkillsSettings } from "./SkillsSettings";
 import { VoiceSettings } from "./VoiceSettings";
 import { ProjectSettings } from "./project/ProjectSettings";
 import type { Category } from "./settings-categories";
 
+function Stack({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col gap-8">{children}</div>;
+}
+
 export function SettingsCategoryContent({ category }: { category: Category }) {
-  return (
-    <>
-      {category === "editor" && <EditorSettings />}
-      {category === "terminal" && <TerminalSettings />}
-      {category === "agents" && (
-        <div className="flex flex-col gap-8">
-          <AISettings />
-          <AgentSettings />
+  switch (category) {
+    case "general":
+      return <AboutSettings />;
+    case "agents":
+      return (
+        <Stack>
+          <AISettings part="agents" />
+          <AgentSettings part="agents" />
           <NotificationSettings />
-        </div>
-      )}
-      {category === "voice" && <VoiceSettings />}
-      {category === "appearance" && <AppearanceSettings />}
-      {category === "mcp" && <McpSettings />}
-      {category === "layout" && <LayoutSettings />}
-      {category === "keyboard" && <KeyboardSettings />}
-      {category === "project" && <ProjectSettings />}
-      {category === "languages" && <LspSettings />}
-      {category === "extensions" && <ExtensionSettings />}
-      {category === "about" && <AboutSettings />}
-    </>
-  );
+          <VoiceSettings />
+        </Stack>
+      );
+    case "appearance":
+      return <AppearanceSettings />;
+    case "editor":
+      return (
+        <Stack>
+          <EditorSettings />
+          <AISettings part="models" />
+          <LspSettings />
+        </Stack>
+      );
+    case "terminal":
+      return <TerminalSettings />;
+    case "git":
+      return <AgentSettings part="worktrees" />;
+    case "spaces":
+      return (
+        <Stack>
+          <LayoutSettings />
+          <ProjectSettings />
+        </Stack>
+      );
+    case "keys":
+      return <KeyboardSettings />;
+    case "extensions":
+      return (
+        <Stack>
+          <McpSettings />
+          <SkillsSettings />
+          <ExtensionSettings />
+        </Stack>
+      );
+  }
 }

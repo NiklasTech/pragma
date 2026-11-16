@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vite-plus/test";
-import { defaultSettings } from "@/shared/stores/settings/defaults";
 import { ACCENT_PRESETS, readableAccent, withAccent } from "./accent";
 import { generateCssVariables, themeMode } from "./applyTheme";
 import { contrastRatio, parseColor } from "./color";
@@ -22,10 +21,6 @@ function ratio(a: string | undefined, b: string | undefined): number {
 }
 
 describe("accent color", () => {
-  it("defaults to the theme's own accent", () => {
-    expect(defaultSettings.appearance.accentColor).toBe("");
-  });
-
   it("changes buttons, focus rings, selection and active states in every built-in theme", () => {
     for (const theme of builtInThemeList) {
       const accented = withAccent(theme, "#ff00aa");

@@ -1,4 +1,5 @@
 import type { EditorView } from "@codemirror/view";
+import { openSettings } from "@/features/settings/openSettings";
 import { useShallow } from "zustand/react/shallow";
 import { Sparkle, Spinner } from "@phosphor-icons/react";
 
@@ -7,7 +8,6 @@ import { Input } from "@/shared/components/ui/input";
 import { Kbd } from "@/shared/components/ui/kbd";
 import { getIsMac } from "@/shared/lib/shortcuts";
 import { useAIStore } from "@/shared/stores/ai";
-import { useLayoutStore } from "@/shell/layout/store";
 
 import { acceptInlineEdit, closeInlineEdit } from "./inlineEdit";
 import { useInlineEditStore } from "./inlineEditStore";
@@ -100,11 +100,7 @@ export function InlineEditPanel({ view, id }: { view: EditorView; id: number }) 
         )}
 
         {!model && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => useLayoutStore.getState().addFloatingPanel("settings")}
-          >
+          <Button variant="ghost" size="sm" onClick={() => openSettings("editor")}>
             Open settings
           </Button>
         )}
