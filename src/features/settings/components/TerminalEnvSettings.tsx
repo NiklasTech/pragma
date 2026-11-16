@@ -4,11 +4,16 @@ import { Plus, X } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { findSpaceByFolder } from "@/shared/stores/spaces/model";
 import { useSettingsStore, type TerminalEnvVar } from "@/shared/stores/settings";
 import { SettingSection } from "./ui/SettingSection";
 
 export function TerminalEnvSettings() {
   const rootPath = useFileExplorerStore((s) => s.rootPath);
+  const spaceName = useOpenRepositoriesStore((s) =>
+    rootPath ? (findSpaceByFolder(s.spaces, rootPath)?.name ?? rootPath) : null,
+  );
   const envByWorkspace = useSettingsStore((s) => s.terminal.envByWorkspace);
   const setTerminalSettings = useSettingsStore((s) => s.setTerminalSettings);
   const vars = rootPath ? (envByWorkspace[rootPath] ?? []) : [];
@@ -26,7 +31,7 @@ export function TerminalEnvSettings() {
 
   return (
     <SettingSection
-      title="Environment"
+      title="Terminal environment"
       action={
         <Button
           size="xs"
@@ -42,8 +47,8 @@ export function TerminalEnvSettings() {
     >
       <div className="flex flex-col gap-2 py-3">
         <span className="text-ui-xs leading-relaxed text-fg-subtle">
-          {rootPath
-            ? `Environment variables for new terminals in ${rootPath}.`
+          {spaceName
+            ? `Variables for new terminals in ${spaceName}. They stay in your own settings and are not written to .pragma/settings.json.`
             : "Open a folder to set environment variables for its terminals."}
         </span>
         {vars.map((item, index) => (
