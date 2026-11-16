@@ -58,7 +58,7 @@ export const CATEGORIES: CategoryDef[] = [
     id: "terminal",
     label: "Terminal",
     icon: Terminal,
-    description: "Shell, font, scrollback and environment of the integrated terminal.",
+    description: "Shell, font, scrollback and suggestions of the integrated terminal.",
   },
   {
     id: "git",
@@ -70,7 +70,8 @@ export const CATEGORIES: CategoryDef[] = [
     id: "spaces",
     label: "Spaces and layouts",
     icon: Stack,
-    description: "The pane layout and the values this space sets in .pragma/settings.json.",
+    description:
+      "The pane layout, terminal variables and the values this space shares in .pragma/settings.json.",
   },
   {
     id: "keys",

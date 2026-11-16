@@ -13,6 +13,7 @@ import { LspSettings } from "./LspSettings";
 import { SkillsSettings } from "./SkillsSettings";
 import { VoiceSettings } from "./VoiceSettings";
 import { ProjectSettings } from "./project/ProjectSettings";
+import { TerminalEnvSettings } from "./TerminalEnvSettings";
 import type { Category } from "./settings-categories";
 
 function Stack({ children }: { children: React.ReactNode }) {
@@ -50,6 +51,7 @@ export function SettingsCategoryContent({ category }: { category: Category }) {
       return (
         <Stack>
           <LayoutSettings />
+          <TerminalEnvSettings />
           <ProjectSettings />
         </Stack>
       );

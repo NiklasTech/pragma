@@ -15,7 +15,6 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { SettingSection } from "./ui/SettingSection";
 import { SettingRow } from "./ui/SettingRow";
 import { FontSelect } from "./FontSelect";
-import { TerminalEnvSettings } from "./TerminalEnvSettings";
 
 const CURSOR_STYLE_LABELS: Record<TerminalCursorStyle, string> = {
   block: "Block",
@@ -160,8 +159,6 @@ export function TerminalSettings() {
           }
         />
       </SettingSection>
-
-      <TerminalEnvSettings />
 
       <SettingSection title="AI">
         <SettingRow
