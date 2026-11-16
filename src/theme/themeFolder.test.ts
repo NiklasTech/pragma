@@ -19,7 +19,10 @@ function extending(id: string, base: string, accent?: string): Record<string, un
 describe("themes folder loader", () => {
   it("lets files extend built-in themes and each other", () => {
     const entries = loadThemeFolder(
-      [file("b.json", extending("b", "a", "#00ff00")), file("a.json", extending("a", "nord"))],
+      [
+        file("b.json", extending("b", "a", "#00ff00")),
+        file("a.json", extending("a", "light-default")),
+      ],
       builtInThemeList,
       reserved,
       {},
@@ -44,16 +47,16 @@ describe("themes folder loader", () => {
   it("rejects ids of built-in themes and ids used twice", () => {
     const entries = loadThemeFolder(
       [
-        file("a.json", extending("nord", "dark-default")),
-        file("b.json", extending("mine", "nord")),
-        file("c.json", extending("mine", "nord")),
+        file("a.json", extending("light-default", "dark-default")),
+        file("b.json", extending("mine", "light-default")),
+        file("c.json", extending("mine", "light-default")),
       ],
       builtInThemeList,
       reserved,
       {},
     );
     expect(entries["a.json"].errors).toEqual([
-      'metadata.id: "nord" is already used by a built-in theme',
+      'metadata.id: "light-default" is already used by a built-in theme',
     ]);
     expect(entries["b.json"].errors).toEqual([]);
     expect(entries["c.json"].errors).toEqual(['metadata.id: "mine" is already used by b.json']);
@@ -61,7 +64,7 @@ describe("themes folder loader", () => {
 
   it("keeps the last valid version while a file has errors", () => {
     const first = loadThemeFolder(
-      [file("a.json", extending("a", "nord", "#00ff00"))],
+      [file("a.json", extending("a", "light-default", "#00ff00"))],
       builtInThemeList,
       reserved,
       {},
@@ -76,7 +79,7 @@ describe("themes folder loader", () => {
     expect(broken["a.json"].theme?.tokens.colors.accent.default).toBe("#00ff00");
 
     const invalid = loadThemeFolder(
-      [file("a.json", extending("a", "nord", "pink"))],
+      [file("a.json", extending("a", "light-default", "pink"))],
       builtInThemeList,
       reserved,
       broken,
@@ -87,7 +90,7 @@ describe("themes folder loader", () => {
 
   it("drops files that were removed", () => {
     const first = loadThemeFolder(
-      [file("a.json", extending("a", "nord"))],
+      [file("a.json", extending("a", "light-default"))],
       builtInThemeList,
       reserved,
       {},

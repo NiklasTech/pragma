@@ -7,7 +7,9 @@ import { builtInThemeList } from "./themes";
 import type { Theme } from "./types";
 
 const lookup = lookupIn(builtInThemeList);
-const nord = builtInThemeList.find((theme) => theme.metadata.id === "nord") as Theme;
+const pragmaLight = builtInThemeList.find(
+  (theme) => theme.metadata.id === "light-default",
+) as Theme;
 
 function ok(result: ThemeResolution): Theme {
   if (!result.ok) throw new Error(result.errors.join("\n"));
@@ -30,10 +32,13 @@ const meta = { id: "mine", name: "Mine" };
 describe("extends", () => {
   it("takes every missing token from the base theme", () => {
     const theme = ok(
-      resolveThemeFile({ format: "pragma-theme-v1", metadata: meta, extends: "nord" }, lookup),
+      resolveThemeFile(
+        { format: "pragma-theme-v1", metadata: meta, extends: "light-default" },
+        lookup,
+      ),
     );
-    expect(theme.tokens).toEqual(nord.tokens);
-    expect(theme.appearance).toEqual(nord.appearance);
+    expect(theme.tokens).toEqual(pragmaLight.tokens);
+    expect(theme.appearance).toEqual(pragmaLight.appearance);
     expect(theme.metadata).toEqual(meta);
   });
 
@@ -43,7 +48,7 @@ describe("extends", () => {
         {
           format: "pragma-theme-v1",
           metadata: meta,
-          extends: "nord",
+          extends: "light-default",
           tokens: { colors: { accent: { default: "#ff00aa" } } },
         },
         lookup,
@@ -53,11 +58,11 @@ describe("extends", () => {
     expect(css.get("--color-accent")).toBe("#ff00aa");
     expect(css.get("--editor-cursor")).toBe("#ff00aa");
     expect(css.get("--color-thread-active")).toBe("#ff00aa");
-    expect(css.get("--color-accent-subtle")).toBe("rgba(255, 0, 170, 0.14)");
-    expect(css.get("--border-focus")).toBe("rgba(255, 0, 170, 0.5)");
-    expect(css.get("--editor-selection")).toBe("rgba(255, 0, 170, 0.25)");
+    expect(css.get("--color-accent-subtle")).toBe("rgba(255, 0, 170, 0.16)");
+    expect(css.get("--border-focus")).toBe("rgba(255, 0, 170, 0.55)");
+    expect(css.get("--editor-selection")).toBe("rgba(255, 0, 170, 0.16)");
     // The built-in theme itself stays untouched.
-    expect(nord.tokens.colors.accent.subtle).toBe("rgba(136, 192, 208, 0.14)");
+    expect(pragmaLight.tokens.colors.accent.subtle).not.toBe(css.get("--color-accent-subtle"));
   });
 
   it("keeps tinted tokens the extending theme sets itself", () => {
@@ -66,7 +71,7 @@ describe("extends", () => {
         {
           format: "pragma-theme-v1",
           metadata: meta,
-          extends: "nord",
+          extends: "light-default",
           tokens: { colors: { accent: { default: "#ff00aa" }, selection: "#123456" } },
         },
         lookup,
@@ -86,7 +91,7 @@ describe("extends", () => {
       {
         format: "pragma-theme-v1",
         metadata: meta,
-        extends: "nord",
+        extends: "light-default",
         tokens: { colors: { accent: { default: "pink" } } },
       },
       lookup,
@@ -189,7 +194,7 @@ describe("palette", () => {
       {
         format: "pragma-theme-v1",
         metadata: meta,
-        extends: "nord",
+        extends: "light-default",
         palette: { background: "#000000", foreground: "#ffffff", accent: "#2f9bff" },
       },
       lookup,

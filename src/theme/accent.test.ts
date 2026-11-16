@@ -6,8 +6,8 @@ import { accentTints } from "./palette";
 import { builtInThemeList, getBuiltInTheme } from "./themes";
 import type { Theme } from "./types";
 
-const nord = getBuiltInTheme("nord") as Theme;
-const paper = getBuiltInTheme("paper-light") as Theme;
+const dark = getBuiltInTheme("dark-default") as Theme;
+const light = getBuiltInTheme("light-default") as Theme;
 
 function css(theme: Theme): Map<string, string> {
   return new Map(generateCssVariables(theme).map(({ name, value }) => [name, value]));
@@ -55,21 +55,21 @@ describe("accent color", () => {
   });
 
   it("reports when the color had to be adjusted", () => {
-    expect(readableAccent(nord, "#88c0d0")).toEqual({ color: "#88c0d0", adjusted: false });
-    const tooDark = readableAccent(nord, "#1a1a2e");
+    expect(readableAccent(dark, "#88c0d0")).toEqual({ color: "#88c0d0", adjusted: false });
+    const tooDark = readableAccent(dark, "#1a1a2e");
     expect(tooDark?.adjusted).toBe(true);
-    const tooLight = readableAccent(paper, "#fff3a0");
+    const tooLight = readableAccent(light, "#fff3a0");
     expect(tooLight?.adjusted).toBe(true);
   });
 
   it("ignores values that are not colors", () => {
-    expect(readableAccent(nord, "pink")).toBeNull();
-    expect(withAccent(nord, "pink")).toBe(nord);
+    expect(readableAccent(dark, "pink")).toBeNull();
+    expect(withAccent(dark, "pink")).toBe(dark);
   });
 
   it("leaves the built-in theme untouched", () => {
-    const before = nord.tokens.colors.accent.default;
-    withAccent(nord, "#ff00aa");
-    expect(nord.tokens.colors.accent.default).toBe(before);
+    const before = dark.tokens.colors.accent.default;
+    withAccent(dark, "#ff00aa");
+    expect(dark.tokens.colors.accent.default).toBe(before);
   });
 });

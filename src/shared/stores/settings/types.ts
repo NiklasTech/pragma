@@ -220,6 +220,8 @@ export interface SettingsState {
   shortcuts: ShortcutMap;
   /** The shortcut defaults revision the stored shortcuts were migrated to. */
   shortcutsRevision: number;
+  /** The theme revision the stored theme choices were migrated to. */
+  themesRevision: number;
 }
 
 export interface AppearanceSettings extends UiMetricsSettings {

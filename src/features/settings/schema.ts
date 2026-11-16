@@ -705,7 +705,7 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
   {
     id: "theme-follow-system",
     keys: ["followSystemTheme"],
-    label: "Follow system appearance",
+    label: "Follow the system",
     description: "Switch between a light and a dark theme with the system",
     keywords: "follow system appearance dark light automatic",
     category: "appearance",
@@ -873,6 +873,7 @@ export const NOT_SETTINGS: Partial<Record<SettingKey, string>> = {
   "ai.migrationRevision": "Migration marker.",
   "mcp.migrationRevision": "Migration marker.",
   shortcutsRevision: "Migration marker.",
+  themesRevision: "Migration marker.",
   "workspace.recentFolders": "History, shown in the welcome page and workspace menu.",
   "workspace.favoriteFolders": "Pinned in the workspace menu.",
   "repositoryColors.byPath": "Picked in the repository color menu.",

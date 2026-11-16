@@ -9,22 +9,18 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import type { Theme } from "@/theme/types";
-
-function getThemePreviewColors(theme: Theme): [string, string, string, string] {
-  const tokens = theme.tokens;
-  const bg = tokens.colors?.background?.root ?? tokens.editor?.background ?? "#1a1b26";
-  const fg = tokens.colors?.foreground?.default ?? tokens.editor?.foreground ?? "#c0caf5";
-  const primary = tokens.colors?.accent?.default ?? "#7aa2f7";
-  const accent = tokens.colors?.accent?.subtle ?? "#565f89";
-  return [bg, fg, primary, accent];
-}
+import { ThemePreview } from "./ThemePreview";
 
 interface ThemeCardProps {
   theme: Theme;
+  /** Splits the preview with a second theme, for following the system. */
+  right?: Theme;
+  /** Name shown under the preview; the theme's name by default. */
+  label?: string;
   active: boolean;
   onSelect: () => void;
-  onDuplicate: () => void;
-  onExport: () => void;
+  onDuplicate?: () => void;
+  onExport?: () => void;
   onDelete?: () => void;
   /** Contrast problems of the theme, shown as a warning. */
   warnings?: string[];
@@ -32,6 +28,8 @@ interface ThemeCardProps {
 
 export function ThemeCard({
   theme,
+  right,
+  label = theme.metadata.name,
   active,
   onSelect,
   onDuplicate,
@@ -39,13 +37,13 @@ export function ThemeCard({
   onDelete,
   warnings = [],
 }: ThemeCardProps) {
-  const [bg, fg, primary, accent] = getThemePreviewColors(theme);
+  const hasMenu = Boolean(onDuplicate || onExport || onDelete);
 
   return (
     <div
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-lg border transition-colors",
-        active ? "border-primary" : "border-border/60 hover:border-border",
+        "relative flex flex-col overflow-hidden rounded-xl border transition-colors",
+        active ? "border-fg-muted" : "border-border hover:border-fg-subtle",
       )}
     >
       <Button
@@ -54,16 +52,11 @@ export function ThemeCard({
         aria-pressed={active}
         className="h-auto flex-col items-stretch gap-2 p-2 text-left font-normal whitespace-normal text-fg-default hover:bg-transparent"
       >
+        <ThemePreview theme={theme} right={right} />
         <span
-          className="flex h-14 w-full items-center justify-center gap-1.5 rounded-md border border-border/30"
-          style={{ backgroundColor: bg }}
+          className={cn("flex min-w-0 items-center justify-between gap-1.5", hasMenu && "pr-6")}
         >
-          <ColorSwatch color={fg} />
-          <ColorSwatch color={primary} />
-          <ColorSwatch color={accent} />
-        </span>
-        <span className="flex min-w-0 items-center justify-between gap-1.5 pr-6">
-          <span className="truncate text-ui-sm text-fg-default">{theme.metadata.name}</span>
+          <span className="truncate text-ui-sm text-fg-default">{label}</span>
           {warnings.length > 0 && (
             <WarningCircle
               size={14}
@@ -74,51 +67,48 @@ export function ThemeCard({
               <title>{warnings.join(". ")}</title>
             </WarningCircle>
           )}
-          {active && <Check size={14} weight="bold" className="shrink-0 text-primary" />}
+          {active && <Check size={14} weight="bold" className="shrink-0 text-fg-default" />}
         </span>
       </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={`Actions for ${theme.metadata.name}`}
-              className="absolute right-1.5 bottom-1.5 text-fg-muted"
-            >
-              <DotsThree size={14} weight="bold" />
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={onDuplicate}>
-            <Copy size={14} />
-            Duplicate
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onExport}>
-            <Export size={14} />
-            Export
-          </DropdownMenuItem>
-          {onDelete && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={onDelete}>
-                <Trash size={14} />
-                Delete
+      {hasMenu && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Actions for ${theme.metadata.name}`}
+                className="absolute right-1.5 bottom-1.5 text-fg-muted"
+              >
+                <DotsThree size={14} weight="bold" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-40">
+            {onDuplicate && (
+              <DropdownMenuItem onClick={onDuplicate}>
+                <Copy size={14} />
+                Duplicate
               </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            )}
+            {onExport && (
+              <DropdownMenuItem onClick={onExport}>
+                <Export size={14} />
+                Export
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                  <Trash size={14} />
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
-  );
-}
-
-function ColorSwatch({ color }: { color: string }) {
-  return (
-    <span
-      className="size-3 rounded-sm border border-border/30"
-      style={{ backgroundColor: color }}
-    />
   );
 }

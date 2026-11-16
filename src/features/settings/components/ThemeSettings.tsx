@@ -2,13 +2,11 @@
 
 import * as React from "react";
 import { Button } from "@/shared/components/ui/button";
-import { Switch } from "@/shared/components/ui/switch";
-import { useTheme, builtInThemeList, themeMode } from "@/theme";
+import { useTheme, builtInThemeList, getBuiltInTheme } from "@/theme";
 import { useThemeFolderStore } from "@/theme/themeFolderStore";
 import { themeContrastIssues } from "@/theme/accessibility";
 import type { Theme } from "@/theme/types";
 import { FolderOpen, UploadSimple } from "@phosphor-icons/react";
-import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 import { ThemeCard } from "./ThemeCard";
 import {
@@ -18,6 +16,9 @@ import {
   importTheme,
   openThemesFolder,
 } from "./theme-actions";
+
+const PRAGMA_DARK = "dark-default";
+const PRAGMA_LIGHT = "light-default";
 
 export function ThemeSettings() {
   const {
@@ -37,23 +38,29 @@ export function ThemeSettings() {
   );
 
   const builtInIds = React.useMemo(() => new Set(builtInThemeList.map((t) => t.metadata.id)), []);
-  const builtInThemes = availableThemes.filter((t) => builtInIds.has(t.metadata.id));
-  const darkThemes = builtInThemes.filter((t) => themeMode(t) === "dark");
-  const lightThemes = builtInThemes.filter((t) => themeMode(t) === "light");
-  const nameOf = (id: string) =>
-    availableThemes.find((t) => t.metadata.id === id)?.metadata.name ?? id;
-  const isSelected = (id: string) =>
-    followSystemTheme ? id === lightThemeId || id === darkThemeId : id === themeId;
+  const findTheme = (id: string) => availableThemes.find((t) => t.metadata.id === id);
+  const pragmaDark = getBuiltInTheme(PRAGMA_DARK);
+  const pragmaLight = getBuiltInTheme(PRAGMA_LIGHT);
+  const highContrastThemes = builtInThemeList.filter(
+    (t) => t.metadata.id !== PRAGMA_DARK && t.metadata.id !== PRAGMA_LIGHT,
+  );
+  const nameOf = (id: string) => findTheme(id)?.metadata.name ?? id;
+  const isSelected = (id: string) => !followSystemTheme && id === themeId;
   const customThemeList = availableThemes.filter((t) => !builtInIds.has(t.metadata.id));
+
+  const choose = (id: string) => {
+    if (followSystemTheme) setFollowSystemTheme(false);
+    setTheme(id);
+  };
 
   const handleDeleteCustom = async (theme: Theme) => {
     const id = theme.metadata.id;
     if (!(await deleteFolderTheme(theme))) deleteCustomTheme(id);
-    if (themeId === id) setTheme("dark-default");
+    if (themeId === id) setTheme(PRAGMA_DARK);
   };
 
   const selectWhenCreated = (id: string | null) => {
-    if (id) setTheme(id);
+    if (id) choose(id);
   };
 
   const renderCard = (theme: Theme, deletable: boolean) => (
@@ -61,7 +68,7 @@ export function ThemeSettings() {
       key={theme.metadata.id}
       theme={theme}
       active={isSelected(theme.metadata.id)}
-      onSelect={() => setTheme(theme.metadata.id)}
+      onSelect={() => choose(theme.metadata.id)}
       onDuplicate={() => void duplicateTheme(theme, availableThemes).then(selectWhenCreated)}
       onExport={() => void exportTheme(theme)}
       onDelete={deletable ? () => void handleDeleteCustom(theme) : undefined}
@@ -91,33 +98,40 @@ export function ThemeSettings() {
           </div>
         }
       >
-        <SettingRow
-          label="Follow system appearance"
-          description={
-            followSystemTheme
-              ? `Uses ${nameOf(lightThemeId)} in light mode and ${nameOf(darkThemeId)} in dark mode. Select a theme to use it for its mode.`
-              : "Switch between a light and a dark theme when the system appearance changes."
-          }
-          control={<Switch checked={followSystemTheme} onCheckedChange={setFollowSystemTheme} />}
-        />
-        <div className="flex flex-col gap-4 pb-4">
-          {[
-            { label: "Dark", themes: darkThemes },
-            { label: "Light", themes: lightThemes },
-          ].map((group) => (
-            <div key={group.label} className="flex flex-col gap-2">
-              <h4 className="px-1 text-ui-xs text-fg-subtle">{group.label}</h4>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-                {group.themes.map((theme) => renderCard(theme, false))}
-              </div>
-            </div>
-          ))}
+        <div className="flex flex-col gap-2 pb-4">
+          <div role="group" aria-label="Theme" className="grid grid-cols-3 gap-2.5">
+            {pragmaDark && renderCard(pragmaDark, false)}
+            {pragmaLight && renderCard(pragmaLight, false)}
+            {pragmaDark && pragmaLight && (
+              <ThemeCard
+                theme={findTheme(darkThemeId) ?? pragmaDark}
+                right={findTheme(lightThemeId) ?? pragmaLight}
+                label="Follow the system"
+                active={followSystemTheme}
+                onSelect={() => setFollowSystemTheme(true)}
+              />
+            )}
+          </div>
+          <p className="px-1 text-ui-xs text-fg-subtle">
+            {followSystemTheme &&
+              `Uses ${nameOf(lightThemeId)} in light mode and ${nameOf(darkThemeId)} in dark mode. `}
+            Orange stays Pragma orange in every theme: it marks what waits on you and your main
+            action.
+          </p>
         </div>
+        {highContrastThemes.length > 0 && (
+          <div className="flex flex-col gap-2 pb-4">
+            <h4 className="px-1 text-ui-xs text-fg-subtle">High contrast</h4>
+            <div className="grid grid-cols-3 gap-2.5">
+              {highContrastThemes.map((theme) => renderCard(theme, false))}
+            </div>
+          </div>
+        )}
       </SettingSection>
 
       {(customThemeList.length > 0 || brokenFiles.length > 0) && (
         <SettingSection title="Custom Themes">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 py-3">
+          <div className="grid grid-cols-3 gap-2.5 py-3">
             {customThemeList.map((theme) => renderCard(theme, true))}
           </div>
           {brokenFiles.map((entry) => (
