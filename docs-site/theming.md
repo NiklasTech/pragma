@@ -6,67 +6,24 @@ Pragma ships with built-in themes and supports importing custom themes as JSON. 
 
 Each theme decides whether Pragma runs in light or dark mode through its `appearance.defaultMode`. Selecting a light theme switches Pragma to light mode, selecting a dark theme to dark mode.
 
-### Follow system appearance
+### Follow the system
 
-Turn on **Follow system appearance** in **Settings > Appearance > Theme** (or choose **System** during onboarding) to switch between a light and a dark theme with the appearance of macOS, Windows or Linux. While it is on, selecting a light theme makes it the theme for light mode and selecting a dark theme makes it the theme for dark mode. Pragma switches without a restart when the system appearance changes.
+**Settings > Appearance > Theme** shows three cards: **Pragma Dark**, **Pragma Light** and **Follow the system**. Follow the system switches between a light and a dark theme with the appearance of macOS, Windows or Linux, without a restart. It keeps the theme you used last for its mode: select a custom dark theme, then **Follow the system**, and Pragma uses that theme in dark mode. Selecting any theme card turns following off again.
 
-### Accent color
-
-**Settings > Appearance > Theme > Accent Color** sets one accent for every theme: **Theme Default**, one of the presets or any color from the picker. Pragma derives the hover, focus, selection and active shades from it with the same rules as the [palette format](#base-colors). If the color would leave too little contrast for text on accent buttons (4.5:1) or against the background (3:1), Pragma lightens or darkens it and says so next to the picker. The accent stays when you switch themes.
+Pragma orange stays the accent in every built-in theme: it marks what waits on you and your main action.
 
 ## Built-in themes
 
 | Id                    | Name                | Mode  |
 | --------------------- | ------------------- | ----- |
-| `dark-default`        | Dark Default        | Dark  |
-| `light-default`       | Light Default       | Light |
-| `catppuccin`          | Catppuccin          | Dark  |
-| `tokyo-night`         | Tokyo Night         | Dark  |
-| `gruvbox`             | Gruvbox             | Dark  |
-| `nord`                | Nord                | Dark  |
-| `rose-pine`           | Rosé Pine           | Dark  |
-| `everforest`          | Everforest          | Dark  |
-| `arctic-light`        | Arctic Light        | Light |
-| `paper-light`         | Paper Light         | Light |
-| `one-dark`            | One Dark            | Dark  |
-| `dracula`             | Dracula             | Dark  |
-| `solarized-dark`      | Solarized Dark      | Dark  |
-| `solarized-light`     | Solarized Light     | Light |
-| `github-dark`         | GitHub Dark         | Dark  |
-| `github-light`        | GitHub Light        | Light |
-| `kanagawa`            | Kanagawa            | Dark  |
-| `ayu-dark`            | Ayu Dark            | Dark  |
-| `ayu-light`           | Ayu Light           | Light |
-| `catppuccin-latte`    | Catppuccin Latte    | Light |
-| `gruvbox-light`       | Gruvbox Light       | Light |
-| `everforest-light`    | Everforest Light    | Light |
-| `rose-pine-dawn`      | Rosé Pine Dawn      | Light |
-| `tokyo-night-day`     | Tokyo Night Day     | Light |
+| `dark-default`        | Pragma Dark         | Dark  |
+| `light-default`       | Pragma Light        | Light |
 | `high-contrast-dark`  | High Contrast Dark  | Dark  |
 | `high-contrast-light` | High Contrast Light | Light |
 
-The two High Contrast themes reach at least 7:1 for text and 3:1 for borders and controls. A theme whose text stays below 4.5:1 shows a warning in the theme list. The themes from One Dark onward are written in the short palette format described below. Their syntax colors come from the original themes and are lifted where needed so code stays readable (at least 4.5:1 against the background).
+The two High Contrast themes reach at least 7:1 for text and 3:1 for borders and controls. A theme whose text stays below 4.5:1 shows a warning in the theme list.
 
-### Credits
-
-These themes are based on the following originals; each theme also lists its author, license and source in `metadata`.
-
-| Theme            | Original by        | License | Source                                                              |
-| ---------------- | ------------------ | ------- | ------------------------------------------------------------------- |
-| One Dark         | GitHub Inc.        | MIT     | <https://github.com/atom/atom/tree/master/packages/one-dark-syntax> |
-| Dracula          | Zeno Rocha         | MIT     | <https://draculatheme.com>                                          |
-| Solarized Dark   | Ethan Schoonover   | MIT     | <https://ethanschoonover.com/solarized/>                            |
-| Solarized Light  | Ethan Schoonover   | MIT     | <https://ethanschoonover.com/solarized/>                            |
-| GitHub Dark      | GitHub Inc.        | MIT     | <https://github.com/primer/github-vscode-theme>                     |
-| GitHub Light     | GitHub Inc.        | MIT     | <https://github.com/primer/github-vscode-theme>                     |
-| Kanagawa         | Tommaso Laurenzi   | MIT     | <https://github.com/rebelot/kanagawa.nvim>                          |
-| Ayu Dark         | Konstantin Pschera | MIT     | <https://github.com/ayu-theme/ayu-colors>                           |
-| Ayu Light        | Konstantin Pschera | MIT     | <https://github.com/ayu-theme/ayu-colors>                           |
-| Catppuccin Latte | Catppuccin         | MIT     | <https://catppuccin.com>                                            |
-| Gruvbox Light    | Pavel Pertsev      | MIT     | <https://github.com/morhetz/gruvbox>                                |
-| Everforest Light | Sainnhe Park       | MIT     | <https://github.com/sainnhe/everforest>                             |
-| Rosé Pine Dawn   | Rosé Pine          | MIT     | <https://rosepinetheme.com>                                         |
-| Tokyo Night Day  | enkia              | MIT     | <https://github.com/enkia/tokyo-night-vscode-theme>                 |
+Pragma used to bundle 22 more themes, such as Nord, Dracula and Solarized. If one of them was selected, as the interface, editor or terminal theme or for following the system, Pragma switches it once to Pragma Dark or Pragma Light of the same mode. A custom theme that extends one of them needs a new base, for example `dark-default`.
 
 ## Custom themes
 
@@ -81,8 +38,8 @@ A custom theme takes a few lines. There are three ways to write one:
 ```json
 {
   "format": "pragma-theme-v1",
-  "metadata": { "id": "nord-pink", "name": "Nord Pink" },
-  "extends": "nord",
+  "metadata": { "id": "dark-pink", "name": "Dark Pink" },
+  "extends": "dark-default",
   "tokens": { "colors": { "accent": { "default": "#ff79c6" } } }
 }
 ```
