@@ -11,6 +11,7 @@ const agent: AgentSettings = {
   useProjectRules: true,
   stepLimit: null,
   removeWorktrees: true,
+  startIn: "worktree",
   maxChildSessions: 4,
   maxSessionDepth: 3,
 };

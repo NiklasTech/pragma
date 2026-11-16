@@ -165,12 +165,16 @@ export interface ExperimentalSettings {
 
 export type AgentAutoApprove = "never" | "edits" | "all";
 
+/** Where ⌘N starts an agent: a new worktree, or the open folder itself. */
+export type AgentStartIn = "worktree" | "here";
+
 export interface AgentSettings {
   autoApprove: AgentAutoApprove;
   allowedCommands: string[];
   useProjectRules: boolean;
   stepLimit: number | null;
   removeWorktrees: boolean;
+  startIn: AgentStartIn;
   maxChildSessions: number;
   maxSessionDepth: number;
 }
