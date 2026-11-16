@@ -253,6 +253,16 @@ export function EditorDisplaySettings() {
           />
         }
       />
+      <SettingRow
+        label="Mark lines an agent wrote"
+        description="In a file of an agent's worktree, changed lines take the agent's color. Off keeps the gutter clean; Review shows the same changes."
+        control={
+          <Switch
+            checked={editor.markAgentLines}
+            onCheckedChange={(v) => setEditorSettings({ markAgentLines: v })}
+          />
+        }
+      />
     </SettingSection>
   );
 }

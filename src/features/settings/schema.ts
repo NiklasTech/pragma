@@ -315,6 +315,16 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     effect: EDITOR_DISPLAY,
   },
   {
+    id: "editor-mark-agent-lines",
+    keys: ["editor.markAgentLines"],
+    label: "Mark lines an agent wrote",
+    description: "Color changed lines in an agent's worktree in the agent's color",
+    keywords: "agent lines gutter marks worktree changes color attribution",
+    category: "editor",
+    scope: "global",
+    effect: "src/features/editor/hooks/useGitChangeGutter.ts",
+  },
+  {
     id: "editor-overview-markers",
     keys: ["editor.overviewMarkers"],
     label: "Overview Markers",
