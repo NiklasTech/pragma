@@ -67,7 +67,7 @@ export const defaultSettings: SettingsState = {
     showUnavailableProviders: true,
     migrationRevision: 1,
     voiceInput: true,
-    voiceEngine: "web-speech",
+    voiceEngine: "parakeet",
     parakeetModel: "parakeet-v3",
     whisperModel: "large-v3-turbo-q5_0",
     providers: {

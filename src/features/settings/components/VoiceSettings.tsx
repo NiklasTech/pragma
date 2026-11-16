@@ -159,8 +159,8 @@ export function VoiceSettings() {
       />
       {engine === "web-speech" ? (
         <p className="py-2.5 text-ui-xs text-fg-muted">
-          Uses the free speech recognition built into the operating system. No audio leaves your
-          device.
+          Uses the speech recognition built into the system web view. Depending on the system, the
+          audio may be sent to its provider, for example Apple, for transcription.
         </p>
       ) : engine === "parakeet" ? (
         <p className="py-2.5 text-ui-xs text-fg-muted">
