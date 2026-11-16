@@ -115,10 +115,13 @@ export function FileEditor({
   const completionTriggerCharacters = useAIStore((state) => state.completionTriggerCharacters);
   const nextEdit = useSettingsStore((state) => state.ai.nextEditPrediction);
   const apiKeyRefs = useAIStore((state) => state.apiKeyRefs);
+  const copilotSignedIn = useAIStore((state) => state.copilotAuth.authenticated);
   const loadKeyStatus = useAIStore((state) => state.loadKeyStatus);
+  const loadCopilotAuthStatus = useAIStore((state) => state.loadCopilotAuthStatus);
   const providerConfig = providers[activeProvider];
   const canComplete =
-    inlineCompletion && completionReady(activeProvider, providerConfig, apiKeyRefs[activeProvider]);
+    inlineCompletion &&
+    completionReady(activeProvider, providerConfig, apiKeyRefs[activeProvider], copilotSignedIn);
 
   const createExtensions = useEditorExtensions({
     diagnosticsCompartmentRef,
@@ -142,10 +145,9 @@ export function FileEditor({
   });
 
   useEffect(() => {
-    if (activeProvider !== "ollama") {
-      void loadKeyStatus(activeProvider);
-    }
-  }, [activeProvider, loadKeyStatus]);
+    if (activeProvider === "copilot") void loadCopilotAuthStatus();
+    else if (activeProvider !== "ollama") void loadKeyStatus(activeProvider);
+  }, [activeProvider, loadKeyStatus, loadCopilotAuthStatus]);
 
   useEditorMount({
     containerRef,

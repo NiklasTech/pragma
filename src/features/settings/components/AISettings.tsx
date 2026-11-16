@@ -244,7 +244,14 @@ export function AISettings({ part }: { part: "models" | "agents" }) {
         enabled={settingsStore.ai.inlineCompletion}
         debounce={settingsStore.ai.completionDebounce}
         nextEdit={settingsStore.ai.nextEditPrediction}
-        needsSetup={!completionReady(activeProvider, providerConfig, apiKeyRef)}
+        needsSetup={
+          !completionReady(
+            activeProvider,
+            providerConfig,
+            apiKeyRef,
+            aiStore.copilotAuth.authenticated,
+          )
+        }
         onEnabledChange={(v) => settingsStore.setAISettings({ inlineCompletion: v })}
         onDebounceChange={(v) => settingsStore.setAISettings({ completionDebounce: v })}
         onNextEditChange={(v) => settingsStore.setAISettings({ nextEditPrediction: v })}
