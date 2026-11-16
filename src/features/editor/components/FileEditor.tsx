@@ -10,6 +10,8 @@ import { useProblemsStore } from "@/shared/stores/problems";
 import { createLinter } from "./extensions/diagnostics";
 import { useAIStore } from "@/shared/stores/ai";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
+import { completionReady } from "@/shared/lib/completionReady";
+import { hintMissingCompletionModel } from "../completionSetupHint";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useLayoutStore } from "@/shell/layout";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -116,12 +118,7 @@ export function FileEditor({
   const loadKeyStatus = useAIStore((state) => state.loadKeyStatus);
   const providerConfig = providers[activeProvider];
   const canComplete =
-    inlineCompletion &&
-    (activeProvider === "ollama"
-      ? true
-      : activeProvider === "custom"
-        ? Boolean(providerConfig.baseUrl)
-        : apiKeyRefs[activeProvider] !== null);
+    inlineCompletion && completionReady(activeProvider, providerConfig, apiKeyRefs[activeProvider]);
 
   const createExtensions = useEditorExtensions({
     diagnosticsCompartmentRef,
@@ -157,6 +154,7 @@ export function FileEditor({
     onChange: (value) => {
       syncedContentRef.current = value;
       onChange(value);
+      if (inlineCompletion && !canComplete) void hintMissingCompletionModel();
     },
     vimEnabled,
     filePath,

@@ -15,6 +15,7 @@ import {
   nextLineChunk,
   nextWordChunk,
 } from "./ghost-text-accept";
+import { ghostTextDom } from "./ghost-text-dom";
 import { nextEditExtension } from "./next-edit";
 
 interface GhostTextConfig {
@@ -103,17 +104,11 @@ class GhostTextWidget extends WidgetType {
     super();
   }
 
-  toDOM(): HTMLElement {
-    const span = document.createElement("span");
-    span.className = "cm-ghost-text";
-    span.textContent = this.text;
-    if (this.count) {
-      const badge = document.createElement("span");
-      badge.className = "cm-ghost-text-count";
-      badge.textContent = this.count;
-      span.appendChild(badge);
-    }
-    return span;
+  toDOM(view: EditorView): HTMLElement {
+    return ghostTextDom(this.text, this.count, () => {
+      acceptPart(view, (text) => text);
+      view.focus();
+    });
   }
 
   eq(other: GhostTextWidget): boolean {
@@ -363,6 +358,35 @@ const ghostTextTheme = EditorView.baseTheme({
     pointerEvents: "none",
     userSelect: "none",
     whiteSpace: "pre",
+  },
+  ".cm-ghost-text-accept": {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    height: "19px",
+    marginLeft: "14px",
+    padding: "0 6px 0 3px",
+    border: "0",
+    borderRadius: "5px",
+    background: "var(--bg-hover)",
+    color: "var(--fg-muted)",
+    fontFamily: "var(--font-ui)",
+    fontSize: "11px",
+    fontStyle: "normal",
+    verticalAlign: "1px",
+    cursor: "pointer",
+    pointerEvents: "auto",
+  },
+  ".cm-ghost-text-accept:hover": {
+    background: "var(--bg-active)",
+    color: "var(--fg-default)",
+  },
+  ".cm-ghost-text-accept kbd": {
+    padding: "1px 5px",
+    borderRadius: "4px",
+    background: "var(--bg-active)",
+    fontFamily: "var(--font-mono)",
+    fontSize: "10.5px",
   },
   ".cm-ghost-text-count": {
     marginLeft: "0.75em",

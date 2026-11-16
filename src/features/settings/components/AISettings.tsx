@@ -18,6 +18,7 @@ import { SettingSection } from "./ui/SettingSection";
 import { ApiKeyRow } from "./ai/ApiKeyRow";
 import { CliIntegrationSection } from "./ai/CliIntegrationSection";
 import { CopilotBlock } from "./ai/CopilotBlock";
+import { completionReady } from "@/shared/lib/completionReady";
 import { InlineCompletionSection } from "./ai/InlineCompletionSection";
 import { TerminalSuggestionSection } from "./ai/TerminalSuggestionSection";
 import { ProviderFields } from "./ai/ProviderFields";
@@ -243,6 +244,7 @@ export function AISettings({ part }: { part: "models" | "agents" }) {
         enabled={settingsStore.ai.inlineCompletion}
         debounce={settingsStore.ai.completionDebounce}
         nextEdit={settingsStore.ai.nextEditPrediction}
+        needsSetup={!completionReady(activeProvider, providerConfig, apiKeyRef)}
         onEnabledChange={(v) => settingsStore.setAISettings({ inlineCompletion: v })}
         onDebounceChange={(v) => settingsStore.setAISettings({ completionDebounce: v })}
         onNextEditChange={(v) => settingsStore.setAISettings({ nextEditPrediction: v })}
