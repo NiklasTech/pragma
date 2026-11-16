@@ -212,9 +212,9 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
               variant="ghost"
               disabled
               title={missing.map((item) => `${item.name}: ${item.install_cmd}`).join("\n")}
-              className="h-8.5 gap-2 rounded-[9px] px-2.5 text-ui-sm ring-1 ring-border-subtle ring-inset disabled:opacity-60"
+              className="h-8.5 max-w-full min-w-0 gap-2 rounded-[9px] px-2.5 text-ui-sm ring-1 ring-border-subtle ring-inset disabled:opacity-60"
             >
-              {missing.map((item) => item.name).join(", ")}
+              <span className="truncate">{missing.map((item) => item.name).join(", ")}</span>
               <span className="text-ui-xs text-fg-subtle">not installed</span>
             </Button>
           )}
