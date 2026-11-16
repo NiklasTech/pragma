@@ -69,6 +69,7 @@ export const defaultSettings: SettingsState = {
     migrationRevision: 1,
     voiceInput: true,
     voiceEngine: "parakeet",
+    parakeetOffered: false,
     parakeetModel: "parakeet-v3",
     whisperModel: "large-v3-turbo-q5_0",
     providers: {

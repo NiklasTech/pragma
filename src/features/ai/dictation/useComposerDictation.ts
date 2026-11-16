@@ -7,6 +7,7 @@ import {
   createLocalDictation,
   type LocalDictationSession,
 } from "./localDictation";
+import { offerParakeet } from "./offerParakeet";
 import { startPcmCapture } from "./pcmCapture";
 import {
   VOICE_INPUT_DENIED,
@@ -264,6 +265,7 @@ export function useComposerDictation({
       }
       if (current === "web-speech") {
         startWebSpeech();
+        void offerParakeet();
       } else if (context) {
         await startLocal(current, currentModel, context);
       }

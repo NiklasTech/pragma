@@ -14,6 +14,7 @@ export function SettingsOverlay() {
   const target = useOverlayStore((state) => state.target);
   const close = useOverlayStore((state) => state.close);
   const open = active === "settings";
+  const [category, reveal] = (target ?? "").split("#");
 
   return (
     <OverlaySheet open={open} onOpenChange={(next) => !next && close("settings")}>
@@ -22,7 +23,8 @@ export function SettingsOverlay() {
         {open && (
           <Settings
             key={target ?? "settings"}
-            initialCategory={isCategory(target) ? target : undefined}
+            initialCategory={isCategory(category) ? category : undefined}
+            initialReveal={reveal}
             onClose={() => close("settings")}
           />
         )}
