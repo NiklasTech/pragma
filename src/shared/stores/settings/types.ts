@@ -47,6 +47,8 @@ export interface EditorSettings {
   trimTrailingWhitespace: boolean;
   insertFinalNewline: boolean;
   overviewMarkers: boolean;
+  /** Colors changed lines in an agent's worktree in that agent's color. */
+  markAgentLines: boolean;
 }
 
 export type TerminalCursorStyle = "block" | "underline" | "bar";

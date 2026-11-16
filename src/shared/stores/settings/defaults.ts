@@ -37,6 +37,7 @@ export const defaultSettings: SettingsState = {
     trimTrailingWhitespace: false,
     insertFinalNewline: false,
     overviewMarkers: true,
+    markAgentLines: false,
   },
   terminal: {
     shell: "",

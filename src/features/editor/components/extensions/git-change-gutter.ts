@@ -19,6 +19,7 @@ import {
   keymap,
   type DecorationSet,
 } from "@codemirror/view";
+import type { AgentColor } from "@/shared/lib/agentIdentity";
 import type { GitLineSelection } from "@/shared/stores/git";
 
 export interface GitChangeActions {
@@ -316,9 +317,36 @@ const gitChangeTheme = EditorView.theme({
   },
 });
 
-/** Gutter markers for lines changed against the git index, with an inline peek to stage or revert. */
-export function gitChangeGutter(actions: GitChangeActions): Extension {
+const AGENT_COLORS: readonly AgentColor[] = ["claude", "codex", "gemini", "opencode", "other"];
+
+// In an agent's worktree every change is the agent's, so the marks take its color.
+const agentChangeTheme = EditorView.theme(
+  Object.fromEntries(
+    AGENT_COLORS.flatMap((color) => [
+      [
+        `&[data-agent-changes="${color}"] .cm-git-change-added, &[data-agent-changes="${color}"] .cm-git-change-modified`,
+        { background: `var(--color-agent-${color})` },
+      ],
+      [
+        `&[data-agent-changes="${color}"] .cm-git-change-deleted`,
+        { borderLeftColor: `var(--color-agent-${color})` },
+      ],
+    ]),
+  ),
+);
+
+/**
+ * Gutter markers for lines changed against the git index, with an inline peek to stage or revert.
+ * `agentColor` marks the changes as an agent's.
+ */
+export function gitChangeGutter(
+  actions: GitChangeActions,
+  agentColor: AgentColor | null = null,
+): Extension {
   return [
+    agentColor
+      ? [EditorView.editorAttributes.of({ "data-agent-changes": agentColor }), agentChangeTheme]
+      : [],
     gitChangeField,
     gitChangeActions.of(actions),
     gutter({
