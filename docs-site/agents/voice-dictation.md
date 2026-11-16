@@ -1,12 +1,12 @@
 # Voice Dictation
 
-Dictate messages instead of typing them, in the chat composer and in coding CLI terminal panes. Configure dictation in **Settings > Voice**.
+Dictate messages instead of typing them, in the chat composer and in coding CLI terminal panes. Configure dictation in **Settings > Agents > Voice input**.
 
 ## Turn it on
 
-1. Open **Settings > Voice**.
+1. Open **Settings > Agents > Voice input**.
 2. Switch on **Enable**. The composer gets a **Dictate** microphone button.
-3. Choose an **Engine**.
+3. Keep the default engine, **Parakeet (local)**, or choose another one.
 
 Click the microphone to start recording and click it again (**Stop dictation**) to insert the transcript at the cursor. Nothing is sent until you send the message yourself.
 
@@ -20,7 +20,9 @@ On macOS, dictation is only available when Pragma runs as the installed app bund
 | Whisper (local)  | whisper.cpp on your CPU               | Windows x64, Linux x64                         |
 | Parakeet (local) | Parakeet V3 on your CPU               | macOS on Apple Silicon, Windows x64, Linux x64 |
 
-The local engines keep the audio on your machine. They need a one-time download, which **Settings > Voice** offers after you select the engine, with a progress bar and a cancel button. If an engine is not available on your platform, the settings say so and Web Speech keeps working.
+The local engines keep the audio on your machine. They need a one-time download, which **Settings > Agents > Voice input** offers for the selected engine, with a progress bar and a cancel button. Parakeet is the default engine. Where it has no build, such as on Intel Macs, dictation uses Web Speech instead, and the settings say so.
+
+Web Speech uses the speech service of the system web view. Depending on the system, the audio may be sent to its provider, for example Apple, for transcription.
 
 ## Model choice
 

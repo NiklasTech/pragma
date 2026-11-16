@@ -183,6 +183,12 @@ export function useComposerDictation({
         engineStatus = { supported: true, installed: false };
       }
       if (!engineStatus.supported) {
+        // Parakeet is the default but has no build for every platform; Web Speech takes over there.
+        if (localEngine === "parakeet") {
+          void context.close().catch(() => undefined);
+          startWebSpeech();
+          return;
+        }
         abort(config.unavailable);
         return;
       }
@@ -226,7 +232,7 @@ export function useComposerDictation({
         abort(VOICE_INPUT_NO_MIC_ACCESS);
       }
     },
-    [emitLevel],
+    [emitLevel, startWebSpeech],
   );
 
   const start = useCallback(() => {
