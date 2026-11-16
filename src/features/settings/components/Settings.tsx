@@ -18,9 +18,12 @@ import type { SearchItem } from "./settings-search-items";
 
 export function Settings({
   initialCategory,
+  initialReveal,
   onClose,
 }: {
   initialCategory?: Category;
+  /** Label of a setting or section to scroll to when the overlay opens. */
+  initialReveal?: string;
   /** Shows Close in the header; the overlay passes it. */
   onClose?: () => void;
 }) {
@@ -28,7 +31,9 @@ export function Settings({
   const [query, setQuery] = React.useState("");
   const [saveIndicator, setSaveIndicator] = React.useState<"idle" | "saved">("idle");
   // A new object per selection, so picking the same result again scrolls to it again.
-  const [reveal, setReveal] = React.useState<{ target: string } | null>(null);
+  const [reveal, setReveal] = React.useState<{ target: string } | null>(
+    initialReveal ? { target: initialReveal } : null,
+  );
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   const handleSelectCategory = (category: Category) => {

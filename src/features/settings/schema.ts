@@ -881,6 +881,7 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
 /** Stored values that are not settings: state, migration markers and values set elsewhere. */
 export const NOT_SETTINGS: Partial<Record<SettingKey, string>> = {
   "ai.migrationRevision": "Migration marker.",
+  "ai.parakeetOffered": "Remembers that the switch to Parakeet was offered once.",
   "mcp.migrationRevision": "Migration marker.",
   shortcutsRevision: "Migration marker.",
   themesRevision: "Migration marker.",

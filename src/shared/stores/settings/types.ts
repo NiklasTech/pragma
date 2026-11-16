@@ -118,6 +118,8 @@ export interface AISettings {
   showUnavailableProviders: boolean;
   voiceInput: boolean;
   voiceEngine: VoiceEngine;
+  /** Set once someone on Web Speech was asked whether to switch to Parakeet. */
+  parakeetOffered: boolean;
   parakeetModel: ParakeetModel;
   whisperModel: WhisperModel;
   providers: Record<AIProvider, ProviderSettings>;
