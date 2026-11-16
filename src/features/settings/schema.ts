@@ -508,6 +508,26 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     effect: EDITOR,
   },
   {
+    id: "ai-terminal-suggestion-provider",
+    keys: ["ai.terminalSuggestionProvider"],
+    label: "Terminal provider",
+    description: "Which provider suggests commands in the terminal",
+    keywords: "terminal suggestion provider command ai",
+    category: "agents",
+    scope: "global",
+    effect: "src/shared/hooks/useTerminalSuggestions.ts",
+  },
+  {
+    id: "ai-terminal-suggestion-model",
+    keys: ["ai.terminalSuggestionModel"],
+    label: "Terminal model",
+    description: "Leave empty to use the editor's model",
+    keywords: "terminal suggestion model command ai",
+    category: "agents",
+    scope: "global",
+    effect: "src/shared/hooks/useTerminalSuggestions.ts",
+  },
+  {
     id: "ai-next-edit",
     keys: ["ai.nextEditPrediction"],
     label: "Next edit prediction",
@@ -873,7 +893,4 @@ export const NOT_SETTINGS: Partial<Record<SettingKey, string>> = {
 };
 
 /** Stored values without a visible effect or without a UI; the settings audit resolves each. */
-export const OPEN_AUDIT: Partial<Record<SettingKey, string>> = {
-  "ai.terminalSuggestionProvider": "Read by terminal suggestions, but no UI sets it.",
-  "ai.terminalSuggestionModel": "Read by terminal suggestions, but no UI sets it.",
-};
+export const OPEN_AUDIT: Partial<Record<SettingKey, string>> = {};
