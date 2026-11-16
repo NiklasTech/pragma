@@ -38,7 +38,7 @@ export function SegmentedControl<Value extends string>({
         if (picked !== undefined) onValueChange(picked);
       }}
       className={cn(
-        "inline-flex rounded-[9px] bg-bg-input p-0.5 ring-1 ring-border-subtle ring-inset",
+        "inline-flex overflow-hidden rounded-[5px] ring-1 ring-fg-default/15 ring-inset",
         className,
       )}
     >
@@ -46,7 +46,7 @@ export function SegmentedControl<Value extends string>({
         <Toggle<Value>
           key={option.value}
           value={option.value}
-          className="inline-flex h-6.5 items-center gap-1.5 rounded-[7px] px-2.5 text-ui-sm whitespace-nowrap text-fg-muted transition-colors outline-none hover:text-fg-default focus-visible:ring-2 focus-visible:ring-border-focus data-[pressed]:bg-control data-[pressed]:text-fg-default"
+          className="inline-flex h-6.5 items-center gap-1.5 px-2.5 font-mono text-[11.5px] whitespace-nowrap text-fg-subtle transition-colors outline-none not-first:border-l not-first:border-fg-default/15 before:hidden before:size-1.5 before:rounded-[1px] before:bg-primary hover:text-fg-default focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset data-[pressed]:bg-primary/10 data-[pressed]:text-fg-default data-[pressed]:before:block"
         >
           {option.label}
           {option.count !== undefined && (
