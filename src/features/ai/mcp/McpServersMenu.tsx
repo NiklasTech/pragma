@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -69,19 +70,21 @@ export function McpServersMenu() {
         }
       />
       <DropdownMenuContent align="start" side="top" sideOffset={6} className="w-60">
-        <DropdownMenuLabel>MCP servers for this session</DropdownMenuLabel>
-        {servers.map((server) => (
-          <DropdownMenuCheckboxItem
-            key={server.id}
-            checked={isMcpServerAllowed(allowed, server.id)}
-            onCheckedChange={(checked) => toggle(server.id, checked)}
-          >
-            <span className="min-w-0 truncate">{server.name}</span>
-            {server.status !== "running" && (
-              <span className="ml-auto text-ui-2xs text-fg-subtle">{server.status}</span>
-            )}
-          </DropdownMenuCheckboxItem>
-        ))}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>MCP servers for this session</DropdownMenuLabel>
+          {servers.map((server) => (
+            <DropdownMenuCheckboxItem
+              key={server.id}
+              checked={isMcpServerAllowed(allowed, server.id)}
+              onCheckedChange={(checked) => toggle(server.id, checked)}
+            >
+              <span className="min-w-0 truncate">{server.name}</span>
+              {server.status !== "running" && (
+                <span className="ml-auto text-ui-2xs text-fg-subtle">{server.status}</span>
+              )}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuGroup>
         {session.mcpServers && (
           <>
             <DropdownMenuSeparator />

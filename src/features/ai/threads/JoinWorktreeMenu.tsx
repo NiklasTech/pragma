@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Chat, ChatCircle, GitBranch, Robot, Terminal, UsersThree } from "@phosphor-icons/react";
 
 import {
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -80,41 +81,43 @@ export function JoinWorktreeMenu({
                     Ask
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="whitespace-normal">
-                    Edits the same files as {sessions.length === 1 ? "the session" : "the sessions"}{" "}
-                    in this worktree
-                  </DropdownMenuLabel>
-                  <DropdownMenuItem
-                    onClick={() => void actions.joinWorktree(environment.id, { kind: "agent" })}
-                  >
-                    <Robot size={14} />
-                    Agent
-                  </DropdownMenuItem>
-                  {cliRows.flatMap((row) =>
-                    row.items.map((item) => (
-                      <DropdownMenuItem
-                        key={`${row.manifestId}:${item.action}`}
-                        onClick={() => {
-                          const manifest = findManifest(row.manifestId);
-                          if (!manifest) return;
-                          void actions.joinWorktree(environment.id, {
-                            kind: "cli",
-                            manifest,
-                            action: item.action,
-                          });
-                        }}
-                      >
-                        {item.action === "conversation" ? (
-                          <Chat size={13} />
-                        ) : (
-                          <Terminal size={13} />
-                        )}
-                        <span className="flex-1 truncate">
-                          {row.items.length > 1 ? `${row.name} ${item.label}` : row.name}
-                        </span>
-                      </DropdownMenuItem>
-                    )),
-                  )}
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="whitespace-normal">
+                      Edits the same files as{" "}
+                      {sessions.length === 1 ? "the session" : "the sessions"} in this worktree
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={() => void actions.joinWorktree(environment.id, { kind: "agent" })}
+                    >
+                      <Robot size={14} />
+                      Agent
+                    </DropdownMenuItem>
+                    {cliRows.flatMap((row) =>
+                      row.items.map((item) => (
+                        <DropdownMenuItem
+                          key={`${row.manifestId}:${item.action}`}
+                          onClick={() => {
+                            const manifest = findManifest(row.manifestId);
+                            if (!manifest) return;
+                            void actions.joinWorktree(environment.id, {
+                              kind: "cli",
+                              manifest,
+                              action: item.action,
+                            });
+                          }}
+                        >
+                          {item.action === "conversation" ? (
+                            <Chat size={13} />
+                          ) : (
+                            <Terminal size={13} />
+                          )}
+                          <span className="flex-1 truncate">
+                            {row.items.length > 1 ? `${row.name} ${item.label}` : row.name}
+                          </span>
+                        </DropdownMenuItem>
+                      )),
+                    )}
+                  </DropdownMenuGroup>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             );
