@@ -1,5 +1,6 @@
 import { matchShortcut, TAB_SELECT_SHORTCUTS, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import { usePaneMaximizeStore } from "./maximize";
@@ -44,6 +45,13 @@ function focusPaneInput(leafId: string): void {
       paneCard(leafId)?.querySelector<HTMLElement>(PANE_INPUT)?.focus({ preventScroll: true });
     });
   });
+}
+
+/** Shows a pane from anywhere: its tab first, then the pane with the keyboard in it. */
+export function revealPane(spaceId: string, tabId: string, leafId: string): void {
+  useOpenRepositoriesStore.getState().activateTab(spaceId, tabId);
+  useAgentsPanesStore.getState().focusLeaf(currentRoot(), leafId);
+  focusPaneInput(leafId);
 }
 
 /** Zooms a pane over its tab, or shrinks the zoomed pane back onto its slot. */

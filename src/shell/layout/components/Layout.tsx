@@ -16,6 +16,7 @@ import { AIChatHost } from "./AIChatHost";
 import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Strip } from "@/shell/chrome/Strip";
+import { AgentRail } from "@/shell/chrome/AgentRail";
 import { useUiMode } from "@/shell/mode";
 import { useTabModeSync } from "@/shell/mode/tabModeSync";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
@@ -75,55 +76,58 @@ export function Layout() {
       <DiagnosticsHost />
       <Strip />
 
-      {uiMode === "agents" ? (
-        <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          <Suspense fallback={null}>
-            <AgentsWorkspace />
-          </Suspense>
-        </div>
-      ) : (
-        <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5 pb-1.5">
-          {aiVisible && aiDrawerLeft && <AIChatHost />}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <AgentRail />
+        {uiMode === "agents" ? (
+          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
+            <Suspense fallback={null}>
+              <AgentsWorkspace />
+            </Suspense>
+          </div>
+        ) : (
+          <div className="relative flex min-h-0 min-w-0 flex-1 gap-1.5 overflow-hidden pr-1.5 pb-1.5">
+            {aiVisible && aiDrawerLeft && <AIChatHost />}
 
-          {sidebarExpanded ? (
-            <ResizablePanelGroup
-              orientation="horizontal"
-              className="min-h-0 flex-1 overflow-hidden"
-              onLayoutChanged={() => {
-                const size = sidebarSizeRef.current;
-                if (size > 0) {
-                  setSidebarWidth(size);
-                }
-              }}
-            >
-              {sidebar.position === "left" && (
-                <>
-                  {sidebarPanel}
-                  <ResizableHandle className={GAP_HANDLE_CLASS} />
-                </>
-              )}
+            {sidebarExpanded ? (
+              <ResizablePanelGroup
+                orientation="horizontal"
+                className="min-h-0 flex-1 overflow-hidden"
+                onLayoutChanged={() => {
+                  const size = sidebarSizeRef.current;
+                  if (size > 0) {
+                    setSidebarWidth(size);
+                  }
+                }}
+              >
+                {sidebar.position === "left" && (
+                  <>
+                    {sidebarPanel}
+                    <ResizableHandle className={GAP_HANDLE_CLASS} />
+                  </>
+                )}
 
-              <ResizablePanel id="workspace" minSize="20%">
+                <ResizablePanel id="workspace" minSize="20%">
+                  {workspace}
+                </ResizablePanel>
+
+                {sidebar.position === "right" && (
+                  <>
+                    <ResizableHandle className={GAP_HANDLE_CLASS} />
+                    {sidebarPanel}
+                  </>
+                )}
+              </ResizablePanelGroup>
+            ) : (
+              <div className="relative min-h-0 flex-1 overflow-hidden">
                 {workspace}
-              </ResizablePanel>
+                <SidebarDrawer />
+              </div>
+            )}
 
-              {sidebar.position === "right" && (
-                <>
-                  <ResizableHandle className={GAP_HANDLE_CLASS} />
-                  {sidebarPanel}
-                </>
-              )}
-            </ResizablePanelGroup>
-          ) : (
-            <div className="relative min-h-0 flex-1 overflow-hidden">
-              {workspace}
-              <SidebarDrawer />
-            </div>
-          )}
-
-          {aiVisible && !aiDrawerLeft && <AIChatHost />}
-        </div>
-      )}
+            {aiVisible && !aiDrawerLeft && <AIChatHost />}
+          </div>
+        )}
+      </div>
 
       <TerminalFloatingHost />
       <FloatingHost />
