@@ -29,6 +29,8 @@ interface SearchResultGroupViewProps {
   group: SearchResultGroup;
   disabled: boolean;
   showReplace: boolean;
+  /** What a replace writes; shown inline next to each struck-out match. */
+  replacement: string;
   caseSensitive: boolean;
   onOpenResult: (result: SearchResult) => void;
   onReplaceOne: (result: SearchResult) => void;
@@ -39,6 +41,7 @@ export function SearchResultGroupView({
   group,
   disabled,
   showReplace,
+  replacement,
   caseSensitive,
   onOpenResult,
   onReplaceOne,
@@ -51,7 +54,7 @@ export function SearchResultGroupView({
 
   return (
     <div className="flex flex-col">
-      <div className="group/file flex h-7 items-center gap-1.5 rounded-md pr-1 pl-1 hover:bg-bg-hover">
+      <div className="group/file flex h-7.5 items-center gap-1.5 rounded-[5px] pr-1.5 pl-1 hover:bg-bg-hover">
         <Button
           variant="ghost"
           size="xs"
@@ -66,8 +69,14 @@ export function SearchResultGroupView({
             className={cn("shrink-0 text-fg-subtle transition-transform", open && "rotate-90")}
           />
           <img src={getFileIconPath(fileName)} alt="" className="size-3.5 shrink-0" />
-          <span className="shrink-0 font-medium text-fg-default">{fileName}</span>
-          {directory && <span className="min-w-0 truncate text-fg-subtle">{directory}</span>}
+          <span className="shrink-0 font-sans text-ui-sm font-medium text-fg-default">
+            {fileName}
+          </span>
+          {directory && (
+            <span className="min-w-0 truncate font-mono text-[11px] text-fg-subtle">
+              {directory}
+            </span>
+          )}
         </Button>
         {showReplace && (
           <Button
@@ -82,7 +91,7 @@ export function SearchResultGroupView({
             <ArrowsLeftRight size={12} />
           </Button>
         )}
-        <span className="shrink-0 rounded-full bg-bg-hover px-1.5 text-ui-2xs text-fg-muted tabular-nums">
+        <span className="shrink-0 rounded-[3px] px-1.5 font-mono text-[10.5px] text-fg-muted tabular-nums ring-1 ring-fg-default/15 ring-inset">
           {group.matches.length}
         </span>
       </div>
@@ -93,24 +102,36 @@ export function SearchResultGroupView({
           return (
             <div
               key={`${match.line}:${match.column}:${index}`}
-              className="group/match flex h-6 items-center gap-1 rounded-md pr-1 pl-6 hover:bg-bg-hover"
+              className="group/match flex h-6.5 items-center gap-1 rounded-[5px] pr-1 pl-3.5 hover:bg-bg-hover"
             >
               <Button
                 variant="ghost"
                 size="xs"
                 onClick={() => onOpenResult(match)}
-                className="min-w-0 flex-1 justify-start gap-2 px-0 text-left text-ui-xs font-normal hover:bg-transparent"
+                className="min-w-0 flex-1 justify-start gap-2.5 px-0 text-left text-[11.5px] font-normal hover:bg-transparent"
                 title={`Line ${match.line}`}
               >
+                <span className="w-7 shrink-0 text-right text-[10.5px] text-fg-subtle tabular-nums">
+                  {match.line}
+                </span>
                 <span className="min-w-0 truncate text-fg-muted">
                   {before}
-                  {hit && (
-                    <mark className="rounded-sm bg-accent-subtle px-px text-fg-default">{hit}</mark>
-                  )}
+                  {hit &&
+                    (showReplace ? (
+                      <>
+                        <del className="rounded-[2px] bg-status-error/15 px-px text-status-error">
+                          {hit}
+                        </del>
+                        <ins className="rounded-[2px] bg-status-success/15 px-px text-status-success no-underline">
+                          {replacement}
+                        </ins>
+                      </>
+                    ) : (
+                      <mark className="rounded-[2px] bg-primary/20 px-px text-fg-default">
+                        {hit}
+                      </mark>
+                    ))}
                   {after}
-                </span>
-                <span className="ml-auto shrink-0 text-ui-2xs text-fg-subtle tabular-nums">
-                  {match.line}
                 </span>
               </Button>
               {showReplace && (

@@ -60,6 +60,8 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<SearchWorkspaceRe
     builder.git_exclude(true);
     builder.ignore(true);
     builder.hidden(false);
+    // Hidden files are searched, but git's own folder (hook samples, refs, packs) never.
+    builder.filter_entry(|entry| entry.file_name() != ".git");
 
     for entry in builder.build() {
         if token.is_cancelled() {
@@ -343,6 +345,18 @@ mod tests {
         let matches = search(dir.path(), |_| {});
 
         assert_eq!(file_names(&matches), vec!["kept.txt"]);
+    }
+
+    #[test]
+    fn skips_the_git_folder_but_not_other_hidden_files() {
+        let dir = tempdir().unwrap();
+        fs::create_dir_all(dir.path().join(".git/hooks")).unwrap();
+        fs::write(dir.path().join(".git/hooks/pre-commit.sample"), "foo").unwrap();
+        fs::write(dir.path().join(".env.example"), "foo").unwrap();
+
+        let matches = search(dir.path(), |_| {});
+
+        assert_eq!(file_names(&matches), vec![".env.example"]);
     }
 
     #[test]
