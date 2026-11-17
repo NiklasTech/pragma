@@ -18,6 +18,7 @@ import { copyToClipboard } from "@/shared/lib/clipboard";
 import { registerTerminalOutput } from "../terminalOutput";
 import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { useTerminalFind } from "../hooks/useTerminalFind";
+import { useTerminalHeaderEvents } from "../hooks/useTerminalHeaderEvents";
 import { useCopyOnSelect } from "../hooks/useTerminalPreferences";
 import { TerminalFindBar } from "./TerminalFindBar";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
@@ -200,7 +201,8 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
 
   useCopyOnSelect(termState);
 
-  const find = useTerminalFind(termState, rootRef);
+  const find = useTerminalFind(termState, rootRef, session.id);
+  useTerminalHeaderEvents(termState, session.id);
 
   return (
     <div

@@ -5,6 +5,7 @@ import {
   SplitHorizontal,
   Broom,
   Copy,
+  MagnifyingGlass,
   X,
 } from "@phosphor-icons/react";
 
@@ -16,7 +17,11 @@ import { findPanelByKind } from "@/shell/layout/tree/operations";
 import { resolvePanelActiveSessionId } from "@/shared/lib/terminal-panels";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { Button } from "@/shared/components/ui/button";
-import { dispatchTerminalClear, dispatchTerminalCopyOutput } from "@/shared/lib/terminal-events";
+import {
+  dispatchTerminalClear,
+  dispatchTerminalCopyOutput,
+  dispatchTerminalFind,
+} from "@/shared/lib/terminal-events";
 import { NewTerminalButton } from "./NewTerminalButton";
 import { TerminalSession } from "./TerminalSession";
 import { RunTerminalSession } from "./RunTerminalSession";
@@ -112,9 +117,20 @@ export function Terminal({ panelId }: TerminalProps) {
           <Button
             variant="ghost"
             size="icon-sm"
+            aria-label="Find in Terminal"
+            onClick={() => activeSessionId && dispatchTerminalFind(activeSessionId)}
+            disabled={!activeSessionId}
+            className="text-fg-muted"
+            title="Find in Terminal"
+          >
+            <MagnifyingGlass size={13} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             aria-label="Copy Output"
-            onClick={dispatchTerminalCopyOutput}
-            disabled={panelSessions.length === 0}
+            onClick={() => activeSessionId && dispatchTerminalCopyOutput(activeSessionId)}
+            disabled={!activeSessionId}
             className="text-fg-muted"
             title="Copy Output"
           >
@@ -124,8 +140,8 @@ export function Terminal({ panelId }: TerminalProps) {
             variant="ghost"
             size="icon-sm"
             aria-label="Clear Terminal"
-            onClick={dispatchTerminalClear}
-            disabled={panelSessions.length === 0}
+            onClick={() => activeSessionId && dispatchTerminalClear(activeSessionId)}
+            disabled={!activeSessionId}
             className="text-fg-muted"
             title="Clear Terminal"
           >
