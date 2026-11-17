@@ -5,11 +5,13 @@ import { useGitStore, type GitStatusEntry } from "@/shared/stores/git";
 import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { openGitDiffInSplit } from "../lib/gitDiffSplit";
-import { GitToolbar } from "./git-status/GitToolbar";
+import { ChangesHeader } from "./git-status/ChangesHeader";
+import { StateSummary } from "./git-status/StateSummary";
+import { type FileState } from "./git-status/fileState";
 import { PullRequestSection } from "./git-status/PullRequestSection";
 import { BranchHeader } from "./git-status/BranchHeader";
 import { GitStatusList } from "./git-status/GitStatusList";
-import { ROW_HEIGHTS, buildRows, type GitRow } from "./git-status/rows";
+import { ROW_HEIGHTS, buildRows, countByState, type GitRow } from "./git-status/rows";
 import { CommitArea } from "./git-status/CommitArea";
 import {
   GitStatusErrorState,
@@ -25,10 +27,10 @@ import { GutterBlame } from "./GutterBlame";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { CreateTagDialog } from "./git-graph/CreateTagDialog";
 import { OperationBanner } from "./git-status/OperationBanner";
-import { RepositoryChanges } from "./git-status/RepositoryChanges";
 import { TagsDialog } from "./git-status/TagsDialog";
 import { useGitCompareDialog } from "../lib/gitDialogs";
 import { useUiSize } from "@/theme/useUiMetrics";
+import { Button } from "@/shared/components/ui/button";
 
 export function GitStatus() {
   const {
@@ -40,10 +42,8 @@ export function GitStatus() {
     commitAmend,
     actionBusy,
     actionStatus,
-    commits,
     branches,
     loadStatus,
-    loadLog,
     loadBranches,
     stageFiles,
     unstageFiles,
@@ -75,10 +75,8 @@ export function GitStatus() {
       commitAmend: s.commitAmend,
       actionBusy: s.actionBusy,
       actionStatus: s.actionStatus,
-      commits: s.commits,
       branches: s.branches,
       loadStatus: s.loadStatus,
-      loadLog: s.loadLog,
       loadBranches: s.loadBranches,
       stageFiles: s.stageFiles,
       unstageFiles: s.unstageFiles,
@@ -106,7 +104,7 @@ export function GitStatus() {
   const editorPanelId = useEditorPanelId();
 
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [filter, setFilter] = useState<FileState | null>(null);
   const [discardEntry, setDiscardEntry] = useState<GitStatusEntry | null>(null);
   const [createBranchOpen, setCreateBranchOpen] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
@@ -122,11 +120,8 @@ export function GitStatus() {
   }, [repoPath, snapshot, isLoading, loadStatus]);
 
   useEffect(() => {
-    if (repoPath) {
-      void loadLog(8);
-      void loadBranches();
-    }
-  }, [repoPath, loadLog, loadBranches]);
+    if (repoPath) void loadBranches();
+  }, [repoPath, loadBranches]);
 
   useEffect(() => {
     if (snapshot) void loadOperation();
@@ -138,10 +133,7 @@ export function GitStatus() {
     () => allFiles.filter((f) => f.is_staged && !f.is_conflicted),
     [allFiles],
   );
-  const unstagedFiles = useMemo(
-    () => allFiles.filter((f) => f.is_unstaged && !f.is_conflicted),
-    [allFiles],
-  );
+  const counts = useMemo(() => countByState(allFiles), [allFiles]);
 
   const stagedCount = stagedFiles.length;
   const canCommit =
@@ -152,23 +144,10 @@ export function GitStatus() {
   const canPushPull = hasRemote && !isDetached;
 
   const handleStageAll = () => {
-    const paths = unstagedFiles.map((f) => f.path);
+    const paths = rows.flatMap((row) =>
+      row.kind === "file" && row.entry.is_unstaged ? [row.entry.path] : [],
+    );
     if (paths.length > 0) void stageFiles(paths);
-  };
-
-  const handleUnstageAll = () => {
-    const paths = stagedFiles.map((f) => f.path);
-    if (paths.length > 0) void unstageFiles(paths);
-  };
-
-  const handleToggleStaged = (entry: GitStatusEntry) => {
-    if (entry.is_unstaged) {
-      void unstageFiles([entry.path]);
-    }
-  };
-
-  const handleToggleUnstaged = (entry: GitStatusEntry) => {
-    void stageFiles([entry.path]);
   };
 
   const handleSelectFile = (entry: GitStatusEntry) => {
@@ -218,17 +197,13 @@ export function GitStatus() {
   const ahead = snapshot?.ahead ?? 0;
   const behind = snapshot?.behind ?? 0;
 
+  const activeFilter = filter !== null && counts[filter] > 0 ? filter : null;
+  useEffect(() => {
+    if (filter !== null && activeFilter === null) setFilter(null);
+  }, [filter, activeFilter]);
   const rows = useMemo<GitRow[]>(
-    () =>
-      buildRows({
-        allFiles,
-        conflictFiles,
-        stagedFiles,
-        unstagedFiles,
-        commits,
-        historyExpanded,
-      }),
-    [allFiles, conflictFiles, stagedFiles, unstagedFiles, commits, historyExpanded],
+    () => buildRows({ allFiles, filter: activeFilter }),
+    [allFiles, activeFilter],
   );
 
   const uiSize = useUiSize();
@@ -237,7 +212,7 @@ export function GitStatus() {
     getScrollElement: () => scrollRef.current,
     estimateSize: (index) => {
       const row = rows[index];
-      return uiSize(row ? ROW_HEIGHTS[row.kind] : ROW_HEIGHTS["unstaged-entry"]);
+      return uiSize(row ? ROW_HEIGHTS[row.kind] : ROW_HEIGHTS.file);
     },
     overscan: 8,
     getItemKey: (index) => rows[index]?.key ?? index,
@@ -265,43 +240,50 @@ export function GitStatus() {
     <div className="@container flex h-full min-w-0 flex-col">
       {error && <GitErrorAlert error={error} />}
 
-      <RepositoryChanges />
-
-      <BranchHeader
-        isDetached={isDetached}
-        branches={branches}
-        currentBranch={currentBranch}
-        onCheckout={(name) => void checkoutBranch(name)}
-        onCreateBranch={(name) => void createBranch(name, true)}
-        onDeleteBranch={(name) => void deleteBranch(name)}
-        onMergeBranch={(name) => void mergeBranch(name)}
-        onRebaseOnto={(name) => void rebaseBranch(name)}
-        onRenameBranch={setRenamingBranch}
-        actionBusy={actionBusy}
-      />
-
-      <GitToolbar
-        onRefresh={() => void refreshAll()}
-        onFetch={() => void fetch()}
-        onPull={() => void pull()}
-        onPush={() => void push()}
-        onNewBranch={() => setCreateBranchOpen(true)}
-        onCompare={() => useGitCompareDialog.getState().show(currentBranch, "")}
-        onTags={() => setTagsOpen(true)}
-        canPushPull={canPushPull}
+      <ChangesHeader
+        branch={
+          <BranchHeader
+            isDetached={isDetached}
+            branches={branches}
+            currentBranch={currentBranch}
+            onCheckout={(name) => void checkoutBranch(name)}
+            onCreateBranch={(name) => void createBranch(name, true)}
+            onDeleteBranch={(name) => void deleteBranch(name)}
+            onMergeBranch={(name) => void mergeBranch(name)}
+            onRebaseOnto={(name) => void rebaseBranch(name)}
+            onRenameBranch={setRenamingBranch}
+            actionBusy={actionBusy}
+          />
+        }
         ahead={ahead}
         behind={behind}
-        isPushBusy={actionBusy === "push"}
-        isPullBusy={actionBusy === "pull"}
-        isFetchBusy={actionBusy === "fetch"}
-        isRefreshBusy={isLoading}
+        canPushPull={canPushPull}
+        busy={actionBusy}
+        onPull={() => void pull()}
+        onPush={() => void push()}
+        onFetch={() => void fetch()}
+        onRefresh={() => void refreshAll()}
+        onNewBranch={() => setCreateBranchOpen(true)}
+        onTags={() => setTagsOpen(true)}
+        onCompare={() => useGitCompareDialog.getState().show(currentBranch, "")}
       />
+
+      {allFiles.length > 0 && (
+        <StateSummary
+          total={allFiles.length}
+          counts={counts}
+          filter={activeFilter}
+          onFilter={setFilter}
+          canStageAll={
+            actionBusy === null && rows.some((row) => row.kind === "file" && row.entry.is_unstaged)
+          }
+          onStageAll={handleStageAll}
+        />
+      )}
 
       <OperationBanner conflictCount={conflictFiles.length} />
 
       <PullRequestSection />
-
-      <StashPanel />
 
       {actionStatus && <ActionStatusBanner status={actionStatus} />}
 
@@ -311,12 +293,8 @@ export function GitStatus() {
         rows={rows}
         actionBusy={actionBusy}
         onOpenConflict={openConflict}
-        historyExpanded={historyExpanded}
-        onToggleHistory={() => setHistoryExpanded((v) => !v)}
-        onStageAll={handleStageAll}
-        onUnstageAll={handleUnstageAll}
-        onToggleStaged={handleToggleStaged}
-        onToggleUnstaged={handleToggleUnstaged}
+        onStage={(entry) => void stageFiles([entry.path])}
+        onUnstage={(entry) => void unstageFiles([entry.path])}
         onSelectFile={handleSelectFile}
         onOpenDiff={handleOpenDiff}
         onDiscard={setDiscardEntry}
@@ -333,6 +311,27 @@ export function GitStatus() {
         actionBusy={actionBusy}
         onCommit={handleCommit}
       />
+
+      <StashPanel />
+
+      <div className="flex shrink-0 items-center gap-1 border-t border-border-subtle px-2 py-1">
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => useGitCompareDialog.getState().show(currentBranch, "")}
+          className="h-6 px-1.5 text-[11px] text-fg-subtle"
+        >
+          compare
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => setTagsOpen(true)}
+          className="h-6 px-1.5 text-[11px] text-fg-subtle"
+        >
+          tags
+        </Button>
+      </div>
 
       <CreateBranchDialog
         open={createBranchOpen}
