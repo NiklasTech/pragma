@@ -22,6 +22,7 @@ import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } 
 import { replayWithoutReplies } from "../replayOutput";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
+import { TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
 
 interface TerminalSetupOptions {
   session: TerminalSessionType;
@@ -100,7 +101,12 @@ export function useTerminalSetup({
       );
       t.open(containerRef.current);
       loadRenderAddons(t);
-      passAppShortcuts(t, ["search.find", "terminal.previousCommand", "terminal.nextCommand"]);
+      passAppShortcuts(t, [
+        "search.find",
+        "terminal.previousCommand",
+        "terminal.nextCommand",
+        ...TAB_SELECT_SHORTCUTS,
+      ]);
       removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);

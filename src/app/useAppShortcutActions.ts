@@ -32,6 +32,7 @@ import {
 } from "@/features/ai/panes/paneCommands";
 import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
 import { leaveAgentsForTerminal, toggleTerminalFromShortcut } from "./terminalShortcuts";
+import { tabSelectActions } from "./tabShortcuts";
 
 function inAgentsTab(): boolean {
   const { uiMode } = useUiModeStore.getState();
@@ -185,6 +186,7 @@ export function useAppShortcutActions(): ShortcutActions {
       "tab.prev": () => {
         cycleTab(-1);
       },
+      ...tabSelectActions(),
       "view.splitEditor": () => {
         if (editorPanelId) {
           useLayoutStore.getState().splitPanel(editorPanelId, "horizontal", "editor");

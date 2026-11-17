@@ -1,57 +1,40 @@
 import { useMemo } from "react";
 
-import { sessionAgentManifest } from "@/features/ai/sessions/sessionAgent";
 import { summarizeAgentStates, useAgentStatesStore } from "@/features/ai/state/agentStates";
-import { AgentMark } from "@/shared/components/ui/agent-mark";
 import { Button } from "@/shared/components/ui/button";
-import { StatusDot, type AgentState } from "@/shared/components/ui/status-dot";
+import type { AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
-import { useAIStore } from "@/shared/stores/ai";
 import { useOverlayStore } from "@/shared/stores/overlays";
 
-const MAX_MARKS = 4;
+const MAX_CELLS = 8;
 
-interface PillMark {
-  sessionId: string;
-  agentId: string | undefined;
-  name: string;
-  state: AgentState;
-}
+const CELL_CLASSES: Record<AgentState, string> = {
+  "needs-you": "bg-state-needs-you shadow-[0_0_6px_var(--color-accent-glow)]",
+  working: "bg-state-working",
+  done: "bg-state-done",
+  idle: "bg-fg-default/15",
+};
 
-function useMarks(sessionIds: Array<[string, AgentState]>): PillMark[] {
-  const chatSessions = useAIStore((state) => state.chatSessions);
-  const cliManifests = useAIStore((state) => state.cliManifests);
-  const activeCLIProvider = useAIStore((state) => state.activeCLIProvider);
-  return useMemo(() => {
-    const ai = useAIStore.getState();
-    return sessionIds.slice(0, MAX_MARKS).map(([sessionId, state]) => {
-      const manifest = sessionAgentManifest(ai, sessionId);
-      return { sessionId, agentId: manifest?.id, name: manifest?.name ?? "Pragma", state };
-    });
-    // The store fields are listed so the marks follow sessions, manifests and the default CLI.
-  }, [sessionIds, chatSessions, cliManifests, activeCLIProvider]);
-}
-
-/// How the agents are doing at a glance; a click opens the overview of every agent.
+/// How the agents are doing at a glance: one cell per agent; a click opens the overview of every agent.
 export function StatusPill() {
   const entries = useAgentStatesStore((store) => store.entries);
   const summary = useMemo(() => summarizeAgentStates(entries), [entries]);
   const { needsYou, working, done, first } = summary;
-  const ordered = useMemo(
-    (): Array<[string, AgentState]> => [
-      ...summary.needsYou.map((id): [string, AgentState] => [id, "needs-you"]),
-      ...summary.working.map((id): [string, AgentState] => [id, "working"]),
-      ...summary.done.map((id): [string, AgentState] => [id, "done"]),
-    ],
-    [summary],
+  const cells = useMemo(
+    (): AgentState[] =>
+      [
+        ...needsYou.map((): AgentState => "needs-you"),
+        ...working.map((): AgentState => "working"),
+        ...done.map((): AgentState => "done"),
+      ].slice(0, MAX_CELLS),
+    [needsYou, working, done],
   );
-  const marks = useMarks(ordered);
   const openOverlay = useOverlayStore((state) => state.open);
 
   const parts = [
     needsYou.length > 0 && `${needsYou.length} ${needsYou.length === 1 ? "needs" : "need"} you`,
     working.length > 0 && `${working.length} working`,
-    needsYou.length === 0 && done.length > 0 && `${done.length} done`,
+    done.length > 0 && `${done.length} done`,
   ].filter((part): part is string => Boolean(part));
 
   return (
@@ -59,27 +42,23 @@ export function StatusPill() {
       variant="ghost"
       onClick={() => openOverlay("overview")}
       title={first ? "Show every agent" : "No agent is running"}
-      className={cn(
-        "rounded-full bg-bg-well pr-3 text-ui-xs font-normal ring-1 ring-border ring-inset hover:bg-bg-well hover:ring-fg-subtle",
-        marks.length > 0 ? "gap-2.5 pl-1.75" : "pl-2.5",
-      )}
+      className="h-6.5 gap-2.25 rounded-[5px] px-2.5 text-ui-2xs font-normal text-fg-subtle ring-1 ring-fg-default/15 ring-inset hover:bg-transparent hover:text-fg-muted hover:ring-fg-default/35"
     >
-      {marks.length > 0 ? (
-        <span className="flex items-center gap-1" aria-hidden="true">
-          {marks.map((mark) => (
-            <AgentMark
-              key={mark.sessionId}
-              agentId={mark.agentId}
-              name={mark.name}
-              state={mark.state}
-              size="sm"
-              className="animate-in duration-200 zoom-in-75 fade-in-0 motion-reduce:animate-none"
+      <span className="flex items-center gap-[3px]" aria-hidden="true">
+        {cells.length > 0 ? (
+          cells.map((state, index) => (
+            <span
+              key={`${state}-${index}`}
+              className={cn(
+                "size-[7px] rounded-[1.5px] animate-in duration-200 zoom-in-50 fade-in-0 motion-reduce:animate-none",
+                CELL_CLASSES[state],
+              )}
             />
-          ))}
-        </span>
-      ) : (
-        <StatusDot state="idle" decorative />
-      )}
+          ))
+        ) : (
+          <span className={cn("size-[7px] rounded-[1.5px]", CELL_CLASSES.idle)} />
+        )}
+      </span>
       <span className="flex items-center gap-1.5">
         {parts.length > 0 ? (
           parts.map((part, index) => (
@@ -87,7 +66,6 @@ export function StatusPill() {
               key={part}
               className={cn(
                 index === 0 && needsYou.length > 0 && "font-medium text-state-needs-you",
-                index > 0 && "text-fg-subtle",
               )}
             >
               {index > 0 && "· "}
@@ -95,7 +73,7 @@ export function StatusPill() {
             </span>
           ))
         ) : (
-          <span>All quiet</span>
+          <span>all quiet</span>
         )}
       </span>
     </Button>

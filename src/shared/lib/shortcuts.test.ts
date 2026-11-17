@@ -147,19 +147,11 @@ describe("getDefaultShortcuts", () => {
     expect(other["search.replace"]).toEqual({ ctrl: true, code: "KeyH" });
   });
 
-  it("switches between editor and agents with Cmd or Ctrl and a digit", () => {
-    expect(getDefaultShortcuts(true)["view.switchToEditor"]).toEqual({
-      meta: true,
-      code: "Digit1",
-    });
-    expect(getDefaultShortcuts(true)["view.switchToAgents"]).toEqual({
-      meta: true,
-      code: "Digit2",
-    });
-    expect(getDefaultShortcuts(false)["view.switchToAgents"]).toEqual({
-      ctrl: true,
-      code: "Digit2",
-    });
+  it("picks the tab with that number with Cmd or Ctrl and a digit", () => {
+    expect(getDefaultShortcuts(true)["tab.select1"]).toEqual({ meta: true, code: "Digit1" });
+    expect(getDefaultShortcuts(false)["tab.select9"]).toEqual({ ctrl: true, code: "Digit9" });
+    expect(getDefaultShortcuts(true)["view.switchToEditor"]).toBeNull();
+    expect(getDefaultShortcuts(true)["view.switchToAgents"]).toBeNull();
   });
 
   it("has no conflicting defaults", () => {
@@ -173,7 +165,7 @@ describe("getDefaultShortcuts", () => {
 
   it("contains all registered actions", () => {
     const defaults = getDefaultShortcuts(false);
-    expect(Object.keys(defaults)).toHaveLength(47);
+    expect(Object.keys(defaults)).toHaveLength(56);
     expect(defaults["view.toggleContextPane"]).toEqual({ ctrl: true, alt: true, code: "Digit0" });
     expect(defaults["chat.send"]).toEqual({ key: "Enter" });
     expect(defaults["terminal.previousCommand"]).toEqual({ ctrl: true, key: "ArrowUp" });
