@@ -5,7 +5,7 @@ use crate::modules::mcp::start::connect;
 use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
 use crate::modules::mcp::{
     config_path, load_tools_cache, save_tools_cache, secrets, write_config_file, McpServerConfig,
-    CONFIG_VERSION,
+    CONFIG_FILE, CONFIG_VERSION,
 };
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::Serialize;
@@ -77,7 +77,6 @@ struct McpLogEvent {
 
 struct RunningServer {
     client: McpConnection,
-    child: Option<Arc<Mutex<Child>>>,
     status: Arc<Mutex<McpServerStatus>>,
     capabilities: McpServerCapabilities,
     tasks: Vec<tokio::task::JoinHandle<()>>,
@@ -306,12 +305,12 @@ impl McpManager {
             config.id.clone(),
             connected.notifications,
         ))];
-        let child = connected.child.map(|child| Arc::new(Mutex::new(child)));
-        if let Some(child) = &child {
+        // The supervisor owns the process; aborting it on stop drops and so ends the process.
+        if let Some(child) = connected.child {
             tasks.push(tokio::spawn(Self::supervise(
                 self.app_handle.clone(),
                 config.id.clone(),
-                Arc::clone(child),
+                child,
                 Arc::clone(&status),
             )));
         }
@@ -330,7 +329,6 @@ impl McpManager {
                 config.id.clone(),
                 RunningServer {
                     client: connected.connection,
-                    child,
                     status,
                     capabilities: connected.capabilities,
                     tasks,
@@ -430,10 +428,6 @@ impl McpManager {
     }
 
     async fn stop_running_server(server: RunningServer) {
-        if let Some(child) = &server.child {
-            let mut child = child.lock().await;
-            let _ = child.kill().await;
-        }
         if let McpConnection::Http(client) = &server.client {
             client.close().await;
         }
@@ -445,13 +439,10 @@ impl McpManager {
     async fn supervise(
         app_handle: AppHandle,
         id: String,
-        child: Arc<Mutex<Child>>,
+        mut child: Child,
         status: Arc<Mutex<McpServerStatus>>,
     ) {
-        let exit = {
-            let mut child = child.lock().await;
-            child.wait().await
-        };
+        let exit = child.wait().await;
 
         let (new_status, error) = match exit {
             Ok(code) if code.success() => (McpServerStatus::Stopped, None),
@@ -548,7 +539,9 @@ fn create_config_watcher(
     RecommendedWatcher::new(
         move |res: notify::Result<Event>| {
             if let Ok(event) = res {
-                if event.kind.is_modify() || event.kind.is_create() {
+                if (event.kind.is_modify() || event.kind.is_create())
+                    && touches_config(&event.paths)
+                {
                     let _ = tx.try_send(());
                 }
             }
@@ -558,9 +551,26 @@ fn create_config_watcher(
     .map_err(|e| McpError::Watcher(e.to_string()))
 }
 
+/// The watcher sees the whole config folder; only `mcp.json` may reload the servers.
+/// The tools cache is written there on every start, and reloading on it stopped every server.
+fn touches_config(paths: &[std::path::PathBuf]) -> bool {
+    paths
+        .iter()
+        .any(|path| path.file_name().is_some_and(|name| name == CONFIG_FILE))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_the_config_file_reloads_the_servers() {
+        let dir = std::path::PathBuf::from("/config");
+        assert!(touches_config(&[dir.join("mcp.json")]));
+        assert!(!touches_config(&[dir.join("mcp-tools-cache.json")]));
+        assert!(!touches_config(&[dir.join("settings.json")]));
+        assert!(!touches_config(&[]));
+    }
 
     #[test]
     fn status_serializes_to_lowercase() {

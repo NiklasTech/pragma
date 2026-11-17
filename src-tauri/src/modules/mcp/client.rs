@@ -116,7 +116,9 @@ impl McpClient {
             .envs(&config.env)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(Stdio::piped())
+            // Stopping a server aborts the task that owns the process; dropping it must end the process.
+            .kill_on_drop(true);
 
         let mut child = cmd.spawn()?;
         let stdin = child.stdin.take().ok_or(McpError::MissingStdio)?;
