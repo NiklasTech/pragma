@@ -1,23 +1,39 @@
 import { sessionAgentManifest } from "@/features/ai/sessions/sessionAgent";
-import { isShellSession } from "@/features/ai/terminal/shell";
+import { isShellSession, SHELL_TITLE } from "@/features/ai/terminal/shell";
 import { AgentMark } from "@/shared/components/ui/agent-mark";
 import type { AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
 
+import { useShellClisStore } from "./shellClis";
+
 export interface SessionIdentity {
   session: ChatSession | undefined;
   manifest: CLIManifest | undefined;
+  /** A plain shell with no coding CLI running in it. */
   shell: boolean;
   /** The agent's name: its CLI, "Shell" or Pragma's own agent. */
   name: string;
+  /** The session title; a shell named after the CLI running in it, like its pane. */
+  title: string;
 }
 
 export function useSessionIdentity(sessionId: string): SessionIdentity {
   const session = useAIStore((state) => state.chatSessions.find((item) => item.id === sessionId));
-  const manifest = useAIStore((state) => sessionAgentManifest(state, sessionId));
-  const shell = session !== undefined && isShellSession(session) && !manifest;
-  return { session, manifest, shell, name: manifest?.name ?? (shell ? "Shell" : "Pragma") };
+  const isShell = session !== undefined && isShellSession(session);
+  const foregroundId = useShellClisStore((state) => state.bySession[sessionId]);
+  const foreground = useAIStore((state) =>
+    isShell && foregroundId
+      ? state.cliManifests.find((item) => item.id === foregroundId)
+      : undefined,
+  );
+  const ownManifest = useAIStore((state) => sessionAgentManifest(state, sessionId));
+  const manifest = isShell ? foreground : ownManifest;
+  const shell = isShell && !manifest;
+  const name = manifest?.name ?? (shell ? "Shell" : "Pragma");
+  const rawTitle = session?.title ?? "";
+  const title = isShell && rawTitle === SHELL_TITLE ? name : rawTitle;
+  return { session, manifest, shell, name, title };
 }
 
 // Square state cells as in the D mockup: orange glow, blue, green, a faint outline.

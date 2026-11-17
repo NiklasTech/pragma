@@ -53,12 +53,12 @@ interface RowProps {
 function SheetRow({ sessionId, details, focused = false, shortcut, onSelect }: RowProps) {
   const identity = useSessionIdentity(sessionId);
   const environments = useAIStore((store) => store.workEnvironments);
-  const { session, name } = identity;
+  const { session, name, title } = identity;
   if (!session) return null;
   const environment = sessionEnvironment(session, environments);
   const branch = environment?.kind === "worktree" ? environment.branch : null;
-  const sub = [session.title === name ? null : name, branch, ...details].filter(
-    (part): part is string => Boolean(part),
+  const sub = [title === name ? null : name, branch, ...details].filter((part): part is string =>
+    Boolean(part),
   );
 
   return (
@@ -73,9 +73,7 @@ function SheetRow({ sessionId, details, focused = false, shortcut, onSelect }: R
     >
       <SessionMark identity={identity} surface="sheet" />
       <span className="flex min-w-0 flex-1 flex-col gap-px">
-        <span className="truncate font-sans text-ui-sm font-medium text-fg-default">
-          {session.title}
-        </span>
+        <span className="truncate font-sans text-ui-sm font-medium text-fg-default">{title}</span>
         <span className="truncate text-[10.5px] text-fg-subtle">{sub.join(" · ")}</span>
       </span>
       {shortcut && <Kbd>{shortcut}</Kbd>}

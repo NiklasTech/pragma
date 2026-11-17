@@ -4,11 +4,13 @@ import { Folder, ListBullets, Plus } from "@phosphor-icons/react";
 import { revealPane } from "@/features/ai/panes/paneCommands";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { selectAgentState, useAgentStatesStore } from "@/features/ai/state/agentStates";
+import { isShellSession } from "@/features/ai/terminal/shell";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
 import { AGENT_STATE_LABELS } from "@/shared/components/ui/status-dot";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
+import { useAIStore } from "@/shared/stores/ai";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useOverlayStore } from "@/shared/stores/overlays";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -16,6 +18,7 @@ import { useLayoutStore } from "@/shell/layout/store";
 import { useUiMode } from "@/shell/mode";
 
 import { useAgentSheetStore } from "./agentSheetStore";
+import { useShellCliPolling } from "./shellClis";
 import { railGroups, type RailEntry } from "./railEntries";
 import { SessionMark, useSessionIdentity } from "./SessionMark";
 
@@ -29,11 +32,11 @@ interface RailCellProps {
 function RailCell({ entry, spaceId, focused, dim }: RailCellProps) {
   const identity = useSessionIdentity(entry.sessionId);
   const state = useAgentStatesStore(selectAgentState(entry.sessionId));
-  const { session, name } = identity;
+  const { session, name, title } = identity;
   if (!session) return null;
 
   const stateLabel = AGENT_STATE_LABELS[state].toLowerCase();
-  const parts = session.title === name ? [name] : [session.title, name];
+  const parts = title === name ? [name] : [title, name];
 
   return (
     <Button
@@ -73,6 +76,16 @@ export function AgentRail() {
     setSidebarCollapsed(filesOpen);
   };
   const groups = useMemo(() => (space ? railGroups(space, trees) : []), [space, trees]);
+  const chatSessions = useAIStore((state) => state.chatSessions);
+  const shellSessionIds = useMemo(() => {
+    const shells = new Set(
+      chatSessions.filter((session) => isShellSession(session)).map((session) => session.id),
+    );
+    return groups.flatMap((group) =>
+      group.entries.flatMap((entry) => (shells.has(entry.sessionId) ? [entry.sessionId] : [])),
+    );
+  }, [chatSessions, groups]);
+  useShellCliPolling(shellSessionIds);
   const focusedLeafId = space ? (trees[space.activeTabId]?.focusedLeafId ?? null) : null;
 
   return (
