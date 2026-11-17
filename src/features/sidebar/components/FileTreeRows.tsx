@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Spinner } from "@phosphor-icons/react";
 
@@ -9,6 +9,7 @@ import type { GitDecorations } from "@/features/sidebar/lib/gitDecorations";
 import { useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
 import { movePaths } from "@/features/sidebar/lib/fileTreeActions";
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
+import { treeGuides } from "@/features/sidebar/lib/treeGuides";
 import { useUiSize } from "@/theme/useUiMetrics";
 
 import { FileTreeNode } from "./FileTreeNode";
@@ -29,7 +30,7 @@ interface FileTreeRowsProps {
   changeMark?: ReactNode;
 }
 
-/// The visible rows of a file tree, virtualized, with selection, drag and drop and git letters.
+/// The visible rows of a file tree, virtualized, with tree lines, selection, drag and drop and git letters.
 export function FileTreeRows({
   nodes,
   expandedDirs,
@@ -63,6 +64,7 @@ export function FileTreeRows({
   }, []);
 
   const rootDrop = useFileTreeDrop(dropRoot, handleMove);
+  const guides = useMemo(() => treeGuides(nodes), [nodes]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rowHeight = useUiSize()(ROW_HEIGHT);
@@ -102,6 +104,7 @@ export function FileTreeRows({
                 <FileTreeNode
                   node={node}
                   depth={depth}
+                  guide={guides[virtualItem.index] ?? { last: true, through: [] }}
                   expandedDirs={expandedDirs}
                   selectedPath={selectedPath}
                   onToggleDir={onToggleDir}

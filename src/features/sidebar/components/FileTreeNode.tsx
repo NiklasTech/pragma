@@ -1,8 +1,6 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { CaretRight, CaretDown, Spinner } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
-import { getFileIconPath } from "@/shared/lib/file-icons";
-import { getFolderIconPath } from "@/shared/lib/folder-icons";
 import { parentPath } from "@/shared/lib/fileDisk";
 import { PRAGMA_PATH_MIME, PRAGMA_PATHS_MIME } from "@/shared/lib/pragma-drag";
 import { useEditorStore } from "@/shared/stores/editor";
@@ -25,20 +23,25 @@ import { selectionTargets, useFileSelectionStore } from "@/features/sidebar/lib/
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
+import { splitExtension } from "@/features/sidebar/lib/extensionTint";
+import type { TreeGuide } from "@/features/sidebar/lib/treeGuides";
 
-const INDENT = 12;
+const INDENT = 14;
+// Center of the caret column, where a folder's line to its children runs.
+const LINE_X = 13;
 
 const DECORATION_TEXT: Record<GitDecorationKind, string> = {
   added: "text-git-added",
   untracked: "text-git-untracked",
   modified: "text-git-modified",
-  deleted: "text-git-deleted line-through",
+  deleted: "text-git-deleted",
   conflict: "text-status-error",
 };
 
 interface FileTreeNodeProps {
   node: FileSystemNode;
   depth: number;
+  guide: TreeGuide;
   expandedDirs: Set<string>;
   selectedPath: string | null;
   onToggleDir: (path: string) => void;
@@ -58,6 +61,7 @@ interface FileTreeNodeProps {
 export function FileTreeNode({
   node,
   depth,
+  guide,
   expandedDirs,
   selectedPath,
   onToggleDir,
@@ -143,7 +147,10 @@ export function FileTreeNode({
     }
   }, [node.path, onShowLocalHistory]);
 
-  const paddingLeft = depth * INDENT + 6;
+  const paddingLeft = depth * INDENT + 8;
+  const ownLineX = (depth - 1) * INDENT + LINE_X;
+  const nameParts = splitExtension(node.name);
+  const lineClass = "pointer-events-none absolute w-px bg-fg-default/15";
 
   const content = (
     <div
@@ -155,10 +162,10 @@ export function FileTreeNode({
       }}
       {...drop.handlers}
       className={cn(
-        "group relative mx-1.5 my-px flex h-[calc(100%-2px)] items-center gap-1.5 rounded-md pr-2 text-ui-sm cursor-pointer select-none transition-colors",
+        "group relative mx-1.5 flex h-full items-center gap-1.5 rounded-[4px] pr-2 font-mono text-ui-xs cursor-pointer select-none transition-colors",
         drop.over && "ring-1 ring-primary ring-inset",
         isActiveFile
-          ? "bg-accent-subtle text-fg-default"
+          ? "bg-primary/10 text-fg-default"
           : isSelected
             ? "bg-bg-hover text-fg-default"
             : "text-fg-muted hover:bg-bg-hover hover:text-fg-default",
@@ -166,60 +173,88 @@ export function FileTreeNode({
       style={{ paddingLeft }}
       onClick={handleClick}
     >
-      {Array.from({ length: depth }, (_, level) => (
+      {isActiveFile && (
         <span
-          key={level}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 w-px bg-border"
-          style={{ left: level * INDENT + 12 }}
+          className="pointer-events-none absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
         />
-      ))}
-      {node.isDirectory ? (
+      )}
+      {guide.through.map((through, index) =>
+        through ? (
+          <span
+            key={index}
+            aria-hidden="true"
+            className={cn(lineClass, "inset-y-0")}
+            style={{ left: index * INDENT + LINE_X }}
+          />
+        ) : null,
+      )}
+      {depth > 0 && (
         <>
-          <span className="flex size-3 shrink-0 items-center justify-center text-fg-subtle">
-            {isExpanded ? (
-              <CaretDown size={12} weight="bold" />
-            ) : (
-              <CaretRight size={12} weight="bold" />
+          <span
+            aria-hidden="true"
+            className={cn(
+              lineClass,
+              "top-0",
+              guide.last ? "h-1/2" : "bottom-0",
+              isActiveFile && "bg-primary/70",
             )}
-          </span>
-          {showDirLoading ? (
-            <Spinner size={14} className="animate-spin text-fg-muted" />
-          ) : (
-            <img
-              src={getFolderIconPath(node.name, isExpanded)}
-              alt=""
-              className="size-3.5 shrink-0"
-            />
-          )}
+            style={{ left: ownLineX }}
+          />
+          <span
+            aria-hidden="true"
+            className={cn(
+              "pointer-events-none absolute top-1/2 h-px bg-fg-default/15",
+              isActiveFile && "bg-primary/70",
+            )}
+            style={{ left: ownLineX, width: paddingLeft - ownLineX + (node.isDirectory ? -2 : 12) }}
+          />
         </>
-      ) : (
-        <span className="w-3 shrink-0" />
       )}
-
-      {node.isDirectory ? null : (
-        <img src={getFileIconPath(node.name)} alt="" className="size-3.5 shrink-0" />
-      )}
+      <span className="flex w-2.5 shrink-0 items-center justify-center text-fg-subtle">
+        {node.isDirectory &&
+          (showDirLoading ? (
+            <Spinner size={11} className="animate-spin" />
+          ) : isExpanded ? (
+            <CaretDown size={9} weight="fill" />
+          ) : (
+            <CaretRight size={9} weight="fill" />
+          ))}
+      </span>
 
       {node.repositoryRoot && <RepositoryColorDot path={node.path} />}
-      <span
-        className={cn(
-          "min-w-0 truncate",
-          isActiveFile && "font-medium",
-          decoration && DECORATION_TEXT[decoration.kind],
-        )}
-      >
-        {node.name}
-      </span>
+      {node.isDirectory ? (
+        <span className="min-w-0 truncate text-fg-default">
+          {node.name}
+          <span className="text-fg-subtle">/</span>
+        </span>
+      ) : (
+        <span
+          className={cn(
+            "min-w-0 truncate",
+            isActiveFile && "text-fg-default",
+            decoration && DECORATION_TEXT[decoration.kind],
+            decoration?.kind === "deleted" && "line-through",
+          )}
+        >
+          {decoration ? (
+            node.name
+          ) : (
+            <>
+              {nameParts.base}
+              {nameParts.ext && <span className={nameParts.tint}>{nameParts.ext}</span>}
+            </>
+          )}
+        </span>
+      )}
 
       {changeMark && <span className="ml-auto flex shrink-0 items-center">{changeMark}</span>}
       {decoration && (
         <span
           className={cn(
-            "shrink-0 font-mono text-ui-2xs font-semibold",
+            "inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] bg-current/15 text-[10px] font-bold",
             !changeMark && "ml-auto",
             DECORATION_TEXT[decoration.kind],
-            "no-underline",
           )}
           title={decoration.kind}
         >
@@ -229,7 +264,7 @@ export function FileTreeNode({
       {!decoration && hasChanges && (
         <span
           aria-label="Contains changes"
-          className="ml-auto size-1.5 shrink-0 rounded-full bg-git-modified/80"
+          className="ml-auto size-1.5 shrink-0 rounded-[1px] bg-git-modified/80"
         />
       )}
 
