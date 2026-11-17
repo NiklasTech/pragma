@@ -20,6 +20,7 @@ import { useTerminalSetup } from "../hooks/useTerminalSetup";
 import { useTerminalInput } from "../hooks/useTerminalInput";
 import { useTerminalCommands, useTerminalSelection } from "../hooks/useTerminalEvents";
 import { useTerminalFind } from "../hooks/useTerminalFind";
+import { useTerminalHeaderEvents } from "../hooks/useTerminalHeaderEvents";
 import { useCopyOnSelect, useTerminalCursor } from "../hooks/useTerminalPreferences";
 import { useTerminalFileDrop } from "../hooks/useTerminalFileDrop";
 import { useShellIntegration } from "../hooks/useShellIntegration";
@@ -116,7 +117,8 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
   useTerminalCursor(termState);
   useCopyOnSelect(termState);
 
-  const find = useTerminalFind(termState, rootRef);
+  const find = useTerminalFind(termState, rootRef, session.id);
+  useTerminalHeaderEvents(termState, session.id);
   const shellIntegration = useShellIntegration(termState, rootRef);
 
   const insertPaths = useCallback(

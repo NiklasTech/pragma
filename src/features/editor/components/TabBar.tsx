@@ -21,6 +21,7 @@ import {
   ContextMenuSeparator,
 } from "@/shared/components/ui/context-menu";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
+import { EditorTabActions } from "./EditorTabActions";
 
 /** The active file's folder relative to the open folder, as the tab row shows it. */
 function folderOf(path: string, root: string | null): string | null {
@@ -239,6 +240,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
             {activePath}
           </span>
         )}
+        <EditorTabActions panelId={panelId} />
         {panelId && (
           <IconButton
             icon={SquareSplitHorizontal}

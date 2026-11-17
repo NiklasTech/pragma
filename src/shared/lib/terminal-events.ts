@@ -31,12 +31,17 @@ export function dismissTerminalSuggestion(): void {
   window.dispatchEvent(new CustomEvent(TERMINAL_DISMISS_SUGGESTION_EVENT));
 }
 
-export function dispatchTerminalClear(): void {
-  window.dispatchEvent(new CustomEvent(TERMINAL_CLEAR_EVENT));
+/** Names the terminal session a header button acts on. */
+export interface TerminalTargetEventDetail {
+  sessionId: string;
 }
 
-export function dispatchTerminalCopyOutput(): void {
-  window.dispatchEvent(new CustomEvent(TERMINAL_COPY_OUTPUT_EVENT));
+export function dispatchTerminalClear(sessionId: string): void {
+  window.dispatchEvent(new CustomEvent(TERMINAL_CLEAR_EVENT, { detail: { sessionId } }));
+}
+
+export function dispatchTerminalCopyOutput(sessionId: string): void {
+  window.dispatchEvent(new CustomEvent(TERMINAL_COPY_OUTPUT_EVENT, { detail: { sessionId } }));
 }
 
 /** True when keyboard focus is inside a terminal marked with `data-terminal-find`. */
@@ -44,6 +49,9 @@ export function isTerminalFindFocused(): boolean {
   return document.activeElement?.closest("[data-terminal-find]") != null;
 }
 
-export function dispatchTerminalFind(): void {
-  window.dispatchEvent(new CustomEvent(TERMINAL_FIND_EVENT));
+/** Without a session the find bar opens in the terminal that has focus. */
+export function dispatchTerminalFind(sessionId?: string): void {
+  window.dispatchEvent(
+    new CustomEvent(TERMINAL_FIND_EVENT, { detail: sessionId ? { sessionId } : undefined }),
+  );
 }
