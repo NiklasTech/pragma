@@ -67,7 +67,17 @@ export interface PreviewTab {
   previewKind: "image" | "binary";
 }
 
-export type EditorTab = FileTab | DiffTab | ReferencesTab | PreviewTab;
+/** The git history of the open repository, shown as a tab beside the files. */
+export interface HistoryTab {
+  id: typeof HISTORY_TAB_ID;
+  kind: "history";
+  path: string;
+  name: string;
+}
+
+export const HISTORY_TAB_ID = "git-history";
+
+export type EditorTab = FileTab | DiffTab | ReferencesTab | PreviewTab | HistoryTab;
 
 export interface TabState {
   tabId: string;
@@ -91,6 +101,7 @@ interface EditorActions {
   openFile: (file: Omit<FileTab, "kind">, panelId?: string | null) => void;
   openDiff: (diff: Omit<DiffTab, "kind" | "name" | "id"> & { id?: string; name?: string }) => void;
   openReferences: (refs: { path: string; symbol: string; locations: ReferenceLocation[] }) => void;
+  openHistory: (panelId?: string | null) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   setPanelActiveTab: (panelId: string, tabId: string | null) => void;
@@ -186,6 +197,27 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
       tabs: [...tabs, diffTab],
       tabStates: [...tabStates, createTabState(diffId)],
       activeTabId: diffId,
+    });
+  },
+
+  openHistory: (panelId) => {
+    const { tabs, tabStates, activeTabIds } = get();
+    const panels = panelId ? { ...activeTabIds, [panelId]: HISTORY_TAB_ID } : activeTabIds;
+    if (tabs.some((t) => t.id === HISTORY_TAB_ID)) {
+      set({ activeTabId: HISTORY_TAB_ID, activeTabIds: panels });
+      return;
+    }
+    const historyTab: HistoryTab = {
+      id: HISTORY_TAB_ID,
+      kind: "history",
+      path: "",
+      name: "History",
+    };
+    set({
+      tabs: [...tabs, historyTab],
+      tabStates: [...tabStates, createTabState(HISTORY_TAB_ID)],
+      activeTabId: HISTORY_TAB_ID,
+      activeTabIds: panels,
     });
   },
 

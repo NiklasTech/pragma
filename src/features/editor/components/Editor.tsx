@@ -9,6 +9,7 @@ import { GitDiffTabView } from "./GitDiffTabView";
 import { FileEditor } from "./FileEditor";
 import { DiskChangeNotice } from "./DiskChangeNotice";
 import { FilePreviewView } from "../preview/FilePreviewView";
+import { GitHistoryView } from "@/features/gitHistory/GitHistoryView";
 
 interface EditorProps {
   panelId?: string;
@@ -76,6 +77,10 @@ export function Editor({ panelId }: EditorProps) {
 
   if (activeTab.kind === "references") {
     return <ReferencesView tab={activeTab} />;
+  }
+
+  if (activeTab.kind === "history") {
+    return <GitHistoryView />;
   }
 
   if (activeTab.kind === "preview") {
