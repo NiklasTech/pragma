@@ -14,14 +14,14 @@ export function SettingRow({ label, description, control, disabled }: SettingRow
     <div
       data-setting-row
       className={cn(
-        "flex w-full flex-row items-center justify-between gap-6 py-3",
+        "flex w-full flex-row items-center justify-between gap-5 py-2.5",
         disabled && "opacity-50",
       )}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-ui-sm font-medium text-fg-default">{label}</span>
+        <span className="text-[13px] font-medium text-fg-default">{label}</span>
         {description && (
-          <span className="text-ui-xs leading-relaxed text-fg-subtle">{description}</span>
+          <span className="text-ui-xs leading-snug text-fg-subtle">{description}</span>
         )}
       </div>
       <div className="shrink-0">{control}</div>

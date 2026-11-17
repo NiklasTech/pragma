@@ -2,8 +2,13 @@
 
 import * as React from "react";
 
-import { Info } from "@phosphor-icons/react";
+import { CaretRight, Info } from "@phosphor-icons/react";
 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/shared/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { aiProviderForCLI } from "@/shared/lib/ai-providers";
 import { useAIStore } from "@/shared/stores/ai";
@@ -96,6 +101,19 @@ export function CliIntegrationSection() {
     }
   };
 
+  const tile = (manifest: (typeof installed)[number]) => (
+    <CliTile
+      key={manifest.id}
+      manifest={manifest}
+      status={aiStore.cliStatuses[manifest.id]}
+      quickKey={quickKeyOf(manifest.id)}
+      busy={installing === manifest.id || loggingIn === manifest.id}
+      onInstall={() => void handleInstallCLI(manifest.id)}
+      onSignIn={() => void handleLoginCLI(manifest.id)}
+      onSignOut={() => void handleLogoutCLI(manifest.id)}
+    />
+  );
+
   return (
     <SettingSection
       title="Coding CLIs"
@@ -131,25 +149,30 @@ export function CliIntegrationSection() {
         </Tooltip>
       }
     >
-      <div className="flex flex-col gap-3 py-3">
+      <div className="flex flex-col gap-1.5 py-2">
         {aiStore.cliManifests.length === 0 ? (
           <p className="text-ui-sm text-fg-muted">Looking for coding CLIs...</p>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {[...installed, ...missing].map((manifest) => (
-                <CliTile
-                  key={manifest.id}
-                  manifest={manifest}
-                  status={aiStore.cliStatuses[manifest.id]}
-                  quickKey={quickKeyOf(manifest.id)}
-                  busy={installing === manifest.id || loggingIn === manifest.id}
-                  onInstall={() => void handleInstallCLI(manifest.id)}
-                  onSignIn={() => void handleLoginCLI(manifest.id)}
-                  onSignOut={() => void handleLogoutCLI(manifest.id)}
-                />
-              ))}
-            </div>
+            <div className="flex flex-col">{installed.map(tile)}</div>
+            {missing.length > 0 && (
+              <Collapsible>
+                <CollapsibleTrigger className="group flex w-full min-w-0 items-center gap-2 rounded-[4px] py-1 text-left font-mono text-ui-2xs text-fg-subtle hover:text-fg-default">
+                  <CaretRight
+                    size={10}
+                    aria-hidden="true"
+                    className="shrink-0 transition-transform group-data-[panel-open]:rotate-90"
+                  />
+                  <span className="shrink-0">+ {missing.length} not installed</span>
+                  <span className="min-w-0 truncate">
+                    {missing.map((manifest) => manifest.name).join(", ")}
+                  </span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="flex flex-col">{missing.map(tile)}</div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
             <p className="text-ui-xs text-fg-subtle">
               The number is the key that starts the CLI in New (⌘N).
             </p>

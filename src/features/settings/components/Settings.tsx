@@ -10,7 +10,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Kbd } from "@/shared/components/ui/kbd";
 import { CATEGORIES, type Category } from "./settings-categories";
 import { SettingsSearch } from "./SettingsSearch";
-import { SettingsNav } from "./SettingsNav";
+import { SettingsTabs } from "./SettingsTabs";
 import { SettingsActions } from "./SettingsActions";
 import { SettingsCategoryContent } from "./SettingsCategoryContent";
 import { revealSetting } from "./revealSetting";
@@ -53,7 +53,6 @@ export function Settings({
   }, [reveal]);
 
   const activeCategoryDef = CATEGORIES.find((c) => c.id === activeCategory);
-  const activeLabel = activeCategoryDef?.label ?? "Settings";
 
   React.useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -83,51 +82,60 @@ export function Settings({
 
   return (
     <TooltipProvider delay={100}>
-      <div className="flex h-full flex-col">
-        <div className="flex min-h-0 flex-1 gap-0">
-          <div className="flex w-56 shrink-0 flex-col overflow-hidden border-r border-border-subtle bg-bg-chrome/40">
-            <SettingsSearch
-              query={query}
-              onQueryChange={setQuery}
-              onSelectResult={handleSelectResult}
-            />
-            <SettingsNav activeCategory={activeCategory} onSelectCategory={handleSelectCategory} />
+      <div
+        className="flex h-full min-h-0 flex-col"
+        data-settings-wide={activeCategoryDef?.wide || undefined}
+      >
+        <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border-subtle pr-2 pl-4 font-mono text-[12.5px]">
+          <span className="font-semibold text-fg-default">settings</span>
+          <span aria-hidden="true" className="text-fg-subtle">
+            ›
+          </span>
+          <span className="truncate text-fg-muted">{activeCategoryDef?.tab ?? "settings"}</span>
+          <span
+            className={cn(
+              "ml-2 inline-flex items-center gap-1 text-ui-2xs text-status-success transition-opacity duration-200",
+              saveIndicator === "saved" ? "opacity-100" : "opacity-0",
+            )}
+            aria-live="polite"
+          >
+            <Check size={11} />
+            saved
+          </span>
+          <span className="ml-auto flex items-center gap-1">
             <SettingsActions />
-          </div>
-
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="mx-auto flex w-full max-w-3xl shrink-0 items-start justify-between gap-4 px-8 pt-7 pb-4">
-              <div className="flex min-w-0 flex-col gap-1">
-                <h2 className="text-xl font-semibold tracking-tight text-fg-default">
-                  {activeLabel}
-                </h2>
-                {activeCategoryDef && (
-                  <p className="text-ui-sm text-fg-subtle">{activeCategoryDef.description}</p>
-                )}
-              </div>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-ui-xs text-status-success transition-opacity duration-200",
-                  saveIndicator === "saved" ? "opacity-100" : "opacity-0",
-                )}
-                aria-live="polite"
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={onClose}
+                aria-label="Close settings"
+                className="ml-1 px-1"
               >
-                <Check size={12} />
-                Saved
-              </span>
-              {onClose && (
-                <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0">
-                  Close <Kbd>Esc</Kbd>
-                </Button>
-              )}
-            </div>
-            <ScrollArea className="min-h-0 flex-1">
-              <div ref={contentRef} className="mx-auto w-full max-w-3xl px-8 pb-10">
-                <SettingsCategoryContent category={activeCategory} />
-              </div>
-            </ScrollArea>
+                <Kbd>esc</Kbd>
+              </Button>
+            )}
+          </span>
+        </header>
+
+        <SettingsTabs active={activeCategory} onSelect={handleSelectCategory} />
+
+        <SettingsSearch
+          query={query}
+          onQueryChange={setQuery}
+          onSelectResult={handleSelectResult}
+        />
+
+        <ScrollArea className="min-h-0 flex-1">
+          <div ref={contentRef} className="w-full px-4 pt-3 pb-10 pl-7">
+            {activeCategoryDef && (
+              <p className="-ml-3 pb-1 text-ui-xs text-fg-subtle">
+                {activeCategoryDef.description}
+              </p>
+            )}
+            <SettingsCategoryContent category={activeCategory} />
           </div>
-        </div>
+        </ScrollArea>
       </div>
     </TooltipProvider>
   );

@@ -31,7 +31,7 @@ export function statusLine(status: CLIStatus | undefined): string {
   return version ? `Version ${version}` : "Ready";
 }
 
-/// One coding CLI as on Board 13: its mark, whether it is ready, and the key that starts it.
+/// One coding CLI as a compact row: its mark, name, state, and the key that starts it.
 export function CliTile({
   manifest,
   status,
@@ -45,39 +45,40 @@ export function CliTile({
   const needsSignIn = installed && status?.authenticated !== true;
 
   return (
-    <div
-      className={cn(
-        "group flex min-w-0 flex-col gap-1 rounded-lg border border-border-subtle px-3 py-2.5",
-        !installed && "text-fg-muted",
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-2.5">
+    <div className="group flex min-w-0 flex-col border-t border-border-subtle py-1.5 first:border-t-0">
+      <div className="flex min-h-7 min-w-0 items-center gap-2.5">
         <AgentMark
           agentId={installed ? manifest.id : undefined}
           name={manifest.name}
+          size="sm"
           className={cn(!installed && "bg-bg-active text-fg-muted")}
         />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-ui-sm text-fg-default">{manifest.name}</span>
-          <span
-            className={cn(
-              "truncate text-ui-xs",
-              needsSignIn ? "text-status-warning" : "text-fg-muted",
-            )}
-          >
-            {statusLine(status)}
-          </span>
+        <span
+          className={cn(
+            "truncate font-mono text-ui-xs",
+            installed ? "text-fg-default" : "text-fg-muted",
+          )}
+        >
+          {manifest.name}
+        </span>
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate font-mono text-ui-2xs",
+            needsSignIn ? "text-status-warning" : "text-fg-subtle",
+          )}
+        >
+          {statusLine(status)}
         </span>
         {!installed && (
-          <Button size="xs" variant="ghost" onClick={onInstall} disabled={busy} className="gap-1">
+          <Button size="xs" variant="outline" onClick={onInstall} disabled={busy} className="gap-1">
             <DownloadSimple size={12} />
-            {busy ? "Installing" : "Install"}
+            {busy ? "installing" : "install"}
           </Button>
         )}
         {needsSignIn && (
           <Button size="xs" variant="outline" onClick={onSignIn} disabled={busy} className="gap-1">
             <SignIn size={12} />
-            {busy ? "Opening" : "Sign in"}
+            {busy ? "opening" : "sign in"}
           </Button>
         )}
         {installed && !needsSignIn && (
@@ -95,7 +96,7 @@ export function CliTile({
           </>
         )}
       </div>
-      {status?.error && <p className="text-ui-xs text-status-error">{status.error}</p>}
+      {status?.error && <p className="pl-7.5 text-ui-xs text-status-error">{status.error}</p>}
     </div>
   );
 }

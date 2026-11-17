@@ -82,7 +82,7 @@ export function ProjectSettings() {
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved ?? {});
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       <p className="text-ui-xs text-fg-subtle">
         Stored in .pragma/settings.json and shared with everyone who opens this folder. An empty
         field or Use my setting leaves the value to each person's own settings.

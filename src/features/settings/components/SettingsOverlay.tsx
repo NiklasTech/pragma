@@ -8,7 +8,7 @@ import { useOverlayStore } from "@/shared/stores/overlays";
 import { isCategory } from "./settings-categories";
 import { Settings } from "./Settings";
 
-/// Settings as an overlay over the workspace, opened on the area a caller asked for.
+/// Settings as a sheet on the right of the workspace, opened on the area a caller asked for.
 export function SettingsOverlay() {
   const active = useOverlayStore((state) => state.active);
   const target = useOverlayStore((state) => state.target);
@@ -18,7 +18,10 @@ export function SettingsOverlay() {
 
   return (
     <OverlaySheet open={open} onOpenChange={(next) => !next && close("settings")}>
-      <OverlaySheetContent className="h-[min(820px,90vh)] max-w-[1100px]">
+      <OverlaySheetContent
+        placement="right"
+        className="w-[min(560px,calc(100%-1rem))] rounded-[9px] transition-[opacity,translate,scale,width] has-[[data-settings-wide]]:w-[min(820px,calc(100%-1rem))]"
+      >
         <OverlaySheetTitle className="sr-only">Settings</OverlaySheetTitle>
         {open && (
           <Settings

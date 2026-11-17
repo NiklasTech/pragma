@@ -101,7 +101,7 @@ export function LspSettings() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       <WorkspaceOverrideNotice section="lsp" />
       <SettingSection
         title="Language Servers"

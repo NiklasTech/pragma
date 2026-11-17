@@ -1,5 +1,4 @@
 import * as React from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { CATEGORIES } from "./settings-categories";
@@ -23,31 +22,33 @@ export function SettingsSearch({ query, onQueryChange, onSelectResult }: Setting
   }, [query]);
 
   return (
-    <div className="relative shrink-0 p-3">
-      <MagnifyingGlass
-        size={14}
-        className="absolute top-1/2 left-5.5 -translate-y-1/2 text-fg-subtle"
-      />
-      <Input
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        placeholder="Search settings"
-        className="h-8 rounded-lg pl-8 text-ui-sm"
-      />
+    <div className="relative shrink-0 px-4 pt-2.5">
+      <label className="flex h-8 items-center gap-2.5 border-b border-fg-default/15 font-mono focus-within:border-primary/60">
+        <span aria-hidden="true" className="font-semibold text-primary">
+          /
+        </span>
+        <Input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="filter all settings"
+          aria-label="Search settings"
+          className="h-full min-w-0 flex-1 bg-transparent px-0 font-mono text-ui-sm ring-0 hover:ring-0 focus-visible:ring-0"
+        />
+      </label>
 
       {(filteredItems.length > 0 || query.trim()) && (
-        <div className="absolute top-full right-0 left-0 z-50 mx-3 -mt-1 rounded-lg border border-border bg-bg-elevated/95 p-1 shadow-[var(--shadow-md)] backdrop-blur-xl">
+        <div className="absolute top-full right-4 left-4 z-50 mt-1 max-h-80 overflow-y-auto rounded-[6px] bg-bg-elevated p-1 shadow-[var(--shadow-md)] ring-1 ring-border">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
               <Button
                 variant="ghost"
                 key={item.id}
                 onClick={() => onSelectResult(item)}
-                className="w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left h-auto whitespace-normal font-normal"
+                className="h-auto w-full items-baseline justify-start gap-2 px-2 py-1.5 text-left font-normal whitespace-normal"
               >
-                <span className="text-ui-sm text-fg-default">{item.label}</span>
-                <span className="text-ui-xs text-fg-subtle">
-                  {CATEGORIES.find((c) => c.id === item.category)?.label}
+                <span className="font-sans text-ui-sm text-fg-default">{item.label}</span>
+                <span className="ml-auto shrink-0 text-ui-2xs text-fg-subtle">
+                  {CATEGORIES.find((c) => c.id === item.category)?.tab}
                 </span>
               </Button>
             ))
