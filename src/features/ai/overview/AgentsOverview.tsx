@@ -377,7 +377,7 @@ export function AgentsOverview() {
 
   return (
     <OverlaySheet open={isOpen} onOpenChange={(open) => !open && close("overview")}>
-      <OverlaySheetContent className="h-[min(780px,88vh)] max-w-[1320px]">
+      <OverlaySheetContent placement="workspace">
         <OverviewBody onClose={() => close("overview")} />
       </OverlaySheetContent>
     </OverlaySheet>

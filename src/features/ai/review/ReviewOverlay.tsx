@@ -436,7 +436,7 @@ export function ReviewOverlay() {
   return (
     <>
       <OverlaySheet open={open} onOpenChange={(next) => !next && close("review")}>
-        <OverlaySheetContent className="h-[min(820px,90vh)] max-w-[1180px]">
+        <OverlaySheetContent placement="workspace">
           {shown && (
             <ReviewBody
               key={shown.id}
