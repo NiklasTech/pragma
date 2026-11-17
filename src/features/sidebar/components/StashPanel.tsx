@@ -35,9 +35,17 @@ export function StashPanel() {
         onClick={() => setExpanded((value) => !value)}
         className="h-auto w-full justify-start gap-1.5 rounded-none px-3 py-1.5 text-ui-xs font-normal hover:bg-transparent"
       >
-        {expanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
-        <span className="font-medium">Stashes</span>
-        <span className="text-fg-subtle">{stashes.length}</span>
+        {expanded ? (
+          <CaretDown size={11} className="text-fg-subtle" />
+        ) : (
+          <CaretRight size={11} className="text-fg-subtle" />
+        )}
+        <span className="font-mono text-[10.5px] tracking-[0.08em] text-fg-subtle uppercase">
+          Stashes
+        </span>
+        <span className="rounded-[3px] px-1.5 font-mono text-[10.5px] text-fg-muted tabular-nums ring-1 ring-fg-default/15 ring-inset">
+          {stashes.length}
+        </span>
       </Button>
 
       {expanded && (

@@ -75,17 +75,19 @@ export function BranchHeader({
   };
 
   return (
-    <div className="relative flex min-w-0 items-center gap-2 px-2.5 pt-2 pb-1.5" ref={menuRef}>
+    <div className="relative flex min-w-0 items-center" ref={menuRef}>
       <Button
-        variant="secondary"
+        variant="outline"
+        size="sm"
         onClick={() => setOpen(!open)}
         disabled={actionBusy === "checkout"}
-        className={cn("h-8 min-w-0 flex-1 justify-start gap-2 px-2.5", open && "bg-control-hover")}
+        title={`Branch ${currentBranch}`}
+        className={cn("min-w-0 max-w-44 justify-start gap-1.5 px-2", open && "ring-fg-default/35")}
       >
         {actionBusy === "checkout" ? (
           <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />
         ) : (
-          <GitBranchIcon size={14} className="shrink-0 text-primary" />
+          <GitBranchIcon size={12} className="shrink-0 text-primary" />
         )}
         <span className="min-w-0 flex-1 truncate text-left">{currentBranch}</span>
         <CaretDown size={10} className="shrink-0 text-fg-subtle" />
@@ -97,7 +99,7 @@ export function BranchHeader({
       </Button>
 
       {open && (
-        <div className="absolute inset-x-2.5 top-full z-50 mt-1 overflow-hidden rounded-lg border border-border bg-bg-elevated shadow-[var(--shadow-md)]">
+        <div className="absolute top-full left-0 z-50 mt-1 w-64 overflow-hidden rounded-lg border border-border bg-bg-elevated shadow-[var(--shadow-md)]">
           <div className="max-h-72 overflow-y-auto py-1">
             {branches.map((branch) => {
               const isCurrent = branch.name === currentBranch;
