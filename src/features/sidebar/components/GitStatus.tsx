@@ -1,7 +1,7 @@
 import { useShallow } from "zustand/react/shallow";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useGitStore, type GitStatusEntry, type CheckState } from "@/shared/stores/git";
+import { useGitStore, type GitStatusEntry } from "@/shared/stores/git";
 import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { openGitDiffInSplit } from "../lib/gitDiffSplit";
@@ -10,6 +10,7 @@ import { PullRequestSection } from "./git-status/PullRequestSection";
 import { BranchHeader } from "./git-status/BranchHeader";
 import { GitStatusList } from "./git-status/GitStatusList";
 import { ROW_HEIGHTS, buildRows, type GitRow } from "./git-status/rows";
+import { CommitArea } from "./git-status/CommitArea";
 import {
   GitStatusErrorState,
   GitStatusLoadingState,
@@ -141,17 +142,6 @@ export function GitStatus() {
     () => allFiles.filter((f) => f.is_unstaged && !f.is_conflicted),
     [allFiles],
   );
-
-  const stagedCheckState = useMemo<CheckState>(() => {
-    if (stagedFiles.length === 0) return "unchecked";
-    const anyUnstagedPart = stagedFiles.some((e) => e.is_unstaged);
-    return anyUnstagedPart ? "indeterminate" : "checked";
-  }, [stagedFiles]);
-
-  const unstagedCheckState = useMemo<CheckState>(() => {
-    if (unstagedFiles.length === 0) return "unchecked";
-    return "checked";
-  }, [unstagedFiles]);
 
   const stagedCount = stagedFiles.length;
   const canCommit =
@@ -319,18 +309,10 @@ export function GitStatus() {
         scrollRef={scrollRef}
         virtualizer={virtualizer}
         rows={rows}
-        commitMessage={commitMessage}
-        setCommitMessage={setCommitMessage}
-        handleKeyDown={handleKeyDown}
-        canCommit={canCommit}
-        stagedCount={stagedCount}
         actionBusy={actionBusy}
-        onCommit={handleCommit}
         onOpenConflict={openConflict}
         historyExpanded={historyExpanded}
         onToggleHistory={() => setHistoryExpanded((v) => !v)}
-        stagedCheckState={stagedCheckState}
-        unstagedCheckState={unstagedCheckState}
         onStageAll={handleStageAll}
         onUnstageAll={handleUnstageAll}
         onToggleStaged={handleToggleStaged}
@@ -340,6 +322,16 @@ export function GitStatus() {
         onDiscard={setDiscardEntry}
         isSelected={isSelected}
         repoLabel={repoLabel}
+      />
+
+      <CommitArea
+        commitMessage={commitMessage}
+        setCommitMessage={setCommitMessage}
+        handleKeyDown={handleKeyDown}
+        canCommit={canCommit}
+        stagedCount={stagedCount}
+        actionBusy={actionBusy}
+        onCommit={handleCommit}
       />
 
       <CreateBranchDialog

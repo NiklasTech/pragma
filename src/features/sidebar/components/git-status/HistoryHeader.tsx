@@ -15,8 +15,8 @@ export function HistoryHeader({ expanded, onToggle }: { expanded: boolean; onTog
         <CaretRight size={11} className="text-fg-muted" />
       )}
       <ClockCounterClockwise size={11} className="text-fg-muted" />
-      <span className="text-ui-xs font-semibold uppercase tracking-[0.14em] text-fg-muted">
-        Recent Commits
+      <span className="font-mono text-[10.5px] font-normal tracking-[0.08em] text-fg-subtle uppercase">
+        Recent commits
       </span>
     </Button>
   );

@@ -1,5 +1,5 @@
 import { type ReactVirtualizer } from "@tanstack/react-virtual";
-import { type CheckState, type GitStatusEntry } from "@/shared/stores/git";
+import { type GitStatusEntry } from "@/shared/stores/git";
 import { GitStatusRow } from "./GitStatusRow";
 import { VirtualRow } from "./VirtualRow";
 import { type GitRow } from "./rows";
@@ -8,18 +8,10 @@ export function GitStatusList({
   scrollRef,
   virtualizer,
   rows,
-  commitMessage,
-  setCommitMessage,
-  handleKeyDown,
-  canCommit,
-  stagedCount,
   actionBusy,
-  onCommit,
   onOpenConflict,
   historyExpanded,
   onToggleHistory,
-  stagedCheckState,
-  unstagedCheckState,
   onStageAll,
   onUnstageAll,
   onToggleStaged,
@@ -33,18 +25,10 @@ export function GitStatusList({
   scrollRef: React.RefObject<HTMLDivElement | null>;
   virtualizer: ReactVirtualizer<HTMLDivElement, Element>;
   rows: GitRow[];
-  commitMessage: string;
-  setCommitMessage: (v: string) => void;
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  canCommit: boolean;
-  stagedCount: number;
   actionBusy: string | null;
-  onCommit: () => void;
   onOpenConflict: (path: string) => void;
   historyExpanded: boolean;
   onToggleHistory: () => void;
-  stagedCheckState: CheckState;
-  unstagedCheckState: CheckState;
   onStageAll: () => void;
   onUnstageAll: () => void;
   onToggleStaged: (entry: GitStatusEntry) => void;
@@ -75,18 +59,10 @@ export function GitStatusList({
             <VirtualRow key={virtualRow.key} size={virtualRow.size} start={virtualRow.start}>
               <GitStatusRow
                 row={row}
-                commitMessage={commitMessage}
-                setCommitMessage={setCommitMessage}
-                handleKeyDown={handleKeyDown}
-                canCommit={canCommit}
-                stagedCount={stagedCount}
                 actionBusy={actionBusy}
-                onCommit={onCommit}
                 onOpenConflict={onOpenConflict}
                 historyExpanded={historyExpanded}
                 onToggleHistory={onToggleHistory}
-                stagedCheckState={stagedCheckState}
-                unstagedCheckState={unstagedCheckState}
                 onStageAll={onStageAll}
                 onUnstageAll={onUnstageAll}
                 onToggleStaged={onToggleStaged}

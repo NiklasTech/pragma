@@ -1,7 +1,6 @@
 import { type GitStatusEntry, type GitCommit } from "@/shared/stores/git";
 
 export type GitRow =
-  | { kind: "commit-area"; key: string }
   | { kind: "conflict-header"; key: string; count: number }
   | { kind: "conflict-entry"; key: string; entry: GitStatusEntry }
   | { kind: "staged-header"; key: string; count: number }
@@ -13,7 +12,6 @@ export type GitRow =
   | { kind: "history-entry"; key: string; commit: GitCommit };
 
 export const ROW_HEIGHTS = {
-  "commit-area": 162,
   "conflict-header": 24,
   "conflict-entry": 36,
   "staged-header": 24,
@@ -41,7 +39,6 @@ export function buildRows({
   historyExpanded: boolean;
 }): GitRow[] {
   const result: GitRow[] = [];
-  result.push({ kind: "commit-area", key: "commit-area" });
 
   if (allFiles.length === 0) {
     result.push({ kind: "clean-hint", key: "clean-hint" });

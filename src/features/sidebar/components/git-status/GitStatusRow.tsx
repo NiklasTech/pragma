@@ -1,5 +1,4 @@
-import { type CheckState, type GitStatusEntry } from "@/shared/stores/git";
-import { CommitArea } from "./CommitArea";
+import { type GitStatusEntry } from "@/shared/stores/git";
 import { SectionHeader } from "./SectionHeader";
 import { FileRow } from "./FileRow";
 import { CleanTreeHint } from "./CleanTreeHint";
@@ -10,18 +9,10 @@ import { type GitRow } from "./rows";
 
 export function GitStatusRow({
   row,
-  commitMessage,
-  setCommitMessage,
-  handleKeyDown,
-  canCommit,
-  stagedCount,
   actionBusy,
-  onCommit,
   onOpenConflict,
   historyExpanded,
   onToggleHistory,
-  stagedCheckState,
-  unstagedCheckState,
   onStageAll,
   onUnstageAll,
   onToggleStaged,
@@ -33,18 +24,10 @@ export function GitStatusRow({
   repoLabel,
 }: {
   row: GitRow;
-  commitMessage: string;
-  setCommitMessage: (v: string) => void;
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  canCommit: boolean;
-  stagedCount: number;
   actionBusy: string | null;
-  onCommit: () => void;
   onOpenConflict: (path: string) => void;
   historyExpanded: boolean;
   onToggleHistory: () => void;
-  stagedCheckState: CheckState;
-  unstagedCheckState: CheckState;
   onStageAll: () => void;
   onUnstageAll: () => void;
   onToggleStaged: (entry: GitStatusEntry) => void;
@@ -55,24 +38,10 @@ export function GitStatusRow({
   isSelected: (path: string) => boolean;
   repoLabel: string;
 }) {
-  if (row.kind === "commit-area") {
-    return (
-      <CommitArea
-        commitMessage={commitMessage}
-        setCommitMessage={setCommitMessage}
-        handleKeyDown={handleKeyDown}
-        canCommit={canCommit}
-        stagedCount={stagedCount}
-        actionBusy={actionBusy}
-        onCommit={onCommit}
-      />
-    );
-  }
-
   if (row.kind === "conflict-header") {
     return (
       <div className="flex h-6 items-center gap-2 px-3">
-        <span className="text-ui-xs font-medium uppercase tracking-wide text-status-error">
+        <span className="font-mono text-[10.5px] tracking-[0.08em] text-status-error uppercase">
           Conflicts
         </span>
         <span className="text-ui-xs tabular-nums text-fg-muted">{row.count}</span>
@@ -93,9 +62,7 @@ export function GitStatusRow({
       <SectionHeader
         title="Staged"
         count={row.count}
-        checkState={stagedCheckState}
         actionBusy={actionBusy}
-        onToggleAll={onUnstageAll}
         onUnstageAll={onUnstageAll}
         mode="staged"
       />
@@ -107,9 +74,7 @@ export function GitStatusRow({
       <SectionHeader
         title="Changes"
         count={row.count}
-        checkState={unstagedCheckState}
         actionBusy={actionBusy}
-        onToggleAll={onStageAll}
         onStageAll={onStageAll}
         mode="unstaged"
       />

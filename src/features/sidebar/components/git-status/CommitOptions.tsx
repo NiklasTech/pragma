@@ -68,16 +68,16 @@ export function CommitOptions({ stagedCount }: { stagedCount: number }) {
 
   return (
     <div className="flex h-6 items-center gap-1">
-      <label className="flex items-center gap-1.5 text-ui-xs text-fg-muted">
+      <label className="flex items-center gap-1.5 font-mono text-[11px] text-fg-subtle">
         <Switch
           size="sm"
           checked={commitAmend}
           disabled={!!actionBusy}
           onCheckedChange={(checked) => void setCommitAmend(checked)}
         />
-        Amend
+        amend
       </label>
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="flex items-center gap-0.5">
         <Button
           variant="ghost"
           size="icon-sm"

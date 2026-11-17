@@ -84,7 +84,9 @@ export function FileRow({
     <div
       className={cn(
         "group relative mx-1.5 flex h-8 items-center gap-2 rounded-md pr-1 pl-1.5 transition-colors duration-100",
-        isSelected ? "bg-accent-subtle text-fg-default" : "hover:bg-bg-hover",
+        isSelected
+          ? "bg-primary/10 text-fg-default ring-1 ring-primary/40 ring-inset"
+          : "hover:bg-bg-hover",
       )}
       onClick={() => onSelect(entry)}
     >
@@ -97,6 +99,15 @@ export function FileRow({
         onClick={(e) => e.stopPropagation()}
         aria-label={mode === "staged" ? `Unstage ${fileName}` : `Stage ${fileName}`}
       />
+      <span
+        className={cn(
+          "inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] bg-current/15 font-mono text-[10px] font-bold",
+          letter.className,
+        )}
+        title={entry.status}
+      >
+        {letter.text}
+      </span>
       <img src={getFileIconPath(fileName)} alt="" className="size-3.5 shrink-0" />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
         <span
@@ -107,7 +118,7 @@ export function FileRow({
         >
           {fileName}
         </span>
-        {dir && <span className="truncate text-ui-2xs text-fg-subtle">{dir}</span>}
+        {dir && <span className="truncate font-mono text-[11px] text-fg-subtle">{dir}</span>}
       </div>
       <div className="hidden shrink-0 items-center group-hover:flex">
         <RowAction label="Open diff" onClick={() => onOpenDiff(entry)}>
@@ -119,15 +130,6 @@ export function FileRow({
           </RowAction>
         )}
       </div>
-      <span
-        className={cn(
-          "w-3 shrink-0 text-center font-mono text-ui-2xs font-semibold",
-          letter.className,
-        )}
-        title={entry.status}
-      >
-        {letter.text}
-      </span>
     </div>
   );
 
