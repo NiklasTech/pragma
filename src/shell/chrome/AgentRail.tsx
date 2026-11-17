@@ -1,25 +1,23 @@
 import { Fragment, useMemo } from "react";
-import { ListBullets, Plus, TerminalWindow } from "@phosphor-icons/react";
+import { Folder, ListBullets, Plus } from "@phosphor-icons/react";
 
 import { revealPane } from "@/features/ai/panes/paneCommands";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
-import { sessionAgentManifest } from "@/features/ai/sessions/sessionAgent";
 import { selectAgentState, useAgentStatesStore } from "@/features/ai/state/agentStates";
-import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
-import { isShellSession } from "@/features/ai/terminal/shell";
-import { AgentMark } from "@/shared/components/ui/agent-mark";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
-import { AGENT_STATE_LABELS, StatusDot } from "@/shared/components/ui/status-dot";
+import { AGENT_STATE_LABELS } from "@/shared/components/ui/status-dot";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
-import { useAIStore } from "@/shared/stores/ai";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useOverlayStore } from "@/shared/stores/overlays";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { useLayoutStore } from "@/shell/layout/store";
 import { useUiMode } from "@/shell/mode";
 
+import { useAgentSheetStore } from "./agentSheetStore";
 import { railGroups, type RailEntry } from "./railEntries";
+import { SessionMark, useSessionIdentity } from "./SessionMark";
 
 interface RailCellProps {
   entry: RailEntry;
@@ -29,15 +27,11 @@ interface RailCellProps {
 }
 
 function RailCell({ entry, spaceId, focused, dim }: RailCellProps) {
-  const session = useAIStore((state) =>
-    state.chatSessions.find((item) => item.id === entry.sessionId),
-  );
-  const manifest = useAIStore((state) => sessionAgentManifest(state, entry.sessionId));
+  const identity = useSessionIdentity(entry.sessionId);
   const state = useAgentStatesStore(selectAgentState(entry.sessionId));
+  const { session, name } = identity;
   if (!session) return null;
 
-  const shell = isShellSession(session) && !manifest;
-  const name = manifest?.name ?? (shell ? "Shell" : "Pragma");
   const stateLabel = AGENT_STATE_LABELS[state].toLowerCase();
   const parts = session.title === name ? [name] : [session.title, name];
 
@@ -54,28 +48,7 @@ function RailCell({ entry, spaceId, focused, dim }: RailCellProps) {
         dim && "opacity-55 hover:opacity-100",
       )}
     >
-      {shell ? (
-        <span
-          aria-hidden="true"
-          className="relative inline-flex size-4.5 items-center justify-center rounded-[5px] text-fg-muted ring-1 ring-fg-default/15 ring-inset"
-        >
-          <TerminalWindow size={11} />
-          {state !== "idle" && (
-            <StatusDot
-              state={state}
-              decorative
-              className="absolute -right-0.75 -bottom-0.75 ring-2 ring-bg-chrome"
-            />
-          )}
-        </span>
-      ) : (
-        <AgentMark
-          agentId={manifest?.id}
-          name={name}
-          state={state}
-          className="**:data-[slot=status-dot]:ring-bg-chrome"
-        />
-      )}
+      <SessionMark identity={identity} state={state} surface="chrome" />
     </Button>
   );
 }
@@ -85,24 +58,22 @@ export function AgentRail() {
   const space = useOpenRepositoriesStore(
     (state) => state.spaces.find((candidate) => candidate.id === state.activeSpaceId) ?? null,
   );
-  const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
   const trees = useAgentsPanesStore((state) => state.trees);
-  const threadsOpen = useAgentsUiStore((state) => state.threadsOpen);
-  const setThreadsOpen = useAgentsUiStore((state) => state.setThreadsOpen);
+  const sheetOpen = useAgentSheetStore((state) => state.open);
+  const setSheetOpen = useAgentSheetStore((state) => state.setOpen);
   const openOverlay = useOverlayStore((state) => state.open);
   const newShortcut = useSettingsStore((state) => state.shortcuts["session.quickStart"]);
   const inAgents = useUiMode() === "agents";
+  const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
+  const sidebarCollapsed = useLayoutStore((state) => state.sidebar.collapsed);
+  const setSidebarCollapsed = useLayoutStore((state) => state.setSidebarCollapsed);
+  const filesOpen = !inAgents && !sidebarCollapsed;
+  const toggleFiles = () => {
+    if (inAgents) activateTabKind("code");
+    setSidebarCollapsed(filesOpen);
+  };
   const groups = useMemo(() => (space ? railGroups(space, trees) : []), [space, trees]);
   const focusedLeafId = space ? (trees[space.activeTabId]?.focusedLeafId ?? null) : null;
-
-  const toggleThreads = () => {
-    if (!inAgents) {
-      activateTabKind("agents");
-      setThreadsOpen(true);
-      return;
-    }
-    setThreadsOpen(!threadsOpen);
-  };
 
   return (
     <nav aria-label="Agents" className="flex w-11 shrink-0 flex-col items-center gap-1.5 pb-1.5">
@@ -132,10 +103,17 @@ export function AgentRail() {
       </div>
       <IconButton
         icon={ListBullets}
-        label={inAgents && threadsOpen ? "Hide threads" : "Show threads"}
-        aria-pressed={inAgents && threadsOpen}
+        label={sheetOpen ? "Hide agents" : "Show agents"}
+        aria-pressed={sheetOpen}
         data-drawer-toggle
-        onClick={toggleThreads}
+        onClick={() => setSheetOpen(!sheetOpen)}
+      />
+      <IconButton
+        icon={Folder}
+        label={filesOpen ? "Hide files" : "Show files"}
+        aria-pressed={filesOpen}
+        data-drawer-toggle
+        onClick={toggleFiles}
       />
       <IconButton
         icon={Plus}

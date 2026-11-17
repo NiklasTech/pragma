@@ -17,6 +17,7 @@ import { TerminalFloatingHost } from "./TerminalFloatingHost";
 import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Strip } from "@/shell/chrome/Strip";
 import { AgentRail } from "@/shell/chrome/AgentRail";
+import { AgentSheet } from "@/shell/chrome/AgentSheet";
 import { useUiMode } from "@/shell/mode";
 import { useTabModeSync } from "@/shell/mode/tabModeSync";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
@@ -76,8 +77,9 @@ export function Layout() {
       <DiagnosticsHost />
       <Strip />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <AgentRail />
+        <AgentSheet />
         {uiMode === "agents" ? (
           <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
             <Suspense fallback={null}>
