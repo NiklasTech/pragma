@@ -20,7 +20,7 @@ use tauri::{AppHandle, Manager, State};
 pub use manager::{McpManager, McpServerState, McpServerStatus};
 pub use tools::{McpTool, McpToolCallResult};
 
-const CONFIG_FILE: &str = "mcp.json";
+pub(crate) const CONFIG_FILE: &str = "mcp.json";
 const TOOLS_CACHE_FILE: &str = "mcp-tools-cache.json";
 /// Version 1 keeps secret env values in the keychain instead of the file.
 pub const CONFIG_VERSION: u32 = 1;
