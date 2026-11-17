@@ -1,4 +1,4 @@
-import { matchShortcut, type ShortcutActionId } from "@/shared/lib/shortcuts";
+import { matchShortcut, TAB_SELECT_SHORTCUTS, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 
@@ -20,6 +20,7 @@ const PANE_SHORTCUTS: ShortcutActionId[] = [
   "pane.toggleZoom",
   "pane.splitRight",
   "pane.splitDown",
+  ...TAB_SELECT_SHORTCUTS,
 ];
 
 /** True for keys that move between or zoom panes, which a terminal must not type. */

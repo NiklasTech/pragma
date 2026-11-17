@@ -23,6 +23,7 @@ import { useCopyOnSelect } from "../hooks/useTerminalPreferences";
 import { TerminalFindBar } from "./TerminalFindBar";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
 
 interface RunOutputEvent {
   process_id: string;
@@ -92,7 +93,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       );
       t.open(containerRef.current);
       loadRenderAddons(t);
-      passAppShortcuts(t, ["search.find"]);
+      passAppShortcuts(t, ["search.find", ...TAB_SELECT_SHORTCUTS]);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);

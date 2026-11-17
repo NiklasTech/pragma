@@ -18,7 +18,7 @@ export function GoToButton() {
       className="px-2.25 text-ui-xs font-normal"
     >
       <MagnifyingGlass size={ICON_SIZE.sm} />
-      Go to
+      go to
       {shortcut && <Kbd>{formatShortcut(shortcut, getIsMac())}</Kbd>}
     </Button>
   );

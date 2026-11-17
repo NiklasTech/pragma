@@ -19,7 +19,7 @@ export function NewTaskButton() {
       className="px-2.25 text-ui-xs font-normal text-fg-default"
     >
       <Plus size={ICON_SIZE.sm} />
-      New
+      new
       {shortcut && <Kbd>{formatShortcut(shortcut, getIsMac())}</Kbd>}
     </Button>
   );

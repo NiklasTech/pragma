@@ -214,19 +214,13 @@ export const SHORTCUT_ACTIONS = [
     id: "view.switchToAgents" as const,
     label: "Show Agents Tab",
     category: "view" as const,
-    default: (isMac: boolean): ShortcutBinding => ({
-      [isMac ? "meta" : "ctrl"]: true,
-      code: "Digit2",
-    }),
+    default: (): ShortcutBinding | null => null,
   },
   {
     id: "view.switchToEditor" as const,
     label: "Show Code Tab",
     category: "view" as const,
-    default: (isMac: boolean): ShortcutBinding => ({
-      [isMac ? "meta" : "ctrl"]: true,
-      code: "Digit1",
-    }),
+    default: (): ShortcutBinding | null => null,
   },
   {
     id: "view.toggleUiMode" as const,
@@ -308,6 +302,87 @@ export const SHORTCUT_ACTIONS = [
     label: "Previous Tab",
     category: "view" as const,
     default: (): ShortcutBinding => ({ ctrl: true, shift: true, key: "Tab" }),
+  },
+  {
+    id: "tab.select1" as const,
+    label: "Go to Tab 1",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit1",
+    }),
+  },
+  {
+    id: "tab.select2" as const,
+    label: "Go to Tab 2",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit2",
+    }),
+  },
+  {
+    id: "tab.select3" as const,
+    label: "Go to Tab 3",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit3",
+    }),
+  },
+  {
+    id: "tab.select4" as const,
+    label: "Go to Tab 4",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit4",
+    }),
+  },
+  {
+    id: "tab.select5" as const,
+    label: "Go to Tab 5",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit5",
+    }),
+  },
+  {
+    id: "tab.select6" as const,
+    label: "Go to Tab 6",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit6",
+    }),
+  },
+  {
+    id: "tab.select7" as const,
+    label: "Go to Tab 7",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit7",
+    }),
+  },
+  {
+    id: "tab.select8" as const,
+    label: "Go to Tab 8",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit8",
+    }),
+  },
+  {
+    id: "tab.select9" as const,
+    label: "Go to Tab 9",
+    category: "view" as const,
+    default: (isMac: boolean): ShortcutBinding => ({
+      [isMac ? "meta" : "ctrl"]: true,
+      code: "Digit9",
+    }),
   },
   {
     id: "view.splitEditor" as const,
@@ -413,6 +488,19 @@ export const SHORTCUT_ACTIONS = [
 ] satisfies ShortcutAction[];
 
 export type ShortcutActionId = (typeof SHORTCUT_ACTIONS)[number]["id"];
+
+/** Cmd/Ctrl+1 to 9 in tab order; terminals let them through to the app. */
+export const TAB_SELECT_SHORTCUTS = [
+  "tab.select1",
+  "tab.select2",
+  "tab.select3",
+  "tab.select4",
+  "tab.select5",
+  "tab.select6",
+  "tab.select7",
+  "tab.select8",
+  "tab.select9",
+] as const satisfies readonly ShortcutActionId[];
 
 export type ShortcutMap = Record<ShortcutActionId, ShortcutBinding | null>;
 

@@ -133,7 +133,25 @@ describe("migrateShortcuts", () => {
     );
     expect(migrated["view.toggleTerminal"]).toEqual({ meta: true, code: "KeyJ" });
     expect(migrated["search.replace"]).toEqual({ meta: true, alt: true, code: "KeyF" });
-    expect(migrated["view.switchToEditor"]).toEqual({ meta: true, code: "Digit1" });
+    expect(migrated["view.switchToEditor"]).toBeNull();
+  });
+
+  it("frees Cmd+1 and Cmd+2 for the numbered tabs", () => {
+    const mac = getDefaultShortcuts(true);
+    const custom = { meta: true, alt: true, code: "KeyA" };
+    const migrated = migrateShortcuts(
+      mac,
+      {
+        "view.switchToEditor": { meta: true, code: "Digit1" },
+        "view.switchToAgents": custom,
+      },
+      1,
+      true,
+    );
+    expect(migrated["view.switchToEditor"]).toBeNull();
+    expect(migrated["view.switchToAgents"]).toEqual(custom);
+    expect(migrated["tab.select1"]).toEqual({ meta: true, code: "Digit1" });
+    expect(migrated["tab.select9"]).toEqual({ meta: true, code: "Digit9" });
   });
 
   it("keeps custom bindings and bindings stored after the new defaults", () => {

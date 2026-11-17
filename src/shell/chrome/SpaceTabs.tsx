@@ -5,9 +5,10 @@ import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
-import { StatusDot } from "@/shared/components/ui/status-dot";
+import { formatShortcut, getIsMac, TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { TAB_NAMES, type Space, type SpaceTab } from "@/shared/stores/spaces/model";
 
 function nextAgentsTabName(space: Space): string {
@@ -15,34 +16,60 @@ function nextAgentsTabName(space: Space): string {
   return `${TAB_NAMES.agents} ${count + 1}`;
 }
 
-function TabButton({ space, tab, waiting }: { space: Space; tab: SpaceTab; waiting: boolean }) {
+interface TabButtonProps {
+  space: Space;
+  tab: SpaceTab;
+  index: number;
+  paneCount: number;
+  waiting: boolean;
+}
+
+function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
   const activateTab = useOpenRepositoriesStore((state) => state.activateTab);
   const closeTab = useOpenRepositoriesStore((state) => state.closeTab);
   const removeTree = useAgentsPanesStore((state) => state.removeTree);
+  const shortcutId = TAB_SELECT_SHORTCUTS[index];
+  const binding = useSettingsStore((state) => (shortcutId ? state.shortcuts[shortcutId] : null));
+  const shortcut = binding ? formatShortcut(binding, getIsMac()) : "";
   const active = tab.id === space.activeTabId;
   const closable = space.tabs.length > 1;
 
   return (
     <div
       className={cn(
-        "group flex h-7.5 items-center rounded-control text-ui-sm transition-colors",
-        active
-          ? "bg-bg-well text-fg-default ring-1 ring-border ring-inset"
-          : "text-fg-muted hover:text-fg-default",
+        "group relative flex h-full shrink-0 items-center transition-colors duration-(--motion-fast)",
+        active ? "text-fg-default" : "text-fg-subtle hover:text-fg-default",
       )}
     >
       <Button
         variant="ghost"
         role="tab"
         aria-selected={active}
+        title={shortcut ? `${tab.name} (${shortcut})` : tab.name}
         onClick={() => activateTab(space.id, tab.id)}
-        className={cn(
-          "h-full gap-1.75 pl-2.75 font-normal text-inherit hover:bg-transparent hover:text-inherit",
-          closable ? "pr-1" : "pr-2.75",
-        )}
+        className="h-full gap-1.75 rounded-none px-0 text-ui-xs font-normal text-inherit hover:bg-transparent hover:text-inherit"
       >
-        {waiting && <StatusDot state="needs-you" decorative className="size-1.5" />}
+        {index < TAB_SELECT_SHORTCUTS.length && (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-[3px] px-0.5 text-[10.5px] ring-1 transition-[background-color,color,box-shadow] duration-(--motion-base) ring-inset",
+              waiting
+                ? "bg-state-needs-you font-semibold text-primary-foreground shadow-[0_0_8px_var(--color-accent-glow)] ring-transparent"
+                : active
+                  ? "text-fg-default ring-fg-default/15"
+                  : "text-fg-subtle ring-fg-default/8",
+            )}
+          >
+            {index + 1}
+          </span>
+        )}
         {tab.name}
+        {paneCount > 0 && (
+          <span aria-hidden="true" className="text-[10.5px] text-fg-subtle">
+            {paneCount}
+          </span>
+        )}
         {waiting && <span className="sr-only">, needs you</span>}
       </Button>
       {closable && (
@@ -54,14 +81,21 @@ function TabButton({ space, tab, waiting }: { space: Space; tab: SpaceTab; waiti
             closeTab(space.id, tab.id);
             removeTree(tab.id);
           }}
-          className="mr-1 size-5 rounded-[5px] text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+          className="absolute top-1/2 left-full ml-0.5 size-5 -translate-y-1/2 rounded-[4px] text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         />
       )}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-x-0 bottom-0 h-0.5 origin-center bg-accent transition-transform duration-(--motion-base) ease-(--motion-ease-out) motion-reduce:transition-none",
+          active ? "scale-x-100" : "scale-x-0",
+        )}
+      />
     </div>
   );
 }
 
-/// The tabs of the active space; each tab keeps its own layout and switching keeps every session running.
+/// The tabs of the active space, numbered for Cmd/Ctrl+1 to 9; each keeps its own layout and sessions.
 export function SpaceTabs() {
   const space = useOpenRepositoriesStore(
     (state) => state.spaces.find((candidate) => candidate.id === state.activeSpaceId) ?? null,
@@ -72,23 +106,35 @@ export function SpaceTabs() {
 
   if (!space) return null;
 
-  const tabWaits = (tab: SpaceTab) =>
-    tab.kind === "agents" &&
-    collectLeaves(trees[tab.id]?.root ?? null).some(
-      (leaf) => leaf.sessionId !== null && waiting.includes(leaf.sessionId),
-    );
+  const sessionsOf = (tab: SpaceTab) =>
+    tab.kind === "agents"
+      ? collectLeaves(trees[tab.id]?.root ?? null).flatMap((leaf) =>
+          leaf.sessionId === null ? [] : [leaf.sessionId],
+        )
+      : [];
 
   return (
-    <nav aria-label="Tabs" className="flex min-w-0 items-center gap-0.5">
-      <div role="tablist" className="flex min-w-0 items-center gap-0.5 overflow-hidden">
-        {space.tabs.map((tab) => (
-          <TabButton key={tab.id} space={space} tab={tab} waiting={tabWaits(tab)} />
-        ))}
+    <nav aria-label="Tabs" className="flex h-full min-w-0 items-center">
+      <div role="tablist" className="flex h-full min-w-0 items-center gap-6 overflow-hidden pr-6">
+        {space.tabs.map((tab, index) => {
+          const sessions = sessionsOf(tab);
+          return (
+            <TabButton
+              key={tab.id}
+              space={space}
+              tab={tab}
+              index={index}
+              paneCount={sessions.length}
+              waiting={sessions.some((id) => waiting.includes(id))}
+            />
+          );
+        })}
       </div>
       <IconButton
         icon={Plus}
         label="New agents tab"
         size="sm"
+        className="-ml-1"
         onClick={() => addTab(space.id, nextAgentsTabName(space), "agents")}
       />
     </nav>

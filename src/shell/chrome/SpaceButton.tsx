@@ -23,7 +23,7 @@ export function SpaceButton() {
       aria-label={`Spaces, current: ${workspaceName || "none"}`}
       aria-haspopup="dialog"
       title={branch ? `${rootPath} (${branch})` : (rootPath ?? "Open a folder")}
-      className="max-w-[260px] min-w-0 justify-start pr-2 pl-1.5 font-semibold text-fg-default"
+      className="max-w-[320px] min-w-0 justify-start pr-2 pl-1.5 font-semibold text-fg-default"
       onClick={() => toggle("spaces")}
     >
       {workspaceName ? (
@@ -38,6 +38,11 @@ export function SpaceButton() {
       )}
       <RepositoryColorDot path={activeRepository} />
       <span className="min-w-0 truncate">{workspaceName || "Open Folder"}</span>
+      {workspaceName && branch && (
+        <span className="max-w-[120px] min-w-0 truncate text-ui-2xs font-normal text-fg-subtle">
+          {branch}
+        </span>
+      )}
       <CaretDown size={12} className="shrink-0 text-fg-subtle" />
     </Button>
   );

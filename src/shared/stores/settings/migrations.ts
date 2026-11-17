@@ -99,16 +99,17 @@ export function migrateMcpSettings(mcp: McpSettings): McpSettings {
   };
 }
 
-export const SHORTCUTS_REVISION = 1;
+export const SHORTCUTS_REVISION = 2;
 
-/// Defaults before revision 1, for the actions whose default changed.
+/// Defaults that a revision replaced: [action, default before that revision, revision].
 const PREVIOUS_SHORTCUT_DEFAULTS: Array<
-  [ShortcutActionId, (isMac: boolean) => ShortcutBinding | null]
+  [ShortcutActionId, (isMac: boolean) => ShortcutBinding | null, number]
 > = [
-  ["view.toggleTerminal", () => ({ ctrl: true, code: "Backquote" })],
-  ["view.switchToAgents", () => null],
-  ["view.switchToEditor", () => null],
-  ["search.replace", (isMac) => ({ [isMac ? "meta" : "ctrl"]: true, code: "KeyH" })],
+  ["view.toggleTerminal", () => ({ ctrl: true, code: "Backquote" }), 1],
+  ["search.replace", (isMac) => ({ [isMac ? "meta" : "ctrl"]: true, code: "KeyH" }), 1],
+  // Cmd/Ctrl+1 to 9 now pick the tab with that number.
+  ["view.switchToAgents", (isMac) => ({ [isMac ? "meta" : "ctrl"]: true, code: "Digit2" }), 2],
+  ["view.switchToEditor", (isMac) => ({ [isMac ? "meta" : "ctrl"]: true, code: "Digit1" }), 2],
 ];
 
 function isSameBinding(a: ShortcutBinding | null | undefined, b: ShortcutBinding | null): boolean {
@@ -132,7 +133,8 @@ export function migrateShortcuts(
     merged["view.toggleTerminal"] = defaults["view.toggleTerminal"];
   }
   if (!persisted || revision >= SHORTCUTS_REVISION) return merged;
-  for (const [id, previous] of PREVIOUS_SHORTCUT_DEFAULTS) {
+  for (const [id, previous, since] of PREVIOUS_SHORTCUT_DEFAULTS) {
+    if (revision >= since) continue;
     if (!(id in persisted) || !isSameBinding(persisted[id], previous(isMac))) continue;
     if (findConflictingAction(id, defaults[id], merged)) continue;
     merged[id] = defaults[id];
