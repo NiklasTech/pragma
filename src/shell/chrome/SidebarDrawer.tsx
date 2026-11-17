@@ -11,7 +11,7 @@ import { SidebarContent } from "./Sidebar";
 // Matches --motion-slow, so the drawer unmounts once it has slid out.
 const SLIDE_MS = 250;
 
-/// The unpinned sidebar: a sheet over the workspace that closes on Escape or a click outside.
+/// The unpinned sidebar: a sheet inset inside the workspace frame that closes on Escape or a click outside.
 export function SidebarDrawer() {
   const sidebar = useLayoutStore((s) => s.sidebar);
   const setSidebarCollapsed = useLayoutStore((s) => s.setSidebarCollapsed);
@@ -31,7 +31,7 @@ export function SidebarDrawer() {
       inert={!shown}
       style={{ width: sidebar.width }}
       className={cn(
-        "absolute inset-y-0 z-40 max-w-[calc(100%-1rem)] overflow-hidden rounded-well bg-bg-sheet shadow-[var(--shadow-md)] ring-1 ring-border",
+        "absolute inset-y-1.5 z-40 max-w-[calc(100%-1rem)] overflow-hidden rounded-[8px] bg-bg-sheet shadow-[var(--shadow-md)] ring-1 ring-border",
         "transition-[translate,opacity] duration-(--motion-slow) ease-(--motion-ease-out)",
         fromRight ? "right-1.5" : "left-1.5",
         shown
