@@ -25,6 +25,9 @@ const overlaySheetVariants = cva(
         center: `${FLOATING} inset-y-0 my-auto h-fit max-h-[calc(100%-4rem)]`,
         /** Pickers and command lists that grow downward while filtering. */
         top: `${FLOATING} top-[12vh] max-h-[76vh]`,
+        /** Boards over the whole workspace; its edges match the panes below the strip. */
+        workspace:
+          "inset-x-1.5 top-(--height-header) bottom-1.5 rounded-well data-starting-style:translate-y-2 data-starting-style:scale-[0.99] data-ending-style:translate-y-1 data-ending-style:scale-[0.99]",
         /** A session looked into from the side; it slides in from the right edge. */
         right:
           "inset-y-2 right-2 w-[min(760px,calc(100%-1rem))] data-starting-style:translate-x-10 data-ending-style:translate-x-6",
