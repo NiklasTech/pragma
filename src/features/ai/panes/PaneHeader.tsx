@@ -28,7 +28,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
-import { AGENT_STATE_LABELS, StatusDot } from "@/shared/components/ui/status-dot";
+import { AGENT_STATE_LABELS, type AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -54,6 +54,13 @@ import { PaneRepositoryLabel } from "./PaneRepositoryLabel";
 import { usePaneHeaderDrag } from "./paneDrag";
 import { agentPaneState, terminalPaneLabel, terminalPaneState } from "./paneState";
 import type { SplitDirection } from "./split";
+
+const STATE_WORD_CLASSES: Record<AgentState, string> = {
+  "needs-you": "font-semibold text-state-needs-you",
+  working: "text-state-working",
+  done: "text-state-done",
+  idle: "text-fg-subtle",
+};
 
 // Details stay out of sight until the pane is focused, hovered or reached by keyboard.
 const QUIET =
@@ -220,21 +227,26 @@ export function PaneHeader({
         }}
         {...drag}
       >
-        {!leaf.browser && session && showState && (
-          <span className="flex size-3 shrink-0 items-center justify-center" title={stateLabel}>
-            <StatusDot state={state} className="size-1.75" />
-          </span>
-        )}
         <PaneMark leaf={leaf} session={session} manifest={shownManifest} shell={shell} />
         <span
           className={cn(
-            "min-w-0 shrink truncate text-ui-sm font-medium transition-colors duration-(--motion-base)",
-            focused ? "text-fg-default" : "text-fg-muted",
+            "min-w-0 shrink truncate font-mono text-ui-xs transition-colors duration-(--motion-base)",
+            focused || state === "needs-you" ? "text-fg-default" : "text-fg-muted",
           )}
           title={title}
         >
           {title}
         </span>
+        {!leaf.browser && session && showState && state !== "idle" && (
+          <span
+            className={cn(
+              "shrink-0 font-mono text-ui-2xs whitespace-nowrap @max-[300px]/pane-header:hidden",
+              STATE_WORD_CLASSES[state],
+            )}
+          >
+            {stateLabel.toLowerCase()}
+          </span>
+        )}
 
         <span className={cn("flex min-w-0 shrink-[2] items-center gap-2", QUIET, shown)}>
           {branch && (
