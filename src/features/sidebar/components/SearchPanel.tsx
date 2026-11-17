@@ -1,20 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  ArrowsLeftRight,
-  BracketsAngle,
-  Funnel,
-  MagnifyingGlass,
-  Quotes,
-  Spinner,
-  TextAa,
-  Warning,
-  X,
-  type Icon,
-} from "@phosphor-icons/react";
-import { Button } from "@/shared/components/ui/button";
+import { MagnifyingGlass, Spinner, Warning } from "@phosphor-icons/react";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
-import { Input } from "@/shared/components/ui/input";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import {
   AlertDialog,
@@ -38,7 +25,11 @@ import {
   type SearchResult,
   type SearchWorkspaceResult,
 } from "@/features/sidebar/lib/searchReplace";
-import { cn } from "@/shared/lib/utils";
+import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
+import { useSettingsStore } from "@/shared/stores/settings";
+import { useRecentSearches } from "@/features/sidebar/lib/recentSearches";
+import { SearchIdle, SearchNoMatches } from "./SearchEmptyState";
+import { SearchQueryBar } from "./SearchQueryBar";
 import { SearchResultGroupView } from "./SearchResultGroup";
 
 const DEBOUNCE_MS = 300;
@@ -65,6 +56,10 @@ export function SearchPanel() {
   const [searchVersion, setSearchVersion] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const recentQueries = useRecentSearches((s) => s.queries);
+  const findBinding = useSettingsStore((s) => s.shortcuts["search.findInFiles"]);
+  const goToBinding = useSettingsStore((s) => s.shortcuts["file.goToFile"]);
+  const isMac = getIsMac();
   const grouped = useMemo(() => groupSearchResults(results, rootPath), [results, rootPath]);
   const searchState = useMemo<SearchQueryState>(
     () => ({
@@ -137,6 +132,7 @@ export function SearchPanel() {
         if (!controller.signal.aborted) {
           setResults(result.matches);
           setTruncated(result.truncated);
+          if (result.matches.length > 0) useRecentSearches.getState().remember(trimmedQuery);
         }
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -185,139 +181,57 @@ export function SearchPanel() {
     );
   }
 
-  const emptyTitle = query.trim().length > 0 ? "No results" : "Search your workspace";
-  const emptyDescription =
-    query.trim().length > 0
-      ? "Try a different query or adjust the filters."
-      : "Find text across every file. Use the toggles for case, whole word or regex.";
-  const activeFilters = (includePatterns.trim() ? 1 : 0) + (excludePatterns.trim() ? 1 : 0);
+  const hasQuery = query.trim().length > 0;
+  const hasFilters = includePatterns.trim().length > 0 || excludePatterns.trim().length > 0;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 flex-col gap-1.5 px-2.5 pt-1.5 pb-2">
-        <div className={FIELD_CLASS}>
-          <MagnifyingGlass size={14} className="shrink-0 text-fg-subtle" />
-          <Input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search in files"
-            aria-label="Search in workspace"
-            className="h-auto min-w-0 flex-1 rounded-none bg-transparent p-0 ring-0 hover:ring-0 focus-visible:ring-0"
-          />
-          {query.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => {
-                setQuery("");
-                inputRef.current?.focus();
-              }}
-              className="text-fg-subtle"
-              aria-label="Clear search"
-            >
-              <X size={12} />
-            </Button>
+      <SearchQueryBar
+        inputRef={inputRef}
+        query={query}
+        onQueryChange={(next) => {
+          setQuery(next);
+          if (!next) inputRef.current?.focus();
+        }}
+        replacement={replacement}
+        onReplacementChange={setReplacement}
+        caseSensitive={caseSensitive}
+        wholeWord={wholeWord}
+        useRegex={useRegex}
+        onToggleCase={() => setCaseSensitive((v) => !v)}
+        onToggleWord={() => setWholeWord((v) => !v)}
+        onToggleRegex={() => setUseRegex((v) => !v)}
+        showReplace={showReplace}
+        onShowReplace={setShowReplace}
+        showFilters={showFilters}
+        onToggleFilters={() => setShowFilters((value) => !value)}
+        includePatterns={includePatterns}
+        onIncludeChange={setIncludePatterns}
+        excludePatterns={excludePatterns}
+        onExcludeChange={setExcludePatterns}
+        summary={{ matches: results.length, files: grouped.length, truncated, loading }}
+        canReplaceAll={!replacing && results.length > 0}
+        onReplaceAll={() => setReplaceAllOpen(true)}
+      />
+
+      {(truncated || error) && (
+        <div className="flex shrink-0 flex-col gap-1.5 px-2.5 pb-2">
+          {truncated && (
+            <Alert>
+              <Warning size={16} />
+              <AlertDescription className="text-ui-xs">
+                Not all matches are shown. Narrow the query or filters to see the rest.
+              </AlertDescription>
+            </Alert>
+          )}
+          {error && (
+            <Alert variant="destructive">
+              <Warning size={16} />
+              <AlertDescription className="text-ui-xs">{error}</AlertDescription>
+            </Alert>
           )}
         </div>
-
-        {showReplace && (
-          <div className={FIELD_CLASS}>
-            <ArrowsLeftRight size={14} className="shrink-0 text-fg-subtle" />
-            <Input
-              value={replacement}
-              onChange={(e) => setReplacement(e.target.value)}
-              placeholder="Replace with"
-              aria-label="Replace with"
-              className="h-auto min-w-0 flex-1 rounded-none bg-transparent p-0 ring-0 hover:ring-0 focus-visible:ring-0"
-            />
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => setReplaceAllOpen(true)}
-              disabled={replacing || results.length === 0}
-              title="Replace all matches"
-              aria-label="Replace all matches"
-              className="h-5 px-1.5"
-            >
-              Replace all
-            </Button>
-          </div>
-        )}
-
-        {showFilters && (
-          <div className="flex flex-col gap-1.5">
-            <Input
-              value={includePatterns}
-              onChange={(e) => setIncludePatterns(e.target.value)}
-              placeholder="Files to include, e.g. src/**/*.ts"
-              className="h-7 rounded-md text-ui-xs"
-            />
-            <Input
-              value={excludePatterns}
-              onChange={(e) => setExcludePatterns(e.target.value)}
-              placeholder="Files to exclude, e.g. *.test.ts"
-              className="h-7 rounded-md text-ui-xs"
-            />
-          </div>
-        )}
-
-        <div className="flex items-center gap-0.5">
-          <OptionButton
-            active={caseSensitive}
-            onClick={() => setCaseSensitive((v) => !v)}
-            title="Match case"
-            icon={TextAa}
-          />
-          <OptionButton
-            active={wholeWord}
-            onClick={() => setWholeWord((v) => !v)}
-            title="Match whole word"
-            icon={Quotes}
-          />
-          <OptionButton
-            active={useRegex}
-            onClick={() => setUseRegex((v) => !v)}
-            title="Use regular expressions"
-            icon={BracketsAngle}
-          />
-          <span aria-hidden="true" className="mx-1 h-3.5 w-px bg-border" />
-          <OptionButton
-            active={showReplace}
-            onClick={() => setShowReplace((value) => !value)}
-            title={showReplace ? "Hide replace" : "Show replace"}
-            icon={ArrowsLeftRight}
-          />
-          <OptionButton
-            active={showFilters || activeFilters > 0}
-            onClick={() => setShowFilters((value) => !value)}
-            title="Include and exclude filters"
-            icon={Funnel}
-          />
-          {results.length > 0 && (
-            <span className="ml-auto truncate pl-2 text-ui-2xs text-fg-subtle tabular-nums">
-              {results.length}
-              {truncated ? "+" : ""} in {grouped.length} file{grouped.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
-
-        {truncated && (
-          <Alert>
-            <Warning size={16} />
-            <AlertDescription className="text-ui-xs">
-              Not all matches are shown. Narrow the query or filters to see the rest.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {error && (
-          <Alert variant="destructive">
-            <Warning size={16} />
-            <AlertDescription className="text-ui-xs">{error}</AlertDescription>
-          </Alert>
-        )}
-      </div>
+      )}
 
       <div className="min-h-0 flex-1">
         {loading && results.length === 0 ? (
@@ -325,12 +239,32 @@ export function SearchPanel() {
             <Spinner size={18} className="animate-spin text-fg-subtle" />
           </div>
         ) : grouped.length === 0 ? (
-          <PanelEmptyState
-            icon={MagnifyingGlass}
-            title={emptyTitle}
-            description={emptyDescription}
-            className="py-4"
-          />
+          hasQuery ? (
+            <SearchNoMatches
+              query={query.trim()}
+              caseSensitive={caseSensitive}
+              wholeWord={wholeWord}
+              useRegex={useRegex}
+              hasFilters={hasFilters}
+              onIgnoreCase={() => setCaseSensitive(false)}
+              onAnyPart={() => setWholeWord(false)}
+              onPlainText={() => setUseRegex(false)}
+              onClearFilters={() => {
+                setIncludePatterns("");
+                setExcludePatterns("");
+              }}
+            />
+          ) : (
+            <SearchIdle
+              recent={recentQueries}
+              onPick={(picked) => {
+                setQuery(picked);
+                inputRef.current?.focus();
+              }}
+              findShortcut={formatShortcut(findBinding, isMac)}
+              goToShortcut={formatShortcut(goToBinding, isMac)}
+            />
+          )
         ) : (
           <ScrollArea className="h-full">
             <div className="flex flex-col gap-1 px-1.5 pb-2">
@@ -340,6 +274,7 @@ export function SearchPanel() {
                   group={group}
                   disabled={replacing}
                   showReplace={showReplace}
+                  replacement={replacement}
                   caseSensitive={caseSensitive}
                   onOpenResult={handleOpenResult}
                   onReplaceOne={replaceOne}
@@ -375,34 +310,5 @@ export function SearchPanel() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-const FIELD_CLASS =
-  "flex h-8 min-w-0 items-center gap-1.5 rounded-control bg-field pr-1 pl-2.5 ring-1 ring-transparent ring-inset transition-[box-shadow] duration-(--motion-fast) hover:ring-border focus-within:ring-2 focus-within:ring-border-focus";
-
-function OptionButton({
-  active,
-  onClick,
-  title,
-  icon: Icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  title: string;
-  icon: Icon;
-}) {
-  return (
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      aria-pressed={active}
-      className={cn(active ? "bg-bg-active text-fg-default" : "text-fg-subtle")}
-    >
-      <Icon size={13} weight={active ? "bold" : "regular"} />
-    </Button>
   );
 }
