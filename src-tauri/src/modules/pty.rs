@@ -404,9 +404,18 @@ pub fn resize_pty(
 
 #[tauri::command]
 pub fn kill_pty(state: State<'_, PtyManager>, id: String) -> Result<(), String> {
-    let mut ptys = state.ptys.lock().map_err(|e| e.to_string())?;
-    if let Some(instance) = ptys.remove(&id) {
-        let _ = instance.killer.lock().map_err(|e| e.to_string())?.kill();
+    let removed = state.ptys.lock().map_err(|e| e.to_string())?.remove(&id);
+    if let Some(instance) = removed {
+        terminate(&instance)?;
+    }
+    Ok(())
+}
+
+/// Hangs up the terminal's process and makes sure it ends, also when it ignores the hangup.
+fn terminate(instance: &PtyInstance) -> Result<(), String> {
+    let _ = instance.killer.lock().map_err(|e| e.to_string())?.kill();
+    if let Some(pid) = instance.pid {
+        super::pty_terminate::escalate(pid);
     }
     Ok(())
 }
@@ -656,5 +665,42 @@ mod tests {
 
         assert!(!child.wait().unwrap().success());
         assert!(manager.ptys.lock().unwrap().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn terminate_ends_a_process_that_ignores_the_hangup() {
+        let pair = NativePtySystem::default()
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .unwrap();
+        let mut cmd = CommandBuilder::new("/bin/sh");
+        cmd.args(["-c", "trap '' HUP; sleep 30"]);
+        let mut child = pair.slave.spawn_command(cmd).unwrap();
+        drop(pair.slave);
+        // Give the shell time to install its trap before the hangup arrives.
+        std::thread::sleep(Duration::from_millis(300));
+        let instance = PtyInstance {
+            writer: Arc::new(Mutex::new(pair.master.take_writer().unwrap())),
+            killer: Arc::new(Mutex::new(child.clone_killer())),
+            master: Arc::new(Mutex::new(pair.master)),
+            pid: child.process_id(),
+        };
+
+        terminate(&instance).unwrap();
+
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(child.wait().map(|status| status.success()));
+        });
+        let ended = rx.recv_timeout(Duration::from_secs(6));
+        assert!(
+            matches!(ended, Ok(Ok(false))),
+            "process still ran: {ended:?}"
+        );
     }
 }

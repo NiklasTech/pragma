@@ -21,6 +21,7 @@ pub mod notification_permission;
 pub mod parakeet;
 pub mod pty;
 pub mod pty_foreground;
+pub mod pty_terminate;
 pub mod pty_utf8;
 pub mod run;
 pub mod shell_integration;
