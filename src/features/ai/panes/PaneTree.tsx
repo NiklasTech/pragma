@@ -31,6 +31,7 @@ import { cancelTerminal, getTerminalEntryStatus } from "../terminal/runner";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { ChildRunView } from "../children/ChildRunView";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
+import { selectAgentState, useAgentStatesStore } from "../state/agentStates";
 import { ChatTranscript } from "./ChatTranscript";
 import { EmptyLeafView } from "./EmptyLeafView";
 import { collectLeaves } from "./layout";
@@ -98,6 +99,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   const dropTarget = usePaneDragStore(
     (state) => leaf !== undefined && state.targetLeafId === leaf.id,
   );
+  const waiting = useAgentStatesStore(selectAgentState(leaf?.sessionId ?? null)) === "needs-you";
   const cardRef = useRef<HTMLDivElement>(null);
   const [pendingClose, setPendingClose] = useState<{
     leafIds: string[];
@@ -147,6 +149,8 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
   if (!leaf) return null;
 
   const focused = focusedLeafId === leaf.id;
+  // With several panes the focused one is framed and the others step back.
+  const shared = totalLeaves > 1 && !maximized;
   const isRunOwner = leaf.sessionId !== null && leaf.sessionId === runSessionId;
   const status: AgentStatus =
     isRunOwner || (runSessionId === null && focused) ? agentStatus : "idle";
@@ -164,7 +168,13 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
       ref={cardRef}
       className={cn(
         "group/pane flex min-h-0 flex-col overflow-hidden rounded-well bg-bg-well ring-1 transition-[box-shadow,opacity,scale] duration-(--motion-base) ease-(--motion-ease-out) ring-inset",
-        focused ? "ring-fg-default/25" : "ring-border-subtle hover:ring-border",
+        waiting
+          ? "shadow-[0_0_0_3px_var(--color-accent-subtle)] ring-state-needs-you"
+          : focused && shared
+            ? "ring-accent/55"
+            : focused
+              ? "ring-fg-default/25"
+              : "ring-border-subtle hover:ring-border",
         dragging && "scale-[0.98] opacity-50",
         maximized ? "absolute inset-0 z-30" : "relative h-full",
       )}
@@ -189,7 +199,13 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         onDropOn={(targetLeafId) => swapPanes(rootPath, leaf.id, targetLeafId)}
       />
 
-      <div className="relative min-h-0 flex-1" onPointerDown={() => focusLeaf(rootPath, leaf.id)}>
+      <div
+        className={cn(
+          "relative min-h-0 flex-1 transition-opacity duration-(--motion-base) ease-(--motion-ease-out)",
+          shared && !focused && !waiting && "opacity-75",
+        )}
+        onPointerDown={() => focusLeaf(rootPath, leaf.id)}
+      >
         {/* Insets give the content a definite height in WebKit, so terminals can refit smaller. */}
         <div className="absolute inset-0">
           <LeafContent leaf={leaf} focused={focused} />

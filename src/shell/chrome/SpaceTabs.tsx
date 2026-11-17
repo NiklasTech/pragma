@@ -3,6 +3,7 @@ import { Plus, X } from "@phosphor-icons/react";
 import { collectLeaves } from "@/features/ai/panes/layout";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
+import { useAgentStatesStore } from "@/features/ai/state/agentStates";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
 import { formatShortcut, getIsMac, TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
@@ -103,6 +104,9 @@ export function SpaceTabs() {
   const addTab = useOpenRepositoriesStore((state) => state.addTab);
   const trees = useAgentsPanesStore((state) => state.trees);
   const { waiting } = useSessionActivity();
+  const agentStates = useAgentStatesStore((state) => state.entries);
+  const needsYou = (sessionId: string) =>
+    waiting.includes(sessionId) || agentStates[sessionId]?.state === "needs-you";
 
   if (!space) return null;
 
@@ -125,7 +129,7 @@ export function SpaceTabs() {
               tab={tab}
               index={index}
               paneCount={sessions.length}
-              waiting={sessions.some((id) => waiting.includes(id))}
+              waiting={sessions.some(needsYou)}
             />
           );
         })}
