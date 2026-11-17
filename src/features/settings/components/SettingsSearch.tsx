@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import { ChangedSettingsMenu } from "./ChangedSettingsMenu";
 import { CATEGORIES } from "./settings-categories";
 import { SEARCH_ITEMS, type SearchItem } from "./settings-search-items";
 
@@ -34,6 +35,7 @@ export function SettingsSearch({ query, onQueryChange, onSelectResult }: Setting
           aria-label="Search settings"
           className="h-full min-w-0 flex-1 bg-transparent px-0 font-mono text-ui-sm ring-0 hover:ring-0 focus-visible:ring-0"
         />
+        <ChangedSettingsMenu onSelect={onSelectResult} />
       </label>
 
       {(filteredItems.length > 0 || query.trim()) && (

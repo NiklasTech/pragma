@@ -11,6 +11,7 @@ import { Kbd } from "@/shared/components/ui/kbd";
 import { CATEGORIES, type Category } from "./settings-categories";
 import { SettingsSearch } from "./SettingsSearch";
 import { SettingsTabs } from "./SettingsTabs";
+import { SettingsAreaContext } from "./settingsArea";
 import { SettingsActions } from "./SettingsActions";
 import { SettingsCategoryContent } from "./SettingsCategoryContent";
 import { revealSetting } from "./revealSetting";
@@ -133,7 +134,9 @@ export function Settings({
                 {activeCategoryDef.description}
               </p>
             )}
-            <SettingsCategoryContent category={activeCategory} />
+            <SettingsAreaContext.Provider value={activeCategory}>
+              <SettingsCategoryContent category={activeCategory} />
+            </SettingsAreaContext.Provider>
           </div>
         </ScrollArea>
       </div>

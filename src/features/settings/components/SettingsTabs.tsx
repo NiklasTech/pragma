@@ -1,5 +1,10 @@
+import { useMemo } from "react";
+
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { useSettingsStore } from "@/shared/stores/settings";
+
+import { changedSettings } from "../settingChanges";
 
 import { CATEGORIES, type Category } from "./settings-categories";
 
@@ -11,6 +16,15 @@ export function SettingsTabs({
   active: Category;
   onSelect: (category: Category) => void;
 }) {
+  const state = useSettingsStore();
+  const counts = useMemo(() => {
+    const byArea = new Map<Category, number>();
+    for (const setting of changedSettings(state)) {
+      byArea.set(setting.category, (byArea.get(setting.category) ?? 0) + 1);
+    }
+    return byArea;
+  }, [state]);
+
   return (
     <nav
       aria-label="Settings areas"
@@ -33,6 +47,14 @@ export function SettingsTabs({
             )}
           >
             {category.tab}
+            {(counts.get(category.id) ?? 0) > 0 && (
+              <sup
+                aria-label={`${counts.get(category.id)} changed`}
+                className="ml-0.5 text-[9px] text-primary"
+              >
+                {counts.get(category.id)}
+              </sup>
+            )}
           </Button>
         );
       })}
