@@ -32,7 +32,7 @@ export function ViewShelf() {
     <div className="flex shrink-0 items-center gap-1 px-1.5 pt-1.5">
       <nav
         aria-label="Sidebar views"
-        className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden"
+        className="flex min-w-0 flex-1 items-center gap-px overflow-hidden"
       >
         {views.map((view) => {
           const active = view.id === tab;
@@ -44,38 +44,40 @@ export function ViewShelf() {
               aria-pressed={active}
               onClick={() => (view.id === "git" ? showHistory() : setSidebarTab(view.id))}
               title={view.label}
-              className={cn("px-2 font-normal", active && "bg-bg-active text-fg-default")}
+              className={cn("px-1.5 font-normal", active && "bg-bg-active text-fg-default")}
             >
               <view.icon size={ICON_SIZE.sm} weight={active ? "fill" : "regular"} />
-              <span className="@max-[260px]:hidden">{view.label}</span>
+              <span className={cn("@max-[240px]:hidden", !active && "@max-[372px]:hidden")}>
+                {view.label}
+              </span>
             </Button>
           );
         })}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="More views"
-                title="More views"
-                className="px-2"
-              >
-                <DotsThree size={ICON_SIZE.md} weight="bold" />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="start" className="min-w-[170px]">
-            {secondarySidebarViews.map((view) => (
-              <DropdownMenuItem key={view.id} onClick={() => setSidebarTab(view.id)}>
-                <view.icon size={ICON_SIZE.sm} />
-                {view.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </nav>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="More views"
+              title="More views"
+              className="shrink-0 px-2"
+            >
+              <DotsThree size={ICON_SIZE.md} weight="bold" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="start" className="min-w-[170px]">
+          {secondarySidebarViews.map((view) => (
+            <DropdownMenuItem key={view.id} onClick={() => setSidebarTab(view.id)}>
+              <view.icon size={ICON_SIZE.sm} />
+              {view.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <IconButton
         icon={pinned ? PushPinSlash : PushPin}
