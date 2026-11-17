@@ -155,7 +155,7 @@ export function AgentsWorkspace() {
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden px-1.5 pb-1.5">
+    <div className="relative flex min-h-0 flex-1 gap-1.5 overflow-hidden pr-1.5 pb-1.5">
       {threadsColumn && (
         <aside aria-label="Threads" className="flex h-full w-[256px] shrink-0 flex-col">
           <ThreadList />
