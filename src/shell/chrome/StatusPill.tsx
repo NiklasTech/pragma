@@ -6,14 +6,9 @@ import type { AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useOverlayStore } from "@/shared/stores/overlays";
 
-const MAX_CELLS = 8;
+import { STATE_CELL_CLASSES } from "./SessionMark";
 
-const CELL_CLASSES: Record<AgentState, string> = {
-  "needs-you": "bg-state-needs-you shadow-[0_0_6px_var(--color-accent-glow)]",
-  working: "bg-state-working",
-  done: "bg-state-done",
-  idle: "bg-fg-default/15",
-};
+const MAX_CELLS = 8;
 
 /// How the agents are doing at a glance: one cell per agent; a click opens the overview of every agent.
 export function StatusPill() {
@@ -51,12 +46,12 @@ export function StatusPill() {
               key={`${state}-${index}`}
               className={cn(
                 "size-[7px] rounded-[1.5px] animate-in duration-200 zoom-in-50 fade-in-0 motion-reduce:animate-none",
-                CELL_CLASSES[state],
+                STATE_CELL_CLASSES[state],
               )}
             />
           ))
         ) : (
-          <span className={cn("size-[7px] rounded-[1.5px]", CELL_CLASSES.idle)} />
+          <span className={cn("size-[7px] rounded-[1.5px]", STATE_CELL_CLASSES.idle)} />
         )}
       </span>
       <span className="flex items-center gap-1.5">
