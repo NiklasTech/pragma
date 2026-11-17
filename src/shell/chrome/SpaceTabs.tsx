@@ -1,11 +1,17 @@
-import { Plus, X } from "@phosphor-icons/react";
+import { Code, Plus, Robot, X } from "@phosphor-icons/react";
 
 import { collectLeaves } from "@/features/ai/panes/layout";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
 import { useAgentStatesStore } from "@/features/ai/state/agentStates";
 import { Button } from "@/shared/components/ui/button";
-import { IconButton } from "@/shared/components/ui/icon-button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
 import { formatShortcut, getIsMac, TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
@@ -102,6 +108,7 @@ export function SpaceTabs() {
     (state) => state.spaces.find((candidate) => candidate.id === state.activeSpaceId) ?? null,
   );
   const addTab = useOpenRepositoriesStore((state) => state.addTab);
+  const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
   const trees = useAgentsPanesStore((state) => state.trees);
   const { waiting } = useSessionActivity();
   const agentStates = useAgentStatesStore((state) => state.entries);
@@ -110,6 +117,7 @@ export function SpaceTabs() {
 
   if (!space) return null;
 
+  const hasCodeTab = space.tabs.some((tab) => tab.kind === "code");
   const sessionsOf = (tab: SpaceTab) =>
     tab.kind === "agents"
       ? collectLeaves(trees[tab.id]?.root ?? null).flatMap((leaf) =>
@@ -134,13 +142,31 @@ export function SpaceTabs() {
           );
         })}
       </div>
-      <IconButton
-        icon={Plus}
-        label="New agents tab"
-        size="sm"
-        className="-ml-1"
-        onClick={() => addTab(space.id, nextAgentsTabName(space), "agents")}
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="New tab"
+              title="New tab"
+              className="-ml-1 text-fg-subtle"
+            >
+              <Plus size={ICON_SIZE.sm} />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="start" className="min-w-[180px]">
+          <DropdownMenuItem onClick={() => addTab(space.id, nextAgentsTabName(space), "agents")}>
+            <Robot size={ICON_SIZE.sm} />
+            <span>New agents tab</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => activateTabKind("code")}>
+            <Code size={ICON_SIZE.sm} />
+            <span>{hasCodeTab ? "Show code tab" : "Code tab"}</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </nav>
   );
 }

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { detectLanguage } from "@/shared/lib/language";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useLayoutStore } from "@/shell/layout";
+import { useUiModeStore } from "@/shell/mode";
 import { allPanelIds, findNode, findPanelByKind } from "@/shell/layout/tree/operations";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
 
@@ -40,11 +41,13 @@ function targetPanel(newPane: boolean): string | null {
   return editorPanelIds().find((id) => !before.has(id)) ?? current;
 }
 
-/// Opens a file, optionally at a position and in a new pane beside the current one.
+/// Opens a file in the code tab, optionally at a position and in a new pane beside the current one.
 export async function openGoToPath(
   path: string,
   options: { position?: GoToPosition; newPane?: boolean } = {},
 ): Promise<void> {
+  // The code tab shows the file; it comes back when it was closed.
+  useUiModeStore.getState().setUiMode("editor");
   const panelId = targetPanel(options.newPane === true);
   if (openNonTextFile(path, panelId)) return;
   try {
