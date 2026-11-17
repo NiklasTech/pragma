@@ -8,7 +8,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/shared/components/ui/context-menu";
-import { ArrowCounterClockwise, GitDiff, Trash } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, GitDiff, Minus, Plus, Trash } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { basename, dirname } from "./utils";
 import { STATE_INFO, fileState, stageState, type StageState } from "./fileState";
@@ -31,16 +31,19 @@ export function statusLetter(code: string): { text: string; className: string } 
 function RowAction({
   label,
   onClick,
+  disabled,
   children,
 }: {
   label: string;
   onClick: () => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Button
       variant="ghost"
       size="icon-sm"
+      disabled={disabled}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
@@ -54,59 +57,22 @@ function RowAction({
   );
 }
 
-/// The stage switch at the end of a row: lit when staged, half lit when only part is staged.
-function StageToggle({
-  state,
-  disabled,
-  fileName,
-  onStage,
-  onUnstage,
-}: {
-  state: StageState;
-  disabled: boolean;
-  fileName: string;
-  onStage: () => void;
-  onUnstage: () => void;
-}) {
-  const label = state === "staged" ? "staged" : state === "part" ? "part" : "stage";
+/// A small lit cell in front of the file: full when staged, half when only part is staged.
+function StageMark({ state }: { state: StageState }) {
+  if (state === "none") return <span aria-hidden="true" className="size-1.5 shrink-0" />;
+  const label = state === "staged" ? "Staged" : "Partly staged";
   return (
-    <Button
-      variant="ghost"
-      size="xs"
-      disabled={disabled}
-      aria-pressed={state === "staged" ? true : state === "part" ? "mixed" : false}
-      aria-label={state === "staged" ? `Unstage ${fileName}` : `Stage ${fileName}`}
-      title={
-        state === "staged"
-          ? "Staged. Click to unstage."
-          : state === "part"
-            ? "Partly staged. Click to stage the rest."
-            : "Click to stage."
-      }
-      onClick={(event) => {
-        event.stopPropagation();
-        if (state === "staged") onUnstage();
-        else onStage();
-      }}
+    <span
+      role="img"
+      title={label}
+      aria-label={label}
       className={cn(
-        "h-5.5 w-18 shrink-0 justify-start gap-1.5 px-2 text-[10.5px] ring-1 ring-inset",
-        state === "none"
-          ? "text-fg-subtle ring-fg-default/15"
-          : "text-fg-default ring-primary/45 hover:bg-primary/10",
+        "size-1.5 shrink-0 rounded-[1px]",
+        state === "staged"
+          ? "bg-primary shadow-[0_0_5px_var(--color-primary)]"
+          : "bg-[linear-gradient(90deg,var(--color-primary)_50%,transparent_50%)] ring-1 ring-primary/60",
       )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 rounded-[1px]",
-          state === "staged" && "bg-primary shadow-[0_0_6px_var(--color-primary)]",
-          state === "part" &&
-            "bg-[linear-gradient(90deg,var(--color-primary)_50%,transparent_50%)] ring-1 ring-primary/60",
-          state === "none" && "bg-fg-default/20",
-        )}
-      />
-      {label}
-    </Button>
+    />
   );
 }
 
@@ -149,7 +115,7 @@ export function FileRow({
   const row = (
     <div
       className={cn(
-        "group relative mx-1.5 flex h-8 items-center gap-2 rounded-[5px] pr-1 pl-2 transition-colors duration-100",
+        "group relative mx-1.5 flex h-8 items-center gap-2 rounded-[5px] pr-2 pl-2 transition-colors duration-100",
         isSelected
           ? "bg-primary/10 text-fg-default ring-1 ring-primary/40 ring-inset"
           : "hover:bg-bg-hover",
@@ -157,6 +123,7 @@ export function FileRow({
       onClick={() => onSelect(entry)}
       onDoubleClick={openDiff}
     >
+      <StageMark state={staged} />
       <img src={getFileIconPath(fileName)} alt="" className="size-3.5 shrink-0" />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
         <span
@@ -182,6 +149,24 @@ export function FileRow({
             <ArrowCounterClockwise size={13} />
           </RowAction>
         )}
+        {staged !== "none" && (
+          <RowAction
+            label={`Unstage ${fileName}`}
+            disabled={actionBusy !== null}
+            onClick={() => onUnstage(entry)}
+          >
+            <Minus size={13} />
+          </RowAction>
+        )}
+        {staged !== "staged" && (
+          <RowAction
+            label={`Stage ${fileName}`}
+            disabled={actionBusy !== null}
+            onClick={() => onStage(entry)}
+          >
+            <Plus size={13} />
+          </RowAction>
+        )}
       </div>
       <span
         title={STATE_INFO[state].title}
@@ -193,13 +178,6 @@ export function FileRow({
       >
         {state}
       </span>
-      <StageToggle
-        state={staged}
-        disabled={actionBusy !== null}
-        fileName={fileName}
-        onStage={() => onStage(entry)}
-        onUnstage={() => onUnstage(entry)}
-      />
     </div>
   );
 
