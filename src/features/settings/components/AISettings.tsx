@@ -171,7 +171,7 @@ export function AISettings({ part }: { part: "models" | "agents" }) {
 
   if (part === "agents") {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
         <CliIntegrationSection />
         <ChatContextSettings />
         <ProjectRulesSettings />
@@ -180,7 +180,7 @@ export function AISettings({ part }: { part: "models" | "agents" }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       <SettingSection title="Models">
         <ProviderFields
           provider={activeProvider}

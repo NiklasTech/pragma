@@ -1,4 +1,3 @@
-import { ArrowCounterClockwise, DownloadSimple, UploadSimple } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { useSettingsStore } from "@/shared/stores/settings";
 import {
@@ -30,35 +29,22 @@ export function SettingsActions() {
   };
 
   return (
-    <div className="flex shrink-0 flex-col gap-0.5 border-t border-border-subtle p-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleExport}
-        className="h-7 justify-start gap-2.5 px-2.5 font-normal"
-      >
-        <DownloadSimple size={14} />
-        Export
+    <div className="flex shrink-0 items-center">
+      <Button variant="ghost" size="xs" onClick={handleExport} className="px-1.5 text-fg-subtle">
+        export
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleImport}
-        className="h-7 justify-start gap-2.5 px-2.5 font-normal"
-      >
-        <UploadSimple size={14} />
-        Import
+      <Button variant="ghost" size="xs" onClick={handleImport} className="px-1.5 text-fg-subtle">
+        import
       </Button>
       <AlertDialog>
         <AlertDialogTrigger
           render={
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 justify-start gap-2.5 px-2.5 font-normal hover:text-status-error"
+              size="xs"
+              className="px-1.5 text-fg-subtle hover:text-status-error"
             >
-              <ArrowCounterClockwise size={14} />
-              Reset Defaults
+              reset all
             </Button>
           }
         />

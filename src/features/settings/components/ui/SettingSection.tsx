@@ -23,14 +23,16 @@ interface SettingSectionProps {
 }
 
 const BADGE_COLORS: Record<NonNullable<SettingSectionBadge["variant"]>, string> = {
-  default: "bg-bg-hover text-fg-muted",
-  warning: "bg-status-warning/10 text-status-warning",
-  success: "bg-status-success/10 text-status-success",
-  error: "bg-status-error/10 text-status-error",
+  default: "text-fg-muted ring-fg-default/15",
+  warning: "text-status-warning ring-status-warning/40",
+  success: "text-status-success ring-status-success/40",
+  error: "text-status-error ring-status-error/40",
 };
 
-const BODY =
-  "flex flex-col divide-y divide-border-subtle rounded-xl border border-border-subtle bg-bg-surface px-4";
+const BODY = "flex flex-col divide-y divide-border-subtle";
+// A small mono label with a hairline running to the right, as in design D.
+const LABEL =
+  "flex min-h-7 items-center gap-2 font-mono text-[10.5px] tracking-[0.08em] text-fg-subtle uppercase after:h-px after:flex-1 after:bg-border-subtle after:content-['']";
 
 export function SettingSection({
   title,
@@ -41,8 +43,10 @@ export function SettingSection({
 }: SettingSectionProps) {
   if (collapsible) {
     return (
-      <Collapsible className="flex flex-col gap-2">
-        <CollapsibleTrigger className="group flex min-h-7 items-center gap-1.5 self-start rounded-md px-1 text-ui-xs font-semibold text-fg-muted transition-colors hover:text-fg-default">
+      <Collapsible className="-ml-3 flex flex-col gap-1 pt-4">
+        <CollapsibleTrigger
+          className={`group ${LABEL} w-full rounded-[4px] text-left hover:text-fg-default`}
+        >
           <CaretRight
             size={12}
             aria-hidden="true"
@@ -54,26 +58,33 @@ export function SettingSection({
           hiddenUntilFound
           className="h-[var(--collapsible-panel-height)] overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 motion-reduce:transition-none"
         >
-          <div className={BODY}>{children}</div>
+          <div className={`${BODY} pl-3`}>{children}</div>
         </CollapsibleContent>
       </Collapsible>
     );
   }
 
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex min-h-7 items-center gap-2 px-1">
-        <h3 className="text-ui-xs font-semibold text-fg-muted">{title}</h3>
-        {badge && (
-          <span
-            className={`rounded-full px-2 py-px text-ui-2xs font-medium ${BADGE_COLORS[badge.variant ?? "default"]}`}
-          >
-            {badge.label}
-          </span>
+    <section className="-ml-3 flex flex-col gap-1 pt-4">
+      <div className="flex min-h-7 items-center gap-2">
+        <h3 className={`${LABEL} min-w-0 flex-1`}>
+          <span className="shrink-0">{title}</span>
+          {badge && (
+            <span
+              className={`shrink-0 rounded-[4px] px-1.5 py-px tracking-normal normal-case ring-1 ring-inset ${BADGE_COLORS[badge.variant ?? "default"]}`}
+            >
+              {badge.label}
+            </span>
+          )}
+        </h3>
+        {action && (
+          // Header actions sit on the hairline, so they stay small whatever size their page asked for.
+          <div className="flex shrink-0 items-center gap-1 [&_[data-slot=button]]:h-6 [&_[data-slot=button]]:px-2 [&_[data-slot=button]]:text-[11px]">
+            {action}
+          </div>
         )}
-        {action && <div className="ml-auto flex items-center gap-1.5">{action}</div>}
       </div>
-      <div className={BODY}>{children}</div>
+      <div className={`${BODY} pl-3`}>{children}</div>
     </section>
   );
 }

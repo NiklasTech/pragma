@@ -66,7 +66,7 @@ export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
 
   if (part === "worktrees") {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
         <SettingSection title="Worktrees">
           <SettingRow
             label="Remove worktrees automatically when a session is finished"
@@ -84,7 +84,7 @@ export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       <WorkspaceOverrideNotice section="agent" />
       <SettingSection title="Approvals">
         <SettingRow

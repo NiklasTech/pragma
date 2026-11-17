@@ -5,7 +5,7 @@ import { ThemeSettings } from "./ThemeSettings";
 
 export function AppearanceSettings() {
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       <ThemeSettings />
       <InterfaceSettings />
       <EditorAppearanceSettings />

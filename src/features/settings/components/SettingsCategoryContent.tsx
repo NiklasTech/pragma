@@ -17,7 +17,7 @@ import { TerminalEnvSettings } from "./TerminalEnvSettings";
 import type { Category } from "./settings-categories";
 
 function Stack({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-8">{children}</div>;
+  return <div className="flex flex-col gap-2">{children}</div>;
 }
 
 export function SettingsCategoryContent({ category }: { category: Category }) {

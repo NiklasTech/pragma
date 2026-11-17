@@ -77,7 +77,7 @@ export function ThemeSettings() {
   );
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-2">
       <SettingSection
         title="Theme"
         action={
