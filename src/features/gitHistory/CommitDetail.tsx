@@ -84,7 +84,7 @@ interface CommitDetailProps {
   stat: { added: number; removed: number };
   /** Set when the commit is on an agent's branch that is not merged yet. */
   agent?: { worktree: RepositoryWorktree; count: number };
-  onDone: () => void;
+  onDone?: () => void;
 }
 
 /// The selected commit: message, author, pull request, files, and what to do with it.
@@ -131,7 +131,7 @@ export function CommitDetail({ sha, stat, agent, onDone }: CommitDetailProps) {
         patchText: result.fallback_patch,
         staged: false,
       });
-      onDone();
+      onDone?.();
     } finally {
       setLoadingPath(null);
     }

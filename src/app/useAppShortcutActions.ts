@@ -12,6 +12,7 @@ import { useLayoutStore } from "@/shell/layout";
 import { resolveUiMode, useUiModeStore } from "@/shell/mode";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
 import { useOverlayStore } from "@/shared/stores/overlays";
+import { openGitHistory } from "@/features/gitHistory/openGitHistory";
 import {
   dispatchEditorFind,
   dispatchEditorFormatDocument,
@@ -173,7 +174,7 @@ export function useAppShortcutActions(): ShortcutActions {
         useOverlayStore.getState().toggle("quickStart");
       },
       "view.gitHistory": () => {
-        useOverlayStore.getState().toggle("git");
+        openGitHistory();
       },
       "editor.formatDocument": () => {
         dispatchEditorFormatDocument();

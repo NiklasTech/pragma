@@ -175,6 +175,8 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                   >
                     {tab.kind === "diff" ? (
                       <GitDiff size={14} className="shrink-0 text-status-success" />
+                    ) : tab.kind === "history" ? (
+                      <GitCommit size={14} className="shrink-0 text-primary" />
                     ) : (
                       <img src={fileIconPath ?? undefined} alt="" className="size-3.5 shrink-0" />
                     )}
