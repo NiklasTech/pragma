@@ -70,4 +70,22 @@ describe("built-in themes", () => {
       }
     });
   }
+
+  for (const theme of builtInThemeList) {
+    it(`draws the focus ring of ${theme.metadata.id} at 3:1 on every surface`, () => {
+      const css = new Map(generateCssVariables(theme).map(({ name, value }) => [name, value]));
+      for (const surface of [
+        "--bg-chrome",
+        "--bg-root",
+        "--bg-surface",
+        "--bg-elevated",
+        "--bg-input",
+      ]) {
+        expect(
+          ratio(css.get("--border-focus"), css.get(surface)),
+          `focus on ${surface}`,
+        ).toBeGreaterThanOrEqual(3);
+      }
+    });
+  }
 });

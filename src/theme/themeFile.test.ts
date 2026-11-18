@@ -59,7 +59,7 @@ describe("extends", () => {
     expect(css.get("--editor-cursor")).toBe("#ff00aa");
     expect(css.get("--color-thread-active")).toBe("#ff00aa");
     expect(css.get("--color-accent-subtle")).toBe("rgba(255, 0, 170, 0.16)");
-    expect(css.get("--border-focus")).toBe("rgba(255, 0, 170, 0.55)");
+    expect(css.get("--border-focus")).toBe("rgba(255, 0, 170, 0.75)");
     expect(css.get("--editor-selection")).toBe("rgba(255, 0, 170, 0.16)");
     // The built-in theme itself stays untouched.
     expect(pragmaLight.tokens.colors.accent.subtle).not.toBe(css.get("--color-accent-subtle"));

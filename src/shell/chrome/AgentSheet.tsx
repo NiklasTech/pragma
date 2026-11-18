@@ -133,7 +133,7 @@ export function AgentSheet() {
   useDrawerDismiss(ref, open, close);
 
   useEffect(() => {
-    if (shown) inputRef.current?.focus({ preventScroll: true });
+    if (open && shown) inputRef.current?.focus({ preventScroll: true });
     if (!open) setFilter("");
   }, [open, shown]);
 
@@ -229,7 +229,7 @@ export function AgentSheet() {
       </div>
 
       <footer className="flex shrink-0 items-center gap-2 border-t border-border py-2 pr-2 pl-3">
-        <label className="flex min-w-0 flex-1 items-center gap-2 font-mono text-ui-xs">
+        <label className="flex min-w-0 flex-1 items-center gap-2 border-b border-transparent font-mono text-ui-xs focus-within:border-primary/60">
           <span aria-hidden="true" className="font-semibold text-primary">
             /
           </span>
