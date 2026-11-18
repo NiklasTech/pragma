@@ -7,19 +7,23 @@ import { Button } from "@/shared/components/ui/button";
 import { convertSkill } from "@/features/ai/skills/convertSkill";
 import { copySkill } from "@/features/ai/skills/copySkill";
 import { SkillList } from "@/features/ai/skills/SkillList";
+import { skillUsers } from "@/features/ai/skills/skillUsers";
 import { useSkillsStore } from "@/features/ai/skills/store";
 import { useCreateSkill } from "@/features/ai/skills/useCreateSkill";
 import { useWorkspaceSkills } from "@/features/ai/skills/useWorkspaceSkills";
+import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { SettingSection } from "./ui/SettingSection";
 
 export function SkillsSettings() {
   const skills = useWorkspaceSkills();
   const setWorkspaceEnabled = useSkillsStore((state) => state.setWorkspaceEnabled);
   const { canCreate, creating, createSkill } = useCreateSkill();
+  const syncTargets = useWorkspaceSettingsStore((state) => state.settings?.cliSync?.targets);
 
   return (
     <SettingSection
       title="Skills"
+      badge={skills.length > 0 ? { label: String(skills.length) } : undefined}
       action={
         <Button
           size="sm"
@@ -32,13 +36,14 @@ export function SkillsSettings() {
         </Button>
       }
     >
-      <p className="py-3 text-ui-xs text-fg-muted">
-        Enabled skills are listed in the prompt of sessions without a named agent. Skills from
-        coding CLI folders are read-only and start disabled.
+      <p className="py-2.5 text-[12.5px] leading-relaxed text-fg-muted">
+        The CLIs under used by read a skill from its folder themselves. The switch lists it in the
+        prompt of Pragma sessions without a named agent; skills from CLI folders start off.
       </p>
       <SkillList
         skills={skills}
         isEnabled={(skill) => skill.enabled}
+        usedBy={(skill) => skillUsers(skill, syncTargets)}
         onToggle={(skill, enabled) =>
           void setWorkspaceEnabled(skill, enabled).catch((err: unknown) => toast.error(String(err)))
         }
