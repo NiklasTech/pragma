@@ -23,8 +23,8 @@ export interface ReviewLineTarget {
 }
 
 const LINE_CLASSES: Record<PatchLine["type"], string> = {
-  added: "bg-status-success/5 text-status-success/90",
-  removed: "bg-status-error/5 text-status-error/90",
+  added: "bg-status-success/5 text-status-success",
+  removed: "bg-status-error/5 text-status-error",
   context: "text-fg-default/80",
 };
 
@@ -72,7 +72,7 @@ export function ReviewHunkDiff({
       {hunks.map((hunk, hunkIndex) => (
         <div key={`${hunkIndex}:${hunk.header}`}>
           <div className="flex h-7 items-center gap-1 border-y border-border-subtle bg-status-info/5 px-2">
-            <span className="min-w-0 flex-1 truncate text-status-info/70">{hunk.header}</span>
+            <span className="min-w-0 flex-1 truncate text-status-info">{hunk.header}</span>
             {hunkActions && (
               <>
                 <Button
@@ -118,10 +118,10 @@ export function ReviewHunkDiff({
                     drafting && "bg-primary/15",
                   )}
                 >
-                  <span className="w-8 shrink-0 pr-1 text-right leading-5 text-fg-muted/50 select-none">
+                  <span className="w-8 shrink-0 pr-1 text-right leading-5 text-fg-subtle select-none">
                     {line.oldLine ?? ""}
                   </span>
-                  <span className="w-8 shrink-0 pr-1 text-right leading-5 text-fg-muted/50 select-none">
+                  <span className="w-8 shrink-0 pr-1 text-right leading-5 text-fg-subtle select-none">
                     {line.newLine ?? ""}
                   </span>
                   <span className="w-4 shrink-0 text-center leading-5 select-none">

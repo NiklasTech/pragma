@@ -194,7 +194,7 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
         >
           {code.split("\n").map((line, index) => (
             <span key={index} className="flex">
-              <span className="mr-2 select-none text-fg-muted/70">{prompt}</span>
+              <span className="mr-2 select-none text-fg-subtle">{prompt}</span>
               <span>{line}</span>
             </span>
           ))}

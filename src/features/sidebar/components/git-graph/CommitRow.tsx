@@ -123,9 +123,7 @@ export function CommitRow({
             <span
               className={cn(
                 "font-semibold",
-                commit.insertions >= commit.deletions
-                  ? "text-status-success/85 dark:text-status-success/85"
-                  : "text-status-error/85 dark:text-status-error/85",
+                commit.insertions >= commit.deletions ? "text-status-success" : "text-status-error",
               )}
             >
               {commit.insertions >= commit.deletions ? "+" : "−"}
@@ -144,14 +142,10 @@ export function CommitRow({
             {totalStat > 0 ? (
               <span className="inline-flex items-center gap-1">
                 {commit.insertions > 0 ? (
-                  <span className="font-semibold text-status-success/85 dark:text-status-success/85">
-                    +{commit.insertions}
-                  </span>
+                  <span className="font-semibold text-status-success">+{commit.insertions}</span>
                 ) : null}
                 {commit.deletions > 0 ? (
-                  <span className="font-semibold text-status-error/85 dark:text-status-error/85">
-                    −{commit.deletions}
-                  </span>
+                  <span className="font-semibold text-status-error">−{commit.deletions}</span>
                 ) : null}
               </span>
             ) : null}
