@@ -2,7 +2,6 @@ mod blame;
 mod branch;
 mod commit;
 mod compare;
-mod compose;
 mod conflict;
 mod diff;
 mod hunk;
@@ -28,7 +27,6 @@ pub use commit::{
     create_branch_from_commit, reset_to_commit, revert_commit, show_commit_diff,
 };
 pub use compare::{compare_file_diff, compare_files};
-pub use compose::compose_file_changed_between_branches;
 pub use conflict::{conflict_sides, resolve_conflict};
 pub use diff::{diff, diff_content, index_content};
 pub use hunk::{apply_lines, LineAction, LineSelection};
@@ -37,7 +35,7 @@ pub use merge::{merge_branch, rebase_onto};
 pub use rebase::{
     abort_operation, continue_operation, operation_state, rebase_branch, GitOperationKind,
 };
-pub use remote::{fetch, list_remote_branches, list_remotes, pull_ff_only, push, remote_url};
+pub use remote::{fetch, list_remote_branches, list_remotes, pull_ff_only, push};
 pub use stage::{discard, stage, unstage};
 pub use stash::{smart_checkout, stash_apply, stash_drop, stash_list, stash_pop, stash_push};
 pub use status::{conflicted_files, resolve_repo, status};

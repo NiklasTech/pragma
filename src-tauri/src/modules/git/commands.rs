@@ -1,8 +1,8 @@
 use crate::modules::git::operations;
 use crate::modules::git::types::{
-    GitBlameLine, GitBranch, GitCommitDetails, GitCommitFileChange, GitCommitResult,
-    GitConflictSides, GitDiffContentResult, GitDiffResult, GitLogEntry, GitPullResult,
-    GitPushResult, GitRemote, GitRemoteBranch, GitStatusSnapshot, SmartCheckoutResult, StashEntry,
+    GitBlameLine, GitBranch, GitCommitDetails, GitCommitResult, GitConflictSides,
+    GitDiffContentResult, GitDiffResult, GitLogEntry, GitPullResult, GitPushResult, GitRemote,
+    GitRemoteBranch, GitStatusSnapshot, SmartCheckoutResult, StashEntry,
 };
 
 async fn blocking<F, T>(f: F) -> Result<T, String>
@@ -112,20 +112,6 @@ pub async fn git_branch_log(
         Ok(GitLogEntriesResponse { entries })
     })
     .await
-}
-
-#[tauri::command]
-pub async fn git_commit_files(
-    repo_path: String,
-    sha: String,
-) -> Result<Vec<GitCommitFileChange>, String> {
-    if repo_path.is_empty() {
-        return Err("Repository path is required".to_string());
-    }
-    if sha.is_empty() {
-        return Err("Commit SHA is required".to_string());
-    }
-    blocking(move || operations::commit_files(&repo_path, &sha).map_err(Into::into)).await
 }
 
 #[tauri::command]
@@ -397,18 +383,6 @@ pub async fn git_commit_file_diff(
             .map_err(Into::into)
     })
     .await
-}
-
-#[tauri::command]
-pub async fn git_remote_url(
-    repo_path: String,
-    name: Option<String>,
-) -> Result<Option<String>, String> {
-    if repo_path.is_empty() {
-        return Err("Repository path is required".to_string());
-    }
-    let remote = name.unwrap_or_else(|| "origin".to_string());
-    blocking(move || operations::remote_url(&repo_path, &remote).map_err(Into::into)).await
 }
 
 #[tauri::command]

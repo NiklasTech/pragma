@@ -17,15 +17,8 @@ function paramsFrom(source: string): URLSearchParams {
   return new URLSearchParams(source.replace(/^[?#]/, ""));
 }
 
-/// Reads nodeId/parent for a floating OS window. Windows WebView2 often drops
-/// `location.search` on `WebviewUrl::App`, so we prefer the init script, then hash.
+/// Reads nodeId/parent for a floating OS window from the hash, then the query.
 export function getFloatingContext(): FloatingWindowContext {
-  const injected = (globalThis as { __PRAGMA_FLOATING__?: { nodeId?: string; parent?: string } })
-    .__PRAGMA_FLOATING__;
-  if (injected?.nodeId) {
-    return { nodeId: injected.nodeId, parent: injected.parent?.trim() || "main" };
-  }
-
   const hash = paramsFrom(globalThis.location?.hash ?? "");
   const hashNodeId = hash.get("nodeId");
   if (hashNodeId) {

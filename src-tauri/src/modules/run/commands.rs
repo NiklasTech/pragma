@@ -225,24 +225,6 @@ pub fn run_stop(state: State<'_, RunManager>, process_id: String) -> Result<(), 
     Ok(())
 }
 
-#[tauri::command(async)]
-pub fn run_restart(
-    app: AppHandle,
-    state: State<'_, RunManager>,
-    workspace_root: String,
-    process_id: String,
-    config: RunConfig,
-) -> Result<String, String> {
-    {
-        let mut processes = state.processes.lock().map_err(|e| e.to_string())?;
-        if let Some(instance) = processes.remove(&process_id) {
-            instance.stop_requested.store(true, Ordering::SeqCst);
-            kill_process_group(instance.pgid);
-        }
-    }
-    run_start(app, state, workspace_root, config)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

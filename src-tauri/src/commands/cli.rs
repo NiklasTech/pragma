@@ -90,19 +90,6 @@ pub async fn cli_list_manifests() -> Result<Vec<CLIManifestResponse>, String> {
 }
 
 #[tauri::command]
-pub async fn cli_check_status(req: CLIProviderRequest) -> Result<CLIStatus, String> {
-    if req.provider_id.is_empty() {
-        return Err("provider_id is required".to_string());
-    }
-
-    let manager = CLIManager::new();
-    manager
-        .check_status(&req.provider_id)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
 pub async fn cli_check_all_statuses() -> Result<Vec<CLIStatus>, String> {
     let manager = CLIManager::new();
     Ok(manager.check_all_statuses().await)
@@ -145,37 +132,6 @@ pub async fn cli_logout(req: CLIProviderRequest) -> Result<(), String> {
         .logout(&req.provider_id)
         .await
         .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn cli_chat(req: CLIChatCommandRequest) -> Result<String, String> {
-    if req.provider_id.is_empty() {
-        return Err("provider_id is required".to_string());
-    }
-    if req.messages.is_empty() {
-        return Err("messages are required".to_string());
-    }
-
-    let manager = CLIManager::new();
-    let chat_req = CLIChatRequest {
-        provider_id: req.provider_id,
-        messages: req.messages,
-        session_id: req.session_id,
-        cwd: None,
-    };
-
-    let mut rx = manager.chat(chat_req).await.map_err(|e| e.to_string())?;
-
-    // Collect all chunks into a single response (non-streaming for now)
-    let mut full_text = String::new();
-    while let Some(chunk) = rx.recv().await {
-        if chunk.done {
-            break;
-        }
-        full_text.push_str(&chunk.text);
-    }
-
-    Ok(full_text)
 }
 
 #[tauri::command]

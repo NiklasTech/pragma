@@ -35,20 +35,13 @@ describe("getWindowScope", () => {
     mockLabel("floating-editor-1");
     vi.stubGlobal("location", { search: "?nodeId=x&parent=workspace-2", hash: "" });
     expect(getWindowScope()).toBe("workspace-2");
+    expect(getFloatingContext()).toEqual({ nodeId: "x", parent: "workspace-2" });
   });
 
   it("reads parent from the hash when search is empty", () => {
     mockLabel("floating-editor-1");
     vi.stubGlobal("location", { search: "", hash: "#nodeId=x&parent=workspace-2" });
     expect(getWindowScope()).toBe("workspace-2");
-  });
-
-  it("prefers the injected floating context over the URL", () => {
-    mockLabel("floating-editor-1");
-    vi.stubGlobal("location", { search: "?parent=from-search", hash: "" });
-    vi.stubGlobal("__PRAGMA_FLOATING__", { nodeId: "n1", parent: "workspace-9" });
-    expect(getWindowScope()).toBe("workspace-9");
-    expect(getFloatingContext()).toEqual({ nodeId: "n1", parent: "workspace-9" });
   });
 
   it("falls back to main for floating windows without parent param", () => {

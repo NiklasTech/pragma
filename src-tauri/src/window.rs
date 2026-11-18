@@ -1,41 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use serde::Deserialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
-
-const LABEL_PREFIX: &str = "floating-";
-
-#[derive(Debug, Deserialize)]
-pub struct WindowBounds {
-    pub x: i32,
-    pub y: i32,
-    pub width: u32,
-    pub height: u32,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateExternalWindowRequest {
-    pub node_id: String,
-    pub title: String,
-    pub bounds: WindowBounds,
-}
-
-fn is_valid_node_id(node_id: &str) -> bool {
-    !node_id.is_empty()
-        && node_id
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == ':' || c == '/')
-}
-
-fn build_label(node_id: &str) -> String {
-    if node_id.starts_with(LABEL_PREFIX) {
-        node_id.to_string()
-    } else {
-        format!("{LABEL_PREFIX}{node_id}")
-    }
-}
 
 fn apply_window_chrome<'a, R: tauri::Runtime, M: Manager<R>>(
     builder: WebviewWindowBuilder<'a, R, M>,
@@ -93,85 +59,6 @@ pub fn set_window_header_height(app: AppHandle, height: u32) -> Result<(), Strin
         }
     }
     Ok(())
-}
-
-/// Creates a new external floating window for the given layout node.
-#[tauri::command]
-pub fn create_external_window(
-    app: AppHandle,
-    window: tauri::Window,
-    request: CreateExternalWindowRequest,
-) -> Result<String, String> {
-    if !is_valid_node_id(&request.node_id) {
-        let msg = format!("Invalid node id: {}", request.node_id);
-        return Err(msg);
-    }
-
-    if request.bounds.width == 0 || request.bounds.height == 0 {
-        let msg = "Window width and height must be greater than 0".to_string();
-        return Err(msg);
-    }
-
-    let label = build_label(&request.node_id);
-    let parent = window.label().to_string();
-    let url = floating_app_url(&request.node_id, &parent);
-    let init_script = floating_init_script(&request.node_id, &parent)?;
-
-    if app.get_webview_window(&label).is_some() {
-        return Err(format!("External window {label} already exists"));
-    }
-
-    let builder = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
-        .title(request.title)
-        .resizable(true)
-        .visible(true)
-        .inner_size(request.bounds.width as f64, request.bounds.height as f64)
-        .position(request.bounds.x as f64, request.bounds.y as f64)
-        .initialization_script(&init_script);
-
-    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
-    let created = apply_window_chrome(builder, true)
-        .build()
-        .map_err(|err| format!("Failed to create external window: {err}"))?;
-    #[cfg(target_os = "macos")]
-    crate::macos_chrome::align_webview(&created);
-
-    Ok(label)
-}
-
-fn floating_app_url(node_id: &str, parent: &str) -> String {
-    // Same entry as the main/workspace windows. A second HTML file plus a
-    // hash fragment 404s as a blank WebView2 on Windows; query params on
-    // index.html already work for workspace windows.
-    format!(
-        "index.html?nodeId={}&parent={}",
-        url_encode(node_id),
-        url_encode(parent)
-    )
-}
-
-fn floating_init_script(node_id: &str, parent: &str) -> Result<String, String> {
-    let payload = serde_json::json!({
-        "nodeId": node_id,
-        "parent": parent,
-    });
-    Ok(format!("window.__PRAGMA_FLOATING__ = {payload};"))
-}
-
-/// Closes an external floating window by label.
-#[tauri::command]
-pub fn close_external_window(app: AppHandle, label: String) -> Result<(), String> {
-    if !label.starts_with(LABEL_PREFIX) {
-        return Err(format!("Invalid external window label: {label}"));
-    }
-
-    let window = app
-        .get_webview_window(&label)
-        .ok_or_else(|| format!("External window {label} not found"))?;
-
-    window
-        .close()
-        .map_err(|err| format!("Failed to close external window: {err}"))
 }
 
 const WORKSPACE_LABEL_PREFIX: &str = "workspace-";
@@ -325,22 +212,6 @@ mod tests {
     #[test]
     fn url_encode_escapes_spaces_and_backslashes() {
         assert_eq!(url_encode("C:\\my proj"), "C%3A%5Cmy%20proj");
-    }
-
-    #[test]
-    fn floating_app_url_uses_index_html_query() {
-        let url = floating_app_url("floating-abc", "main");
-        assert!(url.starts_with("index.html?"));
-        assert!(!url.contains('#'));
-        assert!(url.contains("nodeId=floating-abc"));
-        assert!(url.contains("parent=main"));
-    }
-
-    #[test]
-    fn floating_init_script_json_escapes_quotes() {
-        let script = floating_init_script("id\"x", "main").unwrap();
-        let payload = serde_json::json!({ "nodeId": "id\"x", "parent": "main" }).to_string();
-        assert_eq!(script, format!("window.__PRAGMA_FLOATING__ = {payload};"));
     }
 
     #[test]

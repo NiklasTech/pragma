@@ -128,30 +128,6 @@ pub fn workspace_load(
     }
 }
 
-#[tauri::command(async)]
-pub fn workspace_delete(
-    app: tauri::AppHandle,
-    repo_path: String,
-    branch_name: String,
-) -> Result<(), String> {
-    if repo_path.is_empty() {
-        return Err("Repository path is required".to_string());
-    }
-    if branch_name.is_empty() {
-        return Err("Branch name is required".to_string());
-    }
-
-    let hash = repo_hash(&repo_path)?;
-    let key = store_key(&hash, &branch_name);
-    let store = load_store(&app)?;
-
-    store.delete(&key);
-    store
-        .save()
-        .map_err(|e| format!("failed to save store: {e}"))?;
-    Ok(())
-}
-
 mod repo_hash_inner {
     pub fn digest(input: String) -> String {
         use std::collections::hash_map::DefaultHasher;
