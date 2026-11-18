@@ -18,6 +18,7 @@ import { MCP_ROW_GRID, McpServerRow } from "./McpServerRow";
 import { mcpUsage, visibleClis } from "./tools/cliMcp";
 import { McpEmptyImport } from "./tools/McpEmptyImport";
 import { useCliMcpServers } from "./tools/useCliMcpServers";
+import { useMcpShare } from "./tools/useMcpShare";
 
 function serversEqual(a: McpServerConfig[], b: McpServerConfig[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -56,6 +57,10 @@ export function McpSettings() {
     mcp.servers,
   );
   const cli = useCliMcpServers();
+  const refreshCli = cli.refresh;
+  const { share, dialog: shareDialog } = useMcpShare(
+    React.useCallback(() => void refreshCli(), [refreshCli]),
+  );
   const cliStatuses = useAIStore((state) => state.cliStatuses);
   const usage = React.useMemo(() => mcpUsage(cli.candidates), [cli.candidates]);
   const clis = React.useMemo(() => {
@@ -255,10 +260,13 @@ export function McpSettings() {
               onShowLogs={() => setLogServerId(server.id)}
               onEdit={() => handleEdit(server)}
               onDelete={() => handleDelete(server.id)}
+              onShare={(target) => share(server, target)}
             />
           ))}
         </div>
       </SettingSection>
+
+      {shareDialog}
 
       <McpImportDialog
         open={importOpen}

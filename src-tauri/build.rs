@@ -235,6 +235,7 @@ const COMMANDS: &[&str] = &[
     "mcp_restart_server",
     "mcp_save_config",
     "mcp_set_secret",
+    "mcp_share_server",
     "mcp_start_server",
     "mcp_stop_server",
     "memory_stats",
