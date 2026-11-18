@@ -8,9 +8,15 @@ import { unlistenQuietly } from "@/shared/lib/unlisten";
 
 export type McpServerStatus = "stopped" | "starting" | "running" | "error";
 
+/** Mirrors `McpServerState` in `src-tauri/src/modules/mcp/manager.rs`. */
 export interface McpServerState {
   config: McpServerConfig;
   status: McpServerStatus;
+  /** Why the last start failed; kept until the next start. */
+  error?: string;
+  authRequired: boolean;
+  /** The last lines of the server's log, kept by the backend. */
+  log: { timestamp: string; line: string }[];
 }
 
 export interface McpStatusChangedEvent {
@@ -51,6 +57,11 @@ function statusesEqual(
   return aKeys.every((k) => a[k] === b[k]);
 }
 
+function recordsEqual<T>(a: Record<string, T>, b: Record<string, T>): boolean {
+  const aKeys = Object.keys(a);
+  return aKeys.length === Object.keys(b).length && aKeys.every((k) => a[k] === b[k]);
+}
+
 function toolsEqual(a: Record<string, McpTool[]>, b: Record<string, McpTool[]>): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -60,16 +71,35 @@ export function useMcpServers() {
   const [tools, setTools] = useState<Record<string, McpTool[]>>({});
   const [logs, setLogs] = useState<Record<string, McpLogEvent[]>>({});
   const [authRequired, setAuthRequired] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const result = await invoke<McpServerState[]>("mcp_list_servers");
       const next: Record<string, McpServerStatus> = {};
+      const nextAuth: Record<string, boolean> = {};
+      const nextErrors: Record<string, string> = {};
       for (const server of result) {
         next[server.config.id] = server.status;
+        nextAuth[server.config.id] = server.authRequired;
+        if (server.error) nextErrors[server.config.id] = server.error;
       }
       setStatuses((prev) => (statusesEqual(prev, next) ? prev : next));
+      setAuthRequired((prev) => (recordsEqual(prev, nextAuth) ? prev : nextAuth));
+      setErrors((prev) => (recordsEqual(prev, nextErrors) ? prev : nextErrors));
+      // Lines from before this view opened come from the backend; later ones arrive as events.
+      setLogs((prev) => {
+        let changed = false;
+        const seeded = { ...prev };
+        for (const server of result) {
+          const id = server.config.id;
+          if ((prev[id]?.length ?? 0) > 0 || server.log.length === 0) continue;
+          seeded[id] = server.log.map((entry) => ({ server_id: id, ...entry }));
+          changed = true;
+        }
+        return changed ? seeded : prev;
+      });
     } catch {}
   }, []);
 
@@ -105,6 +135,13 @@ export function useMcpServers() {
     } catch {}
   }, []);
 
+  const loadServerTools = useCallback(async (id: string) => {
+    try {
+      const result = await invoke<McpTool[]>("mcp_list_tools", { id });
+      setTools((prev) => ({ ...prev, [id]: result }));
+    } catch {}
+  }, []);
+
   const clearLogs = useCallback((id: string) => {
     setLogs((prev) => ({ ...prev, [id]: [] }));
   }, []);
@@ -122,14 +159,17 @@ export function useMcpServers() {
 
     void (async () => {
       unlistenStatus = await listen<McpStatusChangedEvent>("mcp_status_changed", (event) => {
-        setStatuses((prev) => ({
-          ...prev,
-          [event.payload.server_id]: event.payload.status,
-        }));
+        const { server_id, status, error } = event.payload;
+        setStatuses((prev) => ({ ...prev, [server_id]: status }));
         setAuthRequired((prev) => ({
           ...prev,
-          [event.payload.server_id]: event.payload.auth_required ?? false,
+          [server_id]: event.payload.auth_required ?? false,
         }));
+        setErrors((prev) => {
+          const { [server_id]: _old, ...rest } = prev;
+          return status === "error" ? { ...rest, [server_id]: error ?? "failed" } : rest;
+        });
+        if (status === "running") void loadServerTools(server_id);
       });
       if (!active) {
         void unlistenQuietly(unlistenStatus);
@@ -184,7 +224,7 @@ export function useMcpServers() {
       void unlistenQuietly(unlistenLog);
       void unlistenQuietly(unlistenNotification);
     };
-  }, [load]);
+  }, [load, loadServerTools]);
 
   useEffect(() => {
     if (Object.keys(statuses).length === 0) return;
@@ -197,6 +237,7 @@ export function useMcpServers() {
     tools,
     logs,
     authRequired,
+    errors,
     loading,
     load,
     loadTools,

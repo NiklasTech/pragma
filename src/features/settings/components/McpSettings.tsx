@@ -34,6 +34,7 @@ export function McpSettings() {
     tools,
     logs,
     authRequired,
+    errors,
     loading: statusLoading,
     load,
     startServer,
@@ -211,6 +212,7 @@ export function McpSettings() {
               tools={tools[server.id] ?? []}
               logCount={(logs[server.id] ?? []).length}
               authRequired={authRequired[server.id] ?? false}
+              error={errors[server.id]}
               missingSecrets={missingSecrets[server.id]}
               onStart={() => startServer(server.id)}
               onStop={() => stopServer(server.id)}

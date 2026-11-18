@@ -43,6 +43,8 @@ interface McpServerRowProps {
   tools: McpTool[];
   logCount: number;
   authRequired: boolean;
+  /** Why the last start failed. */
+  error: string | undefined;
   missingSecrets: string[] | undefined;
   onStart: () => void;
   onStop: () => void;
@@ -58,6 +60,7 @@ export function McpServerRow({
   tools,
   logCount,
   authRequired,
+  error,
   missingSecrets,
   onStart,
   onStop,
@@ -98,6 +101,9 @@ export function McpServerRow({
               ? server.url
               : `${server.command} ${server.args.join(" ")}`}
           </code>
+          {status === "error" && error && (
+            <span className="text-ui-xs break-words text-status-error">{error}</span>
+          )}
           <McpServerTools tools={tools} />
         </div>
       </div>

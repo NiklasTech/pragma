@@ -78,6 +78,11 @@ pub enum McpError {
     /// The server answered 401; holds its `WWW-Authenticate` header.
     AuthRequired(String),
     OAuth(String),
+    /// A local server ended before the handshake; holds what it wrote to stderr.
+    StartFailed {
+        message: String,
+        stderr: Vec<String>,
+    },
 }
 
 impl McpError {
@@ -115,6 +120,12 @@ impl fmt::Display for McpError {
                 )
             }
             McpError::OAuth(msg) => write!(f, "MCP authorization failed: {msg}"),
+            McpError::StartFailed { message, stderr } => {
+                match stderr.iter().rev().find(|line| !line.trim().is_empty()) {
+                    Some(line) => write!(f, "{} ({message})", line.trim()),
+                    None => write!(f, "{message}"),
+                }
+            }
         }
     }
 }
@@ -140,3 +151,28 @@ impl From<McpError> for String {
 }
 
 pub type Result<T> = std::result::Result<T, McpError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_failed_start_names_the_last_stderr_line() {
+        let err = McpError::StartFailed {
+            message: "connection closed".to_string(),
+            stderr: vec![
+                "Error: connect ECONNREFUSED 127.0.0.1:5432".to_string(),
+                "  ".to_string(),
+            ],
+        };
+        assert_eq!(
+            err.to_string(),
+            "Error: connect ECONNREFUSED 127.0.0.1:5432 (connection closed)"
+        );
+        let silent = McpError::StartFailed {
+            message: "connection closed".to_string(),
+            stderr: Vec::new(),
+        };
+        assert_eq!(silent.to_string(), "connection closed");
+    }
+}

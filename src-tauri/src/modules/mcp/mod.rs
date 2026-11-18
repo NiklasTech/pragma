@@ -2,6 +2,7 @@ pub mod cli_configs;
 pub mod client;
 pub mod connection;
 pub mod error;
+pub mod history;
 pub mod http;
 pub mod import;
 pub mod manager;
