@@ -13,6 +13,7 @@ import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useTheme } from "@/theme";
+import { useReducedMotion } from "@/theme/useReducedMotion";
 import { loadRenderAddons } from "@/features/terminal/terminalAddons";
 
 import { sessionCwd } from "../worktree/cwd";
@@ -65,6 +66,11 @@ export function TerminalPane({ session }: TerminalPaneProps) {
   );
   const dictateBindingRef = useRef(dictateBinding);
   dictateBindingRef.current = dictateBinding;
+  const reducedMotion = useReducedMotion();
+  const blinkSetting = useSettingsStore((state) => state.terminal.cursorBlink);
+  const cursorBlink = blinkSetting && !reducedMotion;
+  const cursorBlinkRef = useRef(cursorBlink);
+  cursorBlinkRef.current = cursorBlink;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -77,7 +83,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     const term = new XTerm({
       fontSize,
       fontFamily: `${terminalFontFamily}, Consolas, Courier New, monospace`,
-      cursorBlink: true,
+      cursorBlink: cursorBlinkRef.current,
       cursorStyle: "block",
       convertEol: true,
       scrollback,
@@ -175,6 +181,10 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     });
     return () => cancelAnimationFrame(frame);
   }, [themeId, resolvedMode, terminalThemeId]);
+
+  useEffect(() => {
+    if (termRef.current) termRef.current.options.cursorBlink = cursorBlink;
+  }, [cursorBlink]);
 
   return (
     <div

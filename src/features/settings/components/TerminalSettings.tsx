@@ -60,7 +60,7 @@ export function TerminalSettings() {
 
       <SettingSection title="Appearance">
         <div className="grid grid-cols-2 gap-3 py-3">
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <label className="flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Font Size</span>
             <Input
               type="number"
@@ -69,8 +69,8 @@ export function TerminalSettings() {
               value={terminal.fontSize}
               onChange={(e) => update({ fontSize: Number(e.target.value) })}
             />
-          </div>
-          <div className="flex min-w-0 flex-col gap-1.5">
+          </label>
+          <label className="flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Scrollback</span>
             <Input
               type="number"
@@ -83,8 +83,8 @@ export function TerminalSettings() {
                 update({ scrollback: Number.isNaN(value) ? 10000 : value });
               }}
             />
-          </div>
-          <div className="flex min-w-0 flex-col gap-1.5">
+          </label>
+          <label className="flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Line Height</span>
             <Input
               type="number"
@@ -97,7 +97,7 @@ export function TerminalSettings() {
                 update({ lineHeight: Number.isNaN(value) ? 1 : value });
               }}
             />
-          </div>
+          </label>
           <div className="col-span-full flex min-w-0 flex-col gap-1.5">
             <span className="text-ui-sm text-fg-default">Font Family</span>
             <FontSelect

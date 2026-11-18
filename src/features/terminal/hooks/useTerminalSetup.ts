@@ -23,6 +23,7 @@ import { replayWithoutReplies } from "../replayOutput";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 import { TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
+import { isMotionReduced } from "@/theme/useReducedMotion";
 
 interface TerminalSetupOptions {
   session: TerminalSessionType;
@@ -83,7 +84,7 @@ export function useTerminalSetup({
         fontSize,
         fontFamily: `${terminalFontFamily}, Consolas, Courier New, monospace`,
         lineHeight,
-        cursorBlink,
+        cursorBlink: cursorBlink && !isMotionReduced(),
         cursorStyle,
         convertEol: true,
         scrollback,

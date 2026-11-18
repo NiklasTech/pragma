@@ -2,11 +2,14 @@ import { useEffect } from "react";
 import type { Terminal as XTerm } from "@xterm/xterm";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { useReducedMotion } from "@/theme/useReducedMotion";
 
 /** Applies the cursor settings to a live terminal without recreating it. */
 export function useTerminalCursor(term: XTerm | null) {
   const cursorStyle = useSettingsStore((s) => s.terminal.cursorStyle);
-  const cursorBlink = useSettingsStore((s) => s.terminal.cursorBlink);
+  const blinkSetting = useSettingsStore((s) => s.terminal.cursorBlink);
+  const reducedMotion = useReducedMotion();
+  const cursorBlink = blinkSetting && !reducedMotion;
 
   useEffect(() => {
     if (!term) return;

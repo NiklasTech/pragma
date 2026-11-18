@@ -42,6 +42,7 @@ export function ApiKeyRow({
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
+                aria-label={label}
                 type={showKey ? "text" : "password"}
                 value={value}
                 onChange={(e) => onValueChange(e.target.value)}
@@ -63,11 +64,16 @@ export function ApiKeyRow({
                 {showKey ? <EyeSlash size={14} /> : <Eye size={14} />}
               </Button>
             </div>
-            <Button size="sm" onClick={onSave} disabled={!value.trim()}>
+            <Button size="sm" aria-label="Save API key" onClick={onSave} disabled={!value.trim()}>
               <FloppyDisk size={14} />
             </Button>
             {apiKeyRef && (
-              <Button size="sm" variant="destructive" onClick={onDelete}>
+              <Button
+                size="sm"
+                variant="destructive"
+                aria-label="Delete API key"
+                onClick={onDelete}
+              >
                 <Trash size={14} />
               </Button>
             )}

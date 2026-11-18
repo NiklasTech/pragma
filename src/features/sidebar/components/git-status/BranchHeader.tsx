@@ -211,6 +211,7 @@ export function BranchHeader({
                   size="icon"
                   variant="ghost"
                   className="size-7"
+                  aria-label="Create branch"
                   onClick={handleCreate}
                   disabled={!newBranchName.trim() || actionBusy === "create-branch"}
                 >
@@ -224,6 +225,7 @@ export function BranchHeader({
                   size="icon"
                   variant="ghost"
                   className="size-7"
+                  aria-label="Cancel new branch"
                   onClick={() => {
                     setCreating(false);
                     setNewBranchName("");
