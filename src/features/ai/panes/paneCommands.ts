@@ -21,6 +21,7 @@ const PANE_SHORTCUTS: ShortcutActionId[] = [
   "pane.toggleZoom",
   "pane.splitRight",
   "pane.splitDown",
+  "view.focusCommandLine",
   ...TAB_SELECT_SHORTCUTS,
 ];
 

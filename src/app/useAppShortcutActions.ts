@@ -33,6 +33,7 @@ import {
 import { reopenClosedTab } from "@/features/editor/reopenClosedTab";
 import { leaveAgentsForTerminal, toggleTerminalFromShortcut } from "./terminalShortcuts";
 import { tabSelectActions } from "./tabShortcuts";
+import { focusCommandLine } from "@/shell/chrome/commandLine/CommandLine";
 
 function inAgentsTab(): boolean {
   const { uiMode } = useUiModeStore.getState();
@@ -187,6 +188,7 @@ export function useAppShortcutActions(): ShortcutActions {
         cycleTab(-1);
       },
       ...tabSelectActions(),
+      "view.focusCommandLine": () => focusCommandLine(),
       "view.splitEditor": () => {
         if (editorPanelId) {
           useLayoutStore.getState().splitPanel(editorPanelId, "horizontal", "editor");

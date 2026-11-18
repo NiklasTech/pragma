@@ -52,6 +52,7 @@ import { Conversation, ConversationContent, ConversationScrollButton } from "./C
 import { Message, MessageContent } from "./Message";
 import { SourceBlock } from "./SourceBlock";
 import { WorkingIndicator } from "./WorkingIndicator";
+import { useCommandLineDelivery } from "@/shell/chrome/commandLine/delivery";
 
 export interface ChatPanelProps {
   hideHeader?: boolean;
@@ -225,6 +226,15 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     },
     [composerImages, enqueue, inFlight, input, setInput, submitText],
   );
+
+  const sendFromCommandLine = useCallback(
+    (text: string) => {
+      if (inFlight) enqueue(text);
+      else void submitText(text, []);
+    },
+    [enqueue, inFlight, submitText],
+  );
+  useCommandLineDelivery(activeChatSessionId, sendFromCommandLine);
 
   const streamingMessageId =
     status === "streaming" && messages[messages.length - 1]?.role === "assistant"
