@@ -4,18 +4,6 @@ import { accentTints } from "./palette";
 import { resolveValue } from "./tokenResolution";
 import type { Theme } from "./types";
 
-export const ACCENT_PRESETS = [
-  "#2f9bff",
-  "#6e7bf2",
-  "#a78bfa",
-  "#f472b6",
-  "#f87171",
-  "#fb923c",
-  "#facc15",
-  "#4ade80",
-  "#2dd4bf",
-];
-
 const TEXT_ON_ACCENT = 4.5;
 const ACCENT_ON_BACKGROUND = 3;
 

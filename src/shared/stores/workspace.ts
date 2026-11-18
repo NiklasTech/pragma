@@ -210,16 +210,3 @@ export async function loadWorkspace(
     return { success: false, error: String(err) };
   }
 }
-
-export async function hasWorkspace(repoPath: string, branchName: string): Promise<boolean> {
-  if (!repoPath || !branchName) return false;
-  try {
-    const data = await invoke<WorkspaceData | null>("workspace_load", {
-      repoPath,
-      branchName,
-    });
-    return data !== null;
-  } catch {
-    return false;
-  }
-}

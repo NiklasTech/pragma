@@ -19,10 +19,6 @@ export interface ExtensionKeybindingContribution {
   mac?: string;
 }
 
-export interface ExtensionThemePathContribution {
-  path: string;
-}
-
 export type ExtensionThemeContribution = unknown;
 
 export interface ExtensionContributes {
@@ -82,10 +78,4 @@ export interface BridgeResponse {
   ok: boolean;
   result?: unknown;
   error?: string;
-}
-
-export interface BridgeEvent {
-  kind: "event";
-  event: string;
-  data?: unknown;
 }

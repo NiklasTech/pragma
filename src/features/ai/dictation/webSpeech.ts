@@ -47,14 +47,6 @@ export const VOICE_INPUT_DENIED = "Microphone access was denied.";
 export const VOICE_INPUT_NO_MICROPHONE = "No microphone was found.";
 export const VOICE_INPUT_NO_SPEECH = "No speech was detected.";
 
-export function isSpeechRecognitionSupported(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  const speech = window as SpeechRecognitionWindow;
-  return Boolean(speech.SpeechRecognition ?? speech.webkitSpeechRecognition);
-}
-
 export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") {
     return null;

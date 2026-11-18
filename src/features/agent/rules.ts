@@ -16,13 +16,6 @@ interface FileReadResult {
   content: string;
 }
 
-export function selectRulesFile(present: readonly string[]): string | null {
-  for (const name of RULES_FILENAMES) {
-    if (present.includes(name)) return name;
-  }
-  return null;
-}
-
 export function truncateRulesContent(source: string): { content: string; truncated: boolean } {
   if (source.length <= CHAR_CAP) return { content: source, truncated: false };
   return {

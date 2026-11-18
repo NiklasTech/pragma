@@ -96,12 +96,6 @@ export function capAutoContextSections(
   };
 }
 
-export interface ReadChatContextRequest {
-  root_path: string;
-  paths: string[];
-  max_tokens?: number;
-}
-
 const MENTION_REGEX = /@(\S+)/g;
 
 export function parseMentions(input: string): string[] {

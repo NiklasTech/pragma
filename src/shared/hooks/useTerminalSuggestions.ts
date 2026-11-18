@@ -14,12 +14,6 @@ const DEBOUNCE_MS = 300;
 const MAX_OUTPUT_LEN = 1000;
 const MAX_PROMPT_LEN = 512;
 
-export interface SuggestionContext {
-  cwd: string | null;
-  language: string | null;
-  lastOutput: string;
-}
-
 export interface UseTerminalSuggestionsOptions {
   term: XTerm | null;
   ptyId: string | null;

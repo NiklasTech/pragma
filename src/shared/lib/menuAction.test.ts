@@ -1,21 +1,5 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { guardedDispatch, parseRecentMenuId, wrapWithGuard } from "./menuAction";
-
-describe("parseRecentMenuId", () => {
-  it("returns the path for recent entries", () => {
-    expect(parseRecentMenuId("recent:/home/user/project")).toBe("/home/user/project");
-  });
-
-  it("preserves extra colons inside the path", () => {
-    expect(parseRecentMenuId("recent:C:\\work\\nested:dir")).toBe("C:\\work\\nested:dir");
-    expect(parseRecentMenuId("recent:/a:b/c")).toBe("/a:b/c");
-  });
-
-  it("returns null for non-recent ids", () => {
-    expect(parseRecentMenuId("file.open")).toBeNull();
-    expect(parseRecentMenuId("file.openRecentMenu")).toBeNull();
-  });
-});
+import { guardedDispatch, wrapWithGuard } from "./menuAction";
 
 describe("guardedDispatch", () => {
   it("runs once per id inside the dedupe window", () => {

@@ -10,29 +10,11 @@ import {
   formatRulesForPrompt,
   formatRulesSize,
   loadProjectRules,
-  selectRulesFile,
   truncateRulesContent,
 } from "./rules";
 import { PRAGMA_MD_TEMPLATE, pragmaRulesPath } from "./rulesTemplate";
 
-describe("selectRulesFile", () => {
-  it("prefers PRAGMA.md over the others", () => {
-    expect(selectRulesFile(["CLAUDE.md", "AGENTS.md", "PRAGMA.md"])).toBe("PRAGMA.md");
-  });
-
-  it("falls back to AGENTS.md when PRAGMA.md is absent", () => {
-    expect(selectRulesFile(["CLAUDE.md", "AGENTS.md"])).toBe("AGENTS.md");
-  });
-
-  it("falls back to CLAUDE.md when only it is present", () => {
-    expect(selectRulesFile(["CLAUDE.md"])).toBe("CLAUDE.md");
-  });
-
-  it("returns null when none are present", () => {
-    expect(selectRulesFile(["README.md", "notes.txt"])).toBeNull();
-    expect(selectRulesFile([])).toBeNull();
-  });
-
+describe("RULES_FILENAMES", () => {
   it("exposes the canonical discovery order", () => {
     expect(RULES_FILENAMES).toEqual(["PRAGMA.md", "AGENTS.md", "CLAUDE.md"]);
   });

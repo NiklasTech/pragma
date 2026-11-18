@@ -29,7 +29,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        floating: path.resolve(__dirname, "floating.html"),
       },
     },
   },
