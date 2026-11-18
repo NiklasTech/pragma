@@ -848,7 +848,7 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
   {
     id: "mcp-servers",
     keys: ["mcp.servers"],
-    label: "Servers",
+    label: "MCP servers",
     searchLabel: "MCP Servers",
     description: "Model Context Protocol servers agents can use as tools",
     keywords: "mcp servers model context protocol tools",

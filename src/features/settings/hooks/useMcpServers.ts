@@ -88,13 +88,14 @@ export function useMcpServers() {
       setStatuses((prev) => (statusesEqual(prev, next) ? prev : next));
       setAuthRequired((prev) => (recordsEqual(prev, nextAuth) ? prev : nextAuth));
       setErrors((prev) => (recordsEqual(prev, nextErrors) ? prev : nextErrors));
-      // Lines from before this view opened come from the backend; later ones arrive as events.
+      // The backend keeps starts, failures and lines from before this view opened; take its
+      // tail while it holds more than the events that arrived here.
       setLogs((prev) => {
         let changed = false;
         const seeded = { ...prev };
         for (const server of result) {
           const id = server.config.id;
-          if ((prev[id]?.length ?? 0) > 0 || server.log.length === 0) continue;
+          if (server.log.length <= (prev[id]?.length ?? 0)) continue;
           seeded[id] = server.log.map((entry) => ({ server_id: id, ...entry }));
           changed = true;
         }
