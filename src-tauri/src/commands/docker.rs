@@ -51,15 +51,6 @@ pub struct RuntimeInfoRequest {
     pub workspace_root: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ComposeBranchCheckRequest {
-    pub repo_path: String,
-    pub workspace_root: String,
-    pub source_branch: String,
-    pub target_branch: String,
-}
-
 // ─── Helpers ────────────────────────────────────────────────
 
 fn docker_client() -> Result<Docker, String> {
@@ -443,28 +434,6 @@ pub async fn docker_compose_restart(req: ComposeActionRequest) -> Result<(), Str
         return Err("Docker/Podman is not available".to_string());
     }
     run_compose(&req.workspace_root, &info.binary_path, "restart", &[]).map(|_| ())
-}
-
-#[tauri::command]
-pub async fn docker_compose_changed_between_branches(
-    req: ComposeBranchCheckRequest,
-) -> Result<bool, String> {
-    if req.repo_path.is_empty() {
-        return Err("Repository path is required".to_string());
-    }
-    if req.workspace_root.is_empty() {
-        return Err("Workspace root is required".to_string());
-    }
-    if req.source_branch.is_empty() || req.target_branch.is_empty() {
-        return Err("Source and target branch names are required".to_string());
-    }
-    crate::modules::git::operations::compose_file_changed_between_branches(
-        &req.repo_path,
-        &req.workspace_root,
-        &req.source_branch,
-        &req.target_branch,
-    )
-    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -125,34 +125,3 @@ pub fn push(repo_root: &str) -> Result<GitPushResult> {
 
     Ok(GitPushResult { pushed: true })
 }
-
-pub fn remote_url(repo_root: &str, name: &str) -> Result<Option<String>> {
-    let repo_root = authorized_repo_root(repo_root)?;
-    ensure_git_available()?;
-    if name.is_empty() || name.len() > 64 || !name.chars().all(is_remote_name_char) {
-        return Ok(None);
-    }
-    git_stdout_line_opt(
-        &repo_root.to_string_lossy(),
-        ["config", "--get", &format!("remote.{name}.url")],
-    )
-}
-
-fn is_remote_name_char(c: char) -> bool {
-    c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn is_remote_name_char_allows_word_and_punct() {
-        for c in "abcXYZ012-_.".chars() {
-            assert!(is_remote_name_char(c));
-        }
-        for c in " /:\\?\"'".chars() {
-            assert!(!is_remote_name_char(c));
-        }
-    }
-}

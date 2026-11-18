@@ -202,51 +202,6 @@ pub fn local_history_restore(
     Ok(())
 }
 
-#[tauri::command(async)]
-pub fn local_history_delete_older_than(
-    app: tauri::AppHandle,
-    file_path: String,
-    days: u32,
-) -> Result<(), String> {
-    if file_path.is_empty() {
-        return Err("File path is required".to_string());
-    }
-
-    let app_data_dir = resolve_app_data_dir(&app)?;
-    let repo_path = resolve_repo_path(&file_path)?;
-
-    let mut snapshots = get_all_snapshots(&app_data_dir, &repo_path, &file_path)?;
-    let cutoff = chrono::Utc::now() - chrono::Duration::days(days as i64);
-
-    snapshots.retain(|s| s.timestamp >= cutoff);
-
-    let hash = {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-        let mut hasher = DefaultHasher::new();
-        file_path.hash(&mut hasher);
-        format!("{:016x}", hasher.finish())
-    };
-
-    let dir = app_data_dir
-        .join("history")
-        .join({
-            use std::collections::hash_map::DefaultHasher;
-            use std::hash::{Hash, Hasher};
-            let mut hasher = DefaultHasher::new();
-            repo_path.hash(&mut hasher);
-            format!("{:016x}", hasher.finish())
-        })
-        .join(&hash);
-
-    let meta_file = dir.join("meta.json");
-    let meta_json = serde_json::to_string_pretty(&snapshots)
-        .map_err(|e| format!("Failed to serialize meta: {e}"))?;
-    std::fs::write(&meta_file, meta_json).map_err(|e| format!("Failed to write meta file: {e}"))?;
-
-    Ok(())
-}
-
 /// Snapshot the current on-disk content of a file into Local History.
 /// Used by Agent Mode to create a checkpoint before the first agent write.
 #[tauri::command(async)]
