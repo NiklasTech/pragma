@@ -1,6 +1,7 @@
 use crate::modules::mcp::client::Notification;
 use crate::modules::mcp::connection::{McpConnection, McpServerCapabilities};
 use crate::modules::mcp::error::McpError;
+use crate::modules::mcp::history::{McpLogLine, McpServerHistory};
 use crate::modules::mcp::start::connect;
 use crate::modules::mcp::tools::{call_tool, list_tools, McpTool, McpToolCallResult};
 use crate::modules::mcp::{
@@ -29,9 +30,15 @@ pub enum McpServerStatus {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct McpServerState {
     pub config: McpServerConfig,
     pub status: McpServerStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    pub auth_required: bool,
+    /// The last lines the server wrote to stderr, with its starts and failures.
+    pub log: Vec<McpLogLine>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -87,6 +94,8 @@ pub struct McpManager {
     servers: Mutex<HashMap<String, RunningServer>>,
     tools: Mutex<HashMap<String, Vec<McpTool>>>,
     config: Mutex<Vec<McpServerConfig>>,
+    /// Never held across an await, so status events can record into it synchronously.
+    history: std::sync::Mutex<HashMap<String, McpServerHistory>>,
     watcher: Mutex<RecommendedWatcher>,
     watcher_rx: Mutex<mpsc::Receiver<()>>,
 }
@@ -115,6 +124,7 @@ impl McpManager {
             servers: Mutex::new(HashMap::new()),
             tools: Mutex::new(HashMap::new()),
             config: Mutex::new(Vec::new()),
+            history: std::sync::Mutex::new(HashMap::new()),
             watcher: Mutex::new(watcher),
             watcher_rx: Mutex::new(watcher_rx),
         };
@@ -192,6 +202,9 @@ impl McpManager {
                 tools.keys().cloned().collect()
             };
             let new_ids: HashSet<String> = new_config.iter().map(|c| c.id.clone()).collect();
+            if let Ok(mut history) = self.history.lock() {
+                history.retain(|id, _| new_ids.contains(id));
+            }
             let mut tools = self.tools.lock().await;
             for id in previous_ids {
                 if !new_ids.contains(&id) {
@@ -216,14 +229,31 @@ impl McpManager {
             statuses.insert(id.clone(), *server.status.lock().await);
         }
 
+        let history = self
+            .history
+            .lock()
+            .map(|history| history.clone())
+            .unwrap_or_default();
         configs
             .into_iter()
             .map(|c| {
+                let past = history.get(&c.id).cloned().unwrap_or_default();
+                // A server that failed to connect never reaches `servers`; its error still counts.
                 let status = statuses
                     .get(&c.id)
                     .copied()
-                    .unwrap_or(McpServerStatus::Stopped);
-                McpServerState { config: c, status }
+                    .unwrap_or(if past.error.is_some() {
+                        McpServerStatus::Error
+                    } else {
+                        McpServerStatus::Stopped
+                    });
+                McpServerState {
+                    config: c,
+                    status,
+                    error: past.error,
+                    auth_required: past.auth_required,
+                    log: past.log.into_iter().collect(),
+                }
             })
             .collect()
     }
@@ -288,6 +318,20 @@ impl McpManager {
         let connected = match connect(config).await {
             Ok(connected) => connected,
             Err(err) => {
+                if let McpError::StartFailed { stderr, .. } = &err {
+                    for line in stderr {
+                        let timestamp = chrono::Utc::now().to_rfc3339();
+                        self.record_line(&config.id, timestamp.clone(), line.clone());
+                        let _ = self.app_handle.emit(
+                            "mcp_log",
+                            McpLogEvent {
+                                server_id: config.id.clone(),
+                                timestamp,
+                                line: line.clone(),
+                            },
+                        );
+                    }
+                }
                 let auth_required = matches!(err, McpError::AuthRequired(_));
                 self.emit(
                     &config.id,
@@ -461,6 +505,9 @@ impl McpManager {
             *s = new_status;
         }
 
+        if let Some(manager) = app_handle.try_state::<McpManager>() {
+            manager.record_status(&id, new_status, error.as_deref(), false);
+        }
         let _ = app_handle.emit(
             "mcp_status_changed",
             McpStatusEvent {
@@ -507,9 +554,13 @@ impl McpManager {
         mut rx: mpsc::UnboundedReceiver<String>,
     ) {
         while let Some(line) = rx.recv().await {
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            if let Some(manager) = app_handle.try_state::<McpManager>() {
+                manager.record_line(&id, timestamp.clone(), line.clone());
+            }
             let event = McpLogEvent {
                 server_id: id.clone(),
-                timestamp: chrono::Utc::now().to_rfc3339(),
+                timestamp,
                 line,
             };
             let _ = app_handle.emit("mcp_log", event);
@@ -520,7 +571,34 @@ impl McpManager {
         self.emit(id, status, error, false);
     }
 
+    fn record_status(
+        &self,
+        id: &str,
+        status: McpServerStatus,
+        error: Option<&str>,
+        auth_required: bool,
+    ) {
+        if let Ok(mut history) = self.history.lock() {
+            history.entry(id.to_string()).or_default().record_status(
+                status,
+                error,
+                auth_required,
+                chrono::Utc::now().to_rfc3339(),
+            );
+        }
+    }
+
+    fn record_line(&self, id: &str, timestamp: String, line: String) {
+        if let Ok(mut history) = self.history.lock() {
+            history
+                .entry(id.to_string())
+                .or_default()
+                .push_line(timestamp, line);
+        }
+    }
+
     fn emit(&self, id: &str, status: McpServerStatus, error: Option<String>, auth_required: bool) {
+        self.record_status(id, status, error.as_deref(), auth_required);
         let _ = self.app_handle.emit(
             "mcp_status_changed",
             McpStatusEvent {

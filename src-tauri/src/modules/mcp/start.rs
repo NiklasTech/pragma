@@ -9,6 +9,22 @@ use tokio::process::Child;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
+const MAX_STDERR_LINES: usize = 50;
+const STDERR_WAIT_MS: u64 = 300;
+
+/// What a server that ended early wrote to stderr, waiting briefly for the reader to finish.
+async fn drain_stderr(stderr: &mut mpsc::UnboundedReceiver<String>) -> Vec<String> {
+    let mut lines = Vec::new();
+    let wait = std::time::Duration::from_millis(STDERR_WAIT_MS);
+    while let Ok(Some(line)) = tokio::time::timeout(wait, stderr.recv()).await {
+        lines.push(line);
+        if lines.len() > MAX_STDERR_LINES {
+            lines.remove(0);
+        }
+    }
+    lines
+}
+
 pub(super) struct Connected {
     pub(super) connection: McpConnection,
     pub(super) capabilities: McpServerCapabilities,
@@ -25,7 +41,7 @@ async fn connect_stdio(config: &McpServerConfig) -> Result<Connected> {
             config.name
         )));
     }
-    let (client, mut child, notifications, stderr) = McpClient::start(McpClientConfig {
+    let (client, mut child, notifications, mut stderr) = McpClient::start(McpClientConfig {
         command: config.command.clone(),
         args: config.args.clone(),
         env: secrets::resolve_env(config)?,
@@ -37,7 +53,10 @@ async fn connect_stdio(config: &McpServerConfig) -> Result<Connected> {
         Ok(capabilities) => capabilities,
         Err(err) => {
             let _ = child.start_kill();
-            return Err(err);
+            return Err(McpError::StartFailed {
+                message: err.to_string(),
+                stderr: drain_stderr(&mut stderr).await,
+            });
         }
     };
     Ok(Connected {
@@ -108,5 +127,22 @@ pub(super) async fn connect(config: &McpServerConfig) -> Result<Connected> {
     match config.transport {
         McpTransport::Stdio => connect_stdio(config).await,
         McpTransport::Http => connect_http(config).await,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn drains_the_lines_a_closed_reader_left() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        for n in 0..(MAX_STDERR_LINES + 3) {
+            tx.send(format!("line {n}")).unwrap();
+        }
+        drop(tx);
+        let lines = drain_stderr(&mut rx).await;
+        assert_eq!(lines.len(), MAX_STDERR_LINES);
+        assert_eq!(lines.last().map(String::as_str), Some("line 52"));
     }
 }
