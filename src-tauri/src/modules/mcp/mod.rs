@@ -1,3 +1,4 @@
+pub mod cli_configs;
 pub mod client;
 pub mod connection;
 pub mod error;
