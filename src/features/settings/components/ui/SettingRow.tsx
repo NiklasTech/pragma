@@ -1,8 +1,9 @@
 "use client";
 
-import { useContext } from "react";
+import { useContext, useId } from "react";
 
 import { Button } from "@/shared/components/ui/button";
+import { FieldLabelContext } from "@/shared/components/ui/field-label";
 import { cn } from "@/shared/lib/utils";
 import { useSettingsStore } from "@/shared/stores/settings";
 
@@ -20,6 +21,8 @@ export function SettingRow({ label, description, control, disabled }: SettingRow
   const area = useContext(SettingsAreaContext);
   const setting = area ? findSetting(label, area) : undefined;
   const changed = useSettingsStore((state) => (setting ? isChanged(setting, state) : false));
+  const labelId = useId();
+  const descriptionId = useId();
 
   return (
     <div
@@ -37,9 +40,13 @@ export function SettingRow({ label, description, control, disabled }: SettingRow
         />
       )}
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[13px] font-medium text-fg-default">{label}</span>
+        <span id={labelId} className="text-[13px] font-medium text-fg-default">
+          {label}
+        </span>
         {description && (
-          <span className="text-ui-xs leading-snug text-fg-subtle">{description}</span>
+          <span id={descriptionId} className="text-ui-xs leading-snug text-fg-subtle">
+            {description}
+          </span>
         )}
         {changed && setting && (
           <span className="flex items-center gap-1.5 font-mono text-ui-2xs">
@@ -59,7 +66,13 @@ export function SettingRow({ label, description, control, disabled }: SettingRow
           </span>
         )}
       </div>
-      <div className="shrink-0">{control}</div>
+      <div className="shrink-0">
+        <FieldLabelContext.Provider
+          value={{ labelId, descriptionId: description ? descriptionId : undefined }}
+        >
+          {control}
+        </FieldLabelContext.Provider>
+      </div>
     </div>
   );
 }

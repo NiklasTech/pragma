@@ -115,6 +115,7 @@ export function ProviderFields({
           control={
             <div className="flex max-w-[280px] flex-col gap-1">
               <Input
+                aria-label="Base URL"
                 value={baseUrl ?? ""}
                 onChange={(e) => onBaseUrlChange(e.target.value)}
                 placeholder={

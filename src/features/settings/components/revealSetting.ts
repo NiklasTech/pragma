@@ -1,3 +1,5 @@
+import { isMotionReduced } from "@/theme/useReducedMotion";
+
 const HIGHLIGHT_CLASS = "bg-accent-subtle";
 const HIGHLIGHT_MS = 1600;
 // Pages render lazily, so the target is looked for over a few frames.
@@ -38,8 +40,7 @@ export function revealSetting(root: HTMLElement, target: string): () => void {
       return;
     }
     const row = label.closest<HTMLElement>("[data-setting-row]") ?? label.parentElement ?? label;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    row.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+    row.scrollIntoView({ block: "center", behavior: isMotionReduced() ? "auto" : "smooth" });
     row.classList.add("rounded-md", "transition-colors", HIGHLIGHT_CLASS);
     timer = setTimeout(() => row.classList.remove(HIGHLIGHT_CLASS), HIGHLIGHT_MS);
   };

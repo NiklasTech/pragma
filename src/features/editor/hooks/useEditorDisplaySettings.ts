@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { EditorView } from "@codemirror/view";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { useReducedMotion } from "@/theme/useReducedMotion";
 import {
   bracketColorsCompartment,
   cursorCompartment,
@@ -40,7 +41,9 @@ export function useEditorDisplaySettings(view: EditorView | null): void {
   const indentGuides = useSettingsStore((state) => state.editor.indentGuides);
   const bracketColors = useSettingsStore((state) => state.editor.bracketPairColorization);
   const cursorStyle = useSettingsStore((state) => state.editor.cursorStyle);
-  const cursorBlinking = useSettingsStore((state) => state.editor.cursorBlinking);
+  const blinkSetting = useSettingsStore((state) => state.editor.cursorBlinking);
+  const reducedMotion = useReducedMotion();
+  const cursorBlinking = blinkSetting && !reducedMotion;
   const lineHeight = useSettingsStore((state) => state.editor.lineHeight);
   const fontLigatures = useSettingsStore((state) => state.editor.fontLigatures);
   const overviewMarkers = useSettingsStore((state) => state.editor.overviewMarkers);

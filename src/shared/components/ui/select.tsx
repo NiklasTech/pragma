@@ -4,6 +4,8 @@ import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 
 import { cn } from "@/shared/lib/utils";
+
+import { useFieldLabel } from "./field-label";
 import { MENU_INDICATOR_ITEM, MENU_POPUP } from "./menu-styles";
 import { CaretDown, Check, CaretUp } from "@phosphor-icons/react";
 
@@ -37,6 +39,7 @@ function SelectTrigger({
 }: SelectPrimitive.Trigger.Props & {
   size?: "sm" | "default";
 }) {
+  const naming = useFieldLabel(props);
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
@@ -45,6 +48,7 @@ function SelectTrigger({
         "flex w-fit cursor-pointer items-center justify-between gap-2 rounded-[5px] bg-transparent py-1 pr-2 pl-2.5 font-mono text-ui-xs text-fg-default whitespace-nowrap ring-1 ring-fg-default/15 ring-inset transition-[background-color,box-shadow] duration-(--motion-fast) ease-(--motion-ease) outline-none select-none hover:ring-fg-default/35 focus-visible:ring-2 focus-visible:ring-border-focus disabled:cursor-not-allowed disabled:opacity-40 aria-invalid:ring-2 aria-invalid:ring-destructive/40 data-placeholder:text-fg-subtle data-popup-open:ring-fg-default/35 data-[size=default]:h-7 data-[size=sm]:h-6.5 data-[size=sm]:text-ui-xs *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
+      {...naming}
       {...props}
     >
       {children}
