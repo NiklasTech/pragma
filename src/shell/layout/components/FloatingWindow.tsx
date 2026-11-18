@@ -181,7 +181,7 @@ export function FloatingWindow({
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className="absolute bottom-1 right-1 text-fg-muted/50"
+          className="absolute bottom-1 right-1 text-fg-subtle"
         >
           <path
             d="M8 11L11 11L11 8"

@@ -181,11 +181,11 @@ const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText
   const getLineClasses = useCallback((type: DiffLineType) => {
     switch (type) {
       case "added":
-        return "bg-status-success/5 text-status-success/90";
+        return "bg-status-success/5 text-status-success";
       case "removed":
-        return "bg-status-error/5 text-status-error/90";
+        return "bg-status-error/5 text-status-error";
       case "hunk":
-        return "bg-status-info/5 text-status-info/70";
+        return "bg-status-info/5 text-status-info";
 
       default:
         return "text-fg-default/80";
@@ -195,13 +195,13 @@ const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText
   const getGutterClasses = useCallback((type: DiffLineType) => {
     switch (type) {
       case "added":
-        return "bg-status-success/15 text-status-success/80";
+        return "bg-status-success/15 text-status-success";
       case "removed":
-        return "bg-status-error/15 text-status-error/80";
+        return "bg-status-error/15 text-status-error";
       case "hunk":
-        return "bg-status-info/10 text-status-info/60";
+        return "bg-status-info/10 text-status-info";
       default:
-        return "text-fg-muted/30";
+        return "text-fg-subtle";
     }
   }, []);
 

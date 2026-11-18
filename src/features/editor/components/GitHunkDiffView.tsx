@@ -25,8 +25,8 @@ type Row =
   | { kind: "line"; hunkIndex: number; lineIndex: number; line: PatchLine };
 
 const LINE_CLASSES: Record<PatchLine["type"], string> = {
-  added: "bg-status-success/5 text-status-success/90",
-  removed: "bg-status-error/5 text-status-error/90",
+  added: "bg-status-success/5 text-status-success",
+  removed: "bg-status-error/5 text-status-error",
   context: "text-fg-default/80",
 };
 
@@ -135,7 +135,7 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
                 style={style}
                 className="flex items-center gap-2 border-y border-border/60 bg-status-info/5 px-2"
               >
-                <span className="min-w-0 flex-1 truncate text-ui-xs text-status-info/70">
+                <span className="min-w-0 flex-1 truncate text-ui-xs text-status-info">
                   {hunk.header}
                 </span>
                 {staged ? (
@@ -195,10 +195,10 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
                 isSelected && "bg-primary/15",
               )}
             >
-              <span className="w-10 shrink-0 select-none pr-1 text-right text-ui-xs leading-5 text-fg-muted/50">
+              <span className="w-10 shrink-0 select-none pr-1 text-right text-ui-xs leading-5 text-fg-subtle">
                 {line.oldLine ?? ""}
               </span>
-              <span className="w-10 shrink-0 select-none pr-1 text-right text-ui-xs leading-5 text-fg-muted/50">
+              <span className="w-10 shrink-0 select-none pr-1 text-right text-ui-xs leading-5 text-fg-subtle">
                 {line.newLine ?? ""}
               </span>
               <span

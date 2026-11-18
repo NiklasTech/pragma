@@ -49,7 +49,7 @@ export function ChatToolbar() {
               weight="bold"
               className={cn(
                 "shrink-0 @max-[320px]:hidden",
-                agentMode ? "text-primary/70" : "text-fg-subtle",
+                agentMode ? "text-primary" : "text-fg-subtle",
               )}
             />
           </Button>

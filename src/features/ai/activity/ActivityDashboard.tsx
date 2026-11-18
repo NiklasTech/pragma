@@ -124,7 +124,7 @@ export function ActivityDashboard() {
         >
           <h3 className="flex items-center gap-1 px-2 pb-0.5 text-ui-2xs font-semibold tracking-wide text-fg-subtle uppercase">
             {group.category && (
-              <FolderSimple size={11} weight="fill" className="shrink-0 text-primary/70" />
+              <FolderSimple size={11} weight="fill" className="shrink-0 text-primary" />
             )}
             <span className="truncate">{group.category ?? "No category"}</span>
           </h3>
