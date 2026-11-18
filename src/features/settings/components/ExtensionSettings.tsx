@@ -2,16 +2,12 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import {
-  ArrowsClockwise,
-  FolderOpen,
-  PuzzlePiece,
-  Trash,
-  UploadSimple,
-} from "@phosphor-icons/react";
+import { ArrowsClockwise, FolderOpen, Trash, UploadSimple } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
+import { IconButton } from "@/shared/components/ui/icon-button";
 import { Switch } from "@/shared/components/ui/switch";
+import { cn } from "@/shared/lib/utils";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import {
@@ -22,7 +18,11 @@ import {
 } from "@/features/extensions/host";
 import { useExtensionsStore, type ExtensionRuntimeState } from "@/features/extensions/store";
 import type { ExtensionSummary } from "@/features/extensions/types";
+import { STATE_CELL_CLASSES } from "@/shell/chrome/SessionMark";
 import { SettingSection } from "./ui/SettingSection";
+
+const GRID =
+  "grid grid-cols-[10px_minmax(0,1fr)_6.5rem_minmax(4.5rem,auto)_auto] items-center gap-3";
 
 function statusOf(
   statuses: Record<string, ExtensionRuntimeState>,
@@ -83,41 +83,40 @@ export function ExtensionSettings() {
   if (!rootPath) {
     return (
       <SettingSection title="Extensions">
-        <div className="flex flex-col items-center gap-2 py-6 text-center text-ui-sm text-fg-muted">
-          <PuzzlePiece size={28} className="text-fg-subtle" />
-          <span>Open a folder to manage workspace extensions.</span>
-        </div>
+        <p className="py-3 text-[12.5px] text-fg-subtle">
+          Open a folder to see the extensions in its .pragma/extensions.
+        </p>
       </SettingSection>
     );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <SettingSection title="Installed Extensions">
-        <div className="flex justify-end gap-2 py-2">
-          <Button variant="outline" size="xs" onClick={handleReload} className="gap-1">
-            <ArrowsClockwise size={14} />
-            Reload
-          </Button>
-          <Button variant="outline" size="xs" onClick={handleOpenFolder} className="gap-1">
-            <FolderOpen size={14} />
-            Open Folder
-          </Button>
-          <Button variant="outline" size="xs" onClick={handleInstall} className="gap-1">
-            <UploadSimple size={14} />
-            Install from Folder
-          </Button>
-        </div>
-
+      <SettingSection
+        title="Extensions"
+        badge={summaries.length > 0 ? { label: String(summaries.length) } : undefined}
+        action={
+          <>
+            <Button variant="outline" size="xs" onClick={handleReload} className="gap-1">
+              <ArrowsClockwise size={12} />
+              Reload
+            </Button>
+            <Button variant="outline" size="xs" onClick={handleOpenFolder} className="gap-1">
+              <FolderOpen size={12} />
+              Folder
+            </Button>
+            <Button variant="outline" size="xs" onClick={handleInstall} className="gap-1">
+              <UploadSimple size={12} />
+              Install
+            </Button>
+          </>
+        }
+      >
         {summaries.length === 0 && (
-          <div className="flex flex-col items-center gap-2 py-6 text-center text-ui-sm text-fg-muted">
-            <PuzzlePiece size={28} className="text-fg-subtle" />
-            <span>No extensions installed.</span>
-            <span className="text-ui-xs text-fg-subtle">
-              Extensions live in .pragma/extensions inside the workspace. See docs/EXTENSIONS.md for
-              the manifest format and API.
-            </span>
-          </div>
+          <p className="py-3 text-[12.5px] leading-relaxed text-fg-muted">
+            No extensions in .pragma/extensions yet. An extension adds commands and views to Pragma
+            only; agents do not see it. docs/EXTENSIONS.md has the manifest format and API.
+          </p>
         )}
 
         {summaries.map((summary) => (
@@ -146,50 +145,56 @@ interface ExtensionRowProps {
 function ExtensionRow({ summary, runtime, enabled, onToggle, onRemove }: ExtensionRowProps) {
   const isError = runtime.status === "error" || summary.error !== null;
   const error = runtime.error ?? summary.error;
+  const running = !isError && runtime.status === "running";
 
   return (
-    <div className="flex flex-col gap-1 py-2.5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-ui-sm font-medium text-fg-default">{summary.name}</span>
-            {summary.version && (
-              <span className="text-ui-xs text-fg-subtle">v{summary.version}</span>
-            )}
-            {isError && (
-              <span className="rounded-full bg-status-error/10 px-1.5 py-0.5 text-ui-xs text-status-error">
-                Error
-              </span>
-            )}
-            {!isError && runtime.status === "running" && (
-              <span className="rounded-full bg-status-success/10 px-1.5 py-0.5 text-ui-xs text-status-success">
-                Running
-              </span>
-            )}
-          </div>
-          {summary.description && (
-            <span className="text-ui-xs text-fg-muted">{summary.description}</span>
+    <div className={cn(GRID, "min-h-11 py-1.5")}>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-2 justify-self-center rounded-[1.5px]",
+          isError ? "bg-status-error" : STATE_CELL_CLASSES[running ? "done" : "idle"],
+        )}
+      />
+      <span className="flex min-w-0 flex-col gap-0.5 font-mono">
+        <span className="flex min-w-0 items-baseline gap-2">
+          <span className="truncate text-[12.5px] font-medium text-fg-default">{summary.name}</span>
+          {summary.version && (
+            <span className="shrink-0 text-[11px] text-fg-subtle">{summary.version}</span>
           )}
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Switch
-            checked={enabled && !isError}
-            disabled={isError}
-            onCheckedChange={onToggle}
-            aria-label={`Enable ${summary.name}`}
-          />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onRemove}
-            className="text-fg-muted hover:text-status-error"
-            aria-label={`Remove ${summary.name}`}
-          >
-            <Trash size={14} />
-          </Button>
-        </div>
-      </div>
-      {isError && error && <span className="text-ui-xs text-status-error">{error}</span>}
+        </span>
+        {isError && error ? (
+          <span className="text-[11px] break-words text-status-error">{error}</span>
+        ) : (
+          summary.description && (
+            <span className="truncate text-[11px] text-fg-subtle">{summary.description}</span>
+          )
+        )}
+      </span>
+      <span
+        className={cn(
+          "font-mono text-[11.5px]",
+          isError ? "text-status-error" : running ? "text-fg-muted" : "text-fg-subtle",
+        )}
+      >
+        {isError ? "failed" : running ? "running" : "off"}
+      </span>
+      <span className="font-mono text-[11px] text-fg-subtle">pragma only</span>
+      <span className="flex items-center justify-end gap-1">
+        <Switch
+          checked={enabled && !isError}
+          disabled={isError}
+          onCheckedChange={onToggle}
+          aria-label={`Enable ${summary.name}`}
+        />
+        <IconButton
+          icon={Trash}
+          label={`Remove ${summary.name}`}
+          size="sm"
+          onClick={onRemove}
+          className="text-fg-muted hover:text-status-error"
+        />
+      </span>
     </div>
   );
 }
