@@ -13,15 +13,6 @@ export function currentWindows(usage: SubscriptionUsage | null, now: number): Us
   );
 }
 
-/// The window closest to its limit, for the short form.
-export function headlineWindow(usage: SubscriptionUsage | null, now: number): UsageWindow | null {
-  let top: UsageWindow | null = null;
-  for (const window of currentWindows(usage, now)) {
-    if (!top || window.usedPercent > top.usedPercent) top = window;
-  }
-  return top;
-}
-
 export function isStale(usage: SubscriptionUsage | null, now: number): boolean {
   if (!usage || usage.fetchedAtMs === null) return true;
   if (now - usage.fetchedAtMs >= STALE_AFTER_MS) return true;

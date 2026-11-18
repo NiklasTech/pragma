@@ -3,13 +3,6 @@ export interface NativeMenuPayload {
   path?: string;
 }
 
-const RECENT_PREFIX = "recent:";
-
-export function parseRecentMenuId(id: string): string | null {
-  if (!id.startsWith(RECENT_PREFIX)) return null;
-  return id.slice(RECENT_PREFIX.length);
-}
-
 export function guardedDispatch(
   last: Map<string, number>,
   id: string,

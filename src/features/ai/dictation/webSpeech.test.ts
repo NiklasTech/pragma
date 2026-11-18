@@ -8,7 +8,6 @@ import {
   createSpeechRecognition,
   extractSessionTranscript,
   getSpeechRecognitionCtor,
-  isSpeechRecognitionSupported,
   recognitionErrorCopy,
   type SpeechRecognition,
   type SpeechRecognitionResultEvent,
@@ -39,7 +38,6 @@ function resultEvent(
 
 describe("webSpeech support", () => {
   it("reports no constructor in environments without the Web Speech API", () => {
-    expect(isSpeechRecognitionSupported()).toBe(false);
     expect(getSpeechRecognitionCtor()).toBeNull();
   });
 

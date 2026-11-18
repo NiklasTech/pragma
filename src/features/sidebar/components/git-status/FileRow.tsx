@@ -13,21 +13,6 @@ import { getFileIconPath } from "@/shared/lib/file-icons";
 import { basename, dirname } from "./utils";
 import { STATE_INFO, fileState, stageState, type StageState } from "./fileState";
 
-export function statusLetter(code: string): { text: string; className: string } {
-  switch (code) {
-    case "A":
-      return { text: "A", className: "text-git-added" };
-    case "D":
-      return { text: "D", className: "text-git-deleted" };
-    case "R":
-      return { text: "R", className: "text-git-modified" };
-    case "?":
-      return { text: "U", className: "text-git-untracked" };
-    default:
-      return { text: code === "M" ? "M" : code.slice(0, 1) || "M", className: "text-git-modified" };
-  }
-}
-
 function RowAction({
   label,
   onClick,

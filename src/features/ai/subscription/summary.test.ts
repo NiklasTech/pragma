@@ -8,7 +8,6 @@ import {
   currentWindows,
   formatResetIn,
   formatUpdatedAgo,
-  headlineWindow,
   isStale,
   sessionCliProvider,
   sessionTokens,
@@ -71,16 +70,6 @@ describe("currentWindows", () => {
 
   it("is empty without usage", () => {
     expect(currentWindows(null, NOW)).toEqual([]);
-  });
-});
-
-describe("headlineWindow", () => {
-  it("picks the window closest to its limit", () => {
-    expect(headlineWindow(usage([session5h, week]), NOW)).toBe(week);
-  });
-
-  it("is null when nothing is current", () => {
-    expect(headlineWindow(usage([]), NOW)).toBeNull();
   });
 });
 

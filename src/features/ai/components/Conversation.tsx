@@ -1,8 +1,8 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { useCallback } from "react";
-import { ArrowDown, DownloadSimple } from "@phosphor-icons/react";
+import { ArrowDown } from "@phosphor-icons/react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import { Button } from "@/shared/components/ui/button";
@@ -27,39 +27,6 @@ export const ConversationContent = ({ className, ...props }: ConversationContent
     className={cn("mx-auto flex w-full max-w-3xl min-h-full flex-col gap-6 px-4 py-5", className)}
     {...props}
   />
-);
-
-export type ConversationEmptyStateProps = ComponentProps<"div"> & {
-  title?: string;
-  description?: string;
-  icon?: ReactNode;
-};
-
-export const ConversationEmptyState = ({
-  className,
-  title = "No messages yet",
-  description = "Start a conversation to see messages here",
-  icon,
-  children,
-  ...props
-}: ConversationEmptyStateProps) => (
-  <div
-    className={cn(
-      "flex size-full flex-col items-center justify-center gap-2 p-8 text-center",
-      className,
-    )}
-    {...props}
-  >
-    {children ?? (
-      <>
-        {icon && <div className="text-fg-muted">{icon}</div>}
-        <div className="space-y-1">
-          <h3 className="text-ui-sm font-medium">{title}</h3>
-          {description && <p className="text-ui-sm text-fg-muted">{description}</p>}
-        </div>
-      </>
-    )}
-  </div>
 );
 
 export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
@@ -92,25 +59,3 @@ export const ConversationScrollButton = ({
     </Button>
   );
 };
-
-export type ConversationDownloadProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
-  onDownload: () => void;
-};
-
-export const ConversationDownload = ({
-  onDownload,
-  className,
-  children,
-  ...props
-}: ConversationDownloadProps) => (
-  <Button
-    className={cn("absolute top-4 right-4 rounded-full bg-bg-root hover:bg-bg-hover", className)}
-    onClick={onDownload}
-    size="icon"
-    type="button"
-    variant="outline"
-    {...props}
-  >
-    {children ?? <DownloadSimple size={16} />}
-  </Button>
-);

@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ACCENT_PRESETS, readableAccent, withAccent } from "./accent";
+import { readableAccent, withAccent } from "./accent";
 import { generateCssVariables, themeMode } from "./applyTheme";
 import { contrastRatio, parseColor } from "./color";
 import { accentTints } from "./palette";
 import { builtInThemeList, getBuiltInTheme } from "./themes";
 import type { Theme } from "./types";
+
+// Sample accents across the hue circle for the contrast checks.
+const ACCENT_PRESETS = [
+  "#2f9bff",
+  "#6e7bf2",
+  "#a78bfa",
+  "#f472b6",
+  "#f87171",
+  "#fb923c",
+  "#facc15",
+  "#4ade80",
+  "#2dd4bf",
+];
 
 const dark = getBuiltInTheme("dark-default") as Theme;
 const light = getBuiltInTheme("light-default") as Theme;

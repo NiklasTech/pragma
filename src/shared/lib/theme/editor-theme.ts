@@ -2,12 +2,9 @@ import { type Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { Compartment } from "@codemirror/state";
 
 export const themeCompartment = new Compartment();
-
-export type EditorThemeName = "dark-default" | "one-dark";
 
 const editorBaseSpec = {
   "&": {
@@ -314,14 +311,3 @@ export const pragmaDarkTheme: Extension[] = [
   pragmaDarkBase,
   syntaxHighlighting(pragmaDarkHighlight),
 ];
-
-const themeRegistry: Record<EditorThemeName, Extension[]> = {
-  "dark-default": pragmaDarkTheme,
-  "one-dark": [oneDark],
-};
-
-export function getTheme(name: EditorThemeName): Extension[] {
-  return themeRegistry[name] ?? pragmaDarkTheme;
-}
-
-export const defaultThemeName: EditorThemeName = "dark-default";
