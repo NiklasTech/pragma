@@ -1,6 +1,7 @@
-//! Reads MCP servers from a workspace `.mcp.json` or `.pragma/settings.json` and the
-//! Claude Desktop configuration so they can be imported.
+//! Reads MCP servers from the workspace (`.mcp.json`, `.pragma/settings.json`), the configs of
+//! the coding CLIs and Claude Desktop so they can be imported.
 
+use crate::modules::mcp::cli_configs::{self, McpCli};
 use crate::modules::mcp::{McpServerConfig, McpTransport};
 use serde::Serialize;
 use serde_json::Value;
@@ -8,13 +9,18 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
+/// `~/.claude.json` also holds history and caches, so it may be much larger.
+const MAX_CLAUDE_CONFIG_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_SERVERS: usize = 100;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpImportCandidate {
-    /// Human readable origin, e.g. "Claude Desktop".
+    /// Human readable origin, e.g. "Claude Desktop" or "~/.codex/config.toml".
     pub source: String,
+    /// The coding CLI that reads this config, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cli: Option<McpCli>,
     /// The server with its plain env and header values; the frontend moves secrets to the keychain.
     pub server: McpServerConfig,
 }
@@ -32,7 +38,13 @@ fn string_map(value: Option<&Value>) -> HashMap<String, String> {
 }
 
 fn parse_server(name: &str, entry: &Value) -> Option<McpServerConfig> {
-    let kind = entry.get("type").and_then(Value::as_str).unwrap_or("stdio");
+    let kind = match entry.get("type").and_then(Value::as_str) {
+        Some(kind) => kind,
+        // Gemini names a streamable HTTP endpoint `httpUrl`; Cursor leaves out the type.
+        None if entry.get("httpUrl").is_some() => "http",
+        None if entry.get("command").is_none() && entry.get("url").is_some() => "http",
+        None => "stdio",
+    };
     let mut server = McpServerConfig {
         name: name.to_string(),
         ..Default::default()
@@ -40,7 +52,8 @@ fn parse_server(name: &str, entry: &Value) -> Option<McpServerConfig> {
     match kind {
         "http" | "streamable-http" | "streamableHttp" => {
             server.transport = McpTransport::Http;
-            server.url = Some(entry.get("url")?.as_str()?.to_string());
+            let url = entry.get("httpUrl").or_else(|| entry.get("url"))?;
+            server.url = Some(url.as_str()?.to_string());
             server.headers = string_map(entry.get("headers"));
         }
         // The legacy SSE transport is not supported.
@@ -77,13 +90,16 @@ pub fn parse_mcp_servers(document: &Value) -> Vec<McpServerConfig> {
     parsed
 }
 
-fn read_document(path: &Path) -> Option<Value> {
+fn read_text(path: &Path, max_bytes: u64) -> Option<String> {
     let metadata = std::fs::metadata(path).ok()?;
-    if !metadata.is_file() || metadata.len() > MAX_CONFIG_BYTES {
+    if !metadata.is_file() || metadata.len() > max_bytes {
         return None;
     }
-    let content = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str(&content).ok()
+    std::fs::read_to_string(path).ok()
+}
+
+fn read_document(path: &Path, max_bytes: u64) -> Option<Value> {
+    serde_json::from_str(&read_text(path, max_bytes)?).ok()
 }
 
 fn claude_desktop_config() -> Option<PathBuf> {
@@ -106,38 +122,123 @@ fn claude_desktop_config() -> Option<PathBuf> {
     }
 }
 
-fn candidates_from(path: &Path, source: &str) -> Vec<McpImportCandidate> {
-    read_document(path)
-        .map(|document| parse_mcp_servers(&document))
-        .unwrap_or_default()
+fn tag(
+    servers: Vec<McpServerConfig>,
+    source: &str,
+    cli: Option<McpCli>,
+) -> Vec<McpImportCandidate> {
+    servers
         .into_iter()
         .map(|server| McpImportCandidate {
             source: source.to_string(),
+            cli,
             server,
         })
         .collect()
+}
+
+fn candidates_from(path: &Path, source: &str, cli: Option<McpCli>) -> Vec<McpImportCandidate> {
+    let servers = read_document(path, MAX_CONFIG_BYTES)
+        .map(|document| parse_mcp_servers(&document))
+        .unwrap_or_default();
+    tag(servers, source, cli)
+}
+
+fn codex_candidates(path: &Path, source: &str) -> Vec<McpImportCandidate> {
+    let servers = read_text(path, MAX_CONFIG_BYTES)
+        .map(|content| cli_configs::parse_codex_servers(&content))
+        .unwrap_or_default();
+    tag(servers, source, Some(McpCli::Codex))
+}
+
+/// User-wide servers and the ones Claude Code keeps for `root` in `~/.claude.json`.
+fn claude_candidates(home: &Path, root: Option<&Path>) -> Vec<McpImportCandidate> {
+    let path = cli_configs::claude_config_path(home);
+    let Some(document) = read_document(&path, MAX_CLAUDE_CONFIG_BYTES) else {
+        return Vec::new();
+    };
+    let source = cli_configs::display_path(&path, Some(home));
+    let mut candidates = tag(parse_mcp_servers(&document), &source, Some(McpCli::Claude));
+    if let Some(local) = root.and_then(|root| cli_configs::claude_local_servers(&document, root)) {
+        candidates.extend(tag(
+            parse_mcp_servers(&local),
+            &format!("{source}, this folder"),
+            Some(McpCli::Claude),
+        ));
+    }
+    candidates
+}
+
+fn workspace_candidates(root: &Path) -> Vec<McpImportCandidate> {
+    let mut candidates =
+        candidates_from(&root.join(".mcp.json"), ".mcp.json", Some(McpCli::Claude));
+    candidates.extend(candidates_from(
+        &root.join(".pragma").join("settings.json"),
+        ".pragma/settings.json",
+        None,
+    ));
+    candidates.extend(codex_candidates(
+        &root.join(".codex").join("config.toml"),
+        ".codex/config.toml",
+    ));
+    candidates.extend(candidates_from(
+        &root.join(".gemini").join("settings.json"),
+        ".gemini/settings.json",
+        Some(McpCli::Gemini),
+    ));
+    candidates.extend(candidates_from(
+        &root.join(".cursor").join("mcp.json"),
+        ".cursor/mcp.json",
+        Some(McpCli::Cursor),
+    ));
+    candidates
+}
+
+fn user_candidates(home: &Path, root: Option<&Path>) -> Vec<McpImportCandidate> {
+    let mut candidates = claude_candidates(home, root);
+    let codex = cli_configs::codex_home(home).join("config.toml");
+    candidates.extend(codex_candidates(
+        &codex,
+        &cli_configs::display_path(&codex, Some(home)),
+    ));
+    candidates.extend(candidates_from(
+        &home.join(".gemini").join("settings.json"),
+        "~/.gemini/settings.json",
+        Some(McpCli::Gemini),
+    ));
+    candidates.extend(candidates_from(
+        &home.join(".cursor").join("mcp.json"),
+        "~/.cursor/mcp.json",
+        Some(McpCli::Cursor),
+    ));
+    candidates
 }
 
 #[tauri::command]
 pub async fn mcp_import_candidates(
     workspace_root: Option<String>,
 ) -> Result<Vec<McpImportCandidate>, String> {
-    let mut candidates = Vec::new();
-    if let Some(root) = workspace_root.filter(|root| !root.is_empty()) {
-        let root = Path::new(&root);
-        if !root.is_dir() {
-            return Err("workspace_root is not a directory".to_string());
+    let root = workspace_root
+        .filter(|root| !root.is_empty())
+        .map(PathBuf::from);
+    if root.as_deref().is_some_and(|root| !root.is_dir()) {
+        return Err("workspace_root is not a directory".to_string());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut candidates = root
+            .as_deref()
+            .map(workspace_candidates)
+            .unwrap_or_default();
+        if let Some(home) = cli_configs::home_dir() {
+            candidates.extend(user_candidates(&home, root.as_deref()));
         }
-        candidates.extend(candidates_from(&root.join(".mcp.json"), ".mcp.json"));
-        candidates.extend(candidates_from(
-            &root.join(".pragma").join("settings.json"),
-            ".pragma/settings.json",
-        ));
-    }
-    if let Some(path) = claude_desktop_config() {
-        candidates.extend(candidates_from(&path, "Claude Desktop"));
-    }
-    Ok(candidates)
+        if let Some(path) = claude_desktop_config() {
+            candidates.extend(candidates_from(&path, "Claude Desktop", None));
+        }
+        candidates
+    })
+    .await
+    .map_err(|err| format!("Failed to read MCP configs: {err}"))
 }
 
 #[cfg(test)]
@@ -181,7 +282,7 @@ mod tests {
     fn missing_or_invalid_documents_yield_nothing() {
         assert!(parse_mcp_servers(&json!({})).is_empty());
         assert!(parse_mcp_servers(&json!({ "mcpServers": [] })).is_empty());
-        assert!(candidates_from(Path::new("/nonexistent/.mcp.json"), "x").is_empty());
+        assert!(candidates_from(Path::new("/nonexistent/.mcp.json"), "x", None).is_empty());
     }
 
     #[test]
@@ -192,9 +293,53 @@ mod tests {
             r#"{"mcpServers":{"fs":{"command":"node","args":["fs.js"]}}}"#,
         )
         .unwrap();
-        let candidates = candidates_from(&tmp.path().join(".mcp.json"), ".mcp.json");
+        let candidates = workspace_candidates(tmp.path());
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].source, ".mcp.json");
+        assert_eq!(candidates[0].cli, Some(McpCli::Claude));
         assert_eq!(candidates[0].server.command, "node");
+    }
+
+    #[test]
+    fn reads_gemini_and_cursor_remote_servers() {
+        let document = json!({
+            "mcpServers": {
+                "gemini-http": { "httpUrl": "https://example.com/mcp" },
+                "cursor-remote": { "url": "https://example.com/cursor" },
+                "local": { "command": "node", "url": "ignored" }
+            }
+        });
+        let servers = parse_mcp_servers(&document);
+        assert_eq!(servers.len(), 3);
+        assert_eq!(servers[0].name, "cursor-remote");
+        assert_eq!(servers[0].transport, McpTransport::Http);
+        assert_eq!(servers[1].name, "gemini-http");
+        assert_eq!(servers[1].url.as_deref(), Some("https://example.com/mcp"));
+        assert_eq!(servers[2].transport, McpTransport::Stdio);
+    }
+
+    #[test]
+    fn reads_the_cli_configs_of_a_home_folder() {
+        let home = tempfile::tempdir().unwrap();
+        let root = Path::new("/work/app");
+        std::fs::write(
+            home.path().join(".claude.json"),
+            r#"{"mcpServers":{"gh":{"type":"http","url":"https://gh"}},"projects":{"/work/app":{"mcpServers":{"db":{"command":"pg"}}}}}"#,
+        )
+        .unwrap();
+        std::fs::create_dir_all(home.path().join(".codex")).unwrap();
+        std::fs::write(
+            home.path().join(".codex").join("config.toml"),
+            "[mcp_servers.docs]\ncommand = \"docs\"\n",
+        )
+        .unwrap();
+        let candidates = user_candidates(home.path(), Some(root));
+        let found: Vec<(&str, &str)> = candidates
+            .iter()
+            .map(|c| (c.server.name.as_str(), c.source.as_str()))
+            .collect();
+        assert!(found.contains(&("gh", "~/.claude.json")));
+        assert!(found.contains(&("db", "~/.claude.json, this folder")));
+        assert!(found.contains(&("docs", "~/.codex/config.toml")));
     }
 }

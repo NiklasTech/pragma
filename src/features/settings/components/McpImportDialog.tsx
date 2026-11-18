@@ -20,8 +20,19 @@ import { useSettingsStore, type McpServerConfig } from "@/shared/stores/settings
 
 import { looksSecretHeader } from "./McpRemoteFields";
 
+/** Mirrors `McpCli` in `src-tauri/src/modules/mcp/cli_configs.rs`. */
+type McpCli = "claude" | "codex" | "gemini" | "cursor";
+
+const CLI_NAMES: Record<McpCli, string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  gemini: "Gemini CLI",
+  cursor: "Cursor",
+};
+
 interface McpImportCandidate {
   source: string;
+  cli?: McpCli;
   server: McpServerConfig;
 }
 
@@ -65,7 +76,19 @@ async function storeSecrets(
   }
 }
 
-/// Imports servers from the workspace `.mcp.json` and the Claude Desktop configuration.
+/// Picks every server whose name is not in Pragma yet, once, even when several configs list it.
+function preselect(found: McpImportCandidate[], existing: Set<string>): Set<number> {
+  const names = new Set(existing);
+  const picked = new Set<number>();
+  found.forEach((candidate, index) => {
+    if (names.has(candidate.server.name)) return;
+    names.add(candidate.server.name);
+    picked.add(index);
+  });
+  return picked;
+}
+
+/// Imports servers from the workspace, the coding CLI configs and Claude Desktop.
 export function McpImportDialog({ open, onOpenChange, onImported }: McpImportDialogProps) {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
   const [candidates, setCandidates] = React.useState<McpImportCandidate[]>([]);
@@ -82,13 +105,7 @@ export function McpImportDialog({ open, onOpenChange, onImported }: McpImportDia
         if (!active) return;
         const existing = new Set(useSettingsStore.getState().mcp.servers.map((s) => s.name));
         setCandidates(found);
-        setSelected(
-          new Set(
-            found.flatMap((candidate, index) =>
-              existing.has(candidate.server.name) ? [] : [index],
-            ),
-          ),
-        );
+        setSelected(preselect(found, existing));
       })
       .catch((err: unknown) => toast.error(String(err)))
       .finally(() => {
@@ -145,8 +162,8 @@ export function McpImportDialog({ open, onOpenChange, onImported }: McpImportDia
         <DialogHeader>
           <DialogTitle>Import MCP servers</DialogTitle>
           <DialogDescription>
-            From the workspace .mcp.json and the Claude Desktop configuration. Secrets go to the OS
-            keychain.
+            From this folder, the configs of Claude Code, Codex, Gemini CLI and Cursor, and Claude
+            Desktop. Secrets go to the OS keychain.
           </DialogDescription>
         </DialogHeader>
 
@@ -168,7 +185,11 @@ export function McpImportDialog({ open, onOpenChange, onImported }: McpImportDia
               <span className="flex min-w-0 flex-col">
                 <span className="flex items-center gap-2 text-ui-sm text-fg-default">
                   {candidate.server.name}
-                  <span className="text-ui-xs text-fg-subtle">{candidate.source}</span>
+                  <span className="text-ui-xs text-fg-subtle">
+                    {candidate.cli
+                      ? `${CLI_NAMES[candidate.cli]} · ${candidate.source}`
+                      : candidate.source}
+                  </span>
                 </span>
                 <code className="truncate text-ui-xs text-fg-muted">
                   {describe(candidate.server)}
