@@ -154,7 +154,7 @@ export function CommandLine() {
     <footer
       aria-label="Command line"
       className={cn(
-        "relative flex h-9.5 shrink-0 items-center gap-2.5 pr-3 pl-4 font-mono text-ui-2xs text-fg-subtle transition-colors duration-(--motion-base)",
+        "relative flex h-9.5 shrink-0 items-center gap-2.5 pr-3 pl-4 font-mono text-ui-2xs text-fg-subtle transition-[background-color,box-shadow] duration-(--motion-base) focus-within:shadow-[inset_0_1px_0_var(--border-focus)]",
         asking && "bg-accent-subtle shadow-[inset_0_1px_0_var(--color-accent-glow)]",
       )}
     >

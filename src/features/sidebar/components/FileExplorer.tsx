@@ -131,7 +131,7 @@ export function FileExplorer() {
               />
             </span>
           </div>
-          <label className="mx-2.5 mb-1.5 flex h-7.5 shrink-0 items-center gap-2 rounded-control bg-control px-2.5 text-fg-subtle">
+          <label className="mx-2.5 mb-1.5 flex h-7.5 shrink-0 items-center gap-2 rounded-control bg-control px-2.5 text-fg-subtle ring-inset focus-within:ring-2 focus-within:ring-border-focus">
             <MagnifyingGlass size={13} aria-hidden="true" />
             <Input
               value={filter}
