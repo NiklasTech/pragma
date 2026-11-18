@@ -6,7 +6,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
 import { Label } from "@/shared/components/ui/label";
-import { Scroll, Trash, X } from "@phosphor-icons/react";
+import { Trash, X } from "@phosphor-icons/react";
 import type { McpLogEvent } from "../hooks/useMcpServers";
 
 interface McpServerLogSheetProps {
@@ -102,18 +102,5 @@ export function McpServerLogSheet({
         </ScrollArea>
       </SheetContent>
     </Sheet>
-  );
-}
-
-export function LogButton({ onClick, logCount }: { onClick: () => void; logCount: number }) {
-  return (
-    <Button variant="ghost" size="icon-xs" title="View logs" onClick={onClick} className="relative">
-      <Scroll size={14} />
-      {logCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-medium text-fg-inverse">
-          {logCount > 99 ? "99+" : logCount}
-        </span>
-      )}
-    </Button>
   );
 }

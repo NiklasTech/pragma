@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import * as React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/shared/components/ui/button";
+import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore, type McpServerConfig } from "@/shared/stores/settings";
 import { DownloadSimple, Plus } from "@phosphor-icons/react";
 import { SettingSection } from "./ui/SettingSection";
@@ -13,7 +14,10 @@ import { McpImportDialog } from "./McpImportDialog";
 import { useMissingMcpSecrets } from "../hooks/useMissingMcpSecrets";
 import { formToServerData, serverToForm, type EditForm } from "./mcp-server-form";
 import { McpServerForm } from "./McpServerForm";
-import { McpServerRow } from "./McpServerRow";
+import { MCP_ROW_GRID, McpServerRow } from "./McpServerRow";
+import { mcpUsage, visibleClis } from "./tools/cliMcp";
+import { McpEmptyImport } from "./tools/McpEmptyImport";
+import { useCliMcpServers } from "./tools/useCliMcpServers";
 
 function serversEqual(a: McpServerConfig[], b: McpServerConfig[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -51,6 +55,17 @@ export function McpSettings() {
   const { missing: missingSecrets, refresh: refreshMissingSecrets } = useMissingMcpSecrets(
     mcp.servers,
   );
+  const cli = useCliMcpServers();
+  const cliStatuses = useAIStore((state) => state.cliStatuses);
+  const usage = React.useMemo(() => mcpUsage(cli.candidates), [cli.candidates]);
+  const clis = React.useMemo(() => {
+    const installed = new Set(
+      Object.values(cliStatuses)
+        .filter((status) => status.installed)
+        .map((status) => status.provider_id),
+    );
+    return visibleClis(installed, usage);
+  }, [cliStatuses, usage]);
 
   const loadConfig = React.useCallback(async () => {
     // Don't overwrite the form while the user is editing.
@@ -154,13 +169,17 @@ export function McpSettings() {
   return (
     <div className="flex flex-col gap-2">
       <SettingSection
-        title="Servers"
+        title="MCP servers"
+        badge={mcp.servers.length > 0 ? { label: String(mcp.servers.length) } : undefined}
         action={
           <div className="flex items-center gap-1.5">
             <Button
               size="xs"
               variant="outline"
-              onClick={() => setImportOpen(true)}
+              onClick={() => {
+                void cli.refresh();
+                setImportOpen(true);
+              }}
               disabled={editingId !== null}
               className="gap-1"
             >
@@ -195,11 +214,25 @@ export function McpSettings() {
         )}
 
         {mcp.servers.length === 0 && !editingId && (
-          <div className="rounded-md border border-dashed border-border/60 p-4 text-center">
-            <p className="text-ui-sm text-fg-muted">No MCP servers configured.</p>
-            <p className="text-ui-xs text-fg-subtle">
-              Add a server to make MCP tools available to the AI chat.
-            </p>
+          <McpEmptyImport
+            candidates={cli.candidates}
+            loaded={cli.loaded}
+            onImported={() => {
+              void loadConfig();
+              void load();
+              refreshMissingSecrets();
+            }}
+          />
+        )}
+
+        {mcp.servers.length > 0 && (
+          <div className={`${MCP_ROW_GRID} pb-1 font-mono text-[10px] text-fg-subtle`}>
+            <span />
+            <span>server</span>
+            <span>state</span>
+            <span className="text-right">tools</span>
+            <span>{clis.length > 0 ? "used by" : ""}</span>
+            <span />
           </div>
         )}
 
@@ -210,10 +243,12 @@ export function McpSettings() {
               server={server}
               status={statuses[server.id] ?? "stopped"}
               tools={tools[server.id] ?? []}
-              logCount={(logs[server.id] ?? []).length}
+              logs={logs[server.id] ?? []}
               authRequired={authRequired[server.id] ?? false}
               error={errors[server.id]}
               missingSecrets={missingSecrets[server.id]}
+              usage={usage[server.name] ?? {}}
+              clis={clis}
               onStart={() => startServer(server.id)}
               onStop={() => stopServer(server.id)}
               onRestart={() => restartServer(server.id)}
@@ -228,6 +263,8 @@ export function McpSettings() {
       <McpImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
+        candidates={cli.candidates}
+        loaded={cli.loaded}
         onImported={() => {
           void loadConfig();
           void load();

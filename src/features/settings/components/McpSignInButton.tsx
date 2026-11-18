@@ -69,17 +69,20 @@ export function McpSignInButton({ serverId, serverName, authRequired }: McpSignI
     );
   }
 
-  return (
+  // The one main action of a row that waits on a sign-in.
+  return authRequired ? (
+    <Button size="xs" onClick={() => void signIn()} disabled={busy}>
+      sign in
+    </Button>
+  ) : (
     <Button
-      variant={authRequired ? "outline" : "ghost"}
-      size={authRequired ? "xs" : "icon-xs"}
+      variant="ghost"
+      size="icon-xs"
       onClick={() => void signIn()}
       title="Sign in with OAuth"
       disabled={busy}
-      className={authRequired ? "gap-1 border-status-warning/40 text-status-warning" : undefined}
     >
       <Key size={14} />
-      {authRequired && "Sign in"}
     </Button>
   );
 }
