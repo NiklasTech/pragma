@@ -9,6 +9,7 @@ pub mod manager;
 pub mod oauth;
 pub mod resources;
 pub mod secrets;
+pub mod share;
 mod sse;
 mod start;
 pub mod tools;

@@ -2,14 +2,14 @@
 //! Claude-style `mcpServers` JSON.
 
 use crate::modules::mcp::{McpServerConfig, McpTransport};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use toml_edit::{DocumentMut, Item, TableLike};
 
 /// A coding CLI whose MCP servers Pragma reads.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum McpCli {
     Claude,
@@ -30,18 +30,54 @@ pub fn home_dir() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
-/// `~/.claude.json`, or the file in `CLAUDE_CONFIG_DIR`.
-pub fn claude_config_path(home: &Path) -> PathBuf {
-    let config_dir = std::env::var("CLAUDE_CONFIG_DIR").ok();
-    crate::ai::subscription_usage::claude_config_path(config_dir.as_deref(), home)
+/// The user-wide MCP config file of each coding CLI.
+#[derive(Debug, Clone)]
+pub struct UserConfigs {
+    pub home: PathBuf,
+    pub claude: PathBuf,
+    pub codex: PathBuf,
+    pub gemini: PathBuf,
+    pub cursor: PathBuf,
 }
 
-/// `~/.codex`, or `CODEX_HOME`.
-pub fn codex_home(home: &Path) -> PathBuf {
-    std::env::var_os("CODEX_HOME")
-        .filter(|dir| !dir.is_empty())
-        .map(PathBuf::from)
-        .unwrap_or_else(|| home.join(".codex"))
+impl UserConfigs {
+    /// The default locations below `home`.
+    pub fn in_home(home: &Path) -> Self {
+        Self {
+            home: home.to_path_buf(),
+            claude: home.join(".claude.json"),
+            codex: home.join(".codex").join("config.toml"),
+            gemini: home.join(".gemini").join("settings.json"),
+            cursor: home.join(".cursor").join("mcp.json"),
+        }
+    }
+
+    /// The locations for this user, honoring `CLAUDE_CONFIG_DIR` and `CODEX_HOME`.
+    pub fn from_env() -> Option<Self> {
+        let home = home_dir()?;
+        let mut configs = Self::in_home(&home);
+        let claude_dir = std::env::var("CLAUDE_CONFIG_DIR").ok();
+        configs.claude =
+            crate::ai::subscription_usage::claude_config_path(claude_dir.as_deref(), &home);
+        if let Some(dir) = std::env::var_os("CODEX_HOME").filter(|dir| !dir.is_empty()) {
+            configs.codex = PathBuf::from(dir).join("config.toml");
+        }
+        Some(configs)
+    }
+
+    pub fn path(&self, cli: McpCli) -> &Path {
+        match cli {
+            McpCli::Claude => &self.claude,
+            McpCli::Codex => &self.codex,
+            McpCli::Gemini => &self.gemini,
+            McpCli::Cursor => &self.cursor,
+        }
+    }
+
+    /// The path as the UI shows it, `~/...` below the home folder.
+    pub fn display(&self, cli: McpCli) -> String {
+        display_path(self.path(cli), Some(&self.home))
+    }
 }
 
 /// Shows a path below the home folder as `~/...`.

@@ -236,6 +236,7 @@ permissions = [
   "allow-mcp-restart-server",
   "allow-mcp-save-config",
   "allow-mcp-set-secret",
+  "allow-mcp-share-server",
   "allow-mcp-start-server",
   "allow-mcp-stop-server",
   "allow-memory-stats",

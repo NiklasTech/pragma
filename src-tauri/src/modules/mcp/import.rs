@@ -1,7 +1,7 @@
 //! Reads MCP servers from the workspace (`.mcp.json`, `.pragma/settings.json`), the configs of
 //! the coding CLIs and Claude Desktop so they can be imported.
 
-use crate::modules::mcp::cli_configs::{self, McpCli};
+use crate::modules::mcp::cli_configs::{self, McpCli, UserConfigs};
 use crate::modules::mcp::{McpServerConfig, McpTransport};
 use serde::Serialize;
 use serde_json::Value;
@@ -152,12 +152,11 @@ fn codex_candidates(path: &Path, source: &str) -> Vec<McpImportCandidate> {
 }
 
 /// User-wide servers and the ones Claude Code keeps for `root` in `~/.claude.json`.
-fn claude_candidates(home: &Path, root: Option<&Path>) -> Vec<McpImportCandidate> {
-    let path = cli_configs::claude_config_path(home);
-    let Some(document) = read_document(&path, MAX_CLAUDE_CONFIG_BYTES) else {
+fn claude_candidates(configs: &UserConfigs, root: Option<&Path>) -> Vec<McpImportCandidate> {
+    let Some(document) = read_document(&configs.claude, MAX_CLAUDE_CONFIG_BYTES) else {
         return Vec::new();
     };
-    let source = cli_configs::display_path(&path, Some(home));
+    let source = configs.display(McpCli::Claude);
     let mut candidates = tag(parse_mcp_servers(&document), &source, Some(McpCli::Claude));
     if let Some(local) = root.and_then(|root| cli_configs::claude_local_servers(&document, root)) {
         candidates.extend(tag(
@@ -194,23 +193,19 @@ fn workspace_candidates(root: &Path) -> Vec<McpImportCandidate> {
     candidates
 }
 
-fn user_candidates(home: &Path, root: Option<&Path>) -> Vec<McpImportCandidate> {
-    let mut candidates = claude_candidates(home, root);
-    let codex = cli_configs::codex_home(home).join("config.toml");
+fn user_candidates(configs: &UserConfigs, root: Option<&Path>) -> Vec<McpImportCandidate> {
+    let mut candidates = claude_candidates(configs, root);
     candidates.extend(codex_candidates(
-        &codex,
-        &cli_configs::display_path(&codex, Some(home)),
+        &configs.codex,
+        &configs.display(McpCli::Codex),
     ));
-    candidates.extend(candidates_from(
-        &home.join(".gemini").join("settings.json"),
-        "~/.gemini/settings.json",
-        Some(McpCli::Gemini),
-    ));
-    candidates.extend(candidates_from(
-        &home.join(".cursor").join("mcp.json"),
-        "~/.cursor/mcp.json",
-        Some(McpCli::Cursor),
-    ));
+    for cli in [McpCli::Gemini, McpCli::Cursor] {
+        candidates.extend(candidates_from(
+            configs.path(cli),
+            &configs.display(cli),
+            Some(cli),
+        ));
+    }
     candidates
 }
 
@@ -229,8 +224,8 @@ pub async fn mcp_import_candidates(
             .as_deref()
             .map(workspace_candidates)
             .unwrap_or_default();
-        if let Some(home) = cli_configs::home_dir() {
-            candidates.extend(user_candidates(&home, root.as_deref()));
+        if let Some(configs) = UserConfigs::from_env() {
+            candidates.extend(user_candidates(&configs, root.as_deref()));
         }
         if let Some(path) = claude_desktop_config() {
             candidates.extend(candidates_from(&path, "Claude Desktop", None));
@@ -333,7 +328,7 @@ mod tests {
             "[mcp_servers.docs]\ncommand = \"docs\"\n",
         )
         .unwrap();
-        let candidates = user_candidates(home.path(), Some(root));
+        let candidates = user_candidates(&UserConfigs::in_home(home.path()), Some(root));
         let found: Vec<(&str, &str)> = candidates
             .iter()
             .map(|c| (c.server.name.as_str(), c.source.as_str()))

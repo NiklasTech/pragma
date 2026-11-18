@@ -44,6 +44,8 @@ interface McpServerDetailsProps {
   onShowLogs: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** Writes the server into the user config of a CLI that does not list it yet. */
+  onShare: (cli: McpCli) => void;
 }
 
 /// What an opened server row shows: why it waits or failed, its tools, the CLIs that list
@@ -64,6 +66,7 @@ export function McpServerDetails({
   onShowLogs,
   onEdit,
   onDelete,
+  onShare,
 }: McpServerDetailsProps) {
   const running = state.kind === "running" || state.kind === "starting";
   const tail = logs.slice(-LOG_TAIL);
@@ -129,31 +132,46 @@ export function McpServerDetails({
           <div className="flex flex-wrap gap-2">
             {clis.map((cli) => {
               const source = usage[cli.cli];
-              return (
+              const mark = (
+                <AgentMark
+                  agentId={cli.manifestId}
+                  name={cli.name}
+                  size="sm"
+                  className={cn(
+                    !source && "bg-transparent text-fg-subtle ring-1 ring-fg-default/15 ring-inset",
+                  )}
+                />
+              );
+              return source ? (
                 <span
                   key={cli.cli}
-                  className={cn(
-                    "inline-flex h-7 items-center gap-2 rounded-[5px] pr-2.5 pl-1.5 font-mono text-[11px] ring-1 ring-inset",
-                    source
-                      ? "text-fg-default ring-fg-default/15"
-                      : "text-fg-subtle ring-border-subtle",
-                  )}
+                  title={source}
+                  className="inline-flex h-7 max-w-full min-w-0 items-center gap-2 rounded-[5px] pr-2.5 pl-1.5 font-mono text-[11px] text-fg-default ring-1 ring-fg-default/15 ring-inset"
                 >
-                  <AgentMark
-                    agentId={cli.manifestId}
-                    name={cli.name}
-                    size="sm"
-                    className={cn(
-                      !source &&
-                        "bg-transparent text-fg-subtle ring-1 ring-fg-default/15 ring-inset",
-                    )}
-                  />
-                  {cli.name}
-                  <span className="text-[10.5px] text-fg-subtle">{source ?? "not listed"}</span>
+                  {mark}
+                  <span className="shrink-0">{cli.name}</span>
+                  <span className="max-w-64 truncate text-[10.5px] text-fg-subtle">{source}</span>
                 </span>
+              ) : (
+                <Button
+                  key={cli.cli}
+                  variant="ghost"
+                  onClick={() => onShare(cli.cli)}
+                  className="h-7 gap-2 pr-2.5 pl-1.5 text-[11px] font-normal text-fg-muted ring-1 ring-border-subtle ring-inset"
+                >
+                  {mark}
+                  {cli.name}
+                  <span className="text-[10.5px] text-state-needs-you">+ share</span>
+                </Button>
               );
             })}
           </div>
+          {clis.some((cli) => !usage[cli.cli]) && (
+            <p className="text-fg-subtle">
+              Sharing writes the server into that CLI&apos;s own user config. Agents it starts after
+              that can use it.
+            </p>
+          )}
         </>
       )}
 

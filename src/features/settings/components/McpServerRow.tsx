@@ -51,6 +51,7 @@ interface McpServerRowProps {
   onShowLogs: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onShare: (cli: McpCli) => void;
 }
 
 /// One server as a D row: state cell, name, state in words, tool count, the CLIs that list
@@ -155,6 +156,7 @@ export function McpServerRow(props: McpServerRowProps) {
           onShowLogs={props.onShowLogs}
           onEdit={props.onEdit}
           onDelete={props.onDelete}
+          onShare={props.onShare}
         />
       )}
     </div>
