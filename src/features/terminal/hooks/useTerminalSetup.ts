@@ -105,6 +105,7 @@ export function useTerminalSetup({
         "search.find",
         "terminal.previousCommand",
         "terminal.nextCommand",
+        "view.focusCommandLine",
         ...TAB_SELECT_SHORTCUTS,
       ]);
       removeDeadKeyFix = fixWebKitDeadKeys(t, containerRef.current);

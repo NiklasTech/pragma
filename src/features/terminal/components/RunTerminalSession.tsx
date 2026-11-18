@@ -93,7 +93,7 @@ export function RunTerminalSession({ session, isActive }: RunTerminalSessionProp
       );
       t.open(containerRef.current);
       loadRenderAddons(t);
-      passAppShortcuts(t, ["search.find", ...TAB_SELECT_SHORTCUTS]);
+      passAppShortcuts(t, ["search.find", "view.focusCommandLine", ...TAB_SELECT_SHORTCUTS]);
       termRef.current = t;
       unregisterOutput = registerTerminalOutput(session.id, t);
       setTermState(t);

@@ -18,6 +18,7 @@ import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Strip } from "@/shell/chrome/Strip";
 import { AgentRail } from "@/shell/chrome/AgentRail";
 import { AgentSheet } from "@/shell/chrome/AgentSheet";
+import { CommandLine } from "@/shell/chrome/commandLine/CommandLine";
 import { useUiMode } from "@/shell/mode";
 import { useTabModeSync } from "@/shell/mode/tabModeSync";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
@@ -131,6 +132,7 @@ export function Layout() {
         )}
       </div>
 
+      <CommandLine />
       <TerminalFloatingHost />
       <FloatingHost />
     </div>

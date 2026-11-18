@@ -74,7 +74,8 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   );
 
   const { ready, missing } = useMemo(() => quickAgents(manifests, statuses), [manifests, statuses]);
-  const [task, setTask] = useState("");
+  // The command line hands a task over as the overlay's target.
+  const [task, setTask] = useState(() => useOverlayStore.getState().target ?? "");
   const [picked, setPicked] = useState<QuickAgent | null>(null);
   const [layoutId, setLayoutId] = useState(QUICK_LAYOUTS[0].id);
   const [isRepo, setIsRepo] = useState<boolean | null>(null);

@@ -304,6 +304,14 @@ export const SHORTCUT_ACTIONS = [
     default: (): ShortcutBinding => ({ ctrl: true, shift: true, key: "Tab" }),
   },
   {
+    id: "view.focusCommandLine" as const,
+    label: "Focus Command Line",
+    category: "view" as const,
+    // Ctrl+K deletes to the line end in shells, so other systems add Alt.
+    default: (isMac: boolean): ShortcutBinding =>
+      isMac ? { meta: true, code: "KeyK" } : { ctrl: true, alt: true, code: "KeyK" },
+  },
+  {
     id: "tab.select1" as const,
     label: "Go to Tab 1",
     category: "view" as const,
