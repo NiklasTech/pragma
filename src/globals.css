@@ -665,7 +665,11 @@ button:disabled,
 
 [data-sonner-toast][data-type="error"] {
   border-color: color-mix(in srgb, var(--color-status-error) 40%, transparent) !important;
-  background-color: color-mix(in srgb, var(--color-status-error) 10%, transparent) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--color-status-error) 10%,
+    var(--color-bg-elevated)
+  ) !important;
 }
 
 /* ============================================================================
