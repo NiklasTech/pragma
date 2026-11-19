@@ -2,6 +2,7 @@
 //! greedy token-and-duration transducer decode, all through ONNX Runtime.
 
 use super::install::{DECODER_FILE, ENCODER_FILE, PREPROCESSOR_FILE, VOCAB_FILE};
+use ort::environment::Environment;
 use ort::session::Session;
 use ort::value::Tensor;
 use std::path::Path;
@@ -18,8 +19,8 @@ pub struct ParakeetModel {
     blank: usize,
 }
 
-fn session(path: &Path) -> Result<Session, String> {
-    Session::builder()
+fn session(environment: &Environment, path: &Path) -> Result<Session, String> {
+    Session::builder(environment)
         .map_err(|e| format!("Cannot create ONNX session: {e}"))?
         .commit_from_file(path)
         .map_err(|e| format!("Cannot load {}: {e}", path.display()))
@@ -72,7 +73,7 @@ fn join_tokens(pieces: &[&str]) -> String {
 }
 
 impl ParakeetModel {
-    pub fn load(dir: &Path) -> Result<Self, String> {
+    pub fn load(environment: &Environment, dir: &Path) -> Result<Self, String> {
         let vocab_text = std::fs::read_to_string(dir.join(VOCAB_FILE))
             .map_err(|e| format!("Cannot read Parakeet vocabulary: {e}"))?;
         let vocab = parse_vocab(&vocab_text)?;
@@ -81,9 +82,9 @@ impl ParakeetModel {
             .position(|token| token == "<blk>")
             .ok_or_else(|| "Parakeet vocabulary has no blank token".to_string())?;
         Ok(Self {
-            preprocessor: session(&dir.join(PREPROCESSOR_FILE))?,
-            encoder: session(&dir.join(ENCODER_FILE))?,
-            decoder_joint: session(&dir.join(DECODER_FILE))?,
+            preprocessor: session(environment, &dir.join(PREPROCESSOR_FILE))?,
+            encoder: session(environment, &dir.join(ENCODER_FILE))?,
+            decoder_joint: session(environment, &dir.join(DECODER_FILE))?,
             vocab,
             blank,
         })
@@ -230,5 +231,62 @@ mod tests {
         let vocab = parse_vocab("<unk> 0\n\u{2581}the 1\n<blk> 2\n").unwrap();
         assert_eq!(vocab, vec!["<unk>", " the", "<blk>"]);
         assert!(parse_vocab("a 1\n").is_err());
+    }
+
+    /// The samples of a 16 kHz mono 16-bit PCM WAV, skipping chunks before `data`.
+    fn wav_samples(bytes: &[u8]) -> Vec<f32> {
+        let mut offset = 12;
+        while offset + 8 <= bytes.len() {
+            let id = &bytes[offset..offset + 4];
+            let size = u32::from_le_bytes([
+                bytes[offset + 4],
+                bytes[offset + 5],
+                bytes[offset + 6],
+                bytes[offset + 7],
+            ]) as usize;
+            let body = offset + 8;
+            if id == b"data" {
+                let end = (body + size).min(bytes.len());
+                return bytes[body..end]
+                    .chunks_exact(2)
+                    .map(|pair| f32::from(i16::from_le_bytes([pair[0], pair[1]])) / 32768.0)
+                    .collect();
+            }
+            offset = body + size + (size & 1);
+        }
+        Vec::new()
+    }
+
+    /// Runs the real model once ONNX Runtime or `ort` changes:
+    /// `PARAKEET_TEST_DIR=<.../stt/parakeet> PARAKEET_TEST_WAV=<16 kHz mono wav>
+    /// cargo test --lib transcribes_a_recording -- --ignored`
+    #[test]
+    #[ignore = "needs an installed ONNX Runtime, the Parakeet V3 model and a recording"]
+    fn transcribes_a_recording() {
+        let (Ok(root), Ok(wav)) = (
+            std::env::var("PARAKEET_TEST_DIR"),
+            std::env::var("PARAKEET_TEST_WAV"),
+        ) else {
+            return;
+        };
+        let root = std::path::PathBuf::from(root);
+        let library = std::fs::read_dir(root.join("runtime"))
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .find(|path| path.to_string_lossy().contains("onnxruntime"))
+            .unwrap();
+        let environment = ort::init_from(&library)
+            .unwrap()
+            .with_name("pragma-parakeet-test")
+            .build()
+            .unwrap();
+        let mut model =
+            ParakeetModel::load(&environment, &root.join("models").join("parakeet-v3")).unwrap();
+        let text = model
+            .transcribe(wav_samples(&std::fs::read(wav).unwrap()))
+            .unwrap();
+        println!("transcript: {text}");
+        assert!(text.to_lowercase().contains("settings"), "{text}");
     }
 }
