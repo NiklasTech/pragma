@@ -54,6 +54,21 @@ const appliedField = StateField.define<number | null>({
 });
 
 const roots = new WeakMap<HTMLElement, Root>();
+const fitters = new WeakMap<HTMLElement, ResizeObserver>();
+const PANEL_GAP_PX = 12;
+
+/// Keeps the panel inside the visible code area, so it never widens the content or scrolls out of view.
+function fitToVisibleWidth(view: EditorView, dom: HTMLElement): ResizeObserver {
+  const fit = () => {
+    const gutter = view.contentDOM.offsetLeft;
+    dom.style.left = `${gutter}px`;
+    dom.style.maxWidth = `${Math.max(view.scrollDOM.clientWidth - gutter - PANEL_GAP_PX, 0)}px`;
+    view.requestMeasure();
+  };
+  const observer = new ResizeObserver(fit);
+  observer.observe(view.scrollDOM);
+  return observer;
+}
 
 class PanelWidget extends WidgetType {
   constructor(readonly id: number) {
@@ -68,9 +83,11 @@ class PanelWidget extends WidgetType {
     const root = createRoot(dom);
     root.render(createElement(InlineEditPanel, { view, id: this.id }));
     roots.set(dom, root);
+    fitters.set(dom, fitToVisibleWidth(view, dom));
     return dom;
   }
   destroy(dom: HTMLElement): void {
+    fitters.get(dom)?.disconnect();
     const root = roots.get(dom);
     // React must not unmount while CodeMirror is still updating the DOM.
     if (root) queueMicrotask(() => root.unmount());
@@ -198,7 +215,7 @@ export function acceptInlineEdit(view: EditorView): boolean {
 }
 
 const theme = EditorView.baseTheme({
-  ".cm-inline-edit-panel": { padding: "6px 0" },
+  ".cm-inline-edit-panel": { padding: "6px 0", position: "sticky", whiteSpace: "normal" },
   ".cm-inline-edit-removed": {
     backgroundColor: "var(--color-git-deleted-bg)",
   },
