@@ -4,6 +4,7 @@ import {
   LSP_SERVERS,
   isLspAutoInstallable,
   isLspSupported,
+  lspErrorMessage,
   shouldToastLspError,
 } from "./lsp-servers";
 
@@ -22,6 +23,19 @@ describe("shouldToastLspError", () => {
     expect(shouldToastLspError({ status: "stopped" })).toBe(false);
     expect(shouldToastLspError({ status: "running" })).toBe(false);
     expect(shouldToastLspError({ status: "starting" })).toBe(false);
+  });
+});
+
+describe("lspErrorMessage", () => {
+  it("names the fix when typescript-language-server finds no TypeScript", () => {
+    const error =
+      'JSON-RPC error -32603: Request initialize failed with message: Could not find a valid TypeScript installation. Please ensure that the "typescript" dependency is installed in the workspace or that a valid `tsserver.path` is specified. Exiting.';
+    expect(lspErrorMessage("typescript", error)).toContain("npm install -D typescript");
+  });
+
+  it("keeps other errors and falls back to the language", () => {
+    expect(lspErrorMessage("rust", "spawn failed")).toBe("spawn failed");
+    expect(lspErrorMessage("go", undefined)).toBe("go language server failed");
   });
 });
 
