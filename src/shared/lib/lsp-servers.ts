@@ -225,3 +225,13 @@ export function shouldToastLspError(options: {
   if (options.status !== "error") return false;
   return options.expected !== true;
 }
+
+const MISSING_TYPESCRIPT = "Could not find a valid TypeScript installation";
+
+/** The toast text for a failed server; a missing TypeScript package names the command that fixes it. */
+export function lspErrorMessage(language: string, error: string | undefined): string {
+  if (error?.includes(MISSING_TYPESCRIPT)) {
+    return "TypeScript features need the typescript package. Run npm install -D typescript in this folder to turn them on.";
+  }
+  return error ?? `${language} language server failed`;
+}
