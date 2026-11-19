@@ -13,6 +13,7 @@ import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useAIStore } from "@/shared/stores/ai";
+import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
 import { useOverlayStore } from "@/shared/stores/overlays";
@@ -76,7 +77,6 @@ export function AgentsHome() {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
-  const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
   const shortcuts = useSettingsStore((state) => state.shortcuts);
   const openOverlay = useOverlayStore((state) => state.open);
   const actions = useNewSessionActions(rootPath);
@@ -87,8 +87,11 @@ export function AgentsHome() {
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
-    if (Object.keys(statuses).length === 0) void loadCLIStatuses();
-  }, [loadCLIManifests, loadCLIStatuses, manifests.length, statuses]);
+  }, [loadCLIManifests, manifests.length]);
+
+  useEffect(() => {
+    void refreshCLIStatuses();
+  }, []);
 
   const { ready } = useMemo(() => quickAgents(manifests, statuses), [manifests, statuses]);
   const agent = picked ?? ready[0]?.id ?? PRAGMA_AGENT;
