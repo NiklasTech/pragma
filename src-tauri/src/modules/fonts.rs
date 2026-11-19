@@ -134,7 +134,10 @@ pub async fn download_font(
             let mut file = archive
                 .by_index(i)
                 .map_err(|e| format!("Failed to read zip entry: {e}"))?;
-            let name = file.name().to_owned();
+            let name = file
+                .name()
+                .map_err(|e| format!("Invalid zip entry name: {e}"))?
+                .into_owned();
             if !name
                 .to_lowercase()
                 .ends_with(&format!("/{}", spec.filename.to_lowercase()))
