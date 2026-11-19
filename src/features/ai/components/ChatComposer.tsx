@@ -14,6 +14,7 @@ import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useActiveSessionMeta } from "@/shared/hooks/useActiveSessionMeta";
 import { useSettingsStore } from "@/shared/stores/settings";
+import { DictationStatus } from "@/features/ai/dictation/DictationStatus";
 import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
 import { useComposerDictation } from "@/features/ai/dictation/useComposerDictation";
 import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
@@ -360,7 +361,7 @@ export function ChatComposer({
           </div>
         </div>
       </form>
-      {dictation.status && <p className="px-3 text-ui-2xs text-fg-muted">{dictation.status}</p>}
+      <DictationStatus status={dictation.status} />
     </div>
   );
 }

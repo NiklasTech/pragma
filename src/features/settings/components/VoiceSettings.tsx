@@ -20,6 +20,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { useSettingsStore, type VoiceEngine } from "@/shared/stores/settings";
 
 import { LocalModelSetup, type LocalModelCommands } from "./LocalModelSetup";
+import { MicrophonePermissionRow } from "./MicrophonePermissionRow";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 
@@ -141,6 +142,7 @@ export function VoiceSettings() {
           />
         }
       />
+      {settingsStore.ai.voiceInput && <MicrophonePermissionRow />}
       <SettingRow
         label="Engine"
         description="Transcription backend used by the composer microphone"
