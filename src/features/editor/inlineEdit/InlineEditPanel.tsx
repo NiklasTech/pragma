@@ -70,13 +70,13 @@ export function InlineEditPanel({ view, id }: { view: EditorView; id: number }) 
         )}
       </div>
 
-      <div className="flex min-h-7 items-center gap-1.5">
+      <div className="flex min-h-7 flex-wrap items-center gap-1.5">
         {!model ? (
-          <span className="min-w-0 flex-1 text-ui-xs text-fg-muted">
+          <span className="min-w-48 flex-1 text-ui-xs text-fg-muted">
             Inline edits use a model. Add an API key in Settings, or hand it to an agent as a task.
           </span>
         ) : phase.kind === "working" ? (
-          <span className="flex flex-1 items-center gap-2 text-ui-xs text-fg-muted">
+          <span className="flex min-w-48 flex-1 items-center gap-2 text-ui-xs text-fg-muted">
             <Spinner
               size={12}
               className="animate-spin motion-reduce:animate-none"
@@ -85,16 +85,16 @@ export function InlineEditPanel({ view, id }: { view: EditorView; id: number }) 
             Rewriting with {model.model}
           </span>
         ) : phase.kind === "result" ? (
-          <span className="flex-1 text-ui-xs text-fg-muted">{phase.summary}</span>
+          <span className="min-w-48 flex-1 text-ui-xs text-fg-muted">{phase.summary}</span>
         ) : phase.kind === "error" ? (
           <span
-            className="min-w-0 flex-1 truncate text-ui-xs text-status-error"
+            className="min-w-48 flex-1 truncate text-ui-xs text-status-error"
             title={phase.message}
           >
             {phase.message}
           </span>
         ) : (
-          <span className="flex-1 text-ui-xs text-fg-subtle">
+          <span className="min-w-48 flex-1 text-ui-xs text-fg-subtle">
             Enter rewrites the selected lines
           </span>
         )}
