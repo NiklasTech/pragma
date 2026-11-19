@@ -38,6 +38,8 @@ struct ActiveDownload {
 struct LoadedModel {
     id: &'static str,
     model: ParakeetModel,
+    // ONNX Runtime allows one environment per process; it lives as long as the model's sessions.
+    _environment: ort::environment::Environment,
 }
 
 #[derive(Default)]
@@ -335,13 +337,15 @@ pub async fn parakeet_transcribe(
             .map_err(|_| "Parakeet model state is unavailable".to_string())?;
         if !matches!(slot.as_ref(), Some(current) if current.id == spec.id) {
             *slot = None;
-            ort::init_from(&library)
+            let environment = ort::init_from(&library)
                 .map_err(|e| format!("Cannot load ONNX Runtime: {e}"))?
                 .with_name("pragma-parakeet")
-                .commit();
+                .build()
+                .map_err(|e| format!("Cannot start ONNX Runtime: {e}"))?;
             *slot = Some(LoadedModel {
                 id: spec.id,
-                model: ParakeetModel::load(&dir)?,
+                model: ParakeetModel::load(&environment, &dir)?,
+                _environment: environment,
             });
         }
         match slot.as_mut() {
