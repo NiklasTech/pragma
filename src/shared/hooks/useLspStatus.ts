@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
-import { shouldToastLspError } from "@/shared/lib/lsp-servers";
+import { lspErrorMessage, shouldToastLspError } from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 
@@ -30,8 +30,9 @@ export function useLspStatus() {
         ) {
           return;
         }
-        const message = event.payload.error ?? `${event.payload.language} language server failed`;
-        toast.error(message);
+        const { language, project_root: root, error } = event.payload;
+        // Every open editor listens, and each request retries the start: one toast per server.
+        toast.error(lspErrorMessage(language, error), { id: `lsp:${language}:${root}` });
       });
     };
 
