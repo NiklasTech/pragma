@@ -2,7 +2,7 @@ use std::ffi::{OsStr, OsString};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 use std::time::Duration;
 
@@ -19,6 +19,15 @@ use crate::modules::workspace_trust::ensure_trusted;
 const NOT_A_REPO: &str = "This folder is not a git repository";
 const UNTRUSTED_SCRIPT_LOG: &str =
     "Skipped the .pragma worktree script because this folder is not trusted.";
+
+/// Parallel `git worktree add` and `remove` read each other's half-written `.git/worktrees` entries.
+static WORKTREE_CHANGES: Mutex<()> = Mutex::new(());
+
+fn lock_worktree_changes() -> MutexGuard<'static, ()> {
+    WORKTREE_CHANGES
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+}
 
 #[derive(Debug, Serialize)]
 pub struct SessionRepoCheck {
@@ -430,6 +439,7 @@ pub(crate) fn create_labeled_worktree(
             .map_err(|e| format!("failed to create worktrees dir: {e}"))?;
     }
     let path_str = path.to_string_lossy().to_string();
+    let worktree_changes = lock_worktree_changes();
     let output = run_git(
         Some(repo_path),
         [
@@ -442,6 +452,7 @@ pub(crate) fn create_labeled_worktree(
         ],
         DEFAULT_TIMEOUT_SECS,
     )?;
+    drop(worktree_changes);
     if output.timed_out {
         return Err("git worktree add timed out".to_string());
     }
@@ -530,7 +541,10 @@ pub(crate) fn remove_worktree(
         args.push("--force".into());
     }
     args.push(worktree_path.into());
-    let output = run_git(Some(repo_path), args, DEFAULT_TIMEOUT_SECS)?;
+    let output = {
+        let _worktree_changes = lock_worktree_changes();
+        run_git(Some(repo_path), args, DEFAULT_TIMEOUT_SECS)?
+    };
     if output.timed_out {
         return Err("git worktree remove timed out".to_string());
     }
