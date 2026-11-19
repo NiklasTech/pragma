@@ -13,7 +13,9 @@ pub struct DapProcessInfo {
 /// IDE process itself are left out.
 pub(super) fn list_processes() -> Vec<DapProcessInfo> {
     let own_pid = std::process::id();
-    let mut system = System::new();
+    let Ok(mut system) = System::new() else {
+        return Vec::new();
+    };
     system.refresh_processes_specifics(
         ProcessesToUpdate::All,
         true,

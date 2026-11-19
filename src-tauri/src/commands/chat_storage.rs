@@ -133,7 +133,7 @@ pub struct DeleteSessionRequest {
 pub(crate) fn workspace_hash(root_path: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(root_path.as_bytes());
-    format!("{:x}", hasher.finalize())
+    hex::encode(hasher.finalize())
 }
 
 pub(crate) fn sessions_dir(app: &AppHandle, root_path: &str) -> Result<PathBuf, String> {
@@ -362,6 +362,14 @@ mod tests {
             "updated_at": updated_at,
         }))
         .unwrap()
+    }
+
+    #[test]
+    fn workspace_hash_keeps_the_folder_of_existing_chats() {
+        assert_eq!(
+            workspace_hash("/Users/x/project"),
+            "4faf1baab2320279df8d8de53e49b4b368ccebe29250f480811d2658c28b0260"
+        );
     }
 
     fn message(id: &str, content: &str) -> ChatMessage {
