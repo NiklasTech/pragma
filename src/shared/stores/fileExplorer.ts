@@ -27,6 +27,8 @@ export function getVisibleNodes(
 
   function walk(list: FileSystemNode[], depth: number) {
     for (const node of list) {
+      // Git internals have Changes and History; the tree only shows the repository's files.
+      if (node.name === ".git") continue;
       result.push({ node, depth });
       if (node.isDirectory && node.children && expandedDirs.has(node.path)) {
         walk(node.children, depth + 1);
