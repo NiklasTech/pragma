@@ -17,9 +17,9 @@ export const LSP_SERVERS: Record<string, LspServerDefinition> = {
     displayName: "TypeScript Language Server",
     command: "typescript-language-server",
     args: ["--stdio"],
-    installCommand: "npm install -g typescript-language-server",
+    installCommand: "npm install -g typescript-language-server typescript",
     installProgram: "npm",
-    installArgs: ["install", "-g", "typescript-language-server"],
+    installArgs: ["install", "-g", "typescript-language-server", "typescript"],
     packageManager: "npm",
     homepage: "https://github.com/typescript-language-server/typescript-language-server",
     requiredRuntime: "Node.js",
@@ -29,9 +29,9 @@ export const LSP_SERVERS: Record<string, LspServerDefinition> = {
     displayName: "TypeScript Language Server (for JavaScript)",
     command: "typescript-language-server",
     args: ["--stdio"],
-    installCommand: "npm install -g typescript-language-server",
+    installCommand: "npm install -g typescript-language-server typescript",
     installProgram: "npm",
-    installArgs: ["install", "-g", "typescript-language-server"],
+    installArgs: ["install", "-g", "typescript-language-server", "typescript"],
     packageManager: "npm",
     homepage: "https://github.com/typescript-language-server/typescript-language-server",
     requiredRuntime: "Node.js",
@@ -228,10 +228,15 @@ export function shouldToastLspError(options: {
 
 const MISSING_TYPESCRIPT = "Could not find a valid TypeScript installation";
 
-/** The toast text for a failed server; a missing TypeScript package names the command that fixes it. */
+/** typescript-language-server found neither the project's nor a global TypeScript. */
+export function isMissingTypeScript(error: string | undefined): boolean {
+  return error?.includes(MISSING_TYPESCRIPT) ?? false;
+}
+
+/** The toast text for a failed server; a missing TypeScript package names the ways to fix it. */
 export function lspErrorMessage(language: string, error: string | undefined): string {
-  if (error?.includes(MISSING_TYPESCRIPT)) {
-    return "TypeScript features need the typescript package. Run npm install -D typescript in this folder to turn them on.";
+  if (isMissingTypeScript(error)) {
+    return "TypeScript features need TypeScript. Install it once for every folder, or run npm install -D typescript in this project.";
   }
   return error ?? `${language} language server failed`;
 }

@@ -1,5 +1,6 @@
 mod capabilities;
 mod config;
+mod global_typescript;
 mod lifecycle;
 mod notifications;
 mod project;
@@ -34,10 +35,11 @@ const SERVERS: &[ServerEntry] = &[
         command: "typescript-language-server",
         args: &["--stdio"],
         install_program: Some("npm"),
-        install_args: &["install", "-g", "typescript-language-server"],
+        install_args: &["install", "-g", "typescript-language-server", "typescript"],
         local: &[
             LocalCandidate::TypeScriptNativeLsp,
             LocalCandidate::NodeModulesBin,
+            LocalCandidate::GlobalTypeScriptNativeLsp,
         ],
     },
     ServerEntry {
@@ -45,10 +47,11 @@ const SERVERS: &[ServerEntry] = &[
         command: "typescript-language-server",
         args: &["--stdio"],
         install_program: Some("npm"),
-        install_args: &["install", "-g", "typescript-language-server"],
+        install_args: &["install", "-g", "typescript-language-server", "typescript"],
         local: &[
             LocalCandidate::TypeScriptNativeLsp,
             LocalCandidate::NodeModulesBin,
+            LocalCandidate::GlobalTypeScriptNativeLsp,
         ],
     },
     ServerEntry {

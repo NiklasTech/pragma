@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { markLspDocumentSynced, flushLspDocumentSync } from "@/features/editor/lsp/lspDocuments";
 import { useLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
+import { useLspRetryStore } from "@/shared/stores/lspRetry";
 
 const DEBOUNCE_MS = 500;
 
@@ -17,6 +18,7 @@ export function useLspDocumentSync(
   const lspEnabled = useLspEnabled(language);
   const experimentalLsp = useSettingsStore((state) => state.experimental.lsp);
   const folderTrusted = useFolderTrustStore((state) => state.trusted);
+  const retryAttempt = useLspRetryStore((state) => state.attempt);
   const openedRef = useRef<string | null>(null);
   const savedRef = useRef<string | null>(null);
 
@@ -53,7 +55,7 @@ export function useLspDocumentSync(
     return () => {
       cancelled = true;
     };
-  }, [language, filePath, lspEnabled, experimentalLsp, folderTrusted]);
+  }, [language, filePath, lspEnabled, experimentalLsp, folderTrusted, retryAttempt]);
 
   useEffect(() => {
     if (!experimentalLsp || !lspEnabled || !language || !isLspSupported(language) || !filePath) {

@@ -1,4 +1,5 @@
 use super::config::server_config_for_language;
+use super::global_typescript::global_typescript_native_lsp;
 use super::{ServerEntry, SERVERS};
 use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::manager::resolve_command;
@@ -9,7 +10,7 @@ use std::time::Duration;
 
 const TOOLCHAIN_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Places a project can provide its own language server binary, tried before PATH.
+/// Places a language server binary is looked for, in order, before the command on PATH.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum LocalCandidate {
     /// `<root>/node_modules/.bin/<command>`
@@ -22,6 +23,8 @@ pub(super) enum LocalCandidate {
     TypeScriptNativeLsp,
     /// The binary of the toolchain the project pins, via `rustup which`.
     RustupToolchain,
+    /// A global TypeScript 7's `tsc --lsp` when the project has no TypeScript.
+    GlobalTypeScriptNativeLsp,
 }
 
 /// Resolves the server for a project root: local candidates in order, then the global command.
@@ -65,14 +68,20 @@ async fn resolve_candidate(
         }
         LocalCandidate::ProjectBin => local_file(root, &root.join("bin").join(entry.command))
             .map(|path| (path, default_args())),
-        LocalCandidate::TypeScriptNativeLsp => typescript_native_lsp(root).map(|path| {
-            let args = ["--lsp", "--stdio"].iter().map(|a| a.to_string()).collect();
-            (path, args)
-        }),
+        LocalCandidate::TypeScriptNativeLsp => {
+            typescript_native_lsp(root).map(|path| (path, native_args()))
+        }
         LocalCandidate::RustupToolchain => rustup_toolchain_bin(root, entry.command)
             .await
             .map(|path| (path, default_args())),
+        LocalCandidate::GlobalTypeScriptNativeLsp => {
+            global_typescript_native_lsp(root, &enriched_path()).map(|path| (path, native_args()))
+        }
     }
+}
+
+fn native_args() -> Vec<String> {
+    vec!["--lsp".to_string(), "--stdio".to_string()]
 }
 
 fn node_modules_bin(root: &Path, command: &str) -> Option<PathBuf> {
@@ -387,7 +396,8 @@ mod tests {
             local("typescript"),
             [
                 LocalCandidate::TypeScriptNativeLsp,
-                LocalCandidate::NodeModulesBin
+                LocalCandidate::NodeModulesBin,
+                LocalCandidate::GlobalTypeScriptNativeLsp
             ]
         );
         assert_eq!(local("rust"), [LocalCandidate::RustupToolchain]);

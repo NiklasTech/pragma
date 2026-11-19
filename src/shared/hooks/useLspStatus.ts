@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
-import { lspErrorMessage, shouldToastLspError } from "@/shared/lib/lsp-servers";
+import { installTypeScript } from "@/features/editor/lsp/installTypeScript";
+import {
+  isMissingTypeScript,
+  lspErrorMessage,
+  shouldToastLspError,
+} from "@/shared/lib/lsp-servers";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 
@@ -32,7 +37,12 @@ export function useLspStatus() {
         }
         const message = lspErrorMessage(event.payload.language, event.payload.error);
         // Editors, retries and files in folders without a project file share one toast per failure.
-        toast.error(message, { id: `lsp:${event.payload.language}:${message}` });
+        toast.error(message, {
+          id: `lsp:${event.payload.language}:${message}`,
+          action: isMissingTypeScript(event.payload.error)
+            ? { label: "Install TypeScript", onClick: () => void installTypeScript() }
+            : undefined,
+        });
       });
     };
 
