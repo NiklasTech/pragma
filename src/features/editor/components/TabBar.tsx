@@ -10,6 +10,7 @@ import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileHistoryDialog } from "@/features/sidebar/lib/gitDialogs";
 import { cn } from "@/shared/lib/utils";
+import { handleTabListKeyDown } from "@/shared/lib/tabListKeys";
 import { otherTabRepository } from "@/features/editor/tabRepository";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
@@ -120,10 +121,15 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
       )}
       <div
         ref={listRef}
+        role="tablist"
+        aria-label="Open files"
+        onKeyDown={handleTabListKeyDown}
         className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5"
       >
         {tabs.map((tab, index) => {
           const isActive = activeTabId === tab.id;
+          // One tab stop per bar: the active tab, or the first when none of these is active.
+          const isTabStop = isActive || (!activeTab && index === 0);
           const isDropTarget = dragOverIndex === index;
           const fileIconPath =
             tab.kind === "file" || tab.kind === "preview" ? getFileIconPath(tab.name) : null;
@@ -173,6 +179,9 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                       }
                     }}
                     title={repository ? `${tab.name} (${getWorkspaceName(repository)})` : tab.name}
+                    role="tab"
+                    aria-selected={isActive}
+                    tabIndex={isTabStop ? 0 : -1}
                     data-active={isActive}
                     className={cn(
                       props.className,
@@ -202,6 +211,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                         tab.kind === "file" && tab.isModified && "hidden group-hover/tab:block",
                       )}
                       aria-label={`Close ${tab.name}`}
+                      tabIndex={isActive ? 0 : -1}
                     >
                       <X size={12} />
                     </Button>
