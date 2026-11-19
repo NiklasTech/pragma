@@ -24,6 +24,6 @@ export async function hintMissingCompletionModel(): Promise<void> {
   toast("Suggestions while typing need a model", {
     description:
       "Add an API key under Settings, Editor, Models, or run a model locally with Ollama. You can also turn suggestions off there.",
-    action: { label: "Set up", onClick: () => openSettings("editor") },
+    action: { label: "Set up", onClick: () => openSettings("editor", "Models") },
   });
 }

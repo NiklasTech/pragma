@@ -100,7 +100,7 @@ export function InlineEditPanel({ view, id }: { view: EditorView; id: number }) 
         )}
 
         {!model && (
-          <Button variant="ghost" size="sm" onClick={() => openSettings("editor")}>
+          <Button variant="ghost" size="sm" onClick={() => openSettings("editor", "Models")}>
             Open settings
           </Button>
         )}
