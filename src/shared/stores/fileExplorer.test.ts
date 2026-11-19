@@ -1,5 +1,38 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
-import { mergePersistedFileExplorer, switchRepository, useFileExplorerStore } from "./fileExplorer";
+import {
+  type FileSystemNode,
+  getVisibleNodes,
+  mergePersistedFileExplorer,
+  switchRepository,
+  useFileExplorerStore,
+} from "./fileExplorer";
+
+describe("getVisibleNodes", () => {
+  it("leaves out .git folders and files at every depth", () => {
+    const dir = (path: string, children: FileSystemNode[] = []): FileSystemNode => ({
+      path,
+      name: path.split("/").pop() ?? path,
+      isDirectory: true,
+      isFile: false,
+      children,
+    });
+    const file = (path: string): FileSystemNode => ({
+      path,
+      name: path.split("/").pop() ?? path,
+      isDirectory: false,
+      isFile: true,
+    });
+    const tree = [
+      dir("/r/.git"),
+      dir("/r/lib", [file("/r/lib/.git"), file("/r/lib/a.ts")]),
+      file("/r/.gitignore"),
+    ];
+
+    const names = getVisibleNodes(tree, new Set(["/r/lib", "/r/.git"])).map((n) => n.node.name);
+
+    expect(names).toEqual(["lib", "a.ts", ".gitignore"]);
+  });
+});
 
 describe("mergePersistedFileExplorer", () => {
   it("keeps the current state when nothing was saved for the window", () => {
