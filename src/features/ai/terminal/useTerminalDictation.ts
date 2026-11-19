@@ -6,6 +6,10 @@ import {
   useComposerDictation,
   type UseComposerDictationResult,
 } from "@/features/ai/dictation/useComposerDictation";
+import {
+  isMicrophoneDenied,
+  openMicrophoneSettingsOrToast,
+} from "@/features/ai/dictation/DictationStatus";
 import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
 
 import { writeTerminal } from "./runner";
@@ -50,7 +54,12 @@ export function useTerminalDictation(sessionId: string): TerminalDictation {
     stop: dictation.stop,
   });
   useEffect(() => {
-    if (dictation.status) toast.error(dictation.status);
+    if (!dictation.status) return;
+    toast.error(dictation.status, {
+      action: isMicrophoneDenied(dictation.status)
+        ? { label: "Open System Settings", onClick: openMicrophoneSettingsOrToast }
+        : undefined,
+    });
   }, [dictation.status]);
 
   return { available: voiceInput, metered: voiceEngine !== "web-speech", dictation };
