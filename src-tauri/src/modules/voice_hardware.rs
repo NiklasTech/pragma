@@ -6,7 +6,8 @@ use sysinfo::{MemoryRefreshKind, RefreshKind, System};
 pub fn voice_system_memory() -> Result<u64, String> {
     let system = System::new_with_specifics(
         RefreshKind::nothing().with_memory(MemoryRefreshKind::nothing().with_ram()),
-    );
+    )
+    .map_err(|e| format!("Cannot read the installed memory: {e}"))?;
     Ok(system.total_memory())
 }
 

@@ -144,7 +144,7 @@ pub fn write_text_file(
 fn content_hash(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
-    format!("{:x}", hasher.finalize())
+    hex::encode(hasher.finalize())
 }
 
 /// The frontend hashes the text it loaded, so a decodable file is compared as text.

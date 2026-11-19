@@ -85,7 +85,7 @@ pub(crate) fn foreground_names(shell_pid: Option<u32>, leader: Option<i32>) -> O
         return None;
     }
     let pid = Pid::from_u32(leader);
-    let mut system = System::new();
+    let mut system = System::new().ok()?;
     system.refresh_processes_specifics(ProcessesToUpdate::Some(&[pid]), true, refresh_kind());
     let process = system.process(pid)?;
     let mut names = names_of(process);
@@ -118,7 +118,7 @@ pub(crate) fn foreground_names(shell_pid: Option<u32>, leader: Option<i32>) -> O
 pub(crate) fn foreground_names(shell_pid: Option<u32>) -> Option<Vec<String>> {
     const CONSOLE_HOSTS: [&str; 2] = ["conhost.exe", "openconsole.exe"];
     let shell = Pid::from_u32(shell_pid?);
-    let mut system = System::new();
+    let mut system = System::new().ok()?;
     system.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh_kind());
 
     let mut newest: Option<&Process> = None;

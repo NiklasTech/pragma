@@ -129,7 +129,7 @@ fn is_valid_source(source: &str) -> bool {
 fn content_hash(content: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(content.replace("\r\n", "\n").as_bytes());
-    format!("{:x}", hasher.finalize())
+    hex::encode(hasher.finalize())
 }
 
 fn marker_line(format: FileFormat, source: &str, hash: &str) -> String {

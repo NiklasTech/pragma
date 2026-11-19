@@ -15,7 +15,7 @@ pub fn memory_stats() -> Result<MemoryStats, String> {
     // Only refresh the current process with memory information. Calling
     // `System::new_all()` enumerates every process and can OOM when many
     // short-lived child processes are running (e.g. during `npm install -g`).
-    let mut system = System::new();
+    let mut system = System::new().map_err(|e| format!("Cannot read process memory: {e}"))?;
     system.refresh_processes_specifics(
         ProcessesToUpdate::Some(&[pid]),
         false,

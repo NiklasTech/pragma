@@ -257,7 +257,7 @@ pub(crate) async fn download_verified(
     if received != size {
         return Err("Download ended early".to_string());
     }
-    let digest = format!("{:x}", hasher.finalize());
+    let digest = hex::encode(hasher.finalize());
     if digest != sha256 {
         return Err("Downloaded file failed the checksum".to_string());
     }
