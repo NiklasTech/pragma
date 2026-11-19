@@ -49,9 +49,10 @@ pub fn decode(bytes: &[u8], forced: Option<&'static Encoding>) -> Result<Decoded
         });
     }
 
-    let mut detector = chardetng::EncodingDetector::new();
+    // Local files cannot run scripts, so ISO-2022-JP and UTF-8 are both fair guesses.
+    let mut detector = chardetng::EncodingDetector::new(chardetng::Iso2022JpDetection::Allow);
     detector.feed(bytes, true);
-    let encoding = detector.guess(None, true);
+    let encoding = detector.guess(None, chardetng::Utf8Detection::Allow);
     let (text, _) = encoding.decode_without_bom_handling(bytes);
     Ok(DecodedText {
         text: text.into_owned(),

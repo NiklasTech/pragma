@@ -19,7 +19,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
-chardetng = "0.1.17"
+chardetng = "1.0"
 encoding_rs = "0.8.35"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 toml_edit = "0.25"
@@ -46,7 +46,7 @@ sha2 = "0.10"
 reqwest = { version = "0.13.3", features = ["json", "stream"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tokio = { version = "1.52.3", features = ["process", "rt-multi-thread", "macros", "net"] }
-zip = { version = "4.2", default-features = false, features = ["deflate"] }
+zip = { version = "9.2", default-features = false, features = ["deflate"] }
 tokio-util = "0.7"
 shellwords = "1.1.0"
 sysinfo = "0.39"

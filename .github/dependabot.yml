@@ -30,6 +30,11 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    # The browser pane hands webkit2gtk's cairo surfaces to cairo-rs, so cairo-rs
+    # has to stay on the gtk-rs release webkit2gtk (via Tauri) builds on.
+    ignore:
+      - dependency-name: "cairo-rs"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     groups:
       cargo-dependencies:
         patterns:
