@@ -1,4 +1,5 @@
 import { cn } from "@/shared/lib/utils";
+import { handleTabListKeyDown } from "@/shared/lib/tabListKeys";
 import type { PanelNode } from "../tree/types";
 import { panelLabel } from "./panels/panelLabels";
 
@@ -14,13 +15,21 @@ export function TabsContainer({ tabs, activeTabId, onSelect, children }: TabsCon
   return (
     <div className="flex h-full w-full flex-col">
       {showTabs && (
-        <div className="flex h-tab shrink-0 items-center gap-1 overflow-x-auto px-2">
+        <div
+          role="tablist"
+          aria-label="Panels"
+          onKeyDown={handleTabListKeyDown}
+          className="flex h-tab shrink-0 items-center gap-1 overflow-x-auto px-2"
+        >
           {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
+                tabIndex={isActive ? 0 : -1}
                 data-active={isActive}
                 onClick={() => onSelect(tab.id)}
                 className={cn("pragma-pill-tab", isActive && "data-active=true")}

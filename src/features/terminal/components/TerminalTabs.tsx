@@ -4,6 +4,7 @@ import type { Icon } from "@phosphor-icons/react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { handleTabListKeyDown } from "@/shared/lib/tabListKeys";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useTerminalStore, type TerminalSession } from "@/shared/stores/terminal";
@@ -52,9 +53,16 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
-      {sessions.map((session) => {
+    <div
+      role="tablist"
+      aria-label="Terminal sessions"
+      onKeyDown={handleTabListKeyDown}
+      className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5"
+    >
+      {sessions.map((session, index) => {
         const isActive = session.id === activeSessionId;
+        const isTabStop =
+          isActive || (!sessions.some((s) => s.id === activeSessionId) && index === 0);
         const isRunning = now - (activity[session.id] ?? 0) < 2000;
         const SessionIcon = sessionIcon(session);
         const repository =
@@ -63,6 +71,9 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
         return (
           <div
             key={session.id}
+            role="tab"
+            aria-selected={isActive}
+            tabIndex={isTabStop ? 0 : -1}
             data-active={isActive}
             onClick={() =>
               panelId && useTerminalStore.getState().setActiveSession(panelId, session.id)
@@ -109,8 +120,9 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
                 e.stopPropagation();
                 void killSession(session.id);
               }}
-              className="ml-0.5 size-4 text-fg-muted opacity-0 group-hover:opacity-100"
+              className="ml-0.5 size-4 text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               aria-label={`Close ${session.name}`}
+              tabIndex={isActive ? 0 : -1}
             >
               <X size={12} />
             </Button>

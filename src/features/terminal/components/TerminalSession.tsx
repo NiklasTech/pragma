@@ -26,6 +26,7 @@ import { useTerminalFileDrop } from "../hooks/useTerminalFileDrop";
 import { useShellIntegration } from "../hooks/useShellIntegration";
 import { CommandFailureBar } from "./CommandFailureBar";
 import { quotePathsForShell } from "../shellQuote";
+import { tabSelectedByKeyboard } from "@/shared/lib/tabListKeys";
 
 interface TerminalSessionProps {
   session: TerminalSessionType;
@@ -99,7 +100,8 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
 
   useEffect(() => {
     if (isActive && termRef.current && fitRef.current) {
-      termRef.current.focus();
+      // A session picked with the arrow keys keeps the focus on its tab; a clicked one takes it.
+      if (!tabSelectedByKeyboard()) termRef.current.focus();
       fitRef.current.fit();
       const { cols, rows } = termRef.current;
       if (ptyIdRef.current && cols > 0 && rows > 0) {
