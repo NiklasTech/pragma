@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAIStore } from "@/shared/stores/ai";
+import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 type AISettingsState = ReturnType<typeof useSettingsStore.getState>["ai"];
@@ -76,5 +77,12 @@ export function useAIInit() {
       unsubscribeHydration();
       unsubscribeSettings?.();
     };
+  }, []);
+
+  // A CLI installed in another app while Pragma runs shows up when the user comes back.
+  useEffect(() => {
+    const onFocus = () => void refreshCLIStatuses();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 }

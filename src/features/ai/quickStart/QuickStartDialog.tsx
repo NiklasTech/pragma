@@ -22,6 +22,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import type { GitBranch as GitBranchInfo } from "@/shared/stores/git";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
@@ -67,7 +68,6 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
-  const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
   const presets = useLayoutPresetsStore((state) => state.presets);
   const spaceName = useOpenRepositoriesStore(
     (state) => findSpaceByFolder(state.spaces, rootPath)?.name ?? folderName(rootPath),
@@ -85,8 +85,11 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
-    if (Object.keys(statuses).length === 0) void loadCLIStatuses();
-  }, [loadCLIManifests, loadCLIStatuses, manifests.length, statuses]);
+  }, [loadCLIManifests, manifests.length]);
+
+  useEffect(() => {
+    void refreshCLIStatuses();
+  }, []);
 
   useEffect(() => {
     let live = true;

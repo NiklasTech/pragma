@@ -30,6 +30,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
+import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 
 import { JoinWorktreeMenu } from "./JoinWorktreeMenu";
 import { buildSessionMenuCliRows } from "./session-menu";
@@ -83,9 +84,9 @@ export function NewSessionMenu({
       if (!next) return;
       onOpen?.();
       if (manifests.length === 0) void loadCLIManifests();
-      if (Object.keys(statuses).length === 0) void loadCLIStatuses();
+      void refreshCLIStatuses();
     },
-    [loadCLIManifests, loadCLIStatuses, manifests.length, onOpen, statuses],
+    [loadCLIManifests, manifests.length, onOpen],
   );
 
   const rows = buildSessionMenuCliRows(manifests, statuses);

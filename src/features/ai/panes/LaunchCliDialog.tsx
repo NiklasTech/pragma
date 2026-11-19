@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useAIStore } from "@/shared/stores/ai";
+import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import { useRepositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 
 import { GroupEnvironmentSelect } from "../sessions/GroupEnvironmentSelect";
@@ -45,7 +46,6 @@ export function LaunchCliDialog({ open, onOpenChange }: LaunchCliDialogProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
-  const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
   const [manifestId, setManifestId] = useState<string | null>(null);
   const [count, setCount] = useState(4);
   const [picked, setPicked] = useState<GroupEnvironment | null>(null);
@@ -64,8 +64,8 @@ export function LaunchCliDialog({ open, onOpenChange }: LaunchCliDialogProps) {
   useEffect(() => {
     if (!open) return;
     if (manifests.length === 0) void loadCLIManifests();
-    if (Object.keys(statuses).length === 0) void loadCLIStatuses();
-  }, [loadCLIManifests, loadCLIStatuses, manifests.length, open, statuses]);
+    void refreshCLIStatuses();
+  }, [loadCLIManifests, manifests.length, open]);
 
   const available = buildSessionMenuCliRows(manifests, statuses).filter(
     (row) => !row.disabled && row.items.some((item) => item.action === "terminal"),

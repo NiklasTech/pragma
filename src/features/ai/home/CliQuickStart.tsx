@@ -6,6 +6,7 @@ import { TerminalWindow } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 
 import { providerAccentById } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -22,13 +23,15 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
-  const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
   const actions = useNewSessionActions(rootPath, targetLeafId);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
-    if (Object.keys(statuses).length === 0) void loadCLIStatuses();
-  }, [loadCLIManifests, loadCLIStatuses, manifests.length, statuses]);
+  }, [loadCLIManifests, manifests.length]);
+
+  useEffect(() => {
+    void refreshCLIStatuses();
+  }, []);
 
   const available = buildSessionMenuCliRows(manifests, statuses).filter(
     (row) => !row.disabled && row.items.some((item) => item.action === "terminal"),
