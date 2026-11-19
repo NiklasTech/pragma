@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { FolderSimple, GitCommit, GitDiff, SquareSplitHorizontal, X } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
@@ -22,6 +22,7 @@ import {
 } from "@/shared/components/ui/context-menu";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 import { EditorTabActions } from "./EditorTabActions";
+import { useActiveTabInView } from "./useActiveTabInView";
 
 /** The active file's folder relative to the open folder, as the tab row shows it. */
 function folderOf(path: string, root: string | null): string | null {
@@ -51,6 +52,8 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
   const filesShortcut = filesBinding ? formatShortcut(filesBinding, getIsMac()) : undefined;
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  useActiveTabInView(listRef, activeTabId, tabs.length);
 
   const handleDragStart = useCallback((index: number) => {
     setDraggedIndex(index);
@@ -99,7 +102,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
   const activePath = activeTab ? folderOf(activeTab.path, activeRoot) : null;
 
   return (
-    <div className="flex h-10.5 min-w-0 shrink-0 items-center">
+    <div className="@container flex h-10.5 min-w-0 shrink-0 items-center">
       {panelId && (
         <IconButton
           icon={FolderSimple}
@@ -115,7 +118,10 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
           }}
         />
       )}
-      <div className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5">
+      <div
+        ref={listRef}
+        className="flex h-full min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1.5"
+      >
         {tabs.map((tab, index) => {
           const isActive = activeTabId === tab.id;
           const isDropTarget = dragOverIndex === index;
@@ -234,7 +240,7 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
       <span className="flex shrink-0 items-center gap-0.5 pr-1.5 pl-2">
         {activePath && (
           <span
-            className="max-w-[260px] truncate pr-1.5 text-ui-2xs text-fg-subtle"
+            className="hidden max-w-[260px] truncate pr-1.5 text-ui-2xs text-fg-subtle @lg:inline"
             title={activePath}
           >
             {activePath}
