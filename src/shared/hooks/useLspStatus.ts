@@ -30,9 +30,9 @@ export function useLspStatus() {
         ) {
           return;
         }
-        const { language, project_root: root, error } = event.payload;
-        // Every open editor listens, and each request retries the start: one toast per server.
-        toast.error(lspErrorMessage(language, error), { id: `lsp:${language}:${root}` });
+        const message = lspErrorMessage(event.payload.language, event.payload.error);
+        // Editors, retries and files in folders without a project file share one toast per failure.
+        toast.error(message, { id: `lsp:${event.payload.language}:${message}` });
       });
     };
 
