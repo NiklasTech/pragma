@@ -593,7 +593,7 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     id: "agent-start-in",
     keys: ["agent.startIn"],
     label: "New agents start in",
-    description: "Whether ⌘N starts an agent in a new worktree or in the open folder",
+    description: "Whether New starts an agent in a new worktree or in the open folder",
     keywords: "agent start worktree folder new quick start where",
     category: "agents",
     scope: "global",

@@ -167,177 +167,182 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
 
   return (
     <div className="flex min-h-0 flex-col" onKeyDown={onKeyDown}>
-      <div className="flex flex-col gap-2 px-5.5 pt-5 pb-1.5">
-        <OverlaySheetTitle className="text-ui-xs font-medium tracking-normal text-fg-muted">
-          What should happen?
-        </OverlaySheetTitle>
-        <Textarea
-          autoFocus
-          value={task}
-          onChange={(event) => setTask(event.target.value)}
-          placeholder="Describe the task, or leave it empty to start the agent on its own"
-          aria-label="Task"
-          rows={3}
-          className="min-h-19 resize-none bg-transparent px-0 py-0 text-ui-lg leading-snug ring-0 hover:ring-0 focus-visible:ring-0"
-        />
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-col gap-2 px-5.5 pt-5 pb-1.5">
+          <OverlaySheetTitle className="text-ui-xs font-medium tracking-normal text-fg-muted">
+            What should happen?
+          </OverlaySheetTitle>
+          <Textarea
+            autoFocus
+            value={task}
+            onChange={(event) => setTask(event.target.value)}
+            placeholder="Describe the task, or leave it empty to start the agent on its own"
+            aria-label="Task"
+            rows={3}
+            className="min-h-19 resize-none bg-transparent px-0 py-0 text-ui-lg leading-snug ring-0 hover:ring-0 focus-visible:ring-0"
+          />
+        </div>
+
+        <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
+          <span className="text-ui-xs font-medium text-fg-muted">Who</span>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Agent">
+            {choices.map((choice, index) => (
+              <Button
+                key={`${choice.manifest.id}:${choice.agent.accountDir ?? ""}`}
+                variant="ghost"
+                aria-pressed={sameAgent(agent, choice.agent)}
+                onClick={() => setPicked(choice.agent)}
+                className={cn(
+                  "h-8.5 max-w-full min-w-0 gap-2 rounded-[9px] pr-2.5 pl-2 text-ui-sm text-fg-muted",
+                  CHOICE,
+                )}
+              >
+                <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} />
+                {choice.manifest.name}
+                {choice.accountLabel && (
+                  <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
+                    {choice.accountLabel}
+                  </span>
+                )}
+                {index < MAX_AGENT_KEYS && <Kbd>{index + 1}</Kbd>}
+              </Button>
+            ))}
+            <Button
+              variant="ghost"
+              aria-pressed={agent.kind === "terminal"}
+              onClick={() => setPicked(TERMINAL_ONLY)}
+              className={cn(
+                "h-8.5 gap-2 rounded-[9px] pr-2.5 pl-2 text-ui-sm text-fg-muted",
+                CHOICE,
+              )}
+            >
+              <TerminalWindow size={15} aria-hidden="true" />
+              Terminal only
+              <Kbd>T</Kbd>
+            </Button>
+            {missing.length > 0 && (
+              <Button
+                variant="ghost"
+                disabled
+                title={missing.map((item) => `${item.name}: ${item.install_cmd}`).join("\n")}
+                className="h-8.5 max-w-full min-w-0 gap-2 rounded-[9px] px-2.5 text-ui-sm ring-1 ring-border-subtle ring-inset disabled:opacity-60"
+              >
+                <span className="truncate">{missing.map((item) => item.name).join(", ")}</span>
+                <span className="text-ui-xs text-fg-subtle">not installed</span>
+              </Button>
+            )}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
+          <span className="text-ui-xs font-medium text-fg-muted">Layout</span>
+          <div className="grid grid-cols-4 gap-2" role="group" aria-label="Layout">
+            {layouts.map((item) => (
+              <Button
+                key={item.id}
+                variant="ghost"
+                aria-pressed={item.id === layout.id}
+                onClick={() => setLayoutId(item.id)}
+                className={cn(
+                  "h-auto flex-col items-stretch gap-2 rounded-[10px] p-2 pb-2.5 text-left text-ui-xs font-normal text-fg-muted",
+                  CHOICE,
+                )}
+              >
+                <LayoutDiagram layout={item.node} />
+                <span className="truncate">{item.name}</span>
+              </Button>
+            ))}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
+          <span className="text-ui-xs font-medium text-fg-muted">Where</span>
+          <div className="flex items-center gap-2">
+            <SegmentedControl<QuickWhere>
+              label="Where"
+              value={inWorktree ? "worktree" : "here"}
+              onValueChange={setWhere}
+              options={[
+                ...(isRepo
+                  ? [
+                      {
+                        value: "worktree" as const,
+                        label: (
+                          <>
+                            <GitBranch size={13} aria-hidden="true" />
+                            New worktree
+                          </>
+                        ),
+                      },
+                    ]
+                  : []),
+                {
+                  value: "here",
+                  label: (
+                    <>
+                      <FolderSimple size={13} aria-hidden="true" />
+                      This folder
+                    </>
+                  ),
+                },
+              ]}
+            />
+            {inWorktree && fromBranch && branches.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Base branch: ${fromBranch}`}
+                      className="h-8.5 max-w-50 shrink-0 gap-1.5 px-2.5 font-normal text-fg-muted"
+                    />
+                  }
+                >
+                  from
+                  <span className="min-w-0 truncate font-mono text-ui-xs text-fg-default">
+                    {fromBranch}
+                  </span>
+                  <CaretDown size={11} aria-hidden="true" className="shrink-0" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
+                  {branches.map((branch) => (
+                    <DropdownMenuItem
+                      key={branch.name}
+                      onClick={() => setBaseBranch(branch.name)}
+                      className={cn(
+                        "font-mono text-ui-xs",
+                        branch.name === fromBranch && "bg-bg-hover",
+                      )}
+                    >
+                      <span className="min-w-0 truncate">{branch.name}</span>
+                      {branch.is_head && (
+                        <span className="ml-auto shrink-0 font-sans text-ui-2xs text-fg-subtle">
+                          checked out
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <span className="flex h-8.5 min-w-0 flex-1 items-center rounded-[9px] bg-bg-well px-2.5 font-mono text-ui-xs text-fg-muted ring-1 ring-border-subtle ring-inset">
+              <span className="truncate">
+                {inWorktree ? (
+                  <>
+                    <span className="text-fg-subtle">{spaceName} / </span>
+                    <span className="text-fg-default">pragma/{slug ? `${slug}-…` : "…"}</span>
+                  </>
+                ) : (
+                  `${folderName(rootPath)}, the folder itself`
+                )}
+              </span>
+            </span>
+          </div>
+        </section>
       </div>
 
-      <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
-        <span className="text-ui-xs font-medium text-fg-muted">Who</span>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Agent">
-          {choices.map((choice, index) => (
-            <Button
-              key={`${choice.manifest.id}:${choice.agent.accountDir ?? ""}`}
-              variant="ghost"
-              aria-pressed={sameAgent(agent, choice.agent)}
-              onClick={() => setPicked(choice.agent)}
-              className={cn(
-                "h-8.5 max-w-full min-w-0 gap-2 rounded-[9px] pr-2.5 pl-2 text-ui-sm text-fg-muted",
-                CHOICE,
-              )}
-            >
-              <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} />
-              {choice.manifest.name}
-              {choice.accountLabel && (
-                <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
-                  {choice.accountLabel}
-                </span>
-              )}
-              {index < MAX_AGENT_KEYS && <Kbd>{index + 1}</Kbd>}
-            </Button>
-          ))}
-          <Button
-            variant="ghost"
-            aria-pressed={agent.kind === "terminal"}
-            onClick={() => setPicked(TERMINAL_ONLY)}
-            className={cn("h-8.5 gap-2 rounded-[9px] pr-2.5 pl-2 text-ui-sm text-fg-muted", CHOICE)}
-          >
-            <TerminalWindow size={15} aria-hidden="true" />
-            Terminal only
-            <Kbd>T</Kbd>
-          </Button>
-          {missing.length > 0 && (
-            <Button
-              variant="ghost"
-              disabled
-              title={missing.map((item) => `${item.name}: ${item.install_cmd}`).join("\n")}
-              className="h-8.5 max-w-full min-w-0 gap-2 rounded-[9px] px-2.5 text-ui-sm ring-1 ring-border-subtle ring-inset disabled:opacity-60"
-            >
-              <span className="truncate">{missing.map((item) => item.name).join(", ")}</span>
-              <span className="text-ui-xs text-fg-subtle">not installed</span>
-            </Button>
-          )}
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
-        <span className="text-ui-xs font-medium text-fg-muted">Layout</span>
-        <div className="grid grid-cols-4 gap-2" role="group" aria-label="Layout">
-          {layouts.map((item) => (
-            <Button
-              key={item.id}
-              variant="ghost"
-              aria-pressed={item.id === layout.id}
-              onClick={() => setLayoutId(item.id)}
-              className={cn(
-                "h-auto flex-col items-stretch gap-2 rounded-[10px] p-2 pb-2.5 text-left text-ui-xs font-normal text-fg-muted",
-                CHOICE,
-              )}
-            >
-              <LayoutDiagram layout={item.node} />
-              <span className="truncate">{item.name}</span>
-            </Button>
-          ))}
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
-        <span className="text-ui-xs font-medium text-fg-muted">Where</span>
-        <div className="flex items-center gap-2">
-          <SegmentedControl<QuickWhere>
-            label="Where"
-            value={inWorktree ? "worktree" : "here"}
-            onValueChange={setWhere}
-            options={[
-              ...(isRepo
-                ? [
-                    {
-                      value: "worktree" as const,
-                      label: (
-                        <>
-                          <GitBranch size={13} aria-hidden="true" />
-                          New worktree
-                        </>
-                      ),
-                    },
-                  ]
-                : []),
-              {
-                value: "here",
-                label: (
-                  <>
-                    <FolderSimple size={13} aria-hidden="true" />
-                    This folder
-                  </>
-                ),
-              },
-            ]}
-          />
-          {inWorktree && fromBranch && branches.length > 1 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Base branch: ${fromBranch}`}
-                    className="h-8.5 max-w-50 shrink-0 gap-1.5 px-2.5 font-normal text-fg-muted"
-                  />
-                }
-              >
-                from
-                <span className="min-w-0 truncate font-mono text-ui-xs text-fg-default">
-                  {fromBranch}
-                </span>
-                <CaretDown size={11} aria-hidden="true" className="shrink-0" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="max-h-72 w-64 overflow-y-auto">
-                {branches.map((branch) => (
-                  <DropdownMenuItem
-                    key={branch.name}
-                    onClick={() => setBaseBranch(branch.name)}
-                    className={cn(
-                      "font-mono text-ui-xs",
-                      branch.name === fromBranch && "bg-bg-hover",
-                    )}
-                  >
-                    <span className="min-w-0 truncate">{branch.name}</span>
-                    {branch.is_head && (
-                      <span className="ml-auto shrink-0 font-sans text-ui-2xs text-fg-subtle">
-                        checked out
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <span className="flex h-8.5 min-w-0 flex-1 items-center rounded-[9px] bg-bg-well px-2.5 font-mono text-ui-xs text-fg-muted ring-1 ring-border-subtle ring-inset">
-            <span className="truncate">
-              {inWorktree ? (
-                <>
-                  <span className="text-fg-subtle">{spaceName} / </span>
-                  <span className="text-fg-default">pragma/{slug ? `${slug}-…` : "…"}</span>
-                </>
-              ) : (
-                `${folderName(rootPath)}, the folder itself`
-              )}
-            </span>
-          </span>
-        </div>
-      </section>
-
-      <footer className="mt-3.5 flex items-center gap-2 border-t border-border-subtle bg-bg-ground/40 py-3.5 pr-4 pl-5.5">
+      <footer className="mt-3.5 flex shrink-0 items-center gap-2 border-t border-border-subtle bg-bg-ground/40 py-3.5 pr-4 pl-5.5">
         <span className="min-w-0 truncate text-ui-sm text-fg-muted">
           Opens as tab <span className="text-fg-default">{tabTitle}</span> in {spaceName}
         </span>

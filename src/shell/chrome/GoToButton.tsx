@@ -14,12 +14,13 @@ export function GoToButton() {
   return (
     <Button
       variant="ghost"
+      aria-label="go to"
       onClick={() => openOverlay("goTo")}
       className="px-2.25 text-ui-xs font-normal"
     >
       <MagnifyingGlass size={ICON_SIZE.sm} />
-      go to
-      {shortcut && <Kbd>{formatShortcut(shortcut, getIsMac())}</Kbd>}
+      <span className="max-md:hidden">go to</span>
+      {shortcut && <Kbd className="max-lg:hidden">{formatShortcut(shortcut, getIsMac())}</Kbd>}
     </Button>
   );
 }

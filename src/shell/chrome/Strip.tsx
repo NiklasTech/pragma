@@ -70,14 +70,20 @@ export function Strip() {
       data-tauri-drag-region
       className="relative z-[60] flex h-header shrink-0 items-center gap-1 bg-bg-ground pr-2 pl-2.5 select-none"
     >
-      <div data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-1 self-stretch">
+      <div
+        data-tauri-drag-region
+        className="flex min-w-0 flex-1 items-center gap-1 self-stretch overflow-hidden"
+      >
         {isMac && <div data-tauri-drag-region className="w-[68px] shrink-0 self-stretch" />}
         <SpaceButton />
         <span aria-hidden="true" className="mr-3 ml-1 h-4 w-px shrink-0 bg-fg-default/15" />
         <SpaceTabs />
       </div>
 
-      <div data-tauri-drag-region className="flex shrink-0 items-center gap-1.5">
+      <div
+        data-tauri-drag-region
+        className="flex min-w-0 items-center justify-end gap-1.5 overflow-hidden"
+      >
         <ExtensionStatusItems alignment="left" />
         <ExtensionStatusItems alignment="right" />
         <StatusPill />
@@ -131,46 +137,49 @@ export function Strip() {
             onClick={toggleAI}
           >
             <Sparkle size={ICON_SIZE.sm} weight={aiOpen ? "fill" : "regular"} />
-            Chat
+            <span className="max-md:hidden">Chat</span>
           </Button>
         )}
 
         {!isMac && (
-          <>
-            <IconButton
-              icon={GearSix}
-              label="Settings"
-              shortcut={formatShortcut(shortcuts["view.openSettings"], isMac)}
-              onClick={() => openSettings()}
-            />
-            <div className="mx-1 h-4 w-px bg-border" />
-            <IconButton
-              icon={Minus}
-              weight="bold"
-              size="sm"
-              label="Minimize"
-              className="size-7"
-              onClick={handleMinimize}
-            />
-            <IconButton
-              icon={isMaximized ? CornersIn : CornersOut}
-              weight="bold"
-              size="sm"
-              label={isMaximized ? "Restore" : "Maximize"}
-              className="size-7"
-              onClick={handleToggleMaximize}
-            />
-            <IconButton
-              icon={X}
-              weight="bold"
-              size="sm"
-              label="Close"
-              className="size-7 hover:bg-status-error hover:text-fg-inverse"
-              onClick={handleClose}
-            />
-          </>
+          <IconButton
+            icon={GearSix}
+            label="Settings"
+            shortcut={formatShortcut(shortcuts["view.openSettings"], isMac)}
+            onClick={() => openSettings()}
+          />
         )}
       </div>
+
+      {!isMac && (
+        <div data-tauri-drag-region className="flex shrink-0 items-center gap-1.5">
+          <div className="mx-1 h-4 w-px bg-border" />
+          <IconButton
+            icon={Minus}
+            weight="bold"
+            size="sm"
+            label="Minimize"
+            className="size-7"
+            onClick={handleMinimize}
+          />
+          <IconButton
+            icon={isMaximized ? CornersIn : CornersOut}
+            weight="bold"
+            size="sm"
+            label={isMaximized ? "Restore" : "Maximize"}
+            className="size-7"
+            onClick={handleToggleMaximize}
+          />
+          <IconButton
+            icon={X}
+            weight="bold"
+            size="sm"
+            label="Close"
+            className="size-7 hover:bg-status-error hover:text-fg-inverse"
+            onClick={handleClose}
+          />
+        </div>
+      )}
     </div>
   );
 }
