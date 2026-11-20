@@ -17,7 +17,7 @@ export function EditorBottomLine() {
   const failed = last !== null && last.exitCode !== 0;
 
   return (
-    <div className="flex h-8.5 shrink-0 items-center gap-2.5 border-t border-border-subtle px-2">
+    <div className="@container flex h-8.5 min-w-0 shrink-0 items-center gap-2.5 border-t border-border-subtle px-2">
       <Button
         variant="ghost"
         size="sm"
@@ -27,7 +27,8 @@ export function EditorBottomLine() {
         className="min-w-0 gap-2 px-2 font-normal text-fg-muted"
       >
         <TerminalWindow size={14} aria-hidden="true" />
-        <span>Terminal</span>
+        {/* Narrow editors keep the icon and give the space to the file's details. */}
+        <span className="sr-only @[22rem]:not-sr-only">Terminal</span>
         {last && (
           <>
             <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
