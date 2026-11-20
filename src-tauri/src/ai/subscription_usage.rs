@@ -1,7 +1,7 @@
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
 use serde::Serialize;
@@ -108,7 +108,34 @@ pub fn parse_claude_usage(config: &Value) -> SubscriptionUsage {
     }
 }
 
+/// The last parse of each config file, kept while the file's modification time stays the same.
+static READ_CACHE: std::sync::Mutex<Vec<(PathBuf, SystemTime, SubscriptionUsage)>> =
+    std::sync::Mutex::new(Vec::new());
+
+fn cached_usage(path: &Path, modified: SystemTime) -> Option<SubscriptionUsage> {
+    let cache = READ_CACHE.lock().ok()?;
+    cache
+        .iter()
+        .find(|(cached, at, _)| cached == path && *at == modified)
+        .map(|(_, _, usage)| usage.clone())
+}
+
+fn remember_usage(path: &Path, modified: SystemTime, usage: &SubscriptionUsage) {
+    if let Ok(mut cache) = READ_CACHE.lock() {
+        cache.retain(|(cached, _, _)| cached != path);
+        cache.push((path.to_path_buf(), modified, usage.clone()));
+    }
+}
+
+/// Reads the cached usage, parsing the config again only after Claude Code wrote it, so it can be asked often.
 pub async fn read_claude_usage(path: &Path) -> Result<SubscriptionUsage, String> {
+    let modified = tokio::fs::metadata(path)
+        .await
+        .and_then(|metadata| metadata.modified())
+        .ok();
+    if let Some(usage) = modified.and_then(|at| cached_usage(path, at)) {
+        return Ok(usage);
+    }
     let bytes = match tokio::fs::read(path).await {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == ErrorKind::NotFound => {
@@ -118,7 +145,11 @@ pub async fn read_claude_usage(path: &Path) -> Result<SubscriptionUsage, String>
     };
     let config: Value = serde_json::from_slice(&bytes)
         .map_err(|error| format!("Could not parse the Claude Code config: {error}"))?;
-    Ok(parse_claude_usage(&config))
+    let usage = parse_claude_usage(&config);
+    if let Some(at) = modified {
+        remember_usage(path, at, &usage);
+    }
+    Ok(usage)
 }
 
 fn is_recent(fetched_at_ms: Option<i64>, now_ms: i64) -> bool {
@@ -288,6 +319,26 @@ mod tests {
         );
         assert_eq!(usage_command_error(br#"{"is_error":false}"#), None);
         assert_eq!(usage_command_error(b"not json"), None);
+    }
+
+    #[tokio::test]
+    async fn reads_a_config_again_once_it_changed() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(".claude.json");
+        std::fs::write(&path, config("a", "a").to_string()).unwrap();
+        let first = read_claude_usage(&path).await.unwrap();
+        assert_eq!(first.windows.len(), 2);
+
+        std::fs::write(&path, config("a", "b").to_string()).unwrap();
+        let later = std::time::SystemTime::now() + Duration::from_secs(5);
+        std::fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(later)
+            .unwrap();
+        let second = read_claude_usage(&path).await.unwrap();
+        assert!(second.windows.is_empty());
     }
 
     #[tokio::test]

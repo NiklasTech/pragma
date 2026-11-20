@@ -13,9 +13,13 @@ export function currentWindows(usage: SubscriptionUsage | null, now: number): Us
   );
 }
 
-export function isStale(usage: SubscriptionUsage | null, now: number): boolean {
+export function isStale(
+  usage: SubscriptionUsage | null,
+  now: number,
+  staleAfterMs: number = STALE_AFTER_MS,
+): boolean {
   if (!usage || usage.fetchedAtMs === null) return true;
-  if (now - usage.fetchedAtMs >= STALE_AFTER_MS) return true;
+  if (now - usage.fetchedAtMs >= staleAfterMs) return true;
   return currentWindows(usage, now).length < usage.windows.length;
 }
 
