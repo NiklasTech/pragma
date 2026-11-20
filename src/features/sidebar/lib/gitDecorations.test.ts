@@ -27,7 +27,7 @@ function snapshot(files: GitStatusEntry[]): GitStatusSnapshot {
 
 describe("buildGitDecorations", () => {
   it("returns empty decorations without a snapshot", () => {
-    const decorations = buildGitDecorations(null);
+    const decorations = buildGitDecorations(null, "/repo");
     expect(decorations.files.size).toBe(0);
     expect(decorations.dirtyDirs.size).toBe(0);
   });
@@ -40,6 +40,7 @@ describe("buildGitDecorations", () => {
         entry("src/old.ts", "D"),
         entry("src/merge.ts", "M", true),
       ]),
+      "/repo",
     );
 
     expect(decorations.files.get("/repo/src/app/App.tsx")).toEqual({
@@ -50,5 +51,18 @@ describe("buildGitDecorations", () => {
     expect(decorations.files.get("/repo/src/old.ts")?.kind).toBe("deleted");
     expect(decorations.files.get("/repo/src/merge.ts")?.kind).toBe("conflict");
     expect([...decorations.dirtyDirs].sort()).toEqual(["/repo/src", "/repo/src/app"]);
+  });
+
+  it("uses the tree's Windows paths, not the canonical repo root", () => {
+    const status = snapshot([entry("src/app/App.tsx", "M")]);
+    status.repo.repo_root = "\\\\?\\C:\\code\\repo";
+
+    const decorations = buildGitDecorations(status, "C:\\code\\repo");
+
+    expect(decorations.files.get("C:\\code\\repo\\src\\app\\App.tsx")?.letter).toBe("M");
+    expect([...decorations.dirtyDirs].sort()).toEqual([
+      "C:\\code\\repo\\src",
+      "C:\\code\\repo\\src\\app",
+    ]);
   });
 });

@@ -34,7 +34,7 @@ export function WorktreeTree({
   const path = worktree.environment.path;
   const { tree, expandedDirs, toggleDir, snapshot } = useWorktreeFiles(path);
   const { manifest, name, state } = useWorktreeAgent(worktree.sessionId);
-  const decorations = useMemo(() => buildGitDecorations(snapshot), [snapshot]);
+  const decorations = useMemo(() => buildGitDecorations(snapshot, path), [snapshot, path]);
 
   const filtering = filter.trim() !== "";
   const files = useWorkspaceFileList(path, filtering);

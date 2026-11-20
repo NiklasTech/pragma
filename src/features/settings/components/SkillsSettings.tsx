@@ -37,8 +37,9 @@ export function SkillsSettings() {
       }
     >
       <p className="py-2.5 text-[12.5px] leading-relaxed text-fg-muted">
-        The CLIs under used by read a skill from its folder themselves. The switch lists it in the
-        prompt of Pragma sessions without a named agent; skills from CLI folders start off.
+        The CLIs in the &quot;used by&quot; column read a skill from its folder themselves. The
+        switch lists it in the prompt of Pragma sessions without a named agent; skills from CLI
+        folders start off.
       </p>
       <SkillList
         skills={skills}

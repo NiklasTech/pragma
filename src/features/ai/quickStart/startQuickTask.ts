@@ -22,11 +22,12 @@ export async function startQuickTask(request: QuickStartRequest): Promise<void> 
   const task = request.task.trim();
   let environment: OpenLayoutOptions["environment"] = { environment: "checkout" };
   if (request.where === "worktree") {
+    const toastId = toast.loading("Creating worktree…");
     const worktree = await createWorktreeEnvironment(
       request.rootPath,
       request.baseBranch,
       task || undefined,
-    );
+    ).finally(() => toast.dismiss(toastId));
     if (worktree.setupStatus !== "ready") {
       const lastLine = worktree.setupLog.trim().split("\n").pop();
       toast.error("The worktree setup script failed", { description: lastLine || undefined });
