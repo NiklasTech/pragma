@@ -2,6 +2,7 @@ pub mod acp;
 pub mod auth;
 pub mod child_sessions;
 pub mod cli;
+pub mod cli_accounts;
 pub mod config;
 pub mod error;
 pub mod image;

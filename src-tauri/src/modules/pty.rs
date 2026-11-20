@@ -428,7 +428,12 @@ pub fn create_pty_command(
     cwd: Option<String>,
     cols: u16,
     rows: u16,
+    account: Option<crate::ai::cli_accounts::CliAccountLaunch>,
 ) -> Result<String, String> {
+    let account_env = account
+        .as_ref()
+        .map(crate::ai::cli_accounts::account_env)
+        .transpose()?;
     let trimmed = command.trim();
     if trimmed.is_empty() {
         return Err("command is required".to_string());
@@ -471,6 +476,9 @@ pub fn create_pty_command(
     cmd.args(args);
     cmd.env("TERM", "xterm-256color");
     cmd.env("COLORTERM", "truecolor");
+    if let Some((var, dir)) = account_env {
+        cmd.env(var, dir);
+    }
 
     // Find the same CLIs here as the status check does.
     #[cfg(target_os = "windows")]

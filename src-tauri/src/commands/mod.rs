@@ -5,6 +5,7 @@ pub mod browser_frame;
 pub mod chat_search;
 pub mod chat_storage;
 pub mod cli;
+pub mod cli_accounts;
 pub mod context;
 pub mod docker;
 pub mod image_files;

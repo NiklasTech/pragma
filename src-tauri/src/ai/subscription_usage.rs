@@ -150,7 +150,12 @@ static REFRESH_LOCK: Mutex<()> = Mutex::const_new(());
 
 /// Lets Claude Code fetch the usage with its own credentials in a separate, non-interactive
 /// process, then reads the cache it wrote. Pragma never sees the credentials.
-pub async fn refresh_claude_usage(path: &Path, cwd: &Path) -> Result<SubscriptionUsage, String> {
+/// `account_dir` runs it as a second account, the way a session of that account starts.
+pub async fn refresh_claude_usage(
+    path: &Path,
+    cwd: &Path,
+    account_dir: Option<&Path>,
+) -> Result<SubscriptionUsage, String> {
     let _guard = REFRESH_LOCK.lock().await;
     let current = read_claude_usage(path).await?;
     if is_recent(current.fetched_at_ms, Utc::now().timestamp_millis()) {
@@ -174,6 +179,9 @@ pub async fn refresh_claude_usage(path: &Path, cwd: &Path) -> Result<Subscriptio
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
+    if let Some(dir) = account_dir {
+        command.env("CLAUDE_CONFIG_DIR", dir);
+    }
 
     let output = timeout(REFRESH_TIMEOUT, command.output())
         .await

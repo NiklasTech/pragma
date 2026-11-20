@@ -37,6 +37,7 @@ permissions = [
   "allow-cancel-workspace-search",
   "allow-check-port-in-use",
   "allow-child-session-spawn-reply",
+  "allow-cli-accounts-list",
   "allow-cli-acp-accepts-images",
   "allow-cli-acp-approve",
   "allow-cli-acp-cancel",
