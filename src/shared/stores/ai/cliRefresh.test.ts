@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const loadCLIStatuses = vi.fn(() => Promise.resolve());
 
+vi.mock("@/shared/stores/ai/cliAccounts", () => ({ loadCliAccounts: () => Promise.resolve() }));
+
 vi.mock("@/shared/stores/ai", () => ({
   useAIStore: { getState: () => ({ loadCLIStatuses }) },
 }));

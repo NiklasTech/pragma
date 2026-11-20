@@ -15,11 +15,16 @@ export type JoinTarget =
   | { kind: "ask" | "agent" }
   | { kind: "cli"; manifest: CLIManifest; action: SessionMenuCliAction };
 
+export interface StartTerminalOptions extends Pick<StartSessionRequest, "sameEnvironmentAs"> {
+  /** The CLI's account folder; unset runs its default account. */
+  accountDir?: string;
+}
+
 export interface NewSessionActions {
   startAsk: () => Promise<void>;
   startAgentCheckout: () => Promise<void>;
   startAgentWorktree: () => Promise<void>;
-  startTerminal: (manifest: CLIManifest) => Promise<void>;
+  startTerminal: (manifest: CLIManifest, options?: StartTerminalOptions) => Promise<void>;
   startShell: () => Promise<void>;
   startConversation: (manifest: CLIManifest) => Promise<void>;
   joinWorktree: (environmentId: string, target: JoinTarget) => Promise<void>;
@@ -84,10 +89,13 @@ export function useNewSessionActions(
   );
 
   const startTerminal = useCallback(
-    async (manifest: CLIManifest, environment?: Pick<StartSessionRequest, "sameEnvironmentAs">) => {
+    async (manifest: CLIManifest, options?: StartTerminalOptions) => {
       if (!rootPath) return;
       try {
-        const session = await createTerminalSession(rootPath, manifest, { environment });
+        const session = await createTerminalSession(rootPath, manifest, {
+          environment: { sameEnvironmentAs: options?.sameEnvironmentAs },
+          accountDir: options?.accountDir,
+        });
         place(session.id);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : `Could not start ${manifest.name}`);

@@ -29,6 +29,7 @@ interface TerminalEntry {
   /** Set for a shell pane: the shell to start instead of a CLI command. */
   shell: string | null;
   cwd: string | null;
+  account: TerminalAccount | null;
   buffer: string;
   status: TerminalStatus;
   exitCode: number | null;
@@ -37,11 +38,18 @@ interface TerminalEntry {
   lastAttentionAt: number;
 }
 
+/** Starts the CLI with this account's config folder instead of its default one. */
+export interface TerminalAccount {
+  providerId: string;
+  configDir: string;
+}
+
 export interface StartTerminalOptions {
   command: string;
   /** Starts this shell like the code tab terminal does, instead of running `command`. */
   shell?: string | null;
   cwd: string | null;
+  account?: TerminalAccount | null;
   cols: number;
   rows: number;
 }
@@ -256,6 +264,7 @@ export async function ensureTerminal(
       command: options.command,
       shell: options.shell ?? null,
       cwd: options.cwd,
+      account: options.account ?? null,
       buffer: "",
       status: "running",
       exitCode: null,
@@ -295,6 +304,7 @@ export async function ensureTerminal(
           : await invoke<string>("create_pty_command", {
               command: current.command,
               cwd: current.cwd,
+              account: current.account,
               ...size,
             });
       current.ptyId = ptyId;

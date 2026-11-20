@@ -126,6 +126,10 @@ export function TerminalPane({ session }: TerminalPaneProps) {
       command,
       shell: shellSession ? shellRef.current : undefined,
       cwd,
+      account:
+        manifest && session.cliAccountDir
+          ? { providerId: manifest.id, configDir: session.cliAccountDir }
+          : null,
       cols: initialSize.cols,
       rows: initialSize.rows,
     });

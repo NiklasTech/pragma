@@ -1,4 +1,5 @@
 import { useAIStore } from "@/shared/stores/ai";
+import { loadCliAccounts } from "@/shared/stores/ai/cliAccounts";
 
 /** CLIs are checked again at most this often; one check runs every installed CLI once. */
 export const CLI_REFRESH_INTERVAL_MS = 5000;
@@ -12,9 +13,8 @@ export function refreshCLIStatuses(now: number = Date.now()): Promise<void> {
   if (running) return running;
   if (now - lastRun < CLI_REFRESH_INTERVAL_MS) return Promise.resolve();
   lastRun = now;
-  running = useAIStore
-    .getState()
-    .loadCLIStatuses()
+  running = Promise.all([useAIStore.getState().loadCLIStatuses(), loadCliAccounts()])
+    .then(() => {})
     .finally(() => {
       running = null;
     });

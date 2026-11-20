@@ -20,7 +20,7 @@ export const LAYOUT_PRESETS_STORAGE_KEY = "pragma.agents.layouts.v1";
 /** What a pane of a saved layout starts: a shell, a coding CLI terminal, or nothing yet. */
 export type PresetPane =
   | { type: "pane"; start: "shell" | "empty" }
-  | { type: "pane"; start: "cli"; cliProviderId: string };
+  | { type: "pane"; start: "cli"; cliProviderId: string; cliAccountDir?: string };
 
 export interface PresetSplit {
   type: "split";
@@ -42,7 +42,8 @@ function paneFor(leaf: Leaf | undefined, sessions: readonly ChatSession[]): Pres
   if (session?.kind !== "terminal" || !session.cliProviderId)
     return { type: "pane", start: "empty" };
   if (session.cliProviderId === SHELL_PROVIDER_ID) return { type: "pane", start: "shell" };
-  return { type: "pane", start: "cli", cliProviderId: session.cliProviderId };
+  const pane: PresetPane = { type: "pane", start: "cli", cliProviderId: session.cliProviderId };
+  return session.cliAccountDir ? { ...pane, cliAccountDir: session.cliAccountDir } : pane;
 }
 
 /** The shape of a tab and what runs in each pane; conversations themselves are not kept. */

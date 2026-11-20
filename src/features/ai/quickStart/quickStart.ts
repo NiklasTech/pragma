@@ -3,7 +3,9 @@ import type { CLIManifest, CLIStatus } from "@/shared/stores/ai";
 import type { PresetNode, PresetPane } from "../panes/layoutPresets";
 
 /** Who runs the task: a coding CLI by manifest id, or a plain terminal. */
-export type QuickAgent = { kind: "cli"; manifestId: string } | { kind: "terminal" };
+export type QuickAgent =
+  | { kind: "cli"; manifestId: string; accountDir?: string }
+  | { kind: "terminal" };
 
 export const TERMINAL_ONLY: QuickAgent = { kind: "terminal" };
 
@@ -28,9 +30,9 @@ export function quickAgents(
 }
 
 export function agentPane(agent: QuickAgent): PresetPane {
-  return agent.kind === "cli"
-    ? { type: "pane", start: "cli", cliProviderId: agent.manifestId }
-    : { type: "pane", start: "shell" };
+  if (agent.kind === "terminal") return { type: "pane", start: "shell" };
+  const pane: PresetPane = { type: "pane", start: "cli", cliProviderId: agent.manifestId };
+  return agent.accountDir ? { ...pane, cliAccountDir: agent.accountDir } : pane;
 }
 
 const SHELL: PresetPane = { type: "pane", start: "shell" };

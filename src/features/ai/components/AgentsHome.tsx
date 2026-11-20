@@ -13,6 +13,7 @@ import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useAIStore } from "@/shared/stores/ai";
+import { useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
@@ -29,12 +30,15 @@ import { isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
 import { createTerminalSession } from "../panes/launch";
 import { useAgentsPanesStore } from "../panes/store";
+import { quickChoices, sameAgent, type QuickChoice } from "../quickStart/quickChoices";
 import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
 import { ChatToolbar } from "./ChatToolbar";
 
-/** Pragma's own agent; any other pick is a coding CLI's manifest id. */
+/** Pragma's own agent; any other pick is a coding CLI, or one account of it. */
 const PRAGMA_AGENT = "pragma";
+
+type HomeAgent = QuickChoice["agent"] | typeof PRAGMA_AGENT;
 
 const CARD =
   "h-auto flex-col items-stretch gap-1.5 rounded-[12px] px-3.5 py-3 text-left text-ui-sm font-normal text-fg-default ring-1 ring-border-subtle ring-inset hover:bg-transparent hover:ring-border";
@@ -77,12 +81,14 @@ export function AgentsHome() {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
   const shortcuts = useSettingsStore((state) => state.shortcuts);
   const openOverlay = useOverlayStore((state) => state.open);
   const actions = useNewSessionActions(rootPath);
 
   const [prompt, setPrompt] = useState("");
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<HomeAgent | null>(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -94,7 +100,11 @@ export function AgentsHome() {
   }, []);
 
   const { ready } = useMemo(() => quickAgents(manifests, statuses), [manifests, statuses]);
-  const agent = picked ?? ready[0]?.id ?? PRAGMA_AGENT;
+  const choices = useMemo(
+    () => quickChoices(ready, accounts, accountNames),
+    [ready, accounts, accountNames],
+  );
+  const agent: HomeAgent = picked ?? choices[0]?.agent ?? PRAGMA_AGENT;
   const name = getWorkspaceName(rootPath);
   const where =
     defaultEnvironment(chatSessions, setting) === "worktree"
@@ -122,10 +132,11 @@ export function AgentsHome() {
         });
         openSession(rootPath, session.id);
       } else {
-        const manifest = ready.find((item) => item.id === agent);
+        const manifest = ready.find((item) => item.id === agent.manifestId);
         if (!manifest) return;
         const session = await createTerminalSession(rootPath, manifest, {
           title: text ? taskTabTitle(text) : undefined,
+          accountDir: agent.accountDir,
         });
         openSession(rootPath, session.id);
         if (text) deliverTerminalPrompt(session.id, text);
@@ -196,18 +207,23 @@ export function AgentsHome() {
           />
           <div className="flex flex-wrap items-center gap-1.5">
             <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Agent">
-              {ready.map((manifest) => (
+              {choices.map((choice) => (
                 <Button
-                  key={manifest.id}
+                  key={`${choice.manifest.id}:${choice.agent.accountDir ?? ""}`}
                   type="button"
                   variant="ghost"
                   size="sm"
-                  aria-pressed={agent === manifest.id}
-                  onClick={() => setPicked(manifest.id)}
-                  className="h-7 gap-1.75 pr-2.25 pl-1.5 text-ui-sm font-normal aria-pressed:bg-bg-hover aria-pressed:text-fg-default"
+                  aria-pressed={agent !== PRAGMA_AGENT && sameAgent(agent, choice.agent)}
+                  onClick={() => setPicked(choice.agent)}
+                  className="h-7 max-w-full min-w-0 gap-1.75 pr-2.25 pl-1.5 text-ui-sm font-normal aria-pressed:bg-bg-hover aria-pressed:text-fg-default"
                 >
-                  <AgentMark agentId={manifest.id} name={manifest.name} size="sm" />
-                  {manifest.name}
+                  <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} size="sm" />
+                  {choice.manifest.name}
+                  {choice.accountLabel && (
+                    <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
+                      {choice.accountLabel}
+                    </span>
+                  )}
                 </Button>
               ))}
               <Button

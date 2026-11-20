@@ -30,6 +30,9 @@ pub struct ChatSessionMetadata {
     pub worktree: Option<SessionWorktreeMetadata>,
     #[serde(default)]
     pub cli_provider_id: Option<String>,
+    /// The CLI's account folder; absent runs the CLI's default account.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cli_account_dir: Option<String>,
     #[serde(default)]
     pub agent_id: Option<String>,
     #[serde(default)]

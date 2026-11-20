@@ -21,6 +21,7 @@ export interface StoredSessionMetadata {
   environment?: string | null;
   environment_id?: string | null;
   cli_provider_id?: string | null;
+  cli_account_dir?: string | null;
   agent_id?: string | null;
   archived?: boolean;
   agent_engine?: AgentEngine | null;
@@ -82,6 +83,7 @@ function toStoredSession(session: ChatSession): StoredSessionMetadata {
   if (session.environment) stored.environment = session.environment;
   if (session.environmentId) stored.environment_id = session.environmentId;
   if (session.cliProviderId) stored.cli_provider_id = session.cliProviderId;
+  if (session.cliAccountDir) stored.cli_account_dir = session.cliAccountDir;
   if (session.agentId) stored.agent_id = session.agentId;
   if (session.archived) stored.archived = true;
   if (session.agentEngine) stored.agent_engine = session.agentEngine;
@@ -111,6 +113,7 @@ export function fromStoredSession(session: StoredSessionMetadata, rootPath: stri
   }
   if (session.environment_id) restored.environmentId = session.environment_id;
   if (session.cli_provider_id) restored.cliProviderId = session.cli_provider_id;
+  if (session.cli_account_dir) restored.cliAccountDir = session.cli_account_dir;
   if (session.agent_id) restored.agentId = session.agent_id;
   if (session.archived) restored.archived = true;
   if (session.agent_engine) restored.agentEngine = session.agent_engine;
