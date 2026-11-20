@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
+import { accountKey } from "@/shared/stores/ai/cliAccounts";
+
 import type { SubscriptionUsage } from "./types";
 
 export interface ProviderUsageState {
@@ -21,6 +23,7 @@ const EMPTY_STATE: ProviderUsageState = {
 };
 
 interface SubscriptionUsageStore {
+  /** By account key: one plan per account of a CLI. */
   byProvider: Readonly<Record<string, ProviderUsageState>>;
 }
 
@@ -31,17 +34,20 @@ export const useSubscriptionUsageStore = create<SubscriptionUsageStore>()(() => 
 export function selectProviderUsage(
   state: SubscriptionUsageStore,
   providerId: string,
+  configDir: string | null = null,
 ): ProviderUsageState {
-  return state.byProvider[providerId] ?? EMPTY_STATE;
+  return state.byProvider[accountKey(providerId, configDir)] ?? EMPTY_STATE;
 }
 
-function patch(providerId: string, next: Partial<ProviderUsageState>): void {
+function patch(
+  providerId: string,
+  configDir: string | null,
+  next: Partial<ProviderUsageState>,
+): void {
   const { byProvider } = useSubscriptionUsageStore.getState();
+  const current = selectProviderUsage({ byProvider }, providerId, configDir);
   useSubscriptionUsageStore.setState({
-    byProvider: {
-      ...byProvider,
-      [providerId]: { ...selectProviderUsage({ byProvider }, providerId), ...next },
-    },
+    byProvider: { ...byProvider, [accountKey(providerId, configDir)]: { ...current, ...next } },
   });
 }
 
@@ -51,27 +57,40 @@ function errorText(error: unknown): string {
 }
 
 /// Reads what the CLI last cached. A file read only, so it is cheap to repeat.
-export async function readSubscriptionUsage(providerId: string): Promise<SubscriptionUsage | null> {
+export async function readSubscriptionUsage(
+  providerId: string,
+  configDir: string | null = null,
+): Promise<SubscriptionUsage | null> {
   try {
-    const usage = await invoke<SubscriptionUsage>("subscription_usage_read", { providerId });
-    patch(providerId, { usage, readError: null });
+    const usage = await invoke<SubscriptionUsage>("subscription_usage_read", {
+      providerId,
+      configDir,
+    });
+    patch(providerId, configDir, { usage, readError: null });
     return usage;
   } catch (error) {
-    patch(providerId, { readError: errorText(error) });
+    patch(providerId, configDir, { readError: errorText(error) });
     return null;
   }
 }
 
 /// Lets the CLI fetch fresh usage in its own process; never writes into a running session.
-export async function refreshSubscriptionUsage(providerId: string): Promise<void> {
-  if (selectProviderUsage(useSubscriptionUsageStore.getState(), providerId).refreshing) return;
-  patch(providerId, { refreshing: true, refreshedAt: Date.now() });
+export async function refreshSubscriptionUsage(
+  providerId: string,
+  configDir: string | null = null,
+): Promise<void> {
+  const state = useSubscriptionUsageStore.getState();
+  if (selectProviderUsage(state, providerId, configDir).refreshing) return;
+  patch(providerId, configDir, { refreshing: true, refreshedAt: Date.now() });
   try {
-    const usage = await invoke<SubscriptionUsage>("subscription_usage_refresh", { providerId });
-    patch(providerId, { usage, readError: null, refreshError: null });
+    const usage = await invoke<SubscriptionUsage>("subscription_usage_refresh", {
+      providerId,
+      configDir,
+    });
+    patch(providerId, configDir, { usage, readError: null, refreshError: null });
   } catch (error) {
-    patch(providerId, { refreshError: errorText(error) });
+    patch(providerId, configDir, { refreshError: errorText(error) });
   } finally {
-    patch(providerId, { refreshing: false });
+    patch(providerId, configDir, { refreshing: false });
   }
 }
