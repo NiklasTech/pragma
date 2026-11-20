@@ -25,14 +25,6 @@ export const DASHBOARD_STATE_LABELS: Record<DashboardState, string> = {
   idle: "Idle",
 };
 
-const STATE_ORDER: Record<DashboardState, number> = {
-  waiting: 0,
-  working: 1,
-  failed: 2,
-  finished: 3,
-  idle: 4,
-};
-
 export function resolveDashboardState(sessionId: string, input: StateInput): DashboardState {
   if (input.waiting.has(sessionId)) return "waiting";
   if (input.running.has(sessionId) || input.terminalWorking.has(sessionId)) return "working";
@@ -66,44 +58,6 @@ export interface DashboardItem {
   session: ChatSession;
   state: DashboardState;
   since: number;
-}
-
-export interface DashboardGroup {
-  category: string | null;
-  items: DashboardItem[];
-}
-
-/// Categories alphabetically, uncategorized sessions last; sessions that need the user come first.
-export function groupByCategory(items: DashboardItem[]): DashboardGroup[] {
-  const byCategory = new Map<string | null, DashboardItem[]>();
-  for (const item of items) {
-    const category = item.session.category ?? null;
-    const group = byCategory.get(category) ?? [];
-    group.push(item);
-    byCategory.set(category, group);
-  }
-  return [...byCategory.entries()]
-    .sort(([a], [b]) => {
-      if (a === null) return b === null ? 0 : 1;
-      if (b === null) return -1;
-      return a.localeCompare(b);
-    })
-    .map(([category, group]) => ({
-      category,
-      items: group.sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || b.since - a.since),
-    }));
-}
-
-export function countStates(items: DashboardItem[]): Record<DashboardState, number> {
-  const counts: Record<DashboardState, number> = {
-    waiting: 0,
-    working: 0,
-    failed: 0,
-    finished: 0,
-    idle: 0,
-  };
-  for (const item of items) counts[item.state] += 1;
-  return counts;
 }
 
 export function formatStateDuration(ms: number): string {

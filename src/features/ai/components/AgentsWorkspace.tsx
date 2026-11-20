@@ -20,7 +20,7 @@ import { TaskBoard } from "@/features/ai/tasks/TaskBoard";
 import { useTasksStore } from "@/features/ai/tasks/store";
 import { useTasksUiStore } from "@/features/ai/tasks/ui";
 
-import { ActivityDashboard } from "../activity/ActivityDashboard";
+import { ActivityPage } from "../activity/page/ActivityPage";
 import { AgentsHome } from "./AgentsHome";
 import { PaneTree } from "../panes/PaneTree";
 import { openInRepository } from "../sessions/openInRepository";
@@ -155,7 +155,7 @@ export function AgentsWorkspace() {
         className={cn(!showWells && CARD_CLASS, "flex min-w-0 flex-1 flex-col")}
       >
         {showActivity ? (
-          <ActivityDashboard />
+          <ActivityPage />
         ) : showForm ? (
           <AgentForm
             agent={formAgent ?? undefined}

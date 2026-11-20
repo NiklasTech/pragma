@@ -3,14 +3,10 @@ import { describe, expect, it } from "vite-plus/test";
 import type { ChatSession } from "@/shared/stores/ai";
 
 import {
-  countStates,
   engineLabel,
   formatStateDuration,
-  groupByCategory,
   resolveDashboardState,
   trackStates,
-  type DashboardItem,
-  type DashboardState,
   type StateInput,
 } from "./dashboard";
 
@@ -23,10 +19,6 @@ const quiet: StateInput = {
 
 function session(id: string, extra: Partial<ChatSession> = {}): ChatSession {
   return { id, rootPath: "/repo", title: id, messages: [], createdAt: 0, updatedAt: 100, ...extra };
-}
-
-function item(id: string, state: DashboardState, since: number, category?: string): DashboardItem {
-  return { session: session(id, { category }), state, since };
 }
 
 describe("resolveDashboardState", () => {
@@ -84,35 +76,6 @@ describe("trackStates", () => {
     };
     const next = trackStates(previous, [session("a")], quiet, 9_000);
     expect(Object.keys(next)).toEqual(["a"]);
-  });
-});
-
-describe("groupByCategory", () => {
-  it("sorts categories alphabetically with uncategorized sessions last", () => {
-    const groups = groupByCategory([
-      item("a", "idle", 0),
-      item("b", "idle", 0, "Web"),
-      item("c", "idle", 0, "Api"),
-    ]);
-    expect(groups.map((group) => group.category)).toEqual(["Api", "Web", null]);
-  });
-
-  it("lists sessions that need the user first, then the latest change", () => {
-    const [group] = groupByCategory([
-      item("idle", "idle", 50),
-      item("old", "working", 10),
-      item("new", "working", 20),
-      item("ask", "waiting", 0),
-    ]);
-    expect(group.items.map((entry) => entry.session.id)).toEqual(["ask", "new", "old", "idle"]);
-  });
-});
-
-describe("countStates", () => {
-  it("counts every state", () => {
-    const counts = countStates([item("a", "working", 0), item("b", "working", 0)]);
-    expect(counts.working).toBe(2);
-    expect(counts.idle).toBe(0);
   });
 });
 
