@@ -21,7 +21,6 @@ import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { Button } from "@/shared/components/ui/button";
 import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
 import { RunConfigWidget } from "@/features/run-config/components";
-import { ContextPaneToggle } from "@/features/ai/components/ContextPaneToggle";
 import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
 import { ExtensionStatusItems } from "@/features/extensions/components/ExtensionStatusItems";
 import { cn } from "@/shared/lib/utils";
@@ -121,8 +120,6 @@ export function Strip() {
             onClick={saveFile}
           />
         )}
-
-        {!isMac && !inEditor && <ContextPaneToggle />}
 
         {!isMac && inEditor && (
           <Button

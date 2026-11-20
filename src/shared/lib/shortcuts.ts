@@ -126,8 +126,8 @@ export const SHORTCUT_ACTIONS = [
     }),
   },
   {
-    id: "view.toggleContextPane" as const,
-    label: "Toggle Review Pane",
+    id: "view.showActivity" as const,
+    label: "Show Activity",
     category: "view" as const,
     default: (isMac: boolean): ShortcutBinding => ({
       [isMac ? "meta" : "ctrl"]: true,

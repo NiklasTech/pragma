@@ -10,6 +10,7 @@ import { resolveDefaultTerminalPanelId } from "@/shared/lib/terminal-panels";
 import { dispatchTerminalFind, isTerminalFindFocused } from "@/shared/lib/terminal-events";
 import { useLayoutStore } from "@/shell/layout";
 import { resolveUiMode, useUiModeStore } from "@/shell/mode";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useCommandPaletteStore } from "@/shared/stores/commandPalette";
 import { useOverlayStore } from "@/shared/stores/overlays";
 import { openGitHistory } from "@/features/gitHistory/openGitHistory";
@@ -118,19 +119,8 @@ export function useAppShortcutActions(): ShortcutActions {
       "view.openSettings": () => {
         openSettings();
       },
-      "view.toggleContextPane": () => {
-        const agentsUi = useAgentsUiStore.getState();
-        const { uiMode, setUiMode } = useUiModeStore.getState();
-        const hasRootPath = useFileExplorerStore.getState().rootPath !== null;
-        const visible =
-          resolveUiMode(uiMode, hasRootPath) === "agents" && !agentsUi.contextPaneCollapsed;
-        // Only a pane in view collapses; otherwise the agents tab comes forward with the pane open.
-        if (visible) {
-          agentsUi.setContextPaneCollapsed(true);
-          return;
-        }
-        setUiMode("agents");
-        agentsUi.setContextPaneCollapsed(false);
+      "view.showActivity": () => {
+        useOpenRepositoriesStore.getState().activateTabKind("activity");
       },
       "pane.focusLeft": () => inAgentsTab() && focusPaneInDirection("left"),
       "pane.focusRight": () => inAgentsTab() && focusPaneInDirection("right"),

@@ -6,6 +6,8 @@ import { cn } from "@/shared/lib/utils";
 import { CARD_CLASS } from "@/shared/lib/surfaces";
 import { repositorySessions, useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { activeTab } from "@/shared/stores/spaces/model";
 import { useAgentStore } from "@/features/agent/store";
 import { ThreadList } from "@/features/ai/threads/ThreadList";
 import { ThreadsDrawer } from "@/features/ai/threads/ThreadsDrawer";
@@ -18,7 +20,7 @@ import { TaskBoard } from "@/features/ai/tasks/TaskBoard";
 import { useTasksStore } from "@/features/ai/tasks/store";
 import { useTasksUiStore } from "@/features/ai/tasks/ui";
 
-import { AgentsContextPane } from "./AgentsContextPane";
+import { ActivityDashboard } from "../activity/ActivityDashboard";
 import { AgentsHome } from "./AgentsHome";
 import { PaneTree } from "../panes/PaneTree";
 import { openInRepository } from "../sessions/openInRepository";
@@ -31,7 +33,7 @@ import {
   useAgentsPanesStore,
   usePaneTreeKey,
 } from "../panes/store";
-import { shouldAutoOpenContextPane, useAgentsUiStore } from "../store/agentsUi";
+import { useAgentsUiStore } from "../store/agentsUi";
 
 export function AgentsWorkspace() {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
@@ -45,12 +47,10 @@ export function AgentsWorkspace() {
   const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, treeKey));
   const syncSessions = useAgentsPanesStore((state) => state.syncSessions);
 
-  const agentStatus = useAgentStore((state) => state.status);
-  const editReviewCount = useAgentStore((state) => state.editReviews.length);
-  const checkpointedCount = useAgentStore((state) => state.checkpointedPaths.length);
-
-  const contextPaneCollapsed = useAgentsUiStore((state) => state.contextPaneCollapsed);
-  const setContextPaneCollapsed = useAgentsUiStore((state) => state.setContextPaneCollapsed);
+  const showActivity = useOpenRepositoriesStore((state) => {
+    const space = state.spaces.find((candidate) => candidate.id === state.activeSpaceId);
+    return space ? activeTab(space)?.kind === "activity" : false;
+  });
   const threadsColumn = useAgentsUiStore((state) => state.threadsPinned && state.threadsOpen);
 
   const agents = useNamedAgentsStore((state) => state.agents);
@@ -122,18 +122,6 @@ export function AgentsWorkspace() {
     setActiveChatSession(focusedSessionId);
   }, [focusedSessionId, activeChatSessionId, setActiveChatSession]);
 
-  const autoOpen = shouldAutoOpenContextPane({
-    status: agentStatus,
-    editReviewCount,
-    checkpointedCount,
-  });
-
-  useEffect(() => {
-    if (autoOpen && contextPaneCollapsed) {
-      setContextPaneCollapsed(false);
-    }
-  }, [autoOpen, contextPaneCollapsed, setContextPaneCollapsed]);
-
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? null;
   const formAgent = formAgentId ? (agents.find((agent) => agent.id === formAgentId) ?? null) : null;
   const showForm = creatingAgent || formAgentId !== null;
@@ -144,7 +132,7 @@ export function AgentsWorkspace() {
     !showForm && view === "agents" && selectedAgent !== null && !focusedBelongsToSelected;
   const showBoard = boardOpen && view === "sessions";
   // Panes are wells on the ground; everything else keeps its card.
-  const showWells = !showForm && !showAgentPage && !showBoard && root !== null;
+  const showWells = !showActivity && !showForm && !showAgentPage && !showBoard && root !== null;
 
   const handleNewChat = (agentId: string, chatRoot: string) => {
     const agent = agents.find((item) => item.id === agentId);
@@ -166,7 +154,9 @@ export function AgentsWorkspace() {
         aria-label="Transcript"
         className={cn(!showWells && CARD_CLASS, "flex min-w-0 flex-1 flex-col")}
       >
-        {showForm ? (
+        {showActivity ? (
+          <ActivityDashboard />
+        ) : showForm ? (
           <AgentForm
             agent={formAgent ?? undefined}
             onCancel={closeAgentForm}
@@ -194,7 +184,6 @@ export function AgentsWorkspace() {
         )}
       </section>
 
-      <AgentsContextPane />
       <ThreadsDrawer />
     </div>
   );

@@ -53,7 +53,7 @@ const MENU_ACTION_IDS: &[&str] = &[
     "edit.editWithAI",
     "view.commandPalette",
     "view.toggleSidebar",
-    "view.toggleContextPane",
+    "view.showActivity",
     "view.toggleTerminal",
     "view.toggleProblems",
     "view.togglePreview",
@@ -415,8 +415,8 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .item(&shortcut_item(
             app,
             &mut shortcut_items,
-            "view.toggleContextPane",
-            "Toggle Review Pane",
+            "view.showActivity",
+            "Show Activity",
         )?)
         .item(&shortcut_item(
             app,
@@ -888,8 +888,8 @@ mod tests {
             Some(("run.stopTask", Some("proc-1".to_string())))
         );
         assert_eq!(
-            resolve_menu_event("view.toggleContextPane"),
-            Some(("view.toggleContextPane", None))
+            resolve_menu_event("view.showActivity"),
+            Some(("view.showActivity", None))
         );
         assert_eq!(
             resolve_menu_event("pane.splitRight"),
