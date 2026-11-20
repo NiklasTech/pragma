@@ -7,6 +7,8 @@ import { Button } from "@/shared/components/ui/button";
 import { Progress } from "@/shared/components/ui/progress";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { accountLabel, useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import type { DashboardItem } from "../activity/dashboard";
 import { ProviderLogo } from "../panes/ProviderLogo";
@@ -23,6 +25,7 @@ import {
   type ProviderSessions,
   type UsageLevel,
 } from "./summary";
+import { usageTargets } from "./targets";
 
 const USAGE_LEVEL_TEXT: Record<UsageLevel, string> = {
   normal: "",
@@ -51,14 +54,18 @@ function sessionsSummary(sessions: ProviderSessions): string {
 
 interface ProviderUsageCardProps {
   providerId: string;
+  /** The account folder; null is the CLI's default account. */
+  configDir: string | null;
   name: string;
   sessions: ProviderSessions | undefined;
   now: number;
 }
 
-function ProviderUsageCard({ providerId, name, sessions, now }: ProviderUsageCardProps) {
+function ProviderUsageCard({ providerId, configDir, name, sessions, now }: ProviderUsageCardProps) {
   const supported = supportsSubscriptionUsage(providerId);
-  const state = useSubscriptionUsageStore((store) => selectProviderUsage(store, providerId));
+  const state = useSubscriptionUsageStore((store) =>
+    selectProviderUsage(store, providerId, configDir),
+  );
   const windows = currentWindows(state.usage, now);
   const error = state.refreshError ?? state.readError;
 
@@ -76,7 +83,7 @@ function ProviderUsageCard({ providerId, name, sessions, now }: ProviderUsageCar
               variant="ghost"
               size="icon-xs"
               disabled={state.refreshing}
-              onClick={() => void refreshSubscriptionUsage(providerId)}
+              onClick={() => void refreshSubscriptionUsage(providerId, configDir)}
               aria-label={`Refresh ${name} plan usage`}
             >
               <ArrowClockwise size={12} className={cn(state.refreshing && "animate-spin")} />
@@ -139,27 +146,51 @@ interface ProviderUsageSectionProps {
 export function ProviderUsageSection({ items, now }: ProviderUsageSectionProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const installed = useSubscriptionUsageProviders();
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const names = useSettingsStore((state) => state.ai.cliAccounts.names);
   const combined = useMemo(() => combineByProvider(items), [items]);
   const providerIds = [
     ...new Set([...installed, ...combined.map((sessions) => sessions.providerId)]),
   ];
+  const targets = usageTargets(providerIds, accounts);
+  // Sessions of an account that is no longer listed still show, under their folder.
+  for (const sessions of combined) {
+    const known = targets.some(
+      (target) =>
+        target.providerId === sessions.providerId && target.configDir === sessions.accountDir,
+    );
+    if (!known) {
+      targets.push({
+        providerId: sessions.providerId,
+        configDir: sessions.accountDir,
+        account: null,
+      });
+    }
+  }
 
-  if (providerIds.length === 0) return null;
+  if (targets.length === 0) return null;
 
   return (
     <section aria-label="Plan usage" className="flex flex-col gap-1.5">
       <h3 className="px-2 text-ui-2xs font-semibold tracking-wide text-fg-subtle uppercase">
         Plan usage
       </h3>
-      {providerIds.map((providerId) => (
-        <ProviderUsageCard
-          key={providerId}
-          providerId={providerId}
-          name={manifests.find((manifest) => manifest.id === providerId)?.name ?? providerId}
-          sessions={combined.find((sessions) => sessions.providerId === providerId)}
-          now={now}
-        />
-      ))}
+      {targets.map(({ providerId, configDir, account }) => {
+        const cliName = manifests.find((manifest) => manifest.id === providerId)?.name;
+        const name = cliName ?? providerId;
+        return (
+          <ProviderUsageCard
+            key={`${providerId}:${configDir ?? ""}`}
+            providerId={providerId}
+            configDir={configDir}
+            name={account ? `${name} · ${accountLabel(account, names)}` : name}
+            sessions={combined.find(
+              (sessions) => sessions.providerId === providerId && sessions.accountDir === configDir,
+            )}
+            now={now}
+          />
+        );
+      })}
     </section>
   );
 }

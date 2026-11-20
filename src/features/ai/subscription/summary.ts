@@ -57,6 +57,8 @@ export function sessionTokens(session: Pick<ChatSession, "usage">): number | nul
 
 export interface ProviderSessions {
   providerId: string;
+  /** The account folder the sessions run with; null is the CLI's default account. */
+  accountDir: string | null;
   sessions: number;
   working: number;
   /** Tokens of the sessions that report them, added up. */
@@ -73,8 +75,11 @@ export function combineByProvider(
   for (const { session, state } of items) {
     const providerId = sessionCliProvider(session);
     if (!providerId) continue;
-    const entry = byProvider.get(providerId) ?? {
+    const accountDir = session.cliAccountDir ?? null;
+    const key = `${providerId}:${accountDir ?? ""}`;
+    const entry = byProvider.get(key) ?? {
       providerId,
+      accountDir,
       sessions: 0,
       working: 0,
       tokens: 0,
@@ -85,7 +90,7 @@ export function combineByProvider(
     const tokens = sessionTokens(session);
     if (tokens === null) entry.unreported += 1;
     else entry.tokens += tokens;
-    byProvider.set(providerId, entry);
+    byProvider.set(key, entry);
   }
   return [...byProvider.values()];
 }

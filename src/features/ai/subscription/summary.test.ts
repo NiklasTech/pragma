@@ -135,8 +135,34 @@ describe("combineByProvider", () => {
     ]);
 
     expect(combined).toEqual([
-      { providerId: "anthropic-claude", sessions: 3, working: 2, tokens: 1650, unreported: 1 },
-      { providerId: "openai-codex", sessions: 1, working: 1, tokens: 0, unreported: 1 },
+      {
+        providerId: "anthropic-claude",
+        accountDir: null,
+        sessions: 3,
+        working: 2,
+        tokens: 1650,
+        unreported: 1,
+      },
+      {
+        providerId: "openai-codex",
+        accountDir: null,
+        sessions: 1,
+        working: 1,
+        tokens: 0,
+        unreported: 1,
+      },
+    ]);
+  });
+
+  it("keeps the accounts of one CLI apart", () => {
+    const combined = combineByProvider([
+      item("working", { cliProviderId: "anthropic-claude", kind: "terminal" }),
+      item("idle", { cliProviderId: "anthropic-claude", kind: "terminal", cliAccountDir: "/w" }),
+    ]);
+
+    expect(combined.map((entry) => [entry.accountDir, entry.sessions])).toEqual([
+      [null, 1],
+      ["/w", 1],
     ]);
   });
 });
