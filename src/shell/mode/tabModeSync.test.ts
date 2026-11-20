@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
-import { codeTabId, firstTabId } from "@/shared/stores/spaces/model";
+import { activityTabId, codeTabId, firstTabId } from "@/shared/stores/spaces/model";
 import { useUiModeStore } from "./store";
 import { syncModeFromTab, syncTabFromMode } from "./tabModeSync";
 
@@ -40,6 +40,16 @@ describe("tab and mode sync", () => {
     const second = useOpenRepositoriesStore.getState().addTab(spaceId, "Agents 2");
     syncTabFromMode("agents");
     expect(activeTabId()).toBe(second);
+  });
+
+  it("keeps the activity tab, which belongs to the agents view", () => {
+    useOpenRepositoriesStore.getState().activateTabKind("activity");
+    syncModeFromTab();
+    expect(useUiModeStore.getState().uiMode).toBe("agents");
+    syncTabFromMode("agents");
+    expect(activeTabId()).toBe(activityTabId("/a"));
+    syncTabFromMode("editor");
+    expect(activeTabId()).toBe(codeTabId("/a"));
   });
 
   it("leaves the mode alone without an open space", () => {

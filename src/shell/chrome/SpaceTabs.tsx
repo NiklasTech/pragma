@@ -1,4 +1,4 @@
-import { Code, Plus, Robot, X } from "@phosphor-icons/react";
+import { Code, Plus, Pulse, Robot, X } from "@phosphor-icons/react";
 
 import { collectLeaves } from "@/features/ai/panes/layout";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
@@ -118,6 +118,7 @@ export function SpaceTabs() {
   if (!space) return null;
 
   const hasCodeTab = space.tabs.some((tab) => tab.kind === "code");
+  const hasActivityTab = space.tabs.some((tab) => tab.kind === "activity");
   const sessionsOf = (tab: SpaceTab) =>
     tab.kind === "agents"
       ? collectLeaves(trees[tab.id]?.root ?? null).flatMap((leaf) =>
@@ -164,6 +165,10 @@ export function SpaceTabs() {
           <DropdownMenuItem onClick={() => activateTabKind("code")}>
             <Code size={ICON_SIZE.sm} />
             <span>{hasCodeTab ? "Show code tab" : "Code tab"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => activateTabKind("activity")}>
+            <Pulse size={ICON_SIZE.sm} />
+            <span>{hasActivityTab ? "Show activity tab" : "Activity tab"}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -7,11 +7,15 @@ function modeOf(kind: SpaceTabKind): UiMode {
   return kind === "code" ? "editor" : "agents";
 }
 
-/** The active tab decides the mode: a code tab shows the editor, an agents tab the agent panes. */
-export function syncModeFromTab(): void {
+function activeTabKind(): SpaceTabKind | undefined {
   const { spaces, activeSpaceId } = useOpenRepositoriesStore.getState();
   const space = spaces.find((candidate) => candidate.id === activeSpaceId);
-  const kind = space ? activeTab(space)?.kind : undefined;
+  return space ? activeTab(space)?.kind : undefined;
+}
+
+/** The active tab decides the mode: a code tab shows the editor, agents and activity tabs the agents view. */
+export function syncModeFromTab(): void {
+  const kind = activeTabKind();
   if (!kind) return;
   const mode = modeOf(kind);
   if (useUiModeStore.getState().uiMode !== mode) useUiModeStore.setState({ uiMode: mode });
@@ -19,6 +23,8 @@ export function syncModeFromTab(): void {
 
 /** Code that switches the mode shows the matching tab of the active space. */
 export function syncTabFromMode(mode: UiMode): void {
+  const kind = activeTabKind();
+  if (kind && modeOf(kind) === mode) return;
   useOpenRepositoriesStore.getState().activateTabKind(mode === "editor" ? "code" : "agents");
 }
 

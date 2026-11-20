@@ -1,8 +1,8 @@
 import { normalizePath } from "@/features/ai/named-agents/folders";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 
-/** Agents tabs hold agent panes; the code tab holds the editor layout. */
-export type SpaceTabKind = "agents" | "code";
+/** Agents tabs hold agent panes; the code tab holds the editor layout; activity shows all sessions. */
+export type SpaceTabKind = "agents" | "code" | "activity";
 
 /** A saved layout of panes inside a space. */
 export interface SpaceTab {
@@ -25,7 +25,11 @@ export interface SpacesSnapshot {
   activeSpaceId: string | null;
 }
 
-export const TAB_NAMES: Record<SpaceTabKind, string> = { agents: "Agents", code: "Code" };
+export const TAB_NAMES: Record<SpaceTabKind, string> = {
+  agents: "Agents",
+  code: "Code",
+  activity: "Activity",
+};
 
 /** The first tab of a folder has a stable id, so pane layouts stored per folder can move to it. */
 export function firstTabId(folder: string): string {
@@ -34,6 +38,10 @@ export function firstTabId(folder: string): string {
 
 export function codeTabId(folder: string): string {
   return `code:${normalizePath(folder)}`;
+}
+
+export function activityTabId(folder: string): string {
+  return `activity:${normalizePath(folder)}`;
 }
 
 export function primaryFolder(space: Space): string {
@@ -92,7 +100,13 @@ export function activateTabKind(space: Space, kind: SpaceTabKind): Space {
   if (activeTab(space)?.kind === kind) return space;
   const existing = space.tabs.find((tab) => tab.kind === kind);
   if (existing) return activateTab(space, existing.id);
-  const id = kind === "code" ? codeTabId(primaryFolder(space)) : crypto.randomUUID();
+  const folder = primaryFolder(space);
+  const id =
+    kind === "code"
+      ? codeTabId(folder)
+      : kind === "activity"
+        ? activityTabId(folder)
+        : crypto.randomUUID();
   return addTab(space, TAB_NAMES[kind], kind, id);
 }
 

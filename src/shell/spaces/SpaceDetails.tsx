@@ -138,7 +138,11 @@ export function SpaceDetails({ space, active, onOpen, onDone }: SpaceDetailsProp
             >
               <span className="text-ui-sm text-fg-default">{tab.name}</span>
               <span className="text-ui-xs text-fg-subtle">
-                {tab.kind === "code" ? "editor" : `${panes} ${panes === 1 ? "pane" : "panes"}`}
+                {tab.kind === "code"
+                  ? "editor"
+                  : tab.kind === "activity"
+                    ? "all sessions"
+                    : `${panes} ${panes === 1 ? "pane" : "panes"}`}
               </span>
             </Button>
           );

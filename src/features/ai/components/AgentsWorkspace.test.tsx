@@ -77,7 +77,7 @@ describe("AgentsWorkspace", () => {
   beforeEach(() => {
     ai.state.activeChatSessionId = null;
     ai.state.chatSessions = [];
-    useAgentsUiStore.setState({ contextPaneCollapsed: true });
+    useAgentsUiStore.setState({ threadsOpen: false });
     panes.root = null;
     panes.focusedSessionId = null;
     panes.leafCount = 0;
@@ -97,7 +97,7 @@ describe("AgentsWorkspace", () => {
     });
   });
 
-  it("renders the transcript alone, with the thread drawer and context pane closed", () => {
+  it("renders the transcript alone, with the thread drawer closed", () => {
     const html = renderToStaticMarkup(<AgentsWorkspace />);
 
     expect(html).not.toContain('aria-label="Threads"');
