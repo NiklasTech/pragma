@@ -9,6 +9,15 @@ export interface ActivitySections {
 }
 
 const EARLIER_LIMIT = 8;
+
+/** A session that ran something: a terminal, or a chat with messages or replies. */
+function didWork(session: DashboardItem["session"]): boolean {
+  return (
+    session.kind === "terminal" ||
+    session.messages.length > 0 ||
+    (session.usage?.responses ?? 0) > 0
+  );
+}
 const LAST_LINE_CHARS = 200;
 
 /** A moment as "Sat 01:49", or only "01:49" when it is today. */
@@ -41,6 +50,7 @@ export function activitySections(items: readonly DashboardItem[], now: number): 
     earlier: items
       .filter((item) => item.state !== "waiting" && item.state !== "working")
       .filter((item) => item.since >= dayStart)
+      .filter((item) => item.state !== "idle" || didWork(item.session))
       .sort((a, b) => b.since - a.since)
       .slice(0, EARLIER_LIMIT),
   };

@@ -50,6 +50,14 @@ describe("activitySections", () => {
     expect(sections.running.map((entry) => entry.session.id)).toEqual(["ran"]);
     expect(sections.earlier.map((entry) => entry.session.id)).toEqual(["failed", "done"]);
   });
+
+  it("leaves out sessions that went idle without doing anything", () => {
+    const empty = item("empty", "idle", NOW - 1000);
+    const shell = { ...item("shell", "idle", NOW - 2000) };
+    shell.session = { ...shell.session, kind: "terminal" };
+    const sections = activitySections([empty, shell], NOW);
+    expect(sections.earlier.map((entry) => entry.session.id)).toEqual(["shell"]);
+  });
 });
 
 describe("matchesFilter", () => {
