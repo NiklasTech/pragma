@@ -68,6 +68,9 @@ export function ActivityPage() {
   const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
   const [scope, setScope] = useState<Scope>("space");
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const toggle = (sessionId: string) => () =>
+    setExpanded((current) => (current === sessionId ? null : sessionId));
   const now = useNow();
 
   const spaceSessions = useMemo(
@@ -136,7 +139,13 @@ export function ActivityPage() {
               needs you · {sections.needs.length}
             </h2>
             {sections.needs.map((item) => (
-              <NeedsYouRow key={item.session.id} item={item} now={now} />
+              <NeedsYouRow
+                key={item.session.id}
+                item={item}
+                now={now}
+                expanded={expanded === item.session.id}
+                onToggle={toggle(item.session.id)}
+              />
             ))}
           </section>
         )}
@@ -156,7 +165,13 @@ export function ActivityPage() {
               <span />
             </div>
             {sections.running.map((item) => (
-              <RunningRow key={item.session.id} item={item} now={now} />
+              <RunningRow
+                key={item.session.id}
+                item={item}
+                now={now}
+                expanded={expanded === item.session.id}
+                onToggle={toggle(item.session.id)}
+              />
             ))}
           </section>
         )}
@@ -169,7 +184,12 @@ export function ActivityPage() {
             <div className="flex flex-col" role="list">
               {sections.earlier.map((item) => (
                 <div role="listitem" key={item.session.id}>
-                  <EarlierRow item={item} />
+                  <EarlierRow
+                    item={item}
+                    now={now}
+                    expanded={expanded === item.session.id}
+                    onToggle={toggle(item.session.id)}
+                  />
                 </div>
               ))}
             </div>
