@@ -32,6 +32,7 @@ export function createStreamTransport(
   allowChildSessions = false,
   mcpServerIds: string[] | null = null,
   onUsage: (usage: StreamUsage) => void = () => {},
+  accountDir: string | null = null,
 ): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages: transcript, abortSignal }) {
@@ -192,6 +193,7 @@ export function createStreamTransport(
                   allow_child_sessions: allowChildSessions,
                   ...(mcpServerIds ? { mcp_server_ids: mcpServerIds } : {}),
                   ...(images.length > 0 ? { images } : {}),
+                  ...(accountDir ? { account_dir: accountDir } : {}),
                 };
                 await invoke("cli_acp_chat_stream", { req, channel });
               } else if (isCLIActive && activeCLIProvider) {

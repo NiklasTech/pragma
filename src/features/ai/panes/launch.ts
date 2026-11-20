@@ -35,6 +35,7 @@ export async function launchTerminals(
   manifest: CLIManifest,
   count: number,
   mode: GroupEnvironment,
+  accountDir?: string,
 ): Promise<void> {
   const total = Math.min(Math.max(Math.round(count), 1), MAX_PANES);
   const baseTitle = terminalSessionTitle(manifest.name);
@@ -44,6 +45,7 @@ export async function launchTerminals(
       activate: false,
       title: total > 1 ? `${baseTitle} #${index + 1}` : baseTitle,
       environment: groupEnvironmentRequest(mode, sessions[0]),
+      accountDir,
     });
     sessions.push(session);
   }

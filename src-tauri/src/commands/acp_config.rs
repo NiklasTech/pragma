@@ -17,6 +17,9 @@ pub struct AcpSessionConfigRequest {
     /// MCP servers the session may use; absent means all configured servers.
     #[serde(default)]
     pub mcp_server_ids: Option<Vec<String>>,
+    /// The CLI account's config folder; absent runs the default account.
+    #[serde(default)]
+    pub account_dir: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,6 +60,7 @@ pub async fn cli_acp_session_config(
                 &req.chat_session_id,
                 req.allow_child_sessions,
                 req.mcp_server_ids.as_deref(),
+                req.account_dir.as_deref(),
             )
             .await
             .map_err(|e| e.to_string())?;

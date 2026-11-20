@@ -157,6 +157,7 @@ export function useAI() {
             useAIStore.getState().recordSessionUsage(activeChatSessionId, usage);
           }
         },
+        activeSession?.cliAccountDir ?? null,
       ),
     [
       effectiveProvider,
@@ -173,6 +174,7 @@ export function useAI() {
       leadingSystemMessage,
       activeSessionKind,
       mcpServerIds,
+      activeSession?.cliAccountDir,
     ],
   );
 

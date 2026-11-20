@@ -23,6 +23,7 @@ import {
 } from "./limits";
 import { startChildRun } from "./runner";
 import { deliverTerminalPrompt } from "./terminalPrompt";
+import { sessionCliProvider } from "../subscription/summary";
 
 export const SPAWN_DENIED = "The user denied starting a child session";
 
@@ -138,6 +139,11 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
   const id = crypto.randomUUID();
   const { environment, worktree } = await childEnvironment(plan);
   const { createChatSession } = useAIStore.getState();
+  // A child on the parent's CLI runs with the parent's account.
+  const childCli =
+    request.kind === "terminal" ? request.cli : engine.kind === "cli" ? engine.cliProviderId : null;
+  const accountDir =
+    childCli && childCli === sessionCliProvider(parent) ? parent.cliAccountDir : undefined;
 
   if (request.kind === "conversation") {
     const session = await createChatSession(
@@ -150,6 +156,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         environmentId: worktree?.id,
         agentEngine: engine,
         parentId: parent.id,
+        ...(accountDir ? { cliAccountDir: accountDir } : {}),
       },
       { activate: false },
     );
@@ -161,6 +168,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
   const started = ensureTerminal(id, {
     command: command ?? "",
     cwd,
+    account: childCli && accountDir ? { providerId: childCli, configDir: accountDir } : null,
     cols: TERMINAL_COLS,
     rows: TERMINAL_ROWS,
   });
@@ -176,6 +184,7 @@ async function startChildSession(plan: SpawnPlan): Promise<ChatSession> {
         environmentId: worktree?.id,
         cliProviderId: request.cli ?? undefined,
         parentId: parent.id,
+        ...(accountDir ? { cliAccountDir: accountDir } : {}),
       },
       { activate: false },
     );

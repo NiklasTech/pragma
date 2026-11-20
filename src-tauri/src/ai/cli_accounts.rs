@@ -6,6 +6,8 @@ use serde_json::Value;
 use crate::ai::subscription_usage::{claude_config_path, CLAUDE_PROVIDER_ID};
 
 const CLAUDE_CONFIG_ENV: &str = "CLAUDE_CONFIG_DIR";
+pub const CODEX_PROVIDER_ID: &str = "openai-codex";
+const CODEX_HOME_ENV: &str = "CODEX_HOME";
 const CLAUDE_DIR_PREFIX: &str = ".claude";
 const CLAUDE_CONFIG_FILE: &str = ".claude.json";
 
@@ -19,8 +21,18 @@ pub struct CliAccount {
     pub email: Option<String>,
     pub display_name: Option<String>,
     pub organization_name: Option<String>,
+    /// Whether the folder holds a sign-in; read from the config's presence, never from credentials.
+    pub signed_in: bool,
     /// False when an added folder no longer exists.
     pub available: bool,
+}
+
+/// A folder the user added as an account of one CLI.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddedAccountFolder {
+    pub provider_id: String,
+    pub dir: String,
 }
 
 /// The account a terminal session starts its CLI with.
@@ -33,7 +45,11 @@ pub struct CliAccountLaunch {
 
 /// The variable that points a CLI at another account's config folder.
 pub fn account_env_var(provider_id: &str) -> Option<&'static str> {
-    (provider_id == CLAUDE_PROVIDER_ID).then_some(CLAUDE_CONFIG_ENV)
+    match provider_id {
+        CLAUDE_PROVIDER_ID => Some(CLAUDE_CONFIG_ENV),
+        CODEX_PROVIDER_ID => Some(CODEX_HOME_ENV),
+        _ => None,
+    }
 }
 
 /// Checks a launch request and returns the variable and folder to set.
@@ -78,12 +94,15 @@ fn claude_account(config_dir: Option<&Path>, config_path: &Path) -> CliAccount {
         email: text(&config, "/oauthAccount/emailAddress"),
         display_name: text(&config, "/oauthAccount/displayName"),
         organization_name: text(&config, "/oauthAccount/organizationName"),
+        signed_in: config
+            .pointer("/oauthAccount")
+            .is_some_and(Value::is_object),
         available,
     }
 }
 
-/// Folders like `~/.claude-work` that hold a Claude Code config of their own.
-pub fn claude_account_dirs(home: &Path) -> Vec<PathBuf> {
+/// Folders in the home like `<prefix>-work` that hold the marker file of a CLI's config.
+pub(crate) fn prefixed_dirs(home: &Path, prefix: &str, marker: &str) -> Vec<PathBuf> {
     let Ok(entries) = std::fs::read_dir(home) else {
         return Vec::new();
     };
@@ -92,16 +111,21 @@ pub fn claude_account_dirs(home: &Path) -> Vec<PathBuf> {
         .filter(|entry| {
             let name = entry.file_name();
             let name = name.to_string_lossy();
-            name.starts_with(CLAUDE_DIR_PREFIX) && name != CLAUDE_DIR_PREFIX
+            name.starts_with(prefix) && name != prefix
         })
         .map(|entry| entry.path())
-        .filter(|path| path.is_dir() && path.join(CLAUDE_CONFIG_FILE).is_file())
+        .filter(|path| path.is_dir() && path.join(marker).is_file())
         .collect();
     dirs.sort();
     dirs
 }
 
-fn same_dir(a: &Path, b: &Path) -> bool {
+/// Folders like `~/.claude-work` that hold a Claude Code config of their own.
+pub fn claude_account_dirs(home: &Path) -> Vec<PathBuf> {
+    prefixed_dirs(home, CLAUDE_DIR_PREFIX, CLAUDE_CONFIG_FILE)
+}
+
+pub(crate) fn same_dir(a: &Path, b: &Path) -> bool {
     match (a.canonicalize(), b.canonicalize()) {
         (Ok(a), Ok(b)) => a == b,
         _ => a == b,
@@ -183,6 +207,7 @@ mod tests {
         );
         assert_eq!(accounts[0].config_dir, None);
         assert_eq!(accounts[1].organization_name.as_deref(), Some("Work Org"));
+        assert!(accounts[1].signed_in);
         assert!(accounts.iter().all(|account| account.available));
     }
 
@@ -208,6 +233,7 @@ mod tests {
 
         assert_eq!(accounts.len(), 2);
         assert!(!accounts[1].available);
+        assert!(!accounts[1].signed_in);
         assert_eq!(accounts[1].email, None);
     }
 
@@ -223,7 +249,11 @@ mod tests {
         let (var, folder) = account_env(&launch(CLAUDE_PROVIDER_ID, &path)).unwrap();
         assert_eq!(var, "CLAUDE_CONFIG_DIR");
         assert_eq!(folder, dir.path());
-        assert!(account_env(&launch("openai-codex", &path)).is_err());
+        assert_eq!(
+            account_env(&launch(CODEX_PROVIDER_ID, &path)).unwrap().0,
+            "CODEX_HOME"
+        );
+        assert!(account_env(&launch("google-gemini", &path)).is_err());
         assert!(account_env(&launch(CLAUDE_PROVIDER_ID, "relative/dir")).is_err());
         assert!(account_env(&launch(CLAUDE_PROVIDER_ID, &format!("{path}/missing"))).is_err());
     }

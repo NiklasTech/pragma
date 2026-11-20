@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { sessionMcpServerIds } from "@/features/ai/mcp/selection";
+import { useAIStore } from "@/shared/stores/ai";
 
 export interface AcpConfigValue {
   value: string;
@@ -123,6 +124,9 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
           cwd,
           allow_child_sessions: allowChildSessions,
           mcp_server_ids: sessionMcpServerIds(chatSessionId) ?? undefined,
+          account_dir:
+            useAIStore.getState().chatSessions.find((item) => item.id === chatSessionId)
+              ?.cliAccountDir ?? undefined,
         },
       });
       const preferred = useAcpPreferenceStore.getState().preferred[providerId];

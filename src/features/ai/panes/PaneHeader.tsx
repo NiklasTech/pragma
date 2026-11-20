@@ -48,6 +48,7 @@ import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { SharersBadge } from "../sessions/SharersBadge";
+import { sessionCliProvider } from "../subscription/summary";
 import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
 import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
@@ -125,7 +126,7 @@ function startLike(
   else if (session.kind === "terminal" && manifest)
     void actions.startTerminal(manifest, { accountDir: session.cliAccountDir });
   else if (session.agentEngine?.kind === "cli" && manifest)
-    void actions.startConversation(manifest);
+    void actions.startConversation(manifest, { accountDir: session.cliAccountDir });
   else if (session.kind === "ask") void actions.startAsk();
   else void actions.startAgentCheckout();
 }
@@ -212,8 +213,8 @@ export function PaneHeader({
   const branch = worktree?.branch ?? null;
   const title = paneTitle(leaf, session, shownManifest, shell);
   const account =
-    terminal && !shell
-      ? sessionAccountLabel(accounts, accountNames, manifest?.id, terminal.cliAccountDir)
+    session && sessionCliProvider(session) && !shell
+      ? sessionAccountLabel(accounts, accountNames, manifest?.id, session.cliAccountDir)
       : null;
   const maximizeLabel = maximized ? "Restore" : "Zoom";
   const newLabel = shell

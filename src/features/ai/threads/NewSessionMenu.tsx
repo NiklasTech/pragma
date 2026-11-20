@@ -30,10 +30,16 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { copyToClipboard } from "@/shared/lib/clipboard";
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
+import {
+  accountLabel,
+  choosableAccounts,
+  useCliAccountsStore,
+} from "@/shared/stores/ai/cliAccounts";
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { JoinWorktreeMenu } from "./JoinWorktreeMenu";
-import { buildSessionMenuCliRows } from "./session-menu";
+import { buildSessionMenuCliRows, type SessionMenuCliAction } from "./session-menu";
 import type { NewSessionActions } from "./useNewSessionActions";
 
 function ItemText({ title, hint }: { title: string; hint: string }) {
@@ -76,6 +82,8 @@ export function NewSessionMenu({
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
   const loadCLIStatuses = useAIStore((state) => state.loadCLIStatuses);
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
   const [open, setOpen] = useState(false);
 
   const handleOpenChange = useCallback(
@@ -102,6 +110,12 @@ export function NewSessionMenu({
   };
   const findManifest = (manifestId: string): CLIManifest | undefined =>
     manifests.find((manifest) => manifest.id === manifestId);
+  const launch = (manifestId: string, action: SessionMenuCliAction, accountDir?: string) => {
+    const manifest = findManifest(manifestId);
+    if (!manifest) return;
+    if (action === "conversation") void actions.startConversation(manifest, { accountDir });
+    else void actions.startTerminal(manifest, { accountDir });
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>
@@ -166,6 +180,44 @@ export function NewSessionMenu({
           )}
 
           {installedRows.map((row) => {
+            const rowAccounts = choosableAccounts(accounts, row.manifestId);
+            if (rowAccounts.length > 0 && row.items.length > 0) {
+              return (
+                <DropdownMenuSub key={row.manifestId}>
+                  <DropdownMenuSubTrigger>
+                    <Terminal size={13} />
+                    <span className="flex-1">{row.name}</span>
+                    <span className="text-ui-2xs text-fg-subtle tabular-nums">
+                      {rowAccounts.length} accounts
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-64">
+                    {rowAccounts.map((account) => (
+                      <DropdownMenuGroup key={account.configDir ?? "default"}>
+                        <DropdownMenuLabel className="truncate">
+                          {accountLabel(account, accountNames)}
+                        </DropdownMenuLabel>
+                        {row.items.map((item) => (
+                          <DropdownMenuItem
+                            key={item.action}
+                            onClick={() =>
+                              launch(row.manifestId, item.action, account.configDir ?? undefined)
+                            }
+                          >
+                            {item.action === "conversation" ? (
+                              <Chat size={13} />
+                            ) : (
+                              <Terminal size={13} />
+                            )}
+                            <span className="flex-1">{item.label}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuGroup>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              );
+            }
             if (row.items.length > 1) {
               return (
                 <DropdownMenuSub key={row.manifestId}>

@@ -80,6 +80,7 @@ impl AcpSessionManager {
         chat_session_id: &str,
         allow_child_sessions: bool,
         mcp_server_ids: Option<&[String]>,
+        account_dir: Option<&str>,
     ) -> Result<String> {
         let manifest = get_manifest(provider_id)
             .ok_or_else(|| AcpError::Spawn(format!("unknown provider: {provider_id}")))?;
@@ -103,6 +104,15 @@ impl AcpSessionManager {
                     env.insert(key.clone(), resolved.to_string_lossy().to_string());
                 }
             }
+        }
+        if let Some(config_dir) = account_dir {
+            let launch = crate::ai::cli_accounts::CliAccountLaunch {
+                provider_id: provider_id.to_string(),
+                config_dir: config_dir.to_string(),
+            };
+            let (var, dir) =
+                crate::ai::cli_accounts::account_env(&launch).map_err(AcpError::Spawn)?;
+            env.insert(var.to_string(), dir.to_string_lossy().into_owned());
         }
 
         let config = AcpClientConfig {

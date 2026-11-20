@@ -20,7 +20,7 @@ import {
 import { useSettingsStore } from "@/shared/stores/settings";
 
 /** CLIs that keep each account in a config folder of its own. */
-export const ACCOUNT_PROVIDERS = new Set(["anthropic-claude"]);
+export const ACCOUNT_PROVIDERS = new Set(["anthropic-claude", "openai-codex"]);
 
 function homePath(path: string): string {
   return path.replace(/^\/(Users|home)\/[^/]+/, "~");
@@ -30,8 +30,9 @@ function homePath(path: string): string {
 function detail(account: CliAccount, label: string): string {
   if (!account.available) return "folder not found";
   const where = account.configDir ? homePath(account.configDir) : "default folder";
-  if (!account.email) return `not signed in · ${where}`;
-  return account.email === label ? where : `${account.email} · ${where}`;
+  if (!account.signedIn) return `not signed in · ${where}`;
+  if (!account.email || account.email === label) return where;
+  return `${account.email} · ${where}`;
 }
 
 interface CliAccountRowsProps {
@@ -48,6 +49,9 @@ export function CliAccountRows({ providerId, quickKeyOf }: CliAccountRowsProps) 
   const setAISettings = useSettingsStore((state) => state.setAISettings);
   const [renaming, setRenaming] = useState<CliAccount | null>(null);
 
+  const isAdded = (dir: string) =>
+    settings.folders.some((folder) => folder.providerId === providerId && folder.dir === dir);
+
   const save = (next: Partial<typeof settings>) => {
     setAISettings({ cliAccounts: { ...settings, ...next } });
     void loadCliAccounts();
@@ -55,8 +59,8 @@ export function CliAccountRows({ providerId, quickKeyOf }: CliAccountRowsProps) 
 
   const addFolder = async () => {
     const folder = await open({ directory: true, multiple: false, title: "Account folder" });
-    if (typeof folder !== "string" || settings.addedDirs.includes(folder)) return;
-    save({ addedDirs: [...settings.addedDirs, folder] });
+    if (typeof folder !== "string" || isAdded(folder)) return;
+    save({ folders: [...settings.folders, { providerId, dir: folder }] });
   };
 
   const rename = (account: CliAccount, name: string) => {
@@ -70,7 +74,12 @@ export function CliAccountRows({ providerId, quickKeyOf }: CliAccountRowsProps) 
   const remove = (account: CliAccount) => {
     const names = { ...settings.names };
     delete names[accountKey(account.providerId, account.configDir)];
-    save({ addedDirs: settings.addedDirs.filter((dir) => dir !== account.configDir), names });
+    save({
+      folders: settings.folders.filter(
+        (folder) => folder.providerId !== providerId || folder.dir !== account.configDir,
+      ),
+      names,
+    });
   };
 
   return (
@@ -78,8 +87,7 @@ export function CliAccountRows({ providerId, quickKeyOf }: CliAccountRowsProps) 
       {accounts.length > 1 &&
         accounts.map((account) => {
           const quickKey = quickKeyOf(account.configDir);
-          const added =
-            account.configDir !== null && settings.addedDirs.includes(account.configDir);
+          const added = account.configDir !== null && isAdded(account.configDir);
           return (
             <div
               key={account.configDir ?? "default"}

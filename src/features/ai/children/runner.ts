@@ -227,6 +227,7 @@ export async function startChildRun(
     true,
     mcpServerIds,
     (usage) => useAIStore.getState().recordSessionUsage(sessionId, usage),
+    useAIStore.getState().chatSessions.find((item) => item.id === sessionId)?.cliAccountDir ?? null,
   );
 
   const context = createContext(sessionId);

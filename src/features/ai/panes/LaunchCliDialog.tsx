@@ -22,7 +22,13 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { useAIStore } from "@/shared/stores/ai";
+import {
+  accountLabel,
+  choosableAccounts,
+  useCliAccountsStore,
+} from "@/shared/stores/ai/cliAccounts";
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
+import { useSettingsStore } from "@/shared/stores/settings";
 import { useRepositoryWorkspaceSettings } from "@/shared/stores/workspaceSettings/repositories";
 
 import { GroupEnvironmentSelect } from "../sessions/GroupEnvironmentSelect";
@@ -33,6 +39,14 @@ import { useRepositoryChoice } from "../sessions/useRepositoryChoice";
 import { buildSessionMenuCliRows } from "../threads/session-menu";
 import { launchTerminals } from "./launch";
 import { MAX_PANES } from "./operations";
+
+interface CliChoice {
+  key: string;
+  manifestId: string;
+  label: string;
+  /** The account folder, for a CLI with several accounts. */
+  accountDir?: string;
+}
 
 const COUNTS = Array.from({ length: MAX_PANES }, (_, index) => index + 1);
 const MODES: readonly GroupEnvironment[] = ["isolated", "shared", "checkout"];
@@ -46,7 +60,9 @@ export function LaunchCliDialog({ open, onOpenChange }: LaunchCliDialogProps) {
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
-  const [manifestId, setManifestId] = useState<string | null>(null);
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
+  const [choiceKey, setChoiceKey] = useState<string | null>(null);
   const [count, setCount] = useState(4);
   const [picked, setPicked] = useState<GroupEnvironment | null>(null);
   const [launching, setLaunching] = useState(false);
@@ -67,17 +83,29 @@ export function LaunchCliDialog({ open, onOpenChange }: LaunchCliDialogProps) {
     void refreshCLIStatuses();
   }, [loadCLIManifests, manifests.length, open]);
 
-  const available = buildSessionMenuCliRows(manifests, statuses).filter(
-    (row) => !row.disabled && row.items.some((item) => item.action === "terminal"),
-  );
-  const selectedId = manifestId ?? available[0]?.manifestId ?? null;
-  const selected = manifests.find((manifest) => manifest.id === selectedId);
+  // A CLI with several accounts is offered once per account.
+  const available = buildSessionMenuCliRows(manifests, statuses)
+    .filter((row) => !row.disabled && row.items.some((item) => item.action === "terminal"))
+    .flatMap((row): CliChoice[] => {
+      const rowAccounts = choosableAccounts(accounts, row.manifestId);
+      if (rowAccounts.length === 0) {
+        return [{ key: row.manifestId, manifestId: row.manifestId, label: row.name }];
+      }
+      return rowAccounts.map((account) => ({
+        key: `${row.manifestId}:${account.configDir ?? ""}`,
+        manifestId: row.manifestId,
+        accountDir: account.configDir ?? undefined,
+        label: `${row.name} · ${accountLabel(account, accountNames)}`,
+      }));
+    });
+  const choice = available.find((item) => item.key === choiceKey) ?? available[0];
+  const selected = manifests.find((manifest) => manifest.id === choice?.manifestId);
 
   const handleLaunch = async () => {
     if (!selected || !rootPath || launching) return;
     setLaunching(true);
     try {
-      await launchTerminals(rootPath, selected, count, mode);
+      await launchTerminals(rootPath, selected, count, mode, choice?.accountDir);
       onOpenChange(false);
       await activateRepository(rootPath);
     } catch {
@@ -116,14 +144,14 @@ export function LaunchCliDialog({ open, onOpenChange }: LaunchCliDialogProps) {
             {available.length === 0 ? (
               <p className="text-ui-xs text-fg-subtle">No coding CLI with a terminal installed.</p>
             ) : (
-              <Select value={selectedId} onValueChange={(value) => setManifestId(value)}>
+              <Select value={choice?.key ?? null} onValueChange={(value) => setChoiceKey(value)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue>{selected?.name ?? "Choose a CLI"}</SelectValue>
+                  <SelectValue>{choice?.label ?? "Choose a CLI"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {available.map((row) => (
-                    <SelectItem key={row.manifestId} value={row.manifestId}>
-                      {row.name}
+                  {available.map((item) => (
+                    <SelectItem key={item.key} value={item.key}>
+                      {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
