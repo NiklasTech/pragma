@@ -1,11 +1,12 @@
-import { useMemo } from "react";
-import { ArrowClockwise } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
+import { ArrowClockwise, CaretRight } from "@phosphor-icons/react";
 
 import { AgentMark } from "@/shared/components/ui/agent-mark";
+import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
-import { accountLabel, useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
+import { accountLabel, useCliAccountsStore, type CliAccount } from "@/shared/stores/ai/cliAccounts";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import {
@@ -22,14 +23,15 @@ import {
   currentWindows,
   formatPercent,
   formatResetIn,
+  sessionCliProvider,
   usageLevel,
   type ProviderSessions,
   type UsageLevel,
 } from "../../subscription/summary";
 import { usageTargets, type UsageTarget } from "../../subscription/targets";
 import { formatTokens } from "../../usage/formatTokens";
-import { formatStateDuration, type DashboardItem } from "../dashboard";
-import { filledCells, mostRoomKey, PLAN_CELLS } from "./activityModel";
+import { DASHBOARD_STATE_LABELS, formatStateDuration, type DashboardItem } from "../dashboard";
+import { filledCells, formatMoment, mostRoomKey, PLAN_CELLS } from "./activityModel";
 
 const LEVEL_CELL: Record<UsageLevel, string> = {
   normal: "bg-fg-muted",
@@ -63,16 +65,91 @@ function sessionsLine(sessions: ProviderSessions | undefined): string {
   return parts.join(" · ");
 }
 
+function homePath(path: string): string {
+  return path.replace(/^\/(Users|home)\/[^/]+/, "~");
+}
+
 interface PlanCardProps {
   target: UsageTarget;
   name: string;
   account: string | null;
   best: boolean;
   sessions: ProviderSessions | undefined;
+  items: DashboardItem[];
   now: number;
+  expanded: boolean;
+  onToggle: () => void;
 }
 
-function PlanCard({ target, name, account, best, sessions, now }: PlanCardProps) {
+/// The exact reset times, where the account lives and the sessions running on it.
+function PlanDetails({
+  account,
+  configDir,
+  windows,
+  fetchedAt,
+  items,
+  now,
+}: {
+  now: number;
+  account: CliAccount | null;
+  configDir: string | null;
+  windows: ReturnType<typeof currentWindows>;
+  fetchedAt: number | null;
+  items: DashboardItem[];
+}) {
+  return (
+    <dl className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-2.5 gap-y-1.25 border-t border-border-subtle pt-2.25 font-mono text-ui-2xs">
+      {windows.map((window) => (
+        <div key={window.id} className="contents">
+          <dt className="text-fg-subtle">{WINDOW_NAMES[window.id] ?? window.label}</dt>
+          <dd className="text-fg-default">
+            {Math.round(window.usedPercent)}% used
+            {window.resetsAtMs !== null && ` · resets ${formatMoment(window.resetsAtMs, now)}`}
+          </dd>
+        </div>
+      ))}
+      <dt className="text-fg-subtle">fetched</dt>
+      <dd className="text-fg-default">
+        {fetchedAt === null ? "not yet" : formatMoment(fetchedAt, now)}
+      </dd>
+      {account?.email && (
+        <>
+          <dt className="text-fg-subtle">account</dt>
+          <dd className="truncate text-fg-default">{account.email}</dd>
+        </>
+      )}
+      <dt className="text-fg-subtle">folder</dt>
+      <dd className="truncate text-fg-default" title={configDir ?? undefined}>
+        {configDir ? homePath(configDir) : "default"}
+      </dd>
+      <dt className="text-fg-subtle">sessions</dt>
+      <dd className="flex min-w-0 flex-col gap-0.5 text-fg-default">
+        {items.length === 0
+          ? "none"
+          : items.map((item) => (
+              <span key={item.session.id} className="truncate">
+                <span className="text-fg-subtle">
+                  {DASHBOARD_STATE_LABELS[item.state].toLowerCase()}
+                </span>{" "}
+                {item.session.title}
+              </span>
+            ))}
+      </dd>
+    </dl>
+  );
+}
+
+function PlanCard({
+  target,
+  name,
+  account,
+  best,
+  sessions,
+  items,
+  now,
+  expanded,
+  onToggle,
+}: PlanCardProps) {
   const { providerId, configDir } = target;
   const supported = supportsSubscriptionUsage(providerId);
   const state = useSubscriptionUsageStore((store) =>
@@ -91,10 +168,25 @@ function PlanCard({ target, name, account, best, sessions, now }: PlanCardProps)
       )}
     >
       <div className="flex min-w-0 items-center gap-2 font-mono text-ui-xs">
-        <AgentMark agentId={providerId} name={name} size="sm" />
-        <span className="shrink-0 font-medium text-fg-default">{name}</span>
-        {account && <span className="min-w-0 truncate text-fg-subtle">{account}</span>}
-        <span className="flex-1" />
+        <Button
+          variant="ghost"
+          aria-expanded={expanded}
+          onClick={onToggle}
+          title={expanded ? "Hide details" : "Show details"}
+          className="-mx-1.5 -my-1 h-7 min-w-0 flex-1 justify-start gap-2 px-1.5 font-mono font-normal"
+        >
+          <AgentMark agentId={providerId} name={name} size="sm" />
+          <span className="shrink-0 font-medium text-fg-default">{name}</span>
+          {account && <span className="min-w-0 truncate text-fg-subtle">{account}</span>}
+          <CaretRight
+            size={10}
+            aria-hidden="true"
+            className={cn(
+              "shrink-0 text-fg-subtle transition-transform duration-(--motion-fast)",
+              expanded && "rotate-90",
+            )}
+          />
+        </Button>
         {best && <span className="shrink-0 text-ui-2xs text-state-done">most room</span>}
         {supported && (
           <>
@@ -159,6 +251,16 @@ function PlanCard({ target, name, account, best, sessions, now }: PlanCardProps)
       <div className="border-t border-border-subtle pt-2.25 font-mono text-ui-2xs text-fg-subtle">
         {sessionsLine(sessions)}
       </div>
+      {expanded && (
+        <PlanDetails
+          account={target.account}
+          configDir={configDir}
+          windows={windows}
+          fetchedAt={fetchedAt}
+          items={items}
+          now={now}
+        />
+      )}
     </article>
   );
 }
@@ -170,6 +272,7 @@ export function ActivityPlans({ items, now }: { items: DashboardItem[]; now: num
   const accounts = useCliAccountsStore((state) => state.accounts);
   const names = useSettingsStore((state) => state.ai.cliAccounts.names);
   const usage = useSubscriptionUsageStore((state) => state.byProvider);
+  const [expanded, setExpanded] = useState<string | null>(null);
   // Shells and other sessions without a coding CLI run on no plan.
   const combined = useMemo(
     () =>
@@ -217,7 +320,7 @@ export function ActivityPlans({ items, now }: { items: DashboardItem[]; now: num
         <h2 className="text-ui-2xs font-medium text-fg-muted">plans</h2>
         {bestName && <span>{bestName} has the most room left; start new tasks there</span>}
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] items-start gap-3">
         {targets.map((target) => (
           <PlanCard
             key={targetKey(target)}
@@ -233,7 +336,16 @@ export function ActivityPlans({ items, now }: { items: DashboardItem[]; now: num
                 sessions.providerId === target.providerId &&
                 sessions.accountDir === target.configDir,
             )}
+            items={items.filter(
+              (item) =>
+                sessionCliProvider(item.session) === target.providerId &&
+                (item.session.cliAccountDir ?? null) === target.configDir,
+            )}
             now={now}
+            expanded={expanded === targetKey(target)}
+            onToggle={() =>
+              setExpanded((current) => (current === targetKey(target) ? null : targetKey(target)))
+            }
           />
         ))}
       </div>

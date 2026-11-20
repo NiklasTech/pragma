@@ -6,7 +6,9 @@ import type { DashboardItem, DashboardState } from "../dashboard";
 import {
   activitySections,
   filledCells,
+  formatMoment,
   lastTerminalLine,
+  lastTerminalLines,
   matchesFilter,
   mostRoomKey,
   startOfDay,
@@ -48,6 +50,14 @@ describe("activitySections", () => {
     expect(sections.running.map((entry) => entry.session.id)).toEqual(["ran"]);
     expect(sections.earlier.map((entry) => entry.session.id)).toEqual(["failed", "done"]);
   });
+
+  it("leaves out sessions that went idle without doing anything", () => {
+    const empty = item("empty", "idle", NOW - 1000);
+    const shell = { ...item("shell", "idle", NOW - 2000) };
+    shell.session = { ...shell.session, kind: "terminal" };
+    const sections = activitySections([empty, shell], NOW);
+    expect(sections.earlier.map((entry) => entry.session.id)).toEqual(["shell"]);
+  });
 });
 
 describe("matchesFilter", () => {
@@ -84,5 +94,19 @@ describe("lastTerminalLine", () => {
     const buffer = "\u001b[32mok\u001b[0m\r\nbuilding 10%\rbuilding 100%\r\n\r\n";
     expect(lastTerminalLine(buffer)).toBe("building 100%");
     expect(lastTerminalLine("")).toBe("");
+  });
+});
+
+describe("lastTerminalLines", () => {
+  it("keeps the last lines in order and skips blank ones", () => {
+    expect(lastTerminalLines("a\n\nb\nc\n", 2)).toEqual(["b", "c"]);
+    expect(lastTerminalLines("  indented\n", 3)).toEqual(["  indented"]);
+  });
+});
+
+describe("formatMoment", () => {
+  it("shows the time alone today and the weekday otherwise", () => {
+    expect(formatMoment(new Date(2026, 10, 20, 9, 5).getTime(), NOW)).toBe("09:05");
+    expect(formatMoment(new Date(2026, 10, 21, 1, 49).getTime(), NOW)).toBe("Sat 01:49");
   });
 });
