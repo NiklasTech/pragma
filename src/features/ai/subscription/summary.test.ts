@@ -87,6 +87,11 @@ describe("isStale", () => {
   it("is fresh right after a fetch", () => {
     expect(isStale(usage([session5h, week], NOW - 60_000), NOW)).toBe(false);
   });
+
+  it("takes a shorter age while someone watches the plans", () => {
+    expect(isStale(usage([session5h, week], NOW - 150_000), NOW, 120_000)).toBe(true);
+    expect(isStale(usage([session5h, week], NOW - 60_000), NOW, 120_000)).toBe(false);
+  });
 });
 
 describe("formatting", () => {
