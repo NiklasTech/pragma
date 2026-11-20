@@ -109,7 +109,7 @@ export function Layout() {
                   </>
                 )}
 
-                <ResizablePanel id="workspace" minSize="20%">
+                <ResizablePanel id="workspace" minSize="320px">
                   {workspace}
                 </ResizablePanel>
 

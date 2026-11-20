@@ -91,7 +91,7 @@ export function EditorStatusChip({ panelId }: EditorStatusChipProps) {
   const ordered = branchPart ? [...parts.filter((part) => part !== branchPart), branchPart] : parts;
 
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-3.5 pr-1.5 pl-3 text-ui-xs whitespace-nowrap text-fg-muted tabular-nums">
+    <div className="ml-auto flex min-w-0 items-center gap-3.5 overflow-hidden pr-1.5 pl-3 text-ui-xs whitespace-nowrap text-fg-muted tabular-nums">
       {vimEnabled && (
         <span className="rounded-full bg-bg-active px-1.5 font-semibold text-fg-default">
           {vimMode ? vimMode.toUpperCase() : "VIM"}
