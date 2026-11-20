@@ -3,6 +3,7 @@ import { Code, Plus, Pulse, Robot, X } from "@phosphor-icons/react";
 import { collectLeaves } from "@/features/ai/panes/layout";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
+import { useActivityStore } from "@/features/ai/activity/store";
 import { useAgentStatesStore } from "@/features/ai/state/agentStates";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -114,6 +115,9 @@ export function SpaceTabs() {
   const agentStates = useAgentStatesStore((state) => state.entries);
   const needsYou = (sessionId: string) =>
     waiting.includes(sessionId) || agentStates[sessionId]?.state === "needs-you";
+  const anyoneAsks = useActivityStore((state) =>
+    Object.values(state.entries).some((entry) => entry.state === "waiting"),
+  );
 
   if (!space) return null;
 
@@ -138,7 +142,7 @@ export function SpaceTabs() {
               tab={tab}
               index={index}
               paneCount={sessions.length}
-              waiting={sessions.some(needsYou)}
+              waiting={tab.kind === "activity" ? anyoneAsks : sessions.some(needsYou)}
             />
           );
         })}

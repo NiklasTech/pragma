@@ -17,6 +17,7 @@ import {
   type Leaf,
   type PaneRoot,
 } from "./operations";
+import { showAgentsTabFor } from "./agentsTabFor";
 import { autoLayout, collectLeaves, swapLeaves } from "./layout";
 import {
   nextSplitDirection,
@@ -138,6 +139,7 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
       trees: {},
 
       openSession: (rootPath, sessionId) => {
+        showAgentsTabFor(rootPath);
         const opens = !findLeafBySession(getEntry(get().trees, rootPath).root, sessionId);
         const update = () =>
           set((state) => {
@@ -159,7 +161,8 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
         else update();
       },
 
-      assignSession: (rootPath, leafId, sessionId) =>
+      assignSession: (rootPath, leafId, sessionId) => {
+        showAgentsTabFor(rootPath);
         set((state) => {
           const entry = getEntry(state.trees, rootPath);
           const root = assignLeafSession(entry.root, leafId, sessionId);
@@ -171,7 +174,8 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
               focusOrder: promoteFocusOrder(entry.focusOrder, sessionId),
             }),
           };
-        }),
+        });
+      },
 
       focusLeaf: (rootPath, leafId) =>
         set((state) => {
@@ -187,7 +191,8 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      replaceLayout: (rootPath, sessionIds) =>
+      replaceLayout: (rootPath, sessionIds) => {
+        showAgentsTabFor(rootPath);
         animatePanes(() =>
           set((state) => {
             const entry = getEntry(state.trees, rootPath);
@@ -203,7 +208,8 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
               }),
             };
           }),
-        ),
+        );
+      },
 
       closeLeaf: (rootPath, leafId) => {
         useBrowserHistoryStore.getState().drop(leafId);
