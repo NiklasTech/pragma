@@ -33,6 +33,9 @@ pub struct AgentEngine {
     pub base_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cli_provider_id: Option<String>,
+    /// The CLI account's config folder; absent runs the default account.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cli_account_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

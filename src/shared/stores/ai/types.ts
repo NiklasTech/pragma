@@ -83,6 +83,8 @@ export interface AgentEngine {
   model?: string;
   baseUrl?: string;
   cliProviderId?: string;
+  /** The CLI account's config folder; unset runs the default account. */
+  cliAccountDir?: string;
 }
 
 /** Tokens a session used, summed over every model response that reported usage. */

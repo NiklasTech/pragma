@@ -11,6 +11,7 @@ function account(configDir: string | null): CliAccount {
     email: null,
     displayName: null,
     organizationName: null,
+    signedIn: true,
     available: true,
   };
 }

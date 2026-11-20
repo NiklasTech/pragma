@@ -102,9 +102,15 @@ export type ParakeetModel = "parakeet-v3" | "parakeet-v3-compact";
 
 export type WhisperModel = "large-v3-turbo-q5_0";
 
+/** A config folder added by hand as an account of one CLI. */
+export interface CliAccountFolder {
+  providerId: string;
+  dir: string;
+}
+
 export interface CliAccountSettings {
   /** Account folders added by hand, beside the ones Pragma finds. */
-  addedDirs: string[];
+  folders: CliAccountFolder[];
   /** Short names by account key, for example "work". */
   names: Record<string, string>;
 }

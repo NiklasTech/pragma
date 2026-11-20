@@ -64,6 +64,8 @@ export interface AcpChatRequest {
   mcp_server_ids?: string[];
   /** Images of the new prompt. */
   images?: BackendImage[];
+  /** The CLI account's config folder; absent runs the default account. */
+  account_dir?: string;
 }
 
 /** Token counts of one model response, or the context fill an ACP agent reports. */

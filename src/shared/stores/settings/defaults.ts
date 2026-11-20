@@ -87,7 +87,7 @@ export const defaultSettings: SettingsState = {
       opencode: { model: "" },
       hermes: { model: "" },
     },
-    cliAccounts: { addedDirs: [], names: {} },
+    cliAccounts: { folders: [], names: {} },
   },
   theme: "dark-default",
   followSystemTheme: false,

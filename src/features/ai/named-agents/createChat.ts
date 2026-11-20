@@ -9,6 +9,12 @@ export async function createAgentChat(
   title?: string,
 ): Promise<ChatSession> {
   return startSession(rootPath, {
-    init: { title, kind: "agent", agentId: agent.id, agentEngine: agent.engine },
+    init: {
+      title,
+      kind: "agent",
+      agentId: agent.id,
+      agentEngine: agent.engine,
+      ...(agent.engine.cliAccountDir ? { cliAccountDir: agent.engine.cliAccountDir } : {}),
+    },
   });
 }

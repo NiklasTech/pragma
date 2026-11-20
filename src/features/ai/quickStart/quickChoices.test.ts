@@ -27,6 +27,7 @@ function account(configDir: string | null, email: string | null, available = tru
     email,
     displayName: null,
     organizationName: null,
+    signedIn: true,
     available,
   };
 }

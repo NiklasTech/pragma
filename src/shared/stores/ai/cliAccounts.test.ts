@@ -9,6 +9,7 @@ function account(configDir: string | null, email: string | null): CliAccount {
     email,
     displayName: null,
     organizationName: null,
+    signedIn: true,
     available: true,
   };
 }

@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 
 import { sessionAgentManifest } from "../../sessions/sessionAgent";
 import { sessionEnvironment } from "../../worktree/cwd";
+import { sessionCliProvider } from "../../subscription/summary";
 import { engineLabel } from "../dashboard";
 
 export interface SessionFacts {
@@ -28,7 +29,7 @@ export function useSessionFacts(session: ChatSession): SessionFacts {
   return {
     agent: engineLabel(session, manifests, { provider: activeProvider, model: activeModel }),
     // Only a CLI session runs with an account; Pragma's own chat has none.
-    account: session.cliProviderId
+    account: sessionCliProvider(session)
       ? sessionAccountLabel(accounts, names, manifest?.id, session.cliAccountDir)
       : null,
     where: environment?.kind === "worktree" ? environment.branch : "checkout",

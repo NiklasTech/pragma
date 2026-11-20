@@ -6,11 +6,17 @@ import { TerminalWindow } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import {
+  accountLabel,
+  choosableAccounts,
+  useCliAccountsStore,
+} from "@/shared/stores/ai/cliAccounts";
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { providerAccentById } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
-import { buildSessionMenuCliRows } from "../threads/session-menu";
+import { buildSessionMenuCliRows, type SessionMenuCliRow } from "../threads/session-menu";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
 
 interface CliQuickStartProps {
@@ -24,6 +30,8 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
   const actions = useNewSessionActions(rootPath, targetLeafId);
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
@@ -33,9 +41,18 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
     void refreshCLIStatuses();
   }, []);
 
-  const available = buildSessionMenuCliRows(manifests, statuses).filter(
-    (row) => !row.disabled && row.items.some((item) => item.action === "terminal"),
-  );
+  // A CLI with several accounts gets one chip per account.
+  const available = buildSessionMenuCliRows(manifests, statuses)
+    .filter((row) => !row.disabled && row.items.some((item) => item.action === "terminal"))
+    .flatMap((row): (SessionMenuCliRow & { accountDir?: string; account: string | null })[] => {
+      const rowAccounts = choosableAccounts(accounts, row.manifestId);
+      if (rowAccounts.length === 0) return [{ ...row, account: null }];
+      return rowAccounts.map((account) => ({
+        ...row,
+        accountDir: account.configDir ?? undefined,
+        account: accountLabel(account, accountNames),
+      }));
+    });
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
@@ -55,10 +72,10 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
         <Button
           variant="secondary"
           size="sm"
-          key={row.manifestId}
+          key={`${row.manifestId}:${row.accountDir ?? ""}`}
           onClick={() => {
             const manifest = manifests.find((item) => item.id === row.manifestId);
-            if (manifest) void actions.startTerminal(manifest);
+            if (manifest) void actions.startTerminal(manifest, { accountDir: row.accountDir });
           }}
           className="group gap-1.5 rounded-full px-3 text-fg-muted hover:text-fg-default"
         >
@@ -72,6 +89,11 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
             )}
           />
           {row.name}
+          {row.account && (
+            <span className="max-w-32 truncate font-mono text-ui-2xs text-fg-subtle">
+              {row.account}
+            </span>
+          )}
         </Button>
       ))}
     </div>

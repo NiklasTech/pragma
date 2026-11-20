@@ -26,15 +26,19 @@ export interface NewSessionActions {
   startAgentWorktree: () => Promise<void>;
   startTerminal: (manifest: CLIManifest, options?: StartTerminalOptions) => Promise<void>;
   startShell: () => Promise<void>;
-  startConversation: (manifest: CLIManifest) => Promise<void>;
+  startConversation: (manifest: CLIManifest, options?: { accountDir?: string }) => Promise<void>;
   joinWorktree: (environmentId: string, target: JoinTarget) => Promise<void>;
 }
 
-function cliConversationInit(manifest: CLIManifest): StartSessionRequest["init"] {
+function cliConversationInit(
+  manifest: CLIManifest,
+  accountDir?: string,
+): StartSessionRequest["init"] {
   return {
     kind: "agent",
     cliProviderId: manifest.id,
     agentEngine: { kind: "cli", cliProviderId: manifest.id },
+    ...(accountDir ? { cliAccountDir: accountDir } : {}),
   };
 }
 
@@ -115,7 +119,8 @@ export function useNewSessionActions(
   }, [place, rootPath]);
 
   const startConversation = useCallback(
-    (manifest: CLIManifest) => start({ init: cliConversationInit(manifest) }),
+    (manifest: CLIManifest, options?: { accountDir?: string }) =>
+      start({ init: cliConversationInit(manifest, options?.accountDir) }),
     [start],
   );
 

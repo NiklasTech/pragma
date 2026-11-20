@@ -10,6 +10,8 @@ export interface CliAccount {
   email: string | null;
   displayName: string | null;
   organizationName: string | null;
+  /** The folder holds a sign-in. */
+  signedIn: boolean;
   available: boolean;
 }
 
@@ -66,9 +68,9 @@ export function sessionAccountLabel(
 
 /// Lists the accounts again; cheap, it reads a few config files.
 export async function loadCliAccounts(): Promise<void> {
-  const { addedDirs } = useSettingsStore.getState().ai.cliAccounts;
+  const { folders } = useSettingsStore.getState().ai.cliAccounts;
   try {
-    const accounts = await invoke<CliAccount[]>("cli_accounts_list", { addedDirs });
+    const accounts = await invoke<CliAccount[]>("cli_accounts_list", { added: folders });
     useCliAccountsStore.setState({ accounts });
   } catch {
     // Tauri is unavailable outside the desktop runtime.
