@@ -13,12 +13,15 @@ export function createTerminalSession(
     activate?: boolean;
     title?: string;
     environment?: Pick<StartSessionRequest, "environment" | "sameEnvironmentAs">;
+    /** The CLI's account folder; unset runs its default account. */
+    accountDir?: string;
   },
 ): Promise<ChatSession> {
   return startSession(rootPath, {
     init: {
       kind: "terminal",
       cliProviderId: manifest.id,
+      ...(options?.accountDir ? { cliAccountDir: options.accountDir } : {}),
       title: options?.title ?? terminalSessionTitle(manifest.name),
     },
     ...options?.environment,

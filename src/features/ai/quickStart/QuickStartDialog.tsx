@@ -22,6 +22,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import type { GitBranch as GitBranchInfo } from "@/shared/stores/git";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -32,6 +33,7 @@ import { findSpaceByFolder } from "@/shared/stores/spaces/model";
 
 import { useLayoutPresetsStore } from "../panes/layoutPresets";
 import { LayoutDiagram } from "./LayoutDiagram";
+import { quickChoices, sameAgent } from "./quickChoices";
 import {
   agentPane,
   MAX_AGENT_KEYS,
@@ -53,13 +55,6 @@ function folderName(path: string): string {
   return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 }
 
-function sameAgent(a: QuickAgent, b: QuickAgent): boolean {
-  return (
-    a.kind === b.kind &&
-    (a.kind === "terminal" || (b.kind === "cli" && a.manifestId === b.manifestId))
-  );
-}
-
 function isTyping(target: EventTarget | null): boolean {
   return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement;
 }
@@ -68,12 +63,18 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
   const presets = useLayoutPresetsStore((state) => state.presets);
   const spaceName = useOpenRepositoriesStore(
     (state) => findSpaceByFolder(state.spaces, rootPath)?.name ?? folderName(rootPath),
   );
 
   const { ready, missing } = useMemo(() => quickAgents(manifests, statuses), [manifests, statuses]);
+  const choices = useMemo(
+    () => quickChoices(ready, accounts, accountNames),
+    [ready, accounts, accountNames],
+  );
   // The command line hands a task over as the overlay's target.
   const [task, setTask] = useState(() => useOverlayStore.getState().target ?? "");
   const [picked, setPicked] = useState<QuickAgent | null>(null);
@@ -104,8 +105,7 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
     };
   }, [rootPath]);
 
-  const agent: QuickAgent =
-    picked ?? (ready[0] ? { kind: "cli", manifestId: ready[0].id } : TERMINAL_ONLY);
+  const agent: QuickAgent = picked ?? choices[0]?.agent ?? TERMINAL_ONLY;
   const pane = agentPane(agent);
   const layouts = [
     ...QUICK_LAYOUTS.map((layout) => ({
@@ -155,10 +155,10 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
     if (
       Number.isInteger(number) &&
       number >= 1 &&
-      number <= Math.min(ready.length, MAX_AGENT_KEYS)
+      number <= Math.min(choices.length, MAX_AGENT_KEYS)
     ) {
       event.preventDefault();
-      setPicked({ kind: "cli", manifestId: ready[number - 1].id });
+      setPicked(choices[number - 1].agent);
     } else if (event.key.toLowerCase() === "t") {
       event.preventDefault();
       setPicked(TERMINAL_ONLY);
@@ -185,19 +185,24 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
       <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
         <span className="text-ui-xs font-medium text-fg-muted">Who</span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Agent">
-          {ready.map((manifest, index) => (
+          {choices.map((choice, index) => (
             <Button
-              key={manifest.id}
+              key={`${choice.manifest.id}:${choice.agent.accountDir ?? ""}`}
               variant="ghost"
-              aria-pressed={sameAgent(agent, { kind: "cli", manifestId: manifest.id })}
-              onClick={() => setPicked({ kind: "cli", manifestId: manifest.id })}
+              aria-pressed={sameAgent(agent, choice.agent)}
+              onClick={() => setPicked(choice.agent)}
               className={cn(
-                "h-8.5 gap-2 rounded-[9px] pr-2.5 pl-2 text-ui-sm text-fg-muted",
+                "h-8.5 max-w-full min-w-0 gap-2 rounded-[9px] pr-2.5 pl-2 text-ui-sm text-fg-muted",
                 CHOICE,
               )}
             >
-              <AgentMark agentId={manifest.id} name={manifest.name} />
-              {manifest.name}
+              <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} />
+              {choice.manifest.name}
+              {choice.accountLabel && (
+                <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
+                  {choice.accountLabel}
+                </span>
+              )}
               {index < MAX_AGENT_KEYS && <Kbd>{index + 1}</Kbd>}
             </Button>
           ))}

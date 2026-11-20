@@ -112,6 +112,8 @@ export interface ChatSession {
   environment?: "checkout" | "worktree";
   environmentId?: string;
   cliProviderId?: string;
+  /** The CLI's account folder; unset runs the CLI's default account. */
+  cliAccountDir?: string;
   agentId?: string;
   archived?: boolean;
   agentEngine?: AgentEngine;
@@ -129,6 +131,7 @@ export interface CreateChatSessionInit {
   environment?: ChatSession["environment"];
   environmentId?: string;
   cliProviderId?: string;
+  cliAccountDir?: string;
   agentId?: string;
   agentEngine?: AgentEngine;
   parentId?: string;

@@ -31,7 +31,9 @@ import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { AGENT_STATE_LABELS, type AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession, type CLIManifest } from "@/shared/stores/ai";
+import { sessionAccountLabel, useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useSettingsStore } from "@/shared/stores/settings";
 import type { AgentStatus } from "@/features/agent/store";
 
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
@@ -120,7 +122,8 @@ function startLike(
   actions: NewSessionActions,
 ): void {
   if (isShellSession(session)) void actions.startShell();
-  else if (session.kind === "terminal" && manifest) void actions.startTerminal(manifest);
+  else if (session.kind === "terminal" && manifest)
+    void actions.startTerminal(manifest, { accountDir: session.cliAccountDir });
   else if (session.agentEngine?.kind === "cli" && manifest)
     void actions.startConversation(manifest);
   else if (session.kind === "ask") void actions.startAsk();
@@ -180,6 +183,8 @@ export function PaneHeader({
       : undefined,
   );
   const renameChatSession = useAIStore((state) => state.renameChatSession);
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
   const actions = useNewSessionActions(rootPath);
   const drag = usePaneHeaderDrag(leaf.id, onDropOn);
   const [renaming, setRenaming] = useState(false);
@@ -206,6 +211,10 @@ export function PaneHeader({
   const worktree = environment?.kind === "worktree" ? environment : undefined;
   const branch = worktree?.branch ?? null;
   const title = paneTitle(leaf, session, shownManifest, shell);
+  const account =
+    terminal && !shell
+      ? sessionAccountLabel(accounts, accountNames, manifest?.id, terminal.cliAccountDir)
+      : null;
   const maximizeLabel = maximized ? "Restore" : "Zoom";
   const newLabel = shell
     ? "New shell"
@@ -237,6 +246,14 @@ export function PaneHeader({
         >
           {title}
         </span>
+        {account && (
+          <span
+            className="max-w-40 min-w-0 shrink-[3] truncate font-mono text-ui-2xs text-fg-subtle @max-[260px]/pane-header:hidden"
+            title={`Account: ${account}`}
+          >
+            {account}
+          </span>
+        )}
         {!leaf.browser && session && showState && state !== "idle" && (
           <span
             className={cn(

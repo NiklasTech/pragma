@@ -537,6 +537,18 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     effect: EDITOR,
   },
   {
+    id: "cli-accounts",
+    keys: ["ai.cliAccounts"],
+    label: "add account folder",
+    searchLabel: "CLI accounts",
+    description:
+      "Several accounts of a coding CLI, for example two Claude accounts, each with a name",
+    keywords: "account accounts claude config folder CLAUDE_CONFIG_DIR second work personal",
+    category: "agents",
+    scope: "global",
+    effect: "src/shared/stores/ai/cliAccounts.ts",
+  },
+  {
     id: "agent-project-rules",
     keys: ["agent.useProjectRules"],
     label: "Use PRAGMA.md",

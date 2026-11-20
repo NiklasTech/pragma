@@ -16,6 +16,8 @@ import { useSettingsStore } from "@/shared/stores/settings";
 
 import { SettingSection } from "../ui/SettingSection";
 import { quickAgents } from "@/features/ai/quickStart/quickStart";
+import { quickChoices } from "@/features/ai/quickStart/quickChoices";
+import { useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
 import {
   Select,
   SelectContent,
@@ -25,6 +27,7 @@ import {
 } from "@/shared/components/ui/select";
 
 import { SettingRow } from "../ui/SettingRow";
+import { ACCOUNT_PROVIDERS, CliAccountRows } from "./CliAccountRows";
 import { CliTile } from "./CliTile";
 
 const NONE = "__none__";
@@ -32,6 +35,7 @@ const NONE = "__none__";
 export function CliIntegrationSection() {
   const aiStore = useAIStore();
   const settingsStore = useSettingsStore();
+  const accounts = useCliAccountsStore((state) => state.accounts);
 
   const [installing, setInstalling] = React.useState<string | null>(null);
   const [loggingIn, setLoggingIn] = React.useState<string | null>(null);
@@ -83,8 +87,13 @@ export function CliIntegrationSection() {
   ];
   const missing = aiStore.cliManifests.filter((m) => !isInstalled(m.id));
   const signedIn = installed.filter((m) => aiStore.cliStatuses[m.id]?.authenticated);
-  const quickKeyOf = (id: string): number | null => {
-    const index = ready.findIndex((m) => m.id === id);
+  const choices = quickChoices(ready, accounts, settingsStore.ai.cliAccounts.names);
+  const quickKeyOf = (id: string, accountDir?: string | null): number | null => {
+    const index = choices.findIndex(
+      (choice) =>
+        choice.manifest.id === id &&
+        (accountDir === undefined || (choice.agent.accountDir ?? null) === accountDir),
+    );
     return index >= 0 && index < 9 ? index + 1 : null;
   };
 
@@ -101,18 +110,33 @@ export function CliIntegrationSection() {
     }
   };
 
-  const tile = (manifest: (typeof installed)[number]) => (
-    <CliTile
-      key={manifest.id}
-      manifest={manifest}
-      status={aiStore.cliStatuses[manifest.id]}
-      quickKey={quickKeyOf(manifest.id)}
-      busy={installing === manifest.id || loggingIn === manifest.id}
-      onInstall={() => void handleInstallCLI(manifest.id)}
-      onSignIn={() => void handleLoginCLI(manifest.id)}
-      onSignOut={() => void handleLogoutCLI(manifest.id)}
-    />
-  );
+  const tile = (manifest: (typeof installed)[number]) => {
+    const withAccounts = isInstalled(manifest.id) && ACCOUNT_PROVIDERS.has(manifest.id);
+    const severalAccounts =
+      withAccounts && choices.filter((c) => c.manifest === manifest).length > 1;
+    return (
+      <div
+        key={manifest.id}
+        className="flex flex-col border-t border-border-subtle first:border-t-0"
+      >
+        <CliTile
+          manifest={manifest}
+          status={aiStore.cliStatuses[manifest.id]}
+          quickKey={severalAccounts ? null : quickKeyOf(manifest.id)}
+          busy={installing === manifest.id || loggingIn === manifest.id}
+          onInstall={() => void handleInstallCLI(manifest.id)}
+          onSignIn={() => void handleLoginCLI(manifest.id)}
+          onSignOut={() => void handleLogoutCLI(manifest.id)}
+        />
+        {withAccounts && (
+          <CliAccountRows
+            providerId={manifest.id}
+            quickKeyOf={(configDir) => quickKeyOf(manifest.id, configDir)}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <SettingSection

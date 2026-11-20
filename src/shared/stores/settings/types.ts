@@ -102,6 +102,13 @@ export type ParakeetModel = "parakeet-v3" | "parakeet-v3-compact";
 
 export type WhisperModel = "large-v3-turbo-q5_0";
 
+export interface CliAccountSettings {
+  /** Account folders added by hand, beside the ones Pragma finds. */
+  addedDirs: string[];
+  /** Short names by account key, for example "work". */
+  names: Record<string, string>;
+}
+
 export interface AISettings {
   defaultProvider: AIProvider;
   defaultModel: string;
@@ -123,6 +130,7 @@ export interface AISettings {
   parakeetModel: ParakeetModel;
   whisperModel: WhisperModel;
   providers: Record<AIProvider, ProviderSettings>;
+  cliAccounts: CliAccountSettings;
   /** Internal marker for one-time default migrations. */
   migrationRevision?: number;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAIStore } from "@/shared/stores/ai";
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
+import { loadCliAccounts } from "@/shared/stores/ai/cliAccounts";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 type AISettingsState = ReturnType<typeof useSettingsStore.getState>["ai"];
@@ -57,6 +58,7 @@ export function useAIInit() {
       // Load CLI manifests and statuses on app start
       void loadCLIManifests();
       void loadCLIStatuses();
+      void loadCliAccounts();
 
       // Other providers are checked when settings opens, so startup raises at most one keychain dialog.
       if (settings.ai.defaultProvider !== "ollama") {

@@ -52,6 +52,7 @@ export async function openLayoutPreset(
         const session = await createTerminalSession(rootPath, manifest, {
           activate: false,
           environment: options.environment,
+          accountDir: pane.cliAccountDir,
           // A CLI started for a task is named after it, as its tab is.
           title: task ? options.tabName : undefined,
         });
