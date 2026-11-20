@@ -379,6 +379,7 @@ pub fn run() {
             commands::browser_frame::browser_frame_policy,
             commands::context::read_chat_context,
             commands::cli::cli_list_manifests,
+            commands::cli_accounts::cli_accounts_list,
             commands::cli::cli_check_all_statuses,
             commands::cli::cli_install,
             commands::cli::cli_start_login,
