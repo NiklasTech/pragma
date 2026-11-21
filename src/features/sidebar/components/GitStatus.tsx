@@ -4,7 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useGitStore, type GitStatusEntry } from "@/shared/stores/git";
 import { parseDiffToSides } from "@/shared/lib/diff";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
-import { openGitDiffInSplit } from "../lib/gitDiffSplit";
+import { openGitDiff } from "../lib/gitDiff";
 import { ChangesHeader } from "./git-status/ChangesHeader";
 import { StateSummary } from "./git-status/StateSummary";
 import { type FileState } from "./git-status/fileState";
@@ -161,7 +161,7 @@ export function GitStatus() {
 
       const { original, modified } = parseDiffToSides(content);
 
-      openGitDiffInSplit(editorPanelId, {
+      openGitDiff(editorPanelId, {
         id: `diff:${entry.path}:${staged ? "staged" : "unstaged"}`,
         path: entry.path,
         original,
