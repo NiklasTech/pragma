@@ -284,7 +284,7 @@ export function ChatComposer({
             onPaste={handlePaste}
             placeholder="Ask Pragma anything. Type @ to add context."
             className={cn(
-              "max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none transition-colors duration-300 focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent",
+              "max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none ring-0 transition-colors duration-300 hover:ring-0 focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent",
               dictationLive && "text-fg-muted",
             )}
           />
