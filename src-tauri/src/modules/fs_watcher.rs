@@ -46,6 +46,8 @@ struct PathFilter {
     watched_root: PathBuf,
     display_root: PathBuf,
     gitignore: Gitignore,
+    /// `.gitignore` files of folders below the root, loaded the first time a path passes through.
+    nested: HashMap<PathBuf, Option<Gitignore>>,
 }
 
 impl PathFilter {
@@ -55,30 +57,76 @@ impl PathFilter {
             watched_root,
             display_root,
             gitignore,
+            nested: HashMap::new(),
         }
     }
 
-    fn reload_gitignore(&mut self) {
-        self.gitignore = load_gitignore(&self.watched_root);
+    /// Picks up the new rules of a `.gitignore` file that changed.
+    fn reload_gitignore(&mut self, file: &Path) {
+        match file.parent() {
+            Some(dir) if dir == self.watched_root => {
+                self.gitignore = load_gitignore(&self.watched_root)
+            }
+            Some(dir) => {
+                self.nested.remove(dir);
+            }
+            None => {}
+        }
     }
 
     fn is_gitignore_file(&self, path: &Path) -> bool {
-        path == self.watched_root.join(".gitignore")
+        path.starts_with(&self.watched_root)
+            && path.file_name().is_some_and(|name| name == ".gitignore")
     }
 
-    fn display_path(&self, path: &Path) -> Option<String> {
-        let relative = path.strip_prefix(&self.watched_root).ok()?;
+    fn matcher(&mut self, dir: &Path) -> Option<&Gitignore> {
+        if dir == self.watched_root {
+            return Some(&self.gitignore);
+        }
+        self.nested
+            .entry(dir.to_path_buf())
+            .or_insert_with(|| load_dir_gitignore(dir))
+            .as_ref()
+    }
+
+    /// Whether the `.gitignore` files of `dirs` ignore `path`; the deepest file with a matching
+    /// rule decides, as in git.
+    fn is_ignored(&mut self, path: &Path, is_dir: bool, dirs: &[PathBuf]) -> bool {
+        for dir in dirs.iter().rev() {
+            let Some(matcher) = self.matcher(dir) else {
+                continue;
+            };
+            let decision = matcher.matched(path, is_dir);
+            if decision.is_ignore() {
+                return true;
+            }
+            if decision.is_whitelist() {
+                return false;
+            }
+        }
+        false
+    }
+
+    fn display_path(&mut self, path: &Path) -> Option<String> {
+        let relative = path.strip_prefix(&self.watched_root).ok()?.to_path_buf();
         if relative.as_os_str().is_empty() {
             return None;
         }
         if matches!(relative.components().next(), Some(Component::Normal(name)) if name == ".git") {
             return None;
         }
-        if self
-            .gitignore
-            .matched_path_or_any_parents(relative, path.is_dir())
-            .is_ignore()
-        {
+        // Git reads no rules below an ignored folder, so each parent folder is checked first.
+        let mut dirs = vec![self.watched_root.clone()];
+        let mut parents = relative.components();
+        parents.next_back();
+        for component in parents {
+            let dir = dirs[dirs.len() - 1].join(component);
+            if self.is_ignored(&dir, true, &dirs) {
+                return None;
+            }
+            dirs.push(dir);
+        }
+        if self.is_ignored(path, path.is_dir(), &dirs) {
             return None;
         }
         Some(
@@ -88,6 +136,21 @@ impl PathFilter {
                 .into_owned(),
         )
     }
+}
+
+fn load_dir_gitignore(dir: &Path) -> Option<Gitignore> {
+    let file = dir.join(".gitignore");
+    if !file.is_file() {
+        return None;
+    }
+    let mut builder = GitignoreBuilder::new(dir);
+    if let Some(err) = builder.add(&file) {
+        log::warn!("failed to parse {}: {err}", file.display());
+    }
+    builder
+        .build()
+        .map_err(|e| log::warn!("failed to build gitignore matcher: {e}"))
+        .ok()
 }
 
 fn load_gitignore(root: &Path) -> Gitignore {
@@ -150,8 +213,13 @@ fn debounce_loop(
             }
         }
 
-        if batch.iter().any(|path| filter.is_gitignore_file(path)) {
-            filter.reload_gitignore();
+        let changed_rules: Vec<PathBuf> = batch
+            .iter()
+            .filter(|path| filter.is_gitignore_file(path))
+            .cloned()
+            .collect();
+        for file in &changed_rules {
+            filter.reload_gitignore(file);
         }
         let paths: BTreeSet<String> = batch
             .iter()
@@ -268,7 +336,7 @@ mod tests {
     #[test]
     fn maps_paths_to_the_display_root() {
         let dir = tempfile::tempdir().unwrap();
-        let filter = filter_for(dir.path());
+        let mut filter = filter_for(dir.path());
 
         let mapped = filter.display_path(&dir.path().join("src").join("main.rs"));
 
@@ -287,7 +355,7 @@ mod tests {
     #[test]
     fn drops_root_git_dir_and_outside_paths() {
         let dir = tempfile::tempdir().unwrap();
-        let filter = filter_for(dir.path());
+        let mut filter = filter_for(dir.path());
 
         assert_eq!(filter.display_path(dir.path()), None);
         assert_eq!(
@@ -306,7 +374,7 @@ mod tests {
         )
         .unwrap();
         fs::create_dir_all(dir.path().join("node_modules").join("pkg")).unwrap();
-        let filter = filter_for(dir.path());
+        let mut filter = filter_for(dir.path());
 
         let ignored = dir.path().join("node_modules").join("pkg").join("index.js");
         assert_eq!(filter.display_path(&ignored), None);
@@ -323,7 +391,73 @@ mod tests {
 
         fs::write(dir.path().join(".gitignore"), "out.txt\n").unwrap();
         assert!(filter.is_gitignore_file(&dir.path().join(".gitignore")));
-        filter.reload_gitignore();
+        filter.reload_gitignore(&dir.path().join(".gitignore"));
+
+        assert_eq!(filter.display_path(&path), None);
+    }
+
+    #[test]
+    fn respects_gitignore_files_in_subfolders() {
+        let dir = tempfile::tempdir().unwrap();
+        let crate_dir = dir.path().join("src-tauri");
+        fs::create_dir_all(crate_dir.join("target").join("debug")).unwrap();
+        fs::write(crate_dir.join(".gitignore"), "/target/\n").unwrap();
+        let mut filter = filter_for(dir.path());
+
+        let built = crate_dir.join("target").join("debug").join("app.o");
+        assert_eq!(filter.display_path(&built), None);
+        assert!(filter
+            .display_path(&crate_dir.join("src").join("lib.rs"))
+            .is_some());
+        assert!(filter
+            .display_path(&dir.path().join("target").join("x.o"))
+            .is_some());
+    }
+
+    #[test]
+    fn a_subfolder_gitignore_can_whitelist_a_file() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(".gitignore"), "*.log\n").unwrap();
+        fs::create_dir_all(dir.path().join("logs")).unwrap();
+        fs::write(dir.path().join("logs").join(".gitignore"), "!keep.log\n").unwrap();
+        let mut filter = filter_for(dir.path());
+
+        assert!(filter
+            .display_path(&dir.path().join("logs").join("keep.log"))
+            .is_some());
+        assert_eq!(
+            filter.display_path(&dir.path().join("logs").join("other.log")),
+            None
+        );
+    }
+
+    #[test]
+    fn rules_below_an_ignored_folder_do_not_apply() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join(".gitignore"), "vendor/\n").unwrap();
+        fs::create_dir_all(dir.path().join("vendor")).unwrap();
+        fs::write(dir.path().join("vendor").join(".gitignore"), "!*\n").unwrap();
+        let mut filter = filter_for(dir.path());
+
+        assert_eq!(
+            filter.display_path(&dir.path().join("vendor").join("lib.js")),
+            None
+        );
+    }
+
+    #[test]
+    fn reloads_a_changed_subfolder_gitignore() {
+        let dir = tempfile::tempdir().unwrap();
+        let sub = dir.path().join("pkg");
+        fs::create_dir_all(&sub).unwrap();
+        let mut filter = filter_for(dir.path());
+        let path = sub.join("dist.js");
+        assert!(filter.display_path(&path).is_some());
+
+        let rules = sub.join(".gitignore");
+        fs::write(&rules, "dist.js\n").unwrap();
+        assert!(filter.is_gitignore_file(&rules));
+        filter.reload_gitignore(&rules);
 
         assert_eq!(filter.display_path(&path), None);
     }
