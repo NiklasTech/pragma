@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-} from "@/shared/components/ui/context-menu";
+import { ContextMenu } from "@/shared/components/ui/context-menu";
+import { ActionMenuPopup } from "@/shared/components/ui/action-menu";
+import { useComposerInsertStore } from "@/features/ai/mentions/composerInsert";
+import { formatShortcut, getIsMac, type ShortcutBinding } from "@/shared/lib/shortcuts";
+import { buildMenu, quoteMarkdown, type MenuContextType } from "./globalMenuSpec";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -33,57 +31,47 @@ import {
   type TerminalSelectionEventDetail,
   type TerminalSuggestionEventDetail,
 } from "@/shared/lib/terminal-events";
-import {
-  ArrowSquareOut,
-  Broom,
-  ClipboardText,
-  Copy,
-  Lightning,
-  MagicWand,
-  MagnifyingGlass,
-  PencilLine,
-  Scissors,
-  SelectionAll,
-  Sparkle,
-  X,
-} from "@phosphor-icons/react";
 import { useLspEnabled } from "@/shared/stores/workspaceSettings/effective";
 
-type ContextType = "editor" | "terminal" | "input" | "generic";
-
 interface MenuState {
-  contextType: ContextType;
+  contextType: MenuContextType;
   selection: string;
   target: EventTarget | null;
   position: { clientX: number; clientY: number } | null;
-}
-
-const IS_MAC = navigator.platform.toLowerCase().includes("mac");
-const MODIFIER_LABELS = IS_MAC
-  ? { mod: "\u2318", shift: "\u21E7", alt: "\u2325" }
-  : { mod: "Ctrl+", shift: "Shift+", alt: "Alt+" };
-
-function combo(modifiers: Array<keyof typeof MODIFIER_LABELS>, key: string): string {
-  return modifiers.map((modifier) => MODIFIER_LABELS[modifier]).join("") + key;
-}
-
-function detectContextType(target: EventTarget | null): ContextType {
-  const el = target as HTMLElement | null;
-  if (!el) return "generic";
-  if (el.closest(".cm-editor")) return "editor";
-  if (el.closest(".xterm")) return "terminal";
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.isContentEditable) {
-    return "input";
-  }
-  return "generic";
 }
 
 function getActiveSelection(): string {
   return window.getSelection()?.toString() ?? "";
 }
 
+/** Which menu a right-click opens; null keeps the webview's own menu away and opens nothing. */
+function detectContextType(target: EventTarget | null): MenuContextType | null {
+  if (!(target instanceof Element)) return null;
+  if (target.closest(".cm-editor")) return "editor";
+  if (target.closest(".xterm")) return "terminal";
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  ) {
+    return "input";
+  }
+  return getActiveSelection().trim() ? "selection" : null;
+}
+
+/** A menu of its own already took the click; otherwise only known places open one. */
+function wantsMenu(event: React.MouseEvent): boolean {
+  return !event.defaultPrevented && detectContextType(event.target) !== null;
+}
+
+function shortcutLabel(binding: ShortcutBinding | null | undefined): string | undefined {
+  return binding ? formatShortcut(binding, getIsMac()) : undefined;
+}
+
 export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const [open, setOpen] = useState(false);
+  const shortcuts = useSettingsStore((state) => state.shortcuts);
   const [terminalSelection, setTerminalSelection] = useState("");
   const [terminalSuggestion, setTerminalSuggestion] = useState<TerminalSuggestionEventDetail>({
     suggestion: "",
@@ -138,6 +126,8 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
     (event: React.MouseEvent) => {
       event.preventDefault();
       const contextType = detectContextType(event.target);
+      if (!contextType) return;
+      setOpen(true);
       setMenu({
         contextType,
         selection: contextType === "terminal" ? terminalSelection : getActiveSelection(),
@@ -158,8 +148,14 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   );
 
   const closeMenu = useCallback(() => {
-    setMenu(null);
+    setOpen(false);
   }, []);
+
+  const handleQuote = useCallback(() => {
+    if (!menu || !hasSelection) return;
+    useComposerInsertStore.getState().insert(quoteMarkdown(menu.selection));
+    closeMenu();
+  }, [menu, hasSelection, closeMenu]);
 
   const handleGoToDefinition = useCallback(() => {
     if (menu?.position) {
@@ -251,7 +247,6 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   }, [closeMenu]);
 
   const contextType = menu?.contextType ?? "generic";
-  const showTextActions = contextType === "editor" || contextType === "input";
   const canGoToDefinition = contextType === "editor" && lspReady && definitionAvailable;
   const activeFilePath = activeTab?.kind === "file" ? activeTab.path : undefined;
   const activeFlags = activeFilePath ? getLspFeatureFlags(activeFilePath) : undefined;
@@ -265,19 +260,51 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
   const canQuickFix = Boolean(
     contextType === "editor" && lspReady && (activeFlags?.codeAction ?? true),
   );
-  const showTerminalActions = contextType === "terminal";
-  const showAskAI = contextType === "editor" && hasSelection;
-  const showTerminalSuggestion = contextType === "terminal" && terminalSuggestion.visible;
+
+  const spec = menu
+    ? buildMenu({
+        menu,
+        hasSelection,
+        inChat: menu.target instanceof Element && menu.target.closest("[data-chat-panel]") !== null,
+        activeTabName: activeTab?.name ?? null,
+        editWithAIShortcut: shortcutLabel(shortcuts["edit.editWithAI"]),
+        formatShortcut: shortcutLabel(shortcuts["editor.formatDocument"]),
+        lsp: { canGoToDefinition, canFindReferences, canRename, canQuickFix, canFormatDocument },
+        terminalSuggestion: terminalSuggestion.visible,
+        actions: {
+          editWithAI: handleAskAI,
+          goToDefinition: handleGoToDefinition,
+          findReferences: handleFindReferences,
+          rename: handleRename,
+          quickFix: handleQuickFix,
+          formatDocument: handleFormatDocument,
+          cut: handleCut,
+          copy: () => void handleCopy(),
+          paste: handlePaste,
+          selectAll: handleSelectAll,
+          quote: handleQuote,
+          clearTerminal: handleClearTerminal,
+          acceptSuggestion: handleAcceptTerminalSuggestion,
+          dismissSuggestion: handleDismissTerminalSuggestion,
+        },
+      })
+    : null;
 
   return (
-    <ContextMenu>
+    <ContextMenu
+      open={open && spec !== null}
+      onOpenChange={(next) => {
+        // Only a right-click on a known place opens it; see handleContextMenu.
+        if (!next) setOpen(false);
+      }}
+    >
       <ContextMenuPrimitive.Trigger
         render={(props) => (
           <div
             {...props}
             className="contents"
             onContextMenu={(event) => {
-              if (detectContextType(event.target) === "generic") {
+              if (!wantsMenu(event)) {
                 event.preventDefault();
                 return;
               }
@@ -289,105 +316,7 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
           </div>
         )}
       />
-      <ContextMenuContent className="w-60">
-        {showAskAI && (
-          <>
-            <ContextMenuItem onClick={handleAskAI} className="font-medium">
-              <Sparkle size={14} weight="fill" className="text-primary" />
-              <span>Ask Pragma about selection</span>
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-          </>
-        )}
-        {contextType === "editor" && lspReady && (
-          <>
-            <ContextMenuItem disabled={!canGoToDefinition} onClick={handleGoToDefinition}>
-              <ArrowSquareOut size={14} />
-              <span>Go to Definition</span>
-              <ContextMenuShortcut>F12</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!canFindReferences} onClick={handleFindReferences}>
-              <MagnifyingGlass size={14} />
-              <span>Find References</span>
-              <ContextMenuShortcut>{combo(["shift"], "F12")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!canRename} onClick={handleRename}>
-              <PencilLine size={14} />
-              <span>Rename Symbol</span>
-              <ContextMenuShortcut>F2</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!canQuickFix} onClick={handleQuickFix}>
-              <Lightning size={14} />
-              <span>Quick Fix</span>
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!canFormatDocument} onClick={handleFormatDocument}>
-              <MagicWand size={14} />
-              <span>Format Document</span>
-              <ContextMenuShortcut>{combo(["shift", "alt"], "F")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-          </>
-        )}
-        {showTextActions && (
-          <>
-            <ContextMenuItem disabled={!hasSelection} onClick={handleCut}>
-              <Scissors size={14} />
-              <span>Cut</span>
-              <ContextMenuShortcut>{combo(["mod"], "X")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem disabled={!hasSelection} onClick={handleCopy}>
-              <Copy size={14} />
-              <span>Copy</span>
-              <ContextMenuShortcut>{combo(["mod"], "C")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handlePaste}>
-              <ClipboardText size={14} />
-              <span>Paste</span>
-              <ContextMenuShortcut>{combo(["mod"], "V")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleSelectAll}>
-              <SelectionAll size={14} />
-              <span>Select All</span>
-              <ContextMenuShortcut>{combo(["mod"], "A")}</ContextMenuShortcut>
-            </ContextMenuItem>
-          </>
-        )}
-        {showTerminalActions && (
-          <>
-            {showTerminalSuggestion && (
-              <>
-                <ContextMenuItem onClick={handleAcceptTerminalSuggestion} className="font-medium">
-                  <Lightning size={14} weight="fill" className="text-primary" />
-                  <span>Accept Suggestion</span>
-                  <ContextMenuShortcut>Tab</ContextMenuShortcut>
-                </ContextMenuItem>
-                <ContextMenuItem onClick={handleDismissTerminalSuggestion}>
-                  <X size={14} />
-                  <span>Dismiss Suggestion</span>
-                  <ContextMenuShortcut>Esc</ContextMenuShortcut>
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-              </>
-            )}
-            <ContextMenuItem disabled={!hasSelection} onClick={handleCopy}>
-              <Copy size={14} />
-              <span>Copy</span>
-              <ContextMenuShortcut>{combo(["mod"], "C")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem onClick={handlePaste}>
-              <ClipboardText size={14} />
-              <span>Paste</span>
-              <ContextMenuShortcut>{combo(["mod"], "V")}</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleClearTerminal}>
-              <Broom size={14} />
-              <span>Clear Terminal</span>
-            </ContextMenuItem>
-          </>
-        )}
-      </ContextMenuContent>
+      {spec && <ActionMenuPopup spec={spec} onClose={closeMenu} />}
     </ContextMenu>
   );
 }
