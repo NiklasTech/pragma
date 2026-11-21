@@ -27,6 +27,7 @@ export type ActionTone = "info" | "done" | "needs-you" | "idle" | "error";
 export interface ActionMenuSpec {
   head: string;
   tone?: ActionTone;
+  /** Shown between the header and the actions, for example what an agent asks. */
   prelude?: ReactNode;
   groups: ActionGroup[];
 }
