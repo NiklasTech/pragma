@@ -20,7 +20,7 @@ import {
   type MentionPickerItem,
 } from "@/features/ai/mentions/useContextMentionItems";
 
-interface DirEntry {
+export interface DirEntry {
   path: string;
   name: string;
   is_directory: boolean;
@@ -48,6 +48,9 @@ interface ContextPickerProps {
   rootPath: string | null;
 }
 
+/** Files shown at once; typing narrows the rest down. A list of every file froze large projects. */
+export const MAX_FILE_RESULTS = 50;
+
 function getActiveMention(input: string, cursorPosition: number): ActiveMention | null {
   if (cursorPosition === 0) return null;
 
@@ -72,6 +75,24 @@ function getRelativePath(rootPath: string, entryPath: string): string {
     return normalizedEntry.slice(normalizedRoot.length + 1);
   }
   return normalizedEntry;
+}
+
+/// The first files whose path or name contains the query. The backend lists folders first,
+/// then by name, so the first matches are the ones to show.
+export function matchingFiles(
+  entries: DirEntry[],
+  query: string,
+  rootPath: string | null,
+): DirEntry[] {
+  const matches: DirEntry[] = [];
+  for (const entry of entries) {
+    if (matches.length >= MAX_FILE_RESULTS) break;
+    const relativePath = rootPath ? getRelativePath(rootPath, entry.path) : entry.path;
+    if (relativePath.toLowerCase().includes(query) || entry.name.toLowerCase().includes(query)) {
+      matches.push(entry);
+    }
+  }
+  return matches;
 }
 
 export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
@@ -128,19 +149,11 @@ export const ContextPicker = forwardRef<ContextPickerRef, ContextPickerProps>(
       if (mentionSection?.scoped) return mentions;
       const query = mention.query.toLowerCase();
 
-      const files = entries
-        .filter((entry) => {
-          const relativePath = rootPath ? getRelativePath(rootPath, entry.path) : entry.path;
-          return (
-            relativePath.toLowerCase().includes(query) || entry.name.toLowerCase().includes(query)
-          );
-        })
-        .sort((a, b) => {
-          if (a.is_directory && !b.is_directory) return -1;
-          if (!a.is_directory && b.is_directory) return 1;
-          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-        })
-        .map((entry): PickerItem => ({ kind: "file", key: entry.path, entry }));
+      const files = matchingFiles(entries, query, rootPath).map((entry): PickerItem => ({
+        kind: "file",
+        key: entry.path,
+        entry,
+      }));
       const matchingResources = resources
         .filter(
           (entry) =>
