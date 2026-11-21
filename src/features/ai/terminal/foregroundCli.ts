@@ -1,12 +1,8 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useMemo } from "react";
 
 import { useAIStore, type CLIManifest } from "@/shared/stores/ai";
 
-import { getTerminalPtyId } from "./runner";
-
-/// How often a shell pane checks which program runs in its foreground.
-const POLL_MS = 1200;
+import { useForegroundStore, watchForeground } from "./foregroundPoller";
 
 /** The program name a manifest's command starts, such as `claude` for `claude --resume`. */
 function programName(command: string): string {
@@ -31,33 +27,12 @@ export function matchCliManifest(
 /** The coding CLI running in a shell pane's terminal right now, or null while the shell waits. */
 export function useForegroundCli(sessionId: string, enabled: boolean): CLIManifest | null {
   const manifests = useAIStore((state) => state.cliManifests);
-  const [found, setFound] = useState<CLIManifest | null>(null);
+  const names = useForegroundStore((state) => (enabled ? state.names[sessionId] : undefined));
 
   useEffect(() => {
-    if (!enabled) {
-      setFound(null);
-      return;
-    }
-    let active = true;
-    const check = async () => {
-      const ptyId = getTerminalPtyId(sessionId);
-      if (!ptyId) return;
-      try {
-        const names = await invoke<string[] | null>("pty_foreground_process", { id: ptyId });
-        if (!active) return;
-        const next = names ? matchCliManifest(names, manifests) : null;
-        setFound((current) => (current?.id === next?.id ? current : next));
-      } catch {
-        // The terminal may have closed between two checks.
-      }
-    };
-    void check();
-    const timer = setInterval(() => void check(), POLL_MS);
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [enabled, manifests, sessionId]);
+    if (!enabled) return;
+    return watchForeground(sessionId);
+  }, [enabled, sessionId]);
 
-  return found;
+  return useMemo(() => (names ? matchCliManifest(names, manifests) : null), [names, manifests]);
 }
