@@ -87,12 +87,6 @@ type LoadState =
   | { kind: "loaded" }
   | { kind: "error"; message: string };
 
-const MERGE_VIEW_THEME = EditorView.theme({
-  "&.cm-mergeView": {
-    minHeight: "100%",
-  },
-});
-
 export const SplitDiffView = memo(function SplitDiffView({
   original,
   modified,
@@ -117,7 +111,6 @@ export const SplitDiffView = memo(function SplitDiffView({
       editorBaseTheme,
       ...READONLY_EXT,
       DIFF_THEME,
-      MERGE_VIEW_THEME,
     ],
     [theme],
   );
@@ -164,7 +157,13 @@ export const SplitDiffView = memo(function SplitDiffView({
     };
   }, [filePath]);
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  // Both sides fill the panel, so their scrollbars and the divider reach its bottom.
+  return (
+    <div
+      ref={containerRef}
+      className="h-full w-full [&_.cm-mergeView]:h-full [&_.cm-mergeViewEditor]:flex [&_.cm-mergeViewEditor]:flex-col [&_.cm-mergeViewEditor_.cm-editor]:flex-[1_0_auto] [&_.cm-mergeViewEditor_.cm-scroller]:flex-[1_0_auto] [&_.cm-mergeViewEditor_.cm-scroller]:items-stretch! [&_.cm-mergeViewEditors]:min-h-full"
+    />
+  );
 });
 
 const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText: string }) {
