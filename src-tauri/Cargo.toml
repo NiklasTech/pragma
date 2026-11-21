@@ -140,3 +140,9 @@ harness = false
 [[bench]]
 name = "git_graph_layout"
 harness = false
+
+[profile.release]
+# One codegen unit with full LTO and stripped symbols make the shipped binary smaller and faster.
+codegen-units = 1
+lto = true
+strip = true

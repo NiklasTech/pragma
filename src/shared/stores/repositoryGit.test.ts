@@ -62,4 +62,17 @@ describe("useRepositoryGitStore", () => {
 
     expect(useRepositoryGitStore.getState().byRoot["/code/a"]).toBeUndefined();
   });
+
+  it("leaves the store untouched when a refresh finds the same status", async () => {
+    await useRepositoryGitStore.getState().loadStatus("/code/a");
+    const before = useRepositoryGitStore.getState().byRoot;
+    const updates = vi.fn();
+    const unsubscribe = useRepositoryGitStore.subscribe(updates);
+
+    await useRepositoryGitStore.getState().loadStatus("/code/a");
+    unsubscribe();
+
+    expect(updates).not.toHaveBeenCalled();
+    expect(useRepositoryGitStore.getState().byRoot).toBe(before);
+  });
 });
