@@ -109,6 +109,7 @@ interface EditorActions {
   getPanelActiveTabId: (panelId: string | null) => string | null;
   updateFileContent: (tabId: string, content: string) => void;
   setCursorPosition: (tabId: string, cursor: CursorPosition) => void;
+  setScrollTop: (tabId: string, scrollTop: number) => void;
   setVimMode: (tabId: string, mode: string | null) => void;
   goToPosition: (tabId: string, position: CursorPosition | null) => void;
   markModified: (tabId: string, isModified: boolean) => void;
@@ -329,6 +330,14 @@ const editorStoreCreator: StateCreator<EditorState & EditorActions> = (set, get)
       tabStates: tabState
         ? tabStates.map((s) => (s.tabId === tabId ? { ...s, cursor } : s))
         : tabStates,
+    });
+  },
+
+  setScrollTop: (tabId, scrollTop) => {
+    const { tabStates } = get();
+    if (!tabStates.some((s) => s.tabId === tabId && s.scrollTop !== scrollTop)) return;
+    set({
+      tabStates: tabStates.map((s) => (s.tabId === tabId ? { ...s, scrollTop } : s)),
     });
   },
 
