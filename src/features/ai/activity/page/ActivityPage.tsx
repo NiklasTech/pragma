@@ -6,11 +6,13 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Kbd } from "@/shared/components/ui/kbd";
 import { SegmentedControl } from "@/shared/components/ui/segmented-control";
+import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { repositorySessions, useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useOverlayStore } from "@/shared/stores/overlays";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { getTerminalEntryStatus } from "../../terminal/runner";
 import type { DashboardItem } from "../dashboard";
@@ -66,6 +68,7 @@ export function ActivityPage() {
   const chatSessions = useAIStore((state) => state.chatSessions);
   const openOverlay = useOverlayStore((state) => state.open);
   const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
+  const newShortcut = useSettingsStore((state) => state.shortcuts["session.quickStart"]);
   const [scope, setScope] = useState<Scope>("space");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -215,7 +218,11 @@ export function ActivityPage() {
                 <div className="flex gap-2">
                   <Button onClick={() => openOverlay("quickStart")} className="font-mono">
                     new task
-                    <Kbd className="border-0 bg-black/10 text-primary-foreground/70">⌘N</Kbd>
+                    {newShortcut && (
+                      <Kbd className="border-0 bg-black/10 text-primary-foreground/70">
+                        {formatShortcut(newShortcut, getIsMac())}
+                      </Kbd>
+                    )}
                   </Button>
                   <Button
                     variant="outline"

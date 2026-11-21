@@ -11,6 +11,7 @@ import {
 } from "@/shared/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { aiProviderForCLI } from "@/shared/lib/ai-providers";
+import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 
@@ -36,6 +37,7 @@ export function CliIntegrationSection() {
   const aiStore = useAIStore();
   const settingsStore = useSettingsStore();
   const accounts = useCliAccountsStore((state) => state.accounts);
+  const newShortcut = useSettingsStore((state) => state.shortcuts["session.quickStart"]);
 
   const [installing, setInstalling] = React.useState<string | null>(null);
   const [loggingIn, setLoggingIn] = React.useState<string | null>(null);
@@ -198,7 +200,8 @@ export function CliIntegrationSection() {
               </Collapsible>
             )}
             <p className="text-ui-xs text-fg-subtle">
-              The number is the key that starts the CLI in New (⌘N).
+              The number is the key that starts the CLI in New
+              {newShortcut && ` (${formatShortcut(newShortcut, getIsMac())})`}.
             </p>
           </>
         )}

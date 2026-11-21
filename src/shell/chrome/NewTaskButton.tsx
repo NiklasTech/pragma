@@ -15,12 +15,13 @@ export function NewTaskButton() {
   return (
     <Button
       variant="ghost"
+      aria-label="new"
       onClick={() => openOverlay("quickStart")}
       className="px-2.25 text-ui-xs font-normal text-fg-default"
     >
       <Plus size={ICON_SIZE.sm} />
-      new
-      {shortcut && <Kbd>{formatShortcut(shortcut, getIsMac())}</Kbd>}
+      <span className="max-md:hidden">new</span>
+      {shortcut && <Kbd className="max-lg:hidden">{formatShortcut(shortcut, getIsMac())}</Kbd>}
     </Button>
   );
 }
