@@ -171,6 +171,8 @@ export function FileEditor({
     setEditorView,
     setVimMode: (mode) => setVimMode(tabId, mode),
     setCursorPos: (pos) => setCursorPosition(tabId, pos),
+    restore: tabStates.find((s) => s.tabId === tabId) ?? null,
+    saveScrollTop: (scrollTop) => useEditorStore.getState().setScrollTop(tabId, scrollTop),
   });
 
   const readSelectedText = useCallback(() => {
