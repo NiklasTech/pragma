@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { keepEqualSnapshot } from "./snapshot";
 import type { GitActions, GitSlice, GitStatusSnapshot } from "./types";
 
 export const createReposSlice: GitSlice<
@@ -31,10 +32,13 @@ export const createReposSlice: GitSlice<
     const { repoPath } = get();
     if (!repoPath) return;
 
-    set({ isLoading: true, error: null });
+    // Background refreshes keep the shown status, so only the first load shows a spinner.
+    const firstLoad = get().snapshot === null;
+    if (firstLoad || get().error) set({ isLoading: firstLoad, error: null });
     try {
       const result = await invoke<{ snapshot: GitStatusSnapshot }>("git_status", { repoPath });
-      set({ snapshot: result.snapshot, isLoading: false });
+      const snapshot = keepEqualSnapshot(get().snapshot, result.snapshot);
+      if (firstLoad || snapshot !== get().snapshot) set({ snapshot, isLoading: false });
     } catch (err) {
       set({ snapshot: null, isLoading: false, error: String(err) });
     }

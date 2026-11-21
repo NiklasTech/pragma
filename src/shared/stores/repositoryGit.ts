@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 
+import { keepEqualSnapshot } from "./git/snapshot";
 import type { GitStatusSnapshot } from "./git/types";
 
 export interface RepositoryGitStatus {
@@ -46,13 +47,17 @@ export const useRepositoryGitStore = create<RepositoryGitState>()((set, get) => 
     byRoot: {},
 
     loadStatus: async (rootPath) => {
-      patch(rootPath, { loading: true });
+      if (!get().byRoot[rootPath]?.snapshot) patch(rootPath, { loading: true });
       try {
         const result = await invoke<{ snapshot: GitStatusSnapshot }>("git_status", {
           repoPath: rootPath,
         });
-        if (rootPath in get().byRoot)
-          patch(rootPath, { snapshot: result.snapshot, loading: false });
+        const entry = get().byRoot[rootPath];
+        if (!entry) return;
+        const snapshot = keepEqualSnapshot(entry.snapshot, result.snapshot);
+        if (entry.loading || snapshot !== entry.snapshot) {
+          patch(rootPath, { snapshot, loading: false });
+        }
       } catch (err) {
         if (rootPath in get().byRoot) {
           patch(rootPath, { snapshot: null, loading: false, error: String(err) });
