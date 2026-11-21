@@ -16,6 +16,8 @@ import { goToSession } from "./goToSession";
 import { SessionDetails } from "./SessionDetails";
 import { useOutputTail } from "./useOutputTail";
 import { useSessionFacts } from "./useSessionFacts";
+import { useAgentMenu } from "../../panes/useAgentMenu";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 
 export const RUNNING_COLUMNS =
   "grid grid-cols-[100px_minmax(0,1fr)_200px_190px_64px_60px_56px] items-center gap-4.5";
@@ -69,58 +71,61 @@ export function TitleToggle({
 export function RunningRow({ item, now, expanded, onToggle }: ExpandableProps) {
   const { session } = item;
   const identity = useSessionIdentity(session.id);
+  const menu = useAgentMenu(session.id);
   const facts = useSessionFacts(session);
   const lastLine = useOutputTail(session, 1)[0]?.trim() ?? "";
   const tokens = sessionTokens(session);
   const word = identity.shell ? "running" : "working";
 
   return (
-    <div className="flex flex-col">
-      <div className={cn(RUNNING_COLUMNS, "border-t border-border-subtle px-4 py-2")}>
-        <span
-          className={cn(
-            "flex items-center gap-2 font-mono text-ui-xs",
-            identity.shell ? "text-fg-muted" : "text-status-info",
-          )}
-        >
+    <ActionContextMenu menu={menu}>
+      <div className="flex flex-col">
+        <div className={cn(RUNNING_COLUMNS, "border-t border-border-subtle px-4 py-2")}>
           <span
-            aria-hidden="true"
-            className={cn("size-2.25", identity.shell ? "bg-fg-muted" : "bg-status-info")}
-          />
-          {word}
-        </span>
-        <TitleToggle title={identity.title} expanded={expanded} onToggle={onToggle}>
-          <code className="truncate pl-4 font-mono text-ui-2xs text-fg-subtle">
-            {lastLine || " "}
-          </code>
-        </TitleToggle>
-        <span className="flex min-w-0 items-center gap-2 font-mono text-ui-xs">
-          <SessionMark identity={identity} surface="sheet" />
-          <span className="truncate">
-            {facts.agent}
-            {facts.account && <span className="text-fg-subtle"> {facts.account}</span>}
+            className={cn(
+              "flex items-center gap-2 font-mono text-ui-xs",
+              identity.shell ? "text-fg-muted" : "text-status-info",
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={cn("size-2.25", identity.shell ? "bg-fg-muted" : "bg-status-info")}
+            />
+            {word}
           </span>
-        </span>
-        <span className="truncate font-mono text-ui-xs text-fg-muted" title={facts.where}>
-          {facts.where}
-        </span>
-        <span className="text-right font-mono text-ui-xs text-fg-muted tabular-nums">
-          {formatStateDuration(now - item.since)}
-        </span>
-        <span className="text-right font-mono text-ui-xs text-fg-subtle tabular-nums">
-          {tokens === null ? "—" : formatTokens(tokens)}
-        </span>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() => goToSession(session.id, session.rootPath)}
-          className="justify-self-end font-mono font-normal text-fg-muted"
-        >
-          go to
-        </Button>
+          <TitleToggle title={identity.title} expanded={expanded} onToggle={onToggle}>
+            <code className="truncate pl-4 font-mono text-ui-2xs text-fg-subtle">
+              {lastLine || " "}
+            </code>
+          </TitleToggle>
+          <span className="flex min-w-0 items-center gap-2 font-mono text-ui-xs">
+            <SessionMark identity={identity} surface="sheet" />
+            <span className="truncate">
+              {facts.agent}
+              {facts.account && <span className="text-fg-subtle"> {facts.account}</span>}
+            </span>
+          </span>
+          <span className="truncate font-mono text-ui-xs text-fg-muted" title={facts.where}>
+            {facts.where}
+          </span>
+          <span className="text-right font-mono text-ui-xs text-fg-muted tabular-nums">
+            {formatStateDuration(now - item.since)}
+          </span>
+          <span className="text-right font-mono text-ui-xs text-fg-subtle tabular-nums">
+            {tokens === null ? "—" : formatTokens(tokens)}
+          </span>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => goToSession(session.id, session.rootPath)}
+            className="justify-self-end font-mono font-normal text-fg-muted"
+          >
+            go to
+          </Button>
+        </div>
+        {expanded && <SessionDetails item={item} now={now} />}
       </div>
-      {expanded && <SessionDetails item={item} now={now} />}
-    </div>
+    </ActionContextMenu>
   );
 }
 
@@ -134,6 +139,7 @@ const EARLIER_MARKS = {
 export function EarlierRow({ item, now, expanded, onToggle }: ExpandableProps) {
   const { session } = item;
   const identity = useSessionIdentity(session.id);
+  const menu = useAgentMenu(session.id);
   const facts = useSessionFacts(session);
   const workEnvironments = useAIStore((state) => state.workEnvironments);
   const diff = useDiffStat(sessionEnvironment(session, workEnvironments));
@@ -150,47 +156,49 @@ export function EarlierRow({ item, now, expanded, onToggle }: ExpandableProps) {
       : goToSession(session.id, session.rootPath);
 
   return (
-    <div className="flex flex-col">
-      <div
-        className={cn(
-          EARLIER_COLUMNS,
-          "border-t border-border-subtle px-4 py-1.5 font-mono text-ui-xs",
-        )}
-      >
-        <span className="text-fg-subtle tabular-nums">{formatMoment(item.since, now)}</span>
-        <span className={cn("flex items-center gap-1.75", mark.text)}>
-          <span aria-hidden="true" className={cn("size-1.75", mark.cell)} />
-          {mark.word}
-        </span>
-        <span className="min-w-0 font-sans">
-          <TitleToggle title={identity.title} expanded={expanded} onToggle={onToggle} />
-        </span>
-        <span className="truncate text-fg-subtle">
-          {[facts.agent, facts.account].filter(Boolean).join(" · ")}
-        </span>
-        <span className="truncate text-fg-subtle" title={facts.where}>
-          {facts.where}
-        </span>
-        <span className="text-right whitespace-nowrap tabular-nums">
-          {diff && diff.files > 0 ? (
-            <>
-              <span className="text-state-done">+{diff.added}</span>{" "}
-              <span className="text-status-error">−{diff.removed}</span>
-            </>
-          ) : (
-            <span className="text-fg-subtle">—</span>
+    <ActionContextMenu menu={menu}>
+      <div className="flex flex-col">
+        <div
+          className={cn(
+            EARLIER_COLUMNS,
+            "border-t border-border-subtle px-4 py-1.5 font-mono text-ui-xs",
           )}
-        </span>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={open}
-          className="justify-self-end font-mono font-normal text-fg-muted"
         >
-          {reviewable ? "review" : "open"}
-        </Button>
+          <span className="text-fg-subtle tabular-nums">{formatMoment(item.since, now)}</span>
+          <span className={cn("flex items-center gap-1.75", mark.text)}>
+            <span aria-hidden="true" className={cn("size-1.75", mark.cell)} />
+            {mark.word}
+          </span>
+          <span className="min-w-0 font-sans">
+            <TitleToggle title={identity.title} expanded={expanded} onToggle={onToggle} />
+          </span>
+          <span className="truncate text-fg-subtle">
+            {[facts.agent, facts.account].filter(Boolean).join(" · ")}
+          </span>
+          <span className="truncate text-fg-subtle" title={facts.where}>
+            {facts.where}
+          </span>
+          <span className="text-right whitespace-nowrap tabular-nums">
+            {diff && diff.files > 0 ? (
+              <>
+                <span className="text-state-done">+{diff.added}</span>{" "}
+                <span className="text-status-error">−{diff.removed}</span>
+              </>
+            ) : (
+              <span className="text-fg-subtle">—</span>
+            )}
+          </span>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={open}
+            className="justify-self-end font-mono font-normal text-fg-muted"
+          >
+            {reviewable ? "review" : "open"}
+          </Button>
+        </div>
+        {expanded && <SessionDetails item={item} now={now} />}
       </div>
-      {expanded && <SessionDetails item={item} now={now} />}
-    </div>
+    </ActionContextMenu>
   );
 }

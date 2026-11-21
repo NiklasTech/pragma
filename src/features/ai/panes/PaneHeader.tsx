@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { AGENT_STATE_LABELS, type AgentState } from "@/shared/components/ui/status-dot";
 import { cn } from "@/shared/lib/utils";
@@ -55,6 +56,7 @@ import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
 import { MAX_PANES_TITLE, type Leaf } from "./operations";
 import { PaneRepositoryLabel } from "./PaneRepositoryLabel";
 import { usePaneHeaderDrag } from "./paneDrag";
+import { useAgentMenu } from "./useAgentMenu";
 import { agentPaneState, terminalPaneLabel, terminalPaneState } from "./paneState";
 import type { SplitDirection } from "./split";
 
@@ -189,6 +191,14 @@ export function PaneHeader({
   const actions = useNewSessionActions(rootPath);
   const drag = usePaneHeaderDrag(leaf.id, onDropOn);
   const [renaming, setRenaming] = useState(false);
+  const menu = useAgentMenu(leaf.browser ? "" : (leaf.sessionId ?? ""), {
+    splitRight: () => onSplit("horizontal"),
+    zoom: onToggleMaximize,
+    zoomed: maximized,
+    closeKeepRunning: () => onCloseTerminal(false),
+    stopAndClose: () => onCloseTerminal(true),
+    close: onClose,
+  });
 
   const terminal = session?.kind === "terminal" ? session : null;
   const terminalStatus = useTerminalStatus(terminal?.id ?? null);
@@ -227,156 +237,158 @@ export function PaneHeader({
 
   return (
     <>
-      <div
-        className="@container/pane-header flex h-8.5 shrink-0 cursor-grab touch-none items-center gap-2 pr-1 pl-3 select-none active:cursor-grabbing"
-        onDoubleClick={(event) => {
-          const target = event.target;
-          if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
-          if (target.closest("[data-pane-actions]")) return;
-          onToggleMaximize();
-        }}
-        {...drag}
-      >
-        <PaneMark leaf={leaf} session={session} manifest={shownManifest} shell={shell} />
-        <span
-          className={cn(
-            "min-w-0 shrink truncate font-mono text-ui-xs transition-colors duration-(--motion-base)",
-            focused || state === "needs-you" ? "text-fg-default" : "text-fg-muted",
-          )}
-          title={title}
+      <ActionContextMenu menu={menu}>
+        <div
+          className="@container/pane-header flex h-8.5 shrink-0 cursor-grab touch-none items-center gap-2 pr-1 pl-3 select-none active:cursor-grabbing"
+          onDoubleClick={(event) => {
+            const target = event.target;
+            if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
+            if (target.closest("[data-pane-actions]")) return;
+            onToggleMaximize();
+          }}
+          {...drag}
         >
-          {title}
-        </span>
-        {account && (
-          <span
-            className="max-w-40 min-w-0 shrink-[3] truncate font-mono text-ui-2xs text-fg-subtle @max-[260px]/pane-header:hidden"
-            title={`Account: ${account}`}
-          >
-            {account}
-          </span>
-        )}
-        {!leaf.browser && session && showState && state !== "idle" && (
+          <PaneMark leaf={leaf} session={session} manifest={shownManifest} shell={shell} />
           <span
             className={cn(
-              "shrink-0 font-mono text-ui-2xs whitespace-nowrap @max-[300px]/pane-header:hidden",
-              STATE_WORD_CLASSES[state],
+              "min-w-0 shrink truncate font-mono text-ui-xs transition-colors duration-(--motion-base)",
+              focused || state === "needs-you" ? "text-fg-default" : "text-fg-muted",
             )}
+            title={title}
           >
-            {stateLabel.toLowerCase()}
+            {title}
           </span>
-        )}
-
-        <span className={cn("flex min-w-0 shrink-[2] items-center gap-2", QUIET, shown)}>
-          {branch && (
+          {account && (
             <span
-              className="flex min-w-0 items-center gap-1 font-mono text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"
-              title={worktree ? `${branch} ${worktree.path}` : branch}
+              className="max-w-40 min-w-0 shrink-[3] truncate font-mono text-ui-2xs text-fg-subtle @max-[260px]/pane-header:hidden"
+              title={`Account: ${account}`}
             >
-              <span className="truncate">{branch}</span>
-              <SharersBadge environmentId={worktree?.id} />
+              {account}
             </span>
           )}
-          <PaneRepositoryLabel rootPath={session?.rootPath ?? rootPath} />
-        </span>
-
-        <span className="flex-1" />
-
-        <div
-          className={cn("flex shrink-0 items-center gap-0.5", QUIET, shown)}
-          data-pane-actions=""
-        >
-          <SessionUsageBadge usage={session?.usage} className="@max-[300px]/pane-header:hidden" />
-          {terminal && focused && <TerminalMic sessionId={terminal.id} />}
-          {session && <OpenInBrowserButton session={session} />}
-          <IconButton
-            icon={maximized ? ArrowsInSimple : ArrowsOutSimple}
-            label={maximizeLabel}
-            size="sm"
-            className="size-7 text-fg-subtle @max-[220px]/pane-header:hidden"
-            onClick={onToggleMaximize}
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Pane actions"
-                  title="Pane actions"
-                  className="text-fg-subtle"
-                >
-                  <DotsThree size={ICON_SIZE.md} weight="bold" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="min-w-[190px]">
-              {session && (
-                <DropdownMenuItem onClick={() => setRenaming(true)}>
-                  <PencilSimple size={ICON_SIZE.sm} />
-                  <span>Rename</span>
-                </DropdownMenuItem>
+          {!leaf.browser && session && showState && state !== "idle" && (
+            <span
+              className={cn(
+                "shrink-0 font-mono text-ui-2xs whitespace-nowrap @max-[300px]/pane-header:hidden",
+                STATE_WORD_CLASSES[state],
               )}
-              {session && <CompactSessionMenuItem session={session} />}
-              {session && <ExportSessionMenu session={session} />}
-              {canStartLike && (
+            >
+              {stateLabel.toLowerCase()}
+            </span>
+          )}
+
+          <span className={cn("flex min-w-0 shrink-[2] items-center gap-2", QUIET, shown)}>
+            {branch && (
+              <span
+                className="flex min-w-0 items-center gap-1 font-mono text-ui-2xs text-fg-subtle @max-[360px]/pane-header:hidden"
+                title={worktree ? `${branch} ${worktree.path}` : branch}
+              >
+                <span className="truncate">{branch}</span>
+                <SharersBadge environmentId={worktree?.id} />
+              </span>
+            )}
+            <PaneRepositoryLabel rootPath={session?.rootPath ?? rootPath} />
+          </span>
+
+          <span className="flex-1" />
+
+          <div
+            className={cn("flex shrink-0 items-center gap-0.5", QUIET, shown)}
+            data-pane-actions=""
+          >
+            <SessionUsageBadge usage={session?.usage} className="@max-[300px]/pane-header:hidden" />
+            {terminal && focused && <TerminalMic sessionId={terminal.id} />}
+            {session && <OpenInBrowserButton session={session} />}
+            <IconButton
+              icon={maximized ? ArrowsInSimple : ArrowsOutSimple}
+              label={maximizeLabel}
+              size="sm"
+              className="size-7 text-fg-subtle @max-[220px]/pane-header:hidden"
+              onClick={onToggleMaximize}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Pane actions"
+                    title="Pane actions"
+                    className="text-fg-subtle"
+                  >
+                    <DotsThree size={ICON_SIZE.md} weight="bold" />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="min-w-[190px]">
+                {session && (
+                  <DropdownMenuItem onClick={() => setRenaming(true)}>
+                    <PencilSimple size={ICON_SIZE.sm} />
+                    <span>Rename</span>
+                  </DropdownMenuItem>
+                )}
+                {session && <CompactSessionMenuItem session={session} />}
+                {session && <ExportSessionMenu session={session} />}
+                {canStartLike && (
+                  <DropdownMenuItem
+                    disabled={atCap}
+                    title={atCap ? MAX_PANES_TITLE : undefined}
+                    onClick={() => startLike(session, manifest, actions)}
+                  >
+                    <Plus size={ICON_SIZE.sm} />
+                    <span>{newLabel}</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={onToggleMaximize}>
+                  {maximized ? (
+                    <ArrowsInSimple size={ICON_SIZE.sm} />
+                  ) : (
+                    <ArrowsOutSimple size={ICON_SIZE.sm} />
+                  )}
+                  <span>{maximizeLabel}</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={atCap}
                   title={atCap ? MAX_PANES_TITLE : undefined}
-                  onClick={() => startLike(session, manifest, actions)}
+                  onClick={() => onSplit("horizontal")}
                 >
-                  <Plus size={ICON_SIZE.sm} />
-                  <span>{newLabel}</span>
+                  <SquareSplitHorizontal size={ICON_SIZE.sm} />
+                  <span>Split right</span>
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={onToggleMaximize}>
-                {maximized ? (
-                  <ArrowsInSimple size={ICON_SIZE.sm} />
+                <DropdownMenuItem
+                  disabled={atCap}
+                  title={atCap ? MAX_PANES_TITLE : undefined}
+                  onClick={() => onSplit("vertical")}
+                >
+                  <SquareSplitVertical size={ICON_SIZE.sm} />
+                  <span>Split down</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled={!hasOtherPanes} onClick={onCloseOthers}>
+                  <span>Close other panes</span>
+                </DropdownMenuItem>
+                {runningTerminal ? (
+                  <>
+                    <DropdownMenuItem variant="destructive" onClick={() => onCloseTerminal(true)}>
+                      <Stop size={ICON_SIZE.sm} />
+                      <span>Stop process and close</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onCloseTerminal(false)}>
+                      <X size={ICON_SIZE.sm} />
+                      <span>Close, keep running</span>
+                    </DropdownMenuItem>
+                  </>
                 ) : (
-                  <ArrowsOutSimple size={ICON_SIZE.sm} />
-                )}
-                <span>{maximizeLabel}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={atCap}
-                title={atCap ? MAX_PANES_TITLE : undefined}
-                onClick={() => onSplit("horizontal")}
-              >
-                <SquareSplitHorizontal size={ICON_SIZE.sm} />
-                <span>Split right</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={atCap}
-                title={atCap ? MAX_PANES_TITLE : undefined}
-                onClick={() => onSplit("vertical")}
-              >
-                <SquareSplitVertical size={ICON_SIZE.sm} />
-                <span>Split down</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={!hasOtherPanes} onClick={onCloseOthers}>
-                <span>Close other panes</span>
-              </DropdownMenuItem>
-              {runningTerminal ? (
-                <>
-                  <DropdownMenuItem variant="destructive" onClick={() => onCloseTerminal(true)}>
-                    <Stop size={ICON_SIZE.sm} />
-                    <span>Stop process and close</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onCloseTerminal(false)}>
+                  <DropdownMenuItem onClick={onClose}>
                     <X size={ICON_SIZE.sm} />
-                    <span>Close, keep running</span>
+                    <span>Close pane</span>
                   </DropdownMenuItem>
-                </>
-              ) : (
-                <DropdownMenuItem onClick={onClose}>
-                  <X size={ICON_SIZE.sm} />
-                  <span>Close pane</span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
+      </ActionContextMenu>
 
       {session && (
         <InputDialog

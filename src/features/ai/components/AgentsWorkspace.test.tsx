@@ -42,6 +42,9 @@ vi.mock("@/shared/stores/ai", () => ({
     environments.filter((environment) => environment.rootPath === rootPath),
 }));
 
+// The pane header's right-click menu reads stores this test does not set up.
+vi.mock("../panes/useAgentMenu", () => ({ useAgentMenu: () => () => null }));
+
 vi.mock("@/shared/stores/fileExplorer", () => ({
   useFileExplorerStore: (selector: (state: { rootPath: string | null }) => unknown) =>
     selector({ rootPath: "/workspace" }),

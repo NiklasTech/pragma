@@ -2,6 +2,9 @@ import { Fragment, useMemo } from "react";
 import { Folder, ListBullets, Plus } from "@phosphor-icons/react";
 
 import { revealPane } from "@/features/ai/panes/paneCommands";
+import { useAgentMenu } from "@/features/ai/panes/useAgentMenu";
+import { RenameSessionDialog } from "@/features/ai/sessions/RenameSessionDialog";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { selectAgentState, useAgentStatesStore } from "@/features/ai/state/agentStates";
 import { isShellSession } from "@/features/ai/terminal/shell";
@@ -32,6 +35,7 @@ interface RailCellProps {
 function RailCell({ entry, spaceId, focused, dim }: RailCellProps) {
   const identity = useSessionIdentity(entry.sessionId);
   const state = useAgentStatesStore(selectAgentState(entry.sessionId));
+  const menu = useAgentMenu(entry.sessionId);
   const { session, name, title } = identity;
   if (!session) return null;
 
@@ -39,20 +43,22 @@ function RailCell({ entry, spaceId, focused, dim }: RailCellProps) {
   const parts = title === name ? [name] : [title, name];
 
   return (
-    <Button
-      variant="ghost"
-      aria-label={[...parts, stateLabel, `tab ${entry.tabNumber}`].join(", ")}
-      aria-current={focused || undefined}
-      title={[...parts, stateLabel].join(" · ")}
-      onClick={() => revealPane(spaceId, entry.tabId, entry.leafId)}
-      className={cn(
-        "size-8 shrink-0 p-0 animate-in duration-200 zoom-in-75 fade-in-0 motion-reduce:animate-none",
-        focused && "bg-bg-active ring-1 ring-fg-default/15 ring-inset",
-        dim && "opacity-55 hover:opacity-100",
-      )}
-    >
-      <SessionMark identity={identity} state={state} surface="chrome" />
-    </Button>
+    <ActionContextMenu menu={menu}>
+      <Button
+        variant="ghost"
+        aria-label={[...parts, stateLabel, `tab ${entry.tabNumber}`].join(", ")}
+        aria-current={focused || undefined}
+        title={[...parts, stateLabel].join(" · ")}
+        onClick={() => revealPane(spaceId, entry.tabId, entry.leafId)}
+        className={cn(
+          "size-8 shrink-0 p-0 animate-in duration-200 zoom-in-75 fade-in-0 motion-reduce:animate-none",
+          focused && "bg-bg-active ring-1 ring-fg-default/15 ring-inset",
+          dim && "opacity-55 hover:opacity-100",
+        )}
+      >
+        <SessionMark identity={identity} state={state} surface="chrome" />
+      </Button>
+    </ActionContextMenu>
   );
 }
 
@@ -90,6 +96,7 @@ export function AgentRail() {
 
   return (
     <nav aria-label="Agents" className="flex w-11 shrink-0 flex-col items-center gap-1.5 pb-1.5">
+      <RenameSessionDialog />
       <div className="flex min-h-0 flex-1 flex-col items-center gap-1.5 overflow-x-hidden overflow-y-auto [scrollbar-width:none]">
         {space &&
           groups.map((group, index) => (
