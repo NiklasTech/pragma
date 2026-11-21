@@ -1,13 +1,9 @@
 import { useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
 import { matchCliManifest } from "@/features/ai/terminal/foregroundCli";
-import { getTerminalPtyId } from "@/features/ai/terminal/runner";
+import { useForegroundStore, watchForeground } from "@/features/ai/terminal/foregroundPoller";
 import { useAIStore } from "@/shared/stores/ai";
-
-/// How often the shells of the space are checked for a coding CLI in their foreground.
-const POLL_MS = 1200;
 
 interface ShellClisState {
   /** Session id of a shell to the manifest id of the CLI running in it. */
@@ -28,38 +24,22 @@ export const useShellClisStore = create<ShellClisState>()((set) => ({
 /// Checks which shells run a coding CLI right now, such as `claude` typed into a shell pane.
 export function useShellCliPolling(shellSessionIds: readonly string[]): void {
   const manifests = useAIStore((state) => state.cliManifests);
+  const names = useForegroundStore((state) => state.names);
   const key = shellSessionIds.join("\n");
 
   useEffect(() => {
     const ids = key ? key.split("\n") : [];
-    const replace = useShellClisStore.getState().replace;
-    if (ids.length === 0) {
-      replace({});
-      return;
+    const stops = ids.map(watchForeground);
+    return () => stops.forEach((stop) => stop());
+  }, [key]);
+
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    for (const sessionId of key ? key.split("\n") : []) {
+      const found = names[sessionId];
+      const manifest = found ? matchCliManifest(found, manifests) : null;
+      if (manifest) next[sessionId] = manifest.id;
     }
-    let active = true;
-    const check = async () => {
-      const next: Record<string, string> = {};
-      await Promise.all(
-        ids.map(async (sessionId) => {
-          const ptyId = getTerminalPtyId(sessionId);
-          if (!ptyId) return;
-          try {
-            const names = await invoke<string[] | null>("pty_foreground_process", { id: ptyId });
-            const manifest = names ? matchCliManifest(names, manifests) : null;
-            if (manifest) next[sessionId] = manifest.id;
-          } catch {
-            // The terminal may have closed between two checks.
-          }
-        }),
-      );
-      if (active) replace(next);
-    };
-    void check();
-    const timer = setInterval(() => void check(), POLL_MS);
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [key, manifests]);
+    useShellClisStore.getState().replace(next);
+  }, [key, names, manifests]);
 }
