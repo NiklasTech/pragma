@@ -1,5 +1,5 @@
 use crate::modules::mcp::error::{JsonRpcErrorCode, McpError, Result};
-use crate::platform::new_tokio_command;
+use crate::platform::new_tokio_command_on_path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -111,7 +111,12 @@ impl McpClient {
         }
 
         let timeout = config.request_timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS);
-        let mut cmd = new_tokio_command(&config.command);
+        // npm shims such as npx are .cmd files on Windows, which need resolving and `cmd /c`.
+        let path_var = match config.env.get("PATH") {
+            Some(path) => path.clone(),
+            None => std::env::var("PATH").unwrap_or_default(),
+        };
+        let mut cmd = new_tokio_command_on_path(&config.command, &path_var);
         cmd.args(&config.args)
             .envs(&config.env)
             .stdin(Stdio::piped())

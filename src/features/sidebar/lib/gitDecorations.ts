@@ -28,21 +28,26 @@ function decorationFor(code: string, conflicted: boolean): GitDecoration {
   }
 }
 
-/// Maps git status entries onto absolute tree paths, marking every ancestor folder as dirty.
-export function buildGitDecorations(snapshot: GitStatusSnapshot | null): GitDecorations {
+/// Maps git status entries onto tree paths under `treeRoot` (not repo_root, which is `\\?\C:\` on Windows).
+export function buildGitDecorations(
+  snapshot: GitStatusSnapshot | null,
+  treeRoot: string | null,
+): GitDecorations {
   const files = new Map<string, GitDecoration>();
   const dirtyDirs = new Set<string>();
-  if (!snapshot) return { files, dirtyDirs };
+  if (!snapshot || !treeRoot) return { files, dirtyDirs };
 
-  const root = snapshot.repo.repo_root.replace(/[\\/]+$/, "");
+  const separator = treeRoot.includes("\\") && !treeRoot.includes("/") ? "\\" : "/";
+  const root = treeRoot.replace(/[\\/]+$/, "");
   for (const entry of snapshot.changed_files) {
-    const relative = entry.path.replace(/\\/g, "/").replace(/\/$/, "");
-    const absolute = `${root}/${relative}`;
-    files.set(absolute, decorationFor(entry.status_code, entry.is_conflicted));
+    const segments = entry.path.replace(/[\\/]+$/, "").split(/[\\/]/);
+    files.set(
+      [root, ...segments].join(separator),
+      decorationFor(entry.status_code, entry.is_conflicted),
+    );
 
-    const segments = relative.split("/");
     for (let i = 1; i < segments.length; i++) {
-      dirtyDirs.add(`${root}/${segments.slice(0, i).join("/")}`);
+      dirtyDirs.add([root, ...segments.slice(0, i)].join(separator));
     }
   }
 

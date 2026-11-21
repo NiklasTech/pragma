@@ -50,7 +50,10 @@ export function FileExplorer() {
   const repositoryCount = useOpenRepositoriesStore((s) => s.paths.length);
   useRepositoryTree();
   const gitSnapshot = useGitStore((s) => s.snapshot);
-  const decorations = useMemo(() => buildGitDecorations(gitSnapshot), [gitSnapshot]);
+  const decorations = useMemo(
+    () => buildGitDecorations(gitSnapshot, rootPath),
+    [gitSnapshot, rootPath],
+  );
   const [createAtRoot, setCreateAtRoot] = useState<{ open: boolean; isDirectory: boolean }>({
     open: false,
     isDirectory: false,
@@ -119,7 +122,7 @@ export function FileExplorer() {
                 onValueChange={(value) => setShowAll(value === "all")}
                 options={[
                   { value: "space", label: "This space" },
-                  { value: "all", label: "All spaces" },
+                  { value: "all", label: "All" },
                 ]}
               />
             )}
