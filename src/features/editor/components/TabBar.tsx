@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from "react";
-import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu";
 import { FolderSimple, GitCommit, GitDiff, SquareSplitHorizontal, X } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { useEditorStore } from "@/shared/stores/editor";
@@ -15,16 +14,13 @@ import { otherTabRepository } from "@/features/editor/tabRepository";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
 import { useLayoutStore } from "@/shell/layout/store";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from "@/shared/components/ui/context-menu";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 import { EditorTabActions } from "./EditorTabActions";
 import { useActiveTabInView } from "./useActiveTabInView";
 import { middleClickToClose } from "@/shared/lib/middleClick";
+import { copyToClipboard } from "@/shared/lib/clipboard";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
+import { editorTabMenu } from "./editorTabMenu";
 
 /** The active file's folder relative to the open folder, as the tab row shows it. */
 function folderOf(path: string, root: string | null): string | null {
@@ -52,6 +48,10 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
   );
   const filesBinding = useSettingsStore((s) => s.shortcuts["view.toggleSidebar"]);
   const filesShortcut = filesBinding ? formatShortcut(filesBinding, getIsMac()) : undefined;
+  const closeTabBinding = useSettingsStore((state) => state.shortcuts["file.closeTab"]);
+  const closeTabShortcut = closeTabBinding
+    ? formatShortcut(closeTabBinding, getIsMac())
+    : undefined;
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -136,22 +136,6 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
             tab.kind === "file" || tab.kind === "preview" ? getFileIconPath(tab.name) : null;
           const repository = otherTabRepository(tab.path, repositories, activeRoot);
 
-          const handleCloseOthers = () => {
-            tabs.forEach((t) => {
-              if (t.id !== tab.id) closeTab(t.id);
-            });
-          };
-
-          const handleCloseToRight = () => {
-            for (let i = index + 1; i < tabs.length; i++) {
-              closeTab(tabs[i].id);
-            }
-          };
-
-          const handleCloseAll = () => {
-            tabs.forEach((t) => closeTab(t.id));
-          };
-
           const handleActivate = () => {
             if (panelId) {
               setPanelActiveTab(panelId, tab.id);
@@ -163,91 +147,64 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
           const middleClick = middleClickToClose(() => closeTab(tab.id));
 
           return (
-            <ContextMenu key={tab.id}>
-              <ContextMenuPrimitive.Trigger
-                render={(props) => (
-                  <div
-                    {...props}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onClick={() => handleActivate()}
-                    onMouseDown={(e) => {
-                      props.onMouseDown?.(e);
-                      middleClick.onMouseDown(e);
-                    }}
-                    onMouseUp={(e) => {
-                      props.onMouseUp?.(e);
-                      middleClick.onMouseUp(e);
-                    }}
-                    title={repository ? `${tab.name} (${getWorkspaceName(repository)})` : tab.name}
-                    role="tab"
-                    aria-selected={isActive}
-                    tabIndex={isTabStop ? 0 : -1}
-                    data-active={isActive}
-                    className={cn(
-                      props.className,
-                      "pragma-pill-tab group/tab relative max-w-[220px] cursor-pointer",
-                      isDropTarget && draggedIndex !== index && "bg-accent-subtle",
-                    )}
-                  >
-                    {tab.kind === "diff" ? (
-                      <GitDiff size={14} className="shrink-0 text-status-success" />
-                    ) : tab.kind === "history" ? (
-                      <GitCommit size={14} className="shrink-0 text-primary" />
-                    ) : (
-                      <img src={fileIconPath ?? undefined} alt="" className="size-3.5 shrink-0" />
-                    )}
-                    {repository && <RepositoryColorDot path={repository} className="size-1.5" />}
-                    <span className="min-w-0 flex-1 truncate font-mono text-ui-xs">{tab.name}</span>
-                    {tab.kind === "file" && tab.isModified && (
-                      <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover/tab:hidden" />
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={handleCloseTab(tab.id)}
-                      className={cn(
-                        "size-4 text-fg-subtle",
-                        isActive ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100",
-                        tab.kind === "file" && tab.isModified && "hidden group-hover/tab:block",
-                      )}
-                      aria-label={`Close ${tab.name}`}
-                      tabIndex={isActive ? 0 : -1}
-                    >
-                      <X size={12} />
-                    </Button>
-                  </div>
+            <ActionContextMenu
+              key={tab.id}
+              menu={() =>
+                editorTabMenu(tab, tabs, {
+                  close: closeTab,
+                  closeShortcut: closeTabShortcut,
+                  showHistory: (path) => useFileHistoryDialog.getState().show(path),
+                  copyPath: (path) => void copyToClipboard(path),
+                  rootPath: activeRoot,
+                })
+              }
+            >
+              <div
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
+                onClick={() => handleActivate()}
+                {...middleClick}
+                title={repository ? `${tab.name} (${getWorkspaceName(repository)})` : tab.name}
+                role="tab"
+                aria-selected={isActive}
+                tabIndex={isTabStop ? 0 : -1}
+                data-active={isActive}
+                className={cn(
+                  "pragma-pill-tab group/tab relative max-w-[220px] cursor-pointer",
+                  isDropTarget && draggedIndex !== index && "bg-accent-subtle",
                 )}
-              />
-              <ContextMenuContent className="w-48">
-                <ContextMenuItem onClick={() => closeTab(tab.id)}>
-                  <X size={14} />
-                  <span>Close</span>
-                </ContextMenuItem>
-                <ContextMenuItem onClick={handleCloseOthers}>
-                  <span>Close Others</span>
-                </ContextMenuItem>
-                <ContextMenuItem onClick={handleCloseToRight}>
-                  <span>Close to the Right</span>
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                {tab.kind === "file" && (
-                  <>
-                    <ContextMenuItem onClick={() => useFileHistoryDialog.getState().show(tab.path)}>
-                      <GitCommit size={14} />
-                      <span>File History</span>
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                  </>
+              >
+                {tab.kind === "diff" ? (
+                  <GitDiff size={14} className="shrink-0 text-status-success" />
+                ) : tab.kind === "history" ? (
+                  <GitCommit size={14} className="shrink-0 text-primary" />
+                ) : (
+                  <img src={fileIconPath ?? undefined} alt="" className="size-3.5 shrink-0" />
                 )}
-                <ContextMenuItem onClick={handleCloseAll}>
-                  <span>Close All</span>
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
+                {repository && <RepositoryColorDot path={repository} className="size-1.5" />}
+                <span className="min-w-0 flex-1 truncate font-mono text-ui-xs">{tab.name}</span>
+                {tab.kind === "file" && tab.isModified && (
+                  <span className="size-1.5 shrink-0 rounded-full bg-fg-muted group-hover/tab:hidden" />
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={handleCloseTab(tab.id)}
+                  className={cn(
+                    "size-4 text-fg-subtle",
+                    isActive ? "opacity-100" : "opacity-0 group-hover/tab:opacity-100",
+                    tab.kind === "file" && tab.isModified && "hidden group-hover/tab:block",
+                  )}
+                  aria-label={`Close ${tab.name}`}
+                  tabIndex={isActive ? 0 : -1}
+                >
+                  <X size={12} />
+                </Button>
+              </div>
+            </ActionContextMenu>
           );
         })}
       </div>
