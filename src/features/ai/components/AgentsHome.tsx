@@ -28,11 +28,13 @@ import { startSession } from "@/features/ai/sessions/start";
 import { deliverTerminalPrompt } from "../children/terminalPrompt";
 import { isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
-import { createTerminalSession } from "../panes/launch";
+import { createTerminalSession, launchTerminals } from "../panes/launch";
 import { useAgentsPanesStore } from "../panes/store";
 import { quickChoices, sameAgent, type QuickChoice } from "../quickStart/quickChoices";
 import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
+import type { GroupEnvironment } from "../sessions/group";
+import { AgentCountStepper } from "./AgentCountStepper";
 import { ChatToolbar } from "./ChatToolbar";
 
 /** Pragma's own agent; any other pick is a coding CLI, or one account of it. */
@@ -90,6 +92,7 @@ export function AgentsHome() {
   const [prompt, setPrompt] = useState("");
   const [picked, setPicked] = useState<HomeAgent | null>(null);
   const [creating, setCreating] = useState(false);
+  const [count, setCount] = useState(1);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
@@ -106,8 +109,14 @@ export function AgentsHome() {
   );
   const agent: HomeAgent = picked ?? choices[0]?.agent ?? PRAGMA_AGENT;
   const name = getWorkspaceName(rootPath);
-  const where =
-    defaultEnvironment(chatSessions, setting) === "worktree"
+  const several = agent !== PRAGMA_AGENT && count > 1;
+  // Several agents on one task would edit the same files, so each gets a worktree unless the project says otherwise.
+  const groupMode: GroupEnvironment = setting === "checkout" ? "checkout" : "isolated";
+  const where = several
+    ? groupMode === "isolated"
+      ? "each in its own worktree"
+      : "all in this folder"
+    : defaultEnvironment(chatSessions, setting) === "worktree"
       ? "in a new worktree"
       : "in this folder";
   const isMac = getIsMac();
@@ -134,6 +143,12 @@ export function AgentsHome() {
       } else {
         const manifest = ready.find((item) => item.id === agent.manifestId);
         if (!manifest) return;
+        if (several) {
+          const task = text ? { title: taskTabTitle(text), prompt: text } : undefined;
+          await launchTerminals(rootPath, manifest, count, groupMode, agent.accountDir, task);
+          setPrompt("");
+          return;
+        }
         const session = await createTerminalSession(rootPath, manifest, {
           title: text ? taskTabTitle(text) : undefined,
           accountDir: agent.accountDir,
@@ -240,8 +255,9 @@ export function AgentsHome() {
             </div>
             {agent === PRAGMA_AGENT && rootPath && <ChatToolbar />}
             <span className="ml-auto text-ui-xs text-fg-muted">{where}</span>
+            {agent !== PRAGMA_AGENT && <AgentCountStepper count={count} onChange={setCount} />}
             <Button type="submit" size="sm" disabled={!rootPath || creating}>
-              Start
+              {creating ? "Starting…" : several ? `Start ${count}` : "Start"}
               <Kbd className="border-0 bg-black/10 text-primary-foreground/70">
                 {isMac ? "⌘⏎" : "Ctrl+Enter"}
               </Kbd>

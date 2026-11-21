@@ -7,9 +7,13 @@ import type { StartSessionRequest } from "../sessions/start";
 const mocks = vi.hoisted(() => ({
   startSession: vi.fn(),
   replaceLayout: vi.fn(),
+  deliverTerminalPrompt: vi.fn(),
 }));
 
 vi.mock("../sessions/start", () => ({ startSession: mocks.startSession }));
+vi.mock("../children/terminalPrompt", () => ({
+  deliverTerminalPrompt: mocks.deliverTerminalPrompt,
+}));
 vi.mock("./store", () => ({
   useAgentsPanesStore: { getState: () => ({ replaceLayout: mocks.replaceLayout }) },
 }));
@@ -47,6 +51,24 @@ describe("launchTerminals", () => {
     for (const request of rest) {
       expect(request.sameEnvironmentAs).toMatchObject({ environmentId: "env-1" });
     }
+  });
+
+  it("names every instance after the task and hands it the task", async () => {
+    await launchTerminals("/repo", manifest, 3, "isolated", undefined, {
+      title: "Fix the login",
+      prompt: "Fix the login test",
+    });
+
+    expect(requests().map((request) => request.init.title)).toEqual([
+      "Fix the login #1",
+      "Fix the login #2",
+      "Fix the login #3",
+    ]);
+    expect(mocks.deliverTerminalPrompt.mock.calls).toEqual([
+      ["s1", "Fix the login test"],
+      ["s2", "Fix the login test"],
+      ["s3", "Fix the login test"],
+    ]);
   });
 
   it("starts every instance in the checkout", async () => {
