@@ -36,8 +36,15 @@ export interface GroupTask {
   prompt: string;
 }
 
+/** One CLI of a group start, its account and how many of it run. */
+export interface TeamLaunch {
+  manifest: CLIManifest;
+  accountDir?: string;
+  count: number;
+}
+
 /// Starts `count` new terminals of one CLI one after another and shows exactly them in the grid.
-export async function launchTerminals(
+export function launchTerminals(
   rootPath: string,
   manifest: CLIManifest,
   count: number,
@@ -45,15 +52,30 @@ export async function launchTerminals(
   accountDir?: string,
   task?: GroupTask,
 ): Promise<void> {
-  const total = Math.min(Math.max(Math.round(count), 1), MAX_PANES);
-  const baseTitle = task?.title ?? terminalSessionTitle(manifest.name);
+  return launchTeam(rootPath, [{ manifest, accountDir, count }], mode, task);
+}
+
+/// Starts the terminals of several CLIs one after another and shows exactly them in the grid.
+export async function launchTeam(
+  rootPath: string,
+  members: readonly TeamLaunch[],
+  mode: GroupEnvironment,
+  task?: GroupTask,
+): Promise<void> {
+  const starts = members
+    .flatMap((member) =>
+      Array.from({ length: Math.max(Math.round(member.count), 0) }, () => member),
+    )
+    .slice(0, MAX_PANES);
+  if (starts.length === 0 && members[0]) starts.push(members[0]);
   const sessions: ChatSession[] = [];
-  for (let index = 0; index < total; index += 1) {
-    const session = await createTerminalSession(rootPath, manifest, {
+  for (const [index, member] of starts.entries()) {
+    const baseTitle = task?.title ?? terminalSessionTitle(member.manifest.name);
+    const session = await createTerminalSession(rootPath, member.manifest, {
       activate: false,
-      title: total > 1 ? `${baseTitle} #${index + 1}` : baseTitle,
+      title: starts.length > 1 ? `${baseTitle} #${index + 1}` : baseTitle,
       environment: groupEnvironmentRequest(mode, sessions[0]),
-      accountDir,
+      accountDir: member.accountDir,
     });
     sessions.push(session);
     if (task) deliverTerminalPrompt(session.id, task.prompt);

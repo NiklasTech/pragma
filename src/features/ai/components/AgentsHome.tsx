@@ -5,7 +5,6 @@ import { MagnifyingGlass, Stack, TerminalWindow } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { PragmaMark } from "@/shared/components/PragmaMark";
-import { AgentMark } from "@/shared/components/ui/agent-mark";
 import { Button } from "@/shared/components/ui/button";
 import { Kbd } from "@/shared/components/ui/kbd";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -28,19 +27,21 @@ import { startSession } from "@/features/ai/sessions/start";
 import { deliverTerminalPrompt } from "../children/terminalPrompt";
 import { isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
-import { createTerminalSession, launchTerminals } from "../panes/launch";
+import {
+  pickOnly,
+  setMemberCount,
+  teamTotal,
+  toggleMember,
+  type TeamMember,
+} from "../home/agentTeam";
+import { createTerminalSession, launchTeam } from "../panes/launch";
 import { useAgentsPanesStore } from "../panes/store";
-import { quickChoices, sameAgent, type QuickChoice } from "../quickStart/quickChoices";
+import { quickChoices } from "../quickStart/quickChoices";
 import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
 import type { GroupEnvironment } from "../sessions/group";
-import { AgentCountStepper } from "./AgentCountStepper";
+import { AgentTeamPicker } from "./AgentTeamPicker";
 import { ChatToolbar } from "./ChatToolbar";
-
-/** Pragma's own agent; any other pick is a coding CLI, or one account of it. */
-const PRAGMA_AGENT = "pragma";
-
-type HomeAgent = QuickChoice["agent"] | typeof PRAGMA_AGENT;
 
 const CARD =
   "h-auto flex-col items-stretch gap-1.5 rounded-[12px] px-3.5 py-3 text-left text-ui-sm font-normal text-fg-default ring-1 ring-border-subtle ring-inset hover:bg-transparent hover:ring-border";
@@ -90,9 +91,9 @@ export function AgentsHome() {
   const actions = useNewSessionActions(rootPath);
 
   const [prompt, setPrompt] = useState("");
-  const [picked, setPicked] = useState<HomeAgent | null>(null);
+  const [pragmaPicked, setPragmaPicked] = useState(false);
+  const [picked, setPicked] = useState<TeamMember[] | null>(null);
   const [creating, setCreating] = useState(false);
-  const [count, setCount] = useState(1);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
@@ -107,9 +108,11 @@ export function AgentsHome() {
     () => quickChoices(ready, accounts, accountNames),
     [ready, accounts, accountNames],
   );
-  const agent: HomeAgent = picked ?? choices[0]?.agent ?? PRAGMA_AGENT;
+  const team: TeamMember[] = picked ?? (choices[0] ? [{ agent: choices[0].agent, count: 1 }] : []);
+  const pragma = pragmaPicked || team.length === 0;
+  const total = teamTotal(team);
   const name = getWorkspaceName(rootPath);
-  const several = agent !== PRAGMA_AGENT && count > 1;
+  const several = !pragma && total > 1;
   // Several agents on one task would edit the same files, so each gets a worktree unless the project says otherwise.
   const groupMode: GroupEnvironment = setting === "checkout" ? "checkout" : "isolated";
   const where = several
@@ -133,7 +136,7 @@ export function AgentsHome() {
     setCreating(true);
     const text = trimHomePrompt(prompt);
     try {
-      if (agent === PRAGMA_AGENT) {
+      if (pragma) {
         if (text) setPendingFirstMessage(text);
         else clearPendingFirstMessage();
         const session = await startSession(rootPath, {
@@ -141,14 +144,21 @@ export function AgentsHome() {
         });
         openSession(rootPath, session.id);
       } else {
-        const manifest = ready.find((item) => item.id === agent.manifestId);
-        if (!manifest) return;
         if (several) {
           const task = text ? { title: taskTabTitle(text), prompt: text } : undefined;
-          await launchTerminals(rootPath, manifest, count, groupMode, agent.accountDir, task);
+          const members = team.flatMap((member) => {
+            const manifest = ready.find((item) => item.id === member.agent.manifestId);
+            return manifest
+              ? [{ manifest, accountDir: member.agent.accountDir, count: member.count }]
+              : [];
+          });
+          await launchTeam(rootPath, members, groupMode, task);
           setPrompt("");
           return;
         }
+        const agent = team[0].agent;
+        const manifest = ready.find((item) => item.id === agent.manifestId);
+        if (!manifest) return;
         const session = await createTerminalSession(rootPath, manifest, {
           title: text ? taskTabTitle(text) : undefined,
           accountDir: agent.accountDir,
@@ -221,43 +231,25 @@ export function AgentsHome() {
             className="min-h-0 resize-none bg-transparent px-0 py-0.5 text-ui-lg ring-0 hover:ring-0 focus-visible:ring-0"
           />
           <div className="flex flex-wrap items-center gap-1.5">
-            <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Agent">
-              {choices.map((choice) => (
-                <Button
-                  key={`${choice.manifest.id}:${choice.agent.accountDir ?? ""}`}
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-pressed={agent !== PRAGMA_AGENT && sameAgent(agent, choice.agent)}
-                  onClick={() => setPicked(choice.agent)}
-                  className="h-7 max-w-full min-w-0 gap-1.75 pr-2.25 pl-1.5 text-ui-sm font-normal aria-pressed:bg-bg-hover aria-pressed:text-fg-default"
-                >
-                  <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} size="sm" />
-                  {choice.manifest.name}
-                  {choice.accountLabel && (
-                    <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
-                      {choice.accountLabel}
-                    </span>
-                  )}
-                </Button>
-              ))}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-pressed={agent === PRAGMA_AGENT}
-                onClick={() => setPicked(PRAGMA_AGENT)}
-                className="h-7 gap-1.75 pr-2.25 pl-1.5 text-ui-sm font-normal aria-pressed:bg-bg-hover aria-pressed:text-fg-default"
-              >
-                <PragmaMark variant="compact" className="size-3.75" />
-                Pragma
-              </Button>
-            </div>
-            {agent === PRAGMA_AGENT && rootPath && <ChatToolbar />}
+            <AgentTeamPicker
+              choices={choices}
+              team={team}
+              pragma={pragma}
+              onPickOnly={(agent) => {
+                setPragmaPicked(false);
+                setPicked(pickOnly(pragma ? [] : team, agent));
+              }}
+              onToggle={(agent) => {
+                setPragmaPicked(false);
+                setPicked(pragma ? pickOnly([], agent) : toggleMember(team, agent));
+              }}
+              onCount={(agent, count) => setPicked(setMemberCount(team, agent, count))}
+              onPickPragma={() => setPragmaPicked(true)}
+            />
+            {pragma && rootPath && <ChatToolbar />}
             <span className="ml-auto text-ui-xs text-fg-muted">{where}</span>
-            {agent !== PRAGMA_AGENT && <AgentCountStepper count={count} onChange={setCount} />}
             <Button type="submit" size="sm" disabled={!rootPath || creating}>
-              {creating ? "Starting…" : several ? `Start ${count}` : "Start"}
+              {creating ? "Starting…" : several ? `Start ${total}` : "Start"}
               <Kbd className="border-0 bg-black/10 text-primary-foreground/70">
                 {isMac ? "⌘⏎" : "Ctrl+Enter"}
               </Kbd>
