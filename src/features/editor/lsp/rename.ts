@@ -1,3 +1,4 @@
+import { showLspRequestError } from "./requestError";
 import { EditorView, keymap } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
 import { toast } from "sonner";
@@ -91,7 +92,7 @@ export async function executeRename(request: RenameRequest, newName: string): Pr
     return true;
   } catch (error) {
     console.error("LSP rename request failed", error);
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(request.language, error);
     return false;
   }
 }

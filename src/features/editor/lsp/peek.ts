@@ -1,6 +1,6 @@
+import { showLspRequestError } from "./requestError";
 import { type EditorView, type KeyBinding } from "@codemirror/view";
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 
 import { useEditorStore } from "@/shared/stores/editor";
 import { lspDefinition, type LspDefinitionTarget } from "./client";
@@ -188,7 +188,7 @@ export async function openPeekDefinitionAtCursor(
     await flushLspDocumentSync(language, filePath, view.state.doc.toString()).catch(() => {});
     target = await lspDefinition(language, filePath, lspLine, lspCharacter);
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(language, error);
     return;
   }
   if (!target) {
@@ -199,7 +199,7 @@ export async function openPeekDefinitionAtCursor(
   try {
     content = await readPeekContent(target.filePath, filePath, view.state.doc.toString());
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(language, error);
     return;
   }
 

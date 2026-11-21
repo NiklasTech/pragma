@@ -1,3 +1,4 @@
+import { showLspRequestError } from "./requestError";
 import { EditorView, keymap } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ export async function findReferencesAt(
     useEditorStore.getState().openReferences({ path: filePath, symbol, locations });
   } catch (error) {
     console.error("LSP references request failed", error);
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(language, error);
   }
 }
 

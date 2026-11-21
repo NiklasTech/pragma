@@ -7,6 +7,7 @@ import {
   lspErrorMessage,
   shouldToastLspError,
 } from "@/shared/lib/lsp-servers";
+import { recordLspStatus } from "@/shared/stores/lspFailures";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 
@@ -30,6 +31,7 @@ export function useLspStatus() {
 
     const setup = async () => {
       unlisten = await listen<LspStatusEvent>("lsp_status_changed", (event) => {
+        recordLspStatus(event.payload.language, event.payload.status, event.payload.error);
         if (
           !shouldToastLspError({ status: event.payload.status, expected: event.payload.expected })
         ) {

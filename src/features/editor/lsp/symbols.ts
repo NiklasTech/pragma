@@ -1,3 +1,4 @@
+import { showLspRequestError } from "./requestError";
 import type { EditorView } from "@codemirror/view";
 import { keymap } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
@@ -71,7 +72,7 @@ export async function openDocumentSymbolsForView(
     useSymbolDialogStore.getState().openDocument(language, filePath, items);
   } catch (error) {
     console.error("LSP document symbol request failed", error);
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(language, error);
   }
 }
 
