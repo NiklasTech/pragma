@@ -108,6 +108,9 @@ pub fn commit_files(repo_root: &str, sha: &str) -> Result<Vec<GitCommitFileChang
             OsStr::new("-z"),
             OsStr::new("--name-status"),
             OsStr::new("--numstat"),
+            // A first commit lists its files against the empty tree, a merge against its first parent.
+            OsStr::new("--root"),
+            OsStr::new("--diff-merges=first-parent"),
             OsStr::new(sha),
         ],
         DEFAULT_TIMEOUT_SECS,
@@ -490,5 +493,33 @@ mod tests {
     #[test]
     fn status_label_for_unknown_falls_back() {
         assert_eq!(status_label_for('X'), "Status X");
+    }
+
+    fn paths(files: &[GitCommitFileChange]) -> Vec<&str> {
+        files.iter().map(|file| file.path.as_str()).collect()
+    }
+
+    #[test]
+    fn commit_files_lists_the_first_commit() {
+        let repo = super::super::test_support::TestRepo::new();
+        let head = repo.git(&["rev-parse", "HEAD"]);
+        let files = commit_files(&repo.root, &head).expect("files");
+        assert_eq!(paths(&files), ["file.txt"]);
+        assert_eq!(files[0].status, "A");
+    }
+
+    #[test]
+    fn commit_files_lists_a_merge_against_its_first_parent() {
+        let repo = super::super::test_support::TestRepo::new();
+        repo.git(&["checkout", "-q", "-b", "feature"]);
+        repo.write("feature.txt", "feature\n");
+        repo.commit_all("feat: feature");
+        repo.git(&["checkout", "-q", "main"]);
+        repo.write("main.txt", "main\n");
+        repo.commit_all("feat: main");
+        repo.git(&["merge", "-q", "--no-ff", "-m", "merge feature", "feature"]);
+        let head = repo.git(&["rev-parse", "HEAD"]);
+        let files = commit_files(&repo.root, &head).expect("files");
+        assert_eq!(paths(&files), ["feature.txt"]);
     }
 }
