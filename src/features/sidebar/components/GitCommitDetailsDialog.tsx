@@ -8,7 +8,7 @@ import { Button } from "@/shared/components/ui/button";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Separator } from "@/shared/components/ui/separator";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
-import { openGitDiffInSplit } from "../lib/gitDiffSplit";
+import { openGitDiff } from "../lib/gitDiff";
 import { cn } from "@/shared/lib/utils";
 import { useGitStore, type GitCommitDetails, type GitCommitFileChange } from "@/shared/stores/git";
 
@@ -120,7 +120,7 @@ export function GitCommitDetailsDialog({ sha, open, onOpenChange }: GitCommitDet
           return;
         }
         const fileName = file.path.split("/").pop() ?? file.path;
-        openGitDiffInSplit(editorPanelId, {
+        openGitDiff(editorPanelId, {
           id: `diff:${details.sha}:${file.path}`,
           name: `${fileName} (${details.short_sha})`,
           path: file.path,

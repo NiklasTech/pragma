@@ -18,7 +18,7 @@ import {
   type GitCommitFileChange,
   type GitDiffContentResult,
 } from "@/shared/stores/git";
-import { openGitDiffInSplit } from "../lib/gitDiffSplit";
+import { openGitDiff } from "../lib/gitDiff";
 import { useGitCompareDialog } from "../lib/gitDialogs";
 import { FileChangeRow } from "./GitCommitDetailsDialog";
 
@@ -95,7 +95,7 @@ export function GitCompareDialog() {
         return;
       }
       const fileName = file.path.split("/").pop() ?? file.path;
-      openGitDiffInSplit(editorPanelId, {
+      openGitDiff(editorPanelId, {
         id: `compare:${compared.base}..${compared.head}:${file.path}`,
         name: `${fileName} (${shortRef(compared.base)}..${shortRef(compared.head)})`,
         path: file.path,

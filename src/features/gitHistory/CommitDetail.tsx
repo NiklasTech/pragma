@@ -19,7 +19,7 @@ import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { useGitStore, type GitCommitDetails, type GitCommitFileChange } from "@/shared/stores/git";
 import { useOverlayStore } from "@/shared/stores/overlays";
 import { FileChangeRow } from "@/features/sidebar/components/GitCommitDetailsDialog";
-import { openGitDiffInSplit } from "@/features/sidebar/lib/gitDiffSplit";
+import { openGitDiff } from "@/features/sidebar/lib/gitDiff";
 import { useWorktreeAgent } from "@/features/sidebar/worktrees/useWorktreeAgent";
 import type { RepositoryWorktree } from "@/features/sidebar/worktrees/worktreeView";
 
@@ -122,7 +122,7 @@ export function CommitDetail({ sha, stat, agent, onDone }: CommitDetailProps) {
         toast.info("Binary file, no diff available");
         return;
       }
-      openGitDiffInSplit(editorPanelId, {
+      openGitDiff(editorPanelId, {
         id: `diff:${commit.sha}:${file.path}`,
         name: `${file.path.split("/").pop() ?? file.path} (${commit.short_sha})`,
         path: file.path,

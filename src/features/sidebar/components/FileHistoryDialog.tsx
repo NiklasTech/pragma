@@ -14,7 +14,7 @@ import {
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { useGitStore } from "@/shared/stores/git";
-import { openGitDiffInSplit } from "../lib/gitDiffSplit";
+import { openGitDiff } from "../lib/gitDiff";
 import { repoRelativePath, useFileHistoryDialog } from "../lib/gitDialogs";
 import { relativeDate } from "./git-graph/format";
 import type { GitLogEntry } from "./git-graph/types";
@@ -65,7 +65,7 @@ export function FileHistoryDialog() {
         return;
       }
       const fileName = relPath.split("/").pop() ?? relPath;
-      openGitDiffInSplit(editorPanelId, {
+      openGitDiff(editorPanelId, {
         id: `diff:${entry.sha}:${relPath}`,
         name: `${fileName} (${entry.short_sha})`,
         path: relPath,
