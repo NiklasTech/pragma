@@ -3,13 +3,7 @@ import { type GitBranch } from "@/shared/stores/git";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from "@/shared/components/ui/context-menu";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { useGitCompareDialog } from "../../lib/gitDialogs";
 import {
   Spinner,
@@ -113,8 +107,72 @@ export function BranchHeader({
                       : "text-fg-default hover:bg-bg-hover",
                   )}
                 >
-                  <ContextMenu>
-                    <ContextMenuTrigger className="flex min-w-0 flex-1">
+                  <ActionContextMenu
+                    menu={() => ({
+                      head: isCurrent ? `${branch.name} · checked out` : branch.name,
+                      tone: isCurrent ? "done" : "idle",
+                      groups: [
+                        {
+                          items: isCurrent
+                            ? []
+                            : [
+                                {
+                                  key: "o",
+                                  label: "checkout",
+                                  onSelect: () => onCheckout(branch.name),
+                                },
+                                {
+                                  key: "m",
+                                  label: `merge into ${currentBranch}`,
+                                  onSelect: () => {
+                                    setOpen(false);
+                                    onMergeBranch(branch.name);
+                                  },
+                                },
+                                {
+                                  key: "b",
+                                  label: `rebase ${currentBranch} onto this`,
+                                  onSelect: () => {
+                                    setOpen(false);
+                                    onRebaseOnto(branch.name);
+                                  },
+                                },
+                                {
+                                  key: "c",
+                                  label: `compare with ${currentBranch}`,
+                                  onSelect: () => {
+                                    setOpen(false);
+                                    useGitCompareDialog.getState().show(currentBranch, branch.name);
+                                  },
+                                },
+                              ],
+                        },
+                        {
+                          items: [
+                            {
+                              key: "r",
+                              label: "rename",
+                              onSelect: () => {
+                                setOpen(false);
+                                onRenameBranch(branch.name);
+                              },
+                            },
+                            ...(isCurrent
+                              ? []
+                              : [
+                                  {
+                                    key: "x",
+                                    label: "delete",
+                                    danger: true,
+                                    onSelect: () => onDeleteBranch(branch.name),
+                                  },
+                                ]),
+                          ],
+                        },
+                      ],
+                    })}
+                  >
+                    <div className="flex min-w-0 flex-1 select-none">
                       <Button
                         variant="ghost"
                         size="xs"
@@ -132,59 +190,8 @@ export function BranchHeader({
                         )}
                         <span className="truncate">{branch.name}</span>
                       </Button>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-56">
-                      {!isCurrent && (
-                        <>
-                          <ContextMenuItem onClick={() => onCheckout(branch.name)}>
-                            Checkout
-                          </ContextMenuItem>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem
-                            onClick={() => {
-                              setOpen(false);
-                              onMergeBranch(branch.name);
-                            }}
-                          >
-                            Merge into {currentBranch}
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            onClick={() => {
-                              setOpen(false);
-                              onRebaseOnto(branch.name);
-                            }}
-                          >
-                            Rebase {currentBranch} onto this
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            onClick={() => {
-                              setOpen(false);
-                              useGitCompareDialog.getState().show(currentBranch, branch.name);
-                            }}
-                          >
-                            Compare with {currentBranch}
-                          </ContextMenuItem>
-                          <ContextMenuSeparator />
-                        </>
-                      )}
-                      <ContextMenuItem
-                        onClick={() => {
-                          setOpen(false);
-                          onRenameBranch(branch.name);
-                        }}
-                      >
-                        Rename
-                      </ContextMenuItem>
-                      {!isCurrent && (
-                        <ContextMenuItem
-                          onClick={() => onDeleteBranch(branch.name)}
-                          className="text-status-error focus:text-status-error"
-                        >
-                          Delete
-                        </ContextMenuItem>
-                      )}
-                    </ContextMenuContent>
-                  </ContextMenu>
+                    </div>
+                  </ActionContextMenu>
                 </div>
               );
             })}

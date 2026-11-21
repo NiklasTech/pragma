@@ -1,10 +1,10 @@
 import type { RefObject } from "react";
 import type { ReactVirtualizer } from "@tanstack/react-virtual";
 import { Spinner } from "@phosphor-icons/react";
-import { ContextMenu, ContextMenuTrigger } from "@/shared/components/ui/context-menu";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import type { GraphRow } from "../lib/gitGraphLayout";
 import { CommitRow } from "./CommitRow";
-import { CommitRowContextMenu } from "./CommitRowContextMenu";
+import { commitMenu } from "./commitMenu";
 import { CommitTableHeader } from "./CommitTableHeader";
 import type { ColumnKey } from "./columns";
 import { MIN_TABLE_WIDTH, TABLE_HEADER_HEIGHT } from "./constants";
@@ -90,8 +90,22 @@ export function CommitTable({
                   transform: `translateY(${virtualRow.start - uiSize(TABLE_HEADER_HEIGHT)}px)`,
                 }}
               >
-                <ContextMenu>
-                  <ContextMenuTrigger className="h-full w-full">
+                <ActionContextMenu
+                  menu={() =>
+                    commitMenu(commit, {
+                      onViewDetails: onViewDetails,
+                      onCopySha: onCopySha,
+                      onCheckout: onCheckout,
+                      onCreateBranch: onCreateBranch,
+                      onCherryPick: onCherryPick,
+                      onRevert: onRevert,
+                      onReset: onReset,
+                      onCreateTag: onCreateTag,
+                      onDeleteTag: onDeleteTag,
+                    })
+                  }
+                >
+                  <div className="h-full w-full select-none">
                     <CommitRow
                       commit={commit}
                       active={activeSha === commit.sha}
@@ -100,20 +114,8 @@ export function CommitTable({
                       collapsedCols={collapsedCols}
                       onClick={() => onSetActive(activeSha === commit.sha ? null : commit.sha)}
                     />
-                  </ContextMenuTrigger>
-                  <CommitRowContextMenu
-                    commit={commit}
-                    onViewDetails={onViewDetails}
-                    onCopySha={onCopySha}
-                    onCheckout={onCheckout}
-                    onCreateBranch={onCreateBranch}
-                    onCherryPick={onCherryPick}
-                    onRevert={onRevert}
-                    onReset={onReset}
-                    onCreateTag={onCreateTag}
-                    onDeleteTag={onDeleteTag}
-                  />
-                </ContextMenu>
+                  </div>
+                </ActionContextMenu>
               </div>
             );
           })}

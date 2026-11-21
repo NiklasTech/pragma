@@ -1,14 +1,8 @@
 import { Button } from "@/shared/components/ui/button";
 import { type GitStatusEntry } from "@/shared/stores/git";
 import { cn } from "@/shared/lib/utils";
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from "@/shared/components/ui/context-menu";
-import { ArrowCounterClockwise, GitDiff, Minus, Plus, Trash } from "@phosphor-icons/react";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
+import { ArrowCounterClockwise, GitDiff, Minus, Plus } from "@phosphor-icons/react";
 import { getFileIconPath } from "@/shared/lib/file-icons";
 import { basename, dirname } from "./utils";
 import { STATE_INFO, fileState, stageState, type StageState } from "./fileState";
@@ -167,29 +161,39 @@ export function FileRow({
   );
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger>{row}</ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        {staged !== "staged" && (
-          <ContextMenuItem onClick={() => onStage(entry)}>Stage</ContextMenuItem>
-        )}
-        {staged !== "none" && (
-          <ContextMenuItem onClick={() => onUnstage(entry)}>Unstage</ContextMenuItem>
-        )}
-        <ContextMenuItem onClick={openDiff}>
-          <GitDiff size={14} />
-          Open Diff
-        </ContextMenuItem>
-        {onDiscard && entry.is_unstaged && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={() => onDiscard(entry)} variant="destructive">
-              <Trash size={14} />
-              Discard Changes
-            </ContextMenuItem>
-          </>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+    <ActionContextMenu
+      menu={() => ({
+        head: entry.path,
+        tone: staged === "staged" ? "done" : "idle",
+        groups: [
+          {
+            items: [
+              ...(staged !== "staged"
+                ? [{ key: "s", label: "stage", onSelect: () => onStage(entry) }]
+                : []),
+              ...(staged !== "none"
+                ? [{ key: "u", label: "unstage", onSelect: () => onUnstage(entry) }]
+                : []),
+              { key: "d", label: "open diff", shortcut: "⏎", onSelect: openDiff },
+            ],
+          },
+          {
+            items:
+              onDiscard && entry.is_unstaged
+                ? [
+                    {
+                      key: "x",
+                      label: "discard changes",
+                      danger: true,
+                      onSelect: () => onDiscard(entry),
+                    },
+                  ]
+                : [],
+          },
+        ],
+      })}
+    >
+      <div className="select-none">{row}</div>
+    </ActionContextMenu>
   );
 }

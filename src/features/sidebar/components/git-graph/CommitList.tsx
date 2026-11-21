@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
 import type { ReactVirtualizer } from "@tanstack/react-virtual";
 import { Spinner } from "@phosphor-icons/react";
-import { ContextMenu, ContextMenuTrigger } from "@/shared/components/ui/context-menu";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import type { GraphRow } from "../lib/gitGraphLayout";
-import { CommitRowContextMenu } from "./CommitRowContextMenu";
+import { commitMenu } from "./commitMenu";
 import { CompactCommitRow } from "./CompactCommitRow";
 import type { GitLogEntry, LoadStatus } from "./types";
 
@@ -65,8 +65,25 @@ export function CommitList({
               className="absolute top-0 left-0 w-full"
               style={{ height: virtualRow.size, transform: `translateY(${virtualRow.start}px)` }}
             >
-              <ContextMenu>
-                <ContextMenuTrigger className="h-full w-full">
+              <ActionContextMenu
+                menu={() =>
+                  commitMenu(commit, {
+                    onViewDetails: (sha) => {
+                      onSetActive(sha);
+                      onViewDetails(sha);
+                    },
+                    onCopySha: onCopySha,
+                    onCheckout: onCheckout,
+                    onCreateBranch: onCreateBranch,
+                    onCherryPick: onCherryPick,
+                    onRevert: onRevert,
+                    onReset: onReset,
+                    onCreateTag: onCreateTag,
+                    onDeleteTag: onDeleteTag,
+                  })
+                }
+              >
+                <div className="h-full w-full select-none">
                   <CompactCommitRow
                     commit={commit}
                     active={activeSha === commit.sha}
@@ -75,23 +92,8 @@ export function CommitList({
                     maxLaneCount={maxLaneCount}
                     onClick={() => onViewDetails(commit.sha)}
                   />
-                </ContextMenuTrigger>
-                <CommitRowContextMenu
-                  commit={commit}
-                  onViewDetails={(sha) => {
-                    onSetActive(sha);
-                    onViewDetails(sha);
-                  }}
-                  onCopySha={onCopySha}
-                  onCheckout={onCheckout}
-                  onCreateBranch={onCreateBranch}
-                  onCherryPick={onCherryPick}
-                  onRevert={onRevert}
-                  onReset={onReset}
-                  onCreateTag={onCreateTag}
-                  onDeleteTag={onDeleteTag}
-                />
-              </ContextMenu>
+                </div>
+              </ActionContextMenu>
             </div>
           );
         })}

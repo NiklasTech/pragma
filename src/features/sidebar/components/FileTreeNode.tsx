@@ -5,7 +5,8 @@ import { parentPath } from "@/shared/lib/fileDisk";
 import { PRAGMA_PATH_MIME, PRAGMA_PATHS_MIME } from "@/shared/lib/pragma-drag";
 import { useEditorStore } from "@/shared/stores/editor";
 import { useDelayedLoading } from "@/shared/hooks/useDelayedLoading";
-import { ContextMenu, ContextMenuTrigger } from "@/shared/components/ui/context-menu";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import {
   AlertDialog,
@@ -21,7 +22,15 @@ import type { FileSystemNode } from "@/shared/stores/fileExplorer";
 import type { GitDecoration, GitDecorationKind } from "@/features/sidebar/lib/gitDecorations";
 import { selectionTargets, useFileSelectionStore } from "@/features/sidebar/lib/fileSelection";
 import { useFileTreeDrop } from "@/features/sidebar/hooks/useFileTreeDrop";
-import { FileTreeContextMenu } from "./FileTreeContextMenu";
+import {
+  addPathsToChat,
+  copyPaths,
+  duplicatePath,
+  openInTerminal,
+  revealInFileManager,
+} from "@/features/sidebar/lib/fileTreeActions";
+import { useFileHistoryDialog } from "@/features/sidebar/lib/gitDialogs";
+import { fileTreeMenu } from "./fileTreeMenu";
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 import { splitExtension } from "@/features/sidebar/lib/extensionTint";
 import type { TreeGuide } from "@/features/sidebar/lib/treeGuides";
@@ -78,6 +87,7 @@ export function FileTreeNode({
 }: FileTreeNodeProps) {
   const activeTabId = useEditorStore((s) => s.activeTabId);
   const selection = useFileSelectionStore((s) => s.paths);
+  const rootPath = useFileExplorerStore((s) => s.rootPath);
   const isExpanded = expandedDirs.has(node.path);
   const isSelected =
     selection.length > 0 ? selection.includes(node.path) : selectedPath === node.path;
@@ -278,18 +288,25 @@ export function FileTreeNode({
 
   return (
     <div className="h-full">
-      <ContextMenu>
-        <ContextMenuTrigger className="block h-full">{content}</ContextMenuTrigger>
-        <FileTreeContextMenu
-          node={node}
-          targets={targets}
-          onOpen={activate}
-          onCreate={(isDirectory) => setCreateDialog({ open: true, isDirectory })}
-          onRename={() => setRenameOpen(true)}
-          onDelete={() => setDeleteTargets(targets)}
-          onShowLocalHistory={handleShowLocalHistory}
-        />
-      </ContextMenu>
+      <ActionContextMenu
+        menu={() =>
+          fileTreeMenu(node, targets, rootPath, {
+            open: activate,
+            create: (isDirectory) => setCreateDialog({ open: true, isDirectory }),
+            rename: () => setRenameOpen(true),
+            remove: () => setDeleteTargets(targets),
+            showLocalHistory: handleShowLocalHistory,
+            showFileHistory: (path) => useFileHistoryDialog.getState().show(path),
+            addToChat: (paths) => void addPathsToChat(paths),
+            copyPaths: (paths, relative) => void copyPaths(paths, relative),
+            reveal: (path) => void revealInFileManager(path),
+            openInTerminal,
+            duplicate: (path) => void duplicatePath(path),
+          })
+        }
+      >
+        <div className="block h-full select-none">{content}</div>
+      </ActionContextMenu>
 
       <InputDialog
         open={createDialog.open}
