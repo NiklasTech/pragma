@@ -47,7 +47,7 @@ function RepositorySwitcher() {
   const chip = (
     <>
       <RepositoryColorDot path={active.path} />
-      <span className="truncate">{active.name}</span>
+      <span className="truncate @max-[17rem]:hidden">{active.name}</span>
     </>
   );
   if (summaries.length < 2) {
@@ -68,7 +68,7 @@ function RepositorySwitcher() {
             variant="outline"
             size="sm"
             title={active.path}
-            className="min-w-0 max-w-36 gap-1.5 px-2"
+            className="min-w-0 max-w-36 shrink-[4] gap-1.5 px-2"
           >
             {chip}
             <CaretDown size={10} className="shrink-0 text-fg-subtle" />
