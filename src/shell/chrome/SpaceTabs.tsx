@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { ICON_SIZE, IconButton } from "@/shared/components/ui/icon-button";
+import { middleClickToClose } from "@/shared/lib/middleClick";
 import { formatShortcut, getIsMac, TAB_SELECT_SHORTCUTS } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
@@ -41,6 +42,10 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
   const shortcut = binding ? formatShortcut(binding, getIsMac()) : "";
   const active = tab.id === space.activeTabId;
   const closable = space.tabs.length > 1;
+  const closeThisTab = () => {
+    closeTab(space.id, tab.id);
+    removeTree(tab.id);
+  };
 
   return (
     <div
@@ -55,6 +60,7 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
         aria-selected={active}
         title={shortcut ? `${tab.name} (${shortcut})` : tab.name}
         onClick={() => activateTab(space.id, tab.id)}
+        {...(closable ? middleClickToClose(closeThisTab) : {})}
         className="h-full gap-1.75 rounded-none px-0 text-ui-xs font-normal text-inherit hover:bg-transparent hover:text-inherit"
       >
         {index < TAB_SELECT_SHORTCUTS.length && (
@@ -85,10 +91,7 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
           icon={X}
           size="sm"
           label={`Close ${tab.name} tab`}
-          onClick={() => {
-            closeTab(space.id, tab.id);
-            removeTree(tab.id);
-          }}
+          onClick={closeThisTab}
           className="absolute top-1/2 left-full ml-0.5 size-5 -translate-y-1/2 rounded-[4px] text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         />
       )}

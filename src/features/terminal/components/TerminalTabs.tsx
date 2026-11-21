@@ -4,6 +4,7 @@ import type { Icon } from "@phosphor-icons/react";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { middleClickToClose } from "@/shared/lib/middleClick";
 import { handleTabListKeyDown } from "@/shared/lib/tabListKeys";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
@@ -82,6 +83,7 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
               setDraft(session.name);
               setEditingId(session.id);
             }}
+            {...middleClickToClose(() => void killSession(session.id))}
             className={cn("pragma-pill-tab group cursor-default", isActive && "data-active=true")}
           >
             {isRunning && <span className="size-1.5 shrink-0 rounded-full bg-status-success" />}

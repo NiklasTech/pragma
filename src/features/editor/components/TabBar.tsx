@@ -24,6 +24,7 @@ import {
 import { RepositoryColorDot } from "@/shared/components/RepositoryColorDot";
 import { EditorTabActions } from "./EditorTabActions";
 import { useActiveTabInView } from "./useActiveTabInView";
+import { middleClickToClose } from "@/shared/lib/middleClick";
 
 /** The active file's folder relative to the open folder, as the tab row shows it. */
 function folderOf(path: string, root: string | null): string | null {
@@ -159,6 +160,8 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
             }
           };
 
+          const middleClick = middleClickToClose(() => closeTab(tab.id));
+
           return (
             <ContextMenu key={tab.id}>
               <ContextMenuPrimitive.Trigger
@@ -171,12 +174,13 @@ export function TabBar({ panelId, onClosePanel }: TabBarProps) {
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDrop={(e) => handleDrop(e, index)}
                     onClick={() => handleActivate()}
-                    onAuxClick={(e) => {
-                      props.onAuxClick?.(e);
-                      if (e.button === 1) {
-                        e.preventDefault();
-                        closeTab(tab.id);
-                      }
+                    onMouseDown={(e) => {
+                      props.onMouseDown?.(e);
+                      middleClick.onMouseDown(e);
+                    }}
+                    onMouseUp={(e) => {
+                      props.onMouseUp?.(e);
+                      middleClick.onMouseUp(e);
                     }}
                     title={repository ? `${tab.name} (${getWorkspaceName(repository)})` : tab.name}
                     role="tab"
