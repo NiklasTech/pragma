@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
 import { error as logError } from "@tauri-apps/plugin-log";
@@ -95,9 +95,27 @@ window.addEventListener("unhandledrejection", (event) => {
 
 const floating = getFloatingContext();
 
+function revealWindow(): void {
+  if (!isTauri()) return;
+  getCurrentWindow()
+    .show()
+    .catch((error) => {
+      void logError(`[window] failed to show main window: ${formatErrorDetail(error)}`).catch(
+        () => {},
+      );
+    });
+}
+
+/// Shows the hidden window as soon as React has committed the first screen.
+function RevealOnCommit() {
+  useEffect(() => revealWindow(), []);
+  return null;
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
+      <RevealOnCommit />
       {floating.nodeId ? (
         <ThemeProvider>
           <Toaster position="bottom-right" />
@@ -110,18 +128,5 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
-if (isTauri()) {
-  const appWindow = getCurrentWindow();
-  const reveal = () => {
-    appWindow.show().catch((error) => {
-      void logError(`[window] failed to show main window: ${formatErrorDetail(error)}`).catch(
-        () => {},
-      );
-    });
-  };
-  // Wait for the first paint so the revealed window already shows content.
-  requestAnimationFrame(() => requestAnimationFrame(reveal));
-  // WebKit stops rendering updates for a `visible: false` window, so rAF may never
-  // fire on macOS; the timer is what actually guarantees the reveal.
-  setTimeout(reveal, 400);
-}
+// Fallback when the first render fails; WebKit runs no rAF in a hidden window to wait on instead.
+setTimeout(revealWindow, 400);
