@@ -1,7 +1,7 @@
+import { showLspRequestError } from "./requestError";
 import { EditorView, keymap, ViewPlugin, Decoration, type DecorationSet } from "@codemirror/view";
 import { StateEffect, StateField, type Extension, type Text } from "@codemirror/state";
 import { invoke } from "@tauri-apps/api/core";
-import { toast } from "sonner";
 
 import { useEditorStore } from "@/shared/stores/editor";
 import { detectLanguage } from "@/shared/lib/language";
@@ -74,7 +74,7 @@ export async function jumpToDefinition(
     target = await resolveDefinitionTarget(language, filePath, line, character, content);
   } catch (error) {
     console.error("LSP definition request failed", error);
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(language, error);
     return;
   }
   if (!target) {

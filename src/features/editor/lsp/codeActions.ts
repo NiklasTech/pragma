@@ -1,3 +1,4 @@
+import { showLspRequestError } from "./requestError";
 import type { EditorView } from "@codemirror/view";
 import { toast } from "sonner";
 import { create } from "zustand";
@@ -67,7 +68,7 @@ export async function requestCodeActionsAt(
     useCodeActionsStore.getState().openDialog(applicable);
   } catch (error) {
     console.error("LSP code action request failed", error);
-    toast.error(error instanceof Error ? error.message : String(error));
+    showLspRequestError(language, error);
   }
 }
 
