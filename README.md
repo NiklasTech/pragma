@@ -1,32 +1,55 @@
 <p align="center">
-  <img src="public/pragma_logo.svg" alt="Pragma logo" width="96">
+  <img src="public/pragma_logo.svg" alt="Pragma logo" width="88">
 </p>
 
 <h1 align="center">Pragma</h1>
 
 <p align="center">
-  An AI-native desktop IDE that combines an agent workspace with a full code editor.
-  <br>
-  Built with Tauri 2, Rust, React 19, TypeScript and CodeMirror 6.
+  <strong>Run a team of coding agents side by side, review every change, and keep a full IDE one tab away.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/NiklasTech/pragma/releases">Download</a> ·
-  <a href="https://niklastech.github.io/pragma/">Documentation</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a> ·
-  <a href="https://discord.gg/VYBaBvcpGp">Discord</a>
+  A desktop IDE built with Tauri and Rust. It runs Claude Code, Codex, Gemini CLI and seven more coding CLIs<br>
+  with the accounts you already have, each agent in its own Git worktree.
 </p>
-
-https://github.com/user-attachments/assets/18ff609d-72d4-415a-a2bd-91329dec9f4d
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=1v0JitLk-8E">Watch the trailer on YouTube</a> ·
-  <a href="https://www.youtube.com/watch?v=KRmWK-zc-c8">3-minute walkthrough</a>
+  <a href="https://github.com/NiklasTech/pragma/releases/latest"><img src="https://img.shields.io/github/v/release/NiklasTech/pragma?style=flat&labelColor=16181A&color=E8531F&label=release" alt="Latest release"></a>
+  <a href="https://github.com/NiklasTech/pragma/releases"><img src="https://img.shields.io/github/downloads/NiklasTech/pragma/total?style=flat&labelColor=16181A&color=E8531F" alt="Downloads"></a>
+  <a href="https://github.com/NiklasTech/pragma/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/NiklasTech/pragma/ci.yml?branch=main&style=flat&labelColor=16181A&label=CI" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/NiklasTech/pragma?style=flat&labelColor=16181A&color=57534E" alt="Apache 2.0 license"></a>
+  <a href="#installation"><img src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-57534E?style=flat&labelColor=16181A&label=platforms" alt="Platforms: macOS, Windows and Linux"></a>
+  <a href="https://discord.gg/VYBaBvcpGp"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=flat&labelColor=16181A&logo=discord&logoColor=white" alt="Join the Discord"></a>
 </p>
 
----
+<p align="center">
+  <a href="https://github.com/NiklasTech/pragma/releases/latest"><img src="https://img.shields.io/badge/Download%20Pragma-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-E8531F?style=for-the-badge&labelColor=16181A" alt="Download Pragma for macOS, Windows and Linux"></a>
+</p>
 
-## Contents
+<p align="center">
+  <strong>
+    <a href="#quick-start">Quick start</a> ·
+    <a href="https://niklastech.github.io/pragma/">Docs</a> ·
+    <a href="https://www.youtube.com/watch?v=1v0JitLk-8E">Trailer</a> ·
+    <a href="https://www.youtube.com/watch?v=KRmWK-zc-c8">Walkthrough</a> ·
+    <a href="CONTRIBUTING.md">Contributing</a> ·
+    <a href="https://discord.gg/VYBaBvcpGp">Discord</a>
+  </strong>
+</p>
+
+<p align="center">
+  <img src=".github/assets/readme/agents.webp" alt="Three Claude Code agents working side by side in the Pragma Agents tab, each in its own worktree" width="960">
+</p>
+
+<p align="center">
+  <sub>Works with Claude Code · OpenAI Codex · Gemini CLI · GitHub Copilot CLI · Cursor CLI · OpenCode · Kimi Code · Grok Build · Hermes Agent · DeepSeek Harness</sub>
+</p>
+
+> [!NOTE]
+> Pragma is in active development (0.x). Expect breaking changes between minor versions.
+
+<details>
+<summary><strong>Contents</strong></summary>
 
 - [What is Pragma?](#what-is-pragma)
 - [Features](#features)
@@ -40,39 +63,77 @@ https://github.com/user-attachments/assets/18ff609d-72d4-415a-a2bd-91329dec9f4d
 - [Third-party CLI tools](#third-party-cli-tools)
 - [License](#license)
 
+</details>
+
 ---
 
 ## What is Pragma?
 
-Pragma is a desktop IDE with two modes in one window:
+Pragma is a desktop IDE with two tabs for every project:
 
-- **Agents** is a workspace for directing AI. You start sessions, give them a task and review what they changed.
-- **Editor** is a complete hands-on IDE with a file tree, language servers, Git, a terminal and a debugger.
+- **Agents** starts coding CLIs on a task, one at a time or as a team of up to eight, and shows them side by side.
+- **Code** is a complete hands-on IDE with a file tree, language servers, Git, a terminal and a debugger.
 
-Both modes share the same project, the same terminal and the same AI providers. You can switch between them at any time with `Cmd/Ctrl + Shift + E`.
+Both tabs share the same project, the same terminal and the same AI accounts. Switch between them with `Cmd/Ctrl + 1` and `Cmd/Ctrl + 2`, or with `Cmd/Ctrl + Shift + E`.
 
-Pragma is built with Tauri and Rust instead of Electron, stores API keys in the operating system keychain and can use your existing coding CLI subscriptions such as Claude Code, Codex or Gemini CLI.
-
-Pragma is in active development (0.x). Expect breaking changes between minor versions.
-
-<p align="center">
-  <img src="public/pragma_homescreen.png" alt="Pragma editor with file tree, code and terminal" width="960">
-</p>
+Pragma is built with Tauri and Rust instead of Electron, stores API keys in the operating system keychain and starts the official coding CLIs you are already signed in to.
 
 ---
 
 ## Features
 
-### Agents workspace
+### Start a team of agents
+
+Describe the task once and pick who works on it. A Cmd-click (Ctrl on Windows and Linux) adds another CLI or another account, and every agent gets its own count. Each one runs in its own Git worktree, so parallel work never collides.
 
 <p align="center">
-  <img src="public/pragma_agents.png" alt="Pragma Agents workspace with session list and composer" width="880">
+  <img src=".github/assets/readme/start.webp" alt="The start card with a task, three Claude Code agents selected and a Start 3 button" width="720">
 </p>
 
-- Sessions with a thread list, a transcript and a large composer.
-- Several session panes side by side, each with its own conversation.
-- Writing sessions can run in isolated Git worktrees so parallel work does not collide.
-- Review pane that shows the changes of the focused session next to it.
+### Review before anything lands
+
+Open the changes of any agent as a review. Keep or undo each part, leave comments and send them back to the agent as feedback, or commit and open a pull request from the same sheet.
+
+<p align="center">
+  <img src=".github/assets/readme/review.webp" alt="Review sheet with a diff, a review comment and buttons to send feedback or commit and open a pull request" width="960">
+</p>
+
+### A full IDE one tab away
+
+The Code tab is a real editor: CodeMirror 6 with language servers, a file tree, workspace search, a terminal and a debugger.
+
+<p align="center">
+  <img src=".github/assets/readme/code.webp" alt="Code tab with the file tree, a TypeScript file and a terminal with passing tests" width="960">
+</p>
+
+### Git built in
+
+Browse the commit graph with messages, pull request links and changed files, then stage, commit, push and open pull requests without leaving Pragma.
+
+<p align="center">
+  <img src=".github/assets/readme/history.webp" alt="Git history with the commit graph and the details of a commit" width="960">
+</p>
+
+### One space per project
+
+Every project is a space with its own tabs, layouts and agent worktrees. The overview shows what runs where, and agents keep running while you work in another space.
+
+<p align="center">
+  <img src=".github/assets/readme/spaces.webp" alt="Spaces overview with the worktrees of three agents, the tabs and the saved layouts of a project" width="960">
+</p>
+
+### Everything in detail
+
+<details>
+<summary><strong>Agents</strong></summary>
+
+- Start one agent or a team of up to eight from the start card, mixing CLIs and accounts.
+- Several accounts per coding CLI, for example a work and a personal Claude Code account.
+- Agents run in isolated Git worktrees unless the project runs them in the checkout.
+- Agent panes side by side, with split, zoom and keyboard focus between panes.
+- An activity pill that shows every running agent across all spaces.
+- Review sheet with keep, undo, comments, feedback to the agent and commit with pull request.
+- A chat panel next to the code, with `@` mentions for files and folders.
 - Named agents with a brief, their own memory and approved folders.
 - Reusable workspace skills and local tasks that start a session only when you ask.
 - Sessions can start child sessions for sub-tasks.
@@ -80,7 +141,10 @@ Pragma is in active development (0.x). Expect breaking changes between minor ver
 - Browser pane beside a session, for example to check a local dev server.
 - Voice dictation with Web Speech, local Whisper.cpp or local Parakeet V3.
 
-### Editor
+</details>
+
+<details>
+<summary><strong>Editor</strong></summary>
 
 - CodeMirror 6 with syntax highlighting for many languages and optional Vim mode.
 - Built-in LSP support: completion, hover, go to definition, peek definition, references, rename, formatting, signature help, code actions, inlay hints, folding and an outline panel.
@@ -90,7 +154,10 @@ Pragma is in active development (0.x). Expect breaking changes between minor ver
 - Debugger with breakpoints, stepping and a debug panel.
 - Run configurations for starting and restarting project processes.
 
-### Terminal
+</details>
+
+<details>
+<summary><strong>Terminal</strong></summary>
 
 - xterm.js terminal backed by portable-pty.
 - Multiple tabs and split panes.
@@ -98,31 +165,38 @@ Pragma is in active development (0.x). Expect breaking changes between minor ver
 - AI command suggestions while typing.
 - Clickable links, for example to open a local dev server in the browser.
 
-### Git
+</details>
 
-<p align="center">
-  <img src="public/pragma_git.png" alt="Pragma Git history panel next to the editor" width="880">
-</p>
+<details>
+<summary><strong>Git</strong></summary>
 
-- Commit history with a graph in the sidebar.
+- Commit history with a graph, commit details and the files of every commit.
 - Status panel with staged and unstaged changes and inline diffs.
 - Stage, unstage, commit, push and pull from the UI.
 - Branch switcher, stash panel, blame and a conflict editor.
 
-### AI providers
+</details>
+
+<details>
+<summary><strong>AI providers</strong></summary>
 
 - Built-in providers: Anthropic, OpenAI, Gemini, DeepSeek, Kimi, Grok, OpenRouter, GitHub Copilot, Ollama and OpenAI-compatible custom endpoints.
 - Coding CLIs over the Agent Client Protocol: Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, Hermes Agent and DeepSeek Harness.
 - MCP servers can be added and managed in the settings.
 - API keys are stored in the OS keychain.
 
-### More
+</details>
+
+<details>
+<summary><strong>More</strong></summary>
 
 - Docker and Podman container overview with start, stop, logs, exec and Compose actions.
 - Extensions with a workspace, file and editor API.
 - Built-in themes plus importable custom themes.
-- Configurable keyboard shortcuts and a command palette.
+- Configurable keyboard shortcuts, a command palette and a command line for starting tasks.
 - Resizable panels and native floating windows for detached panels.
+
+</details>
 
 ---
 
@@ -244,27 +318,29 @@ A local build keeps the version from `package.json`. Once a newer release exists
 
 ## Quick start
 
-Prefer to watch first? The [3-minute walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit.
+Prefer to watch first? The [walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit. It was recorded with Pragma 0.7, before the current design.
 
 1. Start Pragma and complete the onboarding.
 2. Choose a theme and connect an AI provider, either with an API key or by signing in to a coding CLI.
 3. Open a project folder. On macOS you can also run `pragma .` in a terminal after `pnpm run install:local`, see [Install a local build](#install-a-local-build-macos).
-4. In **Agents**, describe a task in the composer and start a session.
-5. Switch to **Editor** with `Cmd/Ctrl + Shift + E` to work on the code yourself.
+4. In the **Agents** tab, describe a task on the start card, pick one or more agents and press **Start**.
+5. Review what the agents changed, or switch to the **Code** tab with `Cmd/Ctrl + 2` to work on the code yourself.
 
 Useful default shortcuts (`Cmd` on macOS, `Ctrl` on Windows and Linux):
 
-| Shortcut               | Action                   |
-| ---------------------- | ------------------------ |
-| `Cmd/Ctrl + P`         | Go to file               |
-| `Cmd/Ctrl + Shift + P` | Command palette          |
-| `Cmd/Ctrl + Shift + E` | Switch Agents and Editor |
-| `Cmd/Ctrl + Shift + A` | Toggle AI chat           |
-| `` Ctrl + ` ``         | Toggle terminal          |
-| `Cmd/Ctrl + Shift + T` | Reopen closed tab        |
-| `Cmd/Ctrl + ,`         | Open settings            |
+| Shortcut                    | Action                         |
+| --------------------------- | ------------------------------ |
+| `Cmd/Ctrl + N`              | Start a new task               |
+| `Cmd/Ctrl + P`              | Go to file                     |
+| `Cmd/Ctrl + Shift + P`      | Command palette                |
+| `Cmd/Ctrl + 1` to `9`       | Go to tab                      |
+| `Cmd/Ctrl + Shift + E`      | Switch between Agents and Code |
+| `Cmd + K`, `Ctrl + Alt + K` | Focus the command line         |
+| `Cmd + J`, `` Ctrl + ` ``   | Toggle terminal                |
+| `Cmd/Ctrl + Shift + T`      | Reopen closed tab              |
+| `Cmd/Ctrl + ,`              | Open settings                  |
 
-All shortcuts can be changed in **Settings > Keyboard**.
+All shortcuts can be changed in **Settings > Keys**.
 
 ---
 
@@ -272,20 +348,16 @@ All shortcuts can be changed in **Settings > Keyboard**.
 
 Everything is configured in the settings panel (`Cmd/Ctrl + ,`). Settings can be exported and imported as a file.
 
-<p align="center">
-  <img src="public/pragma_settings.png" alt="Pragma settings with the coding CLI integrations" width="880">
-</p>
-
 ### AI providers
 
 In **Settings > Agents** you can:
 
 - Save an API key for a built-in provider. Keys are stored in the OS keychain.
-- Install and sign in to a coding CLI and select it with **Use This**. The CLI then runs your sessions with your existing subscription.
+- Install and sign in to a coding CLI, add account folders for more accounts and choose the default agent. The CLI then runs your sessions with your existing subscription.
 
 ### MCP servers
 
-MCP servers are added and started in **Settings > MCP**. The configuration is stored as `mcp.json` in the app configuration folder:
+MCP servers are added and started in **Settings > Extensions and tools**. The configuration is stored as `mcp.json` in the app configuration folder:
 
 - macOS: `~/Library/Application Support/dev.pragma.ide/`
 - Linux: `~/.config/dev.pragma.ide/`
@@ -363,4 +435,4 @@ Each CLI is subject to its provider's license, terms and policies. Pragma is not
 
 Pragma is licensed under the [Apache License 2.0](LICENSE).
 
-Pragma builds on many open-source projects, including Tauri, CodeMirror, xterm.js, React and the Vercel AI SDK. The full list of third-party licenses is shown in **Settings > About**.
+Pragma builds on many open-source projects, including Tauri, CodeMirror, xterm.js, React and the Vercel AI SDK. The full list of third-party licenses is shown in **Settings > General**.
