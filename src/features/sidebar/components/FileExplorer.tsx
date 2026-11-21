@@ -1,22 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowsInLineVertical,
-  FilePlus,
-  FolderOpen,
-  FolderPlus,
-  Files,
-  MagnifyingGlass,
-} from "@phosphor-icons/react";
+import { ArrowsInLineVertical, FolderOpen, Files, MagnifyingGlass } from "@phosphor-icons/react";
 import { Button } from "@/shared/components/ui/button";
 import { IconButton } from "@/shared/components/ui/icon-button";
 import { Input } from "@/shared/components/ui/input";
 import { SegmentedControl } from "@/shared/components/ui/segmented-control";
-import {
-  ContextMenu,
-  ContextMenuTrigger,
-  ContextMenuContent,
-  ContextMenuItem,
-} from "@/shared/components/ui/context-menu";
+import { ActionContextMenu, type ActionMenuSpec } from "@/shared/components/ui/action-menu";
 import { InputDialog } from "@/shared/components/ui/input-dialog";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
@@ -60,6 +48,29 @@ export function FileExplorer() {
   });
 
   const rootName = rootPath ? rootPath.replace(/\\/g, "/").split("/").pop() || rootPath : null;
+  const explorerMenu = (): ActionMenuSpec => ({
+    head: rootName ?? "no folder open",
+    tone: "idle",
+    groups: [
+      {
+        items: rootPath
+          ? [
+              {
+                key: "n",
+                label: "new file",
+                onSelect: () => setCreateAtRoot({ open: true, isDirectory: false }),
+              },
+              {
+                key: "f",
+                label: "new folder",
+                onSelect: () => setCreateAtRoot({ open: true, isDirectory: true }),
+              },
+            ]
+          : [],
+      },
+      { items: [{ key: "o", label: "open folder", onSelect: () => void selectRoot() }] },
+    ],
+  });
 
   const [filter, setFilter] = useState("");
   const filtering = filter.trim() !== "";
@@ -108,103 +119,91 @@ export function FileExplorer() {
   }
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger className="h-full">
-        <div className="flex h-full flex-col">
-          <div className="flex h-11 shrink-0 items-center gap-2 pr-1.5 pl-3.5">
-            <span className="text-ui-sm font-semibold text-fg-default" title={rootPath}>
-              Files
-            </span>
-            {(showAll || repositoryCount > 1) && (
-              <SegmentedControl<"space" | "all">
-                label="Show files from"
-                value={showAll ? "all" : "space"}
-                onValueChange={(value) => setShowAll(value === "all")}
-                options={[
-                  { value: "space", label: "This space" },
-                  { value: "all", label: "All" },
-                ]}
-              />
-            )}
-            <span className="ml-auto flex items-center">
-              <IconButton
-                icon={ArrowsInLineVertical}
-                label="Collapse all folders"
-                onClick={() => (shown ? collapseWorktree(shown.environment.path) : collapseAll())}
-              />
-            </span>
-          </div>
-          <label className="mx-2.5 mb-1.5 flex h-7.5 shrink-0 items-center gap-2 rounded-control bg-control px-2.5 text-fg-subtle ring-inset focus-within:ring-2 focus-within:ring-border-focus">
-            <MagnifyingGlass size={13} aria-hidden="true" />
-            <Input
-              value={filter}
-              onChange={(event) => setFilter(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && filter) {
-                  event.stopPropagation();
-                  setFilter("");
-                }
-              }}
-              placeholder={`Filter files in ${rootName ?? "the folder"}`}
-              aria-label="Filter files"
-              className="h-full min-w-0 flex-1 bg-transparent px-0 ring-0 hover:ring-0 focus-visible:ring-0"
-            />
-          </label>
-          {!showAll && rootPath && shown ? (
-            <WorktreeTree
-              key={shown.environment.id}
-              rootPath={rootPath}
-              branch={branch}
-              worktrees={worktrees}
-              worktree={shown}
-              mainChanged={mainChanged}
-              filter={filter}
-            />
-          ) : (
-            <>
-              {!showAll && gitSnapshot && (
-                <WorktreeRootRow
-                  rootPath={rootPath}
-                  branch={branch}
-                  worktrees={worktrees}
-                  shown={null}
-                  changed={mainChanged}
-                  mainChanged={mainChanged}
+    <>
+      <ActionContextMenu menu={explorerMenu}>
+        <div className="h-full select-none">
+          <div className="flex h-full flex-col">
+            <div className="flex h-11 shrink-0 items-center gap-2 pr-1.5 pl-3.5">
+              <span className="text-ui-sm font-semibold text-fg-default" title={rootPath}>
+                Files
+              </span>
+              {(showAll || repositoryCount > 1) && (
+                <SegmentedControl<"space" | "all">
+                  label="Show files from"
+                  value={showAll ? "all" : "space"}
+                  onValueChange={(value) => setShowAll(value === "all")}
+                  options={[
+                    { value: "space", label: "This space" },
+                    { value: "all", label: "All" },
+                  ]}
                 />
               )}
-              <FileTreeRows
-                nodes={visibleNodes}
-                expandedDirs={shownOpen}
-                onToggleDir={toggleDirectory}
-                decorations={decorations}
-                dropRoot={rootPath}
-                loading={showTreeLoading}
-                emptyText={
-                  filtering
-                    ? workspaceFiles === null
-                      ? "Searching…"
-                      : "No file matches."
-                    : "Empty folder"
-                }
+              <span className="ml-auto flex items-center">
+                <IconButton
+                  icon={ArrowsInLineVertical}
+                  label="Collapse all folders"
+                  onClick={() => (shown ? collapseWorktree(shown.environment.path) : collapseAll())}
+                />
+              </span>
+            </div>
+            <label className="mx-2.5 mb-1.5 flex h-7.5 shrink-0 items-center gap-2 rounded-control bg-control px-2.5 text-fg-subtle ring-inset focus-within:ring-2 focus-within:ring-border-focus">
+              <MagnifyingGlass size={13} aria-hidden="true" />
+              <Input
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && filter) {
+                    event.stopPropagation();
+                    setFilter("");
+                  }
+                }}
+                placeholder={`Filter files in ${rootName ?? "the folder"}`}
+                aria-label="Filter files"
+                className="h-full min-w-0 flex-1 bg-transparent px-0 ring-0 hover:ring-0 focus-visible:ring-0"
               />
-            </>
-          )}
+            </label>
+            {!showAll && rootPath && shown ? (
+              <WorktreeTree
+                key={shown.environment.id}
+                rootPath={rootPath}
+                branch={branch}
+                worktrees={worktrees}
+                worktree={shown}
+                mainChanged={mainChanged}
+                filter={filter}
+              />
+            ) : (
+              <>
+                {!showAll && gitSnapshot && (
+                  <WorktreeRootRow
+                    rootPath={rootPath}
+                    branch={branch}
+                    worktrees={worktrees}
+                    shown={null}
+                    changed={mainChanged}
+                    mainChanged={mainChanged}
+                  />
+                )}
+                <FileTreeRows
+                  nodes={visibleNodes}
+                  expandedDirs={shownOpen}
+                  onToggleDir={toggleDirectory}
+                  decorations={decorations}
+                  dropRoot={rootPath}
+                  loading={showTreeLoading}
+                  emptyText={
+                    filtering
+                      ? workspaceFiles === null
+                        ? "Searching…"
+                        : "No file matches."
+                      : "Empty folder"
+                  }
+                />
+              </>
+            )}
+          </div>
         </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        <ContextMenuItem onClick={() => setCreateAtRoot({ open: true, isDirectory: false })}>
-          <FilePlus size={14} />
-          <span>New File</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => setCreateAtRoot({ open: true, isDirectory: true })}>
-          <FolderPlus size={14} />
-          <span>New Folder</span>
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => void selectRoot()}>
-          <FolderOpen size={14} />
-          <span>Open Folder</span>
-        </ContextMenuItem>
-      </ContextMenuContent>
+      </ActionContextMenu>
       <InputDialog
         open={createAtRoot.open}
         onOpenChange={(open) => setCreateAtRoot((prev) => ({ ...prev, open }))}
@@ -217,6 +216,6 @@ export function FileExplorer() {
             void createNode(shown?.environment.path ?? rootPath, name, createAtRoot.isDirectory);
         }}
       />
-    </ContextMenu>
+    </>
   );
 }

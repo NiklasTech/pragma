@@ -3,13 +3,16 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowsClockwise, GitBranch, MagnifyingGlass } from "@phosphor-icons/react";
 
 import { AgentMark } from "@/shared/components/ui/agent-mark";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { Button } from "@/shared/components/ui/button";
+import { copyToClipboard } from "@/shared/lib/clipboard";
 import { Input } from "@/shared/components/ui/input";
 import { AGENT_STATE_LABELS, StatusDot } from "@/shared/components/ui/status-dot";
 import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { cn } from "@/shared/lib/utils";
 import { useGitStore } from "@/shared/stores/git";
 import { GraphRail } from "@/features/sidebar/components/GraphRail";
+import { useGitCompareDialog } from "@/features/sidebar/lib/gitDialogs";
 import type { GitLogEntry } from "@/features/sidebar/components/git-graph/types";
 import { useGraphLayout } from "@/features/sidebar/components/git-graph/useGraphLayout";
 import { useWorktreeAgent } from "@/features/sidebar/worktrees/useWorktreeAgent";
@@ -234,50 +237,86 @@ export function GitHistoryView() {
               }
               const active = selectedRow?.key === row.key;
               return (
-                <Button
+                <ActionContextMenu
                   key={item.key}
-                  variant="ghost"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => setSelected(row.key)}
-                  className={cn(
-                    "absolute top-0 left-0 flex w-full items-center justify-start gap-3 rounded-[5px] px-1 pr-2.5 text-left text-ui-sm font-normal text-fg-default",
-                    active && "bg-primary/10 ring-1 ring-primary/40 ring-inset hover:bg-primary/10",
-                  )}
-                  style={style}
+                  menu={() => ({
+                    head: `${row.commit.short_sha} · ${row.commit.subject}`,
+                    tone: row.kind === "agent" ? "info" : "idle",
+                    groups: [
+                      {
+                        items: [
+                          {
+                            key: "v",
+                            label: "view details",
+                            shortcut: "⏎",
+                            onSelect: () => setSelected(row.key),
+                          },
+                          {
+                            key: "c",
+                            label: "copy sha",
+                            onSelect: () => void copyToClipboard(row.commit.sha),
+                          },
+                          {
+                            key: "m",
+                            label: "copy message",
+                            onSelect: () => void copyToClipboard(row.commit.subject),
+                          },
+                          {
+                            key: "d",
+                            label: "compare with head",
+                            onSelect: () =>
+                              useGitCompareDialog.getState().show(row.commit.sha, "HEAD"),
+                          },
+                        ],
+                      },
+                    ],
+                  })}
                 >
-                  {row.kind === "agent" ? (
-                    <AgentRow row={row} now={now} />
-                  ) : (
-                    <>
-                      <span className="flex w-14 shrink-0 items-center overflow-hidden">
-                        {!query && graphByCommit.get(row.commit.sha) && (
-                          <GraphRail
-                            row={graphByCommit.get(row.commit.sha)!}
-                            rowHeight={uiSize(ROW)}
-                            maxLaneCount={maxLaneCount}
-                            active={active}
-                          />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <Title subject={row.commit.subject} tags={row.commit.tags} />
-                      </span>
-                      <span className="hidden w-36 shrink-0 items-center gap-1.75 truncate text-ui-xs text-fg-muted @min-[620px]:flex">
-                        <span className="inline-flex size-4.5 shrink-0 items-center justify-center rounded-full bg-bg-active text-[9.5px] font-semibold text-fg-default">
-                          {authorInitial(row.commit.author)}
+                  <Button
+                    variant="ghost"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => setSelected(row.key)}
+                    className={cn(
+                      "absolute top-0 left-0 flex w-full items-center justify-start gap-3 rounded-[5px] px-1 pr-2.5 text-left text-ui-sm font-normal text-fg-default",
+                      active &&
+                        "bg-primary/10 ring-1 ring-primary/40 ring-inset hover:bg-primary/10",
+                    )}
+                    style={style}
+                  >
+                    {row.kind === "agent" ? (
+                      <AgentRow row={row} now={now} />
+                    ) : (
+                      <>
+                        <span className="flex w-14 shrink-0 items-center overflow-hidden">
+                          {!query && graphByCommit.get(row.commit.sha) && (
+                            <GraphRail
+                              row={graphByCommit.get(row.commit.sha)!}
+                              rowHeight={uiSize(ROW)}
+                              maxLaneCount={maxLaneCount}
+                              active={active}
+                            />
+                          )}
                         </span>
-                        <span className="truncate">{row.commit.author}</span>
-                      </span>
-                      <span className="hidden w-20 shrink-0 text-ui-xs text-fg-subtle @min-[440px]:block">
-                        {relativeTime(row.commit.timestamp_secs, now)}
-                      </span>
-                      <span className="w-17 shrink-0 text-right font-mono text-ui-xs text-fg-subtle">
-                        {row.commit.short_sha}
-                      </span>
-                    </>
-                  )}
-                </Button>
+                        <span className="min-w-0 flex-1">
+                          <Title subject={row.commit.subject} tags={row.commit.tags} />
+                        </span>
+                        <span className="hidden w-36 shrink-0 items-center gap-1.75 truncate text-ui-xs text-fg-muted @min-[620px]:flex">
+                          <span className="inline-flex size-4.5 shrink-0 items-center justify-center rounded-full bg-bg-active text-[9.5px] font-semibold text-fg-default">
+                            {authorInitial(row.commit.author)}
+                          </span>
+                          <span className="truncate">{row.commit.author}</span>
+                        </span>
+                        <span className="hidden w-20 shrink-0 text-ui-xs text-fg-subtle @min-[440px]:block">
+                          {relativeTime(row.commit.timestamp_secs, now)}
+                        </span>
+                        <span className="w-17 shrink-0 text-right font-mono text-ui-xs text-fg-subtle">
+                          {row.commit.short_sha}
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                </ActionContextMenu>
               );
             })}
           </div>

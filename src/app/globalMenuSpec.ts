@@ -1,4 +1,7 @@
 import { menuShortcut, type ActionMenuSpec } from "@/shared/components/ui/action-menu";
+import { quoteMarkdown } from "@/shared/lib/quoteMarkdown";
+
+export { quoteMarkdown };
 
 export type MenuContextType = "editor" | "terminal" | "input" | "selection";
 
@@ -34,16 +37,6 @@ interface MenuInput {
     acceptSuggestion: () => void;
     dismissSuggestion: () => void;
   };
-}
-
-/** The selection as a Markdown quote, followed by a blank line to answer below it. */
-export function quoteMarkdown(text: string): string {
-  const quoted = text
-    .trim()
-    .split("\n")
-    .map((line) => `> ${line}`)
-    .join("\n");
-  return `${quoted}\n\n`;
 }
 
 function lineCount(text: string): number {

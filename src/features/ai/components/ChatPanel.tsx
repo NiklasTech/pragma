@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 
 import { useAI, getMessageText } from "@/shared/hooks/useAI";
+import { messageMenu } from "./messageMenu";
 import { useAIStore } from "@/shared/stores/ai";
 import { sessionAccountLabel, useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
@@ -19,7 +20,11 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { extractFirstCodeBlock } from "@/shared/lib/extract-code-block";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { Button } from "@/shared/components/ui/button";
+import { copyToClipboard } from "@/shared/lib/clipboard";
+import { quoteMarkdown } from "@/shared/lib/quoteMarkdown";
+import { useComposerInsertStore } from "@/features/ai/mentions/composerInsert";
 import type { UIMessage } from "@ai-sdk/react";
 
 import { AgentApprovals } from "@/features/agent/components/AgentApprovals";
@@ -39,7 +44,7 @@ import { MessageActionBar, MessageActionButton } from "@/features/ai/rewind/Mess
 import { RewindDialog } from "@/features/ai/rewind/RewindDialog";
 import { useMessageActions } from "@/features/ai/rewind/useMessageActions";
 import { useScrollToJumpTarget } from "@/features/ai/search/useScrollToJumpTarget";
-import { CopyMessageButton } from "@/features/ai/export/CopyMessageButton";
+import { CopyMessageButton, copyMessageAsMarkdown } from "@/features/ai/export/CopyMessageButton";
 import { parseFencedBlocks, resolveApplyTargets } from "../context/applyTargets";
 import { AgentRunBar } from "./AgentRunBar";
 import { AssistantTimeline } from "./AssistantTimeline";
@@ -314,59 +319,73 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
               });
 
               return (
-                <Message
+                <ActionContextMenu
                   key={msg.id}
-                  from="assistant"
-                  className="flex-col gap-1"
-                  data-message-id={msg.id}
+                  menu={() =>
+                    messageMenu({
+                      selection: window.getSelection()?.toString() ?? "",
+                      canFork: canActOnMessages,
+                      canRewind: canActOnMessages && messageIndex < messages.length - 1,
+                      actions: {
+                        copy: (selected) => void copyToClipboard(selected),
+                        quote: (selected) =>
+                          useComposerInsertStore.getState().insert(quoteMarkdown(selected)),
+                        copyMessage: () => void copyMessageAsMarkdown(msg),
+                        fork: () => messageActions.fork(messageIndex),
+                        rewind: () => messageActions.requestRewind(messageIndex),
+                      },
+                    })
+                  }
                 >
-                  <MessageContent>
-                    {sourceDocuments.map((source, index) => (
-                      <SourceBlock
-                        key={`${msg.id}-doc-${index}`}
-                        type="document"
-                        title={source.title}
-                        filename={source.filename}
-                        streaming={isStreaming}
-                      />
-                    ))}
-                    {sourceUrls.map((source, index) => (
-                      <SourceBlock
-                        key={`${msg.id}-url-${index}`}
-                        type="url"
-                        title={source.title ?? source.url}
-                        url={source.url}
-                        streaming={isStreaming}
-                      />
-                    ))}
-                    <ChatApplyProvider targets={applyTargets}>
-                      <AssistantTimeline
-                        message={msg}
-                        streaming={isStreaming}
-                        showThinking={showThinking}
-                      />
-                    </ChatApplyProvider>
-                  </MessageContent>
-                  <MessageActionBar>
-                    {!isStreaming && <CopyMessageButton message={msg} />}
-                    {canActOnMessages && (
-                      <MessageActionButton
-                        label="Fork from here"
-                        onClick={() => messageActions.fork(messageIndex)}
-                      >
-                        <GitFork size={13} />
-                      </MessageActionButton>
-                    )}
-                    {canActOnMessages && messageIndex < messages.length - 1 && (
-                      <MessageActionButton
-                        label="Rewind to here"
-                        onClick={() => messageActions.requestRewind(messageIndex)}
-                      >
-                        <ClockCounterClockwise size={13} />
-                      </MessageActionButton>
-                    )}
-                  </MessageActionBar>
-                </Message>
+                  <Message from="assistant" className="flex-col gap-1" data-message-id={msg.id}>
+                    <MessageContent>
+                      {sourceDocuments.map((source, index) => (
+                        <SourceBlock
+                          key={`${msg.id}-doc-${index}`}
+                          type="document"
+                          title={source.title}
+                          filename={source.filename}
+                          streaming={isStreaming}
+                        />
+                      ))}
+                      {sourceUrls.map((source, index) => (
+                        <SourceBlock
+                          key={`${msg.id}-url-${index}`}
+                          type="url"
+                          title={source.title ?? source.url}
+                          url={source.url}
+                          streaming={isStreaming}
+                        />
+                      ))}
+                      <ChatApplyProvider targets={applyTargets}>
+                        <AssistantTimeline
+                          message={msg}
+                          streaming={isStreaming}
+                          showThinking={showThinking}
+                        />
+                      </ChatApplyProvider>
+                    </MessageContent>
+                    <MessageActionBar>
+                      {!isStreaming && <CopyMessageButton message={msg} />}
+                      {canActOnMessages && (
+                        <MessageActionButton
+                          label="Fork from here"
+                          onClick={() => messageActions.fork(messageIndex)}
+                        >
+                          <GitFork size={13} />
+                        </MessageActionButton>
+                      )}
+                      {canActOnMessages && messageIndex < messages.length - 1 && (
+                        <MessageActionButton
+                          label="Rewind to here"
+                          onClick={() => messageActions.requestRewind(messageIndex)}
+                        >
+                          <ClockCounterClockwise size={13} />
+                        </MessageActionButton>
+                      )}
+                    </MessageActionBar>
+                  </Message>
+                </ActionContextMenu>
               );
             })}
 
