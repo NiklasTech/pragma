@@ -76,7 +76,10 @@ export function BranchHeader({
         onClick={() => setOpen(!open)}
         disabled={actionBusy === "checkout"}
         title={`Branch ${currentBranch}`}
-        className={cn("min-w-0 max-w-44 justify-start gap-1.5 px-2", open && "ring-fg-default/35")}
+        className={cn(
+          "min-w-0 max-w-44 shrink justify-start gap-1.5 px-2",
+          open && "ring-fg-default/35",
+        )}
       >
         {actionBusy === "checkout" ? (
           <Spinner size={12} className="shrink-0 animate-spin text-fg-muted" />

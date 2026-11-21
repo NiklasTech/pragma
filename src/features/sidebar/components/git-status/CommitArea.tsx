@@ -53,11 +53,11 @@ export function CommitArea({
             className="max-h-[200px] min-h-10 resize-none rounded-none bg-transparent p-0 leading-5 ring-0 hover:ring-0 focus-visible:ring-0"
           />
         </div>
-        <div className="flex items-center gap-2 px-2 pt-1.5 pb-2">
+        <div className="flex items-center gap-2 px-2 pt-1.5 pb-2 @max-[18rem]:flex-col @max-[18rem]:items-stretch">
           <div className="min-w-0 flex-1">
             <CommitOptions stagedCount={stagedCount} />
           </div>
-          <Button size="sm" disabled={!canCommit} onClick={onCommit} className="shrink-0">
+          <Button size="sm" disabled={!canCommit} onClick={onCommit}>
             {commitLabel(commitAmend, actionBusy === "commit", stagedCount)}
             {showShortcut && <Kbd>{getIsMac() ? "⌘↵" : "Ctrl+↵"}</Kbd>}
           </Button>
