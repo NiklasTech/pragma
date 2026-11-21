@@ -7,6 +7,7 @@ import {
   lspErrorMessage,
   shouldToastLspError,
 } from "@/shared/lib/lsp-servers";
+import { firstLspFailure } from "@/shared/lib/lspToastOnce";
 import { recordLspStatus } from "@/shared/stores/lspFailures";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
@@ -38,7 +39,8 @@ export function useLspStatus() {
           return;
         }
         const message = lspErrorMessage(event.payload.language, event.payload.error);
-        // Editors, retries and files in folders without a project file share one toast per failure.
+        // Each project folder starts its own server; one toast per failure is enough.
+        if (!firstLspFailure(event.payload.language, message)) return;
         toast.error(message, {
           id: `lsp:${event.payload.language}:${message}`,
           action: isMissingTypeScript(event.payload.error)
