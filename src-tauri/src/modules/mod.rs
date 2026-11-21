@@ -31,6 +31,7 @@ pub mod text_encoding;
 pub mod theme_files;
 pub mod voice_access;
 pub mod voice_hardware;
+pub mod webview_microphone;
 pub mod whisper_models;
 pub mod workspace;
 pub mod workspace_settings;

@@ -46,6 +46,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_cli::init())
         .plugin(modules::browser_pane::init(dev_url.as_ref()))
+        .plugin(modules::webview_microphone::init(dev_url.as_ref()))
         .manage(PtyManager::new())
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
