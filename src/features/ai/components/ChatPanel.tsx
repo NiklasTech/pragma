@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { useAI, getMessageText } from "@/shared/hooks/useAI";
 import { useAIStore } from "@/shared/stores/ai";
+import { sessionAccountLabel, useCliAccountsStore } from "@/shared/stores/ai/cliAccounts";
 import { useAIEditStore } from "@/shared/stores/aiEdit";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -108,6 +109,16 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
     activeChatSessionId ? state.running[activeChatSessionId] === true : false,
   );
   const cliStatus = activeCLIProvider ? cliStatuses[activeCLIProvider] : null;
+  const cliName = useAIStore(
+    (state) =>
+      state.cliManifests.find((manifest) => manifest.id === activeCLIProvider)?.name ??
+      activeCLIProvider,
+  );
+  const accounts = useCliAccountsStore((state) => state.accounts);
+  const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
+  const cliAccount = activeCLIProvider
+    ? sessionAccountLabel(accounts, accountNames, activeCLIProvider, activeSession?.cliAccountDir)
+    : null;
   const composerImages = useComposerImages();
 
   const ownsRun =
@@ -242,7 +253,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
       : null;
 
   const cliStatusText = cliStatus
-    ? `Using ${cliStatus.provider_id} via CLI${cliStatus.user ? ` — ${cliStatus.user}` : ""}`
+    ? `runs on ${cliName}${cliAccount ? ` · ${cliAccount}` : cliStatus.user ? ` · ${cliStatus.user}` : ""}`
     : "";
 
   return (
@@ -413,8 +424,8 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
 
         {/* Status Banner */}
         {isCLIActive && cliStatus && (
-          <div className="mb-2 flex w-fit max-w-full items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-muted">
-            <Terminal size={13} className="shrink-0 text-primary" />
+          <div className="mb-2 flex w-fit max-w-full items-center gap-2 rounded-[5px] px-1 py-0.5 font-mono text-ui-2xs text-fg-subtle">
+            <Terminal size={12} className="shrink-0 text-fg-subtle" />
             <span className="min-w-0 flex-1 truncate" title={cliStatusText}>
               {cliStatusText}
             </span>
@@ -422,14 +433,14 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
         )}
 
         {!mcpLoaded && (
-          <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-subtle">
+          <div className="mb-2 flex w-fit items-center gap-2 rounded-[5px] px-1 py-0.5 font-mono text-ui-2xs text-fg-subtle">
             <Robot size={12} className="animate-pulse" />
             <span>Loading MCP tools...</span>
           </div>
         )}
 
         {compacting && (
-          <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-1 text-ui-xs text-fg-subtle">
+          <div className="mb-2 flex w-fit items-center gap-2 rounded-[5px] px-1 py-0.5 font-mono text-ui-2xs text-fg-subtle">
             <ArrowsInLineVertical size={12} className="animate-pulse" />
             <span>Compacting the conversation...</span>
           </div>
