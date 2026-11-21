@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Code, Plus, Pulse, Robot, X } from "@phosphor-icons/react";
 
 import { collectLeaves } from "@/features/ai/panes/layout";
@@ -5,7 +6,9 @@ import { useAgentsPanesStore } from "@/features/ai/panes/store";
 import { useSessionActivity } from "@/features/ai/notifications/useSessionActivity";
 import { useActivityStore } from "@/features/ai/activity/store";
 import { useAgentStatesStore } from "@/features/ai/state/agentStates";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { Button } from "@/shared/components/ui/button";
+import { InputDialog } from "@/shared/components/ui/input-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +22,8 @@ import { cn } from "@/shared/lib/utils";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { TAB_NAMES, type Space, type SpaceTab } from "@/shared/stores/spaces/model";
+
+import { spaceTabMenu } from "./spaceTabMenu";
 
 function nextAgentsTabName(space: Space): string {
   const count = space.tabs.filter((tab) => tab.kind === "agents").length;
@@ -36,7 +41,11 @@ interface TabButtonProps {
 function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
   const activateTab = useOpenRepositoriesStore((state) => state.activateTab);
   const closeTab = useOpenRepositoriesStore((state) => state.closeTab);
+  const renameTab = useOpenRepositoriesStore((state) => state.renameTab);
+  const addTab = useOpenRepositoriesStore((state) => state.addTab);
+  const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
   const removeTree = useAgentsPanesStore((state) => state.removeTree);
+  const [renaming, setRenaming] = useState(false);
   const shortcutId = TAB_SELECT_SHORTCUTS[index];
   const binding = useSettingsStore((state) => (shortcutId ? state.shortcuts[shortcutId] : null));
   const shortcut = binding ? formatShortcut(binding, getIsMac()) : "";
@@ -46,63 +55,87 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
     closeTab(space.id, tab.id);
     removeTree(tab.id);
   };
+  const menu = () =>
+    spaceTabMenu(space, tab, {
+      rename: () => setRenaming(true),
+      newAgentsTab: () => addTab(space.id, nextAgentsTabName(space), "agents"),
+      showCode: () => activateTabKind("code"),
+      showActivity: () => activateTabKind("activity"),
+      close: (tabId) => {
+        closeTab(space.id, tabId);
+        removeTree(tabId);
+      },
+    });
 
   return (
-    <div
-      className={cn(
-        "group relative flex h-full shrink-0 items-center transition-colors duration-(--motion-fast)",
-        active ? "text-fg-default" : "text-fg-subtle hover:text-fg-default",
-      )}
-    >
-      <Button
-        variant="ghost"
-        role="tab"
-        aria-selected={active}
-        title={shortcut ? `${tab.name} (${shortcut})` : tab.name}
-        onClick={() => activateTab(space.id, tab.id)}
-        {...(closable ? middleClickToClose(closeThisTab) : {})}
-        className="h-full gap-1.75 rounded-none px-0 text-ui-xs font-normal text-inherit hover:bg-transparent hover:text-inherit"
-      >
-        {index < TAB_SELECT_SHORTCUTS.length && (
+    <>
+      <ActionContextMenu menu={menu}>
+        <div
+          className={cn(
+            "group relative flex h-full shrink-0 items-center transition-colors duration-(--motion-fast)",
+            active ? "text-fg-default" : "text-fg-subtle hover:text-fg-default",
+          )}
+        >
+          <Button
+            variant="ghost"
+            role="tab"
+            aria-selected={active}
+            title={shortcut ? `${tab.name} (${shortcut})` : tab.name}
+            onClick={() => activateTab(space.id, tab.id)}
+            {...(closable ? middleClickToClose(closeThisTab) : {})}
+            className="h-full gap-1.75 rounded-none px-0 text-ui-xs font-normal text-inherit hover:bg-transparent hover:text-inherit"
+          >
+            {index < TAB_SELECT_SHORTCUTS.length && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-[3px] px-0.5 text-[10.5px] ring-1 transition-[background-color,color,box-shadow] duration-(--motion-base) ring-inset",
+                  waiting
+                    ? "bg-state-needs-you font-semibold text-primary-foreground shadow-[0_0_8px_var(--color-accent-glow)] ring-transparent"
+                    : active
+                      ? "text-fg-default ring-fg-default/15"
+                      : "text-fg-subtle ring-fg-default/8",
+                )}
+              >
+                {index + 1}
+              </span>
+            )}
+            {tab.name}
+            {paneCount > 0 && (
+              <span aria-hidden="true" className="text-[10.5px] text-fg-subtle">
+                {paneCount}
+              </span>
+            )}
+            {waiting && <span className="sr-only">, needs you</span>}
+          </Button>
+          {closable && (
+            <IconButton
+              icon={X}
+              size="sm"
+              label={`Close ${tab.name} tab`}
+              onClick={closeThisTab}
+              className="absolute top-1/2 left-full ml-0.5 size-5 -translate-y-1/2 rounded-[4px] text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+            />
+          )}
           <span
             aria-hidden="true"
             className={cn(
-              "inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-[3px] px-0.5 text-[10.5px] ring-1 transition-[background-color,color,box-shadow] duration-(--motion-base) ring-inset",
-              waiting
-                ? "bg-state-needs-you font-semibold text-primary-foreground shadow-[0_0_8px_var(--color-accent-glow)] ring-transparent"
-                : active
-                  ? "text-fg-default ring-fg-default/15"
-                  : "text-fg-subtle ring-fg-default/8",
+              "absolute inset-x-0 bottom-0 h-0.5 origin-center bg-accent transition-transform duration-(--motion-base) ease-(--motion-ease-out) motion-reduce:transition-none",
+              active ? "scale-x-100" : "scale-x-0",
             )}
-          >
-            {index + 1}
-          </span>
-        )}
-        {tab.name}
-        {paneCount > 0 && (
-          <span aria-hidden="true" className="text-[10.5px] text-fg-subtle">
-            {paneCount}
-          </span>
-        )}
-        {waiting && <span className="sr-only">, needs you</span>}
-      </Button>
-      {closable && (
-        <IconButton
-          icon={X}
-          size="sm"
-          label={`Close ${tab.name} tab`}
-          onClick={closeThisTab}
-          className="absolute top-1/2 left-full ml-0.5 size-5 -translate-y-1/2 rounded-[4px] text-fg-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-        />
-      )}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute inset-x-0 bottom-0 h-0.5 origin-center bg-accent transition-transform duration-(--motion-base) ease-(--motion-ease-out) motion-reduce:transition-none",
-          active ? "scale-x-100" : "scale-x-0",
-        )}
+          />
+        </div>
+      </ActionContextMenu>
+      <InputDialog
+        open={renaming}
+        onOpenChange={setRenaming}
+        title="Rename tab"
+        label="Name"
+        defaultValue={tab.name}
+        confirmLabel="Rename"
+        onConfirm={(name) => renameTab(space.id, tab.id, name)}
       />
-    </div>
+    </>
   );
 }
 

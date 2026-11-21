@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Command, Cube, Play, Terminal, TerminalWindow, X } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
+import { ActionContextMenu } from "@/shared/components/ui/action-menu";
 import { Input } from "@/shared/components/ui/input";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/shared/lib/utils";
@@ -70,65 +71,96 @@ export function TerminalTabs({ sessions, activeSessionId, panelId }: TerminalTab
           repositories.length > 1 ? terminalRepository(session, repositories) : null;
 
         return (
-          <div
+          <ActionContextMenu
             key={session.id}
-            role="tab"
-            aria-selected={isActive}
-            tabIndex={isTabStop ? 0 : -1}
-            data-active={isActive}
-            onClick={() =>
-              panelId && useTerminalStore.getState().setActiveSession(panelId, session.id)
-            }
-            onDoubleClick={() => {
-              setDraft(session.name);
-              setEditingId(session.id);
-            }}
-            {...middleClickToClose(() => void killSession(session.id))}
-            className={cn("pragma-pill-tab group cursor-default", isActive && "data-active=true")}
+            menu={() => ({
+              head: `${session.name} · ${session.type}`,
+              tone: isRunning ? "info" : "idle",
+              groups: [
+                {
+                  items: [
+                    {
+                      key: "r",
+                      label: "rename",
+                      onSelect: () => {
+                        setDraft(session.name);
+                        setEditingId(session.id);
+                      },
+                    },
+                  ],
+                },
+                {
+                  items: [
+                    {
+                      key: "x",
+                      label: "close terminal",
+                      danger: true,
+                      onSelect: () => void killSession(session.id),
+                    },
+                  ],
+                },
+              ],
+            })}
           >
-            {isRunning && <span className="size-1.5 shrink-0 rounded-full bg-status-success" />}
-            <SessionIcon size={13} className="shrink-0 text-fg-muted" />
-            {editingId === session.id ? (
-              <Input
-                autoFocus
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={() => commitRename(session)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitRename(session);
-                  if (e.key === "Escape") setEditingId(null);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="h-5 w-24 rounded-[5px] px-1 py-0"
-              />
-            ) : (
-              <span className="max-w-[140px] truncate" title="Double-click to rename">
-                {session.name}
-              </span>
-            )}
-            {repository && editingId !== session.id && (
-              <span
-                className="flex max-w-[100px] min-w-0 items-center gap-1 text-ui-2xs text-fg-subtle"
-                title={repository}
-              >
-                <RepositoryColorDot path={repository} className="size-1.5" />
-                <span className="truncate">{getWorkspaceName(repository)}</span>
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                void killSession(session.id);
+            <div
+              role="tab"
+              aria-selected={isActive}
+              tabIndex={isTabStop ? 0 : -1}
+              data-active={isActive}
+              onClick={() =>
+                panelId && useTerminalStore.getState().setActiveSession(panelId, session.id)
+              }
+              onDoubleClick={() => {
+                setDraft(session.name);
+                setEditingId(session.id);
               }}
-              className="ml-0.5 size-4 text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-              aria-label={`Close ${session.name}`}
-              tabIndex={isActive ? 0 : -1}
+              {...middleClickToClose(() => void killSession(session.id))}
+              className={cn("pragma-pill-tab group cursor-default", isActive && "data-active=true")}
             >
-              <X size={12} />
-            </Button>
-          </div>
+              {isRunning && <span className="size-1.5 shrink-0 rounded-full bg-status-success" />}
+              <SessionIcon size={13} className="shrink-0 text-fg-muted" />
+              {editingId === session.id ? (
+                <Input
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={() => commitRename(session)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename(session);
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-5 w-24 rounded-[5px] px-1 py-0"
+                />
+              ) : (
+                <span className="max-w-[140px] truncate" title="Double-click to rename">
+                  {session.name}
+                </span>
+              )}
+              {repository && editingId !== session.id && (
+                <span
+                  className="flex max-w-[100px] min-w-0 items-center gap-1 text-ui-2xs text-fg-subtle"
+                  title={repository}
+                >
+                  <RepositoryColorDot path={repository} className="size-1.5" />
+                  <span className="truncate">{getWorkspaceName(repository)}</span>
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void killSession(session.id);
+                }}
+                className="ml-0.5 size-4 text-fg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                aria-label={`Close ${session.name}`}
+                tabIndex={isActive ? 0 : -1}
+              >
+                <X size={12} />
+              </Button>
+            </div>
+          </ActionContextMenu>
         );
       })}
     </div>
