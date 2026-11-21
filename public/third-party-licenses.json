@@ -291,9 +291,9 @@
     },
     {
       "name": "ONNX Runtime",
-      "version": "1.28.2",
+      "version": "1.28.0",
       "license": "MIT",
-      "url": "https://github.com/microsoft/onnxruntime",
+      "url": "https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime",
       "source": "download"
     },
     {

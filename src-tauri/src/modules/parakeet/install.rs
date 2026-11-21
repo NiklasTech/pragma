@@ -98,34 +98,34 @@ pub struct Runtime {
     pub file_name: &'static str,
 }
 
+// The official NuGet package holds every platform's library; GitHub no longer serves the releases.
+const RUNTIME_URL: &str = "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/1.28.0/microsoft.ml.onnxruntime.1.28.0.nupkg";
+const RUNTIME_SIZE: u64 = 139_145_017;
+const RUNTIME_SHA256: &str = "769d1d3ea8ab6cd69f737c9dd4d4462aa4ad0ccfa106eaf506efc40d7bead5db";
+
 pub fn runtime() -> Option<Runtime> {
-    if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        Some(Runtime {
-            url: "https://github.com/microsoft/onnxruntime/releases/download/v1.28.2/onnxruntime-osx-arm64-1.28.2.tgz",
-            size: 32_093_967,
-            sha256: "c4fceacfc53765d0869dc9180c31ec91054d149017a99d1e80ffe28dc79596de",
-            member: "onnxruntime-osx-arm64-1.28.2/lib/libonnxruntime.1.28.2.dylib",
-            file_name: "libonnxruntime.dylib",
-        })
+    let (member, file_name) = if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        (
+            "runtimes/osx-arm64/native/libonnxruntime.dylib",
+            "libonnxruntime.dylib",
+        )
     } else if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
-        Some(Runtime {
-            url: "https://github.com/microsoft/onnxruntime/releases/download/v1.28.2/onnxruntime-win-x64-1.28.2.zip",
-            size: 78_620_837,
-            sha256: "c4eedd29489d5feca21866d054638416f3655bf6b18851b3b6b85c8313e95c35",
-            member: "onnxruntime-win-x64-1.28.2/lib/onnxruntime.dll",
-            file_name: "onnxruntime.dll",
-        })
+        ("runtimes/win-x64/native/onnxruntime.dll", "onnxruntime.dll")
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        Some(Runtime {
-            url: "https://github.com/microsoft/onnxruntime/releases/download/v1.28.2/onnxruntime-linux-x64-1.28.2.tgz",
-            size: 9_128_991,
-            sha256: "d7209b8751b27b862b0c76332c2e20e203396edb5dab700ecf4bb485cf147415",
-            member: "onnxruntime-linux-x64-1.28.2/lib/libonnxruntime.so.1.28.2",
-            file_name: "libonnxruntime.so",
-        })
+        (
+            "runtimes/linux-x64/native/libonnxruntime.so",
+            "libonnxruntime.so",
+        )
     } else {
-        None
-    }
+        return None;
+    };
+    Some(Runtime {
+        url: RUNTIME_URL,
+        size: RUNTIME_SIZE,
+        sha256: RUNTIME_SHA256,
+        member,
+        file_name,
+    })
 }
 
 pub fn model_bytes(spec: &ModelSpec) -> u64 {
@@ -264,7 +264,6 @@ pub(crate) async fn download_verified(
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
 fn extract_member(archive: &Path, member: &str, dest: &Path) -> Result<(), String> {
     let file = std::fs::File::open(archive)
         .map_err(|e| format!("Cannot open {}: {e}", archive.display()))?;
@@ -280,35 +279,6 @@ fn extract_member(archive: &Path, member: &str, dest: &Path) -> Result<(), Strin
     Ok(())
 }
 
-#[cfg(not(target_os = "windows"))]
-fn extract_member(archive: &Path, member: &str, dest: &Path) -> Result<(), String> {
-    use flate2::read::GzDecoder;
-    use tar::Archive as TarArchive;
-
-    let file = std::fs::File::open(archive)
-        .map_err(|e| format!("Cannot open {}: {e}", archive.display()))?;
-    let mut tar = TarArchive::new(GzDecoder::new(file));
-    for entry in tar
-        .entries()
-        .map_err(|e| format!("Invalid archive {}: {e}", archive.display()))?
-    {
-        let mut entry = entry.map_err(|e| format!("Cannot read archive entry: {e}"))?;
-        let is_member = entry
-            .path()
-            .map(|path| path.as_ref() == Path::new(member))
-            .unwrap_or(false);
-        if !is_member || !entry.header().entry_type().is_file() {
-            continue;
-        }
-        let mut out = std::fs::File::create(dest)
-            .map_err(|e| format!("Cannot write {}: {e}", dest.display()))?;
-        std::io::copy(&mut entry, &mut out)
-            .map_err(|e| format!("Cannot write {}: {e}", dest.display()))?;
-        return Ok(());
-    }
-    Err(format!("{member} not found in the ONNX Runtime archive"))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -322,9 +292,9 @@ mod tests {
             }
         }
         if let Some(runtime) = runtime() {
-            assert!(runtime.url.starts_with(
-                "https://github.com/microsoft/onnxruntime/releases/download/v1.28.2/"
-            ));
+            assert!(runtime
+                .url
+                .ends_with("/microsoft.ml.onnxruntime.1.28.0.nupkg"));
             assert_eq!(runtime.sha256.len(), 64);
         }
     }
@@ -341,32 +311,28 @@ mod tests {
         assert!(model("../parakeet-v3").is_err());
     }
 
-    #[cfg(not(target_os = "windows"))]
     #[test]
     fn extracts_only_the_named_member() {
+        use std::io::Write;
+
         let dir = tempfile::tempdir().unwrap();
-        let archive = dir.path().join("runtime.tgz");
+        let archive = dir.path().join("runtime.nupkg");
         {
             let file = std::fs::File::create(&archive).unwrap();
-            let encoder = flate2::write::GzEncoder::new(file, flate2::Compression::fast());
-            let mut builder = tar::Builder::new(encoder);
+            let mut zip = zip::ZipWriter::new(file);
             for (name, body) in [
-                ("pkg/README.md", "readme"),
-                ("pkg/lib/libort.so", "library"),
+                ("README.md", "readme"),
+                ("runtimes/linux-x64/native/libort.so", "library"),
             ] {
-                let mut header = tar::Header::new_gnu();
-                header.set_size(body.len() as u64);
-                header.set_mode(0o644);
-                header.set_cksum();
-                builder
-                    .append_data(&mut header, name, body.as_bytes())
+                zip.start_file(name, zip::write::SimpleFileOptions::default())
                     .unwrap();
+                zip.write_all(body.as_bytes()).unwrap();
             }
-            builder.into_inner().unwrap().finish().unwrap();
+            zip.finish().unwrap();
         }
         let dest = dir.path().join("libonnxruntime.so");
-        extract_member(&archive, "pkg/lib/libort.so", &dest).unwrap();
+        extract_member(&archive, "runtimes/linux-x64/native/libort.so", &dest).unwrap();
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "library");
-        assert!(extract_member(&archive, "pkg/lib/missing.so", &dest).is_err());
+        assert!(extract_member(&archive, "runtimes/linux-x64/native/missing.so", &dest).is_err());
     }
 }

@@ -162,7 +162,8 @@ export function VoiceSettings() {
       {engine === "web-speech" ? (
         <p className="py-2.5 text-ui-xs text-fg-muted">
           Uses the speech recognition built into the system web view. Depending on the system, the
-          audio may be sent to its provider, for example Apple, for transcription.
+          audio may be sent to its provider, for example Apple on macOS or Microsoft on Windows, for
+          transcription.
         </p>
       ) : engine === "parakeet" ? (
         <p className="py-2.5 text-ui-xs text-fg-muted">

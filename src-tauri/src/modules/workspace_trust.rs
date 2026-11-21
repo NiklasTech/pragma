@@ -122,9 +122,20 @@ fn trustable_parent(root: &Path, home: Option<&Path>) -> Option<PathBuf> {
     Some(parent.to_path_buf())
 }
 
+/// The path as people write it: canonical Windows paths start with `\\?\`.
+fn shown(path: &Path) -> String {
+    let text = path.display().to_string();
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{rest}");
+    }
+    text.strip_prefix(r"\\?\")
+        .map(str::to_string)
+        .unwrap_or(text)
+}
+
 fn prompt_message(root: &Path, content: &TrustContent, parent: Option<&Path>) -> String {
     let mut lines = vec![
-        root.display().to_string(),
+        shown(root),
         "In a trusted folder Pragma runs the folder's extensions, worktree scripts, language servers, run configurations and debugger, and the agent may run the commands its .pragma/settings.json allows without asking. In a folder you don't trust, Pragma opens the files but runs none of this.".to_string(),
     ];
     if !content.extensions.is_empty() {
@@ -136,7 +147,7 @@ fn prompt_message(root: &Path, content: &TrustContent, parent: Option<&Path>) ->
     if let Some(parent) = parent {
         lines.push(format!(
             "{TRUST_PARENT} trusts every folder in {}.",
-            parent.display()
+            shown(parent)
         ));
     }
     lines.join("\n\n")
@@ -315,6 +326,13 @@ mod tests {
             None
         );
         assert_eq!(trustable_parent(Path::new("/app"), Some(home)), None);
+    }
+
+    #[test]
+    fn shows_windows_paths_without_the_verbatim_prefix() {
+        assert_eq!(shown(Path::new(r"\\?\C:\code\app")), r"C:\code\app");
+        assert_eq!(shown(Path::new(r"\\?\UNC\server\share")), r"\\server\share");
+        assert_eq!(shown(Path::new("/Users/me/app")), "/Users/me/app");
     }
 
     #[test]
