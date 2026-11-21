@@ -128,7 +128,8 @@ export function SpaceDetails({ space, active, onOpen, onDone }: SpaceDetailsProp
             <Button
               key={tab.id}
               variant="ghost"
-              className="h-auto flex-col items-start gap-0.5 px-3 py-2.5 text-left font-normal ring-1 ring-border-subtle ring-inset"
+              title={tab.name}
+              className="h-auto min-w-0 flex-col items-start gap-0.5 px-3 py-2.5 text-left font-normal ring-1 ring-border-subtle ring-inset"
               onClick={() => {
                 void onOpen().then(() => {
                   activateTab(space.id, tab.id);
@@ -136,7 +137,7 @@ export function SpaceDetails({ space, active, onOpen, onDone }: SpaceDetailsProp
                 });
               }}
             >
-              <span className="text-ui-sm text-fg-default">{tab.name}</span>
+              <span className="max-w-full truncate text-ui-sm text-fg-default">{tab.name}</span>
               <span className="text-ui-xs text-fg-subtle">
                 {tab.kind === "code"
                   ? "editor"
@@ -155,7 +156,7 @@ export function SpaceDetails({ space, active, onOpen, onDone }: SpaceDetailsProp
           <Button
             key={preset.id}
             variant="ghost"
-            className="h-auto justify-start gap-2 px-3 py-2.5 text-left font-normal ring-1 ring-border-subtle ring-inset"
+            className="h-auto min-w-0 justify-start gap-2 px-3 py-2.5 text-left font-normal ring-1 ring-border-subtle ring-inset"
             onClick={() => {
               void onOpen().then(() => {
                 void openLayoutPreset(folder, preset);
