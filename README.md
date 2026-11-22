@@ -320,11 +320,18 @@ A local build keeps the version from `package.json`. Once a newer release exists
 
 Prefer to watch first? The [walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit. It was recorded with Pragma 0.7, before the current design.
 
-1. Start Pragma and complete the onboarding.
-2. Choose a theme and connect an AI provider, either with an API key or by signing in to a coding CLI.
+1. Start Pragma and complete the onboarding. It is one page: pick a look, sign in to the coding CLIs you use and open a project.
+2. Choose a theme and connect an AI provider, either by signing in to a coding CLI or with an API key.
 3. Open a project folder. On macOS you can also run `pragma .` in a terminal after `pnpm run install:local`, see [Install a local build](#install-a-local-build-macos).
 4. In the **Agents** tab, describe a task on the start card, pick one or more agents and press **Start**.
 5. Review what the agents changed, or switch to the **Code** tab with `Cmd/Ctrl + 2` to work on the code yourself.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/onboarding-dark.webp">
+    <img src=".github/assets/readme/onboarding-light.webp" alt="The Pragma onboarding: Agents and code in one window, with a Set up Pragma button" width="720">
+  </picture>
+</p>
 
 Useful default shortcuts (`Cmd` on macOS, `Ctrl` on Windows and Linux):
 
@@ -350,10 +357,8 @@ Everything is configured in the settings panel (`Cmd/Ctrl + ,`). Settings can be
 
 ### AI providers
 
-In **Settings > Agents** you can:
-
-- Save an API key for a built-in provider. Keys are stored in the OS keychain.
-- Install and sign in to a coding CLI, add account folders for more accounts and choose the default agent. The CLI then runs your sessions with your existing subscription.
+- In **Settings > Agents** you install and sign in to a coding CLI, add account folders for more accounts and choose the default agent. The CLI then runs your sessions with your existing subscription.
+- In **Settings > Editor > Models** you save an API key for a built-in provider. It powers the AI features of the editor, such as inline completion and the AI chat. Keys are stored in the OS keychain and are never handed to a CLI.
 
 ### MCP servers
 
