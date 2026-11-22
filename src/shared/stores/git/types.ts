@@ -23,6 +23,8 @@ export interface GitStatusSnapshot {
   changed_files: GitStatusEntry[];
   ahead: number;
   behind: number;
+  /** Untracked files left out of `changed_files` once there are too many to list. */
+  untracked_omitted: number;
 }
 
 export interface GitBranch {

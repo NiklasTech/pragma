@@ -32,6 +32,8 @@ pub struct GitStatusSnapshot {
     pub changed_files: Vec<GitStatusEntry>,
     pub ahead: u32,
     pub behind: u32,
+    /// Untracked files left out of `changed_files` once there are too many to list.
+    pub untracked_omitted: usize,
 }
 
 #[derive(Serialize)]

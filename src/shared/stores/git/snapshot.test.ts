@@ -17,6 +17,7 @@ function snapshot(paths: string[], branch = "main"): GitStatusSnapshot {
     })),
     ahead: 0,
     behind: 0,
+    untracked_omitted: 0,
   };
 }
 

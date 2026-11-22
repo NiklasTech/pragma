@@ -12,6 +12,7 @@ vi.mock("@tauri-apps/api/core", () => ({
           changed_files: [],
           ahead: 0,
           behind: 0,
+          untracked_omitted: 0,
         },
       };
     }

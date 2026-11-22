@@ -18,6 +18,7 @@ function snapshot(branch: string, files: number): GitStatusSnapshot {
     })),
     ahead: 0,
     behind: 0,
+    untracked_omitted: 0,
   };
 }
 

@@ -1,4 +1,4 @@
-import { Spinner, Warning } from "@phosphor-icons/react";
+import { FolderSimpleDashed, Spinner, Warning } from "@phosphor-icons/react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 
 export function GitErrorAlert({ error }: { error: string }) {
@@ -17,5 +17,19 @@ export function ActionStatusBanner({ status }: { status: string }) {
       <Spinner size={10} className="animate-spin" />
       <span className="max-w-[180px] truncate">{status}</span>
     </div>
+  );
+}
+
+/// Shown when a folder full of untracked files, such as build output, was left out of the list.
+export function UntrackedOmittedBanner({ count }: { count: number }) {
+  return (
+    <Alert className="m-2 mb-0">
+      <FolderSimpleDashed size={16} />
+      <AlertTitle>{count.toLocaleString("en-US")} more untracked files not listed</AlertTitle>
+      <AlertDescription className="text-ui-sm">
+        Stage all leaves them out. Build output or dependencies? Add the folder to .gitignore and
+        Git stays fast.
+      </AlertDescription>
+    </Alert>
   );
 }
