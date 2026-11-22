@@ -172,10 +172,6 @@ export interface Theme {
 
 export type ThemeInput = Omit<Theme, "format"> & { format?: string };
 
-export interface ResolvedTheme extends Theme {
-  tokens: ThemeTokens;
-}
-
 /** Base colors a theme file can give instead of every token. */
 export interface ThemePalette {
   background: string;

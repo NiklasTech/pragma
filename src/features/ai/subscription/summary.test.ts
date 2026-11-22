@@ -7,7 +7,6 @@ import {
   combineByProvider,
   currentWindows,
   formatResetIn,
-  formatUpdatedAgo,
   isStale,
   sessionCliProvider,
   sessionTokens,
@@ -95,11 +94,9 @@ describe("isStale", () => {
 });
 
 describe("formatting", () => {
-  it("formats the reset and update times", () => {
+  it("formats the reset time", () => {
     expect(formatResetIn(NOW + 4_800_000, NOW)).toBe("resets in 1h 20m");
     expect(formatResetIn(null, NOW)).toBeNull();
-    expect(formatUpdatedAgo(NOW - 120_000, NOW)).toBe("Updated 2m ago");
-    expect(formatUpdatedAgo(null, NOW)).toBe("Not loaded yet");
   });
 
   it("raises the level near the limit", () => {

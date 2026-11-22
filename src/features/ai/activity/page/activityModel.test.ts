@@ -7,7 +7,6 @@ import {
   activitySections,
   filledCells,
   formatMoment,
-  lastTerminalLine,
   lastTerminalLines,
   matchesFilter,
   mostRoomKey,
@@ -86,14 +85,6 @@ describe("filledCells", () => {
     expect(filledCells(34)).toBe(7);
     expect(filledCells(0)).toBe(0);
     expect(filledCells(140)).toBe(20);
-  });
-});
-
-describe("lastTerminalLine", () => {
-  it("shows the last printed line without colors or overwritten progress", () => {
-    const buffer = "\u001b[32mok\u001b[0m\r\nbuilding 10%\rbuilding 100%\r\n\r\n";
-    expect(lastTerminalLine(buffer)).toBe("building 100%");
-    expect(lastTerminalLine("")).toBe("");
   });
 });
 
