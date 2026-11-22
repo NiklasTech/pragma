@@ -82,34 +82,55 @@ export function teamTitles(baseTitles: readonly string[]): string[] {
   });
 }
 
+/** One terminal of a start: its CLI, its account and, when it has one, its own task. */
+export interface TerminalStart {
+  manifest: CLIManifest;
+  accountDir?: string;
+  task?: GroupTask;
+}
+
 /// Starts the terminals of several CLIs one after another and shows exactly them in the grid.
-export async function launchTeam(
+export function launchTeam(
   rootPath: string,
   members: readonly TeamLaunch[],
   mode: GroupEnvironment,
   task?: GroupTask,
 ): Promise<void> {
-  const starts = members
-    .flatMap((member) =>
-      Array.from({ length: Math.max(Math.round(member.count), 0) }, () => member),
-    )
-    .slice(0, MAX_PANES);
-  if (starts.length === 0 && members[0]) starts.push(members[0]);
+  const starts = members.flatMap((member) =>
+    Array.from({ length: Math.max(Math.round(member.count), 0) }, () => ({
+      manifest: member.manifest,
+      accountDir: member.accountDir,
+      task,
+    })),
+  );
+  if (starts.length === 0 && members[0]) {
+    starts.push({ manifest: members[0].manifest, accountDir: members[0].accountDir, task });
+  }
+  return launchStarts(rootPath, starts, mode);
+}
+
+/// Starts each terminal with its own task, one after another, and shows exactly them in the grid.
+export async function launchStarts(
+  rootPath: string,
+  requested: readonly TerminalStart[],
+  mode: GroupEnvironment,
+): Promise<void> {
+  const starts = requested.slice(0, MAX_PANES);
   // Starts take a while in worktrees; the grid belongs to the tab the start came from.
   const startTab = frontAgentsTab(rootPath);
   const titles = teamTitles(
-    starts.map((member) => task?.title ?? terminalSessionTitle(member.manifest.name)),
+    starts.map((start) => start.task?.title ?? terminalSessionTitle(start.manifest.name)),
   );
   const sessions: ChatSession[] = [];
-  for (const [index, member] of starts.entries()) {
-    const session = await createTerminalSession(rootPath, member.manifest, {
+  for (const [index, start] of starts.entries()) {
+    const session = await createTerminalSession(rootPath, start.manifest, {
       activate: false,
       title: titles[index],
       environment: groupEnvironmentRequest(mode, sessions[0]),
-      accountDir: member.accountDir,
+      accountDir: start.accountDir,
     });
     sessions.push(session);
-    if (task) deliverTerminalPrompt(session.id, task.prompt);
+    if (start.task) deliverTerminalPrompt(session.id, start.task.prompt);
   }
   const sessionIds = sessions.map((session) => session.id);
   const target = startTab && tabStillOpen(rootPath, startTab) ? startTab : undefined;

@@ -1,47 +1,39 @@
 import { MAX_PANES } from "../panes/operations";
 import { sameAgent, type QuickChoice } from "../quickStart/quickChoices";
 
-type CliAgent = QuickChoice["agent"];
+export type CliAgent = QuickChoice["agent"];
 
-/** One agent of a start and how many of it run. */
-export interface TeamMember {
-  agent: CliAgent;
-  count: number;
+/** A plain click: only this agent takes the tasks. */
+export function pickOnly(agent: CliAgent): CliAgent[] {
+  return [agent];
 }
 
-export function teamTotal(team: readonly TeamMember[]): number {
-  return team.reduce((total, member) => total + member.count, 0);
-}
-
-export function memberCount(team: readonly TeamMember[], agent: CliAgent): number | null {
-  return team.find((member) => sameAgent(member.agent, agent))?.count ?? null;
-}
-
-/** A plain click: only this agent, keeping its count, or the count of the one it replaces. */
-export function pickOnly(team: readonly TeamMember[], agent: CliAgent): TeamMember[] {
-  const count = memberCount(team, agent) ?? (team.length === 1 ? team[0].count : 1);
-  return [{ agent, count }];
-}
-
-/** A ⌘-click: adds the agent once, or takes it out while others stay. */
-export function toggleMember(team: readonly TeamMember[], agent: CliAgent): TeamMember[] {
-  if (memberCount(team, agent) !== null) {
-    return team.length > 1 ? team.filter((member) => !sameAgent(member.agent, agent)) : [...team];
+/** A ⌘-click: adds the agent to the ones the tasks are spread over, or takes it out while others stay. */
+export function togglePoolAgent(pool: readonly CliAgent[], agent: CliAgent): CliAgent[] {
+  if (pool.some((member) => sameAgent(member, agent))) {
+    return pool.length > 1 ? pool.filter((member) => !sameAgent(member, agent)) : [...pool];
   }
-  return teamTotal(team) < MAX_PANES ? [...team, { agent, count: 1 }] : [...team];
+  return pool.length < MAX_PANES ? [...pool, agent] : [...pool];
 }
 
-/** Sets one agent's count within the panes a tab holds; zero takes it out unless it is the last. */
-export function setMemberCount(
-  team: readonly TeamMember[],
-  agent: CliAgent,
-  count: number,
-): TeamMember[] {
-  const others = team.filter((member) => !sameAgent(member.agent, agent));
-  if (count <= 0 && others.length > 0) return others;
-  const room = MAX_PANES - teamTotal(others);
-  const clamped = Math.min(Math.max(Math.round(count), 1), room);
-  return team.map((member) =>
-    sameAgent(member.agent, agent) ? { ...member, count: clamped } : member,
+/** The tasks of a start, one per line, at most as many as a tab holds panes. */
+export function splitTasks(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, MAX_PANES);
+}
+
+/** Who runs each task: the agent picked for it, else the pool in turn, so every account gets work. */
+export function assignTasks(
+  taskCount: number,
+  pool: readonly CliAgent[],
+  picked: Readonly<Record<number, CliAgent>>,
+): CliAgent[] {
+  if (pool.length === 0) return [];
+  return Array.from(
+    { length: taskCount },
+    (_, index) => picked[index] ?? pool[index % pool.length],
   );
 }

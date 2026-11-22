@@ -25,7 +25,7 @@ export function startPlacement({
   noGit,
   single,
 }: StartPlacementInput): StartPlacement {
-  // Several agents on one task would edit the same files, so each gets a worktree unless the project says otherwise.
+  // Agents started together would edit the same files, so each gets a worktree unless the project says otherwise.
   const groupMode: GroupEnvironment = setting === "checkout" || noGit ? "checkout" : "isolated";
   if (several) {
     if (groupMode === "isolated") return { groupMode, label: "each in its own worktree" };

@@ -29,19 +29,20 @@ import { isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
 import { startPlacement } from "../home/startPlacement";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
 import {
+  assignTasks,
   pickOnly,
-  setMemberCount,
-  teamTotal,
-  toggleMember,
-  type TeamMember,
+  splitTasks,
+  togglePoolAgent,
+  type CliAgent,
 } from "../home/agentTeam";
-import { createTerminalSession, launchTeam } from "../panes/launch";
+import { createTerminalSession, launchStarts, type TerminalStart } from "../panes/launch";
 import { useAgentsPanesStore } from "../panes/store";
 import { quickChoices } from "../quickStart/quickChoices";
 import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
 import { AgentTeamPicker } from "./AgentTeamPicker";
 import { ChatToolbar } from "./ChatToolbar";
+import { TaskAssignments } from "./TaskAssignments";
 
 const CARD =
   "h-auto flex-col items-stretch gap-1.5 rounded-[12px] px-3.5 py-3 text-left text-ui-sm font-normal text-fg-default ring-1 ring-border-subtle ring-inset hover:bg-transparent hover:ring-border";
@@ -93,7 +94,8 @@ export function AgentsHome() {
 
   const [prompt, setPrompt] = useState("");
   const [pragmaPicked, setPragmaPicked] = useState(false);
-  const [picked, setPicked] = useState<TeamMember[] | null>(null);
+  const [picked, setPicked] = useState<CliAgent[] | null>(null);
+  const [assigned, setAssigned] = useState<Record<number, CliAgent>>({});
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -109,12 +111,15 @@ export function AgentsHome() {
     () => quickChoices(ready, accounts, accountNames),
     [ready, accounts, accountNames],
   );
-  const team: TeamMember[] = picked ?? (choices[0] ? [{ agent: choices[0].agent, count: 1 }] : []);
-  const pragma = pragmaPicked || team.length === 0;
-  const total = teamTotal(team);
+  const pool: CliAgent[] = picked ?? (choices[0] ? [choices[0].agent] : []);
+  const pragma = pragmaPicked || pool.length === 0;
+  const tasks = pragma ? [] : splitTasks(prompt);
+  const taskAgents = assignTasks(tasks.length, pool, assigned);
+  // One task per line, each to its own agent; without a task every picked agent opens empty.
+  const total = tasks.length > 1 ? tasks.length : tasks.length === 0 ? pool.length : 1;
   const name = getWorkspaceName(rootPath);
   const several = !pragma && total > 1;
-  // Several agents on one task would edit the same files, so each gets a worktree unless the project says otherwise.
+  // Agents started together would edit the same files, so each gets a worktree unless the project says otherwise.
   const { groupMode, label: where } = startPlacement({
     several,
     setting,
@@ -143,20 +148,28 @@ export function AgentsHome() {
         });
         openSession(rootPath, session.id);
       } else {
+        const manifestOf = (agent: CliAgent) => ready.find((item) => item.id === agent.manifestId);
         if (several) {
-          const task = text ? { title: taskTabTitle(text), prompt: text } : undefined;
-          const members = team.flatMap((member) => {
-            const manifest = ready.find((item) => item.id === member.agent.manifestId);
-            return manifest
-              ? [{ manifest, accountDir: member.agent.accountDir, count: member.count }]
-              : [];
-          });
-          await launchTeam(rootPath, members, groupMode, task);
+          const starts: TerminalStart[] =
+            tasks.length > 1
+              ? tasks.flatMap((task, index) => {
+                  const agent = taskAgents[index];
+                  const manifest = agent ? manifestOf(agent) : undefined;
+                  if (!agent || !manifest) return [];
+                  const startTask = { title: taskTabTitle(task), prompt: task };
+                  return [{ manifest, accountDir: agent.accountDir, task: startTask }];
+                })
+              : pool.flatMap((agent) => {
+                  const manifest = manifestOf(agent);
+                  return manifest ? [{ manifest, accountDir: agent.accountDir }] : [];
+                });
+          await launchStarts(rootPath, starts, groupMode);
           setPrompt("");
+          setAssigned({});
           return;
         }
-        const agent = team[0].agent;
-        const manifest = ready.find((item) => item.id === agent.manifestId);
+        const agent = taskAgents[0] ?? pool[0];
+        const manifest = manifestOf(agent);
         if (!manifest) return;
         const session = await createTerminalSession(rootPath, manifest, {
           title: text ? taskTabTitle(text) : undefined,
@@ -225,24 +238,37 @@ export function AgentsHome() {
             }}
             rows={1}
             aria-label="Task for the agent"
-            placeholder={name ? `What should happen in ${name}?` : "Open a folder to start"}
+            placeholder={
+              name ? `What should happen in ${name}? One task per line.` : "Open a folder to start"
+            }
             disabled={!rootPath}
             className="min-h-0 resize-none bg-transparent px-0 py-0.5 text-ui-lg ring-0 hover:ring-0 focus-visible:ring-0"
           />
+          {tasks.length > 1 && (
+            <TaskAssignments
+              tasks={tasks}
+              agents={taskAgents}
+              choices={choices}
+              onAssign={(index, agent) =>
+                setAssigned((current) => ({ ...current, [index]: agent }))
+              }
+            />
+          )}
           <div className="flex flex-wrap items-center gap-1.5">
             <AgentTeamPicker
               choices={choices}
-              team={team}
+              pool={pool}
               pragma={pragma}
               onPickOnly={(agent) => {
                 setPragmaPicked(false);
-                setPicked(pickOnly(pragma ? [] : team, agent));
+                setAssigned({});
+                setPicked(pickOnly(agent));
               }}
               onToggle={(agent) => {
                 setPragmaPicked(false);
-                setPicked(pragma ? pickOnly([], agent) : toggleMember(team, agent));
+                setAssigned({});
+                setPicked(pragma ? pickOnly(agent) : togglePoolAgent(pool, agent));
               }}
-              onCount={(agent, count) => setPicked(setMemberCount(team, agent, count))}
               onPickPragma={() => setPragmaPicked(true)}
             />
             {pragma && rootPath && <ChatToolbar />}
