@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEditorStore } from "@/shared/stores/editor";
@@ -13,7 +13,7 @@ import { useFileExplorer } from "@/shared/hooks/useFileExplorer";
 import { getIsMac, SHORTCUT_ACTIONS, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { menuAccelerators } from "@/shared/lib/menuAccelerators";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
-import { wrapWithGuard, type NativeMenuPayload } from "@/shared/lib/menuAction";
+import { setMenuDispatcher, wrapWithGuard, type NativeMenuPayload } from "@/shared/lib/menuAction";
 import type { ShortcutActions } from "@/shared/hooks/useGlobalShortcuts";
 
 const MENU_EVENT = "pragma:menu";
@@ -54,12 +54,8 @@ export function useNativeAppMenu(actions: ShortcutActions): void {
     void invoke("macos_menu_set_shortcuts", { shortcuts: menuAccelerators(shortcuts) });
   }, [isMac, shortcuts]);
 
-  useEffect(() => {
-    if (!isMac) return;
-
-    const unlisten = listen<NativeMenuPayload>(MENU_EVENT, (event) => {
-      const { action, path } = event.payload;
-
+  const dispatch = useCallback(
+    ({ action, path }: NativeMenuPayload) => {
       if (action === "file.openRecent") {
         if (path) void selectRoot(path);
         return;
@@ -82,12 +78,23 @@ export function useNativeAppMenu(actions: ShortcutActions): void {
       }
       if (!isShortcutActionId(action)) return;
       actions[action]?.();
-    });
+    },
+    [actions, selectRoot],
+  );
 
+  useEffect(() => {
+    if (isMac) return;
+    setMenuDispatcher(dispatch);
+    return () => setMenuDispatcher(null);
+  }, [isMac, dispatch]);
+
+  useEffect(() => {
+    if (!isMac) return;
+    const unlisten = listen<NativeMenuPayload>(MENU_EVENT, (event) => dispatch(event.payload));
     return () => {
       unlisten.then(unlistenQuietly).catch(() => {});
     };
-  }, [isMac, actions, selectRoot]);
+  }, [isMac, dispatch]);
 
   useEffect(() => {
     if (!isMac) return;

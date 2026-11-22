@@ -516,6 +516,10 @@ export function getIsMac(): boolean {
   return typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 }
 
+export function getIsWindows(): boolean {
+  return typeof navigator !== "undefined" && /Windows/.test(navigator.userAgent);
+}
+
 export function getDefaultShortcuts(isMac: boolean): ShortcutMap {
   const map = {} as Record<ShortcutActionId, ShortcutBinding | null>;
   for (const action of SHORTCUT_ACTIONS) {

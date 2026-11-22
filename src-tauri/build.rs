@@ -279,6 +279,7 @@ const COMMANDS: &[&str] = &[
     "update_window_folder",
     "voice_input_available",
     "voice_system_memory",
+    "window_button_layout",
     "workspace_load",
     "workspace_save",
     "workspace_settings_load",
