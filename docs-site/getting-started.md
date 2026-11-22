@@ -33,6 +33,11 @@ Windows may show a SmartScreen warning, and macOS may ask you to confirm the fir
 
 ## The first start
 
+<figure class="screen">
+  <img class="light-only" src="/screens/onboarding-light.webp" alt="The welcome screen of Pragma with the Set up Pragma button">
+  <img class="dark-only" src="/screens/onboarding-dark.webp" alt="The welcome screen of Pragma with the Set up Pragma button">
+</figure>
+
 Pragma opens with a short welcome. **Set up Pragma** leads to the setup page, **I know my way around** skips it. The setup is one page with four sections, and you can change everything later in the settings:
 
 | Section   | What you do                                                                                           |

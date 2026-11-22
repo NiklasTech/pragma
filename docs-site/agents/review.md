@@ -2,6 +2,10 @@
 
 The review shows what an agent changed, part by part. You keep or undo each part, comment on lines, and then commit the result or send your comments back to the agent.
 
+<figure class="screen">
+  <img src="/screens/review.webp" alt="The review with a diff, a review comment and the buttons to send feedback or commit and open a pull request">
+</figure>
+
 ## Open a review
 
 - Right-click an agent in the rail or a pane header and choose **review changes**, or press `v` while the menu is open. This works for agents in a [worktree](./worktrees.md).

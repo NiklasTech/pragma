@@ -2,6 +2,10 @@
 
 The code tab is a complete editor built on CodeMirror 6. It shares the project, the terminal and the AI accounts with the agents tabs, so you can take over from an agent at any time. `Cmd/Ctrl + Shift + E` switches between the agents tab you used last and the code tab.
 
+<figure class="screen">
+  <img src="/screens/code.webp" alt="The code tab with the file tree, a TypeScript file and a terminal">
+</figure>
+
 ## Files and tabs
 
 - **Files** in the sidebar is the file tree of the project. Right-click a file for actions such as rename, delete, **file history** and **local history**.

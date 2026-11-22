@@ -2,6 +2,10 @@
 
 The start card of an agents tab gives each task to its own agent. If you pay for two Claude Code plans, or for Claude Code and Codex, every plan gets work at the same time.
 
+<figure class="screen">
+  <img src="/screens/start.webp" alt="The start card with three tasks, one line each, handed to two Claude Code accounts and Grok Build">
+</figure>
+
 ## One task per line
 
 Write each task on its own line. With more than one line, Pragma lists the tasks under the field and shows which agent takes which task. **Start** then reads **Start 3** for three tasks, and `Cmd/Ctrl + Enter` starts them all.

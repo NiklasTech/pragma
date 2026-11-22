@@ -7,7 +7,7 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   head: [
-    ["meta", { name: "theme-color", content: "#101114" }],
+    ["meta", { name: "theme-color", content: "#0e0f11" }],
     ["link", { rel: "icon", type: "image/svg+xml", href: "/pragma/favicon.svg" }],
   ],
   themeConfig: {

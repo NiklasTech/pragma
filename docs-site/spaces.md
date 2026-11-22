@@ -2,6 +2,10 @@
 
 Every project folder you open becomes a space. A space keeps its own tabs, agent panes, saved layouts and agent worktrees. Agents keep running when you switch to another space, and the status pill in the strip still counts them.
 
+<figure class="screen">
+  <img src="/screens/spaces.webp" alt="The spaces overview with the worktrees of three agents, the tabs and the saved layouts of a project">
+</figure>
+
 ## Open and switch spaces
 
 Click the space name at the left of the strip to open the spaces overview. The left column lists every open space with its number of agents and tabs and a dot for its state. Select a space to see its details, and click a tab or a worktree there to go to it.

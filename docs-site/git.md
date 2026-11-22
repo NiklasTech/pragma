@@ -32,6 +32,10 @@ With the GitHub CLI (`gh`) installed and signed in, **Create pull request** open
 
 ## History
 
+<figure class="screen">
+  <img src="/screens/history.webp" alt="Git history with the commit graph and the details of a commit">
+</figure>
+
 **History** (`Cmd/Ctrl + Shift + H`) shows the commit graph of the branch with messages, pull request numbers, tags, authors and times. The unmerged branches of your agents are listed on top. **Search commits** filters the list and **fetch** loads new commits from the remote.
 
 Select a commit to see its message, author, pull request and changed files. From there:
