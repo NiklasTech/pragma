@@ -27,17 +27,21 @@ export interface OverviewInput {
   spaces: readonly Space[];
   /** Sessions whose coding CLI terminal is running. */
   liveTerminals: ReadonlySet<string>;
+  /** Sessions open in a pane of some tab; after a restart their CLI starts once the tab shows. */
+  openSessions: ReadonlySet<string>;
   now: number;
 }
 
 function belongs(session: ChatSession, input: OverviewInput): boolean {
   if (session.archived || isShellSession(session)) return false;
   if (input.entries[session.id]) return true;
-  if (session.kind === "terminal") return input.liveTerminals.has(session.id);
+  if (session.kind === "terminal") {
+    return input.liveTerminals.has(session.id) || input.openSessions.has(session.id);
+  }
   return session.messages.length > 0 && input.now - session.updatedAt < RECENT_MS;
 }
 
-/** Every agent session worth showing: those with a state, live CLIs and recently used chats. */
+/** Every agent session worth showing: those with a state, live or open CLIs and recent chats. */
 export function overviewTiles(input: OverviewInput): OverviewTile[] {
   return input.sessions
     .filter((session) => belongs(session, input))

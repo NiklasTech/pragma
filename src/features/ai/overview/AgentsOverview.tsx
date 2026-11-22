@@ -20,6 +20,8 @@ import type { Space } from "@/shared/stores/spaces/model";
 
 import { focusAttentionSession } from "../notifications/focusSession";
 import { useAgentStatesStore } from "../state/agentStates";
+import { collectLeaves } from "../panes/layout";
+import { useAgentsPanesStore } from "../panes/store";
 import { getTerminalEntryStatus } from "../terminal/runner";
 import {
   countByState,
@@ -140,6 +142,18 @@ function OverviewBody({ onClose }: { onClose: () => void }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  // A string key keeps the store selector stable while panes move around.
+  const openKey = useAgentsPanesStore((state) =>
+    [
+      ...new Set(
+        Object.values(state.trees).flatMap((tree) =>
+          collectLeaves(tree.root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])),
+        ),
+      ),
+    ]
+      .sort()
+      .join(","),
+  );
   const liveKey = sessions
     .filter((session) => session.kind === "terminal")
     .filter((session) => getTerminalEntryStatus(session.id) === "running")
@@ -152,9 +166,10 @@ function OverviewBody({ onClose }: { onClose: () => void }) {
         entries,
         spaces,
         liveTerminals: new Set(liveKey.split(",")),
+        openSessions: new Set(openKey.split(",")),
         now: Date.now(),
       }),
-    [sessions, entries, spaces, liveKey],
+    [sessions, entries, spaces, liveKey, openKey],
   );
   const counts = countByState(spaceId ? filterTiles(tiles, { filter: "all", spaceId }) : tiles);
   const shown = filterTiles(tiles, { filter, spaceId });

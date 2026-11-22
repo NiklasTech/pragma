@@ -38,6 +38,7 @@ const input = (extra: Partial<OverviewInput>): OverviewInput => ({
   entries: {},
   spaces: [space("s1", "/repo"), space("s2", "/other")],
   liveTerminals: new Set(),
+  openSessions: new Set(),
   now: NOW,
   ...extra,
 });
@@ -72,6 +73,20 @@ describe("overviewTiles", () => {
       ["chat", "idle"],
     ]);
     expect(tiles[0].spaceId).toBe("s1");
+  });
+
+  it("keeps a CLI that sits in a pane before its terminal has started", () => {
+    const tiles = overviewTiles(
+      input({
+        sessions: [
+          session("open-cli", { kind: "terminal", cliProviderId: "anthropic-claude" }),
+          session("closed-cli", { kind: "terminal", cliProviderId: "anthropic-claude" }),
+          session("open-shell", { kind: "terminal", cliProviderId: "shell" }),
+        ],
+        openSessions: new Set(["open-cli", "open-shell"]),
+      }),
+    );
+    expect(tiles.map((tile) => [tile.session.id, tile.state])).toEqual([["open-cli", "idle"]]);
   });
 
   it("orders by urgency, the oldest question first", () => {
