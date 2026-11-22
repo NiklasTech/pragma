@@ -27,7 +27,7 @@ import type { ApiKeySaveStatus, ConnectionTestStatus } from "./ai/types";
 import { ChatContextSettings } from "./ChatContextSettings";
 import { ProjectRulesSettings } from "./ProjectRulesSettings";
 
-function isProviderConfigured(
+export function isProviderConfigured(
   provider: AIProvider,
   config: { baseUrl?: string; model: string },
   apiKeyRef: string | null,
