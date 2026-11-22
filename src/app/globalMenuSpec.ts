@@ -21,6 +21,8 @@ interface MenuInput {
     canFormatDocument: boolean;
   };
   terminalSuggestion: boolean;
+  /** The right-click landed on an editor terminal, which can clear, find and copy its output. */
+  editorTerminal: boolean;
   actions: {
     editWithAI: () => void;
     goToDefinition: () => void;
@@ -34,6 +36,8 @@ interface MenuInput {
     selectAll: () => void;
     quote: () => void;
     clearTerminal: () => void;
+    findInTerminal: () => void;
+    copyTerminalOutput: () => void;
     acceptSuggestion: () => void;
     dismissSuggestion: () => void;
   };
@@ -180,7 +184,25 @@ export function buildMenu(input: MenuInput): ActionMenuSpec {
             },
           ],
         },
-        { items: [{ key: "k", label: "clear", onSelect: actions.clearTerminal }] },
+        {
+          items: input.editorTerminal
+            ? [
+                {
+                  key: "f",
+                  label: "find",
+                  shortcut: menuShortcut(["mod"], "F"),
+                  onSelect: actions.findInTerminal,
+                },
+                { key: "o", label: "copy all output", onSelect: actions.copyTerminalOutput },
+                {
+                  key: "k",
+                  label: "clear",
+                  shortcut: menuShortcut(["mod"], "K"),
+                  onSelect: actions.clearTerminal,
+                },
+              ]
+            : [],
+        },
       ],
     };
   }

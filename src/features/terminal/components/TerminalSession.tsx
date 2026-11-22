@@ -139,6 +139,7 @@ export function TerminalSession({ session, isActive }: TerminalSessionProps) {
     <div
       ref={rootRef}
       data-terminal-find
+      data-terminal-session={session.id}
       className="relative h-full w-full bg-terminal-bg py-2 pr-2"
       style={{ display: isActive ? "block" : "none" }}
       {...drop.handlers}

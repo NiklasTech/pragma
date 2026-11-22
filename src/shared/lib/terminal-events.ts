@@ -55,3 +55,10 @@ export function dispatchTerminalFind(sessionId?: string): void {
     new CustomEvent(TERMINAL_FIND_EVENT, { detail: sessionId ? { sessionId } : undefined }),
   );
 }
+
+/** The editor terminal session under a right-click, from the attribute its root carries. */
+export function terminalSessionAt(target: EventTarget | null): string | null {
+  if (!(target instanceof Element)) return null;
+  const root = target.closest<HTMLElement>("[data-terminal-session]");
+  return root?.dataset.terminalSession ?? null;
+}

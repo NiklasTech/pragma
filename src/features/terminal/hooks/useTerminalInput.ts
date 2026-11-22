@@ -5,7 +5,7 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { useSettingsStore } from "@/shared/stores/settings";
 import type { UseTerminalSuggestionsReturn } from "@/shared/hooks/useTerminalSuggestions";
 import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
-import { getIsMac, matchShortcut } from "@/shared/lib/shortcuts";
+import { getIsMac } from "@/shared/lib/shortcuts";
 import { safePtyInvoke } from "../safePtyInvoke";
 import { macTerminalKeyAction } from "../terminalKeymap";
 
@@ -122,9 +122,7 @@ export function useTerminalInput({
       const activeElement = document.activeElement;
       if (!activeElement || !container.contains(activeElement)) return;
 
-      const { shortcuts } = useSettingsStore.getState();
-      if (Object.values(shortcuts).some((binding) => matchShortcut(event, binding))) return;
-
+      // Terminal.app's keys win while the terminal has focus, so ⌘K clears instead of jumping away.
       const term = termRef.current;
       if (!term) return;
 
