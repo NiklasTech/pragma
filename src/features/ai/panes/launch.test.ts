@@ -21,7 +21,7 @@ vi.mock("./store", () => ({
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import type { Space } from "@/shared/stores/spaces/model";
 
-import { launchTeam, launchTerminals } from "./launch";
+import { launchTeam, launchTerminals, teamTitles } from "./launch";
 
 const manifest = { id: "claude", name: "Claude Code" } as CLIManifest;
 
@@ -147,5 +147,27 @@ describe("launchTerminals", () => {
 
       expect(mocks.replaceLayout.mock.calls[0]?.[2]).toBeUndefined();
     });
+  });
+});
+
+describe("teamTitles", () => {
+  it("numbers each agent of a mixed team on its own", () => {
+    expect(teamTitles(["Claude Code", "Claude Code", "Codex"])).toEqual([
+      "Claude Code #1",
+      "Claude Code #2",
+      "Codex",
+    ]);
+  });
+
+  it("numbers a shared task across the whole team", () => {
+    expect(teamTitles(["Fix the login", "Fix the login", "Fix the login"])).toEqual([
+      "Fix the login #1",
+      "Fix the login #2",
+      "Fix the login #3",
+    ]);
+  });
+
+  it("leaves a single agent unnumbered", () => {
+    expect(teamTitles(["Codex"])).toEqual(["Codex"]);
   });
 });

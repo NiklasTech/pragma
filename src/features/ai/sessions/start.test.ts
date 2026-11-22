@@ -125,6 +125,7 @@ describe("startSession", () => {
     });
 
     expect(mocks.toastError).toHaveBeenCalledWith("The worktree setup script failed", {
+      id: "worktree-setup:/repo",
       description: "npm ERR! missing",
     });
     expect(session.environmentId).toBe("env-1");

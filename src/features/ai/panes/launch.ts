@@ -69,6 +69,19 @@ function tabStillOpen(rootPath: string, tabId: string): boolean {
   return space?.tabs.some((tab) => tab.id === tabId) ?? false;
 }
 
+/** Numbers titles that repeat, counting each title on its own: "Codex #1", "Codex #2", "Gemini". */
+export function teamTitles(baseTitles: readonly string[]): string[] {
+  const totals = new Map<string, number>();
+  for (const title of baseTitles) totals.set(title, (totals.get(title) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  return baseTitles.map((title) => {
+    if ((totals.get(title) ?? 0) < 2) return title;
+    const number = (seen.get(title) ?? 0) + 1;
+    seen.set(title, number);
+    return `${title} #${number}`;
+  });
+}
+
 /// Starts the terminals of several CLIs one after another and shows exactly them in the grid.
 export async function launchTeam(
   rootPath: string,
@@ -84,12 +97,14 @@ export async function launchTeam(
   if (starts.length === 0 && members[0]) starts.push(members[0]);
   // Starts take a while in worktrees; the grid belongs to the tab the start came from.
   const startTab = frontAgentsTab(rootPath);
+  const titles = teamTitles(
+    starts.map((member) => task?.title ?? terminalSessionTitle(member.manifest.name)),
+  );
   const sessions: ChatSession[] = [];
   for (const [index, member] of starts.entries()) {
-    const baseTitle = task?.title ?? terminalSessionTitle(member.manifest.name);
     const session = await createTerminalSession(rootPath, member.manifest, {
       activate: false,
-      title: starts.length > 1 ? `${baseTitle} #${index + 1}` : baseTitle,
+      title: titles[index],
       environment: groupEnvironmentRequest(mode, sessions[0]),
       accountDir: member.accountDir,
     });

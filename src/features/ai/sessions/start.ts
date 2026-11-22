@@ -70,7 +70,11 @@ async function prepareWorktree(rootPath: string, requireReady: boolean): Promise
     throw new Error("The worktree setup script failed");
   }
   const lastLine = environment.setupLog.trim().split("\n").pop();
-  toast.error("The worktree setup script failed", { description: lastLine || undefined });
+  // One toast per folder: a team start would otherwise repeat it for every agent.
+  toast.error("The worktree setup script failed", {
+    id: `worktree-setup:${rootPath}`,
+    description: lastLine || undefined,
+  });
   return environment;
 }
 
