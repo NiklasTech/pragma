@@ -8,6 +8,7 @@ import {
   shouldToastLspError,
 } from "@/shared/lib/lsp-servers";
 import { firstLspFailure } from "@/shared/lib/lspToastOnce";
+import { windowOwnsProjectRoot } from "@/shared/lib/lspWindowRoots";
 import { recordLspStatus } from "@/shared/stores/lspFailures";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
@@ -32,6 +33,7 @@ export function useLspStatus() {
 
     const setup = async () => {
       unlisten = await listen<LspStatusEvent>("lsp_status_changed", (event) => {
+        if (!windowOwnsProjectRoot(event.payload.project_root)) return;
         recordLspStatus(event.payload.language, event.payload.status, event.payload.error);
         if (
           !shouldToastLspError({ status: event.payload.status, expected: event.payload.expected })
