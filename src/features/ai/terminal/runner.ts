@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
+import { isCursorQueryOnly } from "@/features/terminal/cursorQueries";
+
 import { isAgentOutput } from "./activity";
 import { createAttentionParser, type TerminalAttention } from "./attentionSignals";
 import { appendTerminalBuffer } from "./buffer";
@@ -105,7 +107,8 @@ function detectAttention(entry: TerminalEntry, data: string): void {
 }
 
 function pushOutput(entry: TerminalEntry, data: string): void {
-  entry.buffer = appendTerminalBuffer(entry.buffer, data);
+  // A replayed cursor query would send the CLI a stale answer, and polling would fill the buffer.
+  if (!isCursorQueryOnly(data)) entry.buffer = appendTerminalBuffer(entry.buffer, data);
   detectAttention(entry, data);
   for (const listener of anyOutputListeners) listener(entry.sessionId);
   const listeners = outputListeners.get(entry.sessionId);

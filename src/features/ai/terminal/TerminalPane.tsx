@@ -15,6 +15,7 @@ import { useTerminalStore } from "@/shared/stores/terminal";
 import { useTheme } from "@/theme";
 import { useReducedMotion } from "@/theme/useReducedMotion";
 import { loadRenderAddons } from "@/features/terminal/terminalAddons";
+import { createOutputWriter } from "@/features/terminal/cursorQueries";
 
 import { sessionCwd } from "../worktree/cwd";
 import { quoteShellPath } from "./buffer";
@@ -109,13 +110,12 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     });
     termRef.current = term;
 
+    const writeOutput = createOutputWriter(term, (data) => void writeTerminal(session.id, data));
     const replayBase = getTerminalBuffer(session.id);
-    const unsubOutput = subscribeTerminalOutput(session.id, (data) => {
-      term.write(data);
-    });
+    const unsubOutput = subscribeTerminalOutput(session.id, writeOutput);
     const replayNow = getTerminalBuffer(session.id);
     const replay = replayNow.startsWith(replayBase) ? replayNow : replayBase;
-    if (replay) term.write(replay);
+    if (replay) writeOutput(replay);
     const dataDisposable = term.onData((data) => {
       void writeTerminal(session.id, data);
     });
