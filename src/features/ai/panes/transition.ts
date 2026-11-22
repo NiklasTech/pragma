@@ -3,6 +3,10 @@ import { flushSync } from "react-dom";
 const DURATION_MS = 220;
 const EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 const RADIUS = "8px";
+// Zooming moves a whole pane across the grid, so it gets a calmer curve than layout shifts.
+const ZOOM = { duration: 340, easing: "cubic-bezier(0.32, 0.72, 0, 1)" };
+const RECEDED: Keyframe = { opacity: 0.55, transform: "scale(0.985)" };
+const PRESENT: Keyframe = { opacity: 1, transform: "none" };
 
 function canAnimate(): boolean {
   return (
@@ -76,9 +80,12 @@ export function animatePanes(update: () => void, enter?: PaneEnter): void {
     if (card.dataset.paneMaximized === "true" && first.width < last.width) {
       card.animate(
         [{ clipPath: insetBetween(last, first) }, { clipPath: `inset(0px round ${RADIUS})` }],
-        timing,
+        ZOOM,
       );
-      continue;
+      for (const other of paneCards()) {
+        if (other !== card) other.animate([PRESENT, RECEDED], ZOOM);
+      }
+      break;
     }
     const dx = first.left - last.left;
     const dy = first.top - last.top;
@@ -87,23 +94,32 @@ export function animatePanes(update: () => void, enter?: PaneEnter): void {
   }
 }
 
-/// Shrinks the maximized card back onto its grid slot, then applies the restore.
+const restoring = new WeakSet<HTMLElement>();
+
+/// Shrinks the maximized card back onto its grid slot while the others step forward, then applies the restore.
 export function animateRestore(card: HTMLElement | null, update: () => void): void {
   const slot = card?.parentElement?.getBoundingClientRect();
   if (!card || !slot || !canAnimate()) {
     update();
     return;
   }
+  // A second press while it shrinks would apply the restore twice and zoom the pane again.
+  if (restoring.has(card)) return;
+  restoring.add(card);
+  for (const other of paneCards()) {
+    if (other !== card) other.animate([RECEDED, PRESENT], ZOOM);
+  }
   const animation = card.animate(
     [
       { clipPath: `inset(0px round ${RADIUS})` },
       { clipPath: insetBetween(card.getBoundingClientRect(), slot) },
     ],
-    { duration: DURATION_MS, easing: EASING, fill: "forwards" },
+    { ...ZOOM, fill: "forwards" },
   );
   animation.onfinish = () => {
     flushSync(update);
     animation.cancel();
+    restoring.delete(card);
   };
 }
 
