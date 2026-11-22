@@ -18,7 +18,11 @@ import {
   GitStatusLoadingState,
   OpenFolderState,
 } from "./git-status/GitStatusStates";
-import { ActionStatusBanner, GitErrorAlert } from "./git-status/GitStatusBanners";
+import {
+  ActionStatusBanner,
+  GitErrorAlert,
+  UntrackedOmittedBanner,
+} from "./git-status/GitStatusBanners";
 import { CreateBranchDialog } from "./git-status/CreateBranchDialog";
 import { DiscardChangesDialog } from "./git-status/DiscardChangesDialog";
 import { StashPanel } from "./StashPanel";
@@ -282,6 +286,10 @@ export function GitStatus() {
       )}
 
       <OperationBanner conflictCount={conflictFiles.length} />
+
+      {snapshot && snapshot.untracked_omitted > 0 && (
+        <UntrackedOmittedBanner count={snapshot.untracked_omitted} />
+      )}
 
       <PullRequestSection />
 

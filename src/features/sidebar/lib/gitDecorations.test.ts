@@ -22,6 +22,7 @@ function snapshot(files: GitStatusEntry[]): GitStatusSnapshot {
     changed_files: files,
     ahead: 0,
     behind: 0,
+    untracked_omitted: 0,
   };
 }
 

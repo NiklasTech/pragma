@@ -22,6 +22,7 @@ export function sameGitStatusSnapshot(
   return (
     a.ahead === b.ahead &&
     a.behind === b.behind &&
+    a.untracked_omitted === b.untracked_omitted &&
     a.repo.repo_root === b.repo.repo_root &&
     a.repo.branch === b.repo.branch &&
     a.repo.upstream === b.repo.upstream &&

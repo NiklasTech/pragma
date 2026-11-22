@@ -19,6 +19,7 @@ vi.mock("@tauri-apps/api/core", () => ({
         })),
         ahead: 0,
         behind: 0,
+        untracked_omitted: 0,
       },
     };
   },

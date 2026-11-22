@@ -5,7 +5,7 @@ use crate::modules::git::parser::parse_porcelain_v2;
 use crate::modules::git::process::{
     ensure_git_available, ensure_success, git_stdout_line_opt, git_stdout_lines, run_git,
 };
-use crate::modules::git::types::{GitStatusSnapshot, DEFAULT_TIMEOUT_SECS};
+use crate::modules::git::types::{GitStatusEntry, GitStatusSnapshot, DEFAULT_TIMEOUT_SECS};
 use crate::modules::git::utils::{authorized_repo_root, canonical_dir};
 
 pub fn resolve_repo(cwd: &str) -> Result<Option<crate::modules::git::types::GitRepoInfo>> {
@@ -68,6 +68,31 @@ pub fn conflicted_files(repo_root: &str) -> Result<Vec<String>> {
         .collect())
 }
 
+/// Untracked files listed at most; a folder of build output that is not ignored can hold
+/// tens of thousands, which would flood every status reload.
+const MAX_UNTRACKED: usize = 2000;
+
+/// Keeps every tracked change and the first `limit` untracked files; returns how many were left out.
+fn cap_untracked(files: Vec<GitStatusEntry>, limit: usize) -> (Vec<GitStatusEntry>, usize) {
+    let mut untracked = 0;
+    let mut omitted = 0;
+    let kept = files
+        .into_iter()
+        .filter(|file| {
+            if file.status_code != "?" {
+                return true;
+            }
+            untracked += 1;
+            if untracked > limit {
+                omitted += 1;
+                return false;
+            }
+            true
+        })
+        .collect();
+    (kept, omitted)
+}
+
 fn status_inner(repo_root: &Path) -> Result<GitStatusSnapshot> {
     let output = run_git(
         Some(&repo_root.to_string_lossy()),
@@ -84,6 +109,7 @@ fn status_inner(repo_root: &Path) -> Result<GitStatusSnapshot> {
 
     let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
     let parsed = parse_porcelain_v2(stdout);
+    let (changed_files, untracked_omitted) = cap_untracked(parsed.files, MAX_UNTRACKED);
 
     Ok(GitStatusSnapshot {
         repo: crate::modules::git::types::GitRepoInfo {
@@ -92,9 +118,10 @@ fn status_inner(repo_root: &Path) -> Result<GitStatusSnapshot> {
             upstream: parsed.upstream.clone(),
             is_detached: parsed.is_detached,
         },
-        changed_files: parsed.files,
+        changed_files,
         ahead: parsed.ahead,
         behind: parsed.behind,
+        untracked_omitted,
     })
 }
 
@@ -170,6 +197,36 @@ mod tests {
         assert!(!entry("file.txt").is_staged);
         assert!(entry("staged.txt").is_staged);
         assert_eq!(entry("untracked.txt").status_code, "?");
+        assert_eq!(snapshot.untracked_omitted, 0);
+    }
+
+    fn file(path: &str, status_code: &str) -> GitStatusEntry {
+        GitStatusEntry {
+            path: path.to_string(),
+            original_path: None,
+            status: String::new(),
+            status_code: status_code.to_string(),
+            is_staged: false,
+            is_unstaged: status_code != "?",
+            is_conflicted: false,
+        }
+    }
+
+    #[test]
+    fn caps_untracked_files_but_keeps_every_tracked_change() {
+        let files = vec![
+            file("a.o", "?"),
+            file("b.o", "?"),
+            file("c.o", "?"),
+            file("src/main.rs", "M"),
+            file("d.o", "?"),
+        ];
+
+        let (kept, omitted) = cap_untracked(files, 2);
+
+        let paths: Vec<&str> = kept.iter().map(|f| f.path.as_str()).collect();
+        assert_eq!(paths, vec!["a.o", "b.o", "src/main.rs"]);
+        assert_eq!(omitted, 2);
     }
 
     #[test]
