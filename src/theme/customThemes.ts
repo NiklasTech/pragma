@@ -2,10 +2,6 @@ import type { Theme } from "./types";
 
 const STORAGE_KEY = "pragma.themes.custom";
 
-export interface CustomThemesState {
-  themes: Record<string, Theme>;
-}
-
 function readStorage(): Record<string, Theme> {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);

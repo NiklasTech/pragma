@@ -31,12 +31,6 @@ export function formatResetIn(resetsAtMs: number | null, now: number): string | 
   return resetsAtMs === null ? null : `resets in ${formatStateDuration(resetsAtMs - now)}`;
 }
 
-export function formatUpdatedAgo(fetchedAtMs: number | null, now: number): string {
-  return fetchedAtMs === null
-    ? "Not loaded yet"
-    : `Updated ${formatStateDuration(now - fetchedAtMs)} ago`;
-}
-
 export type UsageLevel = "normal" | "high" | "critical";
 
 export function usageLevel(usedPercent: number): UsageLevel {

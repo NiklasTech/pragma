@@ -93,8 +93,3 @@ export function lastTerminalLines(buffer: string, count: number): string[] {
   }
   return shown;
 }
-
-/** The last line a terminal printed, as it shows on screen. */
-export function lastTerminalLine(buffer: string): string {
-  return lastTerminalLines(buffer, 1)[0]?.trim() ?? "";
-}

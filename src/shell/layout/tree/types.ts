@@ -46,10 +46,6 @@ export interface TerminalState {
   floating: FloatingState;
 }
 
-export interface WorkspaceState {
-  editorHeight: number;
-}
-
 export type PanelKind =
   | "welcome"
   | "editor"
