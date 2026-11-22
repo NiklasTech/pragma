@@ -5,7 +5,7 @@
 <h1 align="center">Pragma</h1>
 
 <p align="center">
-  <strong>Run a team of coding agents side by side, review every change, and keep a full IDE one tab away.</strong>
+  <strong>Give each coding agent its own task, watch them side by side and review every change, with a full IDE one tab away.</strong>
 </p>
 
 <p align="center">
@@ -65,8 +65,6 @@
 
 </details>
 
----
-
 ## What is Pragma?
 
 Pragma is a desktop IDE with two tabs for every project:
@@ -76,9 +74,7 @@ Pragma is a desktop IDE with two tabs for every project:
 
 Both tabs share the same project, the same terminal and the same AI accounts. Switch between them with `Cmd/Ctrl + 1` and `Cmd/Ctrl + 2`, or with `Cmd/Ctrl + Shift + E`.
 
-Pragma is built with Tauri and Rust instead of Electron, stores API keys in the operating system keychain and starts the official coding CLIs you are already signed in to.
-
----
+Pragma is a native app built with Tauri and Rust. It stores API keys in the operating system keychain and starts the official coding CLIs you are already signed in to.
 
 ## Features
 
@@ -100,7 +96,7 @@ Open the changes of any agent as a review. Keep or undo each part, leave comment
 
 ### A full IDE one tab away
 
-The Code tab is a real editor: CodeMirror 6 with language servers, a file tree, workspace search, a terminal and a debugger.
+The Code tab is a complete editor: CodeMirror 6 with language servers, a file tree, workspace search, a terminal and a debugger.
 
 <p align="center">
   <img src=".github/assets/readme/code.webp" alt="Code tab with the file tree, a TypeScript file and a terminal with passing tests" width="960">
@@ -198,8 +194,6 @@ Every project is a space with its own tabs, layouts and agent worktrees. The ove
 
 </details>
 
----
-
 ## Installation
 
 Pre-built installers for Windows, macOS and Linux are available on the [Releases](https://github.com/NiklasTech/pragma/releases) page.
@@ -229,8 +223,6 @@ Pre-built installers for Windows, macOS and Linux are available on the [Releases
 3. Start Pragma from your application menu or by running the AppImage.
 
 Installed versions check for updates and can update themselves.
-
----
 
 ## Build from source
 
@@ -314,17 +306,14 @@ This builds the app bundle without updater artifacts, replaces `/Applications/Pr
 
 A local build keeps the version from `package.json`. Once a newer release exists, the updater offers it, and installing it replaces the local build.
 
----
-
 ## Quick start
 
-Prefer to watch first? The [walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit. It was recorded with Pragma 0.7, before the current design.
+The [walkthrough](https://www.youtube.com/watch?v=KRmWK-zc-c8) takes a small app from an idea to a commit. It was recorded with Pragma 0.7, before the current design.
 
-1. Start Pragma and complete the onboarding. It is one page: pick a look, sign in to the coding CLIs you use and open a project.
-2. Choose a theme and connect an AI provider, either by signing in to a coding CLI or with an API key.
-3. Open a project folder. On macOS you can also run `pragma .` in a terminal after `pnpm run install:local`, see [Install a local build](#install-a-local-build-macos).
-4. In the **Agents** tab, describe a task on the start card, pick one or more agents and press **Start**.
-5. Review what the agents changed, or switch to the **Code** tab with `Cmd/Ctrl + 2` to work on the code yourself.
+1. Start Pragma and go through the onboarding. It is one page where you pick a theme, sign in to the coding CLIs you use or add an API key, and open a project folder.
+2. To open another folder later on macOS, you can also run `pragma .` in a terminal after `pnpm run install:local` (see [Install a local build](#install-a-local-build-macos)).
+3. In the **Agents** tab, write one task per line on the start card, pick the agents that share them and press **Start**.
+4. Review what the agents changed, or switch to the **Code** tab with `Cmd/Ctrl + 2` to work on the code yourself.
 
 <p align="center">
   <picture>
@@ -349,8 +338,6 @@ Useful default shortcuts (`Cmd` on macOS, `Ctrl` on Windows and Linux):
 
 All shortcuts can be changed in **Settings > Keys**.
 
----
-
 ## Configuration
 
 Everything is configured in the settings panel (`Cmd/Ctrl + ,`). Settings can be exported and imported as a file.
@@ -374,8 +361,6 @@ Built-in themes are selected in **Settings > Appearance**, where you can also im
 
 More details are in the [documentation](https://niklastech.github.io/pragma/).
 
----
-
 ## Project structure
 
 ```
@@ -395,8 +380,6 @@ More details are in the [documentation](https://niklastech.github.io/pragma/).
 └── scripts/             Build and asset scripts
 ```
 
----
-
 ## Tech stack
 
 | Layer             | Technology                                |
@@ -411,17 +394,13 @@ More details are in the [documentation](https://niklastech.github.io/pragma/).
 | AI                | Vercel AI SDK, MCP, Agent Client Protocol |
 | Toolchain         | Vite+, pnpm                               |
 
----
-
 ## Contributing
 
 Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the development setup, branching model, commit conventions and pull request process.
 
-Questions, ideas or just want to chat? Join the [Pragma Discord](https://discord.gg/VYBaBvcpGp).
+For questions and ideas, join the [Pragma Discord](https://discord.gg/VYBaBvcpGp).
 
 Please report security issues privately as described in [SECURITY.md](SECURITY.md), not as a public issue.
-
----
 
 ## Third-party CLI tools
 
@@ -433,8 +412,6 @@ Pragma can work with official coding CLIs that are installed and run locally on 
 - Pragma only starts the locally installed CLI and shows its output.
 
 Each CLI is subject to its provider's license, terms and policies. Pragma is not affiliated with any of these providers.
-
----
 
 ## License
 
