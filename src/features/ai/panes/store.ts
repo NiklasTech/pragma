@@ -47,7 +47,8 @@ interface AgentsPanesState {
   openSession: (rootPath: string, sessionId: string) => void;
   assignSession: (rootPath: string, leafId: string, sessionId: string) => void;
   focusLeaf: (rootPath: string, leafId: string) => void;
-  replaceLayout: (rootPath: string, sessionIds: string[]) => void;
+  /** Shows exactly these sessions; `treeKey` names the tab, else the folder's active tab. */
+  replaceLayout: (rootPath: string, sessionIds: string[], treeKey?: string) => void;
   /** Resolves once the pane is gone, after its exit animation. */
   closeLeaf: (rootPath: string, leafId: string) => Promise<void>;
   addPane: (rootPath: string, leaf: Leaf, focus: boolean) => void;
@@ -191,21 +192,25 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
           };
         }),
 
-      replaceLayout: (rootPath, sessionIds) => {
-        showAgentsTabFor(rootPath);
+      replaceLayout: (rootPath, sessionIds, treeKey) => {
+        if (!treeKey) showAgentsTabFor(rootPath);
+        const key = treeKey ?? paneTreeKey(rootPath);
         animatePanes(() =>
           set((state) => {
-            const entry = getEntry(state.trees, rootPath);
+            const entry = state.trees[key] ?? EMPTY_ENTRY;
             const root = autoLayout(sessionIds.map((sessionId) => createLeaf(sessionId)));
             return {
-              trees: setEntry(state.trees, rootPath, {
-                root,
-                focusedLeafId: firstLeaf(root)?.id ?? null,
-                focusOrder: [
-                  ...sessionIds,
-                  ...entry.focusOrder.filter((id) => !sessionIds.includes(id)),
-                ],
-              }),
+              trees: {
+                ...state.trees,
+                [key]: {
+                  root,
+                  focusedLeafId: firstLeaf(root)?.id ?? null,
+                  focusOrder: [
+                    ...sessionIds,
+                    ...entry.focusOrder.filter((id) => !sessionIds.includes(id)),
+                  ],
+                },
+              },
             };
           }),
         );

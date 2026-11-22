@@ -18,6 +18,9 @@ vi.mock("./store", () => ({
   useAgentsPanesStore: { getState: () => ({ replaceLayout: mocks.replaceLayout }) },
 }));
 
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import type { Space } from "@/shared/stores/spaces/model";
+
 import { launchTeam, launchTerminals } from "./launch";
 
 const manifest = { id: "claude", name: "Claude Code" } as CLIManifest;
@@ -40,7 +43,7 @@ describe("launchTerminals", () => {
     await launchTerminals("/repo", manifest, 4, "isolated");
 
     expect(requests().map((request) => request.environment)).toEqual(Array(4).fill("worktree"));
-    expect(mocks.replaceLayout).toHaveBeenCalledWith("/repo", ["s1", "s2", "s3", "s4"]);
+    expect(mocks.replaceLayout).toHaveBeenCalledWith("/repo", ["s1", "s2", "s3", "s4"], undefined);
   });
 
   it("lets every shared instance join the first one's worktree", async () => {
@@ -92,12 +95,57 @@ describe("launchTerminals", () => {
       ["codex", undefined],
       ["codex", undefined],
     ]);
-    expect(mocks.replaceLayout).toHaveBeenCalledWith("/repo", ["s1", "s2", "s3", "s4", "s5"]);
+    expect(mocks.replaceLayout).toHaveBeenCalledWith(
+      "/repo",
+      ["s1", "s2", "s3", "s4", "s5"],
+      undefined,
+    );
   });
 
   it("starts every instance in the checkout", async () => {
     await launchTerminals("/repo", manifest, 2, "checkout");
 
     expect(requests().map((request) => request.environment)).toEqual(["checkout", "checkout"]);
+  });
+
+  describe("while the user switches tabs", () => {
+    const space: Space = {
+      id: "space",
+      name: "repo",
+      folders: ["/repo"],
+      tabs: [
+        { id: "agents-1", name: "Agents", kind: "agents" },
+        { id: "agents-2", name: "Agents 2", kind: "agents" },
+      ],
+      activeTabId: "agents-1",
+    };
+
+    beforeEach(() => {
+      useOpenRepositoriesStore.setState({ spaces: [space], activeSpaceId: space.id });
+    });
+
+    it("puts the grid into the tab the start came from", async () => {
+      mocks.startSession.mockImplementationOnce(async () => {
+        useOpenRepositoriesStore.setState({ spaces: [{ ...space, activeTabId: "agents-2" }] });
+        return { id: "s1", environment: "worktree", environmentId: "env-1" };
+      });
+
+      await launchTerminals("/repo", manifest, 2, "isolated");
+
+      expect(mocks.replaceLayout.mock.calls[0]?.[2]).toBe("agents-1");
+    });
+
+    it("falls back to the front tab when the start tab was closed meanwhile", async () => {
+      mocks.startSession.mockImplementationOnce(async () => {
+        useOpenRepositoriesStore.setState({
+          spaces: [{ ...space, tabs: space.tabs.slice(1), activeTabId: "agents-2" }],
+        });
+        return { id: "s1", environment: "worktree", environmentId: "env-1" };
+      });
+
+      await launchTerminals("/repo", manifest, 1, "isolated");
+
+      expect(mocks.replaceLayout.mock.calls[0]?.[2]).toBeUndefined();
+    });
   });
 });

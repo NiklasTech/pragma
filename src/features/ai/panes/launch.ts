@@ -1,4 +1,6 @@
 import type { ChatSession, CLIManifest } from "@/shared/stores/ai";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { activeTab, findSpaceByFolder } from "@/shared/stores/spaces/model";
 
 import { deliverTerminalPrompt } from "../children/terminalPrompt";
 import { groupEnvironmentRequest, type GroupEnvironment } from "../sessions/group";
@@ -55,6 +57,18 @@ export function launchTerminals(
   return launchTeam(rootPath, [{ manifest, accountDir, count }], mode, task);
 }
 
+/** The agents tab of the folder's space that is in front right now. */
+function frontAgentsTab(rootPath: string): string | undefined {
+  const space = findSpaceByFolder(useOpenRepositoriesStore.getState().spaces, rootPath);
+  const tab = space ? activeTab(space) : undefined;
+  return tab?.kind === "agents" ? tab.id : undefined;
+}
+
+function tabStillOpen(rootPath: string, tabId: string): boolean {
+  const space = findSpaceByFolder(useOpenRepositoriesStore.getState().spaces, rootPath);
+  return space?.tabs.some((tab) => tab.id === tabId) ?? false;
+}
+
 /// Starts the terminals of several CLIs one after another and shows exactly them in the grid.
 export async function launchTeam(
   rootPath: string,
@@ -68,6 +82,8 @@ export async function launchTeam(
     )
     .slice(0, MAX_PANES);
   if (starts.length === 0 && members[0]) starts.push(members[0]);
+  // Starts take a while in worktrees; the grid belongs to the tab the start came from.
+  const startTab = frontAgentsTab(rootPath);
   const sessions: ChatSession[] = [];
   for (const [index, member] of starts.entries()) {
     const baseTitle = task?.title ?? terminalSessionTitle(member.manifest.name);
@@ -81,5 +97,6 @@ export async function launchTeam(
     if (task) deliverTerminalPrompt(session.id, task.prompt);
   }
   const sessionIds = sessions.map((session) => session.id);
-  useAgentsPanesStore.getState().replaceLayout(rootPath, sessionIds);
+  const target = startTab && tabStillOpen(rootPath, startTab) ? startTab : undefined;
+  useAgentsPanesStore.getState().replaceLayout(rootPath, sessionIds, target);
 }
