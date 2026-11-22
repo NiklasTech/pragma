@@ -1,6 +1,6 @@
-# Browser Pane
+# Browser pane
 
-The browser pane shows a web page next to your sessions, typically the dev server an agent just started. It counts as one of the eight panes in the grid.
+The browser pane shows a web page next to your sessions, typically the dev server an agent just started. It counts as one of the eight panes of a tab.
 
 ## Open a browser pane
 

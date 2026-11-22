@@ -1,8 +1,8 @@
-# Local Tasks
+# Local tasks
 
 The task board is a small to-do list for agent work, kept per workspace on your machine. Each task can be handed to an agent with one click, and the agent's result is written back to the task.
 
-Open the board with **Tasks** at the top of the thread list.
+Open the board with **Tasks** at the top of the [thread list](./index.md#the-thread-list).
 
 ## Columns
 
@@ -26,6 +26,21 @@ Select **New task** and fill in:
 | Status | The column the task starts in                                             |
 | Agent  | **Built-in agent** or one of your [named agents](./named-agents.md)       |
 | Result | What came out of the work, up to 4000 characters; filled in automatically |
+
+The dialog can also organize and plan the task:
+
+| Field      | Notes                                                                                                                                    |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Priority   | None, low, medium or high. Higher priorities come first in their column                                                                  |
+| Labels     | A comma separated list, for example `bug, frontend`                                                                                      |
+| Blocked by | Other tasks that must be done first. A blocked task cannot start until they are **Done**                                                 |
+| Schedule   | **Daily** or **Weekly** at a start time. A scheduled run starts in its own worktree while Pragma is open; missed times are not caught up |
+
+The filters above the board show only one priority or one label.
+
+## Import GitHub issues
+
+**Import issues** lists the open issues of the repository through the GitHub CLI (`gh`, installed and signed in). Pick the issues you want; each becomes a Todo task titled `#<number> <title>`, with the issue text as notes, its labels, and a link back to the issue. Issues that a task already links to are not offered again.
 
 ## Import Markdown files
 
@@ -65,7 +80,7 @@ Only one session runs at a time, so **Run** and **Resume** are disabled while an
 
 Worktrees are created one after another, so their creation never races on the repository. With **One shared worktree** and more than one task, the dialog warns that the tasks edit the same files.
 
-The dialog starts with **Each in its own worktree**. To change that for a project, set **Settings > Project > Agent > Parallel tasks work in**, stored as `agent.parallelTaskEnvironment` (`"isolated"` or `"shared"`) in `.pragma/settings.json`.
+The dialog starts with **Each in its own worktree**. To change that for a project, set **Settings > Spaces and layouts > Agent > Parallel tasks work in**, stored as `agent.parallelTaskEnvironment` (`"isolated"` or `"shared"`) in `.pragma/settings.json`.
 
 Finish each task's session with [Finish](./worktrees.md#finish-a-worktree-session). Its worktree is [removed automatically](./worktrees.md#when-worktrees-are-removed) once the task moves to **Done** or its branch is merged.
 

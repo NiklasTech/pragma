@@ -4,14 +4,14 @@ Extensions add commands, themes and sidebar panels to Pragma. They are small Jav
 
 ## Install an extension
 
-Extensions are installed per workspace in `<workspace>/.pragma/extensions/<id>/`. Manage them in **Settings > Extensions**:
+Extensions are installed per workspace in `<workspace>/.pragma/extensions/<id>/`. Manage them in **Settings > Extensions and tools**:
 
-- **Install from Folder** copies an extension folder into `.pragma/extensions/`.
-- **Open Folder** opens `.pragma/extensions/` in your file manager, so you can place extensions there yourself.
+- **Install** copies an extension folder into `.pragma/extensions/`.
+- **Folder** opens `.pragma/extensions/` in your file manager, so you can place extensions there yourself.
 - **Reload** picks up extensions that were added or changed on disk.
-- The switch next to each extension enables or disables it.
+- The switch next to each extension enables or disables it, and the remove button deletes it.
 
-An extension with a broken manifest or a runtime error is marked as errored in the list; everything else keeps working. Disabling an extension removes its commands and panels. Themes it contributed stay installed.
+An extension with a broken manifest or a runtime error is marked as failed in the list, and everything else keeps working. A folder in [restricted mode](./configuration.md#folder-trust) runs no extensions. Disabling an extension removes its commands and panels. Themes it contributed stay installed.
 
 Extension panels appear in the **Extensions** view of the sidebar, and extension commands in the command palette.
 
@@ -104,4 +104,4 @@ Each extension runs in an iframe with `sandbox="allow-scripts"` and no same-orig
 
 Per-extension state is stored under the `extensions` key of Pragma's settings.
 
-The full reference for extension authors, including the bridge protocol, is in [`docs/EXTENSIONS.md`](https://github.com/NiklasTech/pragma/blob/main/docs/EXTENSIONS.md).
+The full reference for extension authors, including events, status bar items, agent tools and the bridge protocol, is in the [extension API reference](./extensions-api.md).

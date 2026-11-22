@@ -1,4 +1,4 @@
-# Queued Follow-ups and Steering
+# Follow-ups and steering
 
 You do not have to wait for a running session to finish before you write the next message.
 

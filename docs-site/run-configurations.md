@@ -1,11 +1,14 @@
-# Run Configurations
+# Run configurations
 
 Run configurations start the long-running processes of a project, such as a dev server or a watcher, with one click. They are stored in the workspace, so the whole team shares them.
 
 ## Run them
 
-- **Run** in the title bar lists your configurations. Start, stop or restart each one there, open its output, or start it under the debugger.
-- The **Processes** view in the sidebar shows the same configurations with their status and logs, plus suggestions for new ones.
+- A running process shows as a badge at the right of the strip. Click it to open its output, or stop it there.
+- On Windows and Linux, the **Run** button in the strip lists your configurations. Start, stop or restart each one there, or start it under the debugger.
+- On macOS, **Run > Run Task** and **Run > Stop Task** in the menu bar list the same configurations.
+- The **Processes** view in the sidebar of the code tab lists your configurations with their status and logs, plus suggestions for new ones. Open it from the `⋯` button at the top of the sidebar.
+- The command palette has **Run: Start Configuration...**, **Run: Stop Configuration...** and **Run: Restart Configuration...**.
 
 Output appears in the run output panel at the bottom. Each process shows whether it is running, stopped or failed, with the exit code once it has ended.
 

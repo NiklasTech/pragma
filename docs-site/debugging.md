@@ -20,7 +20,7 @@ Rust, C and C++ need a compiled binary, so they are debugged through a run confi
 
 ## Debug a run configuration
 
-Add a `debug` block to a configuration in [`.pragma/run.json`](./run-configurations.md#pragma-run-json). The configuration then gets a debug button in the **Run** menu.
+Add a `debug` block to a configuration in [`.pragma/run.json`](./run-configurations.md#pragma-run-json). The configuration then gets a debug button in the **Run** list of the strip on Windows and Linux.
 
 ```json
 {
@@ -82,4 +82,4 @@ Set or remove a breakpoint by clicking the editor gutter next to a line, or with
 | Step Out                   | `Shift + F11` |
 | Toggle Breakpoint          | `F9`          |
 
-Change them in **Settings > Keyboard**.
+Change them in **Settings > Keys**.

@@ -1,4 +1,4 @@
-# Child Sessions
+# Child sessions
 
 An agent can split its work by starting child sessions. A child is a normal session with its own title, first message and pane; it runs independently, and the parent does not wait for it.
 
@@ -28,7 +28,7 @@ A child can build on its parent's work:
 | `parent`    | The parent's environment: its worktree, or the checkout when the parent works there. Parent and child edit the same files                                                        |
 | `checkout`  | Your main checkout, even when the parent works in a worktree                                                                                                                     |
 
-When the agent does not choose, **Settings > Project > Agent > Child sessions work in** decides: **Own worktree from the parent's branch** (`worktree`, the default) or **Where the parent works** (`parent`). It is stored as `agent.childEnvironment` in `.pragma/settings.json`.
+When the agent does not choose, **Settings > Spaces and layouts > Agent > Child sessions work in** decides: **Own worktree from the parent's branch** (`worktree`, the default) or **Where the parent works** (`parent`). It is stored as `agent.childEnvironment` in `.pragma/settings.json`.
 
 ### Finish a child into its parent
 
@@ -49,7 +49,7 @@ Change both in **Settings > Agents > Child sessions**, for example to let one le
 
 ## Following children
 
-Child sessions are listed under their parent in the thread list, and the parent shows a card for each child with its status. Open a child like any other thread to watch it or take over. A running child can be stopped from its card.
+Child sessions are listed under their parent in the [thread list](./index.md#the-thread-list), and the parent shows a card for each child with its status. Open a child like any other thread to watch it or take over. A running child can be stopped from its card.
 
 ## Deleting a parent
 
