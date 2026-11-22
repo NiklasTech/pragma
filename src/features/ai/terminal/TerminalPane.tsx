@@ -32,6 +32,7 @@ import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 import { isPaneShortcut } from "../panes/paneCommands";
 import { isShellSession, SHELL_TITLE } from "./shell";
+import { isSizeJump } from "./sizeJump";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -134,15 +135,19 @@ export function TerminalPane({ session }: TerminalPaneProps) {
       rows: initialSize.rows,
     });
 
-    resizeObserver = new ResizeObserver(() => {
+    resizeObserver = new ResizeObserver(([entry]) => {
       if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
+      const refit = () => {
         resizeTimer = null;
         fit.fit();
         if (term.cols > 0 && term.rows > 0) {
           void resizeTerminal(session.id, term.cols, term.rows);
         }
-      }, 120);
+      };
+      // Zooming a pane jumps its size; refit at once so the CLI redraws while the zoom plays.
+      const { width, height } = entry.contentRect;
+      if (isSizeJump(term.element?.getBoundingClientRect(), width, height)) refit();
+      else resizeTimer = setTimeout(refit, 120);
     });
     if (!disposed) resizeObserver.observe(container);
 
