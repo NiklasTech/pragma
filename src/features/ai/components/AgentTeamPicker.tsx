@@ -5,38 +5,31 @@ import { AgentMark } from "@/shared/components/ui/agent-mark";
 import { Button } from "@/shared/components/ui/button";
 import { getIsMac } from "@/shared/lib/shortcuts";
 
-import { memberCount, teamTotal, type TeamMember } from "../home/agentTeam";
-import { MAX_PANES } from "../panes/operations";
-import type { QuickChoice } from "../quickStart/quickChoices";
-import { AgentCountStepper } from "./AgentCountStepper";
-
-type CliAgent = QuickChoice["agent"];
+import type { CliAgent } from "../home/agentTeam";
+import { sameAgent, type QuickChoice } from "../quickStart/quickChoices";
 
 const CHIP =
   "h-7 max-w-full min-w-0 gap-1.75 pr-2.25 pl-1.5 text-ui-sm font-normal aria-pressed:bg-bg-hover aria-pressed:text-fg-default";
 
 interface AgentTeamPickerProps {
   choices: readonly QuickChoice[];
-  team: readonly TeamMember[];
+  pool: readonly CliAgent[];
   pragma: boolean;
   onPickOnly: (agent: CliAgent) => void;
   onToggle: (agent: CliAgent) => void;
-  onCount: (agent: CliAgent, count: number) => void;
   onPickPragma: () => void;
 }
 
-/// The agents a start runs: a click picks one, ⌘-click adds another, each with its own count.
+/// The agents a start hands its tasks to: a click picks one, ⌘-click adds another to share the tasks.
 export function AgentTeamPicker({
   choices,
-  team,
+  pool,
   pragma,
   onPickOnly,
   onToggle,
-  onCount,
   onPickPragma,
 }: AgentTeamPickerProps) {
   const isMac = getIsMac();
-  const total = teamTotal(team);
 
   const click = (event: MouseEvent, agent: CliAgent) => {
     if (isMac ? event.metaKey : event.ctrlKey) onToggle(agent);
@@ -49,39 +42,26 @@ export function AgentTeamPicker({
         const name = choice.accountLabel
           ? `${choice.manifest.name} ${choice.accountLabel}`
           : choice.manifest.name;
-        const count = pragma ? null : memberCount(team, choice.agent);
+        const picked = !pragma && pool.some((agent) => sameAgent(agent, choice.agent));
         return (
-          <span
+          <Button
             key={`${choice.manifest.id}:${choice.agent.accountDir ?? ""}`}
-            className="flex max-w-full min-w-0 items-center gap-0.5"
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-pressed={picked}
+            title={`${isMac ? "⌘" : "Ctrl"}-click adds ${name}, so the tasks are shared`}
+            onClick={(event) => click(event, choice.agent)}
+            className={CHIP}
           >
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-pressed={count !== null}
-              title={`${isMac ? "⌘" : "Ctrl"}-click adds ${name} to the start`}
-              onClick={(event) => click(event, choice.agent)}
-              className={CHIP}
-            >
-              <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} size="sm" />
-              {choice.manifest.name}
-              {choice.accountLabel && (
-                <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
-                  {choice.accountLabel}
-                </span>
-              )}
-            </Button>
-            {count !== null && (
-              <AgentCountStepper
-                count={count}
-                label={name}
-                max={MAX_PANES - (total - count)}
-                removable={team.length > 1}
-                onChange={(next) => onCount(choice.agent, next)}
-              />
+            <AgentMark agentId={choice.manifest.id} name={choice.manifest.name} size="sm" />
+            {choice.manifest.name}
+            {choice.accountLabel && (
+              <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
+                {choice.accountLabel}
+              </span>
             )}
-          </span>
+          </Button>
         );
       })}
       <Button
@@ -97,7 +77,7 @@ export function AgentTeamPicker({
       </Button>
       {!pragma && choices.length > 1 && (
         <span className="px-1 font-mono text-ui-2xs text-fg-subtle">
-          {isMac ? "⌘" : "Ctrl"} click adds an agent
+          {isMac ? "⌘" : "Ctrl"} click shares the tasks
         </span>
       )}
     </div>

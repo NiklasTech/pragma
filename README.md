@@ -71,7 +71,7 @@
 
 Pragma is a desktop IDE with two tabs for every project:
 
-- **Agents** starts coding CLIs on a task, one at a time or as a team of up to eight, and shows them side by side.
+- **Agents** starts coding CLIs on your tasks, one at a time or up to eight at once, each with its own task, and shows them side by side.
 - **Code** is a complete hands-on IDE with a file tree, language servers, Git, a terminal and a debugger.
 
 Both tabs share the same project, the same terminal and the same AI accounts. Switch between them with `Cmd/Ctrl + 1` and `Cmd/Ctrl + 2`, or with `Cmd/Ctrl + Shift + E`.
@@ -82,12 +82,12 @@ Pragma is built with Tauri and Rust instead of Electron, stores API keys in the 
 
 ## Features
 
-### Start a team of agents
+### Hand out several tasks at once
 
-Describe the task once and pick who works on it. A Cmd-click (Ctrl on Windows and Linux) adds another CLI or another account, and every agent gets its own count. Each one runs in its own Git worktree, so parallel work never collides.
+Write one task per line and pick who shares them. A Cmd-click (Ctrl on Windows and Linux) adds another CLI or another account, and Pragma hands the tasks out in turn, so a work and a personal Claude Code account both get work. Any task can go to another agent with one click. Each agent runs in its own Git worktree, so parallel work never collides.
 
 <p align="center">
-  <img src=".github/assets/readme/start.webp" alt="The start card with a task, three Claude Code agents selected and a Start 3 button" width="720">
+  <img src=".github/assets/readme/start.webp" alt="The start card with three tasks, one line each, handed to two Claude Code accounts and Grok Build, and a Start 3 button" width="720">
 </p>
 
 ### Review before anything lands
@@ -127,7 +127,7 @@ Every project is a space with its own tabs, layouts and agent worktrees. The ove
 <details>
 <summary><strong>Agents</strong></summary>
 
-- Start one agent or a team of up to eight from the start card, mixing CLIs and accounts.
+- Start up to eight agents at once from the start card, one task per line, spread over the CLIs and accounts you pick.
 - Several accounts per coding CLI, for example a work and a personal Claude Code account.
 - Agents run in isolated Git worktrees unless the project runs them in the checkout.
 - Agent panes side by side, with split, zoom and keyboard focus between panes.
