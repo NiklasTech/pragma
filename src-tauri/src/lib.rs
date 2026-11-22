@@ -10,6 +10,7 @@ mod macos_chrome;
 pub mod modules;
 pub mod platform;
 pub mod window;
+mod window_buttons;
 
 use ai::acp::AcpSessionManager;
 use ai::child_sessions::ChildSessionServer;
@@ -422,6 +423,7 @@ pub fn run() {
             cli::get_cli_project_path,
             window::set_window_header_height,
             window::update_window_folder,
+            window_buttons::window_button_layout,
             app_menu::macos_menu_set_recent,
             app_menu::macos_menu_set_run_tasks,
             app_menu::macos_menu_set_enabled,

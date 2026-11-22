@@ -281,6 +281,7 @@ permissions = [
   "allow-update-window-folder",
   "allow-voice-input-available",
   "allow-voice-system-memory",
+  "allow-window-button-layout",
   "allow-workspace-load",
   "allow-workspace-save",
   "allow-workspace-settings-load",

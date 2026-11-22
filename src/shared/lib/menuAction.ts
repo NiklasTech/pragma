@@ -28,3 +28,16 @@ export function wrapWithGuard<K extends string>(
   }
   return next;
 }
+
+type MenuDispatcher = (payload: NativeMenuPayload) => void;
+
+let dispatcher: MenuDispatcher | null = null;
+
+/// The window's handler for app menu actions; Windows and Linux draw that menu in the page.
+export function setMenuDispatcher(next: MenuDispatcher | null): void {
+  dispatcher = next;
+}
+
+export function dispatchMenuAction(action: string, path?: string): void {
+  dispatcher?.({ action, path });
+}
