@@ -1,0 +1,367 @@
+@import "@fontsource-variable/geist/index.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/600.css";
+
+/* The colors and type of pragma.dev and the app: warm paper in light mode, neutral coal in dark mode, one ember accent. */
+
+:root {
+  --pragma-paper: #f4efe6;
+  --pragma-paper-2: #ebe4d7;
+  --pragma-sheet: #fbf8f2;
+  --pragma-ink: #16181a;
+  --pragma-ink-2: rgba(22, 24, 26, 0.72);
+  --pragma-ink-3: rgba(22, 24, 26, 0.55);
+  --pragma-line: rgba(22, 24, 26, 0.1);
+  --pragma-line-2: rgba(22, 24, 26, 0.18);
+  --pragma-glut: #e8531f;
+  --pragma-glut-text: #b23c0a;
+  --pragma-glut-soft: rgba(232, 83, 31, 0.1);
+  --pragma-on-glut: #fff8f0;
+
+  --vp-font-family-base: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --vp-font-family-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --vp-c-bg: var(--pragma-paper);
+  --vp-c-bg-alt: var(--pragma-paper-2);
+  --vp-c-bg-elv: var(--pragma-sheet);
+  --vp-c-bg-soft: var(--pragma-sheet);
+
+  --vp-c-text-1: var(--pragma-ink);
+  --vp-c-text-2: var(--pragma-ink-2);
+  --vp-c-text-3: var(--pragma-ink-3);
+
+  --vp-c-border: var(--pragma-line-2);
+  --vp-c-divider: var(--pragma-line);
+  --vp-c-gutter: var(--pragma-line);
+
+  --vp-c-brand-1: var(--pragma-glut-text);
+  --vp-c-brand-2: var(--pragma-glut);
+  --vp-c-brand-3: var(--pragma-glut);
+  --vp-c-brand-soft: var(--pragma-glut-soft);
+
+  --vp-c-default-soft: rgba(22, 24, 26, 0.06);
+  --vp-code-bg: rgba(22, 24, 26, 0.06);
+  --vp-code-color: var(--pragma-ink);
+  --vp-code-block-bg: var(--pragma-sheet);
+
+  --vp-button-brand-bg: var(--pragma-glut);
+  --vp-button-brand-hover-bg: #d14716;
+  --vp-button-brand-active-bg: #b23c0a;
+  --vp-button-brand-text: var(--pragma-on-glut);
+  --vp-button-brand-hover-text: var(--pragma-on-glut);
+  --vp-button-brand-active-text: var(--pragma-on-glut);
+  --vp-button-alt-bg: transparent;
+  --vp-button-alt-border: var(--pragma-line-2);
+  --vp-button-alt-hover-bg: var(--pragma-sheet);
+  --vp-button-alt-hover-border: var(--pragma-ink-3);
+
+  --vp-home-hero-name-color: var(--pragma-ink);
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle,
+    var(--pragma-glut-soft) 0%,
+    transparent 68%
+  );
+  --vp-home-hero-image-filter: blur(24px);
+
+  --vp-custom-block-tip-bg: var(--pragma-glut-soft);
+  --vp-custom-block-tip-border: transparent;
+  --vp-custom-block-tip-text: var(--pragma-ink);
+
+  --vp-sidebar-bg-color: var(--pragma-paper);
+  --vp-nav-bg-color: var(--pragma-paper);
+  --vp-local-search-bg: var(--pragma-paper);
+  --vp-local-search-result-bg: var(--pragma-sheet);
+  --vp-local-search-highlight-bg: var(--pragma-glut);
+  --vp-local-search-highlight-text: var(--pragma-on-glut);
+
+  --pragma-radius: 12px;
+}
+
+.dark {
+  --pragma-paper: #0e0f11;
+  --pragma-paper-2: #09090b;
+  --pragma-sheet: #16171a;
+  --pragma-ink: #f3eee4;
+  --pragma-ink-2: rgba(243, 238, 228, 0.72);
+  --pragma-ink-3: rgba(243, 238, 228, 0.52);
+  --pragma-line: rgba(243, 238, 228, 0.09);
+  --pragma-line-2: rgba(243, 238, 228, 0.17);
+  --pragma-glut: #ff7a3d;
+  --pragma-glut-text: #ff8f5c;
+  --pragma-glut-soft: rgba(255, 122, 61, 0.12);
+  --pragma-on-glut: #0f1714;
+
+  --vp-c-default-soft: rgba(243, 238, 228, 0.07);
+  --vp-code-bg: rgba(243, 238, 228, 0.07);
+  --vp-code-block-bg: #121316;
+  --vp-button-brand-hover-bg: #ff8f5c;
+  --vp-button-brand-active-bg: #e8531f;
+}
+
+/* Headings in the app's mono font, tight like the site. */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4,
+.VPHero .name,
+.VPHero .text,
+.VPFeature .title {
+  font-family: var(--vp-font-family-mono);
+  letter-spacing: -0.02em;
+}
+
+.vp-doc h1 {
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.vp-doc h2 {
+  font-size: 22px;
+  font-weight: 600;
+  border-top-color: var(--pragma-line);
+}
+
+.vp-doc h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.vp-doc p,
+.vp-doc li {
+  line-height: 1.75;
+}
+
+.vp-doc a {
+  color: var(--pragma-glut-text);
+  text-decoration-color: color-mix(in srgb, var(--pragma-glut) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+.vp-doc a:hover {
+  text-decoration-color: var(--pragma-glut);
+}
+
+/* Inline code and keys look like the chips of the app. */
+.vp-doc :not(pre) > code {
+  border-radius: 5px;
+  padding: 0.15em 0.4em;
+  font-size: 0.86em;
+}
+
+.vp-doc kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--pragma-line-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--pragma-sheet);
+  color: var(--pragma-ink);
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.82em;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.vp-doc .none {
+  color: var(--vp-c-text-3);
+  font-size: 0.9em;
+}
+
+/* Tables as one rounded sheet with hairlines, no zebra stripes. */
+.vp-doc table {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--pragma-line-2);
+  border-radius: var(--pragma-radius);
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.vp-doc tr {
+  background: transparent;
+  border: 0;
+}
+
+.vp-doc tr:nth-child(2n) {
+  background: transparent;
+}
+
+.vp-doc th,
+.vp-doc td {
+  border: 0;
+  border-bottom: 1px solid var(--pragma-line);
+  padding: 9px 14px;
+}
+
+.vp-doc tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.vp-doc th {
+  background: var(--pragma-sheet);
+  color: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Code blocks and hint boxes on the same sheet. */
+.vp-doc div[class*="language-"] {
+  border: 1px solid var(--pragma-line);
+  border-radius: var(--pragma-radius);
+}
+
+.vp-doc .custom-block {
+  border-radius: var(--pragma-radius);
+}
+
+/* Screenshots as framed windows. */
+.vp-doc .screen {
+  margin: 24px 0;
+}
+
+.vp-doc .screen img {
+  width: 100%;
+  border: 1px solid var(--pragma-line-2);
+  border-radius: var(--pragma-radius);
+  box-shadow: 0 18px 48px -24px rgba(0, 0, 0, 0.35);
+}
+
+.vp-doc .screen figcaption {
+  margin-top: 10px;
+  color: var(--vp-c-text-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Sidebar: mono group titles, ember for the page you are on. */
+.VPSidebarItem.level-0 > .item > .text,
+.VPSidebarItem.level-0 > .item > .link > .text {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+}
+
+.VPSidebarItem.is-active > .item .link > .text {
+  color: var(--pragma-glut-text);
+}
+
+.VPSidebarItem.is-active > .item > .indicator {
+  background-color: var(--pragma-glut);
+}
+
+.VPNavBarTitle .title {
+  font-family: var(--vp-font-family-mono);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Home page. */
+.VPHero .name {
+  font-size: 56px;
+  font-weight: 600;
+}
+
+.VPHero .text {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--vp-c-text-2);
+}
+
+.VPHero .tagline {
+  color: var(--vp-c-text-2);
+}
+
+.VPHome .VPFeature {
+  border: 1px solid var(--pragma-line);
+  border-radius: var(--pragma-radius);
+  background: var(--pragma-sheet);
+  transition: border-color 0.2s;
+}
+
+.VPHome .VPFeature:hover {
+  border-color: var(--pragma-line-2);
+}
+
+.VPFeature .title {
+  font-size: 15px;
+}
+
+.VPFeature .link-text-value {
+  color: var(--pragma-glut-text);
+}
+
+.VPHome .tour {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+.VPHome .tour h2 {
+  margin: 72px 0 8px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.VPHome .tour p {
+  max-width: 640px;
+  color: var(--vp-c-text-2);
+  line-height: 1.7;
+}
+
+.VPHome .tour img {
+  width: 100%;
+  margin-top: 20px;
+  border: 1px solid var(--pragma-line-2);
+  border-radius: var(--pragma-radius);
+  box-shadow: 0 24px 64px -32px rgba(0, 0, 0, 0.4);
+}
+
+.VPHome .tour .video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin-top: 20px;
+  overflow: hidden;
+  border: 1px solid var(--pragma-line-2);
+  border-radius: var(--pragma-radius);
+}
+
+.VPHome .tour .video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .VPHero .name {
+    font-size: 40px;
+  }
+
+  .VPHero .text {
+    font-size: 24px;
+  }
+}
+
+.vp-doc .screen .dark-only,
+.dark .vp-doc .screen .light-only {
+  display: none;
+}
+
+.dark .vp-doc .screen .dark-only {
+  display: block;
+}

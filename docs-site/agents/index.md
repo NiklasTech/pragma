@@ -2,6 +2,10 @@
 
 An agents tab holds up to eight agent panes side by side. A pane shows a coding CLI such as Claude Code or Codex, a shell, a chat with Pragma's own agent or a [browser](./browser-pane.md). Add more agents tabs with `+` in the strip.
 
+<figure class="screen">
+  <img src="/screens/agents.webp" alt="Three Claude Code agents side by side in one agents tab">
+</figure>
+
 ## The start card
 
 An empty agents tab shows the start card:
