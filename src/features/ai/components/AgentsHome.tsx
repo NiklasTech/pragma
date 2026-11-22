@@ -26,6 +26,7 @@ import { startSession } from "@/features/ai/sessions/start";
 
 import { deliverTerminalPrompt } from "../children/terminalPrompt";
 import { isHomePromptSubmitKey, trimHomePrompt } from "../home/homePrompt";
+import { startPlacement } from "../home/startPlacement";
 import { clearPendingFirstMessage, setPendingFirstMessage } from "../home/pendingFirstMessage";
 import {
   pickOnly,
@@ -39,7 +40,6 @@ import { useAgentsPanesStore } from "../panes/store";
 import { quickChoices } from "../quickStart/quickChoices";
 import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
 import { useNewSessionActions } from "../threads/useNewSessionActions";
-import type { GroupEnvironment } from "../sessions/group";
 import { AgentTeamPicker } from "./AgentTeamPicker";
 import { ChatToolbar } from "./ChatToolbar";
 
@@ -81,6 +81,7 @@ export function AgentsHome() {
   const setting = useWorkspaceSettingsStore((state) => state.settings?.agent?.writingSessions);
   const branch = useGitStore((state) => state.snapshot?.repo.branch ?? null);
   const changes = useGitStore((state) => state.snapshot?.changed_files.length ?? null);
+  const noGit = useGitStore((state) => !state.snapshot && !state.isLoading && state.error !== null);
   const manifests = useAIStore((state) => state.cliManifests);
   const statuses = useAIStore((state) => state.cliStatuses);
   const loadCLIManifests = useAIStore((state) => state.loadCLIManifests);
@@ -114,14 +115,12 @@ export function AgentsHome() {
   const name = getWorkspaceName(rootPath);
   const several = !pragma && total > 1;
   // Several agents on one task would edit the same files, so each gets a worktree unless the project says otherwise.
-  const groupMode: GroupEnvironment = setting === "checkout" ? "checkout" : "isolated";
-  const where = several
-    ? groupMode === "isolated"
-      ? "each in its own worktree"
-      : "all in this folder"
-    : defaultEnvironment(chatSessions, setting) === "worktree"
-      ? "in a new worktree"
-      : "in this folder";
+  const { groupMode, label: where } = startPlacement({
+    several,
+    setting,
+    noGit,
+    single: defaultEnvironment(chatSessions, setting),
+  });
   const isMac = getIsMac();
   const facts = rootPath
     ? [
