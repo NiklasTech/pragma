@@ -1,8 +1,8 @@
-# Named Agents
+# Named agents
 
 A named agent is a reusable assistant with its own instructions, memory, skills and folder access. Each chat you start with it gets that context automatically.
 
-Named agents are listed under **Agents** in the thread list. Select one to see its chats and settings.
+Named agents are listed under **Agents** in the [thread list](./index.md#the-thread-list). Select one to see its chats and settings.
 
 Each agent has a scope, shown next to its engine:
 

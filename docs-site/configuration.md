@@ -1,120 +1,111 @@
 # Configuration
 
-Pragma is configured through the in-app settings panel. Open it with `Cmd/Ctrl + ,` or from the command palette, then pick a category in the left column.
+Open the settings with `Cmd/Ctrl + ,` or from the command palette. A row of tabs at the top switches between the categories; most tabs carry the category's first word, **look** stands for Appearance and **tools** for Extensions and tools. The search field filters every setting at once. The menu of changed settings lists everything you set away from its default.
 
-| Category   | What it controls                                           |
-| ---------- | ---------------------------------------------------------- |
-| Editor     | Font, indentation, VIM mode, auto save and formatting      |
-| Terminal   | Shell, font, scrollback and AI command suggestions         |
-| Agents     | AI provider, model, inline completion and CLI integration  |
-| Appearance | Themes, density, UI scale and interface font               |
-| MCP        | Model Context Protocol servers                             |
-| Languages  | Language servers (LSP) per language                        |
-| Extensions | Workspace extensions and their contributed commands/panels |
-| Layout     | Panel sizes and status bar items                           |
-| Keyboard   | Keyboard shortcut bindings                                 |
-| About      | Version, updates and license                               |
+| Category             | What it holds                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| General              | Version, updates and open source licenses                                                                                                                                                                     |
+| Agents               | [Coding CLIs and accounts](./ai-providers.md#coding-clis), chat context, project rules, [approvals](./agents/tool-approvals.md), child sessions, notifications and [voice input](./agents/voice-dictation.md) |
+| Appearance           | [Theme](./theming.md), interface size, editor and terminal colors, accessibility                                                                                                                              |
+| Editor               | Typing, display, [models and API keys](./ai-providers.md#api-keys) and language servers                                                                                                                       |
+| Terminal             | Shell, font, scrollback and command suggestions                                                                                                                                                               |
+| Git and worktrees    | What happens to the [worktrees](./agents/worktrees.md) agents work in                                                                                                                                         |
+| Spaces and layouts   | Panel sizes, terminal variables and the settings this project shares                                                                                                                                          |
+| Keys                 | Every [keyboard shortcut](./keyboard-shortcuts.md). Click a binding to change it                                                                                                                              |
+| Extensions and tools | [MCP servers](./mcp-servers.md), [skills](./agents/skills.md) and [extensions](./extensions.md)                                                                                                               |
+
+**export** writes your settings to a file, **import** reads such a file back in, and **reset all** restores every default. Custom themes and API keys are not touched by a reset.
 
 ## Editor
 
-| Setting                | Default         | Notes                                             |
-| ---------------------- | --------------- | ------------------------------------------------- |
-| VIM mode               | Off             | Enables VIM keybindings in the editor             |
-| Font size              | 14              |                                                   |
-| Font family            | JetBrains Mono  | Selectable from the font manager                  |
-| Tab size               | 2               |                                                   |
-| Insert spaces          | On              |                                                   |
-| Word wrap              | Off             |                                                   |
-| Line numbers           | On              |                                                   |
-| Auto save              | On focus change | Off, on focus change or after a delay             |
-| Auto save delay        | 1000 ms         | Used when auto save is set to after a delay       |
-| Format on save         | Off             |                                                   |
-| Sticky lines           | Off             | Keeps the enclosing scope visible while scrolling |
-| Font weight            | 400             | 100 to 900                                        |
-| Letter spacing         | 0 px            | -2 to 4 px                                        |
-| Editor padding         | 8 px            | Space above and below the text, 0 to 48 px        |
-| Highlight current line | Off             |                                                   |
-| Scroll past end        | Off             | Lets the last line scroll up to the top           |
+| Setting                  | Default         | Notes                                             |
+| ------------------------ | --------------- | ------------------------------------------------- |
+| Font Size                | 14              |                                                   |
+| Font Family              | JetBrains Mono  | Pick any installed font from the font manager     |
+| Tab Size                 | 2               |                                                   |
+| Insert Spaces            | On              |                                                   |
+| Word Wrap                | Off             |                                                   |
+| Vim Mode                 | Off             | Vim keybindings in the editor                     |
+| Auto Save                | On focus change | Off, on focus change or after a delay             |
+| Auto Save Delay          | 1000 ms         | Used when auto save waits for a delay             |
+| Format on Save           | Off             |                                                   |
+| Trim Trailing Whitespace | Off             |                                                   |
+| Insert Final Newline     | Off             |                                                   |
+| Sticky Lines             | Off             | Keeps the enclosing scope visible while scrolling |
+| Line Numbers             | On              |                                                   |
+
+**Display** has the finer settings: line height (1.6), font weight (400), letter spacing, padding, ligatures, cursor style and blinking, whitespace, rulers, indent guides, bracket pair colors, the current line, scroll past end, the markers in the scroll bar, and **Mark lines an agent wrote**, which colors the gutter of lines an agent changed in its worktree.
 
 ## Terminal
 
-| Setting             | Default        | Notes                                                   |
-| ------------------- | -------------- | ------------------------------------------------------- |
-| Default shell       | System default | Path to the shell executable; empty uses the OS default |
-| Font size           | 13             |                                                         |
-| Font family         | JetBrains Mono |                                                         |
-| Scrollback          | 10000 lines    | Clamped between 1000 and 100000                         |
-| Command suggestions | On             | AI-powered suggestions while typing                     |
+| Setting             | Default        | Notes                                                                               |
+| ------------------- | -------------- | ----------------------------------------------------------------------------------- |
+| Default Shell       | System default | Path to the shell. Empty uses the default of the operating system                   |
+| Font Size           | 13             |                                                                                     |
+| Font Family         | JetBrains Mono |                                                                                     |
+| Scrollback          | 10000 lines    | Between 1000 and 100000                                                             |
+| Cursor Style        | Block          |                                                                                     |
+| Copy on Select      | Off            | Copies selected text right away                                                     |
+| Restore Scrollback  | Off            | Also restores the output after a restart. Tabs, splits and folders always come back |
+| Command Suggestions | On             | AI suggestions while you type, with the model from **Settings > Editor > Models**   |
 
 ## Appearance
 
-Themes are described in the [Theming Guide](./theming.md). The **Interface** section sets how large and dense the UI is, independently of the theme. **Reset to Default** restores all three settings.
+Themes are described in the [theming guide](./theming.md). **Interface** sets how large and dense the UI is, independent of the theme:
 
-| Setting  | Default | Notes                                                                                       |
-| -------- | ------- | ------------------------------------------------------------------------------------------- |
-| Density  | Default | Compact, Default or Comfortable; scales row, tab and bar heights and spacing                |
-| UI scale | 100%    | 80% to 150% in steps of 10; scales UI text and sizes, not the editor and terminal font size |
-| UI font  | Geist   | Any installed font or a custom font name; empty uses the default                            |
+| Setting  | Default | Notes                                                                               |
+| -------- | ------- | ----------------------------------------------------------------------------------- |
+| Density  | Default | Compact, Default or Comfortable. Scales the height of rows, tabs and bars           |
+| UI Scale | 100%    | 80% to 150%. Scales the text and sizes of the UI, not the editor and terminal fonts |
+| UI Font  | Default | Any installed font                                                                  |
 
-`Cmd/Ctrl + Plus`, `Cmd/Ctrl + Minus` and `Cmd/Ctrl + 0` change and reset the UI scale. While the editor or a terminal has focus, the same keys change their own font size instead.
+`Cmd/Ctrl + Plus`, `Cmd/Ctrl + Minus` and `Cmd/Ctrl + 0` change and reset the UI scale. While the editor or a terminal has focus, the same keys change their font size instead.
 
 The **Editor** section gives the editor and the terminals their own colors:
 
-- **Editor theme**: "Same as UI theme" (default) or the editor and syntax colors of any other theme, so a light editor can sit in a dark UI and the other way round. It changes the editor, its gutters and the diff views, not the UI.
-- **Terminal theme**: "Same as UI theme" or the terminal colors of another theme.
-- **Editor colors**: **Customize** opens a dialog to override the editor background or single syntax colors (keywords, strings, comments, functions, variables, numbers, types, tags, attributes, properties and operators). Overrides are kept when you switch themes and can be reset one by one or all at once.
-
-### Repository colors
-
-Every open repository gets its own color, handed out from a fixed palette in the order repositories are opened. It shows as a small dot wherever a repository is named: the workspace menu and title bar, the repository overview, thread groups, pane headers, terminal tabs, editor tabs of other repositories, the explorer's repository folders and the git panel. With one repository open, the dot only shows once you pick a color yourself.
-
-Change the active repository's color with **Repository Color** in the workspace menu: **Automatic**, a preset or a custom color. **Use as Accent Color** makes the active repository's color the accent color while it is active, adjusted for contrast like the accent color. Repository colors are personal settings stored per repository path in the app settings, not in `.pragma/settings.json`.
+- **Editor Theme** uses the editor and syntax colors of another theme, so a light editor can sit in a dark UI and the other way round.
+- **Terminal Theme** does the same for the terminal colors.
+- **Editor Colors** overrides the editor background or single syntax colors. Overrides stay when you switch themes and can be reset one by one.
 
 ### Accessibility
 
-| Setting                            | Default       | Notes                                                                                                           |
-| ---------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| Reduce motion                      | Follow System | Follows the operating system's reduce motion setting or forces it on or off; removes transitions and animations |
-| Always show focus outlines         | Off           | A thick outline on the focused control, also after mouse clicks                                                 |
-| Color blind friendly status colors | Off           | Git, diff and status colors that stay apart with red-green color vision deficiency                              |
+| Setting                            | Default       | Notes                                                                                 |
+| ---------------------------------- | ------------- | ------------------------------------------------------------------------------------- |
+| Reduce Motion                      | Follow system | Follows the system setting or forces it on or off. Removes transitions and animations |
+| Always Show Focus Outlines         | Off           | A thick outline on the focused control, also after mouse clicks                       |
+| Color Blind Friendly Status Colors | Off           | Git, diff and status colors that stay apart with red-green color blindness            |
 
-Status is never shown by color alone: the explorer and the git panel show a letter per file, diff views mark lines with `+` and `-`, and in the editor gutter deleted lines use a triangle. With color blind friendly colors on, modified lines also get a striped marker. For low vision, pick High Contrast Dark or High Contrast Light.
+Status is never shown by color alone. The file tree and the Git panel show a letter per file, diffs mark lines with `+` and `-`, and in the editor gutter deleted lines use a triangle. For low vision, pick High Contrast Dark or High Contrast Light.
 
-## Agents
+## Spaces and layouts
 
-See [AI Provider Setup](./ai-providers.md) for provider and model configuration. The Agents category also contains:
+This category holds what belongs to the open project:
 
-- Inline completion toggle and debounce (default 500 ms).
-- Terminal suggestion provider and model.
-- Agent mode with an auto-approve policy (`never`, `edits`, `all`), disabled by default.
+- **Panels**: **Reset Layout** restores the panel sizes.
+- **Terminal environment**: variables that every terminal of this project starts with.
+- **Editor**: tab size and rulers for this project only.
+- **Agent**: where [writing sessions](./agents/worktrees.md#choose-where-writing-sessions-work), [coding CLI launches](./agents/coding-clis.md#run-several-clis-side-by-side), [parallel tasks](./agents/tasks.md#start-tasks-in-parallel) and [child sessions](./agents/child-sessions.md#environments) work, and a step limit for the project.
+- **Language servers**: per-project overrides.
+- **Folder trust**: see below.
+- **Coding CLI sync**: see [Sync .pragma to coding CLI folders](./agents/coding-clis.md#sync-pragma-to-coding-cli-folders).
 
-## Languages
+The project settings are stored in `.pragma/settings.json` in the project, so everyone who opens the folder gets them.
 
-Language servers are enabled per language. Enabled by default: TypeScript, JavaScript, Rust, Python, Go, Java, C, C++, HTML and CSS. LSP is an experimental feature and can be disabled globally under the experimental settings.
+### Folder trust
 
-## Layout and status bar
-
-- Sidebar width, terminal height and chat panel width are stored as layout settings. A reset action restores the panel sizes to their defaults.
-- The status bar can be hidden, and its items reordered: VIM mode, cursor, file type, encoding, end-of-line, Git branch, Git sync, problems, AI provider and theme.
-
-## Import, export and reset
-
-- **Export** writes the current settings to a file; **Import** merges a previously exported file back in.
-- **Reset Defaults** restores all settings to their default values. Custom themes and API keys are not affected.
+A folder you do not trust opens in **Restricted mode**: it runs no extensions, worktree scripts, language servers, run configurations or debugger, and its allowed commands still ask first. The section shows whether the folder is trusted, and what a trusted folder runs: its **Extensions** when the folder opens, and its **Worktree scripts** when a session gets its own worktree.
 
 ## Where Pragma stores data
 
-- **Application settings** are persisted by the settings store under the `pragma.settings.v1` key and synchronized across Pragma windows.
-- **Onboarding state** is stored in a Tauri store named `app.dat`.
-- **MCP server configuration** is stored in `mcp.json`.
-- **Extensions** live per workspace in `<workspace>/.pragma/extensions/`.
+- **App settings** are kept by the settings store under the key `pragma.settings.v1` and shared between Pragma windows.
+- **MCP servers** are stored in `mcp.json` in the app config folder.
+- **Extensions** live per project in `<project>/.pragma/extensions/`.
+- **Project settings** live in `<project>/.pragma/settings.json`.
 
-The Tauri store and `mcp.json` live in Pragma's application config directory, which is derived from the bundle identifier `dev.pragma.ide`:
-
-| Platform | Location                                        |
+| Platform | App config folder                               |
 | -------- | ----------------------------------------------- |
 | Linux    | `~/.config/dev.pragma.ide/`                     |
 | macOS    | `~/Library/Application Support/dev.pragma.ide/` |
 | Windows  | `%APPDATA%\dev.pragma.ide\`                     |
 
-API keys are never written to these files. They are stored in the operating system keychain.
+API keys are never written to these files. They live in the keychain of the operating system.

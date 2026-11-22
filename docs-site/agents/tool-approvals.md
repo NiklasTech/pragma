@@ -1,4 +1,4 @@
-# Tool Approvals
+# Tool approvals
 
 Pragma's built-in agent asks before it does anything that changes your project. You decide how much it may do on its own in **Settings > Agents > Approvals**.
 

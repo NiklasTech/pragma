@@ -1,4 +1,4 @@
-# Theming Guide
+# Theming
 
 Pragma ships with built-in themes and supports importing custom themes as JSON. Configure themes in **Settings > Appearance**.
 

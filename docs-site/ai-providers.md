@@ -1,79 +1,91 @@
-# AI Provider Setup
+# Coding CLIs and API keys
 
-Pragma talks to AI providers for chat, inline completion and terminal suggestions. Configure them in **Settings > Agents**.
+Pragma works with AI in two ways, and they are set up in different places:
 
-## Supported providers
+- **Coding CLIs** such as Claude Code or Codex run your agents. They use the plan you signed in to, so Pragma needs no key for them. Set them up in **Settings > Agents**.
+- **API keys** power the AI features of the editor: inline completion, the AI chat, the AI edit and terminal suggestions. Set them up in **Settings > Editor > Models**.
 
-| Provider       | Authentication                      |
-| -------------- | ----------------------------------- |
-| OpenAI         | API key                             |
-| Anthropic      | API key (default provider)          |
-| Ollama         | None, local server                  |
-| DeepSeek       | API key                             |
-| Kimi           | API key                             |
-| Gemini         | API key                             |
-| OpenRouter     | API key                             |
-| Custom         | API key, OpenAI-compatible endpoint |
-| GitHub Copilot | GitHub OAuth device flow            |
-| Grok           | API key                             |
-| Cursor         | Local CLI only                      |
-| OpenCode       | Local CLI only                      |
-| Hermes         | Local CLI only                      |
+An API key is never handed to a coding CLI, and a CLI's sign-in never leaves the CLI.
 
-## API key providers
+## Coding CLIs
 
-1. Open **Settings > Agents**.
-2. Select the provider under **Default Provider**.
-3. Enter the API key and save it. The key is stored in the operating system keychain, never in plain text.
-4. Select a model. Models are loaded from the provider once a key is present.
-5. Use **Test Connection** to verify the provider, model and base URL.
+**Settings > Agents > Coding CLIs** lists every CLI that Pragma supports, with its state:
 
-Saved keys are shown masked. A provider is marked **Configured** once a key exists. Removing the key also clears its cached model list.
+| State         | What to do                                                             |
+| ------------- | ---------------------------------------------------------------------- |
+| Not installed | **install** runs the vendor's install command, mostly `npm install -g` |
+| Not signed in | **sign in** opens the CLI's own sign-in                                |
+| Ready         | The CLI can run agents. Hover it to sign out                           |
 
-### Base URLs
+Pragma supports Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode, Hermes Agent and DeepSeek Harness. Each CLI is made and distributed by its vendor. Pragma runs the unmodified official program and is not affiliated with these vendors.
 
-Ollama and Custom expose an editable base URL. The remaining providers use these defaults:
+**Default agent** picks the CLI that runs tasks and the chat when you do not pick an agent yourself.
 
-| Provider   | Base URL                                    |
-| ---------- | ------------------------------------------- |
-| Ollama     | `http://localhost:11434`                    |
-| DeepSeek   | `https://api.deepseek.com`                  |
-| Kimi       | `https://api.kimi.com/coding/v1`            |
-| Gemini     | `https://generativelanguage.googleapis.com` |
-| OpenRouter | `https://openrouter.ai/api/v1`              |
-| Grok       | `https://api.x.ai/v1`                       |
-| Custom     | Empty, set by the user                      |
+How the CLIs run inside Pragma, as a terminal or as a chat, is described in [Coding CLIs in agents](./agents/coding-clis.md).
 
-## Local models with Ollama
+## Several accounts of one CLI
 
-1. Start the Ollama server locally.
-2. Select **Ollama** as the provider.
-3. Confirm the base URL, then pick one of the models reported by the server.
+Claude Code and Codex can run under more than one account, for example a work and a personal Claude Code plan. Each account lives in its own config folder:
 
-Ollama needs no API key. If the model list stays empty, check that the server is reachable at the configured base URL.
+- Pragma finds folders in your home directory named like `~/.claude-work` or `~/.codex-personal` that hold a config of their own.
+- **Add account folder** under the CLI adds any other folder.
+- The pencil button names an account. The name shows wherever you pick an agent.
 
-## OpenAI-compatible endpoints
+When an agent starts on an account, Pragma points the CLI at that folder with `CLAUDE_CONFIG_DIR` or `CODEX_HOME`. To sign in to a new account, run the CLI once with that variable set, for example:
 
-Select **Custom** and provide a base URL and a model. Include the API version path, for example `/v1`. LM Studio and Ollama-compatible servers usually need `http://localhost:PORT/v1`.
+```sh
+CLAUDE_CONFIG_DIR=~/.claude-work claude
+```
 
-## GitHub Copilot
+Every account then shows up as its own choice on the [start card](./agents/start.md), so the tasks of one start can be spread over all of them. The [activity tab](./agents/watching.md#the-activity-tab) shows how much of each Claude Code plan is used.
 
-1. Create a GitHub OAuth App and copy its Client ID.
-2. Paste the Client ID under the Copilot section in **Settings > Agents**.
-3. Connect your GitHub account and complete the device flow in the browser. If the browser does not open, enter the displayed code manually.
+## API keys
 
-## Local CLI integration
+**Settings > Editor > Models** holds the provider for the editor's AI features:
 
-Pragma can speak the Agent Client Protocol (ACP) with supported official CLIs that are installed locally. This is experimental and gated by the **Enable local CLI integration** toggle in **Settings > Agents**.
+1. Pick the provider under **Default Provider**.
+2. Enter the API key and save it. Pragma stores it in the operating system keychain, never in a file.
+3. Pick a **Model**. The list is loaded from the provider once a key is saved.
+4. **Connection** tests the provider, the model and the base URL.
 
-- Install a CLI with **Install Official CLI**, then sign in with **Login with CLI**.
-- A CLI only runs while it is the active provider, and nothing is installed or launched until you press Install.
-- ACP turns use the subscription you signed into in the official CLI. API keys configured above are a separate path and are never handed to a CLI.
+| Provider       | Sign-in                             | Base URL                                    |
+| -------------- | ----------------------------------- | ------------------------------------------- |
+| Anthropic      | API key                             | Fixed                                       |
+| OpenAI         | API key                             | Fixed                                       |
+| Gemini         | API key                             | `https://generativelanguage.googleapis.com` |
+| DeepSeek       | API key                             | `https://api.deepseek.com`                  |
+| Kimi           | API key                             | `https://api.kimi.com/coding/v1`            |
+| Grok           | API key                             | `https://api.x.ai/v1`                       |
+| OpenRouter     | API key                             | `https://openrouter.ai/api/v1`              |
+| GitHub Copilot | GitHub device sign-in               | Fixed                                       |
+| Ollama         | None, a local server                | `http://localhost:11434`, editable          |
+| Custom         | API key, OpenAI-compatible endpoint | Set by you                                  |
 
-Supported CLI providers include Codex CLI (OpenAI), Claude Code (Anthropic), Gemini CLI, GitHub Copilot CLI, Kimi Code, Grok Build, Cursor CLI, OpenCode and Hermes Agent. Each CLI is distributed separately by its vendor; Pragma runs the unmodified official binaries and is not affiliated with these vendors.
+**Show unavailable providers** also lists providers without a key in the chat's model picker.
 
-## Completion and voice
+### Local models with Ollama
 
-- **Inline completion** shows AI ghost-text suggestions in the editor, with a configurable debounce. `Tab` accepts the whole suggestion, `Cmd/Ctrl + Right` the next word and `Cmd/Ctrl + Shift + Right` the next line. `Alt + ]` asks for another suggestion and `Alt + [` goes back to an earlier one.
-- **Command suggestions** show AI-powered suggestions while typing in the terminal.
-- Voice input can use Web Speech or the local Whisper and Parakeet engines. See [Voice Dictation](./agents/voice-dictation.md).
+1. Start the Ollama server.
+2. Pick **Ollama** as the provider.
+3. Check the base URL and pick one of the models the server reports.
+
+If the model list stays empty, the server is not reachable at the base URL.
+
+### OpenAI-compatible endpoints
+
+Pick **Custom** and enter a base URL and a model. Include the version path, for example `/v1`. LM Studio and similar servers usually need `http://localhost:PORT/v1`.
+
+### GitHub Copilot
+
+1. Create a GitHub OAuth App and copy its client ID.
+2. Paste the client ID in the Copilot block of **Settings > Editor > Models**.
+3. **Connect GitHub Account** and finish the device sign-in in the browser. If the browser does not open, enter the code that Pragma shows.
+
+## Editor AI features
+
+The same page has the settings of the features that use the API key:
+
+- **Inline Completion** shows ghost-text suggestions while you type, after a short wait you can set. `Tab` accepts the whole suggestion, `Cmd/Ctrl + Right` the next word and `Cmd/Ctrl + Shift + Right` the next line. `Alt + ]` asks for another suggestion and `Alt + [` goes back to an earlier one.
+- **Terminal Suggestions** picks the provider and model for command suggestions in the terminal. Turn them on or off with **Command Suggestions** in **Settings > Terminal**.
+
+Voice input has its own engines and needs no API key, see [Voice dictation](./agents/voice-dictation.md).

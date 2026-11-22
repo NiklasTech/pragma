@@ -5,7 +5,7 @@ Pragma supports sandboxed JavaScript extensions per workspace. Extensions live i
 (`sandbox="allow-scripts"`, no same-origin access), communicating with the host
 through a typed `postMessage` bridge. An extension can never crash the host: a
 broken manifest or a runtime failure marks the extension as errored in the
-Extension Manager (Settings > Extensions) and everything else keeps working.
+Extension Manager (Settings > Extensions and tools) and everything else keeps working.
 
 ## Directory layout
 
@@ -64,7 +64,7 @@ and pressing "Reload".
 ## Runtime API
 
 `main.js` runs with a global `pragma` object. Type declarations for extension
-authors are in [docs/pragma-extension.d.ts](./pragma-extension.d.ts).
+authors are in [docs/pragma-extension.d.ts](https://github.com/NiklasTech/pragma/blob/main/docs/pragma-extension.d.ts).
 
 ```js
 // commands registered in the manifest fire here

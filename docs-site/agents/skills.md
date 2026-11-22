@@ -1,4 +1,4 @@
-# Workspace Skills
+# Workspace skills
 
 A skill is a written procedure that agents follow for a recurring job, such as "release a new version" or "add a database migration". Skills are Markdown files in your repository, so they are versioned and shared with your team like any other file.
 
@@ -90,7 +90,7 @@ A skill with missing fields or headings is listed with an error and is not offer
 
 ## Create and enable skills
 
-Skills are managed in **Settings > Agents > Skills**:
+Skills are managed in **Settings > Extensions and tools > Skills**:
 
 - **New skill** creates `.pragma/skills/new-skill/SKILL.md` and opens it in the editor.
 - **Convert to SKILL.md** on a single-file skill moves `<id>.md` to `<id>/SKILL.md` without changing its content. The id stays the same, so named agents keep their skill selection.

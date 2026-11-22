@@ -4,7 +4,7 @@ An agent session can work in its own [git worktree](https://git-scm.com/docs/git
 
 ## Start a session in a worktree
 
-1. Open **New session** in the thread list.
+1. Open **New session** in the [thread list](./index.md#the-thread-list).
 2. Choose **Agent > New worktree**.
 
 Pragma creates a branch from the current `HEAD` and checks it out in a new worktree. The branch is named `pragma/<id>`, where `<id>` is the last eight hex characters of the session id; if that name is taken, a counter is appended (`pragma/1a2b3c4d-2`).
@@ -27,7 +27,7 @@ A shared worktree is only removed when no session needs it anymore, see [When wo
 
 ## Choose where writing sessions work
 
-Every session that can change files starts in the environment the project setting **Settings > Project > Agent > Writing sessions work in** picks. This covers agent sessions, coding CLI terminals and conversations, named agent chats, Add to chat, Fix in session and tasks you start in the foreground.
+Every session that can change files starts in the environment the project setting **Settings > Spaces and layouts > Agent > Writing sessions work in** picks. This covers agent sessions, coding CLI terminals and conversations, named agent chats, Add to chat, Fix in session and tasks you start in the foreground.
 
 | Value         | Effect                                                                                     |
 | ------------- | ------------------------------------------------------------------------------------------ |
@@ -104,7 +104,7 @@ When a merge conflicts, the merge stays in your checkout and the conflicts open 
 
 ## When worktrees are removed
 
-With **Settings > Agents > Remove worktrees automatically when a session is finished** turned on (the default), Pragma removes a worktree as soon as no session needs it anymore:
+With **Settings > Git and worktrees > Remove worktrees automatically when a session is finished** turned on (the default), Pragma removes a worktree as soon as no session needs it anymore:
 
 - after **Finish > Merge** succeeded
 - after the pull request from **Finish > Push and open pull request** is merged on GitHub, also as a squash merge. Pragma checks the pull request through the GitHub CLI (`gh`, installed and signed in) when the thread list loads and when the window gains focus. A pull request closed without merging keeps the worktree, and the thread shows that it was closed

@@ -1,11 +1,13 @@
-# Voice Dictation
+# Voice dictation
 
 Dictate messages instead of typing them, in the chat composer and in coding CLI terminal panes. Configure dictation in **Settings > Agents > Voice input**.
 
-## Turn it on
+## Set it up
+
+Voice input is on by default: the chat composer shows a microphone button. To set it up:
 
 1. Open **Settings > Agents > Voice input**.
-2. Switch on **Enable**. The composer gets a **Dictate** microphone button.
+2. Check that **Enable** is on. The **Microphone access** row below it shows whether Pragma may use the microphone and asks for access when needed.
 3. Keep the default engine, **Parakeet (local)**, or choose another one.
 
 Click the microphone to start recording and click it again (**Stop dictation**) to insert the transcript at the cursor. Nothing is sent until you send the message yourself.
@@ -40,7 +42,7 @@ Downloaded engines and models are stored in Pragma's application data directory,
 
 ## Hold to dictate
 
-Bind **Hold to Dictate** in **Settings > Keyboard** to record only while a key combination is held. It has no default binding.
+Bind **Hold to Dictate** in **Settings > Keys** to record only while a key combination is held. It has no default binding.
 
 - In the chat composer, recording stops when you release the keys and the transcript is inserted at the cursor.
 - In a [coding CLI terminal pane](./coding-clis.md), the transcript is typed into the terminal without pressing `Enter`, so you can review it before you submit.

@@ -1,89 +1,46 @@
-# Keyboard Shortcuts
+<script setup>
+import ShortcutTable from "./.vitepress/components/ShortcutTable.vue";
+</script>
 
-Pragma ships with a default keymap. `Cmd` refers to the macOS Command key; on Windows and Linux the same binding uses `Ctrl`. Where macOS and the other platforms differ, both bindings are listed.
+# Keyboard shortcuts
 
-## File
+These are the default shortcuts. The tables are built from the keymap in Pragma's source code, so they always match the app. Change any shortcut in **Settings > Keys**.
 
-| Action            | Default                |
-| ----------------- | ---------------------- |
-| Open File         | `Cmd/Ctrl + O`         |
-| Open Folder       | None                   |
-| Save File         | `Cmd/Ctrl + S`         |
-| Close Tab         | `Cmd/Ctrl + W`         |
-| Reopen Closed Tab | `Cmd/Ctrl + Shift + T` |
-| Go to File        | `Cmd/Ctrl + P`         |
+<ShortcutTable />
 
-## Edit
+## Inside a terminal
 
-| Action                 | Default           |
-| ---------------------- | ----------------- |
-| Edit Selection with AI | `Cmd/Ctrl + L`    |
-| Format Document        | `Shift + Alt + F` |
+On macOS a terminal keeps the keys of Terminal.app while it has focus. They win over the app shortcuts above.
 
-## View
+| Keys        | Action                                      |
+| ----------- | ------------------------------------------- |
+| `⌘K`        | Clear the terminal                          |
+| `⌘C` / `⌘V` | Copy and paste                              |
+| `⌘A`        | Select everything in the terminal           |
+| `⌘←` / `⌘→` | Jump to the start or end of the line        |
+| `⌥←` / `⌥→` | Jump one word back or forward               |
+| `⌘⌫` / `⌥⌫` | Delete to the start of the line or one word |
 
-| Action                 | Default                                           |
-| ---------------------- | ------------------------------------------------- |
-| Toggle Sidebar         | `Cmd/Ctrl + B`                                    |
-| Toggle Terminal        | macOS `Cmd + J`, Windows and Linux `` Ctrl + ` `` |
-| New Terminal Tab       | `Cmd/Ctrl + T`                                    |
-| Open Settings          | `Cmd/Ctrl + ,`                                    |
-| Open Command Palette   | `Cmd/Ctrl + Shift + P`                            |
-| Toggle Agents / Editor | `Cmd/Ctrl + Shift + E`                            |
-| Split Editor           | `Cmd/Ctrl + \`                                    |
-| Toggle Problems        | `Cmd/Ctrl + Shift + M`                            |
-| Toggle Preview         | `Cmd/Ctrl + Shift + V`                            |
-| Switch to Agents       | `Cmd/Ctrl + 2`                                    |
-| Switch to Editor       | `Cmd/Ctrl + 1`                                    |
-| Next Tab               | `Ctrl + Tab`                                      |
-| Previous Tab           | `Ctrl + Shift + Tab`                              |
-| Zoom In (UI scale)     | `Cmd/Ctrl + Plus`                                 |
-| Zoom Out (UI scale)    | `Cmd/Ctrl + Minus`                                |
-| Reset Zoom (UI scale)  | `Cmd/Ctrl + 0`                                    |
+On Windows and Linux, clear the terminal from its `⋯` menu or the right-click menu. The same menus have **Find**, **Copy all output**, **Split right** and **Close panel**.
 
-## Search
+`Cmd + Click` on macOS or `Ctrl + Click` on Windows and Linux opens what is under the pointer in any terminal, including coding CLI sessions:
 
-| Action          | Default                                                |
-| --------------- | ------------------------------------------------------ |
-| Find in Files   | `Cmd/Ctrl + Shift + F`                                 |
-| Find in File    | `Cmd/Ctrl + F`                                         |
-| Replace in File | macOS `Cmd + Option + F`, Windows and Linux `Ctrl + H` |
-
-## AI and chat
-
-| Action            | Default                |
-| ----------------- | ---------------------- |
-| Toggle AI Chat    | `Cmd/Ctrl + Shift + A` |
-| Toggle Agent Mode | None                   |
-| Send Chat Message | `Enter`                |
-
-## Debugging
-
-| Action                     | Default       |
-| -------------------------- | ------------- |
-| Start / Continue Debugging | `F5`          |
-| Stop Debugging             | `Shift + F5`  |
-| Step Over                  | `F10`         |
-| Step Into                  | `F11`         |
-| Step Out                   | `Shift + F11` |
-| Toggle Breakpoint          | `F9`          |
-
-## Terminal links
-
-In every terminal, including coding CLI sessions such as Claude Code, `Cmd + Click` on macOS or `Ctrl + Click` on Windows and Linux opens what is under the pointer:
-
-- **File paths** open in the editor, at the line and column when the path has one, for example `src/app.tsx:12:5` or `src/lib.rs(7,3)`. Relative paths are resolved against the terminal's working directory; absolute paths, `~/` and Windows paths work too.
+- **File paths** open in the editor, at the line and column when the path has one, for example `src/app.tsx:12:5` or `src/lib.rs(7,3)`. Relative paths are resolved against the terminal's working directory. Absolute paths, `~/` and Windows paths work too.
 - **URLs** open in the browser.
 
 A plain click only selects text.
 
-## Customize shortcuts
+## Letter keys in menus
 
-1. Open **Settings > Keyboard**.
-2. Select the action you want to change.
-3. Record a new binding in the dialog. Press `Escape` to cancel.
-4. If the binding conflicts with another action, Pragma reports the conflict before it is saved.
+Right-click menus of agents, tabs and terminals show a letter next to each action. While the menu is open, pressing that letter runs the action, so `r` renames and `w` closes a tab.
+
+## Change a shortcut
+
+1. Open **Settings > Keys**.
+2. Click the binding of the action you want to change.
+3. Press the new keys. `Escape` cancels.
+4. If the keys are already taken, Pragma names the other action before it saves.
 
 Each action can be reset to its default, and all shortcuts can be reset at once. On macOS the menu bar shows your shortcuts and uses them too.
 
-When a default changes in an update, a shortcut you never changed moves to the new default. A shortcut you set yourself is kept. Editor VIM keybindings are separate and configured with the VIM mode toggle in the editor settings.
+When a default changes in an update, a shortcut you never changed moves to the new default. A shortcut you set yourself is kept. Vim keybindings in the editor are separate and are turned on with **Vim Mode** in **Settings > Editor**.
