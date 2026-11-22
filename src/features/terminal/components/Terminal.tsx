@@ -1,13 +1,5 @@
 import { useEffect, useRef } from "react";
-import {
-  Terminal as TerminalIcon,
-  Plus,
-  SplitHorizontal,
-  Broom,
-  Copy,
-  MagnifyingGlass,
-  X,
-} from "@phosphor-icons/react";
+import { Terminal as TerminalIcon, Plus } from "@phosphor-icons/react";
 
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
@@ -17,12 +9,8 @@ import { findPanelByKind } from "@/shell/layout/tree/operations";
 import { resolvePanelActiveSessionId } from "@/shared/lib/terminal-panels";
 import { PanelEmptyState } from "@/shared/components/PanelEmptyState";
 import { Button } from "@/shared/components/ui/button";
-import {
-  dispatchTerminalClear,
-  dispatchTerminalCopyOutput,
-  dispatchTerminalFind,
-} from "@/shared/lib/terminal-events";
 import { NewTerminalButton } from "./NewTerminalButton";
+import { TerminalActionsMenu } from "./TerminalActionsMenu";
 import { TerminalSession } from "./TerminalSession";
 import { RunTerminalSession } from "./RunTerminalSession";
 import { TerminalTabs } from "./TerminalTabs";
@@ -114,64 +102,12 @@ export function Terminal({ panelId }: TerminalProps) {
           panelId={panelId}
         />
         <div className="flex shrink-0 items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Find in Terminal"
-            onClick={() => activeSessionId && dispatchTerminalFind(activeSessionId)}
-            disabled={!activeSessionId}
-            className="text-fg-muted"
-            title="Find in Terminal"
-          >
-            <MagnifyingGlass size={13} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Copy Output"
-            onClick={() => activeSessionId && dispatchTerminalCopyOutput(activeSessionId)}
-            disabled={!activeSessionId}
-            className="text-fg-muted"
-            title="Copy Output"
-          >
-            <Copy size={13} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Clear Terminal"
-            onClick={() => activeSessionId && dispatchTerminalClear(activeSessionId)}
-            disabled={!activeSessionId}
-            className="text-fg-muted"
-            title="Clear Terminal"
-          >
-            <Broom size={13} />
-          </Button>
-          {panelId && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Split Terminal Right"
-              onClick={handleSplit}
-              className="text-fg-muted"
-              title="Split Terminal Right"
-            >
-              <SplitHorizontal size={13} />
-            </Button>
-          )}
           <NewTerminalButton onCreate={handleNewSession} />
-          {panelId && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Close Panel"
-              onClick={handleClosePanel}
-              className="text-fg-muted hover:text-status-error"
-              title="Close Panel"
-            >
-              <X size={13} weight="bold" />
-            </Button>
-          )}
+          <TerminalActionsMenu
+            sessionId={activeSessionId}
+            onSplit={panelId ? handleSplit : undefined}
+            onClosePanel={panelId ? handleClosePanel : undefined}
+          />
         </div>
       </div>
       <div className="relative flex-1 min-h-0">

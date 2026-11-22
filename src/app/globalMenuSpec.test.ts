@@ -16,6 +16,8 @@ const actions = {
   selectAll: noop,
   quote: noop,
   clearTerminal: noop,
+  findInTerminal: noop,
+  copyTerminalOutput: noop,
   acceptSuggestion: noop,
   dismissSuggestion: noop,
 };
@@ -42,6 +44,7 @@ describe("global menu", () => {
       activeTabName: null,
       lsp,
       terminalSuggestion: false,
+      editorTerminal: false,
       actions,
     };
     const menu = { contextType: "selection" as const, selection: "hi" };
@@ -58,6 +61,7 @@ describe("global menu", () => {
       activeTabName: "main.ts",
       lsp,
       terminalSuggestion: false,
+      editorTerminal: false,
       actions,
     });
     const items = menu.groups.flatMap((group) => group.items);
@@ -65,5 +69,25 @@ describe("global menu", () => {
     expect(items.find((item) => item.label === "go to definition")?.disabled).toBe(true);
     expect(items.find((item) => item.label === "copy")?.disabled).toBe(true);
     expect(items.find((item) => item.label === "paste")?.disabled).toBeFalsy();
+  });
+
+  it("offers find, copy all output and clear only in an editor terminal", () => {
+    const base = {
+      menu: { contextType: "terminal" as const, selection: "" },
+      hasSelection: false,
+      inChat: false,
+      activeTabName: null,
+      lsp,
+      terminalSuggestion: false,
+      actions,
+    };
+    expect(labels(buildMenu({ ...base, editorTerminal: true }))).toEqual([
+      "copy",
+      "paste",
+      "find",
+      "copy all output",
+      "clear",
+    ]);
+    expect(labels(buildMenu({ ...base, editorTerminal: false }))).toEqual(["copy", "paste"]);
   });
 });

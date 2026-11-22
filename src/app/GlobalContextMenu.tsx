@@ -26,6 +26,10 @@ import { selectAllWithin } from "@/shared/lib/textSelection";
 import {
   acceptTerminalSuggestion,
   dismissTerminalSuggestion,
+  dispatchTerminalClear,
+  dispatchTerminalCopyOutput,
+  dispatchTerminalFind,
+  terminalSessionAt,
   TERMINAL_SELECTION_EVENT,
   TERMINAL_SUGGESTION_EVENT,
   type TerminalSelectionEventDetail,
@@ -231,10 +235,22 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
     closeMenu();
   }, [activeTab, hasSelection, menu, closeMenu]);
 
+  const menuTerminal = menu ? terminalSessionAt(menu.target) : null;
+
   const handleClearTerminal = useCallback(() => {
-    window.dispatchEvent(new CustomEvent("pragma:terminal:clear"));
+    if (menuTerminal) dispatchTerminalClear(menuTerminal);
     closeMenu();
-  }, [closeMenu]);
+  }, [closeMenu, menuTerminal]);
+
+  const handleFindInTerminal = useCallback(() => {
+    if (menuTerminal) dispatchTerminalFind(menuTerminal);
+    closeMenu();
+  }, [closeMenu, menuTerminal]);
+
+  const handleCopyTerminalOutput = useCallback(() => {
+    if (menuTerminal) dispatchTerminalCopyOutput(menuTerminal);
+    closeMenu();
+  }, [closeMenu, menuTerminal]);
 
   const handleAcceptTerminalSuggestion = useCallback(() => {
     acceptTerminalSuggestion();
@@ -271,6 +287,7 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
         formatShortcut: shortcutLabel(shortcuts["editor.formatDocument"]),
         lsp: { canGoToDefinition, canFindReferences, canRename, canQuickFix, canFormatDocument },
         terminalSuggestion: terminalSuggestion.visible,
+        editorTerminal: menuTerminal !== null,
         actions: {
           editWithAI: handleAskAI,
           goToDefinition: handleGoToDefinition,
@@ -284,6 +301,8 @@ export function GlobalContextMenu({ children }: { children: React.ReactNode }) {
           selectAll: handleSelectAll,
           quote: handleQuote,
           clearTerminal: handleClearTerminal,
+          findInTerminal: handleFindInTerminal,
+          copyTerminalOutput: handleCopyTerminalOutput,
           acceptSuggestion: handleAcceptTerminalSuggestion,
           dismissSuggestion: handleDismissTerminalSuggestion,
         },
