@@ -18,6 +18,7 @@ import { loadRenderAddons, passAppShortcuts } from "../terminalAddons";
 import { terminalEnvFor } from "../terminalEnv";
 import { terminalEnvRoot } from "../terminalRepository";
 import { takeTerminalScrollback } from "../terminalScrollback";
+import { createOutputWriter } from "../cursorQueries";
 import { attachPtyOutput, ensurePtyOutputListener, releasePtyOutput, startPty } from "../ptyOutput";
 import { replayWithoutReplies } from "../replayOutput";
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
@@ -136,8 +137,11 @@ export function useTerminalSetup({
         setShowScrollDown(t.buffer.active.viewportY < t.buffer.active.baseY);
       });
 
+      const writeToTerminal = createOutputWriter(t, (data) => {
+        if (ptyIdRef.current) safePtyInvoke(invoke("write_pty", { id: ptyIdRef.current, data }));
+      });
       const writeOutput = (data: string) => {
-        t.write(data);
+        writeToTerminal(data);
         lastOutputRef.current = (lastOutputRef.current + data).slice(-1000);
         const now = Date.now();
         if (now - lastActivityMarkRef.current > 500) {
@@ -152,7 +156,7 @@ export function useTerminalSetup({
           ptyId,
           (replay) => {
             if (reattached) replayWithoutReplies(t, replay);
-            else t.write(replay);
+            else writeToTerminal(replay);
             lastOutputRef.current = replay.slice(-1000);
           },
           writeOutput,
