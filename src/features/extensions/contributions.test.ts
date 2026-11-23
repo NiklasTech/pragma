@@ -176,6 +176,8 @@ describe("agent tools", () => {
       maxSessionDepth: 3,
       ciFailure: "ask",
       ciFixTries: 3,
+      limitHandoff: "ask",
+      limitThreshold: 90,
       useProjectRules: true,
     };
     expect(resolveExtensionToolApproval(tool, settings, false)).toBe("required");

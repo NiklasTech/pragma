@@ -135,6 +135,8 @@ export const defaultSettings: SettingsState = {
     maxSessionDepth: 3,
     ciFailure: "ask",
     ciFixTries: 3,
+    limitHandoff: "ask",
+    limitThreshold: 90,
   },
   notifications: {
     card: true,

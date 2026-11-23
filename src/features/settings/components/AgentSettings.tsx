@@ -23,6 +23,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { ChildSessionSettings } from "./ChildSessionSettings";
 import { CiFailureSettings } from "./CiFailureSettings";
+import { LimitHandoffSettings } from "./LimitHandoffSettings";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
@@ -169,6 +170,8 @@ export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
       <ChildSessionSettings />
 
       <CiFailureSettings />
+
+      <LimitHandoffSettings />
 
       <SettingSection title="Allowed Commands">
         <div className="py-2.5">

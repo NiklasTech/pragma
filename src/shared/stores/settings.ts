@@ -14,6 +14,7 @@ import type { SettingsActions, SettingsState } from "./settings/types";
 export type {
   AgentAutoApprove,
   AgentCiFailure,
+  AgentLimitHandoff,
   AgentStartIn,
   AgentSettings,
   AIProvider,

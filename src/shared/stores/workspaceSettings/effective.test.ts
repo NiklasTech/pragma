@@ -16,6 +16,8 @@ const agent: AgentSettings = {
   maxSessionDepth: 3,
   ciFailure: "ask",
   ciFixTries: 3,
+  limitHandoff: "ask",
+  limitThreshold: 90,
 };
 
 describe("workspace settings overlay", () => {

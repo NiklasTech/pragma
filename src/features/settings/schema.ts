@@ -631,6 +631,27 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     effect: "src/features/ai/ci/reaction.ts",
   },
   {
+    id: "agent-limit-handoff",
+    keys: ["agent.limitHandoff"],
+    label: "Near the limit",
+    description:
+      "Ask, switch accounts on its own or do nothing when an account nears its usage limit",
+    keywords: "usage limit rate limit plan account switch handoff claude reset",
+    category: "agents",
+    scope: "global",
+    effect: "src/features/ai/handoff/useHandoffFeed.ts",
+  },
+  {
+    id: "agent-limit-threshold",
+    keys: ["agent.limitThreshold"],
+    label: "Usage limit from",
+    description: "The share of a usage window from which panes show the usage and ask",
+    keywords: "usage limit threshold percent plan account",
+    category: "agents",
+    scope: "global",
+    effect: "src/features/ai/subscription/PaneUsageMeter.tsx",
+  },
+  {
     id: "agent-children",
     keys: ["agent.maxChildSessions"],
     label: "Children per session",

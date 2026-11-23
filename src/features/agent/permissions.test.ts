@@ -16,6 +16,8 @@ const baseSettings: AgentSettings = {
   maxSessionDepth: 3,
   ciFailure: "ask",
   ciFixTries: 3,
+  limitHandoff: "ask",
+  limitThreshold: 90,
 };
 
 describe("matchesCommandPattern", () => {

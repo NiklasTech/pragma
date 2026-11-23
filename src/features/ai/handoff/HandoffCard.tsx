@@ -10,7 +10,7 @@ import { sessionAccountLabel, useCliAccountsStore } from "@/shared/stores/ai/cli
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import { selectAgentState, useAgentStatesStore } from "../state/agentStates";
-import { fullestWindow, NEAR_LIMIT_PERCENT } from "../subscription/nearLimit";
+import { fullestWindow } from "../subscription/nearLimit";
 import { selectProviderUsage, useSubscriptionUsageStore } from "../subscription/store";
 import { formatPercent, formatResetIn } from "../subscription/summary";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
@@ -46,6 +46,8 @@ function HandoffCardFor({
 
   const accounts = useCliAccountsStore((state) => state.accounts);
   const names = useSettingsStore((state) => state.ai.cliAccounts.names);
+  const mode = useSettingsStore((state) => state.agent.limitHandoff);
+  const threshold = useSettingsStore((state) => state.agent.limitThreshold);
   const usageByAccount = useSubscriptionUsageStore((state) => state.byProvider);
   const agentState = useAgentStatesStore(selectAgentState(session.id));
   const terminal = useTerminalStatus(session.id);
@@ -56,12 +58,16 @@ function HandoffCardFor({
   const accountDir = session.cliAccountDir ?? null;
   const usage = selectProviderUsage({ byProvider: usageByAccount }, CLAUDE, accountDir).usage;
   const fullest = fullestWindow(usage, now);
-  const near = fullest !== null && fullest.usedPercent >= NEAR_LIMIT_PERCENT;
+  const near = fullest !== null && fullest.usedPercent >= threshold;
   const key = windowKey(near ? fullest : null);
   const running = terminal.status === "running";
   // The card waits for the turn to end, so it never talks over an agent at work.
   const asking =
-    running && (near || limitHit !== undefined) && agentState !== "working" && dismissed !== key;
+    mode !== "off" &&
+    running &&
+    (near || limitHit !== undefined) &&
+    agentState !== "working" &&
+    dismissed !== key;
   const open = asking || waitingUntil !== undefined;
   const { mounted, shown } = usePresence(open, SLIDE_MS);
 
