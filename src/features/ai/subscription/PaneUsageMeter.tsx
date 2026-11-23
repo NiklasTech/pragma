@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import type { ChatSession } from "@/shared/stores/ai";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { filledCells } from "../activity/page/activityModel";
 import { nearLimitWindow, shortWindowName } from "./nearLimit";
@@ -11,7 +12,7 @@ import { formatPercent, formatResetIn, sessionCliProvider } from "./summary";
 const CELLS = 10;
 const TICK_MS = 30_000;
 
-/** How full the account of a pane's agent is, once it nears its limit. */
+/** How full the account of a pane's agent is, once it passes the threshold in Settings › Agents. */
 export function PaneUsageMeter({
   session,
   className,
@@ -25,13 +26,14 @@ export function PaneUsageMeter({
       ? selectProviderUsage(store, providerId, session?.cliAccountDir ?? null).usage
       : null,
   );
+  const threshold = useSettingsStore((state) => state.agent.limitThreshold);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), TICK_MS);
     return () => clearInterval(timer);
   }, []);
 
-  const full = nearLimitWindow(usage, now);
+  const full = nearLimitWindow(usage, now, threshold);
   if (!full) return null;
   const name = shortWindowName(full);
   const filled = filledCells(full.usedPercent, CELLS);

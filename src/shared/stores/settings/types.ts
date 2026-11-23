@@ -189,6 +189,9 @@ export type AgentStartIn = "worktree" | "here";
 /** What happens when CI fails on the pull request of an agent worktree. */
 export type AgentCiFailure = "ask" | "fix" | "off";
 
+/** What happens when a coding CLI account nears or hits its usage limit. */
+export type AgentLimitHandoff = "ask" | "switch" | "off";
+
 export interface AgentSettings {
   autoApprove: AgentAutoApprove;
   allowedCommands: string[];
@@ -201,6 +204,9 @@ export interface AgentSettings {
   ciFailure: AgentCiFailure;
   /** Fixes Pragma hands to the agent on its own before it asks you. */
   ciFixTries: number;
+  limitHandoff: AgentLimitHandoff;
+  /** From this share of a usage window, panes show the usage and offer to hand over. */
+  limitThreshold: number;
 }
 
 /** How Pragma pulls you in when an agent needs you, and which outcomes count. */

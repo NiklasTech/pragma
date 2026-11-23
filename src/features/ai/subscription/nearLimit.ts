@@ -1,7 +1,7 @@
 import { currentWindows } from "./summary";
 import type { SubscriptionUsage, UsageWindow } from "./types";
 
-/** From this share of a usage window on, panes show how close their account is to the limit. */
+/** The default share of a usage window from which panes show how close their account is. */
 export const NEAR_LIMIT_PERCENT = 90;
 
 const SHORT_WINDOW_NAMES: Record<string, string> = {
