@@ -50,6 +50,7 @@ import { useTerminalActivity } from "../terminal/useTerminalActivity";
 import { useTerminalDictation } from "../terminal/useTerminalDictation";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { SharersBadge } from "../sessions/SharersBadge";
+import { PaneUsageMeter } from "../subscription/PaneUsageMeter";
 import { sessionCliProvider } from "../subscription/summary";
 import { SessionUsageBadge } from "../usage/SessionUsageBadge";
 import { useNewSessionActions, type NewSessionActions } from "../threads/useNewSessionActions";
@@ -278,6 +279,10 @@ export function PaneHeader({
             </span>
           )}
           <CiBadge environmentId={worktree?.id} className="@max-[340px]/pane-header:hidden" />
+          <PaneUsageMeter
+            session={shell ? undefined : session}
+            className="@max-[300px]/pane-header:hidden"
+          />
 
           <span className={cn("flex min-w-0 shrink-[2] items-center gap-2", QUIET, shown)}>
             {branch && (

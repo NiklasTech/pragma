@@ -12,7 +12,9 @@ import {
   cancelTerminal,
   disposeTerminal,
   ensureTerminal,
+  getTerminalCliSessionId,
   subscribeTerminalAttention,
+  subscribeTerminalLimit,
   writeTerminal,
   type TerminalAttentionKind,
 } from "./runner";
@@ -71,6 +73,19 @@ describe("terminal attention", () => {
       ["session", "finished"],
       ["session", "input"],
     ]);
+  });
+
+  it("keeps the session id a hook reported and tells about the usage limit", async () => {
+    const limits: string[] = [];
+    const stop = subscribeTerminalLimit((sessionId) => limits.push(sessionId));
+    const ptyId = await start("session");
+    expect(getTerminalCliSessionId("session")).toBeNull();
+    output(ptyId, "\x1b]777;notify;Pragma;session:1ec907fa-5571\x07");
+    output(ptyId, "\x1b]777;notify;Pragma;limit\x07");
+    stop();
+    expect(getTerminalCliSessionId("session")).toBe("1ec907fa-5571");
+    expect(limits).toEqual(["session"]);
+    expect(events).toEqual([]);
   });
 
   it("reports one event when a CLI signals twice in a row", async () => {
