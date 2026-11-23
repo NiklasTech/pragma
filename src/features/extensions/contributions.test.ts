@@ -174,6 +174,8 @@ describe("agent tools", () => {
       startIn: "worktree",
       maxChildSessions: 4,
       maxSessionDepth: 3,
+      ciFailure: "ask",
+      ciFixTries: 3,
       useProjectRules: true,
     };
     expect(resolveExtensionToolApproval(tool, settings, false)).toBe("required");

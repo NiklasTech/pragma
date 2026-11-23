@@ -16,7 +16,7 @@ vi.mock("./send", () => ({
 }));
 
 import { useAgentStatesStore } from "../state/agentStates";
-import { noticeCiFailure } from "./attention";
+import { askAboutFailure } from "./attention";
 import { ignoreFailure, sendFailureToAgent } from "./failureActions";
 import { ciStatus } from "./status";
 import { useAgentCiStore } from "./store";
@@ -53,6 +53,9 @@ describe("CI failure actions", () => {
         "env-1": { number: 42, url: "https://github.com/o/r/pull/42", status: failing() },
       },
       handled: {},
+      asking: {},
+      fixes: {},
+      history: {},
     });
   });
 
@@ -77,23 +80,20 @@ describe("CI failure actions", () => {
     expect(useAgentCiStore.getState().handled).toEqual({});
   });
 
-  it("marks a new failure as needing you once, and ignoring clears it", () => {
-    noticeCiFailure("/repo", "env-1", null, failing());
+  it("asking marks the agent as needing you, and ignoring clears it", () => {
+    askAboutFailure("/repo", "env-1", LINK);
     expect(useAgentStatesStore.getState().entries.s1?.state).toBe("needs-you");
+    expect(useAgentCiStore.getState().asking["env-1"]).toBe(LINK);
 
     ignoreFailure("/repo", "env-1");
     expect(useAgentStatesStore.getState().entries.s1?.state).toBe("idle");
     expect(useAgentCiStore.getState().handled["env-1"]).toBe(LINK);
+  });
 
-    // The same failure again stays quiet; a new run that fails speaks up.
-    noticeCiFailure("/repo", "env-1", null, failing());
-    expect(useAgentStatesStore.getState().entries.s1?.state).toBe("idle");
-    noticeCiFailure(
-      "/repo",
-      "env-1",
-      failing(),
-      failing("https://github.com/o/r/actions/runs/3/job/4"),
-    );
-    expect(useAgentStatesStore.getState().entries.s1?.state).toBe("needs-you");
+  it("records the send in the history", async () => {
+    await sendFailureToAgent("/repo", "env-1", "try 2");
+    expect(useAgentCiStore.getState().history["env-1"]?.map((event) => event.text)).toEqual([
+      "sent to Claude Code, try 2",
+    ]);
   });
 });

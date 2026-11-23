@@ -133,6 +133,8 @@ export const defaultSettings: SettingsState = {
     startIn: "worktree",
     maxChildSessions: 4,
     maxSessionDepth: 3,
+    ciFailure: "ask",
+    ciFixTries: 3,
   },
   notifications: {
     card: true,

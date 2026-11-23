@@ -22,6 +22,7 @@ import {
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { ChildSessionSettings } from "./ChildSessionSettings";
+import { CiFailureSettings } from "./CiFailureSettings";
 import { SettingRow } from "./ui/SettingRow";
 import { SettingSection } from "./ui/SettingSection";
 import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
@@ -166,6 +167,8 @@ export function AgentSettings({ part }: { part: "agents" | "worktrees" }) {
       </SettingSection>
 
       <ChildSessionSettings />
+
+      <CiFailureSettings />
 
       <SettingSection title="Allowed Commands">
         <div className="py-2.5">
