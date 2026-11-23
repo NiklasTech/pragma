@@ -5,7 +5,7 @@ import { useAgentStatesStore } from "../state/agentStates";
 import type { GhCheck } from "./api";
 import { buildFailureMessage, type FailureLog } from "./failureMessage";
 import { environmentAgentSession, sendToAgent } from "./send";
-import { markFailureHandled, useAgentCiStore } from "./store";
+import { markFailureHandled, recordCiEvent, useAgentCiStore } from "./store";
 
 /** More logs would not fit the message; the agent can read the rest itself. */
 const MAX_LOGS = 3;
@@ -39,6 +39,7 @@ export async function loadFailureLogs(
 export async function sendFailureToAgent(
   rootPath: string,
   environmentId: string,
+  note?: string,
 ): Promise<boolean> {
   const ci = useAgentCiStore.getState().byEnvironment[environmentId];
   const status = ci?.status;
@@ -54,6 +55,7 @@ export async function sendFailureToAgent(
     logs: await loadFailureLogs(rootPath, status.failing),
   });
   await sendToAgent(session, message);
+  recordCiEvent(environmentId, "sent", `sent to ${session.title}${note ? `, ${note}` : ""}`);
   return true;
 }
 

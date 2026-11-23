@@ -186,6 +186,9 @@ export type AgentAutoApprove = "never" | "edits" | "all";
 /** Where ⌘N starts an agent: a new worktree, or the open folder itself. */
 export type AgentStartIn = "worktree" | "here";
 
+/** What happens when CI fails on the pull request of an agent worktree. */
+export type AgentCiFailure = "ask" | "fix" | "off";
+
 export interface AgentSettings {
   autoApprove: AgentAutoApprove;
   allowedCommands: string[];
@@ -195,6 +198,9 @@ export interface AgentSettings {
   startIn: AgentStartIn;
   maxChildSessions: number;
   maxSessionDepth: number;
+  ciFailure: AgentCiFailure;
+  /** Fixes Pragma hands to the agent on its own before it asks you. */
+  ciFixTries: number;
 }
 
 /** How Pragma pulls you in when an agent needs you, and which outcomes count. */

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { usePresence } from "@/shared/hooks/usePresence";
 import { cn } from "@/shared/lib/utils";
 import { useAIStore } from "@/shared/stores/ai";
+import { useSettingsStore } from "@/shared/stores/settings";
 
 import { useSessionEnvironment } from "../worktree/useSessionEnvironment";
 import type { FailureLog } from "./failureMessage";
@@ -75,8 +77,12 @@ export function CiFailureCard({
   const handled = useAgentCiStore((state) =>
     environmentId ? state.handled[environmentId] : undefined,
   );
+  const asking = useAgentCiStore((state) =>
+    environmentId ? state.asking[environmentId] : undefined,
+  );
   const status = ci?.status;
-  const open = status?.state === "failing" && handled !== status.failureKey;
+  const open =
+    status?.state === "failing" && asking === status.failureKey && handled !== status.failureKey;
   const { mounted, shown } = usePresence(open, SLIDE_MS);
   // The card keeps the failure it showed while it slides away.
   const shownCi = useRef<AgentCi | undefined>(undefined);
@@ -86,6 +92,7 @@ export function CiFailureCard({
   const failing = useRef(status?.failing ?? []);
   failing.current = status?.failing ?? [];
 
+  const fixOnItsOwn = useSettingsStore((state) => state.agent.ciFailure === "fix");
   const [log, setLog] = useState<FailureLog | "loading" | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -149,6 +156,18 @@ export function CiFailureCard({
         <Button size="sm" variant="ghost" onClick={() => ignoreFailure(rootPath, environmentId)}>
           Ignore
         </Button>
+        <label className="ml-auto flex cursor-pointer items-center gap-2 text-fg-muted select-none">
+          <Checkbox
+            checked={fixOnItsOwn}
+            onCheckedChange={(checked) =>
+              useSettingsStore
+                .getState()
+                .setAgentSettings({ ciFailure: checked === true ? "fix" : "ask" })
+            }
+            className="size-3.5"
+          />
+          fix on its own next time
+        </label>
       </footer>
     </section>
   );

@@ -14,6 +14,8 @@ const baseSettings: AgentSettings = {
   startIn: "worktree",
   maxChildSessions: 4,
   maxSessionDepth: 3,
+  ciFailure: "ask",
+  ciFixTries: 3,
 };
 
 describe("matchesCommandPattern", () => {
