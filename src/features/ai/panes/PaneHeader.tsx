@@ -38,6 +38,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import type { AgentStatus } from "@/features/agent/store";
 
 import { OpenInBrowserButton } from "../browser/OpenInBrowserButton";
+import { CiBadge } from "../ci/CiBadge";
 import { CompactSessionMenuItem } from "../compaction/CompactSessionMenuItem";
 import { ExportSessionMenu } from "../export/ExportSessionMenu";
 import { ComposerMicButton } from "../components/ComposerMicButton";
@@ -276,6 +277,7 @@ export function PaneHeader({
               {stateLabel.toLowerCase()}
             </span>
           )}
+          <CiBadge environmentId={worktree?.id} className="@max-[340px]/pane-header:hidden" />
 
           <span className={cn("flex min-w-0 shrink-[2] items-center gap-2", QUIET, shown)}>
             {branch && (

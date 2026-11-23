@@ -27,6 +27,7 @@ import { openInRepository } from "../sessions/openInRepository";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { removeOrphanWorktrees } from "../worktree/orphans";
 import { usePullRequestChecks } from "../worktree/usePullRequestChecks";
+import { useAgentCiChecks } from "../ci/useAgentCiChecks";
 import {
   selectFocusedSessionId,
   selectRoot,
@@ -116,6 +117,7 @@ export function AgentsWorkspace() {
   }, [loadedRoot, rootPath]);
 
   usePullRequestChecks(rootPath, loadedRoot === rootPath);
+  useAgentCiChecks(rootPath, loadedRoot === rootPath);
 
   useEffect(() => {
     if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;
