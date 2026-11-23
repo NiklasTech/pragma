@@ -28,6 +28,7 @@ import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { removeOrphanWorktrees } from "../worktree/orphans";
 import { usePullRequestChecks } from "../worktree/usePullRequestChecks";
 import { useAgentCiChecks } from "../ci/useAgentCiChecks";
+import { useHandoffFeed } from "../handoff/useHandoffFeed";
 import {
   selectFocusedSessionId,
   selectRoot,
@@ -118,6 +119,7 @@ export function AgentsWorkspace() {
 
   usePullRequestChecks(rootPath, loadedRoot === rootPath);
   useAgentCiChecks(rootPath, loadedRoot === rootPath);
+  useHandoffFeed();
 
   useEffect(() => {
     if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;

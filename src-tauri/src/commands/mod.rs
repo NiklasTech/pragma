@@ -4,6 +4,7 @@ pub mod ai;
 pub mod browser_frame;
 pub mod chat_search;
 pub mod chat_storage;
+pub mod claude_resume;
 pub mod cli;
 pub mod cli_accounts;
 pub mod context;
