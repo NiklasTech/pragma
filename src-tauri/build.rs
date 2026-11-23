@@ -35,6 +35,7 @@ const COMMANDS: &[&str] = &[
     "cancel_workspace_search",
     "check_port_in_use",
     "child_session_spawn_reply",
+    "claude_session_share",
     "cli_accounts_list",
     "cli_acp_accepts_images",
     "cli_acp_approve",

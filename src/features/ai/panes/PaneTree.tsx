@@ -31,6 +31,7 @@ import { cancelTerminal, getTerminalEntryStatus } from "../terminal/runner";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { ChildRunView } from "../children/ChildRunView";
 import { PaneCiFailureCard } from "../ci/CiFailureCard";
+import { HandoffCard } from "../handoff/HandoffCard";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { selectAgentState, useAgentStatesStore } from "../state/agentStates";
 import { ChatTranscript } from "./ChatTranscript";
@@ -212,6 +213,11 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
           <LeafContent leaf={leaf} focused={focused} />
         </div>
         <PaneCiFailureCard sessionId={leaf.browser ? null : leaf.sessionId} />
+        <HandoffCard
+          paneRootPath={rootPath}
+          leafId={leaf.id}
+          sessionId={leaf.browser ? null : leaf.sessionId}
+        />
       </div>
 
       {dropTarget && (
