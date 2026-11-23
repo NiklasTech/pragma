@@ -30,6 +30,7 @@ import { TerminalPane } from "../terminal/TerminalPane";
 import { cancelTerminal, getTerminalEntryStatus } from "../terminal/runner";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { ChildRunView } from "../children/ChildRunView";
+import { PaneCiFailureCard } from "../ci/CiFailureCard";
 import { isRunLive, useChildRunsStore } from "../children/runStore";
 import { selectAgentState, useAgentStatesStore } from "../state/agentStates";
 import { ChatTranscript } from "./ChatTranscript";
@@ -210,6 +211,7 @@ function PaneView({ node, totalLeaves }: { node: TabsNode; totalLeaves: number }
         <div className="absolute inset-0">
           <LeafContent leaf={leaf} focused={focused} />
         </div>
+        <PaneCiFailureCard sessionId={leaf.browser ? null : leaf.sessionId} />
       </div>
 
       {dropTarget && (

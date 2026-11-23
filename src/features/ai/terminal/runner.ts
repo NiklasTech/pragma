@@ -6,6 +6,7 @@ import { isCursorQueryOnly } from "@/features/terminal/cursorQueries";
 import { isAgentOutput } from "./activity";
 import { createAttentionParser, type TerminalAttention } from "./attentionSignals";
 import { appendTerminalBuffer } from "./buffer";
+import { nextPasteMode, PASTE_MODE_OFF, type PasteModeState } from "./pasteMode";
 
 interface PtyOutputEvent {
   id: string;
@@ -38,6 +39,7 @@ interface TerminalEntry {
   lastInputAt: number;
   readAttention: (data: string) => TerminalAttention[];
   lastAttentionAt: number;
+  pasteMode: PasteModeState;
 }
 
 /** Starts the CLI with this account's config folder instead of its default one. */
@@ -109,6 +111,7 @@ function detectAttention(entry: TerminalEntry, data: string): void {
 function pushOutput(entry: TerminalEntry, data: string): void {
   // A replayed cursor query would send the CLI a stale answer, and polling would fill the buffer.
   if (!isCursorQueryOnly(data)) entry.buffer = appendTerminalBuffer(entry.buffer, data);
+  entry.pasteMode = nextPasteMode(entry.pasteMode, data);
   detectAttention(entry, data);
   for (const listener of anyOutputListeners) listener(entry.sessionId);
   const listeners = outputListeners.get(entry.sessionId);
@@ -222,6 +225,11 @@ export function getTerminalLastInputAt(sessionId: string): number {
   return entries.get(sessionId)?.lastInputAt ?? 0;
 }
 
+/// Whether the CLI asked for bracketed paste, so text with line breaks reaches it as one paste.
+export function isTerminalBracketedPaste(sessionId: string): boolean {
+  return entries.get(sessionId)?.pasteMode.on ?? false;
+}
+
 export async function writeTerminal(sessionId: string, data: string): Promise<void> {
   const entry = entries.get(sessionId);
   if (!entry?.ptyId) return;
@@ -274,6 +282,7 @@ export async function ensureTerminal(
       lastInputAt: 0,
       readAttention: createAttentionParser(),
       lastAttentionAt: 0,
+      pasteMode: PASTE_MODE_OFF,
     };
     entries.set(sessionId, entry);
   }

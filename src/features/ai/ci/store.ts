@@ -11,9 +11,17 @@ export interface AgentCi {
 
 interface AgentCiState {
   byEnvironment: Record<string, AgentCi>;
+  /** The failure each environment's card was answered for, sent or ignored. */
+  handled: Record<string, string>;
 }
 
-export const useAgentCiStore = create<AgentCiState>()(() => ({ byEnvironment: {} }));
+export const useAgentCiStore = create<AgentCiState>()(() => ({ byEnvironment: {}, handled: {} }));
+
+export function markFailureHandled(environmentId: string, failureKey: string): void {
+  useAgentCiStore.setState((state) => ({
+    handled: { ...state.handled, [environmentId]: failureKey },
+  }));
+}
 
 export function setAgentCi(environmentId: string, ci: AgentCi): void {
   useAgentCiStore.setState((state) => ({

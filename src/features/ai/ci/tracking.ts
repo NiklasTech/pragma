@@ -3,8 +3,9 @@ import { useAIStore, type EnvironmentPullRequest, type WorkEnvironment } from "@
 import { runningRepositorySessions } from "../sessions/runningSessions";
 import { isGhReady } from "../worktree/finish";
 import { fetchBranchPullRequest, fetchPullRequestChecks } from "./api";
+import { noticeCiFailure } from "./attention";
 import { ciStatus } from "./status";
-import { pruneAgentCi, setAgentCi } from "./store";
+import { pruneAgentCi, setAgentCi, useAgentCiStore } from "./store";
 
 const checking = new Set<string>();
 
@@ -60,6 +61,8 @@ export async function checkAgentPullRequests(rootPath: string): Promise<boolean>
         if (checks === null) continue;
         const status = ciStatus(checks);
         if (status?.state === "pending") pending = true;
+        const previous = useAgentCiStore.getState().byEnvironment[environment.id]?.status;
+        noticeCiFailure(rootPath, environment.id, previous, status);
         setAgentCi(environment.id, {
           number: pullRequest.number,
           url: pullRequest.url,
