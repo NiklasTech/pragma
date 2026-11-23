@@ -28,8 +28,21 @@ describe("claudeAttentionSettings", () => {
       hooks: {
         Stop: [{ hooks: [{ type: "command" }] }],
         Notification: [{ matcher: "permission_prompt|elicitation_dialog" }],
+        SessionStart: [{ hooks: [{ type: "command" }] }],
+        StopFailure: [{ matcher: "rate_limit" }],
       },
     });
+  });
+
+  it("reports the session id and the usage limit", () => {
+    const parsed = JSON.parse(claudeAttentionSettings()) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command: string }> }>>;
+    };
+    const session = parsed.hooks.SessionStart?.[0]?.hooks[0]?.command ?? "";
+    const limit = parsed.hooks.StopFailure?.[0]?.hooks[0]?.command ?? "";
+    expect(session).toContain('grep -o "\\"session_id\\":\\"[A-Za-z0-9-]*\\""');
+    expect(session).toContain('printf "\\033]777;notify;Pragma;session:%s\\007" "$s"');
+    expect(limit).toContain('printf "\\033]777;notify;Pragma;limit\\007"');
   });
 
   it("prints the OSC 777 sequences the terminal parser reads", () => {

@@ -4,7 +4,11 @@ import { listen } from "@tauri-apps/api/event";
 import { isCursorQueryOnly } from "@/features/terminal/cursorQueries";
 
 import { isAgentOutput } from "./activity";
-import { createAttentionParser, type TerminalAttention } from "./attentionSignals";
+import {
+  createAttentionParser,
+  type PragmaReport,
+  type TerminalAttention,
+} from "./attentionSignals";
 import { appendTerminalBuffer } from "./buffer";
 import { nextPasteMode, PASTE_MODE_OFF, type PasteModeState } from "./pasteMode";
 
@@ -40,6 +44,8 @@ interface TerminalEntry {
   readAttention: (data: string) => TerminalAttention[];
   lastAttentionAt: number;
   pasteMode: PasteModeState;
+  /** The id the CLI gave its own session, reported by a Pragma hook. */
+  cliSessionId: string | null;
 }
 
 /** Starts the CLI with this account's config folder instead of its default one. */
@@ -65,6 +71,7 @@ const statusListeners = new Map<string, Set<() => void>>();
 const anyOutputListeners = new Set<(sessionId: string) => void>();
 const anyStatusListeners = new Set<(sessionId: string) => void>();
 const attentionListeners = new Set<(sessionId: string, kind: TerminalAttentionKind) => void>();
+const limitListeners = new Set<(sessionId: string) => void>();
 const unclaimedOutput = new Map<string, string>();
 const unclaimedExit = new Map<string, number>();
 
@@ -93,6 +100,15 @@ function findByPtyId(ptyId: string): TerminalEntry | null {
     if (entry.ptyId === ptyId) return entry;
   }
   return null;
+}
+
+function handleReport(sessionId: string, report: PragmaReport): void {
+  if (report.kind === "limit") {
+    for (const listener of limitListeners) listener(sessionId);
+    return;
+  }
+  const entry = entries.get(sessionId);
+  if (entry) entry.cliSessionId = report.id;
 }
 
 function emitAttention(sessionId: string, kind: TerminalAttentionKind): void {
@@ -220,6 +236,19 @@ export function subscribeTerminalAttention(
   };
 }
 
+/// The CLI's own id for the session in this terminal, once a Pragma hook reported it.
+export function getTerminalCliSessionId(sessionId: string): string | null {
+  return entries.get(sessionId)?.cliSessionId ?? null;
+}
+
+/// Calls the listener when the CLI in a terminal stops at its usage limit.
+export function subscribeTerminalLimit(listener: (sessionId: string) => void): () => void {
+  limitListeners.add(listener);
+  return () => {
+    limitListeners.delete(listener);
+  };
+}
+
 /// When the user last typed into the terminal, so the echo of typing is not read as agent work.
 export function getTerminalLastInputAt(sessionId: string): number {
   return entries.get(sessionId)?.lastInputAt ?? 0;
@@ -280,9 +309,10 @@ export async function ensureTerminal(
       status: "running",
       exitCode: null,
       lastInputAt: 0,
-      readAttention: createAttentionParser(),
+      readAttention: createAttentionParser((report) => handleReport(sessionId, report)),
       lastAttentionAt: 0,
       pasteMode: PASTE_MODE_OFF,
+      cliSessionId: null,
     };
     entries.set(sessionId, entry);
   }
