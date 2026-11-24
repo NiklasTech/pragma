@@ -13,6 +13,8 @@ import {
   disposeTerminal,
   ensureTerminal,
   getTerminalCliSessionId,
+  getTerminalSize,
+  resizeTerminal,
   subscribeTerminalAttention,
   subscribeTerminalLimit,
   writeTerminal,
@@ -86,6 +88,15 @@ describe("terminal attention", () => {
     expect(getTerminalCliSessionId("session")).toBe("1ec907fa-5571");
     expect(limits).toEqual(["session"]);
     expect(events).toEqual([]);
+  });
+
+  it("keeps the size an ended program drew its last screen for", async () => {
+    await start("session");
+    expect(getTerminalSize("session")).toEqual({ cols: 80, rows: 24 });
+    await resizeTerminal("session", 149, 39);
+    cancelTerminal("session");
+    await resizeTerminal("session", 94, 32);
+    expect(getTerminalSize("session")).toEqual({ cols: 149, rows: 39 });
   });
 
   it("reports one event when a CLI signals twice in a row", async () => {

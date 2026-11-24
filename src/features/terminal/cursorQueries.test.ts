@@ -34,6 +34,17 @@ describe("createOutputWriter", () => {
     expect(replies).toEqual(["\x1b[?10;5R", "\x1b[10;5R\x1b[?10;5R"]);
   });
 
+  it("tells when a write is parsed", () => {
+    const { writes, write } = setup();
+    let parsed = false;
+    write("hello", () => {
+      parsed = true;
+    });
+    expect(parsed).toBe(false);
+    writes[0].parsed?.();
+    expect(parsed).toBe(true);
+  });
+
   it("writes everything else to xterm", () => {
     const { writes, replies, write } = setup();
 

@@ -15,12 +15,9 @@ interface WritableTerminal {
 export function createOutputWriter(
   term: WritableTerminal,
   reply: (data: string) => void,
-): (data: string) => void {
+): (data: string, onParsed?: () => void) => void {
   let pending = 0;
-  const parsed = () => {
-    pending -= 1;
-  };
-  return (data) => {
+  return (data, onParsed) => {
     // Earlier output still being parsed or a silent replay needs xterm's own, ordered answer.
     if (pending === 0 && !term.options.disableStdin && QUERIES_ONLY.test(data)) {
       const { cursorX, cursorY } = term.buffer.active;
@@ -30,7 +27,10 @@ export function createOutputWriter(
       return;
     }
     pending += 1;
-    term.write(data, parsed);
+    term.write(data, () => {
+      pending -= 1;
+      onParsed?.();
+    });
   };
 }
 
