@@ -384,6 +384,7 @@ pub fn run() {
             commands::context::read_chat_context,
             commands::cli::cli_list_manifests,
             commands::cli_accounts::cli_accounts_list,
+            commands::claude_mcp::claude_mcp_missing,
             commands::claude_resume::claude_session_share,
             commands::cli::cli_check_all_statuses,
             commands::cli::cli_install,

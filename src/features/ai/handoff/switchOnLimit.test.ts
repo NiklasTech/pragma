@@ -6,6 +6,8 @@ import type { AgentLimitHandoff } from "@/shared/stores/settings";
 
 const mocks = vi.hoisted(() => ({
   continueWithAccount: vi.fn(),
+  missing: [] as string[],
+  toast: vi.fn(),
   sessions: [] as ChatSession[],
   accounts: [] as CliAccount[],
   usage: {} as Record<string, number>,
@@ -13,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   mode: "switch" as AgentLimitHandoff,
 }));
 
-vi.mock("sonner", () => ({ toast: { info: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { info: mocks.toast } }));
 vi.mock("@/shared/stores/ai", () => ({
   useAIStore: { getState: () => ({ chatSessions: mocks.sessions }) },
 }));
@@ -56,6 +58,10 @@ vi.mock("../subscription/store", () => ({
   useSubscriptionUsageStore: { getState: () => ({ byProvider: {} }) },
 }));
 vi.mock("./actions", () => ({ continueWithAccount: mocks.continueWithAccount }));
+vi.mock("./missingServers", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  missingMcpServers: () => Promise.resolve(mocks.missing),
+}));
 
 import { useAgentStatesStore } from "../state/agentStates";
 import { useHandoffStore } from "./store";
@@ -96,12 +102,21 @@ beforeEach(() => {
   mocks.usage = { "/h/.claude-work": 60, "/h/.claude-team": 20 };
   mocks.leaf = { id: "leaf-1" };
   mocks.mode = "switch";
+  mocks.missing = [];
   mocks.continueWithAccount.mockResolvedValue(undefined);
   useHandoffStore.setState({ limitHit: {}, dismissed: {}, waitingUntil: {} });
   useAgentStatesStore.setState({ entries: {} });
 });
 
 describe("switchOnLimit", () => {
+  it("says which MCP servers the other account lacks", async () => {
+    mocks.missing = ["github"];
+    await switchOnLimit("s1");
+    expect(mocks.toast).toHaveBeenCalledWith(expect.any(String), {
+      description: "1 MCP server missing there: github",
+    });
+  });
+
   it("moves the session to the account with the most room, in its pane", async () => {
     expect(await switchOnLimit("s1")).toBe(true);
     expect(mocks.continueWithAccount).toHaveBeenCalledWith(

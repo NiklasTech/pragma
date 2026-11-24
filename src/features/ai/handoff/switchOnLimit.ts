@@ -9,6 +9,7 @@ import { findLeafBySession } from "../panes/operations";
 import { paneTreeKey, selectRoot, useAgentsPanesStore } from "../panes/store";
 import { selectProviderUsage, useSubscriptionUsageStore } from "../subscription/store";
 import { continueWithAccount } from "./actions";
+import { missingMcpServers, missingServersLabel } from "./missingServers";
 import { otherAccounts } from "./options";
 
 const CLAUDE = "anthropic-claude";
@@ -39,7 +40,10 @@ export async function switchOnLimit(sessionId: string): Promise<boolean> {
   if (!best || (best.fullest !== null && best.fullest.usedPercent >= agent.limitThreshold)) {
     return false;
   }
+  const missing = await missingMcpServers(session, best.account.configDir);
   await continueWithAccount(rootPath, leaf.id, session, best.account.configDir);
-  toast.info(`Claude Code reached its usage limit and went on with ${best.label}`);
+  toast.info(`Claude Code reached its usage limit and went on with ${best.label}`, {
+    description: missingServersLabel(missing) ?? undefined,
+  });
   return true;
 }
