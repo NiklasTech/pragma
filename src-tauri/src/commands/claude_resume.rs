@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Manager, Runtime};
@@ -47,8 +49,27 @@ fn find_transcript(data_dir: &Path, session_id: &str) -> Option<PathBuf> {
         .find(|path| path.is_file())
 }
 
+/// The ids of the messages in a transcript. Claude Code also appends housekeeping lines, for example
+/// when it exits; those differ between accounts and say nothing about the conversation.
+fn message_ids(transcript: &Path) -> std::io::Result<HashSet<String>> {
+    let mut ids = HashSet::new();
+    for line in BufReader::new(std::fs::File::open(transcript)?).split(b'\n') {
+        let Ok(entry) = serde_json::from_slice::<serde_json::Value>(&line?) else {
+            continue;
+        };
+        if !matches!(entry["type"].as_str(), Some("user" | "assistant")) {
+            continue;
+        }
+        if let Some(id) = entry["uuid"].as_str() {
+            ids.insert(id.to_string());
+        }
+    }
+    Ok(ids)
+}
+
 /// Makes a session's transcript visible to the other account, so `--resume` finds it there.
-/// Folders that share `projects`, for example through a link, need no copy.
+/// Folders that share `projects`, for example through a link, need no copy. An older copy there is
+/// brought up to date; one that went its own way is never overwritten.
 pub fn share_transcript(from: &Path, to: &Path, session_id: &str) -> Result<(), String> {
     if !valid_session_id(session_id) {
         return Err("Invalid session id".to_string());
@@ -62,13 +83,33 @@ pub fn share_transcript(from: &Path, to: &Path, session_id: &str) -> Result<(), 
     let target_dir = to.join(PROJECTS_DIR).join(project);
     let target = target_dir.join(format!("{session_id}.jsonl"));
     if target.is_file() {
-        return Ok(());
+        let same_file = matches!(
+            (source.canonicalize(), target.canonicalize()),
+            (Ok(a), Ok(b)) if a == b
+        );
+        if same_file {
+            return Ok(());
+        }
+        let read_error = |error| format!("Could not read the session: {error}");
+        let ours = message_ids(&source).map_err(read_error)?;
+        let theirs = message_ids(&target).map_err(read_error)?;
+        if !theirs.is_subset(&ours) {
+            return Err("The other account went on with this conversation on its own".to_string());
+        }
+        if theirs.len() == ours.len() {
+            return Ok(());
+        }
     }
     std::fs::create_dir_all(&target_dir)
         .map_err(|error| format!("Could not prepare the other account: {error}"))?;
-    std::fs::copy(&source, &target)
-        .map(|_| ())
-        .map_err(|error| format!("Could not copy the session: {error}"))
+    // Copied beside the target first, so a failed copy never leaves half a conversation.
+    let partial = target.with_extension("jsonl.pragma-partial");
+    std::fs::copy(&source, &partial)
+        .and_then(|_| std::fs::rename(&partial, &target))
+        .map_err(|error| {
+            let _ = std::fs::remove_file(&partial);
+            format!("Could not copy the session: {error}")
+        })
 }
 
 /// Lets another Claude Code account resume a session that ran under `from_dir`.
@@ -107,6 +148,16 @@ mod tests {
         path
     }
 
+    fn append(path: &Path, lines: &str) {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new().append(true).open(path).unwrap();
+        file.write_all(lines.as_bytes()).unwrap();
+    }
+
+    fn message(id: &str) -> String {
+        format!("{{\"type\":\"assistant\",\"uuid\":\"{id}\"}}\n")
+    }
+
     #[test]
     fn copies_the_transcript_into_the_same_project_folder() {
         let home = tempfile::tempdir().unwrap();
@@ -125,6 +176,46 @@ mod tests {
         );
         // A second share finds the copy and leaves it alone.
         share_transcript(&from, &to, ID).unwrap();
+    }
+
+    #[test]
+    fn handing_back_brings_the_work_of_the_other_account() {
+        let home = tempfile::tempdir().unwrap();
+        let first = home.path().join(".claude");
+        let second = home.path().join(".claude-work");
+        let original = write_transcript(&first, "-Users-me-repo");
+        append(&original, &message("one"));
+
+        share_transcript(&first, &second, ID).unwrap();
+        // The first account's CLI writes these as it exits, after the copy was made.
+        append(&original, "{\"type\":\"cost-state\"}\n");
+        let copy = find_transcript(&second, ID).unwrap();
+        append(&copy, &message("two"));
+
+        share_transcript(&second, &first, ID).unwrap();
+        assert_eq!(
+            std::fs::read(&original).unwrap(),
+            std::fs::read(&copy).unwrap()
+        );
+        let files = std::fs::read_dir(original.parent().unwrap())
+            .unwrap()
+            .count();
+        assert_eq!(files, 1);
+    }
+
+    #[test]
+    fn a_session_that_went_on_in_both_accounts_is_left_alone() {
+        let home = tempfile::tempdir().unwrap();
+        let first = home.path().join(".claude");
+        let second = home.path().join(".claude-work");
+        let original = write_transcript(&first, "-Users-me-repo");
+        share_transcript(&first, &second, ID).unwrap();
+        append(&original, &message("mine"));
+        append(&find_transcript(&second, ID).unwrap(), &message("theirs"));
+
+        let before = std::fs::read(&original).unwrap();
+        assert!(share_transcript(&second, &first, ID).is_err());
+        assert_eq!(std::fs::read(&original).unwrap(), before);
     }
 
     #[cfg(unix)]

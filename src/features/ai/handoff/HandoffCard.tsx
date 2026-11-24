@@ -114,7 +114,7 @@ function HandoffCardFor({
     setBusy(true);
     void continueWithAccount(paneRootPath, leafId, session, choice.option.account.configDir)
       .catch((error: unknown) =>
-        toast.error(error instanceof Error ? error.message : "Could not hand the session over"),
+        toast.error(error instanceof Error ? error.message : String(error)),
       )
       .finally(() => setBusy(false));
   };
