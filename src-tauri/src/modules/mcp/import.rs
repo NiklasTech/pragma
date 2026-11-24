@@ -8,9 +8,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
+pub const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
 /// `~/.claude.json` also holds history and caches, so it may be much larger.
-const MAX_CLAUDE_CONFIG_BYTES: u64 = 16 * 1024 * 1024;
+pub const MAX_CLAUDE_CONFIG_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_SERVERS: usize = 100;
 
 #[derive(Debug, Clone, Serialize)]
@@ -98,7 +98,7 @@ fn read_text(path: &Path, max_bytes: u64) -> Option<String> {
     std::fs::read_to_string(path).ok()
 }
 
-fn read_document(path: &Path, max_bytes: u64) -> Option<Value> {
+pub fn read_document(path: &Path, max_bytes: u64) -> Option<Value> {
     serde_json::from_str(&read_text(path, max_bytes)?).ok()
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Warning } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { AgentMark } from "@/shared/components/ui/agent-mark";
@@ -15,6 +16,7 @@ import { selectProviderUsage, useSubscriptionUsageStore } from "../subscription/
 import { formatPercent, formatResetIn } from "../subscription/summary";
 import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { cancelWait, continueWithAccount, waitForReset } from "./actions";
+import { missingServersLabel, useMissingMcpServers } from "./missingServers";
 import { clockTime, otherAccounts, windowKey, type AccountOption } from "./options";
 import { dismissHandoff, useHandoffStore } from "./store";
 
@@ -79,6 +81,11 @@ function HandoffCardFor({
       selectProviderUsage({ byProvider: usageByAccount }, CLAUDE, account.configDir).usage,
     names,
     now,
+  );
+  const missing = useMissingMcpServers(
+    session,
+    options.map((option) => option.account.configDir),
+    asking,
   );
   const choices: Choice[] = [
     ...options.map((option): Choice => ({ kind: "account", option })),
@@ -164,6 +171,10 @@ function HandoffCardFor({
           {choices.map((item) => {
             const id = choiceId(item);
             const active = choice !== null && choiceId(choice) === id;
+            const lacks =
+              item.kind === "account"
+                ? missingServersLabel(missing[item.option.account.configDir ?? ""] ?? [])
+                : null;
             return (
               <Button
                 key={id}
@@ -196,6 +207,12 @@ function HandoffCardFor({
                       ? `same conversation, continues where ${current} stopped`
                       : `pauses, then sends "continue" at ${clockTime(item.at)}`}
                   </span>
+                  {lacks && (
+                    <span className="flex items-center gap-1.5 text-status-warning" title={lacks}>
+                      <Warning size={12} className="shrink-0" aria-hidden="true" />
+                      <span className="truncate">{lacks}</span>
+                    </span>
+                  )}
                 </span>
                 {item.kind === "account" && item.option.fullest && (
                   <span className="ml-auto shrink-0 text-fg-muted">
