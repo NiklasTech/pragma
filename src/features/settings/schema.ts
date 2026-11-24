@@ -590,6 +590,16 @@ export const SETTINGS_SCHEMA: SettingDefinition[] = [
     effect: "src/shared/stores/workspaceSettings/effective.ts",
   },
   {
+    id: "agent-view",
+    keys: ["agent.view"],
+    label: "Show agents as",
+    description: "Whether new agents open in the CLI's terminal or in Pragma's chat",
+    keywords: "agent view chat terminal custom ui interface claude conversation layout open as",
+    category: "agents",
+    scope: "global",
+    effect: "src/features/ai/panes/agentView.ts",
+  },
+  {
     id: "agent-start-in",
     keys: ["agent.startIn"],
     label: "New agents start in",

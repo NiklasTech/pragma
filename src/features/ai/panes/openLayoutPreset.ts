@@ -7,7 +7,9 @@ import { findSpaceByFolder } from "@/shared/stores/spaces/model";
 import { deliverTerminalPrompt } from "../children/terminalPrompt";
 import type { StartSessionRequest } from "../sessions/start";
 import { createShellSession } from "../terminal/shell";
-import { createTerminalSession } from "./launch";
+import { resolveAgentView } from "./agentView";
+import { sendChatTasks, type ChatTask } from "./chatTasks";
+import { createAgentSession } from "./launch";
 import { buildLayout, type LayoutPreset } from "./layoutPresets";
 import { useAgentsPanesStore } from "./store";
 
@@ -16,11 +18,11 @@ export interface OpenLayoutOptions {
   tabName?: string;
   /** Where the shells and CLIs run; unset follows the project setting. */
   environment?: Pick<StartSessionRequest, "environment" | "sameEnvironmentAs">;
-  /** Typed into every coding CLI of the layout once it is ready. */
+  /** Given to every coding CLI of the layout once it is ready. */
   task?: string;
 }
 
-/** Opens a layout as a new agents tab and starts its shells and CLIs in their panes. */
+/** Opens a layout as a new agents tab, starts its shells and CLIs and focuses the first CLI. */
 export async function openLayoutPreset(
   rootPath: string,
   preset: LayoutPreset,
@@ -38,6 +40,7 @@ export async function openLayoutPreset(
 
   const manifests = useAIStore.getState().cliManifests;
   const task = options.task?.trim();
+  const chatTasks: ChatTask[] = [];
   for (const { leafId, pane } of starts) {
     try {
       if (pane.start === "shell") {
@@ -49,7 +52,8 @@ export async function openLayoutPreset(
       } else if (pane.start === "cli") {
         const manifest = manifests.find((item) => item.id === pane.cliProviderId);
         if (!manifest) continue;
-        const session = await createTerminalSession(rootPath, manifest, {
+        const view = resolveAgentView(manifest, pane.view ?? "terminal");
+        const session = await createAgentSession(rootPath, manifest, view, {
           activate: false,
           environment: options.environment,
           accountDir: pane.cliAccountDir,
@@ -57,10 +61,16 @@ export async function openLayoutPreset(
           title: task ? options.tabName : undefined,
         });
         panes.assignSession(rootPath, leafId, session.id);
-        if (task) deliverTerminalPrompt(session.id, task);
+        if (!task) continue;
+        if (view === "chat") chatTasks.push({ sessionId: session.id, prompt: task });
+        else deliverTerminalPrompt(session.id, task);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start a pane of the layout");
     }
   }
+  // Each started pane took the focus; it belongs to the agent, whose chat sends the task.
+  const agent = starts.find(({ pane }) => pane.start === "cli");
+  if (agent) panes.focusLeaf(rootPath, agent.leafId);
+  await sendChatTasks(rootPath, chatTasks);
 }

@@ -17,6 +17,7 @@ export type {
   AgentLimitHandoff,
   AgentStartIn,
   AgentSettings,
+  AgentView,
   AIProvider,
   AISettings,
   AutoSave,

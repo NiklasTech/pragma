@@ -19,6 +19,17 @@ The three cards below the field open a shell, search for a file (`Cmd/Ctrl + P`)
 
 The start dialog does the same as the start card with more choices: who runs the task, which layout opens, and whether it works in a **New worktree** or **This folder**. It opens the result as a new tab. Which of the two places it suggests is set with **New agents start in** in **Settings > Agents**.
 
+### Terminal or Pragma chat
+
+A coding CLI can show in two ways:
+
+- **Terminal** is the CLI's own interface with all its commands.
+- **Pragma chat** is Pragma's view of the same CLI, with its composer, edits and permission requests.
+
+Pick one on the start card or under **Show … as** in the start dialog. The default is **Show agents as** in **Settings > Agents**; it also applies to the coding CLIs of an empty pane. A CLI that has only one of the two always uses that one.
+
+Terminals fit beside both. For a chat next to two shells, pick **Pragma chat** and the layout **Agent, 2 terminals** in the start dialog (`Cmd/Ctrl + N`). The chat keeps its composer while you work in a shell, and its answer goes on when you look at another tab.
+
 ## Panes
 
 Each pane has a header with the agent's mark, its title, the folder or worktree it works in and, for chats, the tokens it used.

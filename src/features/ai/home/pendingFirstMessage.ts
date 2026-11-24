@@ -1,11 +1,18 @@
-let pending: string | null = null;
-
-export function setPendingFirstMessage(text: string): void {
-  pending = text;
+interface PendingFirstMessage {
+  text: string;
+  /** The chat it belongs to; without one, the next chat that opens sends it. */
+  sessionId: string | null;
 }
 
-export function takePendingFirstMessage(): string | null {
-  const text = pending;
+let pending: PendingFirstMessage | null = null;
+
+export function setPendingFirstMessage(text: string, sessionId: string | null = null): void {
+  pending = { text, sessionId };
+}
+
+export function takePendingFirstMessage(sessionId: string): string | null {
+  if (!pending || (pending.sessionId !== null && pending.sessionId !== sessionId)) return null;
+  const { text } = pending;
   pending = null;
   return text;
 }

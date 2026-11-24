@@ -14,6 +14,7 @@ import {
 import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import { useSettingsStore } from "@/shared/stores/settings";
 
+import { AGENT_VIEW_LABELS, resolveAgentView } from "../panes/agentView";
 import { providerAccentById } from "../panes/providerAccent";
 import { ProviderLogo } from "../panes/ProviderLogo";
 import { buildSessionMenuCliRows, type SessionMenuCliRow } from "../threads/session-menu";
@@ -32,6 +33,7 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
   const actions = useNewSessionActions(rootPath, targetLeafId);
   const accounts = useCliAccountsStore((state) => state.accounts);
   const accountNames = useSettingsStore((state) => state.ai.cliAccounts.names);
+  const preferredView = useSettingsStore((state) => state.agent.view);
 
   useEffect(() => {
     if (manifests.length === 0) void loadCLIManifests();
@@ -54,6 +56,11 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
       }));
     });
 
+  const viewOf = (manifestId: string) => {
+    const manifest = manifests.find((item) => item.id === manifestId);
+    return manifest ? resolveAgentView(manifest, preferredView) : preferredView;
+  };
+
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <span className="text-ui-xs text-fg-subtle">
@@ -73,9 +80,14 @@ export function CliQuickStart({ rootPath, targetLeafId }: CliQuickStartProps) {
           variant="secondary"
           size="sm"
           key={`${row.manifestId}:${row.accountDir ?? ""}`}
+          title={`Opens as ${AGENT_VIEW_LABELS[viewOf(row.manifestId)]}. The default is in Settings › Agents`}
           onClick={() => {
             const manifest = manifests.find((item) => item.id === row.manifestId);
-            if (manifest) void actions.startTerminal(manifest, { accountDir: row.accountDir });
+            if (!manifest) return;
+            const options = { accountDir: row.accountDir };
+            if (viewOf(row.manifestId) === "chat")
+              void actions.startConversation(manifest, options);
+            else void actions.startTerminal(manifest, options);
           }}
           className="group gap-1.5 rounded-full px-3 text-fg-muted hover:text-fg-default"
         >

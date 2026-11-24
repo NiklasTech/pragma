@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 import type { ChatSession } from "@/shared/stores/ai";
 
+import { sessionCliProvider } from "../subscription/summary";
 import { SHELL_PROVIDER_ID } from "../terminal/shell";
 import {
   countLeaves,
@@ -17,10 +18,10 @@ import {
 
 export const LAYOUT_PRESETS_STORAGE_KEY = "pragma.agents.layouts.v1";
 
-/** What a pane of a saved layout starts: a shell, a coding CLI terminal, or nothing yet. */
+/** What a pane of a saved layout starts: a shell, a coding CLI in its terminal or as a chat, or nothing yet. */
 export type PresetPane =
   | { type: "pane"; start: "shell" | "empty" }
-  | { type: "pane"; start: "cli"; cliProviderId: string; cliAccountDir?: string };
+  | { type: "pane"; start: "cli"; cliProviderId: string; cliAccountDir?: string; view?: "chat" };
 
 export interface PresetSplit {
   type: "split";
@@ -39,11 +40,16 @@ export interface LayoutPreset {
 
 function paneFor(leaf: Leaf | undefined, sessions: readonly ChatSession[]): PresetPane {
   const session = leaf?.sessionId ? sessions.find((item) => item.id === leaf.sessionId) : undefined;
-  if (session?.kind !== "terminal" || !session.cliProviderId)
-    return { type: "pane", start: "empty" };
-  if (session.cliProviderId === SHELL_PROVIDER_ID) return { type: "pane", start: "shell" };
-  const pane: PresetPane = { type: "pane", start: "cli", cliProviderId: session.cliProviderId };
-  return session.cliAccountDir ? { ...pane, cliAccountDir: session.cliAccountDir } : pane;
+  const cliProviderId = session ? sessionCliProvider(session) : null;
+  if (!session || !cliProviderId) return { type: "pane", start: "empty" };
+  if (cliProviderId === SHELL_PROVIDER_ID) return { type: "pane", start: "shell" };
+  return {
+    type: "pane",
+    start: "cli",
+    cliProviderId,
+    ...(session.cliAccountDir ? { cliAccountDir: session.cliAccountDir } : {}),
+    ...(session.kind === "terminal" ? {} : { view: "chat" as const }),
+  };
 }
 
 /** The shape of a tab and what runs in each pane; conversations themselves are not kept. */

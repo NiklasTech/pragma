@@ -49,7 +49,7 @@ describe("buildSessionMenuCliRows", () => {
       "openai-codex": status("openai-codex", true),
     });
     expect(rows[0].disabled).toBe(false);
-    expect(rows[0].items.map((item) => item.label)).toEqual(["Conversation", "Terminal"]);
+    expect(rows[0].items.map((item) => item.label)).toEqual(["Pragma chat", "Terminal"]);
   });
 
   it("exposes only Conversation when the CLI has no terminal", () => {
@@ -57,7 +57,7 @@ describe("buildSessionMenuCliRows", () => {
       [{ ...manifest("deepseek-harness", true), offers_terminal: false }],
       { "deepseek-harness": status("deepseek-harness", true) },
     );
-    expect(rows[0].items.map((item) => item.label)).toEqual(["Conversation"]);
+    expect(rows[0].items.map((item) => item.label)).toEqual(["Pragma chat"]);
   });
 
   it("exposes only Terminal for an installed non-ACP CLI", () => {

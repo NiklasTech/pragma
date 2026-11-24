@@ -1,5 +1,6 @@
 import { AISettings } from "./AISettings";
 import { AgentSettings } from "./AgentSettings";
+import { AgentViewSettings } from "./AgentViewSettings";
 import { NotificationSettings } from "./NotificationSettings";
 import { EditorSettings } from "./EditorSettings";
 import { TerminalSettings } from "./TerminalSettings";
@@ -27,6 +28,7 @@ export function SettingsCategoryContent({ category }: { category: Category }) {
     case "agents":
       return (
         <Stack>
+          <AgentViewSettings />
           <AISettings part="agents" />
           <AgentSettings part="agents" />
           <NotificationSettings />

@@ -131,6 +131,7 @@ export const defaultSettings: SettingsState = {
     stepLimit: null,
     removeWorktrees: true,
     startIn: "worktree",
+    view: "terminal",
     maxChildSessions: 4,
     maxSessionDepth: 3,
     ciFailure: "ask",

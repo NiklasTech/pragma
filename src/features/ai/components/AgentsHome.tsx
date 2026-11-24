@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { MagnifyingGlass, Stack, TerminalWindow } from "@phosphor-icons/react";
+import { ChatCircle, MagnifyingGlass, Stack, TerminalWindow } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { PragmaMark } from "@/shared/components/PragmaMark";
 import { Button } from "@/shared/components/ui/button";
 import { Kbd } from "@/shared/components/ui/kbd";
+import { SegmentedControl } from "@/shared/components/ui/segmented-control";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { formatShortcut, getIsMac } from "@/shared/lib/shortcuts";
 import { cn } from "@/shared/lib/utils";
@@ -17,7 +18,7 @@ import { refreshCLIStatuses } from "@/shared/stores/ai/cliRefresh";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
 import { useOverlayStore } from "@/shared/stores/overlays";
-import { useSettingsStore } from "@/shared/stores/settings";
+import { useSettingsStore, type AgentView } from "@/shared/stores/settings";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { useAgentStore } from "@/features/agent/store";
 import { defaultEnvironment } from "@/features/ai/sessions/environment";
@@ -35,7 +36,8 @@ import {
   togglePoolAgent,
   type CliAgent,
 } from "../home/agentTeam";
-import { createTerminalSession, launchStarts, type TerminalStart } from "../panes/launch";
+import { AGENT_VIEW_LABELS, resolveAgentView } from "../panes/agentView";
+import { createAgentSession, launchStarts, type TerminalStart } from "../panes/launch";
 import { useAgentsPanesStore } from "../panes/store";
 import { quickChoices } from "../quickStart/quickChoices";
 import { quickAgents, taskTabTitle } from "../quickStart/quickStart";
@@ -43,6 +45,8 @@ import { useNewSessionActions } from "../threads/useNewSessionActions";
 import { AgentTeamPicker } from "./AgentTeamPicker";
 import { ChatToolbar } from "./ChatToolbar";
 import { TaskAssignments } from "./TaskAssignments";
+
+const VIEW_HINT = "How the agent shows. The default is in Settings › Agents";
 
 const CARD =
   "h-auto flex-col items-stretch gap-1.5 rounded-[12px] px-3.5 py-3 text-left text-ui-sm font-normal text-fg-default ring-1 ring-border-subtle ring-inset hover:bg-transparent hover:ring-border";
@@ -95,6 +99,9 @@ export function AgentsHome() {
   const [prompt, setPrompt] = useState("");
   const [pragmaPicked, setPragmaPicked] = useState(false);
   const [picked, setPicked] = useState<CliAgent[] | null>(null);
+  const preferredView = useSettingsStore((state) => state.agent.view);
+  const [pickedView, setPickedView] = useState<AgentView | null>(null);
+  const view = pickedView ?? preferredView;
   const [assigned, setAssigned] = useState<Record<number, CliAgent>>({});
   const [creating, setCreating] = useState(false);
 
@@ -163,7 +170,7 @@ export function AgentsHome() {
                   const manifest = manifestOf(agent);
                   return manifest ? [{ manifest, accountDir: agent.accountDir }] : [];
                 });
-          await launchStarts(rootPath, starts, groupMode);
+          await launchStarts(rootPath, starts, groupMode, view);
           setPrompt("");
           setAssigned({});
           return;
@@ -171,12 +178,15 @@ export function AgentsHome() {
         const agent = taskAgents[0] ?? pool[0];
         const manifest = manifestOf(agent);
         if (!manifest) return;
-        const session = await createTerminalSession(rootPath, manifest, {
+        const session = await createAgentSession(rootPath, manifest, view, {
           title: text ? taskTabTitle(text) : undefined,
           accountDir: agent.accountDir,
+          activate: false,
         });
+        const asChat = resolveAgentView(manifest, view) === "chat";
+        if (text && asChat) setPendingFirstMessage(text, session.id);
         openSession(rootPath, session.id);
-        if (text) deliverTerminalPrompt(session.id, text);
+        if (text && !asChat) deliverTerminalPrompt(session.id, text);
       }
       setPrompt("");
     } catch (err) {
@@ -272,6 +282,33 @@ export function AgentsHome() {
               onPickPragma={() => setPragmaPicked(true)}
             />
             {pragma && rootPath && <ChatToolbar />}
+            {!pragma && rootPath && (
+              <SegmentedControl<AgentView>
+                label="Show agents as"
+                value={view}
+                onValueChange={setPickedView}
+                options={[
+                  {
+                    value: "terminal",
+                    label: (
+                      <span className="flex items-center gap-1.5" title={VIEW_HINT}>
+                        <TerminalWindow size={13} aria-hidden="true" />
+                        {AGENT_VIEW_LABELS.terminal}
+                      </span>
+                    ),
+                  },
+                  {
+                    value: "chat",
+                    label: (
+                      <span className="flex items-center gap-1.5" title={VIEW_HINT}>
+                        <ChatCircle size={13} aria-hidden="true" />
+                        {AGENT_VIEW_LABELS.chat}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            )}
             <span className="ml-auto text-ui-xs text-fg-muted">{where}</span>
             <Button type="submit" size="sm" disabled={!rootPath || creating}>
               {creating ? "Starting…" : several ? `Start ${total}` : "Start"}

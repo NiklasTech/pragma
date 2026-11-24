@@ -4,16 +4,16 @@ Pragma can run the official coding CLIs you have installed, such as Claude Code,
 
 Installed CLIs are listed under **Coding CLIs** in the **New session** menu. Each CLI offers up to two ways to work:
 
-| Mode         | What you get                                                                                                     |
-| ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Conversation | A Pragma chat that talks to the CLI over the Agent Client Protocol, with Pragma's composer, approvals and review |
-| Terminal     | The CLI's own interactive terminal UI in a pane, exactly as in your shell                                        |
+| Mode        | What you get                                                                                                     |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| Pragma chat | A Pragma chat that talks to the CLI over the Agent Client Protocol, with Pragma's composer, approvals and review |
+| Terminal    | The CLI's own interactive terminal UI in a pane, exactly as in your shell                                        |
 
 All supported CLIs offer both modes, except DeepSeek Harness, which has no interactive terminal. When a CLI offers only one mode, the menu starts it directly.
 
 ## What a conversation receives
 
-Before your first message, Pragma sends a Conversation session a short block of context:
+Before your first message, a Pragma chat sends the CLI a short block of context:
 
 - **Skills**: the catalog of the enabled [workspace skills](./skills.md). With a [named agent](./named-agents.md), the agent's brief, its memory and the skills selected on its **Skills** tab instead.
 - **Project rules**: with **Use PRAGMA.md** turned on, the rules file of the project (`PRAGMA.md`, otherwise `AGENTS.md`, otherwise `CLAUDE.md`), but only when the CLI does not load that file on its own. Codex, Copilot, Cursor, OpenCode, Grok and Kimi read `AGENTS.md`, and Claude Code reads `CLAUDE.md`, so Pragma leaves those out to avoid sending them twice. No CLI reads `PRAGMA.md`, so Pragma always sends it.

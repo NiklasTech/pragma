@@ -35,11 +35,13 @@ The right side of the overview shows the selected space:
 
 A layout is an arrangement of panes that you can start again, for example an agent next to two shells for the tests and the dev server. Pragma comes with three:
 
-| Layout                   | Panes                                          |
-| ------------------------ | ---------------------------------------------- |
-| Just the agent           | One agent                                      |
-| Agent, tests, dev server | The agent on the left, two shells on the right |
-| Two agents, one task     | Two agents side by side on the same task       |
+| Layout               | Panes                                          |
+| -------------------- | ---------------------------------------------- |
+| Just the agent       | One agent                                      |
+| Agent, 2 terminals   | The agent on the left, two shells on the right |
+| Two agents, one task | Two agents side by side on the same task       |
+
+The agent of a layout shows as a terminal or as a [Pragma chat](./agents/index.md#terminal-or-pragma-chat), whichever you pick in the start dialog.
 
 To save your own, arrange the panes of an agents tab and choose **Save tab as layout…** in the **Pane layout** menu of the [thread list](./agents/index.md#the-thread-list). Saved layouts appear in the start dialog (`Cmd/Ctrl + N`) and in the spaces overview. A saved layout starts its shells and coding CLIs again in a new agents tab.
 
