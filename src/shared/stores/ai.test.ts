@@ -176,6 +176,33 @@ describe("sessions of several repositories", () => {
     useAIStore.setState({ chatSessions: [], activeChatSessionId: null });
   });
 
+  it("keeps sessions created while the stored list is being read", async () => {
+    useAIStore.setState({ chatSessions: [repoSession("gone", "/a")] });
+    const load = useAIStore.getState().loadSessions("/a");
+    const shell: ChatSession = { ...repoSession("shell", "/a"), kind: "terminal" };
+    useAIStore.setState({ chatSessions: [...useAIStore.getState().chatSessions, shell] });
+    await load;
+
+    // A session from before the read that is no longer stored was deleted and stays gone.
+    const ids = useAIStore.getState().chatSessions.map((session) => session.id);
+    expect(ids.sort()).toEqual(["a1", "a2", "shell"]);
+  });
+
+  it("does not replace a session created while an empty list is being read", async () => {
+    const load = useAIStore.getState().loadSessions("/empty");
+    useAIStore.setState({ chatSessions: [repoSession("first", "/empty")] });
+    await load;
+    expect(useAIStore.getState().chatSessions.map((session) => session.id)).toEqual(["first"]);
+  });
+
+  it("leaves the open chat active when a terminal is added", () => {
+    useAIStore.setState({ chatSessions: [repoSession("chat", "/a")], activeChatSessionId: "chat" });
+    useAIStore.getState().addChatSession({ ...repoSession("shell", "/a"), kind: "terminal" });
+    expect(useAIStore.getState().activeChatSessionId).toBe("chat");
+    useAIStore.getState().addChatSession(repoSession("next", "/a"));
+    expect(useAIStore.getState().activeChatSessionId).toBe("next");
+  });
+
   it("loads two repositories side by side and tags each session with its repository", async () => {
     await useAIStore.getState().loadSessions("/a");
     await useAIStore.getState().loadSessions("/b", { activate: false });

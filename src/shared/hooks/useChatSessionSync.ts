@@ -117,8 +117,10 @@ export function useChatSessionPersistence({
       void saveSession(session);
     }
 
-    // Save messages when streaming finishes.
-    const wasStreaming = previous.status === "streaming" || previous.status === "submitted";
+    // Save messages when streaming finishes. Another session's stream did not end, it left the pane.
+    const wasStreaming =
+      previous.sessionId === activeChatSessionId &&
+      (previous.status === "streaming" || previous.status === "submitted");
     const isReady = chat.status === "ready";
     if (wasStreaming && isReady) {
       void saveSessionMessages(activeChatSessionId, session.messages);

@@ -77,7 +77,7 @@ function LeafContent({ leaf, focused }: { leaf: Leaf; focused: boolean }) {
     return <TerminalPane session={session} />;
   }
   if (runningInBackground) return <ChildRunView sessionId={leaf.sessionId} />;
-  if (focused && leaf.sessionId === activeChatSessionId) return <ChatPanel hideHeader />;
+  if (leaf.sessionId === activeChatSessionId) return <ChatPanel hideHeader focused={focused} />;
   return <ChatTranscript sessionId={leaf.sessionId} />;
 }
 

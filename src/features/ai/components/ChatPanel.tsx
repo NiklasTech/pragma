@@ -62,9 +62,11 @@ import { useCommandLineDelivery } from "@/shell/chrome/commandLine/delivery";
 
 export interface ChatPanelProps {
   hideHeader?: boolean;
+  /** Whether the chat has the pane focus; only then it takes the cursor and Enter. */
+  focused?: boolean;
 }
 
-export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
+export function ChatPanel({ hideHeader = false, focused = true }: ChatPanelProps) {
   const {
     messages,
     input,
@@ -465,9 +467,11 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           </div>
         )}
 
-        {activeChatSessionId && <SessionApprovals sessionId={activeChatSessionId} takesEnter />}
+        {activeChatSessionId && (
+          <SessionApprovals sessionId={activeChatSessionId} takesEnter={focused} />
+        )}
 
-        {ownsRun && <AgentApprovals takesEnter={!sessionAsks} />}
+        {ownsRun && <AgentApprovals takesEnter={focused && !sessionAsks} />}
 
         {!isCLIActive && ownsRun && <AgentRunBar />}
 
@@ -485,6 +489,7 @@ export function ChatPanel({ hideHeader = false }: ChatPanelProps) {
           canChat={canChat}
           mcpLoaded={mcpLoaded}
           onStop={stopRun}
+          focused={focused}
           images={composerImages.images}
           onAddImages={composerImages.addFiles}
           onRemoveImage={composerImages.remove}

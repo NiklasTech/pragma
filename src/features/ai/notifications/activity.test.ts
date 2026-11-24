@@ -22,6 +22,7 @@ const approval: AgentApproval = {
 
 const idle: ActivityInput = {
   liveSessionId: null,
+  backgroundChats: [],
   agentStatus: "idle",
   runSessionId: null,
   runs: {},
@@ -47,6 +48,15 @@ describe("resolveSessionActivity", () => {
 
   it("counts a live CLI chat without an agent run", () => {
     expect(resolveSessionActivity({ ...idle, liveSessionId: "cli" }).running).toEqual(["cli"]);
+  });
+
+  it("counts chats that answer without a pane, unless they wait for the user", () => {
+    const activity = resolveSessionActivity({
+      ...idle,
+      backgroundChats: ["away", "asks"],
+      acpApprovals: { asks: [approval] },
+    });
+    expect(activity).toEqual({ running: ["away"], waiting: ["asks"] });
   });
 
   it("moves a session waiting for approval out of running", () => {

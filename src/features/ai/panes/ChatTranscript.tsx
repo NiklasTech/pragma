@@ -8,11 +8,15 @@ import { Conversation, ConversationContent } from "../components/Conversation";
 import { Message, MessageContent, MessageResponse } from "../components/Message";
 import { ChildSessionCards } from "../children/ChildSessionCards";
 import { CompactionMarker } from "../compaction/CompactionMarker";
+import { WorkingIndicator } from "../components/WorkingIndicator";
+import { useBackgroundChatsStore } from "../live/backgroundChats";
 import { SessionApprovals } from "./SessionApprovals";
 
 export function ChatTranscript({ sessionId }: { sessionId: string }) {
   const session = useAIStore((state) => state.chatSessions.find((item) => item.id === sessionId));
   const loadSessionMessages = useAIStore((state) => state.loadSessionMessages);
+
+  const running = useBackgroundChatsStore((state) => state.running.includes(sessionId));
 
   useEffect(() => {
     if (session && session.messages.length === 0) {
@@ -46,6 +50,13 @@ export function ChatTranscript({ sessionId }: { sessionId: string }) {
                 </Message>
               ),
             )
+          )}
+          {running && (
+            <Message from="assistant">
+              <MessageContent>
+                <WorkingIndicator label="Working" />
+              </MessageContent>
+            </Message>
           )}
           <ChildSessionCards parentId={sessionId} />
         </ConversationContent>

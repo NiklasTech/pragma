@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 import { useAgentStore, type AgentStatus } from "@/features/agent/store";
 
+import { stopBackgroundChat } from "../live/backgroundChats";
 import { reportSessionOutcome } from "../notifications/outcomes";
 import { useTasksStore } from "./store";
 
@@ -37,6 +38,7 @@ function clearLive(sessionId: string | null): void {
 }
 
 export function stopLiveSession(sessionId: string): boolean {
+  if (stopBackgroundChat(sessionId)) return true;
   if (useSessionRunsStore.getState().liveSessionId !== sessionId || !liveStop) return false;
   liveStop();
   return true;

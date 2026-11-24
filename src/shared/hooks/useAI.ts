@@ -28,6 +28,7 @@ import type { ChatImage } from "@/shared/stores/ai";
 import { useMcpChatTools } from "./useMcpChatTools";
 import { useChatPrompt } from "./useChatPrompt";
 import { nativeRulesFiles } from "./cliLeadingMessage";
+import { useChatInstance, type ChatHandlers } from "@/features/ai/live/chatInstances";
 import { useChatSessionLoading, useChatSessionPersistence } from "./useChatSessionSync";
 import { runChatToolCall, shouldAutoContinueChat } from "./chatToolCall";
 import { resolveMentionContext } from "./chatMentionContext";
@@ -211,14 +212,8 @@ export function useAI() {
     return shouldAutoContinueChat(messages);
   }, []);
 
-  const chat = useChat({
-    id: `${sessionId}:${effectiveProvider}:${effectiveModel}:${effectiveCLIProvider ?? "api"}`,
-    transport,
-    messages: initialMessages,
-    experimental_throttle: 50,
-    onToolCall,
-    sendAutomaticallyWhen,
-    onFinish: (message) => {
+  const onFinish = useCallback<NonNullable<ChatHandlers["onFinish"]>>(
+    (message) => {
       if (!activeChatSessionId) return;
 
       const { chatSessions, generateChatTitle: generateTitle } = useAIStore.getState();
@@ -239,7 +234,17 @@ export function useAI() {
           : { provider: effectiveProvider, model: effectiveModel, baseUrl: effectiveBaseUrl },
       );
     },
+    [activeChatSessionId, effectiveBaseUrl, effectiveModel, effectiveProvider, isCLIActive],
+  );
+
+  const instance = useChatInstance({
+    id: `${sessionId}:${effectiveProvider}:${effectiveModel}:${effectiveCLIProvider ?? "api"}`,
+    sessionId: activeChatSessionId,
+    messages: initialMessages,
+    handlers: { transport, onToolCall, onFinish, sendAutomaticallyWhen },
+    keepRunning: acpActive,
   });
+  const chat = useChat({ chat: instance, experimental_throttle: 50 });
 
   chatRef.current = chat;
   useLiveChatRegistration(activeChatSessionId, chatRef);

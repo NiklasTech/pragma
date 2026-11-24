@@ -1,17 +1,19 @@
 import { useAgentStore } from "@/features/agent/store";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 
+import { stopBackgroundChat } from "../live/backgroundChats";
 import { disposeTerminal } from "../terminal/runner";
 import { releaseWorktrees } from "../worktree/cleanup";
 import { childSessions, descendantIds } from "./limits";
 import { getChildRun, isRunLive } from "./runStore";
 
-/// Stops whatever a session is running: its background run, its terminal, or the focused turn.
+/// Stops whatever a session is running: its background run or chat, its terminal, or the focused turn.
 export function stopSession(sessionId: string): void {
   // A live run means the runner is already loaded, so this keeps the AI SDK out of startup.
   if (isRunLive(getChildRun(sessionId))) {
     void import("./runner").then((m) => m.stopChildRun(sessionId));
   }
+  stopBackgroundChat(sessionId);
   disposeTerminal(sessionId);
   const agent = useAgentStore.getState();
   if (agent.runSessionId === sessionId) agent.requestStop();
