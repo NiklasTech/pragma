@@ -279,7 +279,8 @@ export function getTerminalSize(sessionId: string): { cols: number; rows: number
 
 export async function resizeTerminal(sessionId: string, cols: number, rows: number): Promise<void> {
   const entry = entries.get(sessionId);
-  if (!entry?.ptyId) return;
+  // An ended program keeps the size its last screen was drawn for.
+  if (!entry?.ptyId || entry.status !== "running") return;
   sizes.set(sessionId, { cols, rows });
   try {
     await invoke("resize_pty", {
@@ -350,6 +351,7 @@ export async function ensureTerminal(
               ...size,
             });
       current.ptyId = ptyId;
+      sizes.set(sessionId, size);
 
       const pendingOutput = unclaimedOutput.get(ptyId);
       if (pendingOutput !== undefined) {

@@ -9,6 +9,7 @@ import { PRAGMA_PATH_MIME } from "@/shared/lib/pragma-drag";
 import { getIsMac, matchShortcut } from "@/shared/lib/shortcuts";
 import { fixWebKitDeadKeys } from "@/shared/lib/terminal-dead-keys";
 import { getXtermTheme } from "@/shared/lib/theme/xterm-theme";
+import { cn } from "@/shared/lib/utils";
 import { useAIStore, type ChatSession } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { useTerminalStore } from "@/shared/stores/terminal";
@@ -21,9 +22,12 @@ import { sessionCwd } from "../worktree/cwd";
 import { quoteShellPath } from "./buffer";
 import { terminalLaunchCommand } from "./cliAttention";
 import { handleMacCliKey } from "./cliKeymap";
+import { fitEndedTerminal } from "./endedTerminal";
 import {
   ensureTerminal,
   getTerminalBuffer,
+  getTerminalSize,
+  getTerminalStatus,
   resizeTerminal,
   subscribeTerminalOutput,
   writeTerminal,
@@ -33,6 +37,7 @@ import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/termin
 import { isPaneShortcut } from "../panes/paneCommands";
 import { isShellSession, SHELL_TITLE } from "./shell";
 import { isSizeJump } from "./sizeJump";
+import { useTerminalStatus } from "./useTerminalStatus";
 
 interface TerminalPaneProps {
   session: ChatSession;
@@ -52,6 +57,7 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     ? cliManifests.find((item) => item.id === session.cliProviderId)
     : undefined;
   const shellSession = isShellSession(session);
+  const ended = useTerminalStatus(session.id).status !== "running";
   // The shell is read once at start; changing the setting applies to the next shell pane.
   const shellPath = useSettingsStore((state) => state.terminal.shell);
   const shellRef = useRef(shellPath);
@@ -111,17 +117,45 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     });
     termRef.current = term;
 
+    const refit = () => {
+      const size = getTerminalSize(session.id);
+      if (size && getTerminalStatus(session.id).status !== "running") {
+        fitEndedTerminal(term, fit, fontSize, size.cols);
+        return;
+      }
+      fit.fit();
+    };
+
     const writeOutput = createOutputWriter(term, (data) => void writeTerminal(session.id, data));
     const replayBase = getTerminalBuffer(session.id);
     const unsubOutput = subscribeTerminalOutput(session.id, writeOutput);
     const replayNow = getTerminalBuffer(session.id);
     const replay = replayNow.startsWith(replayBase) ? replayNow : replayBase;
-    if (replay) writeOutput(replay);
+    const drawnSize = getTerminalSize(session.id);
+    let replaying = replay !== "";
     const dataDisposable = term.onData((data) => {
       void writeTerminal(session.id, data);
     });
 
-    fit.fit();
+    const showReplay = () => {
+      // Output only lands in the right places at the size it was drawn for, and xterm parses it later.
+      if (drawnSize) term.resize(drawnSize.cols, drawnSize.rows);
+      writeOutput(replay, () => {
+        replaying = false;
+        if (disposed) return;
+        refit();
+        if (term.cols <= 0 || term.rows <= 0) return;
+        // Replayed output of a reattached session is only partial frames, so let the program repaint.
+        void forceTerminalRedraw(
+          (cols, rows) => resizeTerminal(session.id, cols, rows),
+          term.cols,
+          term.rows,
+        );
+      });
+    };
+
+    if (replay) showReplay();
+    else fit.fit();
     const initialSize = { cols: term.cols, rows: term.rows };
     void ensureTerminal(session.id, {
       command,
@@ -137,35 +171,25 @@ export function TerminalPane({ session }: TerminalPaneProps) {
 
     resizeObserver = new ResizeObserver(([entry]) => {
       if (resizeTimer) clearTimeout(resizeTimer);
-      const refit = () => {
+      const resize = () => {
         resizeTimer = null;
-        fit.fit();
+        if (replaying) return;
+        refit();
         if (term.cols > 0 && term.rows > 0) {
           void resizeTerminal(session.id, term.cols, term.rows);
         }
       };
       // Zooming a pane jumps its size; refit at once so the CLI redraws while the zoom plays.
       const { width, height } = entry.contentRect;
-      if (isSizeJump(term.element?.getBoundingClientRect(), width, height)) refit();
-      else resizeTimer = setTimeout(refit, 120);
+      if (isSizeJump(term.element?.getBoundingClientRect(), width, height)) resize();
+      else resizeTimer = setTimeout(resize, 120);
     });
     if (!disposed) resizeObserver.observe(container);
 
     requestAnimationFrame(() => {
-      if (disposed) return;
+      if (disposed || replay) return;
       fit.fit();
-      if (term.cols > 0 && term.rows > 0) {
-        // Replayed output of a reattached session is only partial frames, so let the program repaint.
-        if (replay) {
-          void forceTerminalRedraw(
-            (cols, rows) => resizeTerminal(session.id, cols, rows),
-            term.cols,
-            term.rows,
-          );
-        } else {
-          void resizeTerminal(session.id, term.cols, term.rows);
-        }
-      }
+      if (term.cols > 0 && term.rows > 0) void resizeTerminal(session.id, term.cols, term.rows);
     });
 
     return () => {
@@ -224,7 +248,13 @@ export function TerminalPane({ session }: TerminalPaneProps) {
           aria-hidden="true"
         />
       )}
-      <div ref={containerRef} className="h-full w-full overflow-hidden" />
+      <div
+        ref={containerRef}
+        className={cn(
+          "h-full w-full overflow-hidden",
+          ended && "overflow-x-auto overflow-y-hidden",
+        )}
+      />
     </div>
   );
 }

@@ -26,9 +26,11 @@ import { useReviewRows } from "../review/useReviewRows";
 import { stopSessions } from "../sessions/runningSessions";
 import { sessionAgentManifest } from "../sessions/sessionAgent";
 import { selectAgentState, useAgentStatesStore } from "../state/agentStates";
-import { getTerminalSize, resizeTerminal, writeTerminal } from "../terminal/runner";
+import { terminalPaneLabel, terminalPaneState } from "../panes/paneState";
+import { cancelTerminal, getTerminalSize, resizeTerminal, writeTerminal } from "../terminal/runner";
 import { TerminalPane } from "../terminal/TerminalPane";
 import { isGeneratedTerminalTitle } from "../terminal/title";
+import { useTerminalStatus } from "../terminal/useTerminalStatus";
 import { sessionCwd, sessionEnvironment } from "../worktree/cwd";
 
 type PeekTab = "session" | "changes";
@@ -122,11 +124,20 @@ function PeekBody({ session, onClose }: { session: ChatSession; onClose: () => v
   const spaceName = useOpenRepositoriesStore(
     (store) => store.spaces.find((space) => space.folders.includes(session.rootPath))?.name ?? null,
   );
-  const state = useAgentStatesStore(selectAgentState(session.id));
+  const agentState = useAgentStatesStore(selectAgentState(session.id));
   const [tab, setTab] = useState<PeekTab>("session");
 
   const agentName = manifest?.name ?? "Pragma";
   const isTerminal = session.kind === "terminal";
+  const terminal = useTerminalStatus(isTerminal ? session.id : null);
+  const ended = isTerminal && terminal.status !== "running";
+  const endedLook = { ...terminal, active: false };
+  const state = ended ? terminalPaneState(endedLook) : agentState;
+  const stop = () => {
+    // A stopped terminal keeps its last screen and tells everyone that it ended.
+    if (isTerminal) cancelTerminal(session.id);
+    else stopSessions([session.id]);
+  };
   const title =
     manifest && isGeneratedTerminalTitle(session.title, manifest.name)
       ? manifest.name
@@ -152,7 +163,7 @@ function PeekBody({ session, onClose }: { session: ChatSession; onClose: () => v
         <span className="ml-auto flex shrink-0 items-center gap-1">
           <span className="mr-1.5 flex h-6 items-center gap-1.5 rounded-[6px] bg-bg-hover px-2 text-ui-xs text-fg-muted">
             <StatusDot state={state} decorative />
-            {AGENT_STATE_LABELS[state]}
+            {ended ? terminalPaneLabel(endedLook) : AGENT_STATE_LABELS[state]}
           </span>
           <Button
             variant="ghost"
@@ -199,7 +210,11 @@ function PeekBody({ session, onClose }: { session: ChatSession; onClose: () => v
 
       {tab === "session" && (
         <div className="shrink-0 px-2.5 pt-2.5">
-          {isTerminal ? (
+          {ended ? (
+            <p className="px-1 text-ui-xs text-fg-subtle">
+              {agentName} has ended. This is its last screen.
+            </p>
+          ) : isTerminal ? (
             <ReplyField session={session} agentName={agentName} />
           ) : (
             <p className="px-1 text-ui-xs text-fg-subtle">Open the session as a pane to reply.</p>
@@ -215,10 +230,12 @@ function PeekBody({ session, onClose }: { session: ChatSession; onClose: () => v
           </>
         )}
         <span className="ml-auto flex shrink-0 gap-1.5">
-          <Button variant="ghost" size="sm" onClick={() => stopSessions([session.id])}>
-            <Stop size={12} aria-hidden="true" />
-            Stop
-          </Button>
+          {!ended && (
+            <Button variant="ghost" size="sm" onClick={stop}>
+              <Stop size={12} aria-hidden="true" />
+              Stop
+            </Button>
+          )}
           {tab === "session" && (
             <Button
               variant="secondary"

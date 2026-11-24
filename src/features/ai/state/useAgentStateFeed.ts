@@ -99,9 +99,12 @@ export function useAgentStateFeed(): void {
     };
 
     const onTerminalStatus = (sessionId: string) => {
-      if (!isCliTerminal(sessionId) || getTerminalStatus(sessionId).status === "running") return;
-      // A failed exit already arrived as attention; a clean or cancelled exit ends the run.
-      if (store().entries[sessionId]?.state !== "needs-you") apply(sessionId, "idle");
+      const { status, exitCode } = getTerminalStatus(sessionId);
+      if (!isCliTerminal(sessionId) || status === "running") return;
+      // A clean or cancelled exit ends the run and any open question; a failed one needs a look.
+      const failed = status === "exited" && exitCode !== 0;
+      if (failed && store().entries[sessionId]?.state === "needs-you") return;
+      apply(sessionId, "idle");
     };
 
     let previousRoot = useFileExplorerStore.getState().rootPath;
