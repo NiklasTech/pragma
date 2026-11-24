@@ -21,9 +21,13 @@ function Node({ node, grow }: { node: PresetNode; grow: number }) {
           : "bg-control";
     return (
       <span
-        className={cn("min-h-0 min-w-0 rounded-[3px]", fill)}
+        className={cn("flex min-h-0 min-w-0 flex-col justify-end rounded-[3px] p-1", fill)}
         style={{ flexGrow: grow, flexBasis: 0 }}
-      />
+      >
+        {node.start === "cli" && node.view === "chat" && (
+          <span className="h-2 rounded-[2px] bg-bg-well/45" />
+        )}
+      </span>
     );
   }
   return (
@@ -38,7 +42,7 @@ function Node({ node, grow }: { node: PresetNode; grow: number }) {
   );
 }
 
-/// A small picture of a layout: agent panes in the agent's color, shells and empty panes in grey.
+/// A small picture of a layout: agent panes in the agent's color, a chat with its message field, shells and empty panes in grey.
 export function LayoutDiagram({ layout }: { layout: PresetNode }) {
   return (
     <span aria-hidden="true" className="flex h-15.5 rounded-[6px] bg-bg-well p-1 [&>*]:flex-1">

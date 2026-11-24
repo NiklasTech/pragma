@@ -28,10 +28,12 @@ import type { GitBranch as GitBranchInfo } from "@/shared/stores/git";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useOverlayOpen, useOverlayStore } from "@/shared/stores/overlays";
-import { useSettingsStore } from "@/shared/stores/settings";
+import { useSettingsStore, type AgentView } from "@/shared/stores/settings";
 import { findSpaceByFolder } from "@/shared/stores/spaces/model";
 
+import { resolveAgentView, supportsAgentView } from "../panes/agentView";
 import { useLayoutPresetsStore } from "../panes/layoutPresets";
+import { AgentViewChoice } from "./AgentViewChoice";
 import { LayoutDiagram } from "./LayoutDiagram";
 import { quickChoices, sameAgent } from "./quickChoices";
 import {
@@ -78,6 +80,8 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   // The command line hands a task over as the overlay's target.
   const [task, setTask] = useState(() => useOverlayStore.getState().target ?? "");
   const [picked, setPicked] = useState<QuickAgent | null>(null);
+  const preferredView = useSettingsStore((state) => state.agent.view);
+  const [pickedView, setPickedView] = useState<AgentView | null>(null);
   const [layoutId, setLayoutId] = useState(QUICK_LAYOUTS[0].id);
   const [isRepo, setIsRepo] = useState<boolean | null>(null);
   const [where, setWhere] = useState<QuickWhere>(() => useSettingsStore.getState().agent.startIn);
@@ -106,7 +110,12 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   }, [rootPath]);
 
   const agent: QuickAgent = picked ?? choices[0]?.agent ?? TERMINAL_ONLY;
-  const pane = agentPane(agent);
+  const agentManifest =
+    agent.kind === "cli" ? manifests.find((item) => item.id === agent.manifestId) : undefined;
+  const view = agentManifest
+    ? resolveAgentView(agentManifest, pickedView ?? preferredView)
+    : "terminal";
+  const pane = agentPane(agent, view);
   const layouts = [
     ...QUICK_LAYOUTS.map((layout) => ({
       id: layout.id,
@@ -178,8 +187,8 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
             onChange={(event) => setTask(event.target.value)}
             placeholder="Describe the task, or leave it empty to start the agent on its own"
             aria-label="Task"
-            rows={3}
-            className="min-h-19 resize-none bg-transparent px-0 py-0 text-ui-lg leading-snug ring-0 hover:ring-0 focus-visible:ring-0"
+            rows={2}
+            className="min-h-13 resize-none bg-transparent px-0 py-0 text-ui-lg leading-snug ring-0 hover:ring-0 focus-visible:ring-0"
           />
         </div>
 
@@ -233,6 +242,16 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
             )}
           </div>
         </section>
+
+        {agentManifest && (
+          <AgentViewChoice
+            agentName={agentManifest.name}
+            view={view}
+            supports={(option) => supportsAgentView(agentManifest, option)}
+            onPick={setPickedView}
+            canLeave={task.trim() === ""}
+          />
+        )}
 
         <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
           <span className="text-ui-xs font-medium text-fg-muted">Layout</span>
@@ -379,7 +398,7 @@ export function QuickStartDialog() {
       open={isOpen && rootPath !== null}
       onOpenChange={(open) => !open && close("quickStart")}
     >
-      <OverlaySheetContent placement="top" className="max-w-[720px]">
+      <OverlaySheetContent placement="top" className="top-[8vh] max-h-[84vh] max-w-[720px]">
         {rootPath && (
           <QuickStartForm key={round} rootPath={rootPath} onDone={() => close("quickStart")} />
         )}

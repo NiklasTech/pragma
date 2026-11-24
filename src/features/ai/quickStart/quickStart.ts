@@ -1,4 +1,5 @@
 import type { CLIManifest, CLIStatus } from "@/shared/stores/ai";
+import type { AgentView } from "@/shared/stores/settings";
 
 import type { PresetNode, PresetPane } from "../panes/layoutPresets";
 
@@ -29,10 +30,15 @@ export function quickAgents(
   };
 }
 
-export function agentPane(agent: QuickAgent): PresetPane {
+export function agentPane(agent: QuickAgent, view: AgentView = "terminal"): PresetPane {
   if (agent.kind === "terminal") return { type: "pane", start: "shell" };
-  const pane: PresetPane = { type: "pane", start: "cli", cliProviderId: agent.manifestId };
-  return agent.accountDir ? { ...pane, cliAccountDir: agent.accountDir } : pane;
+  return {
+    type: "pane",
+    start: "cli",
+    cliProviderId: agent.manifestId,
+    ...(agent.accountDir ? { cliAccountDir: agent.accountDir } : {}),
+    ...(view === "chat" ? { view } : {}),
+  };
 }
 
 const SHELL: PresetPane = { type: "pane", start: "shell" };
@@ -47,7 +53,7 @@ export const QUICK_LAYOUTS: readonly QuickLayout[] = [
   { id: "agent", name: "Just the agent", build: (agent) => agent },
   {
     id: "agent-shells",
-    name: "Agent, tests, dev server",
+    name: "Agent, 2 terminals",
     build: (agent) => ({
       type: "split",
       direction: "horizontal",

@@ -39,6 +39,17 @@ describe("layouts", () => {
     expect(agentPane(TERMINAL_ONLY)).toEqual({ type: "pane", start: "shell" });
   });
 
+  it("puts the agent into the layout as a chat beside the shells", () => {
+    const chat = agentPane(
+      { kind: "cli", manifestId: "claude", accountDir: "/h/.claude-2" },
+      "chat",
+    );
+    expect(chat).toEqual({ ...claude, cliAccountDir: "/h/.claude-2", view: "chat" });
+    const shells = QUICK_LAYOUTS[1].build(chat);
+    expect(shells.type === "split" && shells.children[0]).toEqual(chat);
+    expect(agentPane({ kind: "cli", manifestId: "claude" }, "terminal")).toEqual(claude);
+  });
+
   it("gives a saved layout's first empty pane to the agent unless it runs a CLI", () => {
     const empty: PresetNode = {
       type: "split",

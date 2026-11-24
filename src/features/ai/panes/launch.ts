@@ -1,4 +1,5 @@
 import type { ChatSession, CLIManifest } from "@/shared/stores/ai";
+import type { AgentView } from "@/shared/stores/settings";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { activeTab, findSpaceByFolder } from "@/shared/stores/spaces/model";
 
@@ -6,19 +7,63 @@ import { deliverTerminalPrompt } from "../children/terminalPrompt";
 import { groupEnvironmentRequest, type GroupEnvironment } from "../sessions/group";
 import { startSession, type StartSessionRequest } from "../sessions/start";
 import { terminalSessionTitle } from "../terminal/title";
+import { resolveAgentView } from "./agentView";
+import { sendChatTasks, type ChatTask } from "./chatTasks";
 import { MAX_PANES } from "./operations";
 import { useAgentsPanesStore } from "./store";
+
+export interface CreateCliSessionOptions {
+  activate?: boolean;
+  title?: string;
+  environment?: Pick<StartSessionRequest, "environment" | "sameEnvironmentAs">;
+  /** The CLI's account folder; unset runs its default account. */
+  accountDir?: string;
+}
+
+/** A conversation with a coding CLI in Pragma's own chat. */
+export function cliConversationInit(
+  manifest: CLIManifest,
+  accountDir?: string,
+): StartSessionRequest["init"] {
+  return {
+    kind: "agent",
+    cliProviderId: manifest.id,
+    agentEngine: { kind: "cli", cliProviderId: manifest.id },
+    ...(accountDir ? { cliAccountDir: accountDir } : {}),
+  };
+}
+
+export function createConversationSession(
+  rootPath: string,
+  manifest: CLIManifest,
+  options?: CreateCliSessionOptions,
+): Promise<ChatSession> {
+  return startSession(rootPath, {
+    init: {
+      ...cliConversationInit(manifest, options?.accountDir),
+      ...(options?.title ? { title: options.title } : {}),
+    },
+    ...options?.environment,
+    activate: options?.activate,
+  });
+}
+
+/** Starts a CLI in the wanted view, or in the only one it has. */
+export function createAgentSession(
+  rootPath: string,
+  manifest: CLIManifest,
+  view: AgentView,
+  options?: CreateCliSessionOptions,
+): Promise<ChatSession> {
+  return resolveAgentView(manifest, view) === "chat"
+    ? createConversationSession(rootPath, manifest, options)
+    : createTerminalSession(rootPath, manifest, options);
+}
 
 export function createTerminalSession(
   rootPath: string,
   manifest: CLIManifest,
-  options?: {
-    activate?: boolean;
-    title?: string;
-    environment?: Pick<StartSessionRequest, "environment" | "sameEnvironmentAs">;
-    /** The CLI's account folder; unset runs its default account. */
-    accountDir?: string;
-  },
+  options?: CreateCliSessionOptions,
 ): Promise<ChatSession> {
   return startSession(rootPath, {
     init: {
@@ -82,7 +127,7 @@ export function teamTitles(baseTitles: readonly string[]): string[] {
   });
 }
 
-/** One terminal of a start: its CLI, its account and, when it has one, its own task. */
+/** One agent of a start: its CLI, its account and, when it has one, its own task. */
 export interface TerminalStart {
   manifest: CLIManifest;
   accountDir?: string;
@@ -109,11 +154,12 @@ export function launchTeam(
   return launchStarts(rootPath, starts, mode);
 }
 
-/// Starts each terminal with its own task, one after another, and shows exactly them in the grid.
+/// Starts each agent with its own task, one after another, and shows exactly them in the grid.
 export async function launchStarts(
   rootPath: string,
   requested: readonly TerminalStart[],
   mode: GroupEnvironment,
+  view: AgentView = "terminal",
 ): Promise<void> {
   const starts = requested.slice(0, MAX_PANES);
   // Starts take a while in worktrees; the grid belongs to the tab the start came from.
@@ -122,17 +168,22 @@ export async function launchStarts(
     starts.map((start) => start.task?.title ?? terminalSessionTitle(start.manifest.name)),
   );
   const sessions: ChatSession[] = [];
+  const chatTasks: ChatTask[] = [];
   for (const [index, start] of starts.entries()) {
-    const session = await createTerminalSession(rootPath, start.manifest, {
+    const session = await createAgentSession(rootPath, start.manifest, view, {
       activate: false,
       title: titles[index],
       environment: groupEnvironmentRequest(mode, sessions[0]),
       accountDir: start.accountDir,
     });
     sessions.push(session);
-    if (start.task) deliverTerminalPrompt(session.id, start.task.prompt);
+    if (!start.task) continue;
+    if (resolveAgentView(start.manifest, view) === "chat") {
+      chatTasks.push({ sessionId: session.id, prompt: start.task.prompt });
+    } else deliverTerminalPrompt(session.id, start.task.prompt);
   }
   const sessionIds = sessions.map((session) => session.id);
   const target = startTab && tabStillOpen(rootPath, startTab) ? startTab : undefined;
   useAgentsPanesStore.getState().replaceLayout(rootPath, sessionIds, target);
+  await sendChatTasks(rootPath, chatTasks);
 }

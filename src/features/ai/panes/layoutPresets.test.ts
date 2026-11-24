@@ -50,6 +50,34 @@ describe("layout presets", () => {
     });
   });
 
+  it("keeps a coding CLI's chat as a chat with its account", () => {
+    const sessions: ChatSession[] = [
+      { ...session("acp", "agent", "anthropic-claude"), cliAccountDir: "/h/.claude-2" },
+      {
+        ...session("pinned", "agent"),
+        agentEngine: { kind: "cli", cliProviderId: "xai-grok" },
+      },
+      session("shell", "terminal", "shell"),
+    ];
+    const root = createSplit("horizontal", [
+      group("a", "acp"),
+      group("b", "pinned"),
+      group("c", "shell"),
+    ]);
+    const layout = captureLayout(root, sessions);
+    expect(layout?.type === "split" && layout.children).toEqual([
+      {
+        type: "pane",
+        start: "cli",
+        cliProviderId: "anthropic-claude",
+        cliAccountDir: "/h/.claude-2",
+        view: "chat",
+      },
+      { type: "pane", start: "cli", cliProviderId: "xai-grok", view: "chat" },
+      { type: "pane", start: "shell" },
+    ]);
+  });
+
   it("builds empty panes in the saved shape with their starts", () => {
     const root = createSplit("horizontal", [group("a", "claude"), group("b", "shell")]);
     const layout = captureLayout(root, SESSIONS);

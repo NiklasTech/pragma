@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 
 import type { CLIManifest } from "@/shared/stores/ai";
-import { createTerminalSession } from "../panes/launch";
+import { cliConversationInit, createTerminalSession } from "../panes/launch";
 import { createShellSession } from "../terminal/shell";
 import { findLeaf } from "../panes/operations";
 import { paneTreeKey, selectEntry, useAgentsPanesStore } from "../panes/store";
@@ -28,18 +28,6 @@ export interface NewSessionActions {
   startShell: () => Promise<void>;
   startConversation: (manifest: CLIManifest, options?: { accountDir?: string }) => Promise<void>;
   joinWorktree: (environmentId: string, target: JoinTarget) => Promise<void>;
-}
-
-function cliConversationInit(
-  manifest: CLIManifest,
-  accountDir?: string,
-): StartSessionRequest["init"] {
-  return {
-    kind: "agent",
-    cliProviderId: manifest.id,
-    agentEngine: { kind: "cli", cliProviderId: manifest.id },
-    ...(accountDir ? { cliAccountDir: accountDir } : {}),
-  };
 }
 
 export function useNewSessionActions(

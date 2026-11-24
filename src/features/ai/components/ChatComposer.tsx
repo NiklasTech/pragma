@@ -36,6 +36,7 @@ import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
 import { ComposerMicButton } from "./ComposerMicButton";
 import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
+import { useChatAgentName } from "./useChatAgentName";
 
 interface ChatComposerProps {
   input: string;
@@ -71,6 +72,7 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const workspaceRoot = useFileExplorerStore((state) => state.rootPath);
   const rootPath = useActiveSessionMeta()?.rootPath ?? workspaceRoot;
+  const agentName = useChatAgentName();
   const sendShortcut = useSettingsStore((state) => state.shortcuts["chat.send"]);
   const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
   const cliSession = useCliSessionOptions();
@@ -285,7 +287,7 @@ export function ChatComposer({
             onSelect={updateCursorPosition}
             onFocus={claimPushToTalk}
             onPaste={handlePaste}
-            placeholder="Ask Pragma anything. Type @ to add context."
+            placeholder={`Ask ${agentName} anything. Type @ to add context.`}
             className={cn(
               "max-h-48 min-h-10 resize-none border-0 bg-transparent px-0 py-1 text-ui-md shadow-none ring-0 transition-colors duration-300 hover:ring-0 focus-visible:ring-0 focus-visible:shadow-none focus-visible:bg-transparent disabled:bg-transparent",
               dictationLive && "text-fg-muted",

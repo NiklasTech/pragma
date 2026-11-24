@@ -186,6 +186,9 @@ export type AgentAutoApprove = "never" | "edits" | "all";
 /** Where ⌘N starts an agent: a new worktree, or the open folder itself. */
 export type AgentStartIn = "worktree" | "here";
 
+/** How a new agent shows: the CLI's own terminal interface, or Pragma's chat. */
+export type AgentView = "terminal" | "chat";
+
 /** What happens when CI fails on the pull request of an agent worktree. */
 export type AgentCiFailure = "ask" | "fix" | "off";
 
@@ -199,6 +202,7 @@ export interface AgentSettings {
   stepLimit: number | null;
   removeWorktrees: boolean;
   startIn: AgentStartIn;
+  view: AgentView;
   maxChildSessions: number;
   maxSessionDepth: number;
   ciFailure: AgentCiFailure;

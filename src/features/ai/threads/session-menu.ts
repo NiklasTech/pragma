@@ -32,7 +32,7 @@ export function buildSessionMenuCliRows(
     }
 
     const items: SessionMenuCliItem[] = [
-      ...(manifest.uses_acp ? [{ action: "conversation" as const, label: "Conversation" }] : []),
+      ...(manifest.uses_acp ? [{ action: "conversation" as const, label: "Pragma chat" }] : []),
       ...(manifest.offers_terminal ? [{ action: "terminal" as const, label: "Terminal" }] : []),
     ];
 

@@ -369,12 +369,12 @@ export function useAI() {
     if (!activeChatSessionId || chat.status !== "ready") return;
     if (pendingSessionRef.current === activeChatSessionId) return;
 
-    const pending = takePendingFirstMessage();
+    const pending = takePendingFirstMessage(activeChatSessionId);
     if (pending === null) return;
 
     pendingSessionRef.current = activeChatSessionId;
     void submitText(pending).then((submitted) => {
-      if (!submitted) setPendingFirstMessage(pending);
+      if (!submitted) setPendingFirstMessage(pending, activeChatSessionId);
     });
   }, [activeChatSessionId, chat.status, submitText]);
 
