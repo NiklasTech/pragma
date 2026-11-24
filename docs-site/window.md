@@ -25,6 +25,8 @@ A space has three kinds of tabs:
 - The **Code tab** is the editor with the file tree, Git, a terminal and the debugger. Each space has one.
 - The **Activity tab** lists what your agents do, see [Watch your agents](./agents/watching.md#the-activity-tab).
 
+When the tabs no longer fit, scroll the strip with the mouse wheel or trackpad, or pick a tab from the list behind the tab count next to `+`.
+
 Right-click a tab to rename it, add an agents tab, show the code tab or close tabs. `Cmd/Ctrl + Shift + E` switches between the agents tab you used last and the code tab.
 
 ## The command line

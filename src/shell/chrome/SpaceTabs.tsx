@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Code, Plus, Pulse, Robot, X } from "@phosphor-icons/react";
 
 import { collectLeaves } from "@/features/ai/panes/layout";
@@ -23,7 +23,10 @@ import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { useSettingsStore } from "@/shared/stores/settings";
 import { TAB_NAMES, type Space, type SpaceTab } from "@/shared/stores/spaces/model";
 
+import { AllTabsMenu, type TabEntry } from "./AllTabsMenu";
 import { spaceTabMenu } from "./spaceTabMenu";
+import { TabNumber } from "./TabNumber";
+import { useTabStripScroll } from "./useTabStripScroll";
 
 function nextAgentsTabName(space: Space): string {
   const count = space.tabs.filter((tab) => tab.kind === "agents").length;
@@ -86,19 +89,7 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
             className="h-full gap-1.75 rounded-none px-0 text-ui-xs font-normal text-inherit hover:bg-transparent hover:text-inherit"
           >
             {index < TAB_SELECT_SHORTCUTS.length && (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-[3px] px-0.5 text-[10.5px] ring-1 transition-[background-color,color,box-shadow] duration-(--motion-base) ring-inset",
-                  waiting
-                    ? "bg-state-needs-you font-semibold text-primary-foreground shadow-[0_0_8px_var(--color-accent-glow)] ring-transparent"
-                    : active
-                      ? "text-fg-default ring-fg-default/15"
-                      : "text-fg-subtle ring-fg-default/8",
-                )}
-              >
-                {index + 1}
-              </span>
+              <TabNumber number={index + 1} active={active} waiting={waiting} />
             )}
             {tab.name}
             {paneCount > 0 && (
@@ -154,6 +145,9 @@ export function SpaceTabs() {
   const anyoneAsks = useActivityStore((state) =>
     Object.values(state.entries).some((entry) => entry.state === "waiting"),
   );
+  const listRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const strip = useTabStripScroll(listRef, contentRef, space?.activeTabId ?? null);
 
   if (!space) return null;
 
@@ -165,24 +159,36 @@ export function SpaceTabs() {
           leaf.sessionId === null ? [] : [leaf.sessionId],
         )
       : [];
+  const entries: TabEntry[] = space.tabs.map((tab) => {
+    const sessions = sessionsOf(tab);
+    return {
+      tab,
+      paneCount: sessions.length,
+      waiting: tab.kind === "activity" ? anyoneAsks : sessions.some(needsYou),
+    };
+  });
 
   return (
     <nav aria-label="Tabs" className="flex h-full min-w-0 items-center">
-      <div role="tablist" className="flex h-full min-w-0 items-center gap-6 overflow-hidden pr-6">
-        {space.tabs.map((tab, index) => {
-          const sessions = sessionsOf(tab);
-          return (
-            <TabButton
-              key={tab.id}
-              space={space}
-              tab={tab}
-              index={index}
-              paneCount={sessions.length}
-              waiting={tab.kind === "activity" ? anyoneAsks : sessions.some(needsYou)}
-            />
-          );
-        })}
+      <div
+        ref={listRef}
+        onScroll={strip.onScroll}
+        onWheel={strip.onWheel}
+        className={cn(
+          "h-full min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none]",
+          strip.overflowing && "mask-r-from-[calc(100%-24px)]",
+          strip.scrolled && "mask-l-from-[calc(100%-24px)]",
+        )}
+      >
+        <div ref={contentRef} role="tablist" className="flex h-full w-max items-center gap-6 pr-6">
+          {entries.map((entry, index) => (
+            <TabButton key={entry.tab.id} space={space} index={index} {...entry} />
+          ))}
+        </div>
       </div>
+      {strip.overflowing && (
+        <AllTabsMenu spaceId={space.id} activeTabId={space.activeTabId} entries={entries} />
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -191,7 +197,7 @@ export function SpaceTabs() {
               size="icon-sm"
               aria-label="New tab"
               title="New tab"
-              className="-ml-1 text-fg-subtle"
+              className={cn("text-fg-subtle", !strip.overflowing && "-ml-1")}
             >
               <Plus size={ICON_SIZE.sm} />
             </Button>
