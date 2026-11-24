@@ -47,6 +47,8 @@ interface ChatComposerProps {
   canChat: boolean;
   mcpLoaded: boolean;
   onStop: () => void;
+  /** Whether the chat has the pane focus; the cursor only moves here then. */
+  focused?: boolean;
   images: ComposerImage[];
   onAddImages: (files: File[]) => void;
   onRemoveImage: (id: string) => void;
@@ -62,6 +64,7 @@ export function ChatComposer({
   canChat,
   mcpLoaded,
   onStop,
+  focused = true,
   images,
   onAddImages,
   onRemoveImage,
@@ -128,8 +131,8 @@ export function ChatComposer({
   useComposerInsert(inputRef, onInputChange, textareaRef);
 
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
+    if (focused) textareaRef.current?.focus();
+  }, [focused]);
 
   const openSettings = () => {
     openSettingsOverlay("agents");

@@ -22,6 +22,7 @@ import { useTasksUiStore } from "@/features/ai/tasks/ui";
 
 import { ActivityPage } from "../activity/page/ActivityPage";
 import { AgentsHome } from "./AgentsHome";
+import { chatSessionFor } from "../panes/chatSession";
 import { PaneTree } from "../panes/PaneTree";
 import { openInRepository } from "../sessions/openInRepository";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
@@ -47,6 +48,7 @@ export function AgentsWorkspace() {
   const treeKey = usePaneTreeKey(rootPath);
   const root = useAgentsPanesStore((state) => selectRoot(state, treeKey));
   const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, treeKey));
+  const focusOrder = useAgentsPanesStore((state) => state.trees[treeKey]?.focusOrder);
   const syncSessions = useAgentsPanesStore((state) => state.syncSessions);
 
   const showActivity = useOpenRepositoriesStore((state) => {
@@ -121,10 +123,18 @@ export function AgentsWorkspace() {
   useAgentCiChecks(rootPath, loadedRoot === rootPath);
   useHandoffFeed();
 
+  // The tab's chat stays the live one while the focus is in a terminal beside it.
+  const chatSessionId = chatSessionFor(
+    { root, focusedSessionId, focusOrder: focusOrder ?? [] },
+    (id) => {
+      const session = chatSessions.find((item) => item.id === id);
+      return session !== undefined && session.kind !== "terminal";
+    },
+  );
   useEffect(() => {
-    if (!focusedSessionId || focusedSessionId === activeChatSessionId) return;
-    setActiveChatSession(focusedSessionId);
-  }, [focusedSessionId, activeChatSessionId, setActiveChatSession]);
+    if (!chatSessionId || chatSessionId === activeChatSessionId) return;
+    setActiveChatSession(chatSessionId);
+  }, [chatSessionId, activeChatSessionId, setActiveChatSession]);
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? null;
   const formAgent = formAgentId ? (agents.find((agent) => agent.id === formAgentId) ?? null) : null;

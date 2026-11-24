@@ -55,14 +55,32 @@ export function mergeSessionsWithStored(
 }
 
 // Concurrent loads of one repository share a single read, so a later load cannot drop what an earlier one added.
-const pendingLoads = new Map<string, Promise<ChatSession[]>>();
+interface StoredRead {
+  stored: ChatSession[];
+  /** Sessions in memory when the read began; newer ones cannot be in it and must survive it. */
+  knownIds: ReadonlySet<string>;
+}
 
-function loadStoredOnce(rootPath: string): Promise<ChatSession[]> {
+const pendingLoads = new Map<string, Promise<StoredRead>>();
+
+function loadStoredOnce(rootPath: string, inMemory: readonly ChatSession[]): Promise<StoredRead> {
   const pending = pendingLoads.get(rootPath);
   if (pending) return pending;
-  const load = loadStoredSessions(rootPath).finally(() => pendingLoads.delete(rootPath));
+  const knownIds = new Set(inMemory.map((session) => session.id));
+  const load = loadStoredSessions(rootPath)
+    .then((stored) => ({ stored, knownIds }))
+    .finally(() => pendingLoads.delete(rootPath));
   pendingLoads.set(rootPath, load);
   return load;
+}
+
+/** Sessions created while the stored list was being read, which that list does not hold yet. */
+export function createdDuringRead(
+  inMemory: readonly ChatSession[],
+  { stored, knownIds }: StoredRead,
+): ChatSession[] {
+  const storedIds = new Set(stored.map((session) => session.id));
+  return inMemory.filter((session) => !knownIds.has(session.id) && !storedIds.has(session.id));
 }
 
 export const createSessionsSlice: AISlice<
@@ -88,12 +106,14 @@ export const createSessionsSlice: AISlice<
   return {
     loadSessions: async (rootPath, options) => {
       const activate = options?.activate !== false;
-      const stored = await loadStoredOnce(rootPath);
+      const read = await loadStoredOnce(rootPath, get().chatSessions);
+      const { stored } = read;
       // Loading the sessions first migrates legacy worktrees into environments.
       await get().loadEnvironments(rootPath);
 
       const others = get().chatSessions.filter((session) => session.rootPath !== rootPath);
-      if (stored.length === 0) {
+      const created = createdDuringRead(repositorySessions(get().chatSessions, rootPath), read);
+      if (stored.length === 0 && created.length === 0) {
         if (!activate) {
           set({ chatSessions: others });
           return;
@@ -113,10 +133,13 @@ export const createSessionsSlice: AISlice<
       }
 
       const { chatSessions, activeChatSessionId } = get();
-      const merged = mergeSessionsWithStored(
-        stored,
-        chatSessions.filter((session) => session.rootPath === rootPath),
-      );
+      const merged = [
+        ...mergeSessionsWithStored(
+          stored,
+          chatSessions.filter((session) => session.rootPath === rootPath),
+        ),
+        ...created,
+      ].sort((a, b) => b.updatedAt - a.updatedAt);
       if (!activate) {
         set({ chatSessions: [...others, ...merged] });
         return;
@@ -155,10 +178,12 @@ export const createSessionsSlice: AISlice<
     },
 
     addChatSession: (session) => {
-      const { chatSessions } = get();
+      const { chatSessions, activeChatSessionId } = get();
       set({
         chatSessions: [...chatSessions, session],
-        activeChatSessionId: session.id,
+        // A terminal has no chat, so it leaves the open one alone.
+        activeChatSessionId:
+          session.kind === "terminal" ? (activeChatSessionId ?? session.id) : session.id,
       });
     },
 

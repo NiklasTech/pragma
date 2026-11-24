@@ -9,6 +9,7 @@ import { useUiModeStore } from "@/shell/mode";
 import { useAcpApprovalsStore } from "../acp/acpApprovals";
 import { useSpawnApprovalsStore } from "../children/acpSpawn";
 import { useChildRunsStore } from "../children/runStore";
+import { useBackgroundChatsStore } from "../live/backgroundChats";
 import { childRunOutcomes, type AttentionKind } from "../notifications/activity";
 import { subscribeSessionOutcomes } from "../notifications/outcomes";
 import { readSessionInView } from "../notifications/sessionInView";
@@ -122,6 +123,7 @@ export function useAgentStateFeed(): void {
     const unsubscribes = [
       useAgentStore.subscribe(refreshRuns),
       useSessionRunsStore.subscribe(refreshRuns),
+      useBackgroundChatsStore.subscribe(refreshRuns),
       useSpawnApprovalsStore.subscribe(refreshRuns),
       useAcpApprovalsStore.subscribe(refreshRuns),
       useChildRunsStore.subscribe((state, previous) => {

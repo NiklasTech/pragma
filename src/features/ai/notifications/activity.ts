@@ -6,6 +6,8 @@ export type AttentionKind = "finished" | "failed" | "approval" | "input";
 
 export interface ActivityInput {
   liveSessionId: string | null;
+  /** Chats that answer while no pane shows them. */
+  backgroundChats: readonly string[];
   agentStatus: AgentStatus;
   runSessionId: string | null;
   runs: Record<string, ChildRun>;
@@ -38,6 +40,7 @@ export function resolveSessionActivity(input: ActivityInput): SessionActivity {
     }
   }
   if (input.liveSessionId) running.add(input.liveSessionId);
+  for (const sessionId of input.backgroundChats) running.add(sessionId);
 
   return {
     running: [...running].filter((sessionId) => !waiting.has(sessionId)),

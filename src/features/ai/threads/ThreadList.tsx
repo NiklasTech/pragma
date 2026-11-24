@@ -20,6 +20,11 @@ import { useAgentStore } from "@/features/agent/store";
 import { DiscardWorktreeDialog } from "@/features/ai/worktree/DiscardWorktreeDialog";
 import { useFinishWorktree } from "@/features/ai/worktree/useFinishWorktree";
 import { PanePresetsMenu } from "@/features/ai/panes/PanePresetsMenu";
+import {
+  selectFocusedSessionId,
+  useAgentsPanesStore,
+  usePaneTreeKey,
+} from "@/features/ai/panes/store";
 import { AgentRoster } from "@/features/ai/named-agents/AgentRoster";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { useNamedAgentsUiStore, type NamedAgentsView } from "@/features/ai/named-agents/ui";
@@ -54,6 +59,10 @@ export function ThreadList() {
   const activeChatSessionId = useAIStore((state) => state.activeChatSessionId);
   const renameChatSession = useAIStore((state) => state.renameChatSession);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
+  // The focused pane's thread, which can be a terminal while a chat beside it stays live.
+  const treeKey = usePaneTreeKey(rootPath ?? "default");
+  const focusedSessionId = useAgentsPanesStore((state) => selectFocusedSessionId(state, treeKey));
+  const currentSessionId = focusedSessionId ?? activeChatSessionId;
   const agentStatus = useAgentStore((state) => state.status);
   const runSessionId = useAgentStore((state) => state.runSessionId);
 
@@ -209,10 +218,10 @@ export function ThreadList() {
         handleSelect(sessionId);
         return;
       }
-      if (extend) extendSelection(sessionId, activeChatSessionId);
+      if (extend) extendSelection(sessionId, currentSessionId);
       else toggleSelection(sessionId);
     },
-    [activeChatSessionId, extendSelection, handleSelect, toggleSelection, view],
+    [currentSessionId, extendSelection, handleSelect, toggleSelection, view],
   );
 
   const handleDuplicate = useCallback(async (sessionIds: string[]) => {
@@ -270,7 +279,7 @@ export function ThreadList() {
     <ThreadRow
       key={session.id}
       session={session}
-      isActive={session.id === activeChatSessionId}
+      isActive={session.id === currentSessionId}
       status={threadStatus(session)}
       depth={depth}
       runningChildren={runningChildren.get(session.id) ?? 0}
