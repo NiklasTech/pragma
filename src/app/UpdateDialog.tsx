@@ -19,7 +19,8 @@ export function UpdateDialog() {
   const acknowledgeCheck = useUpdaterStore((s) => s.acknowledgeCheck);
   const downloadAndInstall = useUpdaterStore((s) => s.downloadAndInstall);
   const restartApp = useUpdaterStore((s) => s.restartApp);
-  const [dismissedVersion, setDismissedVersion] = React.useState<string | null>(null);
+  // Closing hides this step of this version; the next step, such as the finished install, shows again.
+  const [dismissed, setDismissed] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (import.meta.env.DEV) return;
@@ -28,8 +29,9 @@ export function UpdateDialog() {
 
   const version = "version" in state ? state.version : null;
 
-  const updateOpen =
-    version !== null && (state.status !== "available" || version !== dismissedVersion);
+  const step = version === null ? null : `${state.status} ${version}`;
+
+  const updateOpen = step !== null && step !== dismissed;
   const checkOpen =
     userRequested &&
     (state.status === "checking" || state.status === "up-to-date" || state.status === "error");
@@ -66,7 +68,7 @@ export function UpdateDialog() {
       open={open}
       onOpenChange={(isOpen) => {
         if (isOpen) return;
-        if (version) setDismissedVersion(version);
+        if (step) setDismissed(step);
         acknowledgeCheck();
       }}
     >

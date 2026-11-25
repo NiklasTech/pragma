@@ -261,7 +261,7 @@ export function GoTo() {
     <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <DialogContent
         showCloseButton={false}
-        className="top-[10%] bottom-auto my-0 flex h-[560px] max-h-[calc(100%-4rem)] w-[880px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(880px,calc(100%-2rem))]"
+        className="mt-[10vh] flex self-start h-[560px] max-h-[calc(100%-4rem)] w-[880px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(880px,calc(100%-2rem))]"
       >
         <DialogTitle className="sr-only">Go to</DialogTitle>
         <Command
