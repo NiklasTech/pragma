@@ -26,6 +26,7 @@ import { fitEndedTerminal } from "./endedTerminal";
 import {
   ensureTerminal,
   getTerminalBuffer,
+  getTerminalEntryStatus,
   getTerminalSize,
   getTerminalStatus,
   resizeTerminal,
@@ -35,6 +36,7 @@ import {
 import { forceTerminalRedraw } from "@/shared/lib/terminalRedraw";
 import { pathLinkProvider, urlLinkHandler } from "@/features/terminal/lib/terminalLinkProvider";
 import { isPaneShortcut } from "../panes/paneCommands";
+import { resumableCliSession, resumeCommand } from "./resume";
 import { isShellSession, SHELL_TITLE } from "./shell";
 import { isSizeJump } from "./sizeJump";
 import { useTerminalStatus } from "./useTerminalStatus";
@@ -157,17 +159,26 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     if (replay) showReplay();
     else fit.fit();
     const initialSize = { cols: term.cols, rows: term.rows };
-    void ensureTerminal(session.id, {
-      command,
-      shell: shellSession ? shellRef.current : undefined,
-      cwd,
-      account:
-        manifest && session.cliAccountDir
-          ? { providerId: manifest.id, configDir: session.cliAccountDir }
-          : null,
-      cols: initialSize.cols,
-      rows: initialSize.rows,
-    });
+    const startTerminal = (startCommand: string) =>
+      ensureTerminal(session.id, {
+        command: startCommand,
+        shell: shellSession ? shellRef.current : undefined,
+        cwd,
+        account:
+          manifest && session.cliAccountDir
+            ? { providerId: manifest.id, configDir: session.cliAccountDir }
+            : null,
+        cols: initialSize.cols,
+        rows: initialSize.rows,
+      });
+    // A terminal of an earlier run goes on with its conversation instead of starting a new one.
+    if (resumableCliSession(session) && getTerminalEntryStatus(session.id) === null) {
+      void resumeCommand(session, command).then((resume) => {
+        if (!disposed) void startTerminal(resume);
+      });
+    } else {
+      void startTerminal(command);
+    }
 
     resizeObserver = new ResizeObserver(([entry]) => {
       if (resizeTimer) clearTimeout(resizeTimer);

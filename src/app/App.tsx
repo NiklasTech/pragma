@@ -31,6 +31,7 @@ import { useAcpApprovalRequests } from "@/features/ai/acp/acpApprovals";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
 import { useAgentStateFeed } from "@/features/ai/state/useAgentStateFeed";
+import { useCliSessionIds } from "@/features/ai/terminal/useCliSessionIds";
 import { useWorkingAgentsReport } from "@/features/ai/state/useWorkingAgentsReport";
 import { useActivityTracker } from "@/features/ai/activity/useActivityTracker";
 import { useOpenRepositorySessions } from "@/features/ai/sessions/repositorySessions";
@@ -90,6 +91,7 @@ export default function App() {
   useSessionNotifications();
   useAgentStateFeed();
   useWorkingAgentsReport();
+  useCliSessionIds();
   useActivityTracker();
   useSubscriptionUsagePoller();
   useTaskAutomation();

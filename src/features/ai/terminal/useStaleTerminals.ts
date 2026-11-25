@@ -5,8 +5,8 @@ import { repositorySessions, useAIStore, type ChatSession } from "@/shared/store
 import { collectLeaves } from "../panes/layout";
 import { useAgentsPanesStore, type PaneTreeEntry } from "../panes/store";
 import { releaseWorktrees } from "../worktree/cleanup";
-import { getTerminalEntryStatus, subscribeTerminalStatus } from "./runner";
-import { staleTerminalIds } from "./staleTerminals";
+import { disposeTerminal, getTerminalEntryStatus, subscribeTerminalStatus } from "./runner";
+import { isKeptForResume, staleTerminalIds } from "./staleTerminals";
 
 function isRunning(sessionId: string): boolean {
   return getTerminalEntryStatus(sessionId) === "running";
@@ -54,6 +54,11 @@ export async function purgeStaleTerminals(rootPath: string): Promise<void> {
   const open = openSessionIds(useAgentsPanesStore.getState().trees);
   const ids = new Set(staleTerminalIds(sessions, open, isRunning));
   const stale = sessions.filter((session) => ids.has(session.id));
+  // Opening a kept conversation again has to start its CLI, not show the ended one.
+  for (const session of sessions) {
+    if (open.has(session.id) || ids.has(session.id) || isRunning(session.id)) continue;
+    if (isKeptForResume(session, Date.now())) disposeTerminal(session.id);
+  }
   for (const session of stale) await deleteSession(session.id);
   await releaseWorktrees(rootPath, stale);
 }

@@ -36,6 +36,7 @@ const COMMANDS: &[&str] = &[
     "check_port_in_use",
     "child_session_spawn_reply",
     "claude_mcp_missing",
+    "claude_session_exists",
     "claude_session_share",
     "cli_accounts_list",
     "cli_acp_accepts_images",

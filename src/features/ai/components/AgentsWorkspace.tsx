@@ -107,7 +107,7 @@ export function AgentsWorkspace() {
     syncSessions(rootPath, sessionIds);
   }, [loadedRoot, rootPath, sessionIds, syncSessions]);
 
-  // Terminals from an earlier run cannot be resumed, so the folder drops them once loaded.
+  // Terminals from an earlier run that no pane shows and no CLI can resume are dropped once loaded.
   useEffect(() => {
     if (loadedRoot !== rootPath) return;
     void purgeStaleTerminals(rootPath).catch(() => {});

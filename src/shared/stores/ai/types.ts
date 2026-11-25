@@ -116,6 +116,8 @@ export interface ChatSession {
   cliProviderId?: string;
   /** The CLI's account folder; unset runs the CLI's default account. */
   cliAccountDir?: string;
+  /** The id the CLI gave the conversation in this terminal, for resuming it after a restart. */
+  cliSessionId?: string;
   agentId?: string;
   archived?: boolean;
   agentEngine?: AgentEngine;

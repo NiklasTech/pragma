@@ -22,6 +22,28 @@ describe("isStaleTerminal", () => {
   });
 });
 
+describe("a resumable conversation", () => {
+  const now = 1_000_000_000_000;
+  const claude = {
+    id: "t",
+    kind: "terminal" as const,
+    cliProviderId: "anthropic-claude",
+    cliSessionId: "0f2c7f0a-1111-2222-3333-444455556666",
+    updatedAt: now - 1000,
+  };
+
+  it("stays for a while without a pane", () => {
+    expect(isStaleTerminal(claude, new Set(), none, now)).toBe(false);
+    const old = { ...claude, updatedAt: now - 15 * 24 * 60 * 60 * 1000 };
+    expect(isStaleTerminal(old, new Set(), none, now)).toBe(true);
+  });
+
+  it("goes with its worktree", () => {
+    const inWorktree = { ...claude, environment: "worktree" as const };
+    expect(isStaleTerminal(inWorktree, new Set(), none, now)).toBe(true);
+  });
+});
+
 describe("staleTerminalIds", () => {
   it("lists only the stale sessions", () => {
     const sessions = [
