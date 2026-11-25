@@ -3,13 +3,13 @@ import { toast } from "sonner";
 import type { PresetNode } from "../panes/layoutPresets";
 import { openLayoutPreset, type OpenLayoutOptions } from "../panes/openLayoutPreset";
 import { createWorktreeEnvironment } from "../worktree/create";
-import { taskTabTitle } from "./quickStart";
 
 export type QuickWhere = "worktree" | "here";
 
 export interface QuickStartRequest {
   rootPath: string;
   task: string;
+  tabTitle: string;
   /** The layout with the chosen agent already in place. */
   layout: PresetNode;
   where: QuickWhere;
@@ -34,10 +34,9 @@ export async function startQuickTask(request: QuickStartRequest): Promise<void> 
     }
     environment = { sameEnvironmentAs: { environment: "worktree", environmentId: worktree.id } };
   }
-  const name = taskTabTitle(task);
   await openLayoutPreset(
     request.rootPath,
-    { id: "quick-start", name, layout: request.layout },
-    { tabName: name, environment, task },
+    { id: "quick-start", name: request.tabTitle, layout: request.layout },
+    { tabName: request.tabTitle, environment, task },
   );
 }
