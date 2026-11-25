@@ -185,3 +185,23 @@ describe("split panes", () => {
     expect(entry()?.manual).toBeUndefined();
   });
 });
+
+describe("movePane", () => {
+  it("takes a pane with its session from one tab into another", () => {
+    useAgentsPanesStore.setState({ trees: {} });
+    const { openSession, movePane } = useAgentsPanesStore.getState();
+    openSession(ROOT, "a");
+    openSession(ROOT, "b");
+    const from = paneTreeKey(ROOT);
+    const leaf = findLeafBySession(selectRoot(useAgentsPanesStore.getState(), from), "b");
+    expect(leaf).not.toBeNull();
+
+    expect(movePane(from, leaf?.id ?? "", "other-tab")).toBe(true);
+
+    const trees = useAgentsPanesStore.getState().trees;
+    expect(sessionsInOrder(trees[from]?.root ?? null)).toEqual(["a"]);
+    expect(sessionsInOrder(trees["other-tab"]?.root ?? null)).toEqual(["b"]);
+    expect(trees["other-tab"]?.focusedLeafId).toBe(leaf?.id);
+    expect(movePane(from, "missing", "other-tab")).toBe(false);
+  });
+});
