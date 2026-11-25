@@ -23,7 +23,9 @@ export default defineConfig({
   },
   envPrefix: ["VITE_", "TAURI_ENV_"],
   build: {
-    target: mobile ? ["es2020", "chrome111", "safari13"] : ["chrome120"],
+    // macOS draws the app with the system WebKit: Safari 16.4 at the oldest Tailwind 4 supports. Without
+    // it the build drops -webkit- prefixes, so on older macOS the UI became selectable and lost blur.
+    target: mobile ? ["es2020", "chrome111", "safari13"] : ["chrome120", "safari16.4"],
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
     rollupOptions: {
