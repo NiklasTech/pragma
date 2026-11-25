@@ -29,6 +29,10 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
   );
 }
 
+// Centers the dialog by flex. A fit-content height between two insets fills the window in the
+// WebKit of older macOS versions. Clicks beside the dialog reach the backdrop, which closes it.
+const VIEWPORT = "fixed inset-0 z-[70] pointer-events-none flex items-center justify-center";
+
 function AlertDialogContent({
   className,
   size = "default",
@@ -39,15 +43,17 @@ function AlertDialogContent({
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
-      <AlertDialogPrimitive.Popup
-        data-slot="alert-dialog-content"
-        data-size={size}
-        className={cn(
-          "group/alert-dialog-content fixed inset-0 z-[70] m-auto grid h-fit w-full gap-3 rounded-sheet bg-bg-sheet p-5 text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border duration-150 outline-none max-w-md sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-          className,
-        )}
-        {...props}
-      />
+      <AlertDialogPrimitive.Viewport className={VIEWPORT}>
+        <AlertDialogPrimitive.Popup
+          data-slot="alert-dialog-content"
+          data-size={size}
+          className={cn(
+            "group/alert-dialog-content pointer-events-auto relative grid w-full gap-3 rounded-sheet bg-bg-sheet p-5 text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border duration-150 outline-none max-w-md sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+            className,
+          )}
+          {...props}
+        />
+      </AlertDialogPrimitive.Viewport>
     </AlertDialogPortal>
   );
 }

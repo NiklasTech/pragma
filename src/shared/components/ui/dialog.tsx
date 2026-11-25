@@ -36,6 +36,10 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
   );
 }
 
+// Centers the dialog by flex. A fit-content height between two insets fills the window in the
+// WebKit of older macOS versions. Clicks beside the dialog reach the backdrop, which closes it.
+const VIEWPORT = "fixed inset-0 z-[70] pointer-events-none flex items-center justify-center";
+
 function DialogContent({
   className,
   overlayClassName,
@@ -49,27 +53,29 @@ function DialogContent({
   return (
     <DialogPortal>
       <DialogOverlay className={overlayClassName} />
-      <DialogPrimitive.Popup
-        data-slot="dialog-content"
-        className={cn(
-          "fixed inset-0 z-[70] m-auto grid h-fit max-h-[calc(100%-2rem)] w-full max-w-[calc(100%-2rem)] gap-3 rounded-sheet bg-bg-sheet p-5 text-ui-sm text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border outline-none sm:max-w-lg transition-[opacity,translate,scale] duration-(--motion-base) ease-(--motion-ease-out) data-starting-style:translate-y-2 data-starting-style:scale-[0.98] data-starting-style:opacity-0 data-ending-style:translate-y-1 data-ending-style:scale-[0.98] data-ending-style:opacity-0",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            render={
-              <Button variant="ghost" className="absolute top-1.5 right-1.5" size="icon-sm" />
-            }
-          >
-            <X />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
-      </DialogPrimitive.Popup>
+      <DialogPrimitive.Viewport className={VIEWPORT}>
+        <DialogPrimitive.Popup
+          data-slot="dialog-content"
+          className={cn(
+            "pointer-events-auto relative grid max-h-[calc(100%-2rem)] w-full max-w-[calc(100%-2rem)] gap-3 rounded-sheet bg-bg-sheet p-5 text-ui-sm text-fg-default shadow-[var(--shadow-md)] ring-1 ring-border outline-none sm:max-w-lg transition-[opacity,translate,scale] duration-(--motion-base) ease-(--motion-ease-out) data-starting-style:translate-y-2 data-starting-style:scale-[0.98] data-starting-style:opacity-0 data-ending-style:translate-y-1 data-ending-style:scale-[0.98] data-ending-style:opacity-0",
+            className,
+          )}
+          {...props}
+        >
+          {children}
+          {showCloseButton && (
+            <DialogPrimitive.Close
+              data-slot="dialog-close"
+              render={
+                <Button variant="ghost" className="absolute top-1.5 right-1.5" size="icon-sm" />
+              }
+            >
+              <X />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+          )}
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Viewport>
     </DialogPortal>
   );
 }

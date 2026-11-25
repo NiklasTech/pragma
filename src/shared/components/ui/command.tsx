@@ -49,7 +49,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-[18%] bottom-auto my-0 overflow-hidden rounded-xl border-border bg-bg-elevated p-0 shadow-[var(--shadow-md)]",
+          "mt-[18vh] self-start overflow-hidden rounded-xl border-border bg-bg-elevated p-0 shadow-[var(--shadow-md)]",
           className,
         )}
         showCloseButton={showCloseButton}
