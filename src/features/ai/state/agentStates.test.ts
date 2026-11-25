@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {
   compareAgentStates,
+  liveSessionIds,
   nextAgentState,
   summarizeAgentStates,
   useAgentStatesStore,
@@ -40,6 +41,12 @@ describe("nextAgentState", () => {
     expect(run(["working", "idle"])?.state).toBe("idle");
     const working = run(["working"]);
     expect(nextAgentState(working, "working", 99)).toBe(working);
+  });
+});
+
+describe("liveSessionIds", () => {
+  it("leaves out archived sessions", () => {
+    expect([...liveSessionIds([{ id: "a" }, { id: "b", archived: true }])]).toEqual(["a"]);
   });
 });
 

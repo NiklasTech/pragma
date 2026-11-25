@@ -44,7 +44,7 @@ const input = (extra: Partial<OverviewInput>): OverviewInput => ({
 });
 
 describe("overviewTiles", () => {
-  it("keeps sessions with a state, live CLIs and recent chats, never shells or empty chats", () => {
+  it("keeps sessions with a state, live CLIs and recent chats, a shell only while its CLI asks, never empty chats", () => {
     const tiles = overviewTiles(
       input({
         sessions: [
@@ -52,6 +52,7 @@ describe("overviewTiles", () => {
           session("cli", { kind: "terminal", cliProviderId: "anthropic-claude" }),
           session("dead-cli", { kind: "terminal", cliProviderId: "anthropic-claude" }),
           session("shell", { kind: "terminal", cliProviderId: "shell" }),
+          session("asking-shell", { kind: "terminal", cliProviderId: "shell" }),
           session("chat", { messages: [{ id: "m", role: "user", content: "hi", timestamp: 0 }] }),
           session("old-chat", {
             updatedAt: 0,
@@ -63,12 +64,14 @@ describe("overviewTiles", () => {
         entries: {
           asked: { state: "needs-you", seen: false, changedAt: NOW - 5 },
           archived: { state: "working", seen: true, changedAt: NOW },
+          "asking-shell": { state: "needs-you", seen: false, changedAt: NOW - 4 },
         },
         liveTerminals: new Set(["cli", "shell"]),
       }),
     );
     expect(tiles.map((tile) => [tile.session.id, tile.state])).toEqual([
       ["asked", "needs-you"],
+      ["asking-shell", "needs-you"],
       ["cli", "idle"],
       ["chat", "idle"],
     ]);

@@ -119,6 +119,22 @@ describe("terminal attention", () => {
     expect(events).toEqual([["session", "failed"]]);
   });
 
+  it("stays quiet when a shell ends with the code of its last command", async () => {
+    invokeMock.mockImplementation(() => {
+      ptyCounter += 1;
+      return Promise.resolve(`pty-${ptyCounter}`);
+    });
+    await ensureTerminal("session", {
+      command: "Shell",
+      shell: "",
+      cwd: null,
+      cols: 80,
+      rows: 24,
+    });
+    exit(`pty-${ptyCounter}`, 130);
+    expect(events).toEqual([]);
+  });
+
   it("stays quiet for a clean exit and a cancelled run", async () => {
     const ptyId = await start("session");
     exit(ptyId, 0);
