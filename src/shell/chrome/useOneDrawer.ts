@@ -3,15 +3,15 @@ import { useEffect } from "react";
 import { useAgentsUiStore } from "@/features/ai/store/agentsUi";
 import { useLayoutStore } from "@/shell/layout/store";
 
-import { useAgentSheetStore } from "./agentSheetStore";
+import { useAgentFilesStore, useAgentSheetStore } from "./agentSheetStore";
 
-export type Drawer = "agents" | "sidebar" | "threads";
+export type Drawer = "agents" | "files" | "sidebar" | "threads";
 
 type OpenDrawers = Record<Drawer, boolean>;
 
 /// The drawers to close because another one just opened; the newest stays.
 export function drawersToClose(before: OpenDrawers, now: OpenDrawers): Drawer[] {
-  const drawers: Drawer[] = ["agents", "sidebar", "threads"];
+  const drawers: Drawer[] = ["agents", "files", "sidebar", "threads"];
   const opened = drawers.find((drawer) => now[drawer] && !before[drawer]);
   return opened ? drawers.filter((drawer) => drawer !== opened && now[drawer]) : [];
 }
@@ -21,6 +21,7 @@ function readOpen(): OpenDrawers {
   const { threadsOpen, threadsPinned } = useAgentsUiStore.getState();
   return {
     agents: useAgentSheetStore.getState().open,
+    files: useAgentFilesStore.getState().open,
     // Pinned, both are columns beside the workspace and cover nothing.
     sidebar: !sidebar.pinned && !sidebar.collapsed && sidebar.position !== "hidden",
     threads: !threadsPinned && threadsOpen,
@@ -29,6 +30,7 @@ function readOpen(): OpenDrawers {
 
 const CLOSE: Record<Drawer, () => void> = {
   agents: () => useAgentSheetStore.getState().setOpen(false),
+  files: () => useAgentFilesStore.getState().setOpen(false),
   sidebar: () => useLayoutStore.getState().setSidebarCollapsed(true),
   threads: () => useAgentsUiStore.getState().setThreadsOpen(false),
 };
@@ -45,7 +47,7 @@ export function useOneDrawer(): void {
     };
     // Two drawers may be left open from before; the agents and then the sidebar stay.
     for (const drawer of drawersToClose(
-      { agents: false, sidebar: false, threads: false },
+      { agents: false, files: false, sidebar: false, threads: false },
       before,
     )) {
       CLOSE[drawer]();
@@ -53,6 +55,7 @@ export function useOneDrawer(): void {
     before = readOpen();
     const stops = [
       useAgentSheetStore.subscribe(check),
+      useAgentFilesStore.subscribe(check),
       useLayoutStore.subscribe(check),
       useAgentsUiStore.subscribe(check),
     ];
