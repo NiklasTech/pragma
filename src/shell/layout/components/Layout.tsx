@@ -1,4 +1,4 @@
-import { Suspense, lazy, useRef } from "react";
+import { Suspense, lazy, useRef, useState } from "react";
 import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
 import {
   ResizableHandle,
@@ -20,6 +20,10 @@ import { AgentRail } from "@/shell/chrome/AgentRail";
 import { AgentSheet } from "@/shell/chrome/AgentSheet";
 import { CommandLine } from "@/shell/chrome/commandLine/CommandLine";
 import { useUiMode } from "@/shell/mode";
+import { KeptAgentsTab } from "@/features/ai/panes/store";
+import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
+import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { activeTabIdFor } from "@/shared/stores/spaces/model";
 import { useTabModeSync } from "@/shell/mode/tabModeSync";
 import { DiagnosticsHost } from "@/shared/hooks/useDiagnostics";
 
@@ -36,6 +40,15 @@ export function Layout() {
   const root = useLayoutStore((s) => s.root);
   const setSidebarWidth = useLayoutStore((s) => s.setSidebarWidth);
   const uiMode = useUiMode();
+  const [shown, setShown] = useState({ agents: false, editor: false });
+  if (!shown[uiMode]) setShown({ ...shown, [uiMode]: true });
+  // Behind the code tab the agents view keeps the tab it showed, so its terminals stay as they are.
+  const rootPath = useFileExplorerStore((state) => state.rootPath) ?? "default";
+  const tabId = useOpenRepositoriesStore((state) => activeTabIdFor(state.spaces, rootPath));
+  const [keptTab, setKeptTab] = useState({ rootPath, tabId });
+  if (uiMode === "agents" && (keptTab.rootPath !== rootPath || keptTab.tabId !== tabId)) {
+    setKeptTab({ rootPath, tabId });
+  }
   useTabModeSync();
 
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
@@ -81,14 +94,30 @@ export function Layout() {
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <AgentRail />
         <AgentSheet />
-        {uiMode === "agents" ? (
-          <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
-            <Suspense fallback={null}>
-              <AgentsWorkspace />
-            </Suspense>
+        {/* Both sides stay mounted once shown, so switching keeps editors, terminals and git state. */}
+        {shown.agents && (
+          <div
+            inert={uiMode !== "agents"}
+            className={cn(
+              "relative flex min-h-0 min-w-0 flex-1 overflow-hidden",
+              uiMode !== "agents" && "hidden",
+            )}
+          >
+            <KeptAgentsTab.Provider value={uiMode === "agents" ? null : keptTab}>
+              <Suspense fallback={null}>
+                <AgentsWorkspace />
+              </Suspense>
+            </KeptAgentsTab.Provider>
           </div>
-        ) : (
-          <div className="relative flex min-h-0 min-w-0 flex-1 gap-1.5 overflow-hidden pr-1.5 pb-1.5">
+        )}
+        {shown.editor && (
+          <div
+            inert={uiMode !== "editor"}
+            className={cn(
+              "relative flex min-h-0 min-w-0 flex-1 gap-1.5 overflow-hidden pr-1.5 pb-1.5",
+              uiMode !== "editor" && "hidden",
+            )}
+          >
             {aiVisible && aiDrawerLeft && <AIChatHost />}
 
             {sidebarExpanded ? (
