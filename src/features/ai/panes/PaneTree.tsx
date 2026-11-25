@@ -335,6 +335,8 @@ export function PaneTree() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented || isTextEntry(event.target)) return;
       const card = document.querySelector<HTMLElement>("[data-pane-maximized='true']");
+      // The agents view stays mounted behind the code tab; a key there is not meant for it.
+      if (!card?.checkVisibility()) return;
       animateRestore(card, () => restore(rootPath));
     };
     window.addEventListener("keydown", handleKeyDown);

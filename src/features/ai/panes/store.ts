@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -71,9 +72,14 @@ export function paneTreeKey(rootPath: string): string {
   return activeTabIdFor(useOpenRepositoriesStore.getState().spaces, rootPath);
 }
 
+/** The agents tab a hidden agents view keeps showing while the code tab is in front. */
+export const KeptAgentsTab = createContext<{ rootPath: string; tabId: string } | null>(null);
+
 /** The pane layout key of a folder; changes when its space switches tabs. */
 export function usePaneTreeKey(rootPath: string): string {
-  return useOpenRepositoriesStore((state) => activeTabIdFor(state.spaces, rootPath));
+  const kept = useContext(KeptAgentsTab);
+  const active = useOpenRepositoriesStore((state) => activeTabIdFor(state.spaces, rootPath));
+  return kept?.rootPath === rootPath ? kept.tabId : active;
 }
 
 function getEntry(trees: Record<string, PaneTreeEntry>, rootPath: string): PaneTreeEntry {

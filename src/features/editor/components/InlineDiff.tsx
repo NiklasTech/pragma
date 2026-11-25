@@ -267,6 +267,7 @@ export const InlineDiff = memo(function InlineDiff({
 }: InlineDiffProps) {
   const [state, setState] = useState<LoadState>({ kind: "idle" });
   const [internalViewMode, setInternalViewMode] = useState<DiffViewMode>(viewMode);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const { editorMode } = useTheme();
   const effectiveViewMode = onViewModeChange ? viewMode : internalViewMode;
@@ -283,6 +284,8 @@ export const InlineDiff = memo(function InlineDiff({
     if (!onAccept && !onReject) return;
 
     const handler = (e: KeyboardEvent) => {
+      // A diff in the hidden side of the window takes no keys.
+      if (!rootRef.current?.checkVisibility()) return;
       if (onAccept && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         onAccept(modified);
@@ -327,7 +330,7 @@ export const InlineDiff = memo(function InlineDiff({
   }
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col min-w-0", className)}>
+    <div ref={rootRef} className={cn("flex h-full min-h-0 flex-col min-w-0", className)}>
       <div className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-border/60 px-3">
         <span className="truncate font-mono text-ui-xs text-fg-muted" title={filePath}>
           {filePath}
