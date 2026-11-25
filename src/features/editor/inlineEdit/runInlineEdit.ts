@@ -6,7 +6,7 @@ import { useAIStore } from "@/shared/stores/ai";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
 import { findSpaceByFolder } from "@/shared/stores/spaces/model";
-import { agentPane, quickAgents } from "@/features/ai/quickStart/quickStart";
+import { agentPane, quickAgents, taskTabTitle } from "@/features/ai/quickStart/quickStart";
 import { startQuickTask } from "@/features/ai/quickStart/startQuickTask";
 
 import { closeEdit, currentEdit, proposeInlineEdit } from "./inlineEdit";
@@ -84,6 +84,7 @@ export async function makeInlineEditTask(view: EditorView, id: number): Promise<
   await startQuickTask({
     rootPath,
     task,
+    tabTitle: taskTabTitle(task, agent.name),
     layout: agentPane({ kind: "cli", manifestId: agent.id }),
     where: "here",
   });

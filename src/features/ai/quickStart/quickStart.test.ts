@@ -80,6 +80,7 @@ describe("task names", () => {
   it("names the tab after the first words", () => {
     expect(taskTabTitle("Fix the login form")).toBe("Fix the login form");
     expect(taskTabTitle("Warn before opening files over 5 MB")).toBe("Warn before opening files…");
-    expect(taskTabTitle("   ")).toBe("New task");
+    expect(taskTabTitle("   ", "Claude Code")).toBe("Claude Code");
+    expect(taskTabTitle("Fix it", "Claude Code")).toBe("Fix it");
   });
 });

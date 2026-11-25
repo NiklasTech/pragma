@@ -108,10 +108,10 @@ export function taskSlug(task: string): string {
 
 const TAB_WORDS = 4;
 
-/** A short tab title from the first words of a task. */
-export function taskTabTitle(task: string): string {
+/** A short tab title from the first words of a task; without one, what the tab runs. */
+export function taskTabTitle(task: string, runs = "Agent"): string {
   const words = task.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "New task";
+  if (words.length === 0) return runs;
   const title = words.slice(0, TAB_WORDS).join(" ");
   return words.length > TAB_WORDS ? `${title}…` : title;
 }

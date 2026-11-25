@@ -133,7 +133,9 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const headBranch = branches.find((branch) => branch.is_head)?.name ?? null;
   const fromBranch = baseBranch ?? headBranch;
   const slug = taskSlug(task);
-  const tabTitle = taskTabTitle(task);
+  // A saved layout has a name of its own; a built-in one is named after its agent.
+  const saved = presets.find((preset) => `saved:${preset.id}` === layout.id);
+  const tabTitle = taskTabTitle(task, saved?.name ?? agentManifest?.name ?? "Terminal");
   const isMac = getIsMac();
 
   const start = () => {
@@ -141,6 +143,7 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
     startQuickTask({
       rootPath,
       task,
+      tabTitle,
       layout: layout.node,
       where: inWorktree ? "worktree" : "here",
       baseBranch: inWorktree && baseBranch && baseBranch !== headBranch ? baseBranch : undefined,
