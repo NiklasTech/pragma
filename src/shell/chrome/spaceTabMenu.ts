@@ -7,6 +7,8 @@ export interface SpaceTabActions {
   showCode: () => void;
   showActivity: () => void;
   close: (tabIds: string[]) => void;
+  evenOut: () => void;
+  saveLayout: () => void;
 }
 
 /// Right-click on a space tab: rename it, open the other tab kinds, or close tabs.
@@ -26,6 +28,12 @@ export function spaceTabMenu(
         items: [
           { key: "r", label: "rename", onSelect: actions.rename },
           { key: "n", label: "new agents tab", onSelect: actions.newAgentsTab },
+          ...(tab.kind === "agents"
+            ? [
+                { key: "e", label: "even out panes", onSelect: actions.evenOut },
+                { key: "s", label: "save as layout", onSelect: actions.saveLayout },
+              ]
+            : []),
           ...(tab.kind !== "code"
             ? [{ key: "c", label: "show code tab", onSelect: actions.showCode }]
             : []),

@@ -19,7 +19,7 @@ import { cancelTerminal } from "../terminal/runner";
 import { isShellSession } from "../terminal/shell";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { sessionEnvironment } from "../worktree/cwd";
-import { useAgentsPanesStore } from "./store";
+import { paneTreeKey, useAgentsPanesStore } from "./store";
 
 /** What a pane header adds, since it knows its own pane. */
 export interface PaneMenuActions {
@@ -121,6 +121,12 @@ export function useAgentMenu(
           ? [
               { key: "h", label: "split right", onSelect: pane.splitRight },
               { key: "z", label: pane.zoomed ? "restore pane" : "zoom pane", onSelect: pane.zoom },
+              {
+                key: "e",
+                label: "even out panes",
+                onSelect: () =>
+                  useAgentsPanesStore.getState().evenOutPanes(paneTreeKey(session.rootPath)),
+              },
             ]
           : []),
       ],

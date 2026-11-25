@@ -196,3 +196,13 @@ export function updateSplitSizes(root: PaneRoot, splitId: string, sizes: number[
   if (!changed) return root;
   return { ...root, children };
 }
+
+/** Gives every pane of each split the same share, so all panes of a row or column are equally big. */
+export function evenOutSizes(root: PaneRoot): PaneRoot {
+  if (!root || root.type === "tabs") return root;
+  return {
+    ...root,
+    sizes: distributeSizes(root.children.length),
+    children: root.children.map((child) => evenOutSizes(child) ?? child),
+  };
+}
