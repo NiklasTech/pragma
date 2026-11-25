@@ -2,24 +2,12 @@ import { ArrowCounterClockwise, ArrowUUpLeft, ChatCircle, Check } from "@phospho
 import { useMemo, useState } from "react";
 
 import { Button } from "@/shared/components/ui/button";
-import type { PatchLine } from "@/shared/lib/diffHunks";
+import { DiffGutter } from "@/shared/components/DiffGutter";
+import { hunkPlace, hunkSection, lineNumberDigits, type PatchLine } from "@/shared/lib/diffHunks";
 import { cn } from "@/shared/lib/utils";
 
 import type { ReviewComment, ReviewCommentSide } from "./comments";
 import { ReviewCommentCard, ReviewCommentEditor } from "./ReviewCommentCard";
-
-const HEADER = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@ ?(.*)$/;
-
-/** Where the part sits: the function git names in the header, and its lines in the new file. */
-function hunkTitle(header: string, lines: readonly PatchLine[]): { name: string; place: string } {
-  const match = HEADER.exec(header);
-  const numbers = lines.map((line) => line.newLine ?? line.oldLine).filter((n) => n !== null);
-  const first = numbers[0];
-  const last = numbers[numbers.length - 1];
-  const place =
-    first === undefined ? "" : first === last ? `line ${first}` : `lines ${first}–${last}`;
-  return { name: match?.[3]?.trim() ?? "", place };
-}
 
 const LINE_CLASS: Record<PatchLine["type"], string> = {
   added: "bg-(--color-git-added-bg)",
@@ -73,7 +61,9 @@ export function ReviewHunkCard({
   onRemoveComment,
 }: ReviewHunkCardProps) {
   const [draft, setDraft] = useState<string | null>(null);
-  const { name, place } = hunkTitle(header, lines);
+  const name = hunkSection(header);
+  const place = hunkPlace({ lines });
+  const digits = lineNumberDigits([{ lines }]);
   const lastChanged = [...lines].reverse().find((line) => line.type !== "context");
   const byLine = useMemo(() => {
     const map = new Map<string, ReviewComment[]>();
@@ -138,57 +128,59 @@ export function ReviewHunkCard({
       </div>
       <div
         className={cn(
-          "py-1.5 font-mono text-[12px] leading-5",
+          "overflow-x-auto py-1.5 font-mono text-[12px] leading-5 [tab-size:4]",
           state === "undone" && "line-through decoration-fg-subtle/40 opacity-40",
         )}
       >
-        {lines.map((line, index) => {
-          const at = target(line);
-          const key = at ? `${at.side}:${at.line}` : null;
-          const lineComments = key ? (byLine.get(key) ?? []) : [];
-          return (
-            <div key={index}>
-              <Button
-                variant="ghost"
-                disabled={!at || state === "undone"}
-                title="Comment on this line"
-                onClick={() => setDraft(key === draft ? null : key)}
-                className={cn(
-                  "grid h-5 w-full grid-cols-[46px_18px_1fr] rounded-none px-0 pr-3.5 text-left font-mono text-[12px] font-normal text-fg-default hover:bg-bg-hover",
-                  LINE_CLASS[line.type],
-                )}
-              >
-                <span className="pr-2.5 text-right text-fg-subtle tabular-nums">
-                  {line.newLine ?? line.oldLine}
-                </span>
-                <span className={SIGN_CLASS[line.type]}>{SIGN[line.type]}</span>
-                <span className="overflow-hidden text-ellipsis whitespace-pre">{line.content}</span>
-              </Button>
-              {(lineComments.length > 0 || (key !== null && key === draft)) && (
-                <div className="my-1 mr-3.5 ml-16 flex flex-col gap-1.5 font-sans">
-                  {lineComments.map((comment) => (
-                    <ReviewCommentCard
-                      key={comment.id}
-                      comment={comment}
-                      onUpdate={(body) => onUpdateComment(comment.id, body)}
-                      onRemove={() => onRemoveComment(comment.id)}
-                    />
-                  ))}
-                  {key === draft && at && (
-                    <ReviewCommentEditor
-                      submitLabel="Comment"
-                      onSubmit={(body) => {
-                        onComment(at.side, at.line, line.content, body);
-                        setDraft(null);
-                      }}
-                      onCancel={() => setDraft(null)}
-                    />
+        <div className="w-max min-w-full">
+          {lines.map((line, index) => {
+            const at = target(line);
+            const key = at ? `${at.side}:${at.line}` : null;
+            const lineComments = key ? (byLine.get(key) ?? []) : [];
+            return (
+              <div key={index}>
+                <Button
+                  variant="ghost"
+                  disabled={!at || state === "undone"}
+                  title="Comment on this line"
+                  onClick={() => setDraft(key === draft ? null : key)}
+                  className={cn(
+                    "h-5 w-full justify-start gap-0 rounded-none px-0 pr-3.5 pl-1 text-left font-mono text-[12px] font-normal text-fg-default hover:bg-bg-hover",
+                    LINE_CLASS[line.type],
                   )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                >
+                  <DiffGutter line={line} digits={digits} />
+                  <span className={cn("w-4.5 shrink-0", SIGN_CLASS[line.type])}>
+                    {SIGN[line.type]}
+                  </span>
+                  <span className="flex-1 whitespace-pre">{line.content}</span>
+                </Button>
+                {(lineComments.length > 0 || (key !== null && key === draft)) && (
+                  <div className="my-1 mr-3.5 ml-16 flex flex-col gap-1.5 font-sans">
+                    {lineComments.map((comment) => (
+                      <ReviewCommentCard
+                        key={comment.id}
+                        comment={comment}
+                        onUpdate={(body) => onUpdateComment(comment.id, body)}
+                        onRemove={() => onRemoveComment(comment.id)}
+                      />
+                    ))}
+                    {key === draft && at && (
+                      <ReviewCommentEditor
+                        submitLabel="Comment"
+                        onSubmit={(body) => {
+                          onComment(at.side, at.line, line.content, body);
+                          setDraft(null);
+                        }}
+                        onCancel={() => setDraft(null)}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </article>
   );

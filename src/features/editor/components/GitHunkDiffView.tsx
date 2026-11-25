@@ -3,8 +3,13 @@ import type { MouseEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowCounterClockwise, Minus, Plus } from "@phosphor-icons/react";
 import type { GitLineAction, GitLineSelection } from "@/shared/stores/git";
+import { DiffGutter } from "@/shared/components/DiffGutter";
 import {
+  hunkPlace,
+  hunkSection,
+  lineNumberDigits,
   lineSelection,
+  longestLine,
   parsePatchHunks,
   patchLineKey,
   type PatchHunk,
@@ -41,6 +46,8 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
 }: GitHunkDiffViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hunks = useMemo(() => parsePatchHunks(patchText), [patchText]);
+  const digits = useMemo(() => lineNumberDigits(hunks), [hunks]);
+  const longest = useMemo(() => longestLine(hunks), [hunks]);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [anchor, setAnchor] = useState<{ hunkIndex: number; lineIndex: number } | null>(null);
 
@@ -109,7 +116,14 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
 
   return (
     <div ref={scrollRef} className="h-full w-full overflow-auto font-mono text-ui-base">
-      <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          position: "relative",
+          minWidth: `calc(${longest + 2 * digits + 4}ch + 48px)`,
+          tabSize: 4,
+        }}
+      >
         {virtualizer.getVirtualItems().map((item) => {
           const row = rows[item.index];
           if (!row) return null;
@@ -133,46 +147,53 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
               <div
                 key={item.key}
                 style={style}
-                className="flex items-center gap-2 border-y border-border/60 bg-status-info/5 px-2"
+                className="flex items-center border-y border-border/60 bg-status-info/5"
               >
-                <span className="min-w-0 flex-1 truncate text-ui-xs text-status-info">
-                  {hunk.header}
-                </span>
-                {staged ? (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    className="font-sans text-ui-xs"
-                    disabled={busy}
-                    onClick={() => applyToHunk(hunk, "unstage")}
+                {/* Stays in sight while a long line is scrolled to. */}
+                <span className="sticky left-0 flex items-center gap-2 px-2">
+                  <span
+                    className="mr-2 max-w-96 truncate text-ui-xs text-status-info"
+                    title={hunk.header}
                   >
-                    <Minus size={12} />
-                    Unstage {scope}
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      className="font-sans text-ui-xs hover:text-status-error"
-                      disabled={busy}
-                      onClick={() => applyToHunk(hunk, "discard")}
-                    >
-                      <ArrowCounterClockwise size={12} />
-                      Discard {scope}
-                    </Button>
+                    {hunkPlace(hunk)}
+                    <span className="ml-2 text-fg-subtle">{hunkSection(hunk.header)}</span>
+                  </span>
+                  {staged ? (
                     <Button
                       variant="ghost"
                       size="xs"
                       className="font-sans text-ui-xs"
                       disabled={busy}
-                      onClick={() => applyToHunk(hunk, "stage")}
+                      onClick={() => applyToHunk(hunk, "unstage")}
                     >
-                      <Plus size={12} />
-                      Stage {scope}
+                      <Minus size={12} />
+                      Unstage {scope}
                     </Button>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="font-sans text-ui-xs hover:text-status-error"
+                        disabled={busy}
+                        onClick={() => applyToHunk(hunk, "discard")}
+                      >
+                        <ArrowCounterClockwise size={12} />
+                        Discard {scope}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="font-sans text-ui-xs"
+                        disabled={busy}
+                        onClick={() => applyToHunk(hunk, "stage")}
+                      >
+                        <Plus size={12} />
+                        Stage {scope}
+                      </Button>
+                    </>
+                  )}
+                </span>
               </div>
             );
           }
@@ -195,12 +216,7 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
                 isSelected && "bg-primary/15",
               )}
             >
-              <span className="w-10 shrink-0 select-none pr-1 text-right text-ui-xs leading-5 text-fg-subtle">
-                {line.oldLine ?? ""}
-              </span>
-              <span className="w-10 shrink-0 select-none pr-1 text-right text-ui-xs leading-5 text-fg-subtle">
-                {line.newLine ?? ""}
-              </span>
+              <DiffGutter line={line} digits={digits} />
               <span
                 className={cn(
                   "w-5 shrink-0 select-none text-center text-ui-xs leading-5",
@@ -209,9 +225,7 @@ export const GitHunkDiffView = memo(function GitHunkDiffView({
               >
                 {PREFIX[line.type]}
               </span>
-              <span className="min-w-0 flex-1 truncate whitespace-pre px-1 leading-5">
-                {line.content}
-              </span>
+              <span className="flex-1 whitespace-pre px-1 leading-5">{line.content}</span>
             </div>
           );
         })}
