@@ -64,6 +64,8 @@ interface AgentsPanesState {
   placeLayout: (treeKey: string, root: PaneRoot) => void;
   /** Makes the panes of each row and column of a tab the same size. */
   evenOutPanes: (treeKey: string) => void;
+  /** Moves a pane with its session from one tab to another; false when the other tab is full. */
+  movePane: (fromTab: string, leafId: string, toTab: string) => boolean;
   /** Forgets the layout of a closed tab; stopping its sessions is up to the caller. */
   removeTree: (treeKey: string) => void;
 }
@@ -370,6 +372,28 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             trees: { ...state.trees, [treeKey]: { ...entry, root: evenOutSizes(entry.root) } },
           };
         }),
+
+      movePane: (fromTab, leafId, toTab) => {
+        const state = get();
+        const from = state.trees[fromTab];
+        const leaf = from ? collectLeaves(from.root).find((item) => item.id === leafId) : undefined;
+        const to = state.trees[toTab] ?? EMPTY_ENTRY;
+        if (!from || !leaf || fromTab === toTab || countLeaves(to.root) >= MAX_PANES) return false;
+        const rest = withoutLeaves(from, [leafId]);
+        set({
+          trees: {
+            ...state.trees,
+            [fromTab]: {
+              ...from,
+              root: rest,
+              focusedLeafId:
+                from.focusedLeafId === leafId ? (firstLeaf(rest)?.id ?? null) : from.focusedLeafId,
+            },
+            [toTab]: { ...to, root: placeLeaf(to, leaf), focusedLeafId: leaf.id },
+          },
+        });
+        return true;
+      },
 
       removeTree: (treeKey) =>
         set((state) => {

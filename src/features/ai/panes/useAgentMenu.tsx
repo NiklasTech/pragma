@@ -19,6 +19,7 @@ import { cancelTerminal } from "../terminal/runner";
 import { isShellSession } from "../terminal/shell";
 import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { sessionEnvironment } from "../worktree/cwd";
+import { movePaneToTab, otherAgentsTabs } from "./movePaneToTab";
 import { paneTreeKey, useAgentsPanesStore } from "./store";
 
 /** What a pane header adds, since it knows its own pane. */
@@ -131,6 +132,21 @@ export function useAgentMenu(
           : []),
       ],
     });
+
+    if (pane) {
+      const move = (toTab: string | null) => movePaneToTab(session.rootPath, session.id, toTab);
+      groups.push({
+        label: "move to",
+        items: [
+          ...otherAgentsTabs(session.rootPath).map((tab, index) => ({
+            key: String(index + 1),
+            label: tab.name,
+            onSelect: () => move(tab.id),
+          })),
+          { key: "t", label: "a new tab", onSelect: () => move(null) },
+        ],
+      });
+    }
 
     const location = pane ? null : paneInActiveTab(session.id);
     const closeLeaf = (stop: boolean) => {
