@@ -112,6 +112,30 @@ pub fn share_transcript(from: &Path, to: &Path, session_id: &str) -> Result<(), 
         })
 }
 
+/// Whether an account still holds the conversation. One without a message has no transcript, and
+/// resuming it would end Claude Code with an error.
+#[tauri::command]
+pub async fn claude_session_exists<R: Runtime>(
+    app: AppHandle<R>,
+    session_id: String,
+    config_dir: Option<String>,
+) -> Result<bool, String> {
+    if !valid_session_id(&session_id) {
+        return Err("Invalid session id".to_string());
+    }
+    let home = app
+        .path()
+        .home_dir()
+        .map_err(|error| format!("Could not resolve the home folder: {error}"))?;
+    let env_dir = std::env::var("CLAUDE_CONFIG_DIR").ok();
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = account_dir(config_dir.as_deref(), env_dir.as_deref(), &home)?;
+        Ok(find_transcript(&dir, &session_id).is_some())
+    })
+    .await
+    .map_err(|error| format!("Could not look for the session: {error}"))?
+}
+
 /// Lets another Claude Code account resume a session that ran under `from_dir`.
 #[tauri::command]
 pub async fn claude_session_share<R: Runtime>(
@@ -146,6 +170,14 @@ mod tests {
         let path = dir.join(format!("{ID}.jsonl"));
         std::fs::write(&path, "{\"type\":\"user\"}\n").unwrap();
         path
+    }
+
+    #[test]
+    fn finds_a_transcript_only_once_it_was_written() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(find_transcript(dir.path(), ID).is_none());
+        let path = write_transcript(dir.path(), "-work-repo");
+        assert_eq!(find_transcript(dir.path(), ID), Some(path));
     }
 
     fn append(path: &Path, lines: &str) {

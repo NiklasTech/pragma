@@ -72,6 +72,7 @@ const anyOutputListeners = new Set<(sessionId: string) => void>();
 const anyStatusListeners = new Set<(sessionId: string) => void>();
 const attentionListeners = new Set<(sessionId: string, kind: TerminalAttentionKind) => void>();
 const limitListeners = new Set<(sessionId: string) => void>();
+const cliSessionListeners = new Set<(sessionId: string, cliSessionId: string) => void>();
 const unclaimedOutput = new Map<string, string>();
 const unclaimedExit = new Map<string, number>();
 
@@ -108,7 +109,9 @@ function handleReport(sessionId: string, report: PragmaReport): void {
     return;
   }
   const entry = entries.get(sessionId);
-  if (entry) entry.cliSessionId = report.id;
+  if (!entry) return;
+  entry.cliSessionId = report.id;
+  for (const listener of cliSessionListeners) listener(sessionId, report.id);
 }
 
 function emitAttention(sessionId: string, kind: TerminalAttentionKind): void {
@@ -240,6 +243,16 @@ export function subscribeTerminalAttention(
 /// The CLI's own id for the session in this terminal, once a Pragma hook reported it.
 export function getTerminalCliSessionId(sessionId: string): string | null {
   return entries.get(sessionId)?.cliSessionId ?? null;
+}
+
+/// Reports the id a CLI gives its conversation, also when it starts another one.
+export function subscribeTerminalCliSession(
+  listener: (sessionId: string, cliSessionId: string) => void,
+): () => void {
+  cliSessionListeners.add(listener);
+  return () => {
+    cliSessionListeners.delete(listener);
+  };
 }
 
 /// Calls the listener when the CLI in a terminal stops at its usage limit.

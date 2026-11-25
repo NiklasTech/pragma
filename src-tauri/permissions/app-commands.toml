@@ -38,6 +38,7 @@ permissions = [
   "allow-check-port-in-use",
   "allow-child-session-spawn-reply",
   "allow-claude-mcp-missing",
+  "allow-claude-session-exists",
   "allow-claude-session-share",
   "allow-cli-accounts-list",
   "allow-cli-acp-accepts-images",
