@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { repositorySessions, useAIStore, type ChatSession } from "@/shared/stores/ai";
 
 import { collectLeaves } from "../panes/layout";
-import { paneTreeKey, selectRoot, useAgentsPanesStore } from "../panes/store";
+import { useAgentsPanesStore, type PaneTreeEntry } from "../panes/store";
 import { releaseWorktrees } from "../worktree/cleanup";
 import { getTerminalEntryStatus, subscribeTerminalStatus } from "./runner";
 import { staleTerminalIds } from "./staleTerminals";
@@ -12,9 +12,13 @@ function isRunning(sessionId: string): boolean {
   return getTerminalEntryStatus(sessionId) === "running";
 }
 
-function openSessionIds(rootPath: string): Set<string> {
-  const root = selectRoot(useAgentsPanesStore.getState(), paneTreeKey(rootPath));
-  return new Set(collectLeaves(root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])));
+/// Sessions in a pane of any tab; a tab that was not shown since the start has not started its terminals yet.
+function openSessionIds(trees: Record<string, PaneTreeEntry>): Set<string> {
+  return new Set(
+    Object.values(trees).flatMap((entry) =>
+      collectLeaves(entry.root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])),
+    ),
+  );
 }
 
 /// Terminal sessions to hide from the thread list, updated when their process exits; open in the pane layout of any repository counts.
@@ -38,12 +42,7 @@ export function useStaleTerminalIds(sessions: ChatSession[]): Set<string> {
   }, [terminalKey]);
 
   return useMemo(() => {
-    const open = new Set(
-      Object.values(trees).flatMap((entry) =>
-        collectLeaves(entry.root).flatMap((leaf) => (leaf.sessionId ? [leaf.sessionId] : [])),
-      ),
-    );
-    return new Set(staleTerminalIds(sessions, open, isRunning));
+    return new Set(staleTerminalIds(sessions, openSessionIds(trees), isRunning));
     // statusVersion re-reads the terminal statuses, which live outside React.
   }, [trees, sessions, statusVersion]);
 }
@@ -52,7 +51,8 @@ export function useStaleTerminalIds(sessions: ChatSession[]): Set<string> {
 export async function purgeStaleTerminals(rootPath: string): Promise<void> {
   const { chatSessions, deleteSession } = useAIStore.getState();
   const sessions = repositorySessions(chatSessions, rootPath);
-  const ids = new Set(staleTerminalIds(sessions, openSessionIds(rootPath), isRunning));
+  const open = openSessionIds(useAgentsPanesStore.getState().trees);
+  const ids = new Set(staleTerminalIds(sessions, open, isRunning));
   const stale = sessions.filter((session) => ids.has(session.id));
   for (const session of stale) await deleteSession(session.id);
   await releaseWorktrees(rootPath, stale);
