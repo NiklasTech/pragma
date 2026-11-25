@@ -144,11 +144,25 @@ impl PtyManager {
         }
     }
 
-    pub fn kill_all(&self) {
+    /// Forgets every terminal and returns the process groups to end: the one of the process it
+    /// started, and the one in the foreground, which a shell gives each program it runs.
+    pub fn take_groups(&self) -> Vec<u32> {
         let mut ptys = self.ptys.lock().unwrap_or_else(|e| e.into_inner());
+        let mut groups = Vec::new();
         for (_, instance) in ptys.drain() {
-            let _ = instance.killer.lock().map(|mut k| k.kill());
+            groups.extend(instance.pid);
+            #[cfg(unix)]
+            if let Ok(master) = instance.master.lock() {
+                groups.extend(
+                    master
+                        .process_group_leader()
+                        .and_then(|group| u32::try_from(group).ok()),
+                );
+            }
         }
+        groups.sort_unstable();
+        groups.dedup();
+        groups
     }
 }
 
@@ -645,7 +659,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn kill_all_terminates_running_ptys() {
+    fn take_groups_names_the_process_groups_of_running_ptys() {
         let pair = NativePtySystem::default()
             .openpty(PtySize {
                 rows: 24,
@@ -665,14 +679,17 @@ mod tests {
                 writer: Arc::new(Mutex::new(pair.master.take_writer().unwrap())),
                 killer: Arc::new(Mutex::new(child.clone_killer())),
                 master: Arc::new(Mutex::new(pair.master)),
-                pid: None,
+                pid: child.process_id(),
             },
         );
 
-        manager.kill_all();
+        let groups = manager.take_groups();
 
-        assert!(!child.wait().unwrap().success());
+        assert!(groups.contains(&child.process_id().unwrap()));
         assert!(manager.ptys.lock().unwrap().is_empty());
+        let reaper = std::thread::spawn(move || child.wait().unwrap().success());
+        crate::modules::process_end::end_groups(&groups);
+        assert!(!reaper.join().unwrap());
     }
 
     #[cfg(unix)]

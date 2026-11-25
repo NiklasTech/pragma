@@ -6,7 +6,7 @@ export interface SpaceTabActions {
   newAgentsTab: () => void;
   showCode: () => void;
   showActivity: () => void;
-  close: (tabId: string) => void;
+  close: (tabIds: string[]) => void;
 }
 
 /// Right-click on a space tab: rename it, open the other tab kinds, or close tabs.
@@ -40,19 +40,19 @@ export function spaceTabMenu(
             key: "w",
             label: "close",
             disabled: others.length === 0,
-            onSelect: () => actions.close(tab.id),
+            onSelect: () => actions.close([tab.id]),
           },
           {
             key: "o",
             label: "close other tabs",
             disabled: others.length === 0,
-            onSelect: () => others.forEach((item) => actions.close(item.id)),
+            onSelect: () => actions.close(others.map((item) => item.id)),
           },
           {
             key: "l",
             label: "close tabs to the right",
             disabled: toTheRight.length === 0,
-            onSelect: () => toTheRight.forEach((item) => actions.close(item.id)),
+            onSelect: () => actions.close(toTheRight.map((item) => item.id)),
           },
         ],
       },

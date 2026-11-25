@@ -20,6 +20,7 @@ pub mod mcp;
 pub mod microphone_permission;
 pub mod notification_permission;
 pub mod parakeet;
+pub mod process_end;
 pub mod pty;
 pub mod pty_foreground;
 pub mod pty_terminate;
