@@ -24,7 +24,9 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { TAB_NAMES, type Space, type SpaceTab } from "@/shared/stores/spaces/model";
 
 import { AllTabsMenu, type TabEntry } from "./AllTabsMenu";
+import { useLayoutPresetsStore } from "@/features/ai/panes/layoutPresets";
 import { requestCloseTabs } from "./closeSpaceTabs";
+import { saveTabAsLayout } from "./saveTabAsLayout";
 import { spaceTabMenu } from "./spaceTabMenu";
 import { TabNumber } from "./TabNumber";
 import { useTabStripScroll } from "./useTabStripScroll";
@@ -48,6 +50,8 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
   const addTab = useOpenRepositoriesStore((state) => state.addTab);
   const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
   const [renaming, setRenaming] = useState(false);
+  const [savingLayout, setSavingLayout] = useState(false);
+  const presetCount = useLayoutPresetsStore((state) => state.presets.length);
   const shortcutId = TAB_SELECT_SHORTCUTS[index];
   const binding = useSettingsStore((state) => (shortcutId ? state.shortcuts[shortcutId] : null));
   const shortcut = binding ? formatShortcut(binding, getIsMac()) : "";
@@ -62,6 +66,8 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
       showCode: () => activateTabKind("code"),
       showActivity: () => activateTabKind("activity"),
       close: closeTabs,
+      evenOut: () => useAgentsPanesStore.getState().evenOutPanes(tab.id),
+      saveLayout: () => setSavingLayout(true),
     });
 
   return (
@@ -119,6 +125,15 @@ function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
         defaultValue={tab.name}
         confirmLabel="Rename"
         onConfirm={(name) => renameTab(space.id, tab.id, name)}
+      />
+      <InputDialog
+        open={savingLayout}
+        onOpenChange={setSavingLayout}
+        title="Save tab as layout"
+        label="Name"
+        defaultValue={`Layout ${presetCount + 1}`}
+        confirmLabel="Save"
+        onConfirm={(name) => saveTabAsLayout(tab.id, name)}
       />
     </>
   );

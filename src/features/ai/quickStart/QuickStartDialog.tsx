@@ -49,6 +49,7 @@ import {
 } from "./quickStart";
 import { WorktreeError } from "../worktree/worktreeErrors";
 import { startQuickTask, type QuickWhere } from "./startQuickTask";
+import { AGENT_COUNTS, startSeveralAgents, type AgentCount } from "./startSeveralAgents";
 
 const CHOICE =
   "ring-1 ring-border-subtle ring-inset hover:ring-border aria-pressed:bg-control-hover aria-pressed:text-fg-default aria-pressed:ring-fg-default/40";
@@ -83,6 +84,7 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const preferredView = useSettingsStore((state) => state.agent.view);
   const [pickedView, setPickedView] = useState<AgentView | null>(null);
   const [layoutId, setLayoutId] = useState(QUICK_LAYOUTS[0].id);
+  const [count, setCount] = useState<AgentCount>("1");
   const [isRepo, setIsRepo] = useState<boolean | null>(null);
   const [where, setWhere] = useState<QuickWhere>(() => useSettingsStore.getState().agent.startIn);
   const [branches, setBranches] = useState<GitBranchInfo[]>([]);
@@ -138,8 +140,25 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
   const tabTitle = taskTabTitle(task, saved?.name ?? agentManifest?.name ?? "Terminal");
   const isMac = getIsMac();
 
+  const several = agent.kind === "cli" && agentManifest !== undefined && count !== "1";
+
   const start = () => {
     onDone();
+    if (several && agent.kind === "cli" && agentManifest) {
+      startSeveralAgents({
+        rootPath,
+        task,
+        tabTitle,
+        manifest: agentManifest,
+        accountDir: agent.accountDir,
+        count: Number(count),
+        where: inWorktree ? "worktree" : "here",
+        view,
+      }).catch((err: unknown) =>
+        toast.error(err instanceof Error ? err.message : "Could not start the agents"),
+      );
+      return;
+    }
     startQuickTask({
       rootPath,
       task,
@@ -256,7 +275,25 @@ function QuickStartForm({ rootPath, onDone }: { rootPath: string; onDone: () => 
           />
         )}
 
-        <section className="flex flex-col gap-2.5 px-5.5 pt-3 pb-1">
+        {agent.kind === "cli" && (
+          <section className="flex items-center gap-3 px-5.5 pt-3 pb-1">
+            <span className="text-ui-xs font-medium text-fg-muted">How many</span>
+            <SegmentedControl<AgentCount>
+              label="How many agents"
+              value={count}
+              onValueChange={setCount}
+              options={AGENT_COUNTS.map((value) => ({ value, label: value }))}
+            />
+            {several && (
+              <span className="text-ui-xs text-fg-subtle">
+                side by side{task.trim() ? ", each with the task" : ""}
+                {inWorktree ? ", each in its own worktree" : ""}
+              </span>
+            )}
+          </section>
+        )}
+
+        <section className={cn("flex flex-col gap-2.5 px-5.5 pt-3 pb-1", several && "hidden")}>
           <span className="text-ui-xs font-medium text-fg-muted">Layout</span>
           <div className="grid grid-cols-4 gap-2" role="group" aria-label="Layout">
             {layouts.map((item) => (

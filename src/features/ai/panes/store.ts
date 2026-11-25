@@ -10,6 +10,7 @@ import {
   assignLeafSession,
   countLeaves,
   createLeaf,
+  evenOutSizes,
   findLeaf,
   findLeafBySession,
   firstLeaf,
@@ -61,6 +62,8 @@ interface AgentsPanesState {
   setSplitSizes: (rootPath: string, splitId: string, sizes: number[]) => void;
   /** Gives a tab a ready-made layout, such as an opened layout preset. */
   placeLayout: (treeKey: string, root: PaneRoot) => void;
+  /** Makes the panes of each row and column of a tab the same size. */
+  evenOutPanes: (treeKey: string) => void;
   /** Forgets the layout of a closed tab; stopping its sessions is up to the caller. */
   removeTree: (treeKey: string) => void;
 }
@@ -358,6 +361,15 @@ export const useAgentsPanesStore = create<AgentsPanesState>()(
             },
           },
         })),
+
+      evenOutPanes: (treeKey) =>
+        set((state) => {
+          const entry = state.trees[treeKey];
+          if (!entry?.root) return {};
+          return {
+            trees: { ...state.trees, [treeKey]: { ...entry, root: evenOutSizes(entry.root) } },
+          };
+        }),
 
       removeTree: (treeKey) =>
         set((state) => {

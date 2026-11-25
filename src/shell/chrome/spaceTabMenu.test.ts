@@ -23,6 +23,8 @@ function actions() {
     showCode: vi.fn(),
     showActivity: vi.fn(),
     close: vi.fn(),
+    evenOut: vi.fn(),
+    saveLayout: vi.fn(),
   };
 }
 
@@ -33,6 +35,15 @@ describe("spaceTabMenu", () => {
     expect(menu.head).toBe("tab 2 · Code · pragma");
     expect(labels).not.toContain("show code tab");
     expect(labels).toContain("show activity tab");
+  });
+
+  it("evens out and saves the panes of an agents tab only", () => {
+    const labels = (index: number) =>
+      spaceTabMenu(space, space.tabs[index], actions()).groups.flatMap((group) =>
+        group.items.map((item) => item.label),
+      );
+    expect(labels(0)).toEqual(expect.arrayContaining(["even out panes", "save as layout"]));
+    expect(labels(1)).not.toContain("even out panes");
   });
 
   it("closes the other tabs and the ones to the right", () => {

@@ -6,6 +6,7 @@ import {
   createBrowserLeaf,
   createLeaf,
   createSplit,
+  evenOutSizes,
   createTabs,
   distributeSizes,
   findBrowserLeaf,
@@ -109,5 +110,20 @@ describe("updateSplitSizes", () => {
     );
 
     expect(updateSplitSizes(root, "sp1", [40.001, 59.999])).toBe(root);
+  });
+});
+
+describe("evenOutSizes", () => {
+  it("gives the panes of every split the same share", () => {
+    const left = createTabs([createLeaf("a")], undefined, "left");
+    const top = createTabs([createLeaf("b")], undefined, "top");
+    const bottom = createTabs([createLeaf("c")], undefined, "bottom");
+    const column = createSplit("vertical", [top, bottom], [80, 20], "column");
+    const root = createSplit("horizontal", [left, column], [30, 70], "root");
+    const even = evenOutSizes(root);
+    expect(even?.type === "split" && even.sizes).toEqual([50, 50]);
+    const inner = even?.type === "split" ? even.children[1] : null;
+    expect(inner?.type === "split" && inner.sizes).toEqual([50, 50]);
+    expect(evenOutSizes(null)).toBeNull();
   });
 });
