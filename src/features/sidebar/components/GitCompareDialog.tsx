@@ -21,6 +21,7 @@ import {
 import { openGitDiff } from "../lib/gitDiff";
 import { useGitCompareDialog } from "../lib/gitDialogs";
 import { FileChangeRow } from "./GitCommitDetailsDialog";
+import { errorText } from "@/shared/lib/errorText";
 
 const REFS_LIST_ID = "git-compare-refs";
 
@@ -106,7 +107,7 @@ export function GitCompareDialog() {
       });
       close();
     } catch (err) {
-      toast.error(`Failed to load diff: ${String(err)}`);
+      toast.error(`Failed to load diff: ${errorText(err)}`);
     } finally {
       setLoadingDiffPath(null);
     }

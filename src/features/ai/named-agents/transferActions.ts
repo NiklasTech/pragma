@@ -10,6 +10,7 @@ import { relativeAgentFolders, serializeProjectAgent } from "./projectFile";
 import { useNamedAgentsStore } from "./store";
 import { agentFileName, parseAgentFile, serializeAgent } from "./transfer";
 import type { Agent, AgentEngine } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 const FILTERS = [{ name: "Pragma agent", extensions: ["json"] }];
 const MARKDOWN_FILTERS = [{ name: "Markdown agent", extensions: ["md"] }];
@@ -31,7 +32,7 @@ export async function exportAgent(agent: Agent, includeMemory: boolean): Promise
     await invoke("write_text_file", { path, content: serializeAgent(agent, includeMemory) });
     toast.success(`Exported ${agent.name}`);
   } catch (err) {
-    toast.error("Could not export the agent", { description: String(err) });
+    toast.error("Could not export the agent", { description: errorText(err) });
   }
 }
 
@@ -48,7 +49,7 @@ export async function exportAgentMarkdown(agent: Agent): Promise<void> {
     await invoke("write_text_file", { path, content: serializeProjectAgent(agent, folders) });
     toast.success(`Exported ${agent.name}`);
   } catch (err) {
-    toast.error("Could not export the agent", { description: String(err) });
+    toast.error("Could not export the agent", { description: errorText(err) });
   }
 }
 
@@ -76,7 +77,7 @@ export async function importAgent(): Promise<Agent | null> {
     });
     return parsed.agent;
   } catch (err) {
-    toast.error("Could not import the agent", { description: String(err) });
+    toast.error("Could not import the agent", { description: errorText(err) });
     return null;
   }
 }

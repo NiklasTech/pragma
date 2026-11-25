@@ -18,18 +18,20 @@ pub enum AcpError {
 impl fmt::Display for AcpError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AcpError::ConnectionClosed => write!(f, "ACP connection closed"),
+            AcpError::ConnectionClosed => write!(f, "The agent stopped"),
             AcpError::MissingStdio => write!(f, "Failed to acquire stdio handles"),
             AcpError::Serialization(msg) => write!(f, "Serialization error: {msg}"),
-            AcpError::Spawn(msg) => write!(f, "Failed to spawn process: {msg}"),
-            AcpError::RequestTimeout => write!(f, "ACP request timed out"),
+            AcpError::Spawn(msg) => write!(f, "Could not start the agent: {msg}"),
+            AcpError::RequestTimeout => write!(f, "The agent did not answer in time"),
             AcpError::TooManyConcurrentRequests => {
                 write!(f, "Too many concurrent ACP requests")
             }
-            AcpError::JsonRpc { code, message } => {
-                write!(f, "ACP JSON-RPC error {code}: {message}")
-            }
-            AcpError::Protocol(msg) => write!(f, "ACP protocol error: {msg}"),
+            // The code means something to Pragma, not to the person reading the message.
+            AcpError::JsonRpc { message, .. } => write!(f, "{message}"),
+            AcpError::Protocol(msg) => write!(
+                f,
+                "The agent sent something Pragma does not understand: {msg}"
+            ),
             AcpError::InvalidPath(msg) => write!(f, "Invalid path: {msg}"),
             AcpError::ApprovalTimeout => write!(f, "Approval request timed out"),
             AcpError::ApprovalRejected => write!(f, "Approval request rejected"),

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { GitActions, GitSlice, StashEntry } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createStashSlice: GitSlice<
   Pick<GitActions, "loadStashes" | "stashPush" | "stashPop" | "stashApply" | "stashDrop">
@@ -28,8 +29,8 @@ export const createStashSlice: GitSlice<
       await get().loadStashes();
       await get().loadStatus();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ stashBusy: false });
     }
@@ -93,8 +94,8 @@ export const createStashSlice: GitSlice<
       toast.success("Stash dropped");
       await get().loadStashes();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ stashBusy: false });
     }

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { GitActions, GitLastCommit, GitSlice } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createLastCommitSlice: GitSlice<
   Pick<GitActions, "loadLastCommit" | "setCommitAmend" | "amendCommit" | "undoLastCommit">
@@ -63,8 +64,8 @@ export const createLastCommitSlice: GitSlice<
       toast.success("Undid the last commit. Its changes are staged.");
       await get().refreshAll();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ actionBusy: null });
     }

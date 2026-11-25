@@ -6,6 +6,7 @@ import { getMessageImages } from "@/shared/lib/ai/images";
 import { useAIStore, type ChatImage } from "@/shared/stores/ai";
 
 import { forkThread, keepCheckpointsForEdit, restoreRewindFiles, rewindFiles } from "./actions";
+import { errorText } from "@/shared/lib/errorText";
 
 interface MessageActionsOptions {
   sessionId: string | null;
@@ -54,7 +55,7 @@ export function useMessageActions({
       const source = useAIStore.getState().chatSessions.find((s) => s.id === sessionId);
       if (!source) return;
       forkThread(rootPath, source, messages, index).catch((err: unknown) => {
-        toast.error(`Could not fork the thread: ${String(err)}`);
+        toast.error(`Could not fork the thread: ${errorText(err)}`);
       });
     },
     [sessionId, rootPath, messages],

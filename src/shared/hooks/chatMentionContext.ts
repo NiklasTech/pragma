@@ -5,6 +5,7 @@ import { parseMentions, stripMentions, type ChatContextResult } from "@/shared/l
 import { parseResourceMention, readResourceContext } from "@/features/ai/mcp/resources";
 import { parseContextMention, type ContextMention } from "@/features/ai/mentions/contextMentions";
 import { readContextMentions } from "@/features/ai/mentions/resolveContextMentions";
+import { errorText } from "@/shared/lib/errorText";
 
 interface MentionContext {
   question: string;
@@ -48,7 +49,7 @@ export async function resolveMentionContext(
         contextParts.push(resources);
       }
     } catch (err) {
-      toast.error(`Could not read the MCP resource: ${String(err)}`);
+      toast.error(`Could not read the MCP resource: ${errorText(err)}`);
       return null;
     }
   }
@@ -61,7 +62,7 @@ export async function resolveMentionContext(
         contextParts.push(context);
       }
     } catch (err) {
-      toast.error(`Could not attach ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Could not attach ${err instanceof Error ? err.message : errorText(err)}`);
       return null;
     }
   }

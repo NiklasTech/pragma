@@ -15,6 +15,7 @@ import {
   type StreamChunk,
   type StreamUsage,
 } from "./protocol";
+import { errorText } from "@/shared/lib/errorText";
 
 export function createStreamTransport(
   activeProvider: string,
@@ -82,7 +83,7 @@ export function createStreamTransport(
             if (closed) return;
 
             if (chunk.error) {
-              safeEnqueue({ type: "error", errorText: chunk.error });
+              safeEnqueue({ type: "error", errorText: errorText(chunk.error) });
               safeClose();
               return;
             }
@@ -230,7 +231,7 @@ export function createStreamTransport(
               if (String(err).includes("aborted")) {
                 safeClose();
               } else {
-                safeEnqueue({ type: "error", errorText: String(err) });
+                safeEnqueue({ type: "error", errorText: errorText(err) });
                 safeClose();
               }
             } finally {

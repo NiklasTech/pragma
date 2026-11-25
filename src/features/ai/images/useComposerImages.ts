@@ -5,6 +5,7 @@ import { generateId } from "@/shared/lib/ai/id";
 import type { ChatImage } from "@/shared/stores/ai";
 
 import { MAX_IMAGES_PER_MESSAGE, readImageFile } from "./readImage";
+import { errorText } from "@/shared/lib/errorText";
 
 export interface ComposerImage extends ChatImage {
   id: string;
@@ -44,7 +45,7 @@ export function useComposerImages(): ComposerImages {
         })
         .catch((err: unknown) => {
           toast.error(
-            err instanceof Error ? err.message : `Could not attach the image: ${String(err)}`,
+            err instanceof Error ? err.message : `Could not attach the image: ${errorText(err)}`,
           );
         })
         .finally(() => {

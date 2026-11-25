@@ -12,6 +12,7 @@ import { activeChatSession, revealChatSession } from "@/features/ai/revealChatSe
 import { startSession } from "@/features/ai/sessions/start";
 import { movedPath, retargetTabs } from "@/features/editor/retargetTabs";
 import { refreshFileTree } from "./fileTreeRefresh";
+import { errorText } from "@/shared/lib/errorText";
 
 export function baseName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
@@ -40,7 +41,7 @@ export async function copyPaths(paths: string[], relative: boolean): Promise<voi
   try {
     await navigator.clipboard.writeText(text);
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }
 
@@ -48,7 +49,7 @@ export async function revealInFileManager(path: string): Promise<void> {
   try {
     await invoke("reveal_in_file_manager", { path });
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }
 
@@ -72,7 +73,7 @@ export async function duplicatePath(path: string): Promise<void> {
     const copy = await invoke<string>("duplicate_path", { path });
     if (rootPath) await refreshFileTree(rootPath, [copy]);
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }
 
@@ -84,7 +85,7 @@ export async function movePaths(paths: string[], targetDir: string): Promise<voi
     try {
       await invoke("rename_file", { oldPath: path, newPath });
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
       continue;
     }
     retargetTabs(path, newPath);

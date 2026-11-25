@@ -5,6 +5,7 @@ import { useLspFailuresStore } from "@/shared/stores/lspFailures";
 import { useLspRetryStore } from "@/shared/stores/lspRetry";
 
 import { installTypeScript } from "./installTypeScript";
+import { errorText } from "@/shared/lib/errorText";
 
 const NOT_RUNNING = /is not running$/;
 
@@ -26,7 +27,7 @@ export function isServerNotRunning(error: unknown): boolean {
 /// instead of the raw backend message with the project's full path.
 export function showLspRequestError(language: string, error: unknown): void {
   if (!isServerNotRunning(error)) {
-    toast.error(error instanceof Error ? error.message : String(error));
+    toast.error(error instanceof Error ? error.message : errorText(error));
     return;
   }
   const failure = useLspFailuresStore.getState().byLanguage[language];

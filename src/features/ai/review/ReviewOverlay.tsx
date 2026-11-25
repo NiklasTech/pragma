@@ -44,6 +44,7 @@ import { buildReviewLine, buildReviewMessage } from "./reviewMessage";
 import type { ReviewRow } from "./rows";
 import { useReviewRows } from "./useReviewRows";
 import { useSessionDiffs } from "./useSessionDiffs";
+import { errorText } from "@/shared/lib/errorText";
 
 type DiffView = "unified" | "split";
 
@@ -163,7 +164,7 @@ function ReviewBody({
       await action();
       setRevision((value) => value + 1);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      toast.error(error instanceof Error ? error.message : errorText(error));
     } finally {
       setBusy(false);
     }

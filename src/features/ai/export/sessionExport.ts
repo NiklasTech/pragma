@@ -11,6 +11,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 
 import { liveChat } from "../compaction/liveChat";
 import { sessionToMarkdown, type MarkdownExportOptions } from "./markdown";
+import { errorText } from "@/shared/lib/errorText";
 
 export function exportOptions(includeToolOutput: boolean): MarkdownExportOptions {
   return { includeToolOutput, includeReasoning: useSettingsStore.getState().ai.showThinking };
@@ -46,7 +47,7 @@ export async function copySessionMarkdown(
     await copyToClipboard(markdown);
     toast.success("Copied session as Markdown");
   } catch (err) {
-    toast.error(`Could not copy the session: ${String(err)}`);
+    toast.error(`Could not copy the session: ${errorText(err)}`);
   }
 }
 
@@ -68,6 +69,6 @@ export async function exportSessionMarkdown(
     await invoke("write_text_file", { path, content: markdown });
     toast.success("Exported session as Markdown");
   } catch (err) {
-    toast.error(`Could not export the session: ${String(err)}`);
+    toast.error(`Could not export the session: ${errorText(err)}`);
   }
 }

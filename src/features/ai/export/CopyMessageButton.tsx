@@ -9,6 +9,7 @@ import { copyToClipboard } from "@/shared/lib/clipboard";
 import { MessageActionButton } from "../rewind/MessageActionBar";
 import { messageToMarkdown } from "./markdown";
 import { exportOptions } from "./sessionExport";
+import { errorText } from "@/shared/lib/errorText";
 
 /** Copies a reply as Markdown and says so. */
 export async function copyMessageAsMarkdown(message: UIMessage): Promise<void> {
@@ -16,7 +17,7 @@ export async function copyMessageAsMarkdown(message: UIMessage): Promise<void> {
     await copyToClipboard(messageToMarkdown(message, exportOptions(false)));
     toast.success("Copied message as Markdown");
   } catch (err) {
-    toast.error(`Could not copy the message: ${String(err)}`);
+    toast.error(`Could not copy the message: ${errorText(err)}`);
   }
 }
 

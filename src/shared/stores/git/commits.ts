@@ -7,6 +7,7 @@ import type {
   GitDiffContentResult,
   GitSlice,
 } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createCommitsSlice: GitSlice<
   Pick<
@@ -42,7 +43,7 @@ export const createCommitsSlice: GitSlice<
       const result = await invoke<GitCommitDetails>("git_commit_details", { repoPath, sha });
       return result;
     } catch (err) {
-      toast.error(`Failed to load commit details: ${String(err)}`);
+      toast.error(`Failed to load commit details: ${errorText(err)}`);
       return null;
     }
   },
@@ -60,7 +61,7 @@ export const createCommitsSlice: GitSlice<
       });
       return result;
     } catch (err) {
-      toast.error(`Failed to load diff: ${String(err)}`);
+      toast.error(`Failed to load diff: ${errorText(err)}`);
       return null;
     }
   },
@@ -75,8 +76,8 @@ export const createCommitsSlice: GitSlice<
       toast.success(`Checked out ${sha.slice(0, 7)}`);
       await get().refreshAll();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ actionBusy: null });
     }
@@ -92,8 +93,8 @@ export const createCommitsSlice: GitSlice<
       toast.success(`Created branch ${branchName}`);
       await get().refreshAll();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ actionBusy: null });
     }
@@ -155,8 +156,8 @@ export const createCommitsSlice: GitSlice<
       toast.success(`Reset ${mode} to ${sha.slice(0, 7)}`);
       await get().refreshAll();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ actionBusy: null });
     }

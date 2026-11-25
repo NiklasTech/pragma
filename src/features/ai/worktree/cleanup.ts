@@ -9,6 +9,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { getChildRun, isRunLive } from "../children/runStore";
 import { getTerminalEntryStatus } from "../terminal/runner";
 import { removeWorktreeEnvironment } from "./remove";
+import { errorText } from "@/shared/lib/errorText";
 
 export type WorktreeRelease = "removed" | "skipped" | "in-use" | "dirty" | "failed";
 
@@ -98,7 +99,7 @@ export async function releaseWorktree(
     }
     return (await removeWorktree(rootPath, worktree, force, branchMerged)) ? "removed" : "failed";
   } catch (err) {
-    toast.error(`Could not remove the worktree: ${String(err)}`);
+    toast.error(`Could not remove the worktree: ${errorText(err)}`);
     return "failed";
   }
 }

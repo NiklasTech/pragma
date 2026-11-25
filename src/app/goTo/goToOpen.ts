@@ -7,6 +7,7 @@ import { useLayoutStore } from "@/shell/layout";
 import { useUiModeStore } from "@/shell/mode";
 import { allPanelIds, findNode, findPanelByKind } from "@/shell/layout/tree/operations";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FileReadResult {
   path: string;
@@ -69,6 +70,6 @@ export async function openGoToPath(
     if (options.position) editor.goToPosition(result.path, options.position);
   } catch (error) {
     if (openNonTextFile(path, panelId, error)) return;
-    toast.error(String(error));
+    toast.error(errorText(error));
   }
 }

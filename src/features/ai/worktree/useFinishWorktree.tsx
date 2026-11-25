@@ -42,6 +42,7 @@ import { autoRemoveWorktrees, releaseWorktree } from "./cleanup";
 import { sessionEnvironment } from "./cwd";
 import { rememberPullRequest } from "./pullRequests";
 import { removeSessionWorktree } from "./remove";
+import { errorText } from "@/shared/lib/errorText";
 
 interface MergedSession {
   sessionId: string;
@@ -125,7 +126,7 @@ export function useFinishWorktree(rootPath: string): {
           if (!parentBranch) await openCheckoutConflicts(rootPath);
         }
       } catch (err) {
-        toast.error(String(err), { id: toastId });
+        toast.error(errorText(err), { id: toastId });
       }
     },
     [rootPath],
@@ -145,7 +146,7 @@ export function useFinishWorktree(rootPath: string): {
           body: pullRequestBody(task?.notes ?? null, messages),
         });
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       }
     },
     [rootPath],
@@ -168,7 +169,7 @@ export function useFinishWorktree(rootPath: string): {
           );
           if (!ready) return;
         } catch (err) {
-          toast.error(String(err));
+          toast.error(errorText(err));
           return;
         }
         if (action === "pull-request") void openPullRequest(session, worktree);
@@ -199,7 +200,7 @@ export function useFinishWorktree(rootPath: string): {
       if (git.repoPath === rootPath) void git.loadBranches();
       setMerged(null);
     } catch (err) {
-      toast.error(`Could not remove the worktree: ${String(err)}`);
+      toast.error(`Could not remove the worktree: ${errorText(err)}`);
     } finally {
       setRemoving(false);
     }

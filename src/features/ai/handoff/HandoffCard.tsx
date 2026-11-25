@@ -19,6 +19,7 @@ import { cancelWait, continueWithAccount, waitForReset } from "./actions";
 import { missingServersLabel, useMissingMcpServers } from "./missingServers";
 import { clockTime, otherAccounts, windowKey, type AccountOption } from "./options";
 import { dismissHandoff, useHandoffStore } from "./store";
+import { errorText } from "@/shared/lib/errorText";
 
 const SLIDE_MS = 250;
 const TICK_MS = 30_000;
@@ -121,7 +122,7 @@ function HandoffCardFor({
     setBusy(true);
     void continueWithAccount(paneRootPath, leafId, session, choice.option.account.configDir)
       .catch((error: unknown) =>
-        toast.error(error instanceof Error ? error.message : String(error)),
+        toast.error(error instanceof Error ? error.message : errorText(error)),
       )
       .finally(() => setBusy(false));
   };

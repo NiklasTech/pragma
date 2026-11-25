@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { WorkEnvironment } from "@/shared/stores/ai";
 
 import { autoRemoveWorktrees, isPragmaBranch, removeWorktree } from "./cleanup";
+import { errorText } from "@/shared/lib/errorText";
 
 interface OrphanWorktree {
   id: string;
@@ -36,7 +37,7 @@ export async function removeOrphanWorktrees(rootPath: string): Promise<void> {
     try {
       await removeWorktree(rootPath, worktree, false);
     } catch (err) {
-      toast.error(`Could not remove the worktree: ${String(err)}`);
+      toast.error(`Could not remove the worktree: ${errorText(err)}`);
     }
   }
 

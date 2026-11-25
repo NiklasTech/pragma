@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import type { BackendToolDefinition } from "./protocol";
+import { errorText } from "@/shared/lib/errorText";
 
 export interface McpChatTool {
   serverId: string;
@@ -76,6 +77,6 @@ export async function callMcpTool(
     if (result.is_error || result.error) return { errorText: result.error ?? output };
     return { output };
   } catch (err) {
-    return { errorText: String(err) };
+    return { errorText: errorText(err) };
   }
 }

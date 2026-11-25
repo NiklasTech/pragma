@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
 import { useLspRetryStore } from "@/shared/stores/lspRetry";
+import { errorText } from "@/shared/lib/errorText";
 
 const TOAST_ID = "lsp:install-typescript";
 
@@ -16,6 +17,6 @@ export async function installTypeScript(): Promise<void> {
     });
     useLspRetryStore.getState().retry();
   } catch (error) {
-    toast.error(`TypeScript could not be installed: ${String(error)}`, { id: TOAST_ID });
+    toast.error(`TypeScript could not be installed: ${errorText(error)}`, { id: TOAST_ID });
   }
 }

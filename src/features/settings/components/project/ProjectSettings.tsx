@@ -23,6 +23,7 @@ import { LspOverrides } from "./LspOverrides";
 import { ChildEnvironmentSelect } from "./ChildEnvironmentSelect";
 import { WritingSessionsSelect } from "./WritingSessionsSelect";
 import { InheritSelect, parseNumberList, parsePositiveInt } from "./fields";
+import { errorText } from "@/shared/lib/errorText";
 
 type EditorDraft = NonNullable<WorkspaceSettings["editor"]>;
 
@@ -72,7 +73,7 @@ export function ProjectSettings() {
       await save(draft);
       toast.success("Saved .pragma/settings.json");
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setSaving(false);
     }

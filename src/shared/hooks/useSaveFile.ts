@@ -12,6 +12,7 @@ import { flushPendingDocChanges } from "@/features/editor/components/extensions/
 import { notifyFileSaved } from "@/features/extensions/events";
 import { getEditorSettings } from "@/shared/stores/workspaceSettings/effective";
 import { formatForSave } from "@/features/editor/lsp/formatOnSave";
+import { errorText } from "@/shared/lib/errorText";
 
 interface SaveFileOptions {
   /// Autosave skips the conflict toast; the editor notice already shows the conflict.
@@ -67,7 +68,7 @@ export function useSaveFile({ auto = false }: SaveFileOptions = {}) {
         if (!auto) toast.warning(conflictMessage(tab.name));
         return;
       }
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   }, [auto]);
 }

@@ -8,6 +8,7 @@ import { lspCodeAction, type LspCodeAction } from "./client";
 import { flushLspDocumentSync } from "./lspDocuments";
 import { coordsToPos, positionToLsp } from "./definition";
 import { applyWorkspaceEdits } from "./workspaceEdits";
+import { errorText } from "@/shared/lib/errorText";
 
 interface CodeActionsDialogState {
   open: boolean;
@@ -92,6 +93,6 @@ export async function executeCodeAction(action: LspCodeAction): Promise<void> {
     toast.success(action.title);
   } catch (error) {
     console.error("LSP code action failed", error);
-    toast.error(error instanceof Error ? error.message : String(error));
+    toast.error(error instanceof Error ? error.message : errorText(error));
   }
 }

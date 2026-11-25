@@ -10,6 +10,7 @@ import {
 } from "@/theme/themeFolderStore";
 import type { Theme } from "@/theme/types";
 import { duplicateThemeFile, exportThemeContent, parseThemeImport } from "./theme-import";
+import { errorText } from "@/shared/lib/errorText";
 
 function showErrors(title: string, errors: string[]): void {
   toast.error(title, {
@@ -35,7 +36,7 @@ export async function importTheme(available: Theme[]): Promise<string | null> {
   try {
     content = (await invoke<{ content: string }>("read_text_file", { path: selected })).content;
   } catch (err) {
-    toast.error("Could not read the theme file", { description: String(err) });
+    toast.error("Could not read the theme file", { description: errorText(err) });
     return null;
   }
 
@@ -52,7 +53,7 @@ export async function importTheme(available: Theme[]): Promise<string | null> {
     await invoke("theme_files_write", { fileName, content });
     await reloadThemeFolder();
   } catch (err) {
-    toast.error("Could not save the theme", { description: String(err) });
+    toast.error("Could not save the theme", { description: errorText(err) });
     return null;
   }
   return id;
@@ -70,7 +71,7 @@ export async function duplicateTheme(theme: Theme, available: Theme[]): Promise<
     await invoke("theme_files_write", { fileName: copy.fileName, content: copy.content });
     await reloadThemeFolder();
   } catch (err) {
-    toast.error("Could not duplicate the theme", { description: String(err) });
+    toast.error("Could not duplicate the theme", { description: errorText(err) });
     return null;
   }
   const created = folderThemes(useThemeFolderStore.getState().entries).some(
@@ -90,7 +91,7 @@ export async function exportTheme(theme: Theme): Promise<void> {
   try {
     await invoke("write_text_file", { path, content: exportThemeContent(theme, entry) });
   } catch (err) {
-    toast.error("Could not export the theme", { description: String(err) });
+    toast.error("Could not export the theme", { description: errorText(err) });
   }
 }
 
@@ -102,13 +103,13 @@ export async function deleteFolderTheme(theme: Theme): Promise<boolean> {
     await invoke("theme_files_delete", { fileName: entry.fileName });
     await reloadThemeFolder();
   } catch (err) {
-    toast.error("Could not delete the theme", { description: String(err) });
+    toast.error("Could not delete the theme", { description: errorText(err) });
   }
   return true;
 }
 
 export function openThemesFolder(): void {
   invoke("theme_files_open_folder").catch((err: unknown) => {
-    toast.error("Could not open the themes folder", { description: String(err) });
+    toast.error("Could not open the themes folder", { description: errorText(err) });
   });
 }

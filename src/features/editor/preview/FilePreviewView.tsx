@@ -15,6 +15,7 @@ import { Button } from "@/shared/components/ui/button";
 import type { PreviewTab } from "@/shared/stores/editor";
 
 import { formatBytes, nextZoom, type Zoom } from "./zoom";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FilePreview {
   kind: "image" | "binary";
@@ -48,7 +49,7 @@ export function FilePreviewView({ tab }: { tab: PreviewTab }) {
 
   const openExternally = () => {
     invoke("open_with_default_app", { path: tab.path }).catch((err: unknown) =>
-      toast.error(String(err)),
+      toast.error(errorText(err)),
     );
   };
 

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { detectLanguage } from "@/shared/lib/language";
 import { useEditorStore } from "@/shared/stores/editor";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FileReadResult {
   path: string;
@@ -33,7 +34,7 @@ export async function openWorkspaceFile(path: string, panelId: string | null): P
     return true;
   } catch (err) {
     if (openNonTextFile(path, panelId, err)) return true;
-    toast.error(String(err));
+    toast.error(errorText(err));
     return false;
   }
 }

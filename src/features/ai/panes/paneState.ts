@@ -33,5 +33,5 @@ export function terminalPaneState({ status, exitCode, active }: TerminalPaneStat
 export function terminalPaneLabel({ status, exitCode, active }: TerminalPaneStatus): string {
   if (status === "running") return active ? "Working" : "Waiting for input";
   if (status === "cancelled") return "Stopped";
-  return exitCode !== null ? `Exited (${exitCode})` : "Exited";
+  return exitCode !== null && exitCode !== 0 ? "Ended with an error" : "Ended";
 }

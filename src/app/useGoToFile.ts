@@ -5,6 +5,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
 import { useOverlayOpen } from "@/shared/stores/overlays";
 import { toGoToFileEntry } from "./goToFileSearch";
+import { errorText } from "@/shared/lib/errorText";
 
 interface WorkspaceFiles {
   files: string[];
@@ -47,7 +48,7 @@ export function useGoToFile(): void {
       } catch (err) {
         if (cancelled) return;
         setError(String(err));
-        toast.error(`Failed to list files: ${String(err)}`);
+        toast.error(`Failed to list files: ${errorText(err)}`);
       } finally {
         if (!cancelled) setLoading(false);
       }

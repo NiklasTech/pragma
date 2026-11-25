@@ -4,6 +4,7 @@ import { useEditorStore, type EditorTab, type FileTab } from "@/shared/stores/ed
 import { useDiskStateStore } from "@/shared/stores/diskState";
 import { isMissingFileError, isSameOrInside } from "@/shared/lib/fileDisk";
 import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FileReadResult {
   content: string;
@@ -107,7 +108,7 @@ export async function reloadFromDisk(tabId: string): Promise<void> {
     replaceWithDisk(tabId, disk);
     useDiskStateStore.getState().clearStatus(tab.path);
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }
 
@@ -120,7 +121,7 @@ export async function keepLocalVersion(tabId: string): Promise<void> {
     if (disk !== null) setDiskBaseline(tabId, disk);
     useDiskStateStore.getState().clearStatus(tab.path);
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }
 
@@ -143,6 +144,6 @@ export async function compareWithDisk(tabId: string): Promise<void> {
       staged: false,
     });
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }

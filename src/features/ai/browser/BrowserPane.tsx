@@ -20,6 +20,7 @@ import { NativeBrowserView } from "./NativeBrowserView";
 import { registerBrowserFrame } from "./frames";
 import { currentUrl, useBrowserHistoryStore } from "./history";
 import { parseBrowserUrl } from "./url";
+import { errorText } from "@/shared/lib/errorText";
 
 const IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-forms allow-modals";
 
@@ -54,7 +55,7 @@ export function BrowserPane({ leafId }: { leafId: string }) {
 
   const openExternally = () => {
     if (!url) return;
-    invoke("open_external_url", { url }).catch((err: unknown) => toast.error(String(err)));
+    invoke("open_external_url", { url }).catch((err: unknown) => toast.error(errorText(err)));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

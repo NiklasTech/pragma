@@ -19,6 +19,7 @@ import {
 import type { McpServerConfig } from "@/shared/stores/settings";
 
 import { cliName, type McpCli } from "./cliMcp";
+import { errorText } from "@/shared/lib/errorText";
 
 interface PendingShare {
   server: McpServerConfig;
@@ -46,7 +47,7 @@ export function useMcpShare(onShared: () => void) {
         toast.success(`${cliName(cli)} now lists ${server.name} in ${file}`);
         onShared();
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       }
     },
     [onShared],

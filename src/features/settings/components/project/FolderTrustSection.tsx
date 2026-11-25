@@ -8,6 +8,7 @@ import { useFolderTrustStore } from "@/shared/stores/workspaceSettings/trust";
 
 import { SettingRow } from "../ui/SettingRow";
 import { SettingSection } from "../ui/SettingSection";
+import { errorText } from "@/shared/lib/errorText";
 
 interface TrustStatus {
   trusted: boolean | null;
@@ -44,7 +45,7 @@ export function FolderTrustSection({ rootPath }: { rootPath: string }) {
       setStatus({ ...status, trusted });
       await loadWorkspaceExtensions(rootPath);
     } catch (err) {
-      toast.error("Could not change folder trust", { description: String(err) });
+      toast.error("Could not change folder trust", { description: errorText(err) });
     } finally {
       setBusy(false);
     }
