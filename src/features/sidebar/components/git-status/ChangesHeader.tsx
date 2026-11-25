@@ -54,7 +54,7 @@ function RepositorySwitcher() {
     return (
       <span
         title={active.path}
-        className="flex h-6.5 min-w-0 items-center gap-1.5 px-1 font-mono text-ui-xs text-fg-default"
+        className="flex h-6.5 min-w-0 items-center gap-1.5 px-1 font-mono text-ui-xs text-fg-default @max-[17rem]:hidden"
       >
         {chip}
       </span>

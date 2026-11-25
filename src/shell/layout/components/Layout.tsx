@@ -18,6 +18,7 @@ import { FloatingHost } from "@/shell/workspace/FloatingHost";
 import { Strip } from "@/shell/chrome/Strip";
 import { AgentRail } from "@/shell/chrome/AgentRail";
 import { AgentSheet } from "@/shell/chrome/AgentSheet";
+import { useOneDrawer } from "@/shell/chrome/useOneDrawer";
 import { CommandLine } from "@/shell/chrome/commandLine/CommandLine";
 import { useUiMode } from "@/shell/mode";
 import { KeptAgentsTab } from "@/features/ai/panes/store";
@@ -50,6 +51,7 @@ export function Layout() {
     setKeptTab({ rootPath, tabId });
   }
   useTabModeSync();
+  useOneDrawer();
 
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
   const sidebarSizeRef = useRef<number>(sidebar.width);

@@ -27,7 +27,7 @@ export function ThreadsDrawer() {
       aria-label="Threads"
       inert={!shown}
       className={cn(
-        "absolute top-0 bottom-1.5 left-1.5 z-40 flex w-[272px] max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-well bg-bg-sheet p-1.5 shadow-[var(--shadow-md)] ring-1 ring-border",
+        "absolute top-0 bottom-1.5 left-0 z-40 flex w-[272px] max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-well bg-bg-sheet p-1.5 shadow-[var(--shadow-md)] ring-1 ring-border",
         "transition-[translate,opacity] duration-(--motion-slow) ease-(--motion-ease-out)",
         shown ? "translate-x-0 opacity-100" : "-translate-x-[calc(100%+0.75rem)] opacity-0",
       )}
