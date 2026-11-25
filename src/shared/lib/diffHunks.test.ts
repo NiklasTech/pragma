@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
-import { lineSelection, parsePatchHunks, patchLineKey } from "./diffHunks";
+import {
+  hunkPlace,
+  hunkSection,
+  lineNumberDigits,
+  lineSelection,
+  longestLine,
+  parsePatchHunks,
+  patchLineKey,
+} from "./diffHunks";
 
 const PATCH = [
   "diff --git a/file.txt b/file.txt",
@@ -66,5 +74,36 @@ describe("patchLineKey", () => {
     const keys = hunk?.lines.slice(1, 3).map(patchLineKey);
 
     expect(keys).toEqual(["-2", "+2"]);
+  });
+});
+
+describe("line numbers of a hunk", () => {
+  const hunks = parsePatchHunks(
+    [
+      "@@ -9,3 +9,3 @@ function add() {",
+      "-old",
+      "+new",
+      " same",
+      "@@ -120,2 +118,0 @@",
+      "-gone",
+      "-too",
+    ].join("\n"),
+  );
+
+  it("places a hunk by its new lines, and by the old ones when nothing is left", () => {
+    expect(hunkPlace(hunks[0])).toBe("lines 9–10");
+    expect(hunkPlace(hunks[1])).toBe("lines 120–121");
+    expect(hunkPlace({ lines: [] })).toBe("");
+  });
+
+  it("reads the section git names", () => {
+    expect(hunkSection(hunks[0].header)).toBe("function add() {");
+    expect(hunkSection(hunks[1].header)).toBe("");
+  });
+
+  it("sizes the numbers and the longest line", () => {
+    expect(lineNumberDigits(hunks)).toBe(3);
+    expect(lineNumberDigits([])).toBe(2);
+    expect(longestLine([{ lines: parsePatchHunks("@@ -1 +1 @@\n+\tab")[0].lines }])).toBe(6);
   });
 });

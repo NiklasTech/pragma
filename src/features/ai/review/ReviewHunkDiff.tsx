@@ -2,7 +2,15 @@ import { ArrowCounterClockwise, Check } from "@phosphor-icons/react";
 import { Fragment, useMemo, useState } from "react";
 
 import { Button } from "@/shared/components/ui/button";
-import { lineSelection, parsePatchHunks, type PatchLine } from "@/shared/lib/diffHunks";
+import { DiffGutter } from "@/shared/components/DiffGutter";
+import {
+  hunkPlace,
+  hunkSection,
+  lineNumberDigits,
+  lineSelection,
+  parsePatchHunks,
+  type PatchLine,
+} from "@/shared/lib/diffHunks";
 import { cn } from "@/shared/lib/utils";
 import type { GitLineSelection } from "@/shared/stores/git";
 
@@ -56,6 +64,7 @@ export function ReviewHunkDiff({
   onRemoveComment: (id: string) => void;
 }) {
   const hunks = useMemo(() => parsePatchHunks(patchText), [patchText]);
+  const digits = useMemo(() => lineNumberDigits(hunks), [hunks]);
   const [draftKey, setDraftKey] = useState<string | null>(null);
 
   const commentsByLine = useMemo(() => {
@@ -68,37 +77,43 @@ export function ReviewHunkDiff({
   }, [comments]);
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto font-mono text-ui-xs">
+    <div className="min-h-0 flex-1 overflow-auto font-mono text-ui-xs [tab-size:4]">
       {hunks.map((hunk, hunkIndex) => (
-        <div key={`${hunkIndex}:${hunk.header}`}>
-          <div className="flex h-7 items-center gap-1 border-y border-border-subtle bg-status-info/5 px-2">
-            <span className="min-w-0 flex-1 truncate text-status-info">{hunk.header}</span>
-            {hunkActions && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="font-sans text-ui-xs hover:text-status-error"
-                  disabled={hunkActions.busy}
-                  title="Discard this hunk"
-                  onClick={() => hunkActions.onApply("discard", lineSelection(hunk.lines))}
-                >
-                  <ArrowCounterClockwise size={12} />
-                  Discard
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="font-sans text-ui-xs"
-                  disabled={hunkActions.busy}
-                  title="Keep this hunk and stage it"
-                  onClick={() => hunkActions.onApply("stage", lineSelection(hunk.lines))}
-                >
-                  <Check size={12} />
-                  Keep
-                </Button>
-              </>
-            )}
+        <div className="w-max min-w-full" key={`${hunkIndex}:${hunk.header}`}>
+          <div className="flex h-7 items-center border-y border-border-subtle bg-status-info/5">
+            {/* Stays in sight while a long line is scrolled to. */}
+            <span className="sticky left-0 flex items-center gap-1 px-2">
+              <span className="mr-2 max-w-96 truncate text-status-info" title={hunk.header}>
+                {hunkPlace(hunk)}
+                <span className="ml-2 text-fg-subtle">{hunkSection(hunk.header)}</span>
+              </span>
+              {hunkActions && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="font-sans text-ui-xs hover:text-status-error"
+                    disabled={hunkActions.busy}
+                    title="Discard this hunk"
+                    onClick={() => hunkActions.onApply("discard", lineSelection(hunk.lines))}
+                  >
+                    <ArrowCounterClockwise size={12} />
+                    Discard
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="font-sans text-ui-xs"
+                    disabled={hunkActions.busy}
+                    title="Keep this hunk and stage it"
+                    onClick={() => hunkActions.onApply("stage", lineSelection(hunk.lines))}
+                  >
+                    <Check size={12} />
+                    Keep
+                  </Button>
+                </>
+              )}
+            </span>
           </div>
           {hunk.lines.map((line, lineIndex) => {
             const target = lineTarget(line);
@@ -118,18 +133,11 @@ export function ReviewHunkDiff({
                     drafting && "bg-primary/15",
                   )}
                 >
-                  <span className="w-8 shrink-0 pr-1 text-right leading-5 text-fg-subtle select-none">
-                    {line.oldLine ?? ""}
-                  </span>
-                  <span className="w-8 shrink-0 pr-1 text-right leading-5 text-fg-subtle select-none">
-                    {line.newLine ?? ""}
-                  </span>
+                  <DiffGutter line={line} digits={digits} />
                   <span className="w-4 shrink-0 text-center leading-5 select-none">
                     {PREFIX[line.type]}
                   </span>
-                  <span className="min-w-0 flex-1 truncate px-1 leading-5 whitespace-pre">
-                    {line.content}
-                  </span>
+                  <span className="flex-1 px-1 leading-5 whitespace-pre">{line.content}</span>
                 </button>
                 {(lineComments.length > 0 || drafting) && (
                   <div className="flex flex-col gap-1.5 border-y border-border-subtle bg-bg-surface px-2 py-1.5">

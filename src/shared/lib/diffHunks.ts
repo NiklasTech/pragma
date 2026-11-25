@@ -62,3 +62,45 @@ export function lineSelection(lines: readonly PatchLine[]): GitLineSelection {
 export function patchLineKey(line: PatchLine): string {
   return line.type === "removed" ? `-${line.oldLine}` : `+${line.newLine}`;
 }
+
+/** Digits of the largest line number, so every line number of a diff gets the same width. */
+export function lineNumberDigits(hunks: readonly Pick<PatchHunk, "lines">[]): number {
+  let largest = 0;
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      largest = Math.max(largest, line.oldLine ?? 0, line.newLine ?? 0);
+    }
+  }
+  return Math.max(2, String(largest).length);
+}
+
+/** Where a hunk sits in the new file: "line 12", "lines 12-20", or the old lines when all are gone. */
+export function hunkPlace(hunk: Pick<PatchHunk, "lines">): string {
+  const numbers = (side: "newLine" | "oldLine") =>
+    hunk.lines.map((line) => line[side]).filter((line) => line !== null);
+  const fresh = numbers("newLine");
+  const shown = fresh.length > 0 ? fresh : numbers("oldLine");
+  const first = shown[0];
+  const last = shown[shown.length - 1];
+  if (first === undefined || last === undefined) return "";
+  return first === last ? `line ${first}` : `lines ${first}\u2013${last}`;
+}
+
+/** The function or section git names behind the line numbers of a hunk header. */
+export function hunkSection(header: string): string {
+  return /^@@ [^@]*@@ ?(.*)$/.exec(header)?.[1]?.trim() ?? "";
+}
+
+const TAB_COLUMNS = 4;
+
+/** Columns of the longest line, so a long line can be scrolled to instead of being cut off. */
+export function longestLine(hunks: readonly Pick<PatchHunk, "lines">[]): number {
+  let longest = 0;
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      const tabs = line.content.split("\t").length - 1;
+      longest = Math.max(longest, line.content.length + tabs * (TAB_COLUMNS - 1));
+    }
+  }
+  return longest;
+}

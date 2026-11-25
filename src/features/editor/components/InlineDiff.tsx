@@ -1,14 +1,23 @@
 import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { MergeView } from "@codemirror/merge";
 import { EditorState, Compartment } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, lineNumbers } from "@codemirror/view";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Spinner, Columns, Rows, Check, X } from "@phosphor-icons/react";
 import { pragmaDarkTheme, editorBaseTheme } from "@/shared/lib/theme/editor-theme";
 import { useTheme } from "@/theme";
 import { loadLanguage } from "@/shared/lib/editor/languages";
-import { parseDiffLines, type DiffLineType } from "@/shared/lib/diff";
+import { DiffGutter } from "@/shared/components/DiffGutter";
+import {
+  hunkPlace,
+  hunkSection,
+  lineNumberDigits,
+  longestLine,
+  parsePatchHunks,
+  type PatchHunk,
+  type PatchLine,
+} from "@/shared/lib/diffHunks";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 
@@ -110,6 +119,7 @@ export const SplitDiffView = memo(function SplitDiffView({
       pragmaDarkTheme,
       editorBaseTheme,
       ...READONLY_EXT,
+      lineNumbers(),
       DIFF_THEME,
     ],
     [theme],
@@ -166,86 +176,84 @@ export const SplitDiffView = memo(function SplitDiffView({
   );
 });
 
+type UnifiedRow = { kind: "hunk"; hunk: PatchHunk } | { kind: "line"; line: PatchLine };
+
+const LINE_CLASSES: Record<PatchLine["type"], string> = {
+  added: "bg-status-success/5 text-status-success",
+  removed: "bg-status-error/5 text-status-error",
+  context: "text-fg-default/80",
+};
+
+const SIGNS: Record<PatchLine["type"], string> = { added: "+", removed: "-", context: " " };
+
 const UnifiedDiffView = memo(function UnifiedDiffView({ patchText }: { patchText: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const lines = useMemo(() => parseDiffLines(patchText), [patchText]);
+  const hunks = useMemo(() => parsePatchHunks(patchText), [patchText]);
+  const digits = useMemo(() => lineNumberDigits(hunks), [hunks]);
+  const longest = useMemo(() => longestLine(hunks), [hunks]);
+  const rows = useMemo<UnifiedRow[]>(
+    () =>
+      hunks.flatMap((hunk): UnifiedRow[] => [
+        { kind: "hunk", hunk },
+        ...hunk.lines.map((line): UnifiedRow => ({ kind: "line", line })),
+      ]),
+    [hunks],
+  );
 
   const virtualizer = useVirtualizer({
-    count: lines.length,
+    count: rows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 20,
     overscan: 20,
   });
 
-  const getLineClasses = useCallback((type: DiffLineType) => {
-    switch (type) {
-      case "added":
-        return "bg-status-success/5 text-status-success";
-      case "removed":
-        return "bg-status-error/5 text-status-error";
-      case "hunk":
-        return "bg-status-info/5 text-status-info";
-
-      default:
-        return "text-fg-default/80";
-    }
-  }, []);
-
-  const getGutterClasses = useCallback((type: DiffLineType) => {
-    switch (type) {
-      case "added":
-        return "bg-status-success/15 text-status-success";
-      case "removed":
-        return "bg-status-error/15 text-status-error";
-      case "hunk":
-        return "bg-status-info/10 text-status-info";
-      default:
-        return "text-fg-subtle";
-    }
-  }, []);
-
-  const getPrefix = useCallback((type: DiffLineType) => {
-    switch (type) {
-      case "added":
-        return "+";
-      case "removed":
-        return "-";
-      case "hunk":
-        return "@";
-      default:
-        return " ";
-    }
-  }, []);
-
   return (
     <div ref={scrollRef} className="h-full w-full overflow-auto font-mono text-ui-base">
-      <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          position: "relative",
+          minWidth: `calc(${longest + 2 * digits + 4}ch + 48px)`,
+          tabSize: 4,
+        }}
+      >
         {virtualizer.getVirtualItems().map((virtualItem) => {
-          const line = lines[virtualItem.index];
-          if (!line) return null;
-
+          const row = rows[virtualItem.index];
+          if (!row) return null;
+          const style = {
+            position: "absolute" as const,
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: virtualItem.size,
+            transform: `translateY(${virtualItem.start}px)`,
+          };
+          if (row.kind === "hunk") {
+            return (
+              <div
+                key={virtualItem.key}
+                style={style}
+                className="flex items-center bg-status-info/5 px-2 text-ui-xs text-status-info"
+              >
+                <span className="sticky left-2 truncate" title={row.hunk.header}>
+                  {hunkPlace(row.hunk)}
+                  <span className="ml-2 text-fg-subtle">{hunkSection(row.hunk.header)}</span>
+                </span>
+              </div>
+            );
+          }
+          const { line } = row;
           return (
             <div
               key={virtualItem.key}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: virtualItem.size,
-                transform: `translateY(${virtualItem.start}px)`,
-              }}
-              className={cn("flex items-start", getLineClasses(line.type))}
+              style={style}
+              className={cn("flex items-start", LINE_CLASSES[line.type])}
             >
-              <span
-                className={cn(
-                  "shrink-0 w-6 text-center text-ui-xs select-none leading-5",
-                  getGutterClasses(line.type),
-                )}
-              >
-                {getPrefix(line.type)}
+              <DiffGutter line={line} digits={digits} />
+              <span className="w-5 shrink-0 text-center leading-5 select-none">
+                {SIGNS[line.type]}
               </span>
-              <span className="min-w-0 flex-1 truncate leading-5 px-1">{line.content}</span>
+              <span className="flex-1 px-1 leading-5 whitespace-pre">{line.content}</span>
             </div>
           );
         })}
