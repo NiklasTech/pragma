@@ -31,6 +31,7 @@ import { useAcpApprovalRequests } from "@/features/ai/acp/acpApprovals";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
 import { useAgentStateFeed } from "@/features/ai/state/useAgentStateFeed";
+import { useWorkingAgentsReport } from "@/features/ai/state/useWorkingAgentsReport";
 import { useActivityTracker } from "@/features/ai/activity/useActivityTracker";
 import { useOpenRepositorySessions } from "@/features/ai/sessions/repositorySessions";
 import { useSubscriptionUsagePoller } from "@/features/ai/subscription/useSubscriptionUsagePoller";
@@ -59,6 +60,7 @@ import { AttachProcessDialog } from "@/features/debug/components/AttachProcessDi
 import { GitCompareDialog } from "@/features/sidebar/components/GitCompareDialog";
 import { FileHistoryDialog } from "@/features/sidebar/components/FileHistoryDialog";
 import { CloseRepositoryDialog } from "@/shell/chrome/CloseRepositoryDialog";
+import { CloseTabsDialog } from "@/shell/chrome/CloseTabsDialog";
 import { UpdateDialog } from "./UpdateDialog";
 import { useNativeRunMenu } from "@/features/run-config/useNativeRunMenu";
 
@@ -87,6 +89,7 @@ export default function App() {
   useAcpBrowserRequests();
   useSessionNotifications();
   useAgentStateFeed();
+  useWorkingAgentsReport();
   useActivityTracker();
   useSubscriptionUsagePoller();
   useTaskAutomation();
@@ -132,6 +135,7 @@ export default function App() {
         <FileHistoryDialog />
         <UpdateDialog />
         <CloseRepositoryDialog />
+        <CloseTabsDialog />
         <AttentionCard />
         <Toaster position="bottom-right" />
       </GlobalContextMenu>

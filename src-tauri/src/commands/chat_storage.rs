@@ -1,5 +1,6 @@
 use super::agents::AgentEngine;
 use super::work_environments::migrate_session_worktrees;
+use crate::ai::acp::AcpSessionManager;
 use crate::ai::image::{validate_image, ImageContent};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -339,8 +340,11 @@ async fn save_messages(path: &Path, messages: Vec<ChatMessage>) -> Result<(), St
 
 #[tauri::command]
 pub async fn ai_delete_session(app: AppHandle, req: DeleteSessionRequest) -> Result<(), String> {
-    let _guard = SESSION_IO_LOCK.lock().await;
     let dir = session_dir(&app, &req.root_path, &req.session_id)?;
+    if let Some(acp) = app.try_state::<AcpSessionManager>() {
+        acp.stop_session(&req.session_id).await;
+    }
+    let _guard = SESSION_IO_LOCK.lock().await;
     delete_session_dir(&dir).await
 }
 

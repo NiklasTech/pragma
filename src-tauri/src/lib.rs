@@ -9,6 +9,8 @@ mod dev_identifier;
 mod macos_chrome;
 pub mod modules;
 pub mod platform;
+mod quit;
+mod shutdown;
 pub mod window;
 mod window_buttons;
 
@@ -52,6 +54,7 @@ pub fn run() {
         .manage(RunManager::new())
         .manage(window::OpenFolders::default())
         .manage(modules::attention_badge::AttentionBadges::default())
+        .manage(quit::WorkingAgents::default())
         .manage(modules::fs_watcher::WorkspaceWatchers::default())
         .manage(modules::theme_files::ThemeFilesWatcher::default())
         .manage(modules::parakeet::ParakeetState::default())
@@ -132,6 +135,14 @@ pub fn run() {
                     window.try_state::<modules::attention_badge::AttentionBadges>()
                 {
                     badges.remove_window(window.app_handle(), window.label());
+                }
+                if let Some(working) = window.try_state::<quit::WorkingAgents>() {
+                    working.remove_window(window.label());
+                }
+            }
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if quit::holds_close(window) {
+                    api.prevent_close();
                 }
             }
             #[cfg(target_os = "macos")]
@@ -425,6 +436,7 @@ pub fn run() {
             commands::search::list_workspace_dir,
             commands::web_fetch::fetch_url_text,
             cli::get_cli_project_path,
+            quit::set_working_agents,
             window::set_window_header_height,
             window::update_window_folder,
             window_buttons::window_button_layout,
@@ -439,19 +451,9 @@ pub fn run() {
     match result {
         Ok(app) => {
             app.run(|app_handle, event| {
-                if let tauri::RunEvent::ExitRequested { .. } = event {
-                    if let Some(run_manager) = app_handle.try_state::<RunManager>() {
-                        run_manager.stop_all();
-                    }
-                    if let Some(pty_manager) = app_handle.try_state::<PtyManager>() {
-                        pty_manager.kill_all();
-                    }
-                    if let Some(lsp_manager) = app_handle.try_state::<LspManager>() {
-                        tauri::async_runtime::block_on(lsp_manager.shutdown_all());
-                    }
-                    if let Some(dap_manager) = app_handle.try_state::<DapManager>() {
-                        tauri::async_runtime::block_on(dap_manager.shutdown_all());
-                    }
+                // Quitting on macOS only reports the exit; closing the last window asks for it first.
+                if let tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit = event {
+                    shutdown::stop_children(app_handle);
                 }
             });
         }

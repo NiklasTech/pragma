@@ -60,7 +60,7 @@ interface AgentsPanesState {
   setSplitSizes: (rootPath: string, splitId: string, sizes: number[]) => void;
   /** Gives a tab a ready-made layout, such as an opened layout preset. */
   placeLayout: (treeKey: string, root: PaneRoot) => void;
-  /** Forgets the layout of a closed tab; its sessions keep running. */
+  /** Forgets the layout of a closed tab; stopping its sessions is up to the caller. */
   removeTree: (treeKey: string) => void;
 }
 

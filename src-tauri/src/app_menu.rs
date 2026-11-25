@@ -103,6 +103,11 @@ fn resolve_menu_event(id: &str) -> Option<(&str, Option<String>)> {
 
 #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
 pub fn handle_menu_event(app: &AppHandle, id: &str) {
+    #[cfg(target_os = "macos")]
+    if id == crate::quit::QUIT_MENU_ID {
+        crate::quit::request(app);
+        return;
+    }
     let Some((action, path)) = resolve_menu_event(id) else {
         return;
     };
@@ -305,7 +310,13 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
         .item(&PredefinedMenuItem::hide_others(app, Some("Hide Others"))?)
         .item(&PredefinedMenuItem::show_all(app, Some("Show All"))?)
         .separator()
-        .item(&PredefinedMenuItem::quit(app, Some("Quit Pragma"))?)
+        .item(&MenuItem::with_id(
+            app,
+            crate::quit::QUIT_MENU_ID,
+            "Quit Pragma",
+            true,
+            Some("CmdOrCtrl+Q"),
+        )?)
         .build()?;
 
     let file = SubmenuBuilder::new(app, "File")

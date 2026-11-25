@@ -40,10 +40,10 @@ describe("spaceTabMenu", () => {
     const menu = spaceTabMenu(space, space.tabs[0], run);
     const items = menu.groups.flatMap((group) => group.items);
     items.find((item) => item.label === "close tabs to the right")?.onSelect();
-    expect(run.close.mock.calls.map((call) => call[0])).toEqual(["c", "x"]);
+    expect(run.close.mock.calls.map((call) => call[0])).toEqual([["c", "x"]]);
     run.close.mockClear();
     items.find((item) => item.label === "close other tabs")?.onSelect();
-    expect(run.close.mock.calls.map((call) => call[0])).toEqual(["c", "x"]);
+    expect(run.close.mock.calls.map((call) => call[0])).toEqual([["c", "x"]]);
   });
 
   it("cannot close the only tab", () => {

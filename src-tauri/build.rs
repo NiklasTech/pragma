@@ -266,6 +266,7 @@ const COMMANDS: &[&str] = &[
     "set_attention_badge",
     "set_onboarding_completed",
     "set_window_header_height",
+    "set_working_agents",
     "stt_cancel_download",
     "stt_download",
     "stt_remove",

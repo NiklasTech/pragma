@@ -25,6 +25,7 @@ use super::usage::{context_usage, prompt_usage};
 use crate::ai::child_sessions::ChildSessionServer;
 use crate::ai::cli::{enriched_path, get_manifest};
 use crate::commands::ai::StreamChunk;
+use crate::modules::process_end::end_groups;
 use crate::platform::resolve_on_path;
 
 const ACP_PROTOCOL_VERSION: u64 = 1;
@@ -41,7 +42,7 @@ struct ConfigOptionsEvent {
 
 pub struct AcpSession {
     client: AcpClient,
-    _child: Child,
+    child: Child,
     #[allow(dead_code)]
     cwd: String,
     acp_session_id: String,
@@ -205,7 +206,7 @@ impl AcpSessionManager {
 
         let session = AcpSession {
             client,
-            _child: child,
+            child,
             cwd,
             acp_session_id: acp_session_id.clone(),
             accepts_images,
@@ -221,6 +222,42 @@ impl AcpSessionManager {
         }
 
         Ok(acp_session_id)
+    }
+
+    /// Ends the agent of a chat that is gone; a chat without one is fine.
+    pub async fn stop_session(&self, chat_session_id: &str) {
+        let session = self.sessions.lock().await.remove(chat_session_id);
+        let Some(mut session) = session else {
+            return;
+        };
+        if let Some(group) = session.child.id() {
+            tokio::task::spawn_blocking(move || end_groups(&[group]));
+        }
+        // Reaps the process, so the group counts as gone once it ended.
+        tokio::spawn(async move {
+            let _ = session.child.wait().await;
+        });
+    }
+
+    /// Forgets every session and returns the process groups of their agents to end.
+    pub async fn take_groups(&self) -> Vec<u32> {
+        let sessions: Vec<AcpSession> = self
+            .sessions
+            .lock()
+            .await
+            .drain()
+            .map(|(_, session)| session)
+            .collect();
+        let groups = sessions
+            .iter()
+            .filter_map(|session| session.child.id())
+            .collect();
+        for mut session in sessions {
+            tokio::spawn(async move {
+                let _ = session.child.wait().await;
+            });
+        }
+        groups
     }
 
     /// Whether the agent advertised image prompts; `None` until its session started.

@@ -24,6 +24,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { TAB_NAMES, type Space, type SpaceTab } from "@/shared/stores/spaces/model";
 
 import { AllTabsMenu, type TabEntry } from "./AllTabsMenu";
+import { requestCloseTabs } from "./closeSpaceTabs";
 import { spaceTabMenu } from "./spaceTabMenu";
 import { TabNumber } from "./TabNumber";
 import { useTabStripScroll } from "./useTabStripScroll";
@@ -43,31 +44,24 @@ interface TabButtonProps {
 
 function TabButton({ space, tab, index, paneCount, waiting }: TabButtonProps) {
   const activateTab = useOpenRepositoriesStore((state) => state.activateTab);
-  const closeTab = useOpenRepositoriesStore((state) => state.closeTab);
   const renameTab = useOpenRepositoriesStore((state) => state.renameTab);
   const addTab = useOpenRepositoriesStore((state) => state.addTab);
   const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
-  const removeTree = useAgentsPanesStore((state) => state.removeTree);
   const [renaming, setRenaming] = useState(false);
   const shortcutId = TAB_SELECT_SHORTCUTS[index];
   const binding = useSettingsStore((state) => (shortcutId ? state.shortcuts[shortcutId] : null));
   const shortcut = binding ? formatShortcut(binding, getIsMac()) : "";
   const active = tab.id === space.activeTabId;
   const closable = space.tabs.length > 1;
-  const closeThisTab = () => {
-    closeTab(space.id, tab.id);
-    removeTree(tab.id);
-  };
+  const closeTabs = (tabIds: string[]) => void requestCloseTabs(space.id, tabIds);
+  const closeThisTab = () => closeTabs([tab.id]);
   const menu = () =>
     spaceTabMenu(space, tab, {
       rename: () => setRenaming(true),
       newAgentsTab: () => addTab(space.id, nextAgentsTabName(space), "agents"),
       showCode: () => activateTabKind("code"),
       showActivity: () => activateTabKind("activity"),
-      close: (tabId) => {
-        closeTab(space.id, tabId);
-        removeTree(tabId);
-      },
+      close: closeTabs,
     });
 
   return (

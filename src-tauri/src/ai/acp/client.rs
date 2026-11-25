@@ -92,6 +92,9 @@ impl AcpClient {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        // The agent and the processes it starts end together, as one group.
+        #[cfg(unix)]
+        cmd.process_group(0);
 
         let mut child = cmd.spawn().map_err(|e| AcpError::Spawn(format!("{e}")))?;
 
