@@ -6,6 +6,7 @@ import { Key, SignOut } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
+import { errorText } from "@/shared/lib/errorText";
 
 interface McpSignInButtonProps {
   serverId: string;
@@ -35,7 +36,7 @@ export function McpSignInButton({ serverId, serverName, authRequired }: McpSignI
       await invoke("mcp_oauth_authorize", { id: serverId });
       toast.success(`Signed in to ${serverName}`, { id: toastId });
     } catch (err) {
-      toast.error(String(err), { id: toastId });
+      toast.error(errorText(err), { id: toastId });
     } finally {
       setBusy(false);
       refresh();
@@ -48,7 +49,7 @@ export function McpSignInButton({ serverId, serverName, authRequired }: McpSignI
       await invoke("mcp_oauth_sign_out", { id: serverId });
       toast.success(`Signed out of ${serverName}`);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setBusy(false);
       refresh();

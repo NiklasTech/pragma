@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { dapInstallAdapter, type DapAdapterInfo, type DapInstallResult } from "./client";
+import { errorText } from "@/shared/lib/errorText";
 
 export function installResultSucceeded(result: DapInstallResult): boolean {
   return result.exitCode === 0;
@@ -16,7 +17,7 @@ export async function installAdapter(adapter: DapAdapterInfo): Promise<boolean> 
     toast.error(`Failed to install ${adapter.label}: ${detail}`);
     return false;
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
     return false;
   }
 }

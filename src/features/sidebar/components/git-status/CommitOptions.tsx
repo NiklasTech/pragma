@@ -7,6 +7,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
 import { generateCommitMessage } from "../../lib/commitMessage";
 import { UndoCommitDialog } from "./UndoCommitDialog";
+import { errorText } from "@/shared/lib/errorText";
 
 export function CommitOptions({ stagedCount }: { stagedCount: number }) {
   const repoPath = useGitStore((s) => s.repoPath);
@@ -42,7 +43,7 @@ export function CommitOptions({ stagedCount }: { stagedCount: number }) {
       );
       setCommitMessage(message);
     } catch (err) {
-      toast.error("Could not generate a commit message", { description: String(err) });
+      toast.error("Could not generate a commit message", { description: errorText(err) });
     } finally {
       setGenerating(false);
     }

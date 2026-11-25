@@ -17,6 +17,7 @@ import {
   goToPreviousChange,
   setGitBaseline,
 } from "@/features/editor/components/extensions/git-change-gutter";
+import { errorText } from "@/shared/lib/errorText";
 
 interface GitChangeGutterContext {
   view: EditorView | null;
@@ -55,7 +56,7 @@ async function stageFromEditor(
       });
       await loadBaseline(view, worktreePath, filePath);
     } catch (err) {
-      toast.error(String(err) || "Staging the hunk failed");
+      toast.error(errorText(err) || "Staging the hunk failed");
     }
     return;
   }

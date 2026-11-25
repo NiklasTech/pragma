@@ -6,6 +6,7 @@ import { useEditorStore } from "@/shared/stores/editor";
 import { useEditorPanelId } from "@/shared/hooks/useEditorPanelId";
 import { detectLanguage } from "@/shared/lib/language";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FileReadResult {
   path: string;
@@ -26,7 +27,7 @@ export function useOpenFile() {
         directory: false,
       });
     } catch (err) {
-      toast.error(`Failed to open dialog: ${String(err)}`);
+      toast.error(`Failed to open dialog: ${errorText(err)}`);
       return;
     }
 
@@ -53,7 +54,7 @@ export function useOpenFile() {
       );
     } catch (err) {
       if (openNonTextFile(path, editorPanelId, err)) return;
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   }, [openFile, editorPanelId]);
 }

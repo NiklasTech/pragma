@@ -16,6 +16,7 @@ import type { ReviewDiffMode } from "./ReviewDiff";
 import type { ReviewHunkAction } from "./ReviewHunkDiff";
 import type { ReviewRow } from "./rows";
 import { useReviewDiff } from "./useReviewDiff";
+import { errorText } from "@/shared/lib/errorText";
 
 export function SessionReview({
   sessionId,
@@ -61,7 +62,7 @@ export function SessionReview({
       try {
         await invoke("git_discard", { repoPath: cwd, paths: [row.path] });
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       }
     },
     [cwd],
@@ -74,7 +75,7 @@ export function SessionReview({
         await invoke("git_apply_lines", { repoPath: cwd, path: row.path, action, selection });
         setRevision((value) => value + 1);
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       } finally {
         setHunkBusy(false);
       }

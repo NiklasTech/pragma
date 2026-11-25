@@ -9,6 +9,7 @@ import { Input } from "@/shared/components/ui/input";
 import { useAIStore } from "@/shared/stores/ai";
 
 import { commitMessageFor } from "./commit";
+import { errorText } from "@/shared/lib/errorText";
 
 /** Stages the session's kept changes and commits them with a message prefilled from its task. */
 export function ReviewCommit({
@@ -35,7 +36,7 @@ export function ReviewCommit({
       await invoke("git_stage", { repoPath: cwd, paths });
       setMessage(commitMessageFor(taskTitle, sessionTitle));
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setBusy(false);
     }
@@ -50,7 +51,7 @@ export function ReviewCommit({
       setMessage(null);
       toast.success("Committed the kept changes");
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setBusy(false);
     }

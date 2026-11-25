@@ -12,6 +12,7 @@ import { SettingSection } from "./ui/SettingSection";
 import { WorkspaceOverrideNotice } from "./project/WorkspaceOverrideNotice";
 import { ArrowClockwise, Copy, Check, Globe, DownloadSimple } from "@phosphor-icons/react";
 import { cn } from "@/shared/lib/utils";
+import { errorText } from "@/shared/lib/errorText";
 
 type ServerStatus = "checking" | "installed" | "missing" | "error";
 
@@ -74,7 +75,7 @@ export function LspSettings() {
       toast.success("Install command copied to clipboard");
       setTimeout(() => setCopied(null), 2000);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   };
 
@@ -88,7 +89,7 @@ export function LspSettings() {
       });
       await checkServer(language);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
       setStatuses((prev) => ({ ...prev, [language]: "missing" }));
     } finally {
       setInstalling((prev) => ({ ...prev, [language]: false }));

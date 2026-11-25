@@ -6,6 +6,7 @@ import type { GhCheck } from "./api";
 import { buildFailureMessage, type FailureLog } from "./failureMessage";
 import { environmentAgentSession, sendToAgent } from "./send";
 import { markFailureHandled, recordCiEvent, useAgentCiStore } from "./store";
+import { errorText } from "@/shared/lib/errorText";
 
 /** More logs would not fit the message; the agent can read the rest itself. */
 const MAX_LOGS = 3;
@@ -71,5 +72,5 @@ export function ignoreFailure(rootPath: string, environmentId: string): void {
 }
 
 export function openCheckLog(link: string): void {
-  invoke("open_external_url", { url: link }).catch((err: unknown) => toast.error(String(err)));
+  invoke("open_external_url", { url: link }).catch((err: unknown) => toast.error(errorText(err)));
 }

@@ -6,6 +6,7 @@ import { processLabel, repositoryProcesses } from "@/shared/stores/runProcesses"
 import { useTerminalStore } from "@/shared/stores/terminal";
 import { useLayoutStore } from "@/shell/layout";
 import { useRegisterPaletteCommands } from "./useRegisterPaletteCommands";
+import { errorText } from "@/shared/lib/errorText";
 
 async function startConfig(index: number): Promise<void> {
   const config = useRunConfigStore.getState().configs[index];
@@ -32,7 +33,7 @@ function pickConfig(): void {
       detail: config.command,
     })),
     onSelect: (item) => {
-      void startConfig(Number(item.id)).catch((err: unknown) => toast.error(String(err)));
+      void startConfig(Number(item.id)).catch((err: unknown) => toast.error(errorText(err)));
     },
   });
 }

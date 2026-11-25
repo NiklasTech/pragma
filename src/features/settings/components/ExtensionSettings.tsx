@@ -20,6 +20,7 @@ import { useExtensionsStore, type ExtensionRuntimeState } from "@/features/exten
 import type { ExtensionSummary } from "@/features/extensions/types";
 import { STATE_CELL_CLASSES } from "@/shell/chrome/SessionMark";
 import { SettingSection } from "./ui/SettingSection";
+import { errorText } from "@/shared/lib/errorText";
 
 const GRID =
   "grid grid-cols-[10px_minmax(0,1fr)_6.5rem_minmax(4.5rem,auto)_auto] items-center gap-3";
@@ -40,7 +41,7 @@ export function ExtensionSettings() {
   const handleReload = () => {
     if (!rootPath) return;
     void loadWorkspaceExtensions(rootPath).catch((err: unknown) => {
-      toast.error(`Failed to load extensions: ${String(err)}`);
+      toast.error(`Failed to load extensions: ${errorText(err)}`);
     });
   };
 
@@ -52,7 +53,7 @@ export function ExtensionSettings() {
       await installExtensionFromPath(rootPath, selected);
       toast.success("Extension installed");
     } catch (err) {
-      toast.error(`Failed to install extension: ${String(err)}`);
+      toast.error(`Failed to install extension: ${errorText(err)}`);
     }
   };
 
@@ -62,7 +63,7 @@ export function ExtensionSettings() {
       await removeExtension(rootPath, id);
       toast.success("Extension removed");
     } catch (err) {
-      toast.error(`Failed to remove extension: ${String(err)}`);
+      toast.error(`Failed to remove extension: ${errorText(err)}`);
     }
   };
 
@@ -71,7 +72,7 @@ export function ExtensionSettings() {
     try {
       await invoke("extension_open_folder", { workspaceRoot: rootPath });
     } catch (err) {
-      toast.error(`Failed to open extensions folder: ${String(err)}`);
+      toast.error(`Failed to open extensions folder: ${errorText(err)}`);
     }
   };
 

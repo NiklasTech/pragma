@@ -13,6 +13,7 @@ import { useCreateSkill } from "@/features/ai/skills/useCreateSkill";
 import { useWorkspaceSkills } from "@/features/ai/skills/useWorkspaceSkills";
 import { useWorkspaceSettingsStore } from "@/shared/stores/workspaceSettings/store";
 import { SettingSection } from "./ui/SettingSection";
+import { errorText } from "@/shared/lib/errorText";
 
 export function SkillsSettings() {
   const skills = useWorkspaceSkills();
@@ -46,13 +47,15 @@ export function SkillsSettings() {
         isEnabled={(skill) => skill.enabled}
         usedBy={(skill) => skillUsers(skill, syncTargets)}
         onToggle={(skill, enabled) =>
-          void setWorkspaceEnabled(skill, enabled).catch((err: unknown) => toast.error(String(err)))
+          void setWorkspaceEnabled(skill, enabled).catch((err: unknown) =>
+            toast.error(errorText(err)),
+          )
         }
         onConvert={(skill) =>
-          void convertSkill(skill).catch((err: unknown) => toast.error(String(err)))
+          void convertSkill(skill).catch((err: unknown) => toast.error(errorText(err)))
         }
         onCopyToPragma={(skill) =>
-          void copySkill(skill).catch((err: unknown) => toast.error(String(err)))
+          void copySkill(skill).catch((err: unknown) => toast.error(errorText(err)))
         }
       />
     </SettingSection>

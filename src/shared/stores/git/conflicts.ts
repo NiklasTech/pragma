@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { GitActions, GitConflictSides, GitSlice } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createConflictsSlice: GitSlice<
   Pick<
@@ -28,7 +29,7 @@ export const createConflictsSlice: GitSlice<
       const sides = await invoke<GitConflictSides>("git_conflict_sides", { repoPath, path });
       set({ conflictSides: sides, conflictLoading: false });
     } catch (err) {
-      toast.error(`Failed to load conflict: ${String(err)}`);
+      toast.error(`Failed to load conflict: ${errorText(err)}`);
       set({ conflictSides: null, conflictLoading: false });
     }
   },
@@ -46,8 +47,8 @@ export const createConflictsSlice: GitSlice<
       set({ conflictPath: null, conflictSides: null });
       await get().loadStatus();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ conflictLoading: false });
     }
@@ -64,8 +65,8 @@ export const createConflictsSlice: GitSlice<
       set({ conflictPath: null, conflictSides: null });
       await get().loadStatus();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ conflictLoading: false });
     }

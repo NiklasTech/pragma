@@ -5,6 +5,7 @@ import { useDiskStateStore } from "@/shared/stores/diskState";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 import { flushPendingDocChanges } from "@/features/editor/components/extensions/doc-sync";
 import { setDiskBaseline } from "@/features/editor/diskSync";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FileReadResult {
   content: string;
@@ -36,7 +37,7 @@ export async function reopenWithEncoding(tab: FileTab, encoding: string): Promis
     });
     useDiskStateStore.getState().clearStatus(tab.path);
   } catch (err) {
-    toast.error(`Could not reopen ${tab.name}: ${String(err)}`);
+    toast.error(`Could not reopen ${tab.name}: ${errorText(err)}`);
   }
 }
 
@@ -62,6 +63,6 @@ export async function saveWithEncoding(staleTab: FileTab, encoding: string): Pro
     useDiskStateStore.getState().clearStatus(tab.path);
     toast.success(`Saved ${tab.name} as ${encoding}`);
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
   }
 }

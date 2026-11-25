@@ -6,6 +6,7 @@ import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { loadProjectRules } from "./rules";
 import { PRAGMA_MD_TEMPLATE, PRAGMA_RULES_FILENAME, pragmaRulesPath } from "./rulesTemplate";
 import { useAgentStore } from "./store";
+import { errorText } from "@/shared/lib/errorText";
 
 export function useCreateRulesFile() {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
@@ -34,7 +35,7 @@ export function useCreateRulesFile() {
       useAgentStore.getState().setRules(loaded);
       toast.success(`Created ${PRAGMA_RULES_FILENAME}`);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setCreating(false);
     }

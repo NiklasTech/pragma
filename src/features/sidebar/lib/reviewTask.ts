@@ -11,6 +11,7 @@ import { runTask } from "@/features/ai/tasks/actions";
 import { useTasksStore } from "@/features/ai/tasks/store";
 import type { Task } from "@/features/ai/tasks/types";
 import { TASK_NOTES_MAX } from "@/features/ai/tasks/validation";
+import { errorText } from "@/shared/lib/errorText";
 
 const TRUNCATED_NOTE = "\n\n[Truncated. See the pull request for the remaining comments.]";
 
@@ -45,7 +46,7 @@ export async function sendReviewCommentsToAgent(
   try {
     comments = await loadReviewComments(repoPath, pr.number);
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
     return;
   }
   if (comments.length === 0) {

@@ -17,6 +17,7 @@ import {
   type SearchResult,
   type SearchResultGroup,
 } from "@/features/sidebar/lib/searchReplace";
+import { errorText } from "@/shared/lib/errorText";
 
 function openFileTabForPath(path: string): FileTab | null {
   const { tabs } = useEditorStore.getState();
@@ -119,7 +120,7 @@ export function useWorkspaceReplace({
         }
         onRefresh();
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       } finally {
         setReplacing(false);
       }
@@ -146,7 +147,7 @@ export function useWorkspaceReplace({
         }
         onRefresh();
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       } finally {
         setReplacing(false);
       }
@@ -193,7 +194,7 @@ export function useWorkspaceReplace({
       }
       onRefresh();
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setReplacing(false);
     }

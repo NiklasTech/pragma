@@ -29,6 +29,7 @@ import {
   isAgentNameUnique,
   isAgentNameValid,
 } from "./validation";
+import { errorText } from "@/shared/lib/errorText";
 
 interface AgentFormProps {
   agent?: Agent;
@@ -88,7 +89,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       setName(drafted.name);
       setBrief(drafted.brief);
     } catch (err) {
-      toast.error("Could not draft the agent", { description: String(err) });
+      toast.error("Could not draft the agent", { description: errorText(err) });
     } finally {
       setDrafting(false);
     }
@@ -154,7 +155,7 @@ export function AgentForm({ agent, onCancel, onSaved }: AgentFormProps) {
       await saveAgent(saved);
       onSaved(saved);
     } catch (err) {
-      toast.error("Could not save the agent", { description: String(err) });
+      toast.error("Could not save the agent", { description: errorText(err) });
     } finally {
       setSaving(false);
     }

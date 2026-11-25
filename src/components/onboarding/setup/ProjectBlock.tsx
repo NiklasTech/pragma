@@ -10,6 +10,7 @@ import { getWorkspaceName } from "@/shared/lib/workspaceName";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGitStore } from "@/shared/stores/git";
 import { useOpenRepositoriesStore } from "@/shared/stores/openRepositories";
+import { errorText } from "@/shared/lib/errorText";
 
 interface DirEntry {
   path: string;
@@ -53,7 +54,7 @@ export function ProjectBlock() {
       );
       toast.success(`Created project "${name}"`);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       store.setIsLoading(false);
     }

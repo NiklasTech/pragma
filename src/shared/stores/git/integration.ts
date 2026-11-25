@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { GitActions, GitMergeResult, GitOperationKind, GitSlice } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createIntegrationSlice: GitSlice<
   Pick<
@@ -26,8 +27,8 @@ export const createIntegrationSlice: GitSlice<
     try {
       await action();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ actionBusy: null });
     }

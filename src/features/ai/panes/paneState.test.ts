@@ -28,7 +28,9 @@ describe("terminalPaneState", () => {
   });
 
   it("names the exit code", () => {
-    expect(terminalPaneLabel({ status: "exited", exitCode: 2, active: false })).toBe("Exited (2)");
+    expect(terminalPaneLabel({ status: "exited", exitCode: 2, active: false })).toBe(
+      "Ended with an error",
+    );
     expect(terminalPaneLabel({ status: "running", exitCode: null, active: false })).toBe(
       "Waiting for input",
     );

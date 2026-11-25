@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { saveWorkspace, loadWorkspace } from "../workspace";
 import type { GitActions, GitBranch, GitSlice } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createBranchesSlice: GitSlice<
   Pick<
@@ -86,7 +87,7 @@ export const createBranchesSlice: GitSlice<
       }
     } catch (err) {
       set({ error: String(err) });
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       set({ actionBusy: null, actionStatus: null });
     }
@@ -132,8 +133,8 @@ export const createBranchesSlice: GitSlice<
       toast.success(`Renamed ${oldName} to ${newName}`);
       await get().refreshAll();
     } catch (err) {
-      toast.error(String(err));
-      set({ error: String(err) });
+      toast.error(errorText(err));
+      set({ error: errorText(err) });
     } finally {
       set({ actionBusy: null });
     }

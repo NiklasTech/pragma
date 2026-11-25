@@ -5,6 +5,7 @@ import { detectLanguage } from "@/shared/lib/language";
 import { useEditorStore, type FileTab } from "@/shared/stores/editor";
 
 import type { ResolvedApplyTarget } from "./applyTargets";
+import { errorText } from "@/shared/lib/errorText";
 
 interface FileReadResult {
   path: string;
@@ -43,7 +44,7 @@ export async function applyChatCodeBlock(target: ResolvedApplyTarget): Promise<v
       tab = findOpenTab({ ...target, tabId: result.path });
       original = result.content;
     } catch (err) {
-      toast.error(`Could not open ${target.name}: ${String(err)}`);
+      toast.error(`Could not open ${target.name}: ${errorText(err)}`);
       return;
     }
   }

@@ -6,6 +6,7 @@ import { Button } from "@/shared/components/ui/button";
 
 import { openMicrophoneSettings } from "./microphonePermission";
 import { VOICE_INPUT_DENIED } from "./webSpeech";
+import { errorText } from "@/shared/lib/errorText";
 
 /** Whether a dictation message means the system blocks the microphone. */
 export function isMicrophoneDenied(status: string | null): boolean {
@@ -13,7 +14,7 @@ export function isMicrophoneDenied(status: string | null): boolean {
 }
 
 export function openMicrophoneSettingsOrToast(): void {
-  void openMicrophoneSettings().catch((err: unknown) => toast.error(String(err)));
+  void openMicrophoneSettings().catch((err: unknown) => toast.error(errorText(err)));
 }
 
 /// The last dictation message under the composer; a blocked microphone links to its setting.

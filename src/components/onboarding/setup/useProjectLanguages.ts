@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { isLspSupported, LSP_SERVERS } from "@/shared/lib/lsp-servers";
 
 import type { LanguagesState } from "./setupSections";
+import { errorText } from "@/shared/lib/errorText";
 
 export type ServerStatus = "checking" | "installed" | "missing" | "error";
 
@@ -58,7 +59,7 @@ export function useProjectLanguages(rootPath: string | null, enabled: boolean): 
         setStatuses(Object.fromEntries(checked));
         setScanned(rootPath);
       } catch (err) {
-        if (!cancelled) toast.error(String(err));
+        if (!cancelled) toast.error(errorText(err));
       }
     })();
     return () => {
@@ -81,7 +82,7 @@ export function useProjectLanguages(rootPath: string | null, enabled: boolean): 
           description: output || undefined,
         });
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       } finally {
         setInstalling((prev) => ({ ...prev, [language]: false }));
         await recheck(language);

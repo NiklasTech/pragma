@@ -33,6 +33,7 @@ import { useNamedAgentsStore } from "./store";
 import { exportAgent, exportAgentMarkdown } from "./transferActions";
 import type { Agent, AgentScope } from "./types";
 import { useNamedAgentsUiStore } from "./ui";
+import { errorText } from "@/shared/lib/errorText";
 
 type AgentTab = "brief" | "memory" | "skills" | "folders";
 
@@ -95,7 +96,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
         useNamedAgentsUiStore.getState().selectAgent(copy.id);
       })
       .catch((err: unknown) =>
-        toast.error("Could not copy the agent", { description: String(err) }),
+        toast.error("Could not copy the agent", { description: errorText(err) }),
       );
   };
 
@@ -106,7 +107,7 @@ export function AgentPage({ agent, onNewChat, onEdit, onDeleted }: AgentPageProp
         useNamedAgentsUiStore.getState().selectAgent(copy.id);
       })
       .catch((err: unknown) =>
-        toast.error("Could not copy the agent", { description: String(err) }),
+        toast.error("Could not copy the agent", { description: errorText(err) }),
       );
   };
 

@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { dapEnsureAdapter, listenDapInstallProgress } from "./client";
+import { errorText } from "@/shared/lib/errorText";
 
 /**
  * Make sure the debug adapter for a language (or adapter id) is installed,
@@ -33,7 +34,7 @@ export async function ensureAdapterForLanguage(language: string): Promise<string
     });
     return null;
   } catch (err) {
-    toast.error(String(err), { id: toastId });
+    toast.error(errorText(err), { id: toastId });
     return null;
   } finally {
     void unlistenQuietly(unlisten);

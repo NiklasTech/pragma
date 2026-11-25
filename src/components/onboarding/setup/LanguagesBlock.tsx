@@ -9,6 +9,7 @@ import { cn } from "@/shared/lib/utils";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 import type { ProjectLanguages, ServerStatus } from "./useProjectLanguages";
+import { errorText } from "@/shared/lib/errorText";
 
 const CELL: Record<ServerStatus, string> = {
   checking: "bg-fg-subtle/40",
@@ -63,7 +64,7 @@ export function LanguagesBlock({ project }: { project: ProjectLanguages }) {
       setCopied(language);
       setTimeout(() => setCopied(null), 2000);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   };
 

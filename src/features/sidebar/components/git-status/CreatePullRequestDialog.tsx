@@ -28,6 +28,7 @@ import {
   loadPrCreateOptions,
   type GhPrCreateOptions,
 } from "@/shared/stores/github";
+import { errorText } from "@/shared/lib/errorText";
 
 export function CreatePullRequestDialog({
   open,
@@ -81,7 +82,7 @@ export function CreatePullRequestDialog({
       })
       .catch((err: unknown) => {
         if (!current) return;
-        toast.error(String(err));
+        toast.error(errorText(err));
         setOptions({ template: null, labels: [], default_branch: null });
       });
     return () => {
@@ -123,7 +124,7 @@ export function CreatePullRequestDialog({
       onOpenChange(false);
       onCreated(url);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setSubmitting(false);
     }

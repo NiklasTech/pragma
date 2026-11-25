@@ -8,6 +8,7 @@ import { useUiModeStore } from "@/shell/mode";
 
 import { createSkillFile } from "./storage";
 import { useSkillsStore } from "./store";
+import { errorText } from "@/shared/lib/errorText";
 
 export function useCreateSkill() {
   const rootPath = useFileExplorerStore((state) => state.rootPath);
@@ -23,7 +24,7 @@ export function useCreateSkill() {
       await useSkillsStore.getState().loadSkills(rootPath);
       if (await openWorkspaceFile(path, editorPanelId)) setUiMode("editor");
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       setCreating(false);
     }

@@ -40,6 +40,7 @@ import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
 import { compactIfNeeded } from "@/features/ai/compaction/compactSession";
 import { useLiveChatRegistration } from "@/features/ai/compaction/liveChat";
 import { getAgentSettings } from "@/shared/stores/workspaceSettings/effective";
+import { errorText } from "@/shared/lib/errorText";
 
 export { getMessageText };
 
@@ -280,7 +281,7 @@ export function useAI() {
       try {
         raw = await expandPromptCommand(raw, mcpServerIds);
       } catch (err) {
-        toast.error(`Could not load the MCP prompt: ${String(err)}`);
+        toast.error(`Could not load the MCP prompt: ${errorText(err)}`);
         return false;
       }
 

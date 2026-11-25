@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import type { GitActions, GitSlice, GitTag } from "./types";
+import { errorText } from "@/shared/lib/errorText";
 
 export const createTagsSlice: GitSlice<Pick<GitActions, "loadTags" | "createTag" | "deleteTag">> = (
   set,
@@ -33,7 +34,7 @@ export const createTagsSlice: GitSlice<Pick<GitActions, "loadTags" | "createTag"
       await Promise.all([get().loadTags(), get().loadStatus()]);
       return true;
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
       return false;
     } finally {
       set({ actionBusy: null });
@@ -50,7 +51,7 @@ export const createTagsSlice: GitSlice<Pick<GitActions, "loadTags" | "createTag"
       toast.success(`Deleted tag ${name}`);
       await Promise.all([get().loadTags(), get().loadStatus()]);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     } finally {
       set({ actionBusy: null });
     }

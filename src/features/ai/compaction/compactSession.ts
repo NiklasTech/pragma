@@ -12,6 +12,7 @@ import { liveChat } from "./liveChat";
 import { insertSummary, planSummary, renderTranscript } from "./plan";
 import { estimateTokens, pruneToolOutputs } from "./prune";
 import { summarizeConversation } from "./summarize";
+import { errorText } from "@/shared/lib/errorText";
 
 export type CompactionMode = "manual" | "auto";
 
@@ -92,7 +93,7 @@ async function runCompaction(sessionId: string, mode: CompactionMode): Promise<b
         next = insertSummary(next, plan.cutIndex, await summarizeConversation(engine, transcript));
         summarized = true;
       } catch (err) {
-        toast.error(`Could not summarize the session: ${String(err)}`);
+        toast.error(`Could not summarize the session: ${errorText(err)}`);
         if (pruned.removedChars === 0) return false;
       }
     }
@@ -143,7 +144,7 @@ export function compactSession(sessionId: string, mode: CompactionMode): Promise
   setRunning(sessionId, true);
   const run = runCompaction(sessionId, mode)
     .catch((err: unknown) => {
-      toast.error(`Could not compact the session: ${String(err)}`);
+      toast.error(`Could not compact the session: ${errorText(err)}`);
       return false;
     })
     .finally(() => {

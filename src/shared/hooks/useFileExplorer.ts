@@ -13,6 +13,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { detectLanguage } from "@/shared/lib/language";
 import { retargetTabs } from "@/features/editor/retargetTabs";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
+import { errorText } from "@/shared/lib/errorText";
 
 export interface DirEntry {
   path: string;
@@ -64,7 +65,7 @@ export async function selectRootFolder(targetPath?: string): Promise<boolean> {
     try {
       path = await open({ multiple: false, directory: true });
     } catch (err) {
-      toast.error(`Failed to open dialog: ${String(err)}`);
+      toast.error(`Failed to open dialog: ${errorText(err)}`);
       return false;
     }
   }
@@ -81,7 +82,7 @@ export async function selectRootFolder(targetPath?: string): Promise<boolean> {
     useSettingsStore.getState().addRecentFolder(repositoryPath);
     return true;
   } catch (err) {
-    toast.error(String(err));
+    toast.error(errorText(err));
     return false;
   } finally {
     store.setIsLoading(false);
@@ -117,7 +118,7 @@ export function useFileExplorer() {
       store.setDirChildren(path, children);
     } catch (err) {
       store.setDirError(path, String(err));
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   }, []);
 
@@ -162,7 +163,7 @@ export function useFileExplorer() {
         useFileExplorerStore.getState().setSelectedPath(path);
       } catch (err) {
         if (openNonTextFile(path, editorPanelId, err)) return;
-        toast.error(String(err));
+        toast.error(errorText(err));
       }
     },
     [editorPanelId],
@@ -192,7 +193,7 @@ export function useFileExplorer() {
           await loadDirectory(path);
         }
       } catch (err) {
-        toast.error(String(err));
+        toast.error(errorText(err));
       }
     },
     [loadDirectory],
@@ -210,7 +211,7 @@ export function useFileExplorer() {
       useFileExplorerStore.getState().renameNode(oldPath, newPath, newName);
       retargetTabs(oldPath, newPath);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   }, []);
 
@@ -219,7 +220,7 @@ export function useFileExplorer() {
       await invoke("delete_file", { path });
       useFileExplorerStore.getState().removeNode(path);
     } catch (err) {
-      toast.error(String(err));
+      toast.error(errorText(err));
     }
   }, []);
 
