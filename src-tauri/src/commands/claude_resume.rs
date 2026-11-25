@@ -204,6 +204,33 @@ mod tests {
     }
 
     #[test]
+    fn a_to_b_to_a_with_several_turns_on_b_keeps_every_message_once() {
+        let home = tempfile::tempdir().unwrap();
+        let first = home.path().join(".claude");
+        let second = home.path().join(".claude-work");
+        let original = write_transcript(&first, "-Users-me-repo");
+        append(&original, &message("a1"));
+
+        share_transcript(&first, &second, ID).unwrap();
+        let copy = find_transcript(&second, ID).unwrap();
+        for id in ["b1", "b2", "b3"] {
+            append(&copy, &message(id));
+        }
+        share_transcript(&second, &first, ID).unwrap();
+        append(&original, &message("a2"));
+
+        let ids = |path: &Path| -> Vec<String> {
+            std::fs::read_to_string(path)
+                .unwrap()
+                .lines()
+                .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+                .filter_map(|entry| entry["uuid"].as_str().map(str::to_string))
+                .collect()
+        };
+        assert_eq!(ids(&original), ["a1", "b1", "b2", "b3", "a2"]);
+    }
+
+    #[test]
     fn a_session_that_went_on_in_both_accounts_is_left_alone() {
         let home = tempfile::tempdir().unwrap();
         let first = home.path().join(".claude");
