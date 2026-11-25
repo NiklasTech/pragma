@@ -25,8 +25,10 @@ import {
   subscribeTerminalAttention,
   type TerminalAttentionKind,
 } from "../terminal/runner";
+import { matchCliManifest } from "../terminal/foregroundCli";
+import { useForegroundStore, watchForeground } from "../terminal/foregroundPoller";
 import { isShellSession } from "../terminal/shell";
-import { useAgentStatesStore, type AgentStateEvent } from "./agentStates";
+import { liveSessionIds, useAgentStatesStore, type AgentStateEvent } from "./agentStates";
 
 const OUTCOME_EVENTS: Record<AttentionKind | TerminalAttentionKind, AgentStateEvent> = {
   finished: "done",
@@ -35,9 +37,17 @@ const OUTCOME_EVENTS: Record<AttentionKind | TerminalAttentionKind, AgentStateEv
   input: "needs-you",
 };
 
-function isCliTerminal(sessionId: string): boolean {
+/** Whether a coding CLI runs in the shell right now, such as `claude` typed into it. */
+function shellRunsCli(sessionId: string): boolean {
+  const names = useForegroundStore.getState().names[sessionId];
+  return names ? matchCliManifest(names, useAIStore.getState().cliManifests) !== null : false;
+}
+
+/** A terminal whose output and signals come from an agent; a plain shell's bell does not count. */
+function isAgentTerminal(sessionId: string): boolean {
   const session = useAIStore.getState().chatSessions.find((item) => item.id === sessionId);
-  return session?.kind === "terminal" && !isShellSession(session);
+  if (session?.kind !== "terminal") return false;
+  return !isShellSession(session) || shellRunsCli(sessionId);
 }
 
 /** Feeds every source of agent state into the one store, and marks what the user looks at. */
@@ -51,8 +61,8 @@ export function useAgentStateFeed(): void {
       if (document.hasFocus() && readSessionInView(sessionId)) store().apply(sessionId, "seen");
     };
     const apply = (sessionId: string, event: AgentStateEvent) => {
-      // A terminal can still report after its session was deleted; such a state would never clear.
-      const known = useAIStore.getState().chatSessions.some((session) => session.id === sessionId);
+      // A session can still report after it was deleted or archived; such a state would never clear.
+      const known = liveSessionIds(useAIStore.getState().chatSessions).has(sessionId);
       if (!known) return;
       store().apply(sessionId, event);
       if (event === "done") markSeen(sessionId);
@@ -77,7 +87,7 @@ export function useAgentStateFeed(): void {
     };
 
     const onTerminalOutput = (sessionId: string) => {
-      if (!isCliTerminal(sessionId)) return;
+      if (!isAgentTerminal(sessionId)) return;
       const lastInputAt = getTerminalLastInputAt(sessionId);
       // A question stays open, and a finished run stays done, until the user typed after it.
       const entry = store().entries[sessionId];
@@ -100,24 +110,44 @@ export function useAgentStateFeed(): void {
 
     const onTerminalStatus = (sessionId: string) => {
       const { status, exitCode } = getTerminalStatus(sessionId);
-      if (!isCliTerminal(sessionId) || status === "running") return;
+      if (!(sessionId in store().entries) || status === "running") return;
       // A clean or cancelled exit ends the run and any open question; a failed one needs a look.
       const failed = status === "exited" && exitCode !== 0;
       if (failed && store().entries[sessionId]?.state === "needs-you") return;
       apply(sessionId, "idle");
     };
 
-    let previousRoot = useFileExplorerStore.getState().rootPath;
-    let previousIds = new Set(useAIStore.getState().chatSessions.map((session) => session.id));
-    const forgetDeleted = () => {
-      const rootPath = useFileExplorerStore.getState().rootPath;
-      const ids = new Set(useAIStore.getState().chatSessions.map((session) => session.id));
-      // Switching folders reloads the list; only a removal within one folder is a deletion.
-      if (rootPath === previousRoot) {
-        for (const id of previousIds) if (!ids.has(id)) store().forget(id);
+    const forgetGone = () => {
+      const ids = liveSessionIds(useAIStore.getState().chatSessions);
+      for (const id of Object.keys(store().entries)) if (!ids.has(id)) store().forget(id);
+    };
+
+    const shellWatches = new Map<string, () => void>();
+    // Every shell is watched, so a CLI in a shell of another space counts as well.
+    const watchShells = () => {
+      const shells = new Set(
+        useAIStore
+          .getState()
+          .chatSessions.filter((session) => isShellSession(session) && !session.archived)
+          .map((session) => session.id),
+      );
+      for (const id of shells) {
+        if (!shellWatches.has(id)) shellWatches.set(id, watchForeground(id));
       }
-      previousRoot = rootPath;
-      previousIds = ids;
+      for (const [id, stop] of shellWatches) {
+        if (shells.has(id)) continue;
+        stop();
+        shellWatches.delete(id);
+      }
+    };
+
+    // The CLI in a shell ended, so nothing in there waits or works anymore.
+    const forgetEndedShellClis = () => {
+      const sessions = useAIStore.getState().chatSessions;
+      for (const id of Object.keys(store().entries)) {
+        const session = sessions.find((item) => item.id === id);
+        if (session && isShellSession(session) && !shellRunsCli(id)) store().forget(id);
+      }
     };
 
     const onWindowFocus = () => seenFocused();
@@ -136,17 +166,26 @@ export function useAgentStateFeed(): void {
         refreshRuns();
       }),
       subscribeSessionOutcomes((sessionId, kind) => apply(sessionId, OUTCOME_EVENTS[kind])),
-      subscribeTerminalAttention((sessionId, kind) => apply(sessionId, OUTCOME_EVENTS[kind])),
+      subscribeTerminalAttention((sessionId, kind) => {
+        if (isAgentTerminal(sessionId)) apply(sessionId, OUTCOME_EVENTS[kind]);
+      }),
+      useForegroundStore.subscribe(forgetEndedShellClis),
       subscribeAnyTerminalOutput(onTerminalOutput),
       subscribeAnyTerminalStatus(onTerminalStatus),
       useAgentsPanesStore.subscribe(seenFocused),
       useUiModeStore.subscribe(seenFocused),
       useOpenRepositoriesStore.subscribe(seenFocused),
-      useAIStore.subscribe(forgetDeleted),
+      useAIStore.subscribe((state, previous) => {
+        if (state.chatSessions === previous.chatSessions) return;
+        forgetGone();
+        watchShells();
+      }),
     ];
     refreshRuns();
+    watchShells();
 
     return () => {
+      for (const stop of shellWatches.values()) stop();
       window.removeEventListener("focus", onWindowFocus);
       for (const unsubscribe of unsubscribes) unsubscribe();
       for (const timer of timers.values()) clearTimeout(timer);

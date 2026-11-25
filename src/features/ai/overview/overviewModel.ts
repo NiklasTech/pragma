@@ -33,8 +33,11 @@ export interface OverviewInput {
 }
 
 function belongs(session: ChatSession, input: OverviewInput): boolean {
-  if (session.archived || isShellSession(session)) return false;
-  if (input.entries[session.id]) return true;
+  if (session.archived) return false;
+  const entry = input.entries[session.id];
+  // A shell counts while a coding CLI in it works or asks; every other count includes it too.
+  if (isShellSession(session)) return entry !== undefined && entry.state !== "idle";
+  if (entry) return true;
   if (session.kind === "terminal") {
     return input.liveTerminals.has(session.id) || input.openSessions.has(session.id);
   }

@@ -48,6 +48,13 @@ export function compareAgentStates(a: AgentState, b: AgentState): number {
   return PRIORITY[a] - PRIORITY[b];
 }
 
+/** Sessions a state can belong to: those on screen somewhere, not deleted, closed or archived. */
+export function liveSessionIds(
+  sessions: readonly { id: string; archived?: boolean }[],
+): Set<string> {
+  return new Set(sessions.filter((session) => !session.archived).map((session) => session.id));
+}
+
 export interface AgentStateSummary {
   needsYou: string[];
   done: string[];

@@ -147,7 +147,8 @@ function applyExit(entry: TerminalEntry, exitCode: number): void {
   entry.status = "exited";
   entry.exitCode = exitCode;
   notifyStatus(entry.sessionId);
-  if (exitCode !== 0) emitAttention(entry.sessionId, "failed");
+  // A shell ends with the code of its last command, which is no failure of the shell.
+  if (exitCode !== 0 && entry.shell === null) emitAttention(entry.sessionId, "failed");
 }
 
 function handleOutput(ptyId: string, data: string): void {

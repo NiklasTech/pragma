@@ -211,12 +211,18 @@ export function PaneHeader({
   const shownManifest = shell ? (shellCli ?? undefined) : manifest;
   const terminalLook = { ...terminalStatus, active: terminalActive };
   const sharedState = useAgentStatesStore(selectAgentState(session?.id));
-  const ownState = terminal ? terminalPaneState(terminalLook) : agentPaneState(status);
+  // A shell that ended has nothing to answer, whatever code its last command left.
+  const shellEnded = shell && terminalStatus.status !== "running";
+  const ownState = !terminal
+    ? agentPaneState(status)
+    : shellEnded
+      ? "idle"
+      : terminalPaneState(terminalLook);
   // The shared model knows about questions the pane cannot see, such as a CLI hook asking.
   const asked = sharedState === "needs-you" && ownState !== "needs-you";
   const state = asked ? sharedState : ownState;
-  // A plain shell shows no state until a CLI runs in it or it fails.
-  const showState = !shell || shellCli !== null || state === "needs-you";
+  // A plain shell shows no state until a CLI runs in it or it ends.
+  const showState = !shell || shellCli !== null || shellEnded || state === "needs-you";
   const stateLabel =
     terminal && !asked ? terminalPaneLabel(terminalLook) : AGENT_STATE_LABELS[state];
 
