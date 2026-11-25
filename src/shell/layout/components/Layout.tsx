@@ -96,6 +96,7 @@ export function Layout() {
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <AgentRail />
         <AgentSheet />
+        {uiMode === "agents" && <SidebarDrawer overAgents />}
         {/* Both sides stay mounted once shown, so switching keeps editors, terminals and git state. */}
         {shown.agents && (
           <div

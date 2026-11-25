@@ -20,7 +20,7 @@ import { useSettingsStore } from "@/shared/stores/settings";
 import { useLayoutStore } from "@/shell/layout/store";
 import { useUiMode } from "@/shell/mode";
 
-import { useAgentSheetStore } from "./agentSheetStore";
+import { useAgentFilesStore, useAgentSheetStore } from "./agentSheetStore";
 import { useShellCliPolling } from "./shellClis";
 import { railGroups, type RailEntry } from "./railEntries";
 import { SessionMark, useSessionIdentity } from "./SessionMark";
@@ -73,13 +73,15 @@ export function AgentRail() {
   const openOverlay = useOverlayStore((state) => state.open);
   const newShortcut = useSettingsStore((state) => state.shortcuts["session.quickStart"]);
   const inAgents = useUiMode() === "agents";
-  const activateTabKind = useOpenRepositoriesStore((state) => state.activateTabKind);
   const sidebarCollapsed = useLayoutStore((state) => state.sidebar.collapsed);
   const setSidebarCollapsed = useLayoutStore((state) => state.setSidebarCollapsed);
-  const filesOpen = !inAgents && !sidebarCollapsed;
+  const agentFilesOpen = useAgentFilesStore((state) => state.open);
+  const setAgentFilesOpen = useAgentFilesStore((state) => state.setOpen);
+  // Over the agents the files and changes open as a drawer of their own, so the agents stay in view.
+  const filesOpen = inAgents ? agentFilesOpen : !sidebarCollapsed;
   const toggleFiles = () => {
-    if (inAgents) activateTabKind("code");
-    setSidebarCollapsed(filesOpen);
+    if (inAgents) setAgentFilesOpen(!agentFilesOpen);
+    else setSidebarCollapsed(filesOpen);
   };
   const groups = useMemo(() => (space ? railGroups(space, trees) : []), [space, trees]);
   const chatSessions = useAIStore((state) => state.chatSessions);
