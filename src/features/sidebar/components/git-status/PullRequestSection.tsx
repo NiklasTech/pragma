@@ -14,10 +14,9 @@ import { cn } from "@/shared/lib/utils";
 import { useGitStore } from "@/shared/stores/git";
 import { useGithubStore, type GhChecksSummary, type GhPullRequest } from "@/shared/stores/github";
 import { sendReviewCommentsToAgent } from "../../lib/reviewTask";
+import { checksPollMs } from "./checksPoll";
 import { CreatePullRequestDialog } from "./CreatePullRequestDialog";
 import { ToolbarButton } from "./ToolbarButton";
-
-const PENDING_POLL_MS = 30_000;
 
 function StateBadge({ pr }: { pr: GhPullRequest }) {
   if (pr.state === "MERGED") return <Badge>Merged</Badge>;
@@ -27,11 +26,16 @@ function StateBadge({ pr }: { pr: GhPullRequest }) {
 }
 
 function ChecksStatus({ checks }: { checks: GhChecksSummary }) {
-  if (checks.total === 0) return null;
+  if (checks.total === 0) {
+    return <span className="text-ui-2xs whitespace-nowrap text-fg-subtle">No checks yet</span>;
+  }
   const title = `${checks.passing} passing, ${checks.failing} failing, ${checks.pending} pending`;
   if (checks.failing > 0) {
     return (
-      <span title={title} className="flex items-center gap-1 text-ui-2xs text-status-error">
+      <span
+        title={title}
+        className="flex items-center gap-1 text-ui-2xs whitespace-nowrap text-status-error"
+      >
         <XCircle size={12} weight="fill" />
         {checks.failing} failing
       </span>
@@ -39,14 +43,20 @@ function ChecksStatus({ checks }: { checks: GhChecksSummary }) {
   }
   if (checks.pending > 0) {
     return (
-      <span title={title} className="flex items-center gap-1 text-ui-2xs text-status-warning">
+      <span
+        title={title}
+        className="flex items-center gap-1 text-ui-2xs whitespace-nowrap text-status-warning"
+      >
         <Clock size={12} weight="fill" />
         {checks.pending} pending
       </span>
     );
   }
   return (
-    <span title={title} className="flex items-center gap-1 text-ui-2xs text-status-success">
+    <span
+      title={title}
+      className="flex items-center gap-1 text-ui-2xs whitespace-nowrap text-status-success"
+    >
       <CheckCircle size={12} weight="fill" />
       Checks passing
     </span>
@@ -58,6 +68,7 @@ export function PullRequestSection() {
   const snapshot = useGitStore((state) => state.snapshot);
   const hasRemote = useGitStore((state) => state.remotes.length > 0);
   const lastCommitMessage = useGitStore((state) => state.commits[0]?.message ?? "");
+  const head = useGitStore((state) => state.commits[0]?.id ?? null);
   const cli = useGithubStore((state) => state.cli);
   const cliRepoPath = useGithubStore((state) => state.repoPath);
   const pullRequest = useGithubStore((state) => state.pullRequest);
@@ -81,14 +92,14 @@ export function PullRequestSection() {
   useEffect(() => {
     if (!enabled || !repoPath || !branch) return;
     void loadPullRequest(repoPath, branch);
-  }, [enabled, repoPath, branch, upstream, ahead, loadPullRequest]);
+  }, [enabled, repoPath, branch, upstream, ahead, head, loadPullRequest]);
 
-  const hasPendingChecks = (pullRequest?.checks.pending ?? 0) > 0;
+  const pollMs = checksPollMs(pullRequest);
   useEffect(() => {
-    if (!enabled || !repoPath || !branch || !hasPendingChecks) return;
-    const timer = window.setInterval(() => void loadPullRequest(repoPath, branch), PENDING_POLL_MS);
+    if (!enabled || !repoPath || !branch || pollMs === null) return;
+    const timer = window.setInterval(() => void loadPullRequest(repoPath, branch), pollMs);
     return () => window.clearInterval(timer);
-  }, [enabled, repoPath, branch, hasPendingChecks, loadPullRequest]);
+  }, [enabled, repoPath, branch, pollMs, loadPullRequest]);
 
   if (!cli?.installed || !repoPath) return null;
 
@@ -114,7 +125,7 @@ export function PullRequestSection() {
   };
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5 px-2.5 pb-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 px-2.5 pb-2">
       {pullRequest ? (
         <>
           <Button
@@ -122,7 +133,7 @@ export function PullRequestSection() {
             size="sm"
             onClick={() => void invoke("open_external_url", { url: pullRequest.url })}
             title={`Open #${pullRequest.number} on GitHub`}
-            className="min-w-0 flex-1 justify-start gap-1.5 px-1 text-left font-normal text-fg-default"
+            className="min-w-0 basis-full justify-start gap-1.5 px-1 text-left font-normal text-fg-default"
           >
             <GitPullRequest
               size={14}
@@ -138,8 +149,11 @@ export function PullRequestSection() {
             </span>
             <span className="min-w-0 truncate text-fg-default">{pullRequest.title}</span>
           </Button>
-          <StateBadge pr={pullRequest} />
-          <ChecksStatus checks={pullRequest.checks} />
+          {/* The title has the first line; the state, the checks and the actions share the second. */}
+          <span className="mr-auto ml-1 flex min-w-0 items-center gap-1.5">
+            <StateBadge pr={pullRequest} />
+            {pullRequest.state === "OPEN" && <ChecksStatus checks={pullRequest.checks} />}
+          </span>
           <ToolbarButton
             icon={ChatCircleText}
             label="Send review comments to an agent"

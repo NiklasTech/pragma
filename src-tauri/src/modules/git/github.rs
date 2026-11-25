@@ -270,6 +270,10 @@ pub fn create_options(repo_root: &str) -> Result<GhPrCreateOptions> {
 fn summarize_checks(checks: &[RawCheck]) -> GhChecksSummary {
     let mut summary = GhChecksSummary::default();
     for check in checks {
+        // Skipped checks did not run, and a failing job cancels its siblings: neither says anything.
+        if matches!(check.conclusion.as_deref(), Some("SKIPPED" | "CANCELLED")) {
+            continue;
+        }
         summary.total += 1;
         let outcome = if let Some(state) = check.state.as_deref() {
             match state {
@@ -281,7 +285,7 @@ fn summarize_checks(checks: &[RawCheck]) -> GhChecksSummary {
             "pending"
         } else {
             match check.conclusion.as_deref() {
-                Some("SUCCESS" | "NEUTRAL" | "SKIPPED") => "pass",
+                Some("SUCCESS" | "NEUTRAL") => "pass",
                 _ => "fail",
             }
         };
@@ -600,6 +604,7 @@ mod tests {
             "statusCheckRollup": [
                 {"__typename": "CheckRun", "status": "COMPLETED", "conclusion": "SUCCESS"},
                 {"__typename": "CheckRun", "status": "COMPLETED", "conclusion": "SKIPPED"},
+                {"__typename": "CheckRun", "status": "COMPLETED", "conclusion": "CANCELLED"},
                 {"__typename": "CheckRun", "status": "COMPLETED", "conclusion": "FAILURE"},
                 {"__typename": "CheckRun", "status": "IN_PROGRESS", "conclusion": ""},
                 {"__typename": "StatusContext", "state": "PENDING"},
@@ -613,8 +618,8 @@ mod tests {
         assert_eq!(
             pr.checks,
             GhChecksSummary {
-                total: 6,
-                passing: 2,
+                total: 5,
+                passing: 1,
                 failing: 2,
                 pending: 2,
             }
