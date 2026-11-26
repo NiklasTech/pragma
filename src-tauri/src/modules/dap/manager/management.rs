@@ -10,7 +10,7 @@ use super::adapters::{
 };
 use super::go::managed_go_bin_dir;
 use super::java::{java_adapter_dir, jdtls_available};
-use super::python::python_with_module;
+use super::python::{managed_debugpy_dir, python_with_module, record_interpreter};
 use super::DapManager;
 
 const INSTALL_TIMEOUT: Duration = Duration::from_secs(180);
@@ -176,6 +176,45 @@ impl DapManager {
                 reported.exit_code = output.status.code().unwrap_or(-1);
                 Ok(reported)
             }
+            InstallSpec::Pip { package } => {
+                let python = python_with_module("pip").await.ok_or_else(|| {
+                    format!("Cannot install '{}': no Python with pip found", entry.label)
+                })?;
+                let adapters = adapters_dir(app)?;
+                let target = managed_debugpy_dir(&adapters);
+                let args = install::pip_target_args(package, &target);
+                install::emit_progress(
+                    app,
+                    entry.id,
+                    InstallStage::Installing,
+                    None,
+                    format!("Running {} {}", python.display(), args.join(" ")),
+                );
+                let output = tokio::time::timeout(
+                    INSTALL_TIMEOUT,
+                    crate::platform::new_tokio_command(&python)
+                        .args(&args)
+                        .output(),
+                )
+                .await
+                .map_err(|_| {
+                    format!(
+                        "Install of '{}' timed out after {}s",
+                        entry.label,
+                        INSTALL_TIMEOUT.as_secs()
+                    )
+                })?
+                .map_err(|e| format!("Failed to run '{}': {e}", python.display()))?;
+                let result = if output.status.success() {
+                    record_interpreter(&adapters, &python)
+                        .map(|()| format!("Installed '{}' to {}", entry.label, target.display()))
+                } else {
+                    Err(stderr_tail(&String::from_utf8_lossy(&output.stderr)))
+                };
+                let mut reported = finish_install(app, entry, result);
+                reported.exit_code = output.status.code().unwrap_or(-1);
+                Ok(reported)
+            }
             spec => {
                 let (program, args) = install::spec_command(&spec)
                     .ok_or_else(|| format!("No install command for adapter '{adapter_id}'"))?;
@@ -187,12 +226,8 @@ impl DapManager {
                     None,
                     format!("Running {} {}", program, args.join(" ")),
                 );
-                let program_path = if matches!(spec, InstallSpec::Pip { .. }) {
-                    python_with_module("pip").await.unwrap_or(program.into())
-                } else {
-                    resolve_program(program)
-                        .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?
-                };
+                let program_path = resolve_program(program)
+                    .map_err(|e| format!("Cannot install '{}': {e}", entry.label))?;
                 let output = tokio::time::timeout(
                     INSTALL_TIMEOUT,
                     crate::platform::new_tokio_command(&program_path)

@@ -12,7 +12,7 @@ const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(600);
 /// How an adapter is provisioned when it is missing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InstallSpec {
-    /// `python -m pip install <package>` (Windows) / `pip install <package>`.
+    /// `python -m pip install --target <adapters>/python <package>`, outside every site-packages.
     Pip { package: &'static str },
     /// `npm install -g <package>`.
     Npm { package: &'static str },
@@ -74,39 +74,33 @@ pub fn emit_progress(
     );
 }
 
-/// The `(program, args)` for package-manager based specs; GitHub releases are
-/// downloaded directly instead of running a command.
+/// The `(program, args)` for npm specs; pip, Go and downloads have their own install paths.
 pub fn spec_command(spec: &InstallSpec) -> Option<(&'static str, Vec<String>)> {
     match spec {
-        InstallSpec::Pip { package } => {
-            // Windows resolves `python` reliably via resolve_program, while a
-            // bare `pip` is often missing from PATH; elsewhere `pip` is the
-            // conventional entrypoint.
-            #[cfg(target_os = "windows")]
-            {
-                Some((
-                    "python",
-                    vec![
-                        "-m".to_string(),
-                        "pip".to_string(),
-                        "install".to_string(),
-                        package.to_string(),
-                    ],
-                ))
-            }
-            #[cfg(not(target_os = "windows"))]
-            {
-                Some(("pip", vec!["install".to_string(), package.to_string()]))
-            }
-        }
         InstallSpec::Npm { package } => Some((
             "npm",
             vec!["install".to_string(), "-g".to_string(), package.to_string()],
         )),
-        InstallSpec::GitHubRelease { .. }
+        InstallSpec::Pip { .. }
+        | InstallSpec::GitHubRelease { .. }
         | InstallSpec::GoInstall { .. }
         | InstallSpec::MavenJar { .. } => None,
     }
+}
+
+/// The interpreter arguments that install `package` into `target`; no system prefix is written,
+/// so neither root rights nor an "externally managed" Python (PEP 668) gets in the way.
+pub fn pip_target_args(package: &str, target: &Path) -> Vec<String> {
+    vec![
+        "-m".to_string(),
+        "pip".to_string(),
+        "install".to_string(),
+        "--target".to_string(),
+        target.to_string_lossy().to_string(),
+        "--upgrade".to_string(),
+        "--disable-pip-version-check".to_string(),
+        package.to_string(),
+    ]
 }
 
 /// The `go install` arguments for a pinned module version.
@@ -381,13 +375,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pip_spec_resolves_to_a_command() {
-        let (program, args) = spec_command(&InstallSpec::Pip { package: "debugpy" }).unwrap();
-        assert!(args.contains(&"debugpy".to_string()));
-        #[cfg(target_os = "windows")]
-        assert_eq!(program, "python");
-        #[cfg(not(target_os = "windows"))]
-        assert_eq!(program, "pip");
+    fn pip_installs_into_the_target_folder() {
+        assert!(spec_command(&InstallSpec::Pip { package: "debugpy" }).is_none());
+        let target = Path::new("/adapters/python");
+        let args = pip_target_args("debugpy", target);
+        assert_eq!(args[..3], ["-m", "pip", "install"]);
+        let at = args.iter().position(|a| a == "--target").unwrap();
+        assert_eq!(Path::new(&args[at + 1]), target);
+        assert_eq!(args.last().unwrap(), "debugpy");
     }
 
     #[test]
