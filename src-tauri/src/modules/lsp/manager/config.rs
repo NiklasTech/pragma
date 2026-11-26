@@ -1,12 +1,25 @@
+use super::managed::{managed_binary, run_install};
 use super::{LspManager, SERVERS};
 use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::types::LspServerConfig;
 use crate::platform::new_tokio_command;
+use std::path::{Path, PathBuf};
 
 impl LspManager {
-    pub async fn check_server_installed(language: &str) -> Result<bool, String> {
+    /// True when Pragma installed the server into `servers` or its command answers on PATH.
+    pub async fn check_server_installed(
+        servers: Option<&Path>,
+        language: &str,
+    ) -> Result<bool, String> {
         let config = server_config_for_language(language)
             .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
+
+        if servers
+            .and_then(|dir| managed_server(dir, language))
+            .is_some()
+        {
+            return Ok(true);
+        }
 
         let path = enriched_path();
         let command = resolve_command(&config.command, &path);
@@ -22,49 +35,33 @@ impl LspManager {
         }
     }
 
-    pub async fn install_server(language: &str) -> Result<String, String> {
-        let config = server_config_for_language(language)
+    pub async fn install_server(servers: &Path, language: &str) -> Result<String, String> {
+        let entry = SERVERS
+            .iter()
+            .find(|s| s.language == language)
             .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
-
-        let program = config
-            .install_program
+        let installer = entry
+            .install
             .ok_or_else(|| format!("Automatic installation is not supported for '{language}'"))?;
 
-        if config.install_args.is_empty() {
-            return Err(format!("No install arguments configured for '{language}'"));
-        }
-
-        let path = enriched_path();
-        let program = resolve_command(&program, &path);
-        let output = new_tokio_command(&program)
-            .args(&config.install_args)
-            .env("PATH", &path)
-            .output()
-            .await
-            .map_err(|e| format!("Failed to run installer: {e}"))?;
-
-        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-
-        if !output.status.success() {
-            let message = if stderr.is_empty() { stdout } else { stderr };
-            return Err(format!(
-                "Installation failed with exit code {}: {message}",
-                output.status.code().unwrap_or(-1)
-            ));
-        }
+        let output = run_install(servers, installer, &enriched_path()).await?;
 
         // Verify the server is actually discoverable after a reported success.
-        if !Self::check_server_installed(language).await? {
-            let output = if stdout.is_empty() { stderr } else { stdout };
+        if !Self::check_server_installed(Some(servers), language).await? {
             return Err(format!(
-                "Installation reported success but '{}' is still not in PATH. Output: {output}",
-                config.command
+                "Installation reported success but '{}' is still not found. Output: {output}",
+                entry.command
             ));
         }
 
-        Ok(if stdout.is_empty() { stderr } else { stdout })
+        Ok(output)
     }
+}
+
+/// The binary an earlier install put into the servers folder for `language`.
+pub(super) fn managed_server(servers: &Path, language: &str) -> Option<PathBuf> {
+    let entry = SERVERS.iter().find(|s| s.language == language)?;
+    managed_binary(servers, entry.install, entry.command)
 }
 
 /// Resolves a command name to an executable path.
@@ -105,13 +102,12 @@ pub(super) fn server_config_for_language(language: &str) -> Option<LspServerConf
         .map(|s| LspServerConfig {
             command: s.command.to_string(),
             args: s.args.iter().map(|a| a.to_string()).collect(),
-            install_program: s.install_program.map(|p| p.to_string()),
-            install_args: s.install_args.iter().map(|a| a.to_string()).collect(),
         })
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::managed::Installer;
     use super::*;
     use std::fs;
 
@@ -171,13 +167,10 @@ mod tests {
     #[test]
     fn html_and_css_use_the_langservers_extracted_package() {
         for language in ["html", "css"] {
-            let config = server_config_for_language(language).unwrap();
-            let expected: Vec<String> = ["install", "-g", "vscode-langservers-extracted"]
-                .iter()
-                .map(|arg| arg.to_string())
-                .collect();
+            let entry = SERVERS.iter().find(|s| s.language == language).unwrap();
             assert_eq!(
-                config.install_args, expected,
+                entry.install,
+                Some(Installer::Npm(&["vscode-langservers-extracted"])),
                 "{language} must install the package that ships its binary"
             );
         }

@@ -5,8 +5,6 @@ use std::collections::HashMap;
 pub struct LspServerConfig {
     pub command: String,
     pub args: Vec<String>,
-    pub install_program: Option<String>,
-    pub install_args: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

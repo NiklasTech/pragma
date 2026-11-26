@@ -25,7 +25,8 @@ fn find_on_path(command: &str, path: &str) -> Option<PathBuf> {
 }
 
 /// npm links `<prefix>/bin/tsc` to the package's `bin/tsc`; on Windows `<prefix>\tsc.cmd` sits
-/// next to `<prefix>\node_modules\typescript`.
+/// next to `<prefix>\node_modules\typescript`, and a local `node_modules\.bin\tsc.cmd` one level
+/// below it.
 fn typescript_package(tsc: &Path) -> Option<PathBuf> {
     let linked = tsc
         .canonicalize()
@@ -34,7 +35,11 @@ fn typescript_package(tsc: &Path) -> Option<PathBuf> {
     let beside = tsc
         .parent()
         .map(|dir| dir.join("node_modules").join("typescript"));
-    [linked, beside]
+    let local_bin = tsc
+        .parent()
+        .and_then(Path::parent)
+        .map(|node_modules| node_modules.join("typescript"));
+    [linked, beside, local_bin]
         .into_iter()
         .flatten()
         .find(|package| package.join("package.json").is_file() && package.join("lib").is_dir())
@@ -126,6 +131,31 @@ mod tests {
         touch(&root.join("node_modules/typescript/package.json"));
 
         assert_eq!(global_typescript_native_lsp(&root, &path_of(&bin)), None);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn finds_a_typescript_7_installed_into_a_local_node_modules() {
+        let dir = temp_dir("local-bin");
+        let node_modules = dir.join("npm/node_modules");
+        let package = node_modules.join("typescript");
+        touch(&package.join("package.json"));
+        touch(&package.join("bin/tsc"));
+        touch(&package.join("lib/getExePath.js"));
+        let bin = node_modules.join(".bin");
+        if cfg!(target_os = "windows") {
+            touch(&bin.join("tsc.cmd"));
+        } else {
+            fs::create_dir_all(&bin).unwrap();
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(package.join("bin/tsc"), bin.join("tsc")).unwrap();
+        }
+        let root = dir.join("project");
+        fs::create_dir_all(&root).unwrap();
+
+        let tsc = global_typescript_native_lsp(&root, &path_of(&bin)).unwrap();
+        assert!(tsc.starts_with(&bin));
 
         let _ = fs::remove_dir_all(&dir);
     }

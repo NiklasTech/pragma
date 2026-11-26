@@ -1,4 +1,5 @@
 use super::capabilities::client_capabilities;
+use super::managed::servers_dir;
 use super::resolve::resolve_server_config;
 use super::{LspManager, RunningServer};
 use crate::modules::lsp::client::{is_expected_start_error, LspClient};
@@ -44,7 +45,8 @@ impl LspManager {
             }
         }
 
-        let config = resolve_server_config(language, project_root)
+        let servers = servers_dir(&self.app_handle).ok();
+        let config = resolve_server_config(language, project_root, servers.as_deref())
             .await
             .ok_or_else(|| format!("No LSP server configured for language '{language}'"))?;
 
@@ -113,7 +115,9 @@ impl LspManager {
                 supervisor_handle.abort();
                 log_handle.abort();
                 // A launcher shim (e.g. rustup without the component) spawns but exits at once.
-                let missing = !Self::check_server_installed(language).await.unwrap_or(true);
+                let missing = !Self::check_server_installed(servers.as_deref(), language)
+                    .await
+                    .unwrap_or(true);
                 let message = if missing {
                     format!("{command} is not installed")
                 } else {

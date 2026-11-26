@@ -1,5 +1,6 @@
-use super::config::server_config_for_language;
+use super::config::{managed_server, server_config_for_language};
 use super::global_typescript::global_typescript_native_lsp;
+use super::managed::npm_bin_dir;
 use super::{ServerEntry, SERVERS};
 use crate::ai::cli::manager::enriched_path;
 use crate::modules::lsp::manager::resolve_command;
@@ -23,31 +24,38 @@ pub(super) enum LocalCandidate {
     TypeScriptNativeLsp,
     /// The binary of the toolchain the project pins, via `rustup which`.
     RustupToolchain,
-    /// A global TypeScript 7's `tsc --lsp` when the project has no TypeScript.
+    /// A TypeScript 7 Pragma installed, or a global one, as `tsc --lsp` when the project has none.
     GlobalTypeScriptNativeLsp,
 }
 
-/// Resolves the server for a project root: local candidates in order, then the global command.
+/// Resolves the server for a project root: local candidates in order, then the one Pragma
+/// installed into `servers`, then the global command.
 pub(super) async fn resolve_server_config(
     language: &str,
     project_root: &str,
+    servers: Option<&Path>,
 ) -> Option<LspServerConfig> {
     let entry = SERVERS.iter().find(|s| s.language == language)?;
     let global = server_config_for_language(language)?;
 
     let root = Path::new(project_root);
-    if project_root.is_empty() || !root.is_dir() {
-        return Some(global);
+    if !project_root.is_empty() && root.is_dir() {
+        for candidate in entry.local {
+            if let Some((command, args)) = resolve_candidate(*candidate, entry, root, servers).await
+            {
+                return Some(LspServerConfig {
+                    command: command.to_string_lossy().to_string(),
+                    args,
+                });
+            }
+        }
     }
 
-    for candidate in entry.local {
-        if let Some((command, args)) = resolve_candidate(*candidate, entry, root).await {
-            return Some(LspServerConfig {
-                command: command.to_string_lossy().to_string(),
-                args,
-                ..global
-            });
-        }
+    if let Some(binary) = servers.and_then(|dir| managed_server(dir, language)) {
+        return Some(LspServerConfig {
+            command: binary.to_string_lossy().to_string(),
+            ..global
+        });
     }
 
     Some(global)
@@ -57,6 +65,7 @@ async fn resolve_candidate(
     candidate: LocalCandidate,
     entry: &ServerEntry,
     root: &Path,
+    servers: Option<&Path>,
 ) -> Option<(PathBuf, Vec<String>)> {
     let default_args = || entry.args.iter().map(|a| a.to_string()).collect();
     match candidate {
@@ -75,9 +84,22 @@ async fn resolve_candidate(
             .await
             .map(|path| (path, default_args())),
         LocalCandidate::GlobalTypeScriptNativeLsp => {
-            global_typescript_native_lsp(root, &enriched_path()).map(|path| (path, native_args()))
+            global_typescript_native_lsp(root, &typescript_search_path(servers))
+                .map(|path| (path, native_args()))
         }
     }
+}
+
+/// PATH with the binaries Pragma installed first, so its own TypeScript wins over a global one.
+fn typescript_search_path(servers: Option<&Path>) -> String {
+    let path = enriched_path();
+    let Some(bin) = servers.map(npm_bin_dir) else {
+        return path;
+    };
+    let dirs = std::iter::once(bin).chain(std::env::split_paths(&path));
+    std::env::join_paths(dirs)
+        .map(|joined| joined.to_string_lossy().to_string())
+        .unwrap_or(path)
 }
 
 fn native_args() -> Vec<String> {
@@ -186,7 +208,7 @@ mod tests {
     }
 
     async fn resolve(language: &str, root: &Path) -> LspServerConfig {
-        resolve_server_config(language, root.to_str().unwrap())
+        resolve_server_config(language, root.to_str().unwrap(), None)
             .await
             .unwrap()
     }
@@ -326,7 +348,7 @@ mod tests {
 
     #[tokio::test]
     async fn an_empty_or_missing_root_uses_the_global_command() {
-        let config = resolve_server_config("typescript", "").await.unwrap();
+        let config = resolve_server_config("typescript", "", None).await.unwrap();
         assert_eq!(config.command, "typescript-language-server");
 
         let missing = std::env::temp_dir().join("pragma-lsp-resolve-does-not-exist");
@@ -337,10 +359,43 @@ mod tests {
     #[tokio::test]
     async fn unknown_languages_resolve_to_nothing() {
         let root = temp_root("unknown");
-        assert!(resolve_server_config("cobol", root.to_str().unwrap())
+        assert!(resolve_server_config("cobol", root.to_str().unwrap(), None)
             .await
             .is_none());
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[tokio::test]
+    async fn a_server_pragma_installed_comes_after_the_project_and_before_path() {
+        let root = temp_root("managed-root");
+        let servers = temp_root("managed-servers");
+        let managed = servers
+            .join("npm/node_modules/.bin")
+            .join(bin_name("typescript-language-server"));
+        touch(&managed);
+
+        let config = resolve_server_config("typescript", root.to_str().unwrap(), Some(&servers))
+            .await
+            .unwrap();
+        assert_eq!(PathBuf::from(&config.command), managed);
+        assert_eq!(config.args, vec!["--stdio"]);
+
+        let config = resolve_server_config("typescript", "", Some(&servers))
+            .await
+            .unwrap();
+        assert_eq!(PathBuf::from(&config.command), managed);
+
+        let local = root
+            .join("node_modules/.bin")
+            .join(bin_name("typescript-language-server"));
+        touch(&local);
+        let config = resolve_server_config("typescript", root.to_str().unwrap(), Some(&servers))
+            .await
+            .unwrap();
+        assert_eq!(PathBuf::from(&config.command), local);
+
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&servers);
     }
 
     #[test]
