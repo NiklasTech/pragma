@@ -4,60 +4,39 @@ import { toast } from "sonner";
 import { useFileExplorerStore } from "@/shared/stores/fileExplorer";
 import { useGoToFileStore } from "@/shared/stores/goToFile";
 import { useOverlayOpen } from "@/shared/stores/overlays";
-import { toGoToFileEntry } from "./goToFileSearch";
 import { errorText } from "@/shared/lib/errorText";
 
-interface WorkspaceFiles {
-  files: string[];
-}
-
+/// Lists the folder again in the backend each time Go to opens; searches use the last listing meanwhile.
 export function useGoToFile(): void {
   const isOpen = useOverlayOpen("goTo");
-  const setFiles = useGoToFileStore((state) => state.setFiles);
-  const setLoading = useGoToFileStore((state) => state.setLoading);
-  const setError = useGoToFileStore((state) => state.setError);
   const rootPath = useFileExplorerStore((state) => state.rootPath);
 
   useEffect(() => {
     if (!isOpen) return;
-
+    const { filesRoot, setListed, setLoading, setError } = useGoToFileStore.getState();
     if (!rootPath) {
-      setFiles(null, []);
       setError("No folder is open.");
       return;
     }
 
     let cancelled = false;
-
-    async function loadFiles(root: string) {
-      // The last listing of this folder stays visible while it refreshes.
-      const hasListing = useGoToFileStore.getState().filesRoot === root;
-      if (!hasListing) setFiles(root, []);
-      setLoading(!hasListing);
-      setError(null);
-
-      try {
-        const result = await invoke<WorkspaceFiles>("list_workspace_files", {
-          workspaceRoot: root,
-        });
-        if (cancelled) return;
-        const files = result.files
-          .map((relativePath) => toGoToFileEntry(root, relativePath))
-          .sort((a, b) => (a.pathKey < b.pathKey ? -1 : a.pathKey > b.pathKey ? 1 : 0));
-        setFiles(root, files);
-      } catch (err) {
+    setLoading(filesRoot !== rootPath);
+    setError(null);
+    invoke<number>("quick_open_refresh", { workspaceRoot: rootPath })
+      .then(() => {
+        if (!cancelled) setListed(rootPath);
+      })
+      .catch((err: unknown) => {
         if (cancelled) return;
         setError(String(err));
         toast.error(`Failed to list files: ${errorText(err)}`);
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) setLoading(false);
-      }
-    }
-
-    void loadFiles(rootPath);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [isOpen, rootPath, setFiles, setLoading, setError]);
+  }, [isOpen, rootPath]);
 }

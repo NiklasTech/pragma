@@ -4,32 +4,30 @@ export interface GoToFileEntry {
   path: string;
   name: string;
   relativePath: string;
-  /** Lowercase name and relative path, computed once per listing. */
-  nameKey: string;
-  pathKey: string;
 }
 
 interface GoToFileState {
-  files: GoToFileEntry[];
-  /** The folder `files` was listed from, so reopening shows them while they refresh. */
+  /** The folder Go to last listed; its files stay searchable while a new listing runs. */
   filesRoot: string | null;
+  /** Counts the listings, so open searches run again once a new one is done. */
+  listing: number;
   isLoading: boolean;
   error: string | null;
 }
 
 interface GoToFileActions {
-  setFiles: (root: string | null, files: GoToFileEntry[]) => void;
+  setListed: (root: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 
 const goToFileStoreCreator: StateCreator<GoToFileState & GoToFileActions> = (set) => ({
-  files: [],
   filesRoot: null,
+  listing: 0,
   isLoading: false,
   error: null,
 
-  setFiles: (root, files) => set({ filesRoot: root, files }),
+  setListed: (root) => set((state) => ({ filesRoot: root, listing: state.listing + 1 })),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
 });

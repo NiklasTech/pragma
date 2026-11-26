@@ -247,6 +247,8 @@ const COMMANDS: &[&str] = &[
     "parakeet_remove",
     "parakeet_status",
     "parakeet_transcribe",
+    "quick_open_refresh",
+    "quick_open_search",
     "read_chat_context",
     "read_file_preview",
     "read_image_file",
