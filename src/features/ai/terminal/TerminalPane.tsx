@@ -111,11 +111,20 @@ export function TerminalPane({ session }: TerminalPaneProps) {
     const removeDeadKeyFix = fixWebKitDeadKeys(term, container);
     const isMac = getIsMac();
     // The hold-to-dictate key belongs to dictation, so xterm must not type it.
-    term.attachCustomKeyEventHandler((event) => {
-      if (matchShortcut(event, dictateBindingRef.current) || isPaneShortcut(event)) return false;
-      return !(
-        isMac && handleMacCliKey(term, event, (data) => void writeTerminal(session.id, data))
+    const repaint = () => {
+      if (getTerminalStatus(session.id).status !== "running") return;
+      void forceTerminalRedraw(
+        (cols, rows) => resizeTerminal(session.id, cols, rows),
+        term.cols,
+        term.rows,
       );
+    };
+    term.attachCustomKeyEventHandler((event) => {
+      if (matchShortcut(event, dictateBindingRef.current)) return false;
+      const send = (data: string) => void writeTerminal(session.id, data);
+      // Terminal.app's keys come before the pane keys, so ⌘K clears instead of leaving the pane.
+      if (isMac && handleMacCliKey(term, event, send, repaint)) return false;
+      return !isPaneShortcut(event);
     });
     termRef.current = term;
 

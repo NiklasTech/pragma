@@ -9,7 +9,12 @@ vi.mock("@/shared/lib/clipboard", () => ({
 }));
 vi.mock("@/shared/stores/settings", () => ({
   useSettingsStore: {
-    getState: () => ({ shortcuts: { "view.toggleTerminal": { meta: true, code: "KeyJ" } } }),
+    getState: () => ({
+      shortcuts: {
+        "view.toggleTerminal": { meta: true, code: "KeyJ" },
+        "view.focusCommandLine": { meta: true, code: "KeyK" },
+      },
+    }),
   },
 }));
 
@@ -25,6 +30,7 @@ function keydown(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardE
     shiftKey: false,
     altKey: false,
     preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
     ...modifiers,
   } as unknown as KeyboardEvent;
 }
@@ -66,6 +72,17 @@ describe("handleMacCliKey", () => {
     expect(term.clear).toHaveBeenCalledOnce();
     expect(term.selectAll).toHaveBeenCalledOnce();
     expect(clipboard.copied).toEqual(["hello"]);
+  });
+
+  it("clears with ⌘K instead of focusing the command line, and asks for a repaint", () => {
+    const term = fakeTerminal();
+    const onClear = vi.fn();
+    const stopPropagation = vi.fn();
+    const event = keydown("k", { metaKey: true, stopPropagation });
+    expect(handleMacCliKey(term, event, () => {}, onClear)).toBe(true);
+    expect(term.clear).toHaveBeenCalledOnce();
+    expect(onClear).toHaveBeenCalledOnce();
+    expect(stopPropagation).toHaveBeenCalledOnce();
   });
 
   it("pastes the clipboard through the terminal", async () => {

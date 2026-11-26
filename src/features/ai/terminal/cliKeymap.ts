@@ -2,22 +2,30 @@ import type { Terminal as XTerm } from "@xterm/xterm";
 
 import { macTerminalKeyAction } from "@/features/terminal/terminalKeymap";
 import { copyToClipboard, readFromClipboard } from "@/shared/lib/clipboard";
-import { matchShortcut } from "@/shared/lib/shortcuts";
+import { matchShortcut, type ShortcutActionId } from "@/shared/lib/shortcuts";
 import { useSettingsStore } from "@/shared/stores/settings";
 
 type CliTerminal = Pick<XTerm, "getSelection" | "paste" | "clear" | "selectAll">;
+
+// ⌘K clears the terminal as in Terminal.app; outside a terminal it still focuses the command line.
+const YIELDS_TO_TERMINAL: ReadonlySet<ShortcutActionId> = new Set(["view.focusCommandLine"]);
 
 /// Runs a macOS Terminal.app shortcut in a CLI session; true when the key was handled and xterm must skip it.
 export function handleMacCliKey(
   term: CliTerminal,
   event: KeyboardEvent,
   send: (data: string) => void,
+  onClear?: () => void,
 ): boolean {
   if (event.type !== "keydown") return false;
   const action = macTerminalKeyAction(event);
   if (!action) return false;
   const { shortcuts } = useSettingsStore.getState();
-  if (Object.values(shortcuts).some((binding) => matchShortcut(event, binding))) return false;
+  const appShortcut = Object.entries(shortcuts).some(
+    ([id, binding]) =>
+      !YIELDS_TO_TERMINAL.has(id as ShortcutActionId) && matchShortcut(event, binding),
+  );
+  if (appShortcut) return false;
 
   switch (action.type) {
     case "copy": {
@@ -33,6 +41,7 @@ export function handleMacCliKey(
       break;
     case "clear":
       term.clear();
+      onClear?.();
       break;
     case "selectAll":
       term.selectAll();
@@ -42,5 +51,7 @@ export function handleMacCliKey(
       break;
   }
   event.preventDefault();
+  // The app's own shortcuts listen on the window, so the key stops at the terminal.
+  event.stopPropagation();
   return true;
 }
