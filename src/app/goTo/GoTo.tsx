@@ -27,7 +27,6 @@ import { compareAgentStates, useAgentStatesStore } from "@/features/ai/state/age
 import { isGeneratedTerminalTitle } from "@/features/ai/terminal/title";
 import { symbolKindName } from "@/features/editor/lsp/symbols";
 
-import { rankFiles } from "../goToFileSearch";
 import { useGoToFile } from "../useGoToFile";
 import { openGoToPath } from "./goToOpen";
 import { AgentPreview, CommandPreview, FilePreview } from "./GoToPreview";
@@ -38,7 +37,7 @@ import {
   rankByLabel,
   type GoToScope,
 } from "./goToQuery";
-import { useGoToSymbols, useGoToText } from "./useGoToSearches";
+import { useGoToFiles, useGoToSymbols, useGoToText } from "./useGoToSearches";
 
 type GoToItem =
   | { kind: "file"; key: string; path: string; name: string; detail: string }
@@ -117,7 +116,6 @@ export function GoTo() {
   const closeOverlay = useOverlayStore((state) => state.close);
   const close = () => closeOverlay("goTo");
   const rootPath = useFileExplorerStore((state) => state.rootPath);
-  const files = useGoToFileStore((state) => state.files);
   const filesLoading = useGoToFileStore((state) => state.isLoading);
   const commands = useCommandPaletteStore((state) => state.commands);
   const sessions = useAIStore((state) => state.chatSessions);
@@ -137,6 +135,7 @@ export function GoTo() {
 
   const symbols = useGoToSymbols(text, isOpen && shows(scope, "symbols"));
   const textSearch = useGoToText(text, isOpen && scope === "all", rootPath);
+  const files = useGoToFiles(text, isOpen && scope === "all", rootPath, GROUP_LIMITS.all.files);
 
   const groups = useMemo<GoToGroup[]>(() => {
     const show = (group: GoToScope) => shows(scope, group);
@@ -158,11 +157,10 @@ export function GoTo() {
       });
     }
     if (scope === "all") {
-      const found = rankFiles(files, text, limit("files"));
-      if (found.length > 0) {
+      if (files.length > 0) {
         result.push({
           heading: "Files",
-          items: found.map((file) => ({
+          items: files.map((file) => ({
             kind: "file",
             key: `file:${file.path}`,
             path: file.path,

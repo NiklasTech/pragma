@@ -434,6 +434,8 @@ pub fn run() {
             commands::search::replace_workspace,
             commands::search::glob_workspace,
             commands::search::list_workspace_files,
+            commands::search::quick_open_refresh,
+            commands::search::quick_open_search,
             commands::search::list_workspace_dir,
             commands::web_fetch::fetch_url_text,
             cli::get_cli_project_path,

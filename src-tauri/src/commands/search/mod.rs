@@ -3,6 +3,7 @@ mod files;
 mod find;
 mod glob;
 mod list_dir;
+mod quick_open;
 mod replace;
 
 pub use cancel::*;
@@ -10,6 +11,7 @@ pub use files::*;
 pub use find::*;
 pub use glob::*;
 pub use list_dir::*;
+pub use quick_open::*;
 pub use replace::*;
 
 use regex::{Regex, RegexBuilder};

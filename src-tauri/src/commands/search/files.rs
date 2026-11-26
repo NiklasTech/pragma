@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::path::Path;
 use std::sync::Mutex;
 
-const MAX_FILES: usize = 100_000;
+pub(super) const MAX_FILES: usize = 100_000;
 const SKIPPED_DIRS: &[&str] = &["node_modules", "target"];
 
 #[derive(Debug, Serialize)]
@@ -22,7 +22,7 @@ pub fn list_workspace_files(workspace_root: String) -> Result<WorkspaceFiles, St
     Ok(collect_files(&root, MAX_FILES))
 }
 
-fn collect_files(root: &Path, limit: usize) -> WorkspaceFiles {
+pub(super) fn collect_files(root: &Path, limit: usize) -> WorkspaceFiles {
     let mut builder = ignore::WalkBuilder::new(root);
     builder
         .hidden(true)

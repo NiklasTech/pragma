@@ -3,12 +3,42 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { lspWorkspaceSymbol, type LspWorkspaceSymbolItem } from "@/features/editor/lsp/client";
 import type { SearchResult, SearchWorkspaceResult } from "@/features/sidebar/lib/searchReplace";
+import { useGoToFileStore, type GoToFileEntry } from "@/shared/stores/goToFile";
 
+import { toGoToFileEntry } from "../goToFileSearch";
 import { activeLspContext } from "../useLspSymbolCommands";
 
 const SYMBOL_DELAY_MS = 120;
 const TEXT_DELAY_MS = 220;
 const MIN_TEXT_LENGTH = 3;
+
+/// The best files for the text, ranked in the backend so typing never waits for the whole list.
+export function useGoToFiles(
+  text: string,
+  enabled: boolean,
+  rootPath: string | null,
+  limit: number,
+): GoToFileEntry[] {
+  const listing = useGoToFileStore((state) => state.listing);
+  const [result, setResult] = useState<{ root: string; files: GoToFileEntry[] } | null>(null);
+  useEffect(() => {
+    if (!enabled || !rootPath) return;
+    let live = true;
+    invoke<string[]>("quick_open_search", { workspaceRoot: rootPath, query: text, limit })
+      .then((found) => {
+        if (live)
+          setResult({
+            root: rootPath,
+            files: found.map((path) => toGoToFileEntry(rootPath, path)),
+          });
+      })
+      .catch(() => live && setResult({ root: rootPath, files: [] }));
+    return () => {
+      live = false;
+    };
+  }, [enabled, rootPath, text, limit, listing]);
+  return enabled && result?.root === rootPath ? result.files : [];
+}
 
 /// Workspace symbols from the language server of the open file; empty without one.
 export function useGoToSymbols(text: string, enabled: boolean): LspWorkspaceSymbolItem[] {
