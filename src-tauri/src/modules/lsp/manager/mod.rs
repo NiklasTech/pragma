@@ -2,6 +2,7 @@ mod capabilities;
 mod config;
 mod global_typescript;
 mod lifecycle;
+mod managed;
 mod notifications;
 mod project;
 mod pull_diagnostics;
@@ -9,10 +10,12 @@ mod resolve;
 mod sync;
 
 pub use config::resolve_command;
+pub use managed::servers_dir;
 pub use project::resolve_project_root;
 
 use crate::modules::lsp::client::LspClient;
 use crate::modules::lsp::types::{LspServerStatus, LspStatusEvent, ServerCapabilities};
+use managed::Installer;
 use resolve::LocalCandidate;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -24,8 +27,7 @@ struct ServerEntry {
     language: &'static str,
     command: &'static str,
     args: &'static [&'static str],
-    install_program: Option<&'static str>,
-    install_args: &'static [&'static str],
+    install: Option<Installer>,
     local: &'static [LocalCandidate],
 }
 
@@ -34,8 +36,10 @@ const SERVERS: &[ServerEntry] = &[
         language: "typescript",
         command: "typescript-language-server",
         args: &["--stdio"],
-        install_program: Some("npm"),
-        install_args: &["install", "-g", "typescript-language-server", "typescript"],
+        install: Some(Installer::Npm(&[
+            "typescript-language-server",
+            "typescript",
+        ])),
         local: &[
             LocalCandidate::TypeScriptNativeLsp,
             LocalCandidate::NodeModulesBin,
@@ -46,8 +50,10 @@ const SERVERS: &[ServerEntry] = &[
         language: "javascript",
         command: "typescript-language-server",
         args: &["--stdio"],
-        install_program: Some("npm"),
-        install_args: &["install", "-g", "typescript-language-server", "typescript"],
+        install: Some(Installer::Npm(&[
+            "typescript-language-server",
+            "typescript",
+        ])),
         local: &[
             LocalCandidate::TypeScriptNativeLsp,
             LocalCandidate::NodeModulesBin,
@@ -58,112 +64,113 @@ const SERVERS: &[ServerEntry] = &[
         language: "rust",
         command: "rust-analyzer",
         args: &[],
-        install_program: Some("rustup"),
-        install_args: &["component", "add", "rust-analyzer"],
+        install: Some(Installer::Command {
+            program: "rustup",
+            args: &["component", "add", "rust-analyzer"],
+        }),
         local: &[LocalCandidate::RustupToolchain],
     },
     ServerEntry {
         language: "python",
         command: "pylsp",
         args: &[],
-        install_program: Some("pip"),
-        install_args: &["install", "python-lsp-server"],
+        install: Some(Installer::Pip(&["python-lsp-server"])),
         local: &[LocalCandidate::PythonVenv],
     },
     ServerEntry {
         language: "go",
         command: "gopls",
         args: &[],
-        install_program: Some("go"),
-        install_args: &["install", "golang.org/x/tools/gopls@latest"],
+        install: Some(Installer::Command {
+            program: "go",
+            args: &["install", "golang.org/x/tools/gopls@latest"],
+        }),
         local: &[],
     },
     ServerEntry {
         language: "java",
         command: "jdtls",
         args: &[],
-        install_program: Some("npm"),
-        install_args: &["install", "-g", "jdtls"],
+        install: Some(Installer::Npm(&["jdtls"])),
         local: &[],
     },
     ServerEntry {
         language: "c",
         command: "clangd",
         args: &[],
-        install_program: None,
-        install_args: &[],
+        install: None,
         local: &[],
     },
     ServerEntry {
         language: "cpp",
         command: "clangd",
         args: &[],
-        install_program: None,
-        install_args: &[],
+        install: None,
         local: &[],
     },
     ServerEntry {
         language: "html",
         command: "vscode-html-language-server",
         args: &["--stdio"],
-        install_program: Some("npm"),
-        install_args: &["install", "-g", "vscode-langservers-extracted"],
+        install: Some(Installer::Npm(&["vscode-langservers-extracted"])),
         local: &[LocalCandidate::NodeModulesBin],
     },
     ServerEntry {
         language: "css",
         command: "vscode-css-language-server",
         args: &["--stdio"],
-        install_program: Some("npm"),
-        install_args: &["install", "-g", "vscode-langservers-extracted"],
+        install: Some(Installer::Npm(&["vscode-langservers-extracted"])),
         local: &[LocalCandidate::NodeModulesBin],
     },
     ServerEntry {
         language: "shell",
         command: "bash-language-server",
         args: &["start"],
-        install_program: Some("npm"),
-        install_args: &["install", "-g", "bash-language-server"],
+        install: Some(Installer::Npm(&["bash-language-server"])),
         local: &[LocalCandidate::NodeModulesBin],
     },
     ServerEntry {
         language: "ruby",
         command: "ruby-lsp",
         args: &[],
-        install_program: Some("gem"),
-        install_args: &["install", "ruby-lsp"],
+        install: Some(Installer::Command {
+            program: "gem",
+            args: &["install", "ruby-lsp"],
+        }),
         local: &[LocalCandidate::ProjectBin],
     },
     ServerEntry {
         language: "toml",
         command: "taplo",
         args: &["lsp", "stdio"],
-        install_program: Some("cargo"),
-        install_args: &["install", "taplo-cli", "--locked", "--features", "lsp"],
+        install: Some(Installer::Command {
+            program: "cargo",
+            args: &["install", "taplo-cli", "--locked", "--features", "lsp"],
+        }),
         local: &[],
     },
     ServerEntry {
         language: "csharp",
         command: "csharp-ls",
         args: &[],
-        install_program: Some("dotnet"),
-        install_args: &["tool", "install", "--global", "csharp-ls"],
+        install: Some(Installer::Command {
+            program: "dotnet",
+            args: &["tool", "install", "--global", "csharp-ls"],
+        }),
         local: &[],
     },
     ServerEntry {
         language: "swift",
         command: "sourcekit-lsp",
         args: &[],
-        install_program: None,
-        install_args: &[],
+        install: None,
         local: &[],
     },
     ServerEntry {
         language: "zig",
         command: "zls",
         args: &[],
-        install_program: None,
-        install_args: &[],
+        install: None,
         local: &[],
     },
 ];

@@ -6,7 +6,7 @@ pub mod types;
 pub mod uris;
 
 use crate::modules::workspace_trust::require_trusted;
-pub use manager::{resolve_project_root, LspManager};
+pub use manager::{resolve_project_root, servers_dir, LspManager};
 pub use types::{
     DefinitionTarget, LspCodeAction, LspCompletionItem, LspDiagnostic, LspDiagnosticsEvent,
     LspDocumentSymbolItem, LspFeatureFlags, LspFileEdit, LspHover, LspInlayHint, LspLocation,
@@ -110,16 +110,17 @@ pub async fn lsp_did_save(
 }
 
 #[tauri::command]
-pub async fn lsp_check_server(language: String) -> Result<bool, String> {
-    LspManager::check_server_installed(&language).await
+pub async fn lsp_check_server(app: tauri::AppHandle, language: String) -> Result<bool, String> {
+    let servers = servers_dir(&app).ok();
+    LspManager::check_server_installed(servers.as_deref(), &language).await
 }
 
 #[tauri::command]
-pub async fn lsp_install_server(language: String) -> Result<String, String> {
+pub async fn lsp_install_server(app: tauri::AppHandle, language: String) -> Result<String, String> {
     if language.is_empty() {
         return Err("language is required".to_string());
     }
-    LspManager::install_server(&language).await
+    LspManager::install_server(&servers_dir(&app)?, &language).await
 }
 
 #[tauri::command]

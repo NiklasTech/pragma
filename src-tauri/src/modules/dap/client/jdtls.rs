@@ -97,8 +97,6 @@ pub(super) async fn start(
     let (lsp, mut child, _notifications, stderr_lines) = LspClient::start(LspServerConfig {
         command: config.command.clone(),
         args: config.args.clone(),
-        install_program: None,
-        install_args: Vec::new(),
     })
     .await
     .map_err(lsp_error)?;
