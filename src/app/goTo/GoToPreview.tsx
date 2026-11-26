@@ -68,10 +68,7 @@ export function FilePreview({ path, label, line }: { path: string; label: string
           const number = first + index;
           const current = number === line;
           return (
-            <div
-              key={number}
-              className={cn("grid grid-cols-[48px_1fr] whitespace-pre", current && "bg-bg-hover")}
-            >
+            <div key={number} className={cn("grid grid-cols-[48px_1fr]", current && "bg-bg-hover")}>
               <span
                 className={cn(
                   "pr-3.5 text-right tabular-nums",
@@ -80,7 +77,7 @@ export function FilePreview({ path, label, line }: { path: string; label: string
               >
                 {number}
               </span>
-              <span className="overflow-hidden text-ellipsis whitespace-pre text-fg-muted">
+              <span className="whitespace-pre-wrap wrap-break-word text-fg-muted">
                 {text || " "}
               </span>
             </div>
