@@ -108,6 +108,8 @@ impl McpManager {
         let handle = app_handle.clone();
         tauri::async_runtime::spawn(async move {
             if let Some(manager) = handle.try_state::<McpManager>() {
+                // Servers connect once the window shows; a slow or hung one held the app back up to a minute.
+                manager.start_autostart_servers().await;
                 manager.run().await;
             }
         });
@@ -129,7 +131,7 @@ impl McpManager {
             watcher_rx: Mutex::new(watcher_rx),
         };
 
-        manager.reload_config().await?;
+        *manager.config.lock().await = manager.read_config().await?;
         if let Err(_e) = manager.hydrate_tools_cache().await {}
 
         let path = config_path(&app_handle).map_err(McpError::Config)?;
@@ -156,7 +158,21 @@ impl McpManager {
         }
     }
 
+    async fn start_autostart_servers(&self) {
+        let configs = self.config.lock().await.clone();
+        for config in configs.iter().filter(|config| config.autostart) {
+            if let Err(_e) = self.start_server_internal(config).await {}
+        }
+    }
+
     pub async fn reload_config(&self) -> crate::modules::mcp::error::Result<()> {
+        let servers = self.read_config().await?;
+        self.apply_config(servers).await;
+        Ok(())
+    }
+
+    /// The configured servers, with plain secrets moved to the keychain first.
+    async fn read_config(&self) -> crate::modules::mcp::error::Result<Vec<McpServerConfig>> {
         let path = config_path(&self.app_handle).map_err(McpError::Config)?;
         let content = if path.exists() {
             tokio::fs::read_to_string(&path)
@@ -182,8 +198,7 @@ impl McpManager {
                 .map_err(McpError::Config)?;
         }
 
-        self.apply_config(file.servers).await;
-        Ok(())
+        Ok(file.servers)
     }
 
     async fn apply_config(&self, new_config: Vec<McpServerConfig>) {
