@@ -3,9 +3,12 @@ use super::{
     build_gitignore, build_matcher, is_within_workspace, matches_globs, validate_query,
     validate_workspace_root, MAX_FILE_SIZE_BYTES,
 };
+use ignore::WalkState;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
 const MAX_MATCHES_PER_FILE: usize = 100;
 const MAX_TOTAL_MATCHES: usize = 1000;
@@ -51,9 +54,6 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<SearchWorkspaceRe
     let include_globs = build_gitignore(&workspace_root, &req.include_globs)?;
     let exclude_globs = build_gitignore(&workspace_root, &req.exclude_globs)?;
 
-    let mut matches = Vec::new();
-    let mut truncated = false;
-
     let mut builder = ignore::WalkBuilder::new(&workspace_root);
     builder.git_ignore(true);
     builder.git_global(true);
@@ -63,53 +63,66 @@ pub fn search_workspace(req: SearchWorkspaceRequest) -> Result<SearchWorkspaceRe
     // Hidden files are searched, but git's own folder (hook samples, refs, packs) never.
     builder.filter_entry(|entry| entry.file_name() != ".git");
 
-    for entry in builder.build() {
-        if token.is_cancelled() {
-            return Err("Search was cancelled".to_string());
-        }
-        if truncated {
-            break;
-        }
-
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_some_and(|ft| ft.is_file()) {
-            continue;
-        }
-
-        let path = entry.path();
-        if !is_within_workspace(&workspace_root, path) {
-            continue;
-        }
-
-        let rel_path = match path.strip_prefix(&workspace_root) {
-            Ok(p) => p,
-            Err(_) => continue,
-        };
-
-        if !matches_globs(rel_path, &include_globs, &exclude_globs) {
-            continue;
-        }
-
-        let (file_matches, file_truncated) = match search_file(path, &matcher) {
-            Ok(m) => m,
-            Err(_) => continue,
-        };
-        truncated |= file_truncated;
-
-        for mut m in file_matches {
-            if matches.len() >= MAX_TOTAL_MATCHES {
-                truncated = true;
-                break;
+    let found = Mutex::new((Vec::new(), false));
+    let cancelled = AtomicBool::new(false);
+    // Several threads read and search files at once, as ripgrep does.
+    builder.build_parallel().run(|| {
+        Box::new(|entry| {
+            if token.is_cancelled() {
+                cancelled.store(true, Ordering::Relaxed);
+                return WalkState::Quit;
             }
-            m.path = path.to_string_lossy().to_string();
-            matches.push(m);
-        }
-    }
+            let Ok(entry) = entry else {
+                return WalkState::Continue;
+            };
+            if !entry.file_type().is_some_and(|ft| ft.is_file()) {
+                return WalkState::Continue;
+            }
+            let path = entry.path();
+            if !is_within_workspace(&workspace_root, path) {
+                return WalkState::Continue;
+            }
+            let Ok(rel_path) = path.strip_prefix(&workspace_root) else {
+                return WalkState::Continue;
+            };
+            if !matches_globs(rel_path, &include_globs, &exclude_globs) {
+                return WalkState::Continue;
+            }
+            let Ok((file_matches, file_truncated)) = search_file(path, &matcher) else {
+                return WalkState::Continue;
+            };
+            if file_matches.is_empty() && !file_truncated {
+                return WalkState::Continue;
+            }
 
+            let Ok(mut found) = found.lock() else {
+                return WalkState::Quit;
+            };
+            let (matches, truncated) = &mut *found;
+            *truncated |= file_truncated;
+            let path = path.to_string_lossy().to_string();
+            for mut m in file_matches {
+                if matches.len() >= MAX_TOTAL_MATCHES {
+                    *truncated = true;
+                    return WalkState::Quit;
+                }
+                m.path = path.clone();
+                matches.push(m);
+            }
+            WalkState::Continue
+        })
+    });
+
+    if cancelled.load(Ordering::Relaxed) {
+        return Err("Search was cancelled".to_string());
+    }
+    let (mut matches, truncated) = found
+        .into_inner()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    // The threads finish in any order, so results are sorted for a stable list.
+    matches.sort_by(|a: &SearchMatch, b: &SearchMatch| {
+        (&a.path, a.line, a.column).cmp(&(&b.path, b.line, b.column))
+    });
     Ok(SearchWorkspaceResult { matches, truncated })
 }
 
@@ -192,6 +205,29 @@ mod tests {
 
         assert_eq!(result.matches.len(), 2);
         assert!(!result.truncated);
+    }
+
+    #[test]
+    fn sorts_matches_by_path_and_line_across_files() {
+        let dir = tempdir().unwrap();
+        for name in ["c.txt", "a.txt", "b.txt"] {
+            fs::write(dir.path().join(name), "x\nfoo\nfoo foo").unwrap();
+        }
+
+        let result = search_workspace(default_request(&dir.path().to_string_lossy())).unwrap();
+
+        let order: Vec<(String, usize, usize)> = result
+            .matches
+            .iter()
+            .map(|m| {
+                let name = Path::new(&m.path).file_name().unwrap();
+                (name.to_string_lossy().to_string(), m.line, m.column)
+            })
+            .collect();
+        let mut sorted = order.clone();
+        sorted.sort();
+        assert_eq!(order.len(), 9);
+        assert_eq!(order, sorted);
     }
 
     #[test]
