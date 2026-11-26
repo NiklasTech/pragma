@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 
 import { entryToNode, findNode, type DirEntry } from "@/shared/hooks/useFileExplorer";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
+import { createGitRefreshQueue } from "@/shared/lib/gitRefreshQueue";
 import type { FileSystemNode } from "@/shared/stores/fileExplorer";
 import type { GitStatusSnapshot } from "@/shared/stores/git/types";
 import { syncTabsWithDisk } from "@/features/editor/diskSync";
@@ -83,17 +84,19 @@ export function useWorktreeFiles(root: string): WorktreeFiles {
 
   useEffect(() => {
     invoke("workspace_watch", { root }).catch(() => {});
+    // One status reload at a time, paced, while an agent keeps writing files.
+    const refresh = createGitRefreshQueue(loadStatus);
     const unlistenFs = listen<WorkspaceChange>("workspace-fs-changed", (event) => {
       if (event.payload.root !== root) return;
       for (const dir of changedDirectories(event.payload.paths)) {
         const node = findNode(treeRef.current, dir);
         if (dir === root || (node?.isDirectory && openRef.current.has(dir))) void list(dir);
       }
-      void loadStatus();
+      refresh("status");
       void syncTabsWithDisk(event.payload.paths);
     });
     const unlistenGit = listen<WorkspaceChange>("workspace-git-changed", (event) => {
-      if (event.payload.root === root) void loadStatus();
+      if (event.payload.root === root) refresh("all");
     });
     return () => {
       invoke("workspace_unwatch", { root }).catch(() => {});
