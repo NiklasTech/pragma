@@ -9,7 +9,7 @@ use super::java::{
     java_available, resolve_java, JAVA_DEBUG_ARTIFACT, JAVA_DEBUG_GROUP_PATH, JAVA_DEBUG_SHA256,
     JAVA_DEBUG_VERSION,
 };
-use super::python::{python_with_debugpy, python_with_module};
+use super::python::{managed_debugpy, python_with_debugpy, python_with_module};
 
 // Pinned CodeLLDB release; bump deliberately, never "latest".
 const CODELLDB_TAG: &str = "v1.11.5";
@@ -112,7 +112,8 @@ fn managed_lldb_binary(adapters_dir: &Path) -> PathBuf {
 /// Node: `PRAGMA_JS_DEBUG_PATH` may point at the vscode-js-debug
 /// `dapDebugServer.js` entry (run through `node`); otherwise the
 /// `js-debug-dap` binary from the `vscode-js-debug` npm package is used.
-/// Python: `python -m debugpy.adapter` from the `debugpy` package.
+/// Python: the debugpy Pragma installed, run by the interpreter it was installed with, else
+/// `python -m debugpy.adapter` from an interpreter that has the `debugpy` package.
 /// CodeLLDB: `PRAGMA_CODELLDB_PATH` or a `codelldb` on PATH win over the
 /// managed copy under the adapters dir; it speaks DAP over TCP (`--port`).
 /// Go and Java: see `go.rs` and `java.rs`.
@@ -139,6 +140,13 @@ pub(super) fn resolve_adapter(
             })
         }
         "python" => {
+            if let Some((python, adapter)) = adapters_dir.and_then(managed_debugpy) {
+                return Some(DapAdapterConfig {
+                    command: python.to_string_lossy().to_string(),
+                    args: vec![adapter.to_string_lossy().to_string()],
+                    transport: DapTransport::Stdio,
+                });
+            }
             let python = python_with_debugpy()
                 .map(|p| p.to_string_lossy().to_string())
                 .unwrap_or_else(|| "python".to_string());
@@ -200,7 +208,10 @@ pub(super) async fn check_adapter_available(id: &str, adapters_dir: Option<&Path
             }
             resolve_program("js-debug-dap").is_ok()
         }
-        "python" => python_with_module("debugpy").await.is_some(),
+        "python" => {
+            adapters_dir.and_then(managed_debugpy).is_some()
+                || python_with_module("debugpy").await.is_some()
+        }
         "lldb" => {
             if let Ok(path) = std::env::var("PRAGMA_CODELLDB_PATH") {
                 if !path.is_empty() {
