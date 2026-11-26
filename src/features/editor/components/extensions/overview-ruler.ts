@@ -5,7 +5,7 @@ import { getSearchQuery, searchPanelOpen } from "@codemirror/search";
 import { gitChangeRanges } from "./git-change-gutter";
 
 const MAX_SEARCH_MARKS = 2000;
-const MIN_MARK_HEIGHT = 2;
+const MIN_MARK_HEIGHT = 3;
 
 interface OverviewMark {
   className: string;
@@ -130,11 +130,15 @@ class OverviewRuler {
   };
 }
 
+const RULER_WIDTH = "14px";
+
 const overviewTheme = EditorView.theme({
+  // The ruler sits on the scrollbar, so the scrollbar gets its width to keep the code uncovered.
+  ".cm-scroller::-webkit-scrollbar": { width: RULER_WIDTH },
   ".cm-overview": {
     position: "absolute",
     right: "0",
-    width: "8px",
+    width: RULER_WIDTH,
     zIndex: "1",
     pointerEvents: "none",
   },
@@ -146,13 +150,13 @@ const overviewTheme = EditorView.theme({
   },
   ".cm-overview-git-added, .cm-overview-git-modified, .cm-overview-git-deleted": {
     left: "0",
-    width: "3px",
+    width: "5px",
   },
   ".cm-overview-git-added": { background: "var(--color-status-success)" },
   ".cm-overview-git-modified": { background: "var(--color-status-info)" },
   ".cm-overview-git-deleted": { background: "var(--color-status-error)" },
-  ".cm-overview-search": { left: "2px", width: "4px", background: "var(--color-accent)" },
-  ".cm-overview-error, .cm-overview-warning, .cm-overview-info": { right: "0", width: "3px" },
+  ".cm-overview-search": { left: "5px", width: "4px", background: "var(--color-accent)" },
+  ".cm-overview-error, .cm-overview-warning, .cm-overview-info": { right: "0", width: "5px" },
   ".cm-overview-error": { background: "var(--color-status-error)" },
   ".cm-overview-warning": { background: "var(--color-status-warning)" },
   ".cm-overview-info": { background: "var(--color-status-info)" },
