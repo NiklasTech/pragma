@@ -247,6 +247,16 @@ pub enum SessionUpdateDetail {
         #[serde(default, rename = "configOptions")]
         config_options: Value,
     },
+    #[serde(rename = "available_commands_update")]
+    AvailableCommandsUpdate {
+        #[serde(default, rename = "availableCommands")]
+        available_commands: Value,
+    },
+    #[serde(rename = "plan")]
+    Plan {
+        #[serde(default)]
+        entries: Value,
+    },
     #[serde(rename = "usage_update")]
     UsageUpdate {
         #[serde(default)]
@@ -412,6 +422,26 @@ pub enum PermissionOutcome {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn commands_and_plan_updates_have_their_own_variants() {
+        let commands: SessionUpdateDetail = serde_json::from_value(serde_json::json!({
+            "sessionUpdate": "available_commands_update",
+            "availableCommands": [{ "name": "review", "description": "Review" }]
+        }))
+        .unwrap();
+        let plan: SessionUpdateDetail = serde_json::from_value(serde_json::json!({
+            "sessionUpdate": "plan",
+            "entries": [{ "content": "Test", "priority": "high", "status": "pending" }]
+        }))
+        .unwrap();
+
+        assert!(matches!(
+            commands,
+            SessionUpdateDetail::AvailableCommandsUpdate { available_commands } if available_commands.is_array()
+        ));
+        assert!(matches!(plan, SessionUpdateDetail::Plan { entries } if entries.is_array()));
+    }
 
     #[test]
     fn image_prompt_content_uses_the_acp_field_names() {

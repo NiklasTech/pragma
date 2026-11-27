@@ -16,6 +16,7 @@ use super::config_options::{parse_config_options, SessionConfigOption};
 use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
+use super::session_info::{SessionInfo, SessionInfoSink, SharedSessionInfo};
 use super::tools_bridge::handle_tool_call;
 use super::types::{
     ClientCapabilities, ContentBlock, FsCapabilities, InitializeRequest, NewSessionRequest,
@@ -49,6 +50,7 @@ pub struct AcpSession {
     accepts_images: bool,
     current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
     config_options: SharedConfigOptions,
+    session_info: SharedSessionInfo,
     _notification_handle: JoinHandle<()>,
     _reverse_rpc_handle: JoinHandle<()>,
 }
@@ -185,6 +187,7 @@ impl AcpSessionManager {
                 .get("configOptions")
                 .unwrap_or(&Value::Null),
         )));
+        let session_info: SharedSessionInfo = Arc::default();
 
         let notification_handle = spawn_notification_handler(
             current_chunk_tx.clone(),
@@ -194,6 +197,11 @@ impl AcpSessionManager {
                 app_handle: self.app_handle.clone(),
                 chat_session_id: chat_session_id.to_string(),
                 options: config_options.clone(),
+            },
+            SessionInfoSink {
+                app_handle: self.app_handle.clone(),
+                chat_session_id: chat_session_id.to_string(),
+                info: session_info.clone(),
             },
         );
 
@@ -212,6 +220,7 @@ impl AcpSessionManager {
             accepts_images,
             current_chunk_tx,
             config_options,
+            session_info,
             _notification_handle: notification_handle,
             _reverse_rpc_handle: reverse_rpc_handle,
         };
@@ -346,6 +355,20 @@ impl AcpSessionManager {
         Ok(options)
     }
 
+    /// The commands and plan the agent reported last; empty until it reports them.
+    pub async fn session_info(&self, chat_session_id: &str) -> Result<SessionInfo> {
+        let shared = {
+            let sessions = self.sessions.lock().await;
+            sessions
+                .get(chat_session_id)
+                .ok_or_else(|| AcpError::Protocol(format!("no ACP session for {chat_session_id}")))?
+                .session_info
+                .clone()
+        };
+        let info = shared.lock().await.clone();
+        Ok(info)
+    }
+
     pub async fn set_config_option(
         &self,
         chat_session_id: &str,
@@ -473,6 +496,7 @@ fn spawn_notification_handler(
     acp_session_id: String,
     mut notifications: mpsc::UnboundedReceiver<Notification>,
     config_sink: ConfigOptionsSink,
+    info_sink: SessionInfoSink,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         while let Some(notification) = notifications.recv().await {
@@ -497,6 +521,17 @@ fn spawn_notification_handler(
             if let SessionUpdateDetail::ConfigOptionUpdate { config_options } = &update.update {
                 config_sink.replace(config_options).await;
                 continue;
+            }
+            match &update.update {
+                SessionUpdateDetail::AvailableCommandsUpdate { available_commands } => {
+                    info_sink.set_commands(available_commands).await;
+                    continue;
+                }
+                SessionUpdateDetail::Plan { entries } => {
+                    info_sink.set_plan(entries).await;
+                    continue;
+                }
+                _ => {}
             }
 
             let chunk = session_update_to_chunk(update.update.clone());
@@ -630,17 +665,18 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             tool_results: None,
             usage: None,
         },
-        SessionUpdateDetail::ConfigOptionUpdate { .. } | SessionUpdateDetail::Other => {
-            StreamChunk {
-                text: None,
-                error: None,
-                done: false,
-                reasoning: None,
-                tool_calls: None,
-                tool_results: None,
-                usage: None,
-            }
-        }
+        SessionUpdateDetail::ConfigOptionUpdate { .. }
+        | SessionUpdateDetail::AvailableCommandsUpdate { .. }
+        | SessionUpdateDetail::Plan { .. }
+        | SessionUpdateDetail::Other => StreamChunk {
+            text: None,
+            error: None,
+            done: false,
+            reasoning: None,
+            tool_calls: None,
+            tool_results: None,
+            usage: None,
+        },
     }
 }
 
@@ -845,10 +881,16 @@ mod tests {
 
     #[test]
     fn unknown_and_config_updates_produce_empty_chunks() {
-        let unknown = chunk(json!({ "sessionUpdate": "plan", "entries": [] }));
+        let unknown =
+            chunk(json!({ "sessionUpdate": "current_mode_update", "currentModeId": "plan" }));
         let config = chunk(json!({ "sessionUpdate": "config_option_update", "configOptions": [] }));
+        let plan = chunk(json!({ "sessionUpdate": "plan", "entries": [] }));
+        let commands =
+            chunk(json!({ "sessionUpdate": "available_commands_update", "availableCommands": [] }));
 
         assert!(is_empty(&unknown));
         assert!(is_empty(&config));
+        assert!(is_empty(&plan));
+        assert!(is_empty(&commands));
     }
 }

@@ -19,7 +19,9 @@ import { insertAtCursor } from "@/features/ai/dictation/insertAtCursor";
 import { useComposerDictation } from "@/features/ai/dictation/useComposerDictation";
 import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
 
+import { AgentPlan } from "@/features/ai/acp/AgentPlan";
 import { CliSessionOptionsMenu } from "@/features/ai/acp/CliSessionOptionsMenu";
+import { useAcpSessionInfo } from "@/features/ai/acp/useAcpSessionInfo";
 import { McpServersMenu } from "@/features/ai/mcp/McpServersMenu";
 import { PromptPicker, type PromptPickerRef } from "@/features/ai/mcp/PromptPicker";
 import { useCliSessionOptions } from "@/features/ai/acp/useCliSessionOptions";
@@ -76,6 +78,7 @@ export function ChatComposer({
   const sendShortcut = useSettingsStore((state) => state.shortcuts["chat.send"]);
   const voiceInput = useSettingsStore((state) => state.ai.voiceInput);
   const cliSession = useCliSessionOptions();
+  const agentSession = useAcpSessionInfo(cliSession !== null);
   const voiceEngine = useSettingsStore((state) => state.ai.voiceEngine);
   const voiceModel = useSettingsStore((state) =>
     state.ai.voiceEngine === "whisper" ? state.ai.whisperModel : state.ai.parakeetModel,
@@ -186,6 +189,8 @@ export function ChatComposer({
           textarea.focus();
           textarea.setSelectionRange(position, position);
         }
+        // The Enter key-up of the pick may have stored the caret before the text changed.
+        moveCursor(position);
       });
     },
     [moveCursor, onInputChange],
@@ -262,6 +267,7 @@ export function ChatComposer({
           </Button>
         </div>
       )}
+      <AgentPlan entries={agentSession.plan} />
       <form
         ref={formRef}
         onSubmit={onSubmit}
@@ -305,6 +311,7 @@ export function ChatComposer({
             input={input}
             cursorPosition={cursorPosition}
             onSelect={handleContextSelect}
+            agentCommands={agentSession.commands}
           />
         </div>
         <div className="flex flex-nowrap items-center gap-1 px-2 pb-2">
