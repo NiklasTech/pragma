@@ -10,6 +10,7 @@ import { MessageResponse } from "./Message";
 import { ReasoningBlock } from "./ReasoningBlock";
 import { ToolInvocationBlock } from "./ToolInvocationBlock";
 import { WorkingIndicator } from "./WorkingIndicator";
+import { useSessionFolder } from "./useSessionFolder";
 
 interface AssistantTimelineProps {
   message: UIMessage;
@@ -26,6 +27,7 @@ function isFinishedTool(item: TimelineItem | undefined): boolean {
 
 export function AssistantTimeline({ message, streaming, showThinking }: AssistantTimelineProps) {
   const items = useMemo(() => buildAssistantTimeline(message), [message]);
+  const root = useSessionFolder();
   const last = items[items.length - 1];
   const isWaiting = streaming && (!last || isFinishedTool(last));
 
@@ -85,6 +87,8 @@ export function AssistantTimeline({ message, streaming, showThinking }: Assistan
             errorText={item.invocation.errorText}
             title={item.invocation.title}
             active={streaming}
+            toolMetadata={item.invocation.toolMetadata}
+            root={root}
           />
         );
       })}

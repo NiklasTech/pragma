@@ -156,7 +156,7 @@ When showing file contents, preserve the full code and include the language tag.
                         tool_calls: None,
                         tool_results: None,
                         usage: None,
-                        tool_titles: None,
+                        tool_details: None,
                     });
                     failed = true;
                     break;
