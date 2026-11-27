@@ -6,6 +6,7 @@
 //! running app, which handles it in the frontend.
 
 pub mod bridge;
+pub mod cli_config;
 mod protocol;
 pub mod server;
 

@@ -404,6 +404,7 @@ pub fn run() {
             commands::cli::cli_logout,
             commands::cli::cli_chat_stream,
             commands::cli::cli_acp_chat_stream,
+            ai::child_sessions::cli_config::child_session_mcp_config,
             ai::child_sessions::server::child_session_spawn_reply,
             modules::browser_pane::snapshot::browser_pane_snapshot,
             modules::browser_pane::native::browser_webview_show,
