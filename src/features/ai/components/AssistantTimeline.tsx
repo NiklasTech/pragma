@@ -83,6 +83,8 @@ export function AssistantTimeline({ message, streaming, showThinking }: Assistan
             input={item.invocation.input}
             output={item.invocation.output}
             errorText={item.invocation.errorText}
+            title={item.invocation.title}
+            active={streaming}
           />
         );
       })}

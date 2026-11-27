@@ -17,10 +17,11 @@ use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
 use super::session_info::{SessionInfo, SessionInfoSink, SharedSessionInfo};
+use super::tool_calls::{tool_call_chunk, ToolCallReport};
 use super::tools_bridge::handle_tool_call;
 use super::types::{
     ClientCapabilities, ContentBlock, FsCapabilities, InitializeRequest, NewSessionRequest,
-    PromptContent, PromptRequest, SessionUpdate, SessionUpdateDetail, ToolCallContent,
+    PromptContent, PromptRequest, SessionUpdate, SessionUpdateDetail,
 };
 use super::usage::{context_usage, prompt_usage};
 use crate::ai::child_sessions::ChildSessionServer;
@@ -317,13 +318,10 @@ impl AcpSessionManager {
             let usage = result.as_ref().ok().and_then(prompt_usage);
             let _ = tx
                 .send(StreamChunk {
-                    text: None,
                     error: result.err().map(|e| e.to_string()),
                     done: true,
-                    reasoning: None,
-                    tool_calls: None,
-                    tool_results: None,
                     usage,
+                    ..StreamChunk::default()
                 })
                 .await;
         });
@@ -546,137 +544,64 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
     match payload {
         SessionUpdateDetail::AgentMessageChunk { content } => StreamChunk {
             text: Some(extract_text(content)),
-            error: None,
-            done: false,
-            reasoning: None,
-            tool_calls: None,
-            tool_results: None,
-            usage: None,
+            ..StreamChunk::default()
         },
         SessionUpdateDetail::AgentThoughtChunk { content } => StreamChunk {
-            text: None,
-            error: None,
-            done: false,
             reasoning: Some(extract_text(content)),
-            tool_calls: None,
-            tool_results: None,
-            usage: None,
+            ..StreamChunk::default()
         },
         SessionUpdateDetail::ToolCall {
             tool_call_id,
             title,
+            status,
+            meta,
             raw_input,
             content,
             ..
-        } => {
-            let input_text = raw_input
-                .as_ref()
-                .map(|v| match v {
-                    Value::String(s) => s.clone(),
-                    other => other.to_string(),
-                })
-                .or_else(|| content.as_ref().and_then(|c| extract_first_text(c)))
-                .unwrap_or_default();
-            StreamChunk {
-                text: None,
-                error: None,
-                done: false,
-                reasoning: None,
-                tool_calls: Some(vec![crate::ai::provider::ToolCall {
-                    id: tool_call_id,
-                    r#type: "function".to_string(),
-                    function: crate::ai::provider::FunctionCall {
-                        name: title,
-                        arguments: input_text,
-                    },
-                }]),
-                tool_results: None,
-                usage: None,
-            }
-        }
+        } => tool_call_chunk(ToolCallReport {
+            id: tool_call_id,
+            title: Some(title),
+            status,
+            meta,
+            raw_input,
+            raw_output: None,
+            content,
+        }),
         SessionUpdateDetail::ToolCallUpdate {
             tool_call_id,
+            title,
             status,
+            meta,
+            raw_input,
             content,
             raw_output,
             ..
-        } => {
-            let is_completed = status.as_deref() == Some("completed");
-            let is_failed = status.as_deref() == Some("failed");
-            if is_completed || is_failed {
-                let output_text = raw_output
-                    .map(|v| match v {
-                        Value::String(s) => s,
-                        other => other.to_string(),
-                    })
-                    .or_else(|| content.as_ref().and_then(|c| extract_first_text(c)))
-                    .unwrap_or_default();
-                StreamChunk {
-                    text: None,
-                    error: None,
-                    done: false,
-                    reasoning: None,
-                    tool_calls: None,
-                    tool_results: Some(vec![crate::commands::ai::ToolResult {
-                        tool_call_id,
-                        output: output_text,
-                        is_error: is_failed,
-                    }]),
-                    usage: None,
-                }
-            } else {
-                // Ignore intermediate tool_call_update chunks that only stream input.
-                // The final result is delivered via the completed/failed branch above.
-                StreamChunk {
-                    text: None,
-                    error: None,
-                    done: false,
-                    reasoning: None,
-                    tool_calls: None,
-                    tool_results: None,
-                    usage: None,
-                }
-            }
-        }
+        } => tool_call_chunk(ToolCallReport {
+            id: tool_call_id,
+            title,
+            status,
+            meta,
+            raw_input,
+            raw_output,
+            content,
+        }),
         SessionUpdateDetail::UsageUpdate { used, size } => StreamChunk {
-            text: None,
-            error: None,
-            done: false,
-            reasoning: None,
-            tool_calls: None,
-            tool_results: None,
             usage: context_usage(used, size),
+            ..StreamChunk::default()
         },
         SessionUpdateDetail::TurnEnded { .. } => StreamChunk {
-            text: None,
-            error: None,
             done: true,
-            reasoning: None,
-            tool_calls: None,
-            tool_results: None,
-            usage: None,
+            ..StreamChunk::default()
         },
         SessionUpdateDetail::Error { message } => StreamChunk {
-            text: None,
             error: Some(message),
             done: true,
-            reasoning: None,
-            tool_calls: None,
-            tool_results: None,
-            usage: None,
+            ..StreamChunk::default()
         },
         SessionUpdateDetail::ConfigOptionUpdate { .. }
         | SessionUpdateDetail::AvailableCommandsUpdate { .. }
         | SessionUpdateDetail::Plan { .. }
-        | SessionUpdateDetail::Other => StreamChunk {
-            text: None,
-            error: None,
-            done: false,
-            reasoning: None,
-            tool_calls: None,
-            tool_results: None,
-            usage: None,
-        },
+        | SessionUpdateDetail::Other => StreamChunk::default(),
     }
 }
 
@@ -688,13 +613,6 @@ fn extract_text(block: ContentBlock) -> String {
         ContentBlock::ResourceLink { .. } => String::new(),
         ContentBlock::Other => String::new(),
     }
-}
-
-fn extract_first_text(contents: &[ToolCallContent]) -> Option<String> {
-    contents.iter().find_map(|c| match &c.content {
-        Some(ContentBlock::Text { text }) => Some(text.clone()),
-        _ => None,
-    })
 }
 
 fn spawn_reverse_rpc_handler(
@@ -759,6 +677,7 @@ mod tests {
             && chunk.tool_calls.is_none()
             && chunk.tool_results.is_none()
             && chunk.usage.is_none()
+            && chunk.tool_titles.is_none()
     }
 
     #[test]
@@ -857,15 +776,26 @@ mod tests {
     }
 
     #[test]
-    fn in_progress_tool_call_updates_are_ignored() {
-        let update = chunk(json!({
+    fn updates_with_the_complete_input_refine_the_tool_call() {
+        let refined = chunk(json!({
             "sessionUpdate": "tool_call_update",
             "toolCallId": "call-1",
-            "status": "in_progress",
-            "rawInput": { "partial": true }
+            "title": "git status",
+            "_meta": { "claudeCode": { "toolName": "Bash" } },
+            "rawInput": { "command": "git status" }
+        }));
+        let status_only = chunk(json!({
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "call-1",
+            "status": "in_progress"
         }));
 
-        assert!(is_empty(&update));
+        let call = &refined.tool_calls.as_ref().unwrap()[0];
+        assert_eq!(call.id, "call-1");
+        assert_eq!(call.function.name, "Bash");
+        assert_eq!(call.function.arguments, r#"{"command":"git status"}"#);
+        assert_eq!(refined.tool_titles.unwrap()[0].title, "git status");
+        assert!(is_empty(&status_only));
     }
 
     #[test]

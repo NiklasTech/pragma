@@ -57,7 +57,14 @@ pub struct ToolResult {
     pub is_error: bool,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+/// The title a coding CLI gives one of its tool calls, such as the shell command it runs.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct ToolCallTitle {
+    pub tool_call_id: String,
+    pub title: String,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct StreamChunk {
     pub text: Option<String>,
     pub error: Option<String>,
@@ -70,6 +77,8 @@ pub struct StreamChunk {
     pub tool_results: Option<Vec<ToolResult>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub usage: Option<StreamUsage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_titles: Option<Vec<ToolCallTitle>>,
 }
 
 /// Token counts of one model response. ACP agents may instead report the

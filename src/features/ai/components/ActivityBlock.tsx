@@ -15,6 +15,8 @@ type ActivityBlockProps = {
   streaming?: boolean;
   hint?: string;
   meta?: ReactNode;
+  /** Shown under the title while the block is closed, e.g. the first lines of a tool's output. */
+  preview?: ReactNode;
 };
 
 export function ActivityBlock({
@@ -25,6 +27,7 @@ export function ActivityBlock({
   streaming = false,
   hint,
   meta,
+  preview,
 }: ActivityBlockProps) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -57,6 +60,7 @@ export function ActivityBlock({
           )}
         />
       </Button>
+      {!open && preview && <div className="mb-1 ml-2 border-l border-border pl-4">{preview}</div>}
       {open && (
         <div
           data-state={streaming ? "streaming" : "done"}
