@@ -267,6 +267,11 @@ pub enum SessionUpdateDetail {
         #[serde(default)]
         entries: Value,
     },
+    #[serde(rename = "current_mode_update")]
+    CurrentModeUpdate {
+        #[serde(rename = "currentModeId")]
+        current_mode_id: String,
+    },
     #[serde(rename = "usage_update")]
     UsageUpdate {
         #[serde(default)]

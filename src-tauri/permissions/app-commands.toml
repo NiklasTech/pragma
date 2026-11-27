@@ -50,6 +50,8 @@ permissions = [
   "allow-cli-acp-session-config",
   "allow-cli-acp-session-info",
   "allow-cli-acp-set-config-option",
+  "allow-cli-acp-sign-in",
+  "allow-cli-acp-sign-in-methods",
   "allow-cli-acp-stop-session",
   "allow-cli-chat-stream",
   "allow-cli-check-all-statuses",

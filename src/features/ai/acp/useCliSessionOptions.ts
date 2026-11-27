@@ -14,6 +14,7 @@ import {
   useAcpSessionOptionsStore,
   type AcpConfigOption,
 } from "./sessionOptions";
+import { useAcpSignInStore } from "./signIn";
 
 export interface CliSessionOptions {
   providerId: string;
@@ -22,6 +23,8 @@ export interface CliSessionOptions {
   loading: boolean;
   error: string | null;
   setOption: (configId: string, value: string) => void;
+  /** Runs one of the CLI's sign-in methods and starts the session after it. */
+  signIn: (methodId: string) => void;
 }
 
 /// Options of the active coding CLI session, or null when the chat does not run over ACP.
@@ -101,5 +104,11 @@ export function useCliSessionOptions(): CliSessionOptions | null {
       void useAcpSessionOptionsStore
         .getState()
         .setOption(activeCLIProvider, activeChatSessionId, configId, value),
+    signIn: (methodId) => {
+      if (!cwd) return;
+      void useAcpSignInStore
+        .getState()
+        .signIn(activeCLIProvider, activeChatSessionId, cwd, allowChildSessions, methodId);
+    },
   };
 }

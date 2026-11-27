@@ -419,6 +419,8 @@ pub fn run() {
             commands::acp_config::cli_acp_session_info,
             commands::acp_config::cli_acp_open_session,
             commands::acp_config::cli_acp_stop_session,
+            commands::acp_config::cli_acp_sign_in,
+            commands::acp_config::cli_acp_sign_in_methods,
             commands::subscription_usage::subscription_usage_read,
             commands::subscription_usage::subscription_usage_refresh,
             commands::image_files::read_image_file,

@@ -17,7 +17,11 @@ use super::continuation::{continue_method, replay_transcript, ReplayedMessage};
 use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
+use super::modes::{keep_modes, with_modes, MODE_OPTION_ID};
 use super::session_info::{SessionInfo, SessionInfoSink, SharedSessionInfo};
+use super::sign_in::{
+    auth_methods, is_auth_required, AuthMethodInfo, EndOnError, SIGN_IN_TIMEOUT_MS,
+};
 use super::tool_calls::{tool_call_chunk, ToolCallReport};
 use super::tools_bridge::handle_tool_call;
 use super::types::{
@@ -75,12 +79,16 @@ pub struct SessionStart<'a> {
     pub resume_session_id: Option<&'a str>,
     /// Load the conversation and keep its replay, for a chat that does not show it yet.
     pub replay_history: bool,
+    /// A sign-in method of the agent to run before the session starts.
+    pub sign_in_method: Option<&'a str>,
 }
 
 pub struct AcpSessionManager {
     app_handle: AppHandle,
     approval_bridge: ApprovalBridge,
     sessions: Mutex<HashMap<String, AcpSession>>,
+    /// The sign-in methods of chats whose agent needs a signed-in account first.
+    sign_ins: Mutex<HashMap<String, Vec<AuthMethodInfo>>>,
 }
 
 impl AcpSessionManager {
@@ -90,6 +98,7 @@ impl AcpSessionManager {
             app_handle,
             approval_bridge,
             sessions: Mutex::new(HashMap::new()),
+            sign_ins: Mutex::new(HashMap::new()),
         }
     }
 
@@ -108,6 +117,7 @@ impl AcpSessionManager {
             account_dir,
             resume_session_id,
             replay_history,
+            sign_in_method,
         } = start;
         let manifest = get_manifest(provider_id)
             .ok_or_else(|| AcpError::Spawn(format!("unknown provider: {provider_id}")))?;
@@ -150,6 +160,7 @@ impl AcpSessionManager {
         };
 
         let (client, child, mut notifications, reverse_requests) = AcpClient::start(config).await?;
+        let mut end_on_error = EndOnError::new(child.id());
 
         let init_response = client
             .request(
@@ -167,6 +178,23 @@ impl AcpSessionManager {
                 Default::default(),
             )
             .await?;
+        let methods = auth_methods(&init_response);
+        if let Some(method_id) = sign_in_method {
+            if !methods.iter().any(|method| method.id == method_id) {
+                return Err(AcpError::Protocol(format!(
+                    "unknown sign-in method {method_id}"
+                )));
+            }
+            client
+                .request(
+                    "authenticate",
+                    Some(serde_json::json!({ "methodId": method_id })),
+                    RequestOptions {
+                        timeout_ms: Some(SIGN_IN_TIMEOUT_MS),
+                    },
+                )
+                .await?;
+        }
         let accepts_images = init_response
             .pointer("/agentCapabilities/promptCapabilities/image")
             .and_then(Value::as_bool)
@@ -220,13 +248,23 @@ impl AcpSessionManager {
                     cwd: cwd.to_string(),
                     mcp_servers: Some(mcp_servers),
                 };
-                let response = client
+                let response = match client
                     .request(
                         "session/new",
                         Some(serde_json::to_value(new_session_req)?),
                         Default::default(),
                     )
-                    .await?;
+                    .await
+                {
+                    Err(error) if is_auth_required(&error) && !methods.is_empty() => {
+                        self.sign_ins
+                            .lock()
+                            .await
+                            .insert(chat_session_id.to_string(), methods);
+                        return Err(AcpError::SignInRequired(manifest.name.clone()));
+                    }
+                    other => other?,
+                };
                 let session_id = response
                     .get("sessionId")
                     .and_then(|v| v.as_str())
@@ -241,10 +279,13 @@ impl AcpSessionManager {
         let cwd = cwd.to_string();
         let current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>> =
             Arc::new(Mutex::new(None));
-        let config_options: SharedConfigOptions = Arc::new(Mutex::new(parse_config_options(
-            new_session_resp
-                .get("configOptions")
-                .unwrap_or(&Value::Null),
+        let config_options: SharedConfigOptions = Arc::new(Mutex::new(with_modes(
+            parse_config_options(
+                new_session_resp
+                    .get("configOptions")
+                    .unwrap_or(&Value::Null),
+            ),
+            new_session_resp.get("modes"),
         )));
         let session_info: SharedSessionInfo = Arc::new(Mutex::new(SessionInfo {
             session_id: acp_session_id.clone(),
@@ -293,6 +334,8 @@ impl AcpSessionManager {
             let mut sessions = self.sessions.lock().await;
             sessions.insert(chat_session_id.to_string(), session);
         }
+        self.sign_ins.lock().await.remove(chat_session_id);
+        end_on_error.disarm();
 
         Ok(acp_session_id)
     }
@@ -345,6 +388,16 @@ impl AcpSessionManager {
     pub async fn take_replayed(&self, chat_session_id: &str) -> Option<Vec<ReplayedMessage>> {
         let mut sessions = self.sessions.lock().await;
         sessions.get_mut(chat_session_id)?.replayed.take()
+    }
+
+    /// The sign-in methods of a chat whose agent asked for a signed-in account.
+    pub async fn sign_in_methods(&self, chat_session_id: &str) -> Vec<AuthMethodInfo> {
+        self.sign_ins
+            .lock()
+            .await
+            .get(chat_session_id)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Whether the next prompt must carry the chat's history; true only once per new session.
@@ -471,20 +524,33 @@ impl AcpSessionManager {
             )));
         }
 
-        let response = client
-            .request(
+        // Session modes go through their own method; the agent knows no option for them.
+        let (method, params) = if config_id == MODE_OPTION_ID {
+            (
+                "session/set_mode",
+                serde_json::json!({ "sessionId": acp_session_id, "modeId": value }),
+            )
+        } else {
+            (
                 "session/set_config_option",
-                Some(serde_json::json!({
+                serde_json::json!({
                     "sessionId": acp_session_id,
                     "configId": config_id,
                     "value": value,
-                })),
-                Default::default(),
+                }),
             )
+        };
+        let response = client
+            .request(method, Some(params), Default::default())
             .await?;
 
         let options = parse_config_options(response.get("configOptions").unwrap_or(&Value::Null));
         let mut stored = shared.lock().await;
+        let options = if options.is_empty() {
+            options
+        } else {
+            keep_modes(options, &stored)
+        };
         if options.is_empty() {
             // Agents may answer without the full list; keep ours and record the new value.
             for option in stored.iter_mut().filter(|option| option.id == config_id) {
@@ -545,8 +611,26 @@ struct ConfigOptionsSink {
 
 impl ConfigOptionsSink {
     async fn replace(&self, raw: &Value) {
-        let options = parse_config_options(raw);
-        *self.options.lock().await = options.clone();
+        let mut stored = self.options.lock().await;
+        let options = keep_modes(parse_config_options(raw), &stored);
+        *stored = options.clone();
+        drop(stored);
+        self.emit(options);
+    }
+
+    /// The agent switched its session mode, e.g. after leaving plan mode.
+    async fn set_mode(&self, mode_id: &str) {
+        let mut stored = self.options.lock().await;
+        let Some(option) = stored.iter_mut().find(|option| option.id == MODE_OPTION_ID) else {
+            return;
+        };
+        option.current_value = mode_id.to_string();
+        let options = stored.clone();
+        drop(stored);
+        self.emit(options);
+    }
+
+    fn emit(&self, options: Vec<SessionConfigOption>) {
         let _ = self.app_handle.emit(
             CONFIG_OPTIONS_EVENT,
             ConfigOptionsEvent {
@@ -595,6 +679,10 @@ fn spawn_notification_handler(
 
             if let SessionUpdateDetail::ConfigOptionUpdate { config_options } = &update.update {
                 config_sink.replace(config_options).await;
+                continue;
+            }
+            if let SessionUpdateDetail::CurrentModeUpdate { current_mode_id } = &update.update {
+                config_sink.set_mode(current_mode_id).await;
                 continue;
             }
             match &update.update {
@@ -680,6 +768,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             ..StreamChunk::default()
         },
         SessionUpdateDetail::ConfigOptionUpdate { .. }
+        | SessionUpdateDetail::CurrentModeUpdate { .. }
         | SessionUpdateDetail::AvailableCommandsUpdate { .. }
         | SessionUpdateDetail::Plan { .. }
         | SessionUpdateDetail::UserMessageChunk { .. }
@@ -896,8 +985,7 @@ mod tests {
 
     #[test]
     fn unknown_and_config_updates_produce_empty_chunks() {
-        let unknown =
-            chunk(json!({ "sessionUpdate": "current_mode_update", "currentModeId": "plan" }));
+        let unknown = chunk(json!({ "sessionUpdate": "session_info_update", "title": "x" }));
         let config = chunk(json!({ "sessionUpdate": "config_option_update", "configOptions": [] }));
         let plan = chunk(json!({ "sessionUpdate": "plan", "entries": [] }));
         let commands =

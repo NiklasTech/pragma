@@ -6,6 +6,7 @@ use tauri::State;
 use crate::ai::acp::config_options::SessionConfigOption;
 use crate::ai::acp::continuation::ReplayedMessage;
 use crate::ai::acp::session_info::SessionInfo;
+use crate::ai::acp::sign_in::AuthMethodInfo;
 use crate::ai::acp::{AcpSessionManager, SessionStart};
 use crate::ai::cli::get_manifest;
 
@@ -79,6 +80,7 @@ pub async fn cli_acp_session_config(
                 account_dir: req.account_dir.as_deref(),
                 resume_session_id: req.resume_session_id.as_deref(),
                 replay_history: false,
+                sign_in_method: None,
             })
             .await
             .map_err(|e| e.to_string())?;
@@ -164,6 +166,7 @@ pub async fn cli_acp_open_session(
             account_dir: req.account_dir.as_deref(),
             resume_session_id: Some(session_id),
             replay_history: true,
+            sign_in_method: None,
         })
         .await
         .map_err(|e| e.to_string())?;
@@ -175,6 +178,60 @@ pub async fn cli_acp_open_session(
             Err(format!("{name} could not open this conversation"))
         }
     }
+}
+
+/// The sign-in methods of a chat whose coding CLI asked for a signed-in account.
+#[tauri::command]
+pub async fn cli_acp_sign_in_methods(
+    req: AcpSessionRequest,
+    state: State<'_, AcpSessionManager>,
+) -> Result<Vec<AuthMethodInfo>, String> {
+    if req.chat_session_id.is_empty() {
+        return Err("chat_session_id is required".to_string());
+    }
+    Ok(state.sign_in_methods(&req.chat_session_id).await)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AcpSignInRequest {
+    #[serde(flatten)]
+    pub start: AcpSessionConfigRequest,
+    pub method_id: String,
+}
+
+/// Signs the coding CLI in with one of its methods, e.g. a browser login, then starts the
+/// chat's session and returns its options.
+#[tauri::command]
+pub async fn cli_acp_sign_in(
+    req: AcpSignInRequest,
+    state: State<'_, AcpSessionManager>,
+) -> Result<Vec<SessionConfigOption>, String> {
+    let start = &req.start;
+    validate_start(start)?;
+    if req.method_id.is_empty() || req.method_id.len() > 128 {
+        return Err("a valid method_id is required".to_string());
+    }
+
+    state.stop_session(&start.chat_session_id).await;
+    state
+        .start_session(SessionStart {
+            provider_id: &start.provider_id,
+            cwd: &start.cwd,
+            chat_session_id: &start.chat_session_id,
+            allow_child_sessions: start.allow_child_sessions,
+            mcp_server_ids: start.mcp_server_ids.as_deref(),
+            account_dir: start.account_dir.as_deref(),
+            resume_session_id: start.resume_session_id.as_deref(),
+            replay_history: false,
+            sign_in_method: Some(&req.method_id),
+        })
+        .await
+        .map_err(|e| e.to_string())?;
+
+    state
+        .config_options(&start.chat_session_id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Ends the coding CLI behind a chat, e.g. before its conversation goes on in a terminal.

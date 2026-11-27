@@ -8,11 +8,16 @@ pub enum AcpError {
     Spawn(String),
     RequestTimeout,
     TooManyConcurrentRequests,
-    JsonRpc { code: i64, message: String },
+    JsonRpc {
+        code: i64,
+        message: String,
+    },
     Protocol(String),
     InvalidPath(String),
     ApprovalTimeout,
     ApprovalRejected,
+    /// The agent needs a signed-in account; the chat offers its sign-in methods.
+    SignInRequired(String),
 }
 
 impl fmt::Display for AcpError {
@@ -35,6 +40,7 @@ impl fmt::Display for AcpError {
             AcpError::InvalidPath(msg) => write!(f, "Invalid path: {msg}"),
             AcpError::ApprovalTimeout => write!(f, "Approval request timed out"),
             AcpError::ApprovalRejected => write!(f, "Approval request rejected"),
+            AcpError::SignInRequired(agent) => write!(f, "{agent} needs a sign-in"),
         }
     }
 }

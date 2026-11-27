@@ -6,6 +6,7 @@ import { sessionMcpServerIds } from "@/features/ai/mcp/selection";
 import { useAIStore } from "@/shared/stores/ai";
 
 import { resumeSessionId } from "./sessionInfo";
+import { useAcpSignInStore } from "./signIn";
 
 export interface AcpConfigValue {
   value: string;
@@ -83,6 +84,25 @@ export function pendingPreferences(
     .map(([configId, value]) => ({ configId, value }));
 }
 
+/// What starts a chat's coding CLI session: the CLI, its folder, account and conversation.
+export function sessionStartRequest(
+  providerId: string,
+  chatSessionId: string,
+  cwd: string,
+  allowChildSessions: boolean,
+) {
+  const chatSession = useAIStore.getState().chatSessions.find((item) => item.id === chatSessionId);
+  return {
+    provider_id: providerId,
+    chat_session_id: chatSessionId,
+    cwd,
+    allow_child_sessions: allowChildSessions,
+    mcp_server_ids: sessionMcpServerIds(chatSessionId) ?? undefined,
+    account_dir: chatSession?.cliAccountDir ?? undefined,
+    resume_session_id: resumeSessionId(chatSession) ?? undefined,
+  };
+}
+
 interface SessionOptionsState {
   bySession: Record<string, AcpConfigOption[]>;
   loading: Record<string, boolean>;
@@ -129,19 +149,8 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
     }));
 
     try {
-      const chatSession = useAIStore
-        .getState()
-        .chatSessions.find((item) => item.id === chatSessionId);
       let options = await invoke<AcpConfigOption[]>("cli_acp_session_config", {
-        req: {
-          provider_id: providerId,
-          chat_session_id: chatSessionId,
-          cwd,
-          allow_child_sessions: allowChildSessions,
-          mcp_server_ids: sessionMcpServerIds(chatSessionId) ?? undefined,
-          account_dir: chatSession?.cliAccountDir ?? undefined,
-          resume_session_id: resumeSessionId(chatSession) ?? undefined,
-        },
+        req: sessionStartRequest(providerId, chatSessionId, cwd, allowChildSessions),
       });
       const preferred = useAcpPreferenceStore.getState().preferred[providerId];
       for (const { configId, value } of pendingPreferences(options, preferred)) {
@@ -151,7 +160,9 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
       }
       get().receive(chatSessionId, options);
     } catch (err) {
-      set((s) => ({ errors: { ...s.errors, [chatSessionId]: String(err) } }));
+      // An agent that needs a sign-in shows its methods instead of an error.
+      const needsSignIn = await useAcpSignInStore.getState().check(chatSessionId);
+      set((s) => ({ errors: { ...s.errors, [chatSessionId]: needsSignIn ? null : String(err) } }));
     } finally {
       set((s) => ({ loading: { ...s.loading, [chatSessionId]: false } }));
     }

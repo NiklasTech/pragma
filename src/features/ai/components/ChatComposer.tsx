@@ -20,6 +20,7 @@ import { useComposerDictation } from "@/features/ai/dictation/useComposerDictati
 import { usePushToTalk } from "@/features/ai/dictation/usePushToTalk";
 
 import { AgentPlan } from "@/features/ai/acp/AgentPlan";
+import { AgentSignIn } from "@/features/ai/acp/AgentSignIn";
 import { CliSessionOptionsMenu } from "@/features/ai/acp/CliSessionOptionsMenu";
 import { useAcpSessionInfo } from "@/features/ai/acp/useAcpSessionInfo";
 import { McpServersMenu } from "@/features/ai/mcp/McpServersMenu";
@@ -267,6 +268,7 @@ export function ChatComposer({
           </Button>
         </div>
       )}
+      {cliSession && <AgentSignIn session={cliSession} />}
       <AgentPlan entries={agentSession.plan} />
       <form
         ref={formRef}
