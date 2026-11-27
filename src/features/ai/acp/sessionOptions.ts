@@ -5,6 +5,8 @@ import { persist } from "zustand/middleware";
 import { sessionMcpServerIds } from "@/features/ai/mcp/selection";
 import { useAIStore } from "@/shared/stores/ai";
 
+import { resumeSessionId } from "./sessionInfo";
+
 export interface AcpConfigValue {
   value: string;
   name: string;
@@ -117,6 +119,9 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
     }));
 
     try {
+      const chatSession = useAIStore
+        .getState()
+        .chatSessions.find((item) => item.id === chatSessionId);
       let options = await invoke<AcpConfigOption[]>("cli_acp_session_config", {
         req: {
           provider_id: providerId,
@@ -124,9 +129,8 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
           cwd,
           allow_child_sessions: allowChildSessions,
           mcp_server_ids: sessionMcpServerIds(chatSessionId) ?? undefined,
-          account_dir:
-            useAIStore.getState().chatSessions.find((item) => item.id === chatSessionId)
-              ?.cliAccountDir ?? undefined,
+          account_dir: chatSession?.cliAccountDir ?? undefined,
+          resume_session_id: resumeSessionId(chatSession) ?? undefined,
         },
       });
       const preferred = useAcpPreferenceStore.getState().preferred[providerId];

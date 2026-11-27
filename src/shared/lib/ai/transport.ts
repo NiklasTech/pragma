@@ -35,6 +35,7 @@ export function createStreamTransport(
   mcpServerIds: string[] | null = null,
   onUsage: (usage: StreamUsage) => void = () => {},
   accountDir: string | null = null,
+  resumeSessionId: () => string | null = () => null,
 ): ChatTransport<UIMessage> {
   return {
     async sendMessages({ messages: transcript, abortSignal }) {
@@ -205,6 +206,8 @@ export function createStreamTransport(
                   ...(images.length > 0 ? { images } : {}),
                   ...(accountDir ? { account_dir: accountDir } : {}),
                 };
+                const resumeId = resumeSessionId();
+                if (resumeId) req.resume_session_id = resumeId;
                 await invoke("cli_acp_chat_stream", { req, channel });
               } else if (isCLIActive && activeCLIProvider) {
                 const req: CLIChatRequest = {

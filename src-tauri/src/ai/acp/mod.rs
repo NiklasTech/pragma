@@ -1,6 +1,7 @@
 pub mod approval_bridge;
 pub mod client;
 pub mod config_options;
+pub mod continuation;
 pub mod error;
 pub mod fs_bridge;
 pub mod manager;
@@ -14,5 +15,5 @@ pub mod usage;
 pub use approval_bridge::{ApprovalBridge, ApprovalDecision};
 pub use client::{AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest};
 pub use error::{AcpError, Result};
-pub use manager::{AcpSessionHandle, AcpSessionManager};
+pub use manager::{AcpSessionHandle, AcpSessionManager, SessionStart};
 pub use types::PromptContent;

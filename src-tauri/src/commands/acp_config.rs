@@ -5,7 +5,7 @@ use tauri::State;
 
 use crate::ai::acp::config_options::SessionConfigOption;
 use crate::ai::acp::session_info::SessionInfo;
-use crate::ai::acp::AcpSessionManager;
+use crate::ai::acp::{AcpSessionManager, SessionStart};
 use crate::ai::cli::get_manifest;
 
 #[derive(Debug, Deserialize)]
@@ -21,6 +21,9 @@ pub struct AcpSessionConfigRequest {
     /// The CLI account's config folder; absent runs the default account.
     #[serde(default)]
     pub account_dir: Option<String>,
+    /// The agent's id of a conversation to continue instead of starting a new one.
+    #[serde(default)]
+    pub resume_session_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,14 +58,15 @@ pub async fn cli_acp_session_config(
 
     if !state.has_session(&req.chat_session_id).await {
         state
-            .start_session(
-                &req.provider_id,
-                &req.cwd,
-                &req.chat_session_id,
-                req.allow_child_sessions,
-                req.mcp_server_ids.as_deref(),
-                req.account_dir.as_deref(),
-            )
+            .start_session(SessionStart {
+                provider_id: &req.provider_id,
+                cwd: &req.cwd,
+                chat_session_id: &req.chat_session_id,
+                allow_child_sessions: req.allow_child_sessions,
+                mcp_server_ids: req.mcp_server_ids.as_deref(),
+                account_dir: req.account_dir.as_deref(),
+                resume_session_id: req.resume_session_id.as_deref(),
+            })
             .await
             .map_err(|e| e.to_string())?;
     }

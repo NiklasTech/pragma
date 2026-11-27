@@ -13,6 +13,7 @@ use super::client::{
     AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest, DEFAULT_TIMEOUT_MS,
 };
 use super::config_options::{parse_config_options, SessionConfigOption};
+use super::continuation::continue_method;
 use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
@@ -49,11 +50,27 @@ pub struct AcpSession {
     cwd: String,
     acp_session_id: String,
     accepts_images: bool,
+    /// Whether the agent has not seen the chat yet, so the next prompt carries its history.
+    needs_history: bool,
     current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
     config_options: SharedConfigOptions,
     session_info: SharedSessionInfo,
     _notification_handle: JoinHandle<()>,
     _reverse_rpc_handle: JoinHandle<()>,
+}
+
+/// What the agent of a chat starts with.
+pub struct SessionStart<'a> {
+    pub provider_id: &'a str,
+    pub cwd: &'a str,
+    pub chat_session_id: &'a str,
+    pub allow_child_sessions: bool,
+    /// MCP servers the session may use; `None` allows all of them.
+    pub mcp_server_ids: Option<&'a [String]>,
+    /// The CLI account's config folder; `None` runs the default account.
+    pub account_dir: Option<&'a str>,
+    /// The agent's id of a conversation to continue instead of starting a new one.
+    pub resume_session_id: Option<&'a str>,
 }
 
 pub struct AcpSessionManager {
@@ -77,15 +94,16 @@ impl AcpSessionManager {
         sessions.contains_key(chat_session_id)
     }
 
-    pub async fn start_session(
-        &self,
-        provider_id: &str,
-        cwd: &str,
-        chat_session_id: &str,
-        allow_child_sessions: bool,
-        mcp_server_ids: Option<&[String]>,
-        account_dir: Option<&str>,
-    ) -> Result<String> {
+    pub async fn start_session(&self, start: SessionStart<'_>) -> Result<String> {
+        let SessionStart {
+            provider_id,
+            cwd,
+            chat_session_id,
+            allow_child_sessions,
+            mcp_server_ids,
+            account_dir,
+            resume_session_id,
+        } = start;
         let manifest = get_manifest(provider_id)
             .ok_or_else(|| AcpError::Spawn(format!("unknown provider: {provider_id}")))?;
 
@@ -126,7 +144,7 @@ impl AcpSessionManager {
             request_timeout_ms: Some(DEFAULT_TIMEOUT_MS),
         };
 
-        let (client, child, notifications, reverse_requests) = AcpClient::start(config).await?;
+        let (client, child, mut notifications, reverse_requests) = AcpClient::start(config).await?;
 
         let init_response = client
             .request(
@@ -159,26 +177,51 @@ impl AcpSessionManager {
                 mcp_servers.push(server);
             }
         }
-        let new_session_req = NewSessionRequest {
-            cwd: cwd.to_string(),
-            mcp_servers: Some(mcp_servers),
+        // A stored session the agent can no longer continue starts over with the chat's history.
+        let mut continued = None;
+        if let (Some(session_id), Some(method)) =
+            (resume_session_id, continue_method(&init_response))
+        {
+            let request = serde_json::json!({
+                "sessionId": session_id,
+                "cwd": cwd,
+                "mcpServers": mcp_servers,
+            });
+            if let Ok(response) = client
+                .request(method.rpc_method(), Some(request), Default::default())
+                .await
+            {
+                // A load replays the history before it answers; the chat already shows it.
+                while notifications.try_recv().is_ok() {}
+                continued = Some((session_id.to_string(), response));
+            }
+        }
+        let needs_history = continued.is_none();
+
+        let (acp_session_id, new_session_resp) = match continued {
+            Some(continued) => continued,
+            None => {
+                let new_session_req = NewSessionRequest {
+                    cwd: cwd.to_string(),
+                    mcp_servers: Some(mcp_servers),
+                };
+                let response = client
+                    .request(
+                        "session/new",
+                        Some(serde_json::to_value(new_session_req)?),
+                        Default::default(),
+                    )
+                    .await?;
+                let session_id = response
+                    .get("sessionId")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        AcpError::Protocol("missing sessionId in session/new response".to_string())
+                    })?
+                    .to_string();
+                (session_id, response)
+            }
         };
-
-        let new_session_resp = client
-            .request(
-                "session/new",
-                Some(serde_json::to_value(new_session_req)?),
-                Default::default(),
-            )
-            .await?;
-
-        let acp_session_id = new_session_resp
-            .get("sessionId")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                AcpError::Protocol("missing sessionId in session/new response".to_string())
-            })?
-            .to_string();
 
         let cwd = cwd.to_string();
         let current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>> =
@@ -188,7 +231,10 @@ impl AcpSessionManager {
                 .get("configOptions")
                 .unwrap_or(&Value::Null),
         )));
-        let session_info: SharedSessionInfo = Arc::default();
+        let session_info: SharedSessionInfo = Arc::new(Mutex::new(SessionInfo {
+            session_id: acp_session_id.clone(),
+            ..SessionInfo::default()
+        }));
 
         let notification_handle = spawn_notification_handler(
             current_chunk_tx.clone(),
@@ -219,6 +265,7 @@ impl AcpSessionManager {
             cwd,
             acp_session_id: acp_session_id.clone(),
             accepts_images,
+            needs_history,
             current_chunk_tx,
             config_options,
             session_info,
@@ -276,6 +323,14 @@ impl AcpSessionManager {
         sessions
             .get(chat_session_id)
             .map(|session| session.accepts_images)
+    }
+
+    /// Whether the next prompt must carry the chat's history; true only once per new session.
+    pub async fn take_needs_history(&self, chat_session_id: &str) -> bool {
+        let mut sessions = self.sessions.lock().await;
+        sessions
+            .get_mut(chat_session_id)
+            .is_some_and(|session| std::mem::take(&mut session.needs_history))
     }
 
     pub async fn send_prompt(

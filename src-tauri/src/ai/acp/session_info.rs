@@ -30,6 +30,8 @@ pub struct PlanEntry {
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionInfo {
+    /// The agent's id of the conversation, for continuing it after a restart.
+    pub session_id: String,
     pub commands: Vec<AvailableCommand>,
     pub plan: Vec<PlanEntry>,
 }

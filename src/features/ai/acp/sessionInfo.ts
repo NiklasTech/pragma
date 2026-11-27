@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
+import type { ChatSession } from "@/shared/stores/ai";
+
 /// A slash command, skill or agent a coding CLI offers over ACP.
 export interface AcpCommand {
   name: string;
@@ -16,11 +18,21 @@ export interface AcpPlanEntry {
 }
 
 export interface AcpSessionInfo {
+  /** The agent's id of the conversation, stored to continue it after a restart. */
+  sessionId: string;
   commands: AcpCommand[];
   plan: AcpPlanEntry[];
 }
 
 export const ACP_SESSION_INFO_EVENT = "acp_session_info";
+
+/// The stored conversation a chat continues; terminal sessions resume theirs in the terminal.
+export function resumeSessionId(
+  session: Pick<ChatSession, "kind" | "cliSessionId"> | undefined,
+): string | null {
+  if (!session || session.kind === "terminal") return null;
+  return session.cliSessionId ?? null;
+}
 
 /// Commands whose name starts with the query come first, the agent's order is kept otherwise.
 export function matchingCommands(commands: AcpCommand[], query: string): AcpCommand[] {

@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use tauri::ipc::Channel;
 use tauri::State;
 
-use crate::ai::acp::{AcpSessionManager, ApprovalDecision, PromptContent};
+use crate::ai::acp::continuation::prompt_texts;
+use crate::ai::acp::{AcpSessionManager, ApprovalDecision, PromptContent, SessionStart};
 use crate::ai::cli::{built_in_manifests, CLIChatMessage, CLIChatRequest, CLIManager, CLIStatus};
 use crate::ai::image::{validate_images, ImageContent};
 use crate::commands::ai::StreamChunk;
@@ -38,6 +39,9 @@ pub struct AcpChatCommandRequest {
     /// The CLI account's config folder; absent runs the default account.
     #[serde(default)]
     pub account_dir: Option<String>,
+    /// The agent's id of a conversation to continue instead of starting a new one.
+    #[serde(default)]
+    pub resume_session_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -213,26 +217,27 @@ pub async fn cli_acp_chat_stream(
     }
     validate_images(&req.images)?;
 
-    let mut prompt_contents: Vec<PromptContent> = req
-        .messages
-        .into_iter()
-        .map(|m| PromptContent::Text { text: m.content })
-        .collect();
-
     // Ensure the ACP session exists; create it on first use.
     if !state.has_session(&req.chat_session_id).await {
         state
-            .start_session(
-                &req.provider_id,
-                &req.cwd,
-                &req.chat_session_id,
-                req.allow_child_sessions,
-                req.mcp_server_ids.as_deref(),
-                req.account_dir.as_deref(),
-            )
+            .start_session(SessionStart {
+                provider_id: &req.provider_id,
+                cwd: &req.cwd,
+                chat_session_id: &req.chat_session_id,
+                allow_child_sessions: req.allow_child_sessions,
+                mcp_server_ids: req.mcp_server_ids.as_deref(),
+                account_dir: req.account_dir.as_deref(),
+                resume_session_id: req.resume_session_id.as_deref(),
+            })
             .await
             .map_err(|e| e.to_string())?;
     }
+
+    let with_history = state.take_needs_history(&req.chat_session_id).await;
+    let mut prompt_contents: Vec<PromptContent> = prompt_texts(req.messages, with_history)
+        .into_iter()
+        .map(|text| PromptContent::Text { text })
+        .collect();
 
     if !req.images.is_empty() {
         if state.accepts_images(&req.chat_session_id).await != Some(true) {
