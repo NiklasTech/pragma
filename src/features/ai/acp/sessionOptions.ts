@@ -88,6 +88,8 @@ interface SessionOptionsState {
   loading: Record<string, boolean>;
   errors: Record<string, string | null>;
   receive: (chatSessionId: string, options: AcpConfigOption[]) => void;
+  /** Drops what an ended agent reported, so the chat's next agent loads its own. */
+  forget: (chatSessionId: string) => void;
   load: (
     providerId: string,
     chatSessionId: string,
@@ -109,6 +111,14 @@ export const useAcpSessionOptionsStore = create<SessionOptionsState>()((set, get
 
   receive: (chatSessionId, options) =>
     set((state) => ({ bySession: { ...state.bySession, [chatSessionId]: options } })),
+
+  forget: (chatSessionId) =>
+    set((state) => {
+      const { [chatSessionId]: _options, ...bySession } = state.bySession;
+      const { [chatSessionId]: _loading, ...loading } = state.loading;
+      const { [chatSessionId]: _error, ...errors } = state.errors;
+      return { bySession, loading, errors };
+    }),
 
   load: async (providerId, chatSessionId, cwd, allowChildSessions) => {
     const state = get();

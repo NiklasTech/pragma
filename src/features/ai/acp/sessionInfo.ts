@@ -51,6 +51,7 @@ export function planProgress(plan: AcpPlanEntry[]): { done: number; total: numbe
 interface SessionInfoState {
   bySession: Record<string, AcpSessionInfo>;
   receive: (chatSessionId: string, info: AcpSessionInfo) => void;
+  forget: (chatSessionId: string) => void;
   load: (chatSessionId: string) => Promise<void>;
 }
 
@@ -59,6 +60,12 @@ export const useAcpSessionInfoStore = create<SessionInfoState>()((set, get) => (
 
   receive: (chatSessionId, info) =>
     set((state) => ({ bySession: { ...state.bySession, [chatSessionId]: info } })),
+
+  forget: (chatSessionId) =>
+    set((state) => {
+      const { [chatSessionId]: _info, ...bySession } = state.bySession;
+      return { bySession };
+    }),
 
   load: async (chatSessionId) => {
     try {
