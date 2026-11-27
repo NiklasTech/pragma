@@ -189,6 +189,8 @@ export function ChatComposer({
           textarea.focus();
           textarea.setSelectionRange(position, position);
         }
+        // The Enter key-up of the pick may have stored the caret before the text changed.
+        moveCursor(position);
       });
     },
     [moveCursor, onInputChange],
