@@ -6,6 +6,7 @@ pub mod fs_bridge;
 pub mod manager;
 pub mod mcp_bridge;
 pub mod session_info;
+pub mod tool_calls;
 pub mod tools_bridge;
 pub mod types;
 pub mod usage;

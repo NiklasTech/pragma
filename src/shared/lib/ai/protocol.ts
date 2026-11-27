@@ -87,6 +87,8 @@ export interface StreamChunk {
   tool_calls?: BackendToolCall[];
   tool_results?: { tool_call_id: string; output: string; is_error: boolean }[];
   usage?: StreamUsage;
+  /** Titles coding CLIs give their tool calls, such as the shell command. */
+  tool_titles?: { tool_call_id: string; title: string }[];
 }
 
 interface ToolInvocationPart {
@@ -126,6 +128,7 @@ export interface ToolInvocationLike {
   input: unknown;
   output?: unknown;
   errorText?: string;
+  title?: string;
 }
 
 export function getToolInvocation(
@@ -162,6 +165,7 @@ export function getToolInvocation(
       input: p.input,
       output: p.output,
       errorText: p.errorText,
+      title: p.title,
     };
   }
 

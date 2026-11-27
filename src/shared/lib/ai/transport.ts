@@ -16,6 +16,7 @@ import {
   type StreamUsage,
 } from "./protocol";
 import { errorText } from "@/shared/lib/errorText";
+import { ToolCallTracker } from "./toolCallTracker";
 
 export function createStreamTransport(
   activeProvider: string,
@@ -60,13 +61,23 @@ export function createStreamTransport(
           };
 
           let hadToolCalls = false;
-          let reasoningStarted = false;
+          const toolCalls = new ToolCallTracker();
+          // Open parts; text, thinking and tool calls get parts in the order they arrive.
+          let textId: string | null = null;
+          let reasoningId: string | null = null;
+
+          const endReasoning = () => {
+            if (reasoningId) safeEnqueue({ type: "reasoning-end", id: reasoningId });
+            reasoningId = null;
+          };
+          const endText = () => {
+            if (textId) safeEnqueue({ type: "text-end", id: textId });
+            textId = null;
+          };
 
           const finish = () => {
-            if (reasoningStarted) {
-              safeEnqueue({ type: "reasoning-end", id: chunkId });
-            }
-            safeEnqueue({ type: "text-end", id: chunkId });
+            endReasoning();
+            endText();
             safeEnqueue({ type: "finish-step" });
             safeEnqueue({
               type: "finish",
@@ -91,46 +102,44 @@ export function createStreamTransport(
             if (!started) {
               started = true;
               safeEnqueue({ type: "start-step" });
+              textId = chunkId;
               safeEnqueue({ type: "text-start", id: chunkId });
             }
 
             if (chunk.text) {
-              safeEnqueue({ type: "text-delta", id: chunkId, delta: chunk.text });
+              endReasoning();
+              if (!textId) {
+                textId = generateId();
+                safeEnqueue({ type: "text-start", id: textId });
+              }
+              safeEnqueue({ type: "text-delta", id: textId, delta: chunk.text });
             }
 
             if (chunk.reasoning) {
-              if (!reasoningStarted) {
-                reasoningStarted = true;
-                safeEnqueue({ type: "reasoning-start", id: chunkId });
+              endText();
+              if (!reasoningId) {
+                reasoningId = generateId();
+                safeEnqueue({ type: "reasoning-start", id: reasoningId });
               }
-              safeEnqueue({
-                type: "reasoning-delta",
-                id: chunkId,
-                delta: chunk.reasoning,
-              });
+              safeEnqueue({ type: "reasoning-delta", id: reasoningId, delta: chunk.reasoning });
             }
 
             if (chunk.tool_calls && chunk.tool_calls.length > 0) {
               hadToolCalls = true;
+              endReasoning();
+              endText();
               for (const call of chunk.tool_calls) {
-                let input: unknown;
-                try {
-                  input = JSON.parse(call.function.arguments);
-                } catch {
-                  input = call.function.arguments;
-                }
-
-                safeEnqueue({
-                  type: "tool-input-available",
-                  toolCallId: call.id,
-                  toolName: call.function.name,
-                  input,
-                });
+                const update = toolCalls.update(
+                  call,
+                  chunk.tool_titles?.find((item) => item.tool_call_id === call.id)?.title,
+                );
+                if (update) safeEnqueue({ type: "tool-input-available", ...update });
               }
             }
 
             if (chunk.tool_results && chunk.tool_results.length > 0) {
               for (const result of chunk.tool_results) {
+                toolCalls.finish(result.tool_call_id);
                 if (result.is_error) {
                   safeEnqueue({
                     type: "tool-output-error",
@@ -224,6 +233,7 @@ export function createStreamTransport(
 
               if (!started) {
                 safeEnqueue({ type: "start-step" });
+                textId = chunkId;
                 safeEnqueue({ type: "text-start", id: chunkId });
               }
               finish();

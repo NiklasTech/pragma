@@ -213,6 +213,8 @@ pub enum SessionUpdateDetail {
     AgentThoughtChunk { content: ContentBlock },
     #[serde(rename = "tool_call")]
     ToolCall {
+        #[serde(default, rename = "_meta")]
+        meta: Option<Value>,
         #[serde(rename = "toolCallId")]
         tool_call_id: String,
         title: String,
@@ -227,6 +229,8 @@ pub enum SessionUpdateDetail {
     },
     #[serde(rename = "tool_call_update")]
     ToolCallUpdate {
+        #[serde(default, rename = "_meta")]
+        meta: Option<Value>,
         #[serde(rename = "toolCallId")]
         tool_call_id: String,
         #[serde(default)]

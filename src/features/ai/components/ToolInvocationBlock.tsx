@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, Spinner } from "@phosphor-icons/react";
 import { imageToFilePart } from "@/shared/lib/ai/images";
 import { isToolImageOutput, toolOutputImages } from "@/shared/lib/ai/toolOutput";
 import { stepLabel } from "@/features/agent/executor";
+import { cn } from "@/shared/lib/utils";
 
 import { ActivityBlock } from "./ActivityBlock";
 import { Shimmer } from "./Shimmer";
@@ -21,7 +22,13 @@ interface ToolInvocationBlockProps {
   input?: unknown;
   output?: unknown;
   errorText?: string;
+  /** The title a coding CLI gave the call, such as the shell command or the file it reads. */
+  title?: string;
+  /** Whether the message is still streaming; a call waiting for its output then counts as running. */
+  active?: boolean;
 }
+
+const PREVIEW_LINES = 3;
 
 function formatValue(value: unknown): string {
   if (value === undefined) return "";
@@ -41,6 +48,27 @@ function humanizeToolName(name: string): string {
   return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
+/// The CLI title without the tool name it repeats, e.g. "Read src/a.ts" -> "src/a.ts".
+export function titleDetail(
+  title: string | undefined,
+  toolName: string,
+  label: string,
+): string | undefined {
+  const text = title?.replace(/`/g, "").trim();
+  if (!text || text === toolName || text === label) return undefined;
+  for (const prefix of [toolName, label]) {
+    if (text.startsWith(`${prefix} `)) return text.slice(prefix.length + 1).trim();
+  }
+  return text;
+}
+
+/// The first lines of a tool's output and how many lines stay hidden.
+export function outputPreview(text: string): { lines: string[]; hidden: number } {
+  const all = text.replace(/\s+$/, "").split("\n");
+  if (all.length === 1 && all[0] === "") return { lines: [], hidden: 0 };
+  return { lines: all.slice(0, PREVIEW_LINES), hidden: Math.max(0, all.length - PREVIEW_LINES) };
+}
+
 const PRE_CLASS =
   "mt-1 max-w-full overflow-x-auto rounded-md border border-border-subtle bg-bg-root px-2.5 py-2 font-mono text-ui-2xs leading-relaxed whitespace-pre-wrap text-fg-muted";
 
@@ -50,13 +78,20 @@ export function ToolInvocationBlock({
   input,
   output,
   errorText,
+  title: cliTitle,
+  active = false,
 }: ToolInvocationBlockProps) {
-  const isRunning = state === "input-streaming" || state === "output-streaming";
+  const isStreaming = state === "input-streaming" || state === "output-streaming";
+  const isRunning = isStreaming || (active && state === "input-available");
   const isError = state === "output-error";
   const isDone = state === "output-available" || isError;
 
   const known = stepLabel(toolName, input);
   const label = known.label === toolName ? humanizeToolName(toolName) : known.label;
+  const detail = known.detail ?? titleDetail(cliTitle, toolName, label);
+  const preview = isDone
+    ? outputPreview(isError ? (errorText ?? "Tool execution failed") : formatValue(output))
+    : null;
 
   const icon = isRunning ? (
     <Spinner size={13} className="animate-spin text-primary" />
@@ -83,10 +118,8 @@ export function ToolInvocationBlock({
       ) : (
         <span className="shrink-0 font-medium text-fg-default">{label}</span>
       )}
-      {known.detail && (
-        <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-subtle">
-          {known.detail}
-        </span>
+      {detail && (
+        <span className="min-w-0 truncate font-mono text-ui-2xs text-fg-muted">{detail}</span>
       )}
     </>
   );
@@ -97,7 +130,28 @@ export function ToolInvocationBlock({
       title={title}
       hint={toolName}
       streaming={isRunning}
-      defaultOpen={isRunning}
+      defaultOpen={isStreaming}
+      preview={
+        preview && preview.lines.length > 0 ? (
+          <div
+            className={cn(
+              "flex flex-col font-mono text-ui-2xs leading-relaxed",
+              isError ? "text-status-error" : "text-fg-muted",
+            )}
+          >
+            {preview.lines.map((line, index) => (
+              <span key={index} className="truncate whitespace-pre">
+                {line || " "}
+              </span>
+            ))}
+            {preview.hidden > 0 && (
+              <span className="text-fg-subtle">
+                +{preview.hidden} {preview.hidden === 1 ? "line" : "lines"}
+              </span>
+            )}
+          </div>
+        ) : undefined
+      }
     >
       <div className="flex flex-col gap-2.5 text-ui-xs">
         {input !== undefined && (

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ToolInvocationBlock } from "./ToolInvocationBlock";
+import { outputPreview, titleDetail, ToolInvocationBlock } from "./ToolInvocationBlock";
 
 describe("ToolInvocationBlock", () => {
   it("renders a collapsed tool call as one row without card chrome", () => {
@@ -18,7 +18,8 @@ describe("ToolInvocationBlock", () => {
     expect(html.match(/<button/g) ?? []).toHaveLength(1);
     expect(html).not.toContain("my-2");
     expect(html).not.toContain("bg-bg-hover/30");
-    expect(html).not.toContain("file contents");
+    expect(html).toContain("file contents");
+    expect(html).not.toContain("Output");
   });
 
   it("expands args while running", () => {
@@ -46,5 +47,52 @@ describe("ToolInvocationBlock", () => {
     );
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain("Output");
+  });
+
+  it("shows a coding CLI's command and the first output lines", () => {
+    const html = renderToStaticMarkup(
+      <ToolInvocationBlock
+        toolCallId="call-4"
+        toolName="Bash"
+        title="ls -la"
+        state="output-available"
+        input={{ command: "ls -la" }}
+        output={"a\nb\nc\nd\ne"}
+      />,
+    );
+    expect(html).toContain("Bash");
+    expect(html).toContain("ls -la");
+    expect(html).toContain("+2 lines");
+    expect(html).not.toContain(">d<");
+  });
+
+  it("spins while a coding CLI's call waits for its output", () => {
+    const html = renderToStaticMarkup(
+      <ToolInvocationBlock
+        toolCallId="call-5"
+        toolName="Bash"
+        state="input-available"
+        input={{}}
+        active
+      />,
+    );
+    expect(html).toContain("animate-spin");
+    expect(html).toContain('aria-expanded="false"');
+  });
+});
+
+describe("titleDetail", () => {
+  it("drops the tool name the title repeats", () => {
+    expect(titleDetail("Read src/main.ts", "Read", "Read")).toBe("src/main.ts");
+    expect(titleDetail("`*.ts`", "Glob", "Glob")).toBe("*.ts");
+    expect(titleDetail("Terminal", "Terminal", "Terminal")).toBeUndefined();
+    expect(titleDetail(undefined, "Bash", "Bash")).toBeUndefined();
+  });
+});
+
+describe("outputPreview", () => {
+  it("keeps three lines and counts the rest", () => {
+    expect(outputPreview("1\n2\n3\n4\n")).toEqual({ lines: ["1", "2", "3"], hidden: 1 });
+    expect(outputPreview("")).toEqual({ lines: [], hidden: 0 });
   });
 });

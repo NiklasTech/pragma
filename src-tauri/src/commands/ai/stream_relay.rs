@@ -44,6 +44,7 @@ impl StreamRelay {
             tool_calls: chunk.tool_calls,
             tool_results: None,
             usage: None,
+            tool_titles: None,
         })
     }
 
@@ -60,6 +61,7 @@ impl StreamRelay {
             tool_calls: None,
             tool_results: None,
             usage: self.usage.map(Into::into),
+            tool_titles: None,
         })
     }
 }
