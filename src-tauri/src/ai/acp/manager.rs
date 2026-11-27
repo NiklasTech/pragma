@@ -13,7 +13,7 @@ use super::client::{
     AcpClient, AcpClientConfig, Notification, RequestOptions, ReverseRpcRequest, DEFAULT_TIMEOUT_MS,
 };
 use super::config_options::{parse_config_options, SessionConfigOption};
-use super::continuation::continue_method;
+use super::continuation::{continue_method, replay_transcript, ReplayedMessage};
 use super::error::{AcpError, Result};
 use super::fs_bridge::handle_fs_request;
 use super::mcp_bridge::configs_to_acp_servers;
@@ -52,6 +52,8 @@ pub struct AcpSession {
     accepts_images: bool,
     /// Whether the agent has not seen the chat yet, so the next prompt carries its history.
     needs_history: bool,
+    /// The conversation a load replayed, kept until the chat that asked for it takes it.
+    replayed: Option<Vec<ReplayedMessage>>,
     current_chunk_tx: Arc<Mutex<Option<mpsc::Sender<StreamChunk>>>>,
     config_options: SharedConfigOptions,
     session_info: SharedSessionInfo,
@@ -71,6 +73,8 @@ pub struct SessionStart<'a> {
     pub account_dir: Option<&'a str>,
     /// The agent's id of a conversation to continue instead of starting a new one.
     pub resume_session_id: Option<&'a str>,
+    /// Load the conversation and keep its replay, for a chat that does not show it yet.
+    pub replay_history: bool,
 }
 
 pub struct AcpSessionManager {
@@ -103,6 +107,7 @@ impl AcpSessionManager {
             mcp_server_ids,
             account_dir,
             resume_session_id,
+            replay_history,
         } = start;
         let manifest = get_manifest(provider_id)
             .ok_or_else(|| AcpError::Spawn(format!("unknown provider: {provider_id}")))?;
@@ -179,9 +184,11 @@ impl AcpSessionManager {
         }
         // A stored session the agent can no longer continue starts over with the chat's history.
         let mut continued = None;
-        if let (Some(session_id), Some(method)) =
-            (resume_session_id, continue_method(&init_response))
-        {
+        let mut replayed = None;
+        if let (Some(session_id), Some(method)) = (
+            resume_session_id,
+            continue_method(&init_response, replay_history),
+        ) {
             let request = serde_json::json!({
                 "sessionId": session_id,
                 "cwd": cwd,
@@ -191,8 +198,16 @@ impl AcpSessionManager {
                 .request(method.rpc_method(), Some(request), Default::default())
                 .await
             {
-                // A load replays the history before it answers; the chat already shows it.
-                while notifications.try_recv().is_ok() {}
+                // A load replays the history before it answers, so the replay is queued by now.
+                let mut updates = Vec::new();
+                while let Ok(notification) = notifications.try_recv() {
+                    if notification.method == "session/update" {
+                        updates.extend(notification.params);
+                    }
+                }
+                if replay_history {
+                    replayed = Some(replay_transcript(&updates, session_id));
+                }
                 continued = Some((session_id.to_string(), response));
             }
         }
@@ -266,6 +281,7 @@ impl AcpSessionManager {
             acp_session_id: acp_session_id.clone(),
             accepts_images,
             needs_history,
+            replayed,
             current_chunk_tx,
             config_options,
             session_info,
@@ -323,6 +339,12 @@ impl AcpSessionManager {
         sessions
             .get(chat_session_id)
             .map(|session| session.accepts_images)
+    }
+
+    /// The conversation a `replay_history` start loaded; `None` when the agent could not load it.
+    pub async fn take_replayed(&self, chat_session_id: &str) -> Option<Vec<ReplayedMessage>> {
+        let mut sessions = self.sessions.lock().await;
+        sessions.get_mut(chat_session_id)?.replayed.take()
     }
 
     /// Whether the next prompt must carry the chat's history; true only once per new session.
@@ -656,6 +678,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
         SessionUpdateDetail::ConfigOptionUpdate { .. }
         | SessionUpdateDetail::AvailableCommandsUpdate { .. }
         | SessionUpdateDetail::Plan { .. }
+        | SessionUpdateDetail::UserMessageChunk { .. }
         | SessionUpdateDetail::Other => StreamChunk::default(),
     }
 }

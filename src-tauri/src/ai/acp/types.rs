@@ -209,6 +209,8 @@ pub struct SessionUpdate {
 pub enum SessionUpdateDetail {
     #[serde(rename = "agent_message_chunk")]
     AgentMessageChunk { content: ContentBlock },
+    #[serde(rename = "user_message_chunk")]
+    UserMessageChunk { content: ContentBlock },
     #[serde(rename = "agent_thought_chunk")]
     AgentThoughtChunk { content: ContentBlock },
     #[serde(rename = "tool_call")]

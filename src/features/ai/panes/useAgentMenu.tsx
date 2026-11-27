@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 import type { ActionGroup, ActionMenuSpec, ActionTone } from "@/shared/components/ui/action-menu";
 import { AGENT_STATE_LABELS, type AgentState } from "@/shared/components/ui/status-dot";
 import { useAIStore } from "@/shared/stores/ai";
@@ -21,6 +23,7 @@ import { purgeStaleTerminals } from "../terminal/useStaleTerminals";
 import { sessionEnvironment } from "../worktree/cwd";
 import { movePaneToTab, otherAgentsTabs } from "./movePaneToTab";
 import { paneTreeKey, useAgentsPanesStore } from "./store";
+import { canShowAsChat, canShowInTerminal, showAsChat, showInTerminal } from "./switchAgentView";
 
 /** What a pane header adds, since it knows its own pane. */
 export interface PaneMenuActions {
@@ -132,6 +135,25 @@ export function useAgentMenu(
           : []),
       ],
     });
+
+    const manifest = useAIStore
+      .getState()
+      .cliManifests.find((item) => item.id === session.cliProviderId);
+    const switchView = (show: (sessionId: string) => Promise<void>) =>
+      void show(session.id).catch((err: unknown) =>
+        toast.error(err instanceof Error ? err.message : String(err)),
+      );
+    if (canShowAsChat(session, manifest)) {
+      groups.push({
+        items: [{ key: "c", label: "show as Pragma chat", onSelect: () => switchView(showAsChat) }],
+      });
+    } else if (canShowInTerminal(session, manifest)) {
+      groups.push({
+        items: [
+          { key: "c", label: "show in terminal", onSelect: () => switchView(showInTerminal) },
+        ],
+      });
+    }
 
     if (pane) {
       const move = (toTab: string | null) => movePaneToTab(session.rootPath, session.id, toTab);

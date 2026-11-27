@@ -228,6 +228,7 @@ pub async fn cli_acp_chat_stream(
                 mcp_server_ids: req.mcp_server_ids.as_deref(),
                 account_dir: req.account_dir.as_deref(),
                 resume_session_id: req.resume_session_id.as_deref(),
+                replay_history: false,
             })
             .await
             .map_err(|e| e.to_string())?;
