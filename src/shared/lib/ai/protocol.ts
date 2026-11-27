@@ -66,6 +66,8 @@ export interface AcpChatRequest {
   images?: BackendImage[];
   /** The CLI account's config folder; absent runs the default account. */
   account_dir?: string;
+  /** The agent's id of a conversation to continue instead of starting a new one. */
+  resume_session_id?: string;
 }
 
 /** Token counts of one model response, or the context fill an ACP agent reports. */

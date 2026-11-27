@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { matchingCommands, planProgress, type AcpCommand } from "./sessionInfo";
+import { matchingCommands, planProgress, resumeSessionId, type AcpCommand } from "./sessionInfo";
 
 function command(name: string): AcpCommand {
   return { name, description: `${name} description`, hint: null };
@@ -30,5 +30,14 @@ describe("planProgress", () => {
         { content: "c", priority: "low", status: "pending" },
       ]),
     ).toEqual({ done: 1, total: 3 });
+  });
+});
+
+describe("resumeSessionId", () => {
+  it("continues the stored conversation of a chat, never of a terminal", () => {
+    expect(resumeSessionId({ kind: "agent", cliSessionId: "abc" })).toBe("abc");
+    expect(resumeSessionId({ kind: "terminal", cliSessionId: "abc" })).toBeNull();
+    expect(resumeSessionId({ kind: "agent" })).toBeNull();
+    expect(resumeSessionId(undefined)).toBeNull();
   });
 });

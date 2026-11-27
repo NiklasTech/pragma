@@ -34,6 +34,7 @@ import { runChatToolCall, shouldAutoContinueChat } from "./chatToolCall";
 import { resolveMentionContext } from "./chatMentionContext";
 import { mcpSelectionKey, resolveMcpServerIds } from "@/features/ai/mcp/selection";
 import { expandPromptCommand } from "@/features/ai/mcp/prompts";
+import { resumeSessionId } from "@/features/ai/acp/sessionInfo";
 import { useAgent } from "@/features/agent/useAgent";
 import { useAgentStore } from "@/features/agent/store";
 import { useNamedAgentsStore } from "@/features/ai/named-agents/store";
@@ -160,6 +161,10 @@ export function useAI() {
           }
         },
         activeSession?.cliAccountDir ?? null,
+        () =>
+          resumeSessionId(
+            useAIStore.getState().chatSessions.find((item) => item.id === activeChatSessionId),
+          ),
       ),
     [
       effectiveProvider,
