@@ -34,6 +34,7 @@ const COMMANDS: &[&str] = &[
     "cancel_ai_chat_stream",
     "cancel_workspace_search",
     "check_port_in_use",
+    "child_session_mcp_config",
     "child_session_spawn_reply",
     "claude_mcp_missing",
     "claude_session_exists",

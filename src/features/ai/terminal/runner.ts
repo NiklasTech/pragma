@@ -11,6 +11,7 @@ import {
 } from "./attentionSignals";
 import { appendTerminalBuffer } from "./buffer";
 import { nextPasteMode, PASTE_MODE_OFF, type PasteModeState } from "./pasteMode";
+import { withPragmaMcp } from "./pragmaMcp";
 
 interface PtyOutputEvent {
   id: string;
@@ -359,7 +360,7 @@ export async function ensureTerminal(
               ...size,
             })
           : await invoke<string>("create_pty_command", {
-              command: current.command,
+              command: await withPragmaMcp(sessionId, current.command),
               cwd: current.cwd,
               account: current.account,
               ...size,

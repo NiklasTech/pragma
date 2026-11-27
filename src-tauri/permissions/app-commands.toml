@@ -36,6 +36,7 @@ permissions = [
   "allow-cancel-ai-chat-stream",
   "allow-cancel-workspace-search",
   "allow-check-port-in-use",
+  "allow-child-session-mcp-config",
   "allow-child-session-spawn-reply",
   "allow-claude-mcp-missing",
   "allow-claude-session-exists",
