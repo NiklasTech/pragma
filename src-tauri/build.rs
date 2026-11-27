@@ -45,6 +45,7 @@ const COMMANDS: &[&str] = &[
     "cli_acp_cancel",
     "cli_acp_chat_stream",
     "cli_acp_session_config",
+    "cli_acp_session_info",
     "cli_acp_set_config_option",
     "cli_chat_stream",
     "cli_check_all_statuses",

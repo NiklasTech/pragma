@@ -47,6 +47,7 @@ permissions = [
   "allow-cli-acp-cancel",
   "allow-cli-acp-chat-stream",
   "allow-cli-acp-session-config",
+  "allow-cli-acp-session-info",
   "allow-cli-acp-set-config-option",
   "allow-cli-chat-stream",
   "allow-cli-check-all-statuses",

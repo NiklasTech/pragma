@@ -4,6 +4,7 @@ use serde::Deserialize;
 use tauri::State;
 
 use crate::ai::acp::config_options::SessionConfigOption;
+use crate::ai::acp::session_info::SessionInfo;
 use crate::ai::acp::AcpSessionManager;
 use crate::ai::cli::get_manifest;
 
@@ -104,4 +105,19 @@ pub async fn cli_acp_accepts_images(
         return Err("chat_session_id is required".to_string());
     }
     Ok(state.accepts_images(&req.chat_session_id).await)
+}
+
+/// The slash commands, skills and plan the coding CLI reported for a running session.
+#[tauri::command]
+pub async fn cli_acp_session_info(
+    req: AcpSessionRequest,
+    state: State<'_, AcpSessionManager>,
+) -> Result<SessionInfo, String> {
+    if req.chat_session_id.is_empty() {
+        return Err("chat_session_id is required".to_string());
+    }
+    state
+        .session_info(&req.chat_session_id)
+        .await
+        .map_err(|e| e.to_string())
 }
