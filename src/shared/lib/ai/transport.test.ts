@@ -58,11 +58,11 @@ describe("createStreamTransport", () => {
       { reasoning: "plan" },
       {
         tool_calls: [call("t1", "Bash", "{}")],
-        tool_titles: [{ tool_call_id: "t1", title: "Terminal" }],
+        tool_details: [{ tool_call_id: "t1", title: "Terminal" }],
       },
       {
         tool_calls: [call("t1", "Bash", '{"command":"ls"}')],
-        tool_titles: [{ tool_call_id: "t1", title: "ls" }],
+        tool_details: [{ tool_call_id: "t1", title: "ls" }],
       },
       { tool_results: [{ tool_call_id: "t1", output: "a.ts", is_error: false }] },
       { text: "Done." },

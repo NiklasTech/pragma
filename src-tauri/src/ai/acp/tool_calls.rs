@@ -2,7 +2,9 @@ use serde_json::Value;
 
 use super::types::{ContentBlock, ToolCallContent};
 use crate::ai::provider::{FunctionCall, ToolCall};
-use crate::commands::ai::{StreamChunk, ToolCallTitle, ToolResult};
+use crate::commands::ai::{
+    StreamChunk, ToolCallDetails, ToolCallDiff, ToolCallLocation, ToolResult,
+};
 
 /// One `tool_call` or `tool_call_update` of an ACP agent.
 pub struct ToolCallReport {
@@ -10,6 +12,7 @@ pub struct ToolCallReport {
     pub title: Option<String>,
     pub status: Option<String>,
     pub meta: Option<Value>,
+    pub locations: Option<Vec<Value>>,
     pub raw_input: Option<Value>,
     pub raw_output: Option<Value>,
     pub content: Option<Vec<ToolCallContent>>,
@@ -55,13 +58,61 @@ fn value_text(value: Value) -> String {
     }
 }
 
-/// A tool call as stream chunk when it brings a title or input: its name (empty when the
-/// agent sends no tool name or title), input and title. A finished call carries its result.
+/// The file changes among a tool call's content; a diff without a path is left out.
+fn diffs(contents: &[ToolCallContent]) -> Vec<ToolCallDiff> {
+    contents
+        .iter()
+        .filter(|content| content.kind == "diff")
+        .filter_map(|content| {
+            Some(ToolCallDiff {
+                path: content.path.clone().filter(|path| !path.is_empty())?,
+                old_text: content.old_text.clone(),
+                new_text: content.new_text.clone().unwrap_or_default(),
+            })
+        })
+        .collect()
+}
+
+fn locations(raw: &[Value]) -> Vec<ToolCallLocation> {
+    raw.iter()
+        .filter_map(|location| {
+            Some(ToolCallLocation {
+                path: location
+                    .get("path")?
+                    .as_str()
+                    .filter(|path| !path.is_empty())?
+                    .to_string(),
+                line: location
+                    .get("line")
+                    .and_then(Value::as_u64)
+                    .and_then(|line| u32::try_from(line).ok()),
+            })
+        })
+        .collect()
+}
+
+/// A tool call as stream chunk. A report with a title or input names the call (the name is
+/// empty when the agent sends no tool name or title); its title, file changes and files go
+/// into the details, also after the call finished. A finished call carries its result.
 pub fn tool_call_chunk(report: ToolCallReport) -> StreamChunk {
     let is_completed = report.status.as_deref() == Some("completed");
     let is_failed = report.status.as_deref() == Some("failed");
     let title = report.title.filter(|title| !title.trim().is_empty());
     let mut chunk = StreamChunk::default();
+
+    let details = ToolCallDetails {
+        tool_call_id: report.id.clone(),
+        title: title.clone(),
+        diffs: report.content.as_deref().map(diffs).unwrap_or_default(),
+        locations: report
+            .locations
+            .as_deref()
+            .map(locations)
+            .unwrap_or_default(),
+    };
+    if details.title.is_some() || !details.diffs.is_empty() || !details.locations.is_empty() {
+        chunk.tool_details = Some(vec![details]);
+    }
 
     if title.is_some() || report.raw_input.is_some() {
         let arguments = report
@@ -79,12 +130,6 @@ pub fn tool_call_chunk(report: ToolCallReport) -> StreamChunk {
                 arguments,
             },
         }]);
-        chunk.tool_titles = title.map(|title| {
-            vec![ToolCallTitle {
-                tool_call_id: report.id.clone(),
-                title,
-            }]
-        });
     }
 
     if is_completed || is_failed {
@@ -114,6 +159,7 @@ mod tests {
             title: None,
             status: None,
             meta: None,
+            locations: None,
             raw_input: None,
             raw_output: None,
             content: None,
@@ -133,10 +179,11 @@ mod tests {
         assert_eq!(call.function.name, "Bash");
         assert_eq!(call.function.arguments, r#"{"command":"ls -la"}"#);
         assert_eq!(
-            chunk.tool_titles.unwrap(),
-            vec![ToolCallTitle {
+            chunk.tool_details.unwrap(),
+            vec![ToolCallDetails {
                 tool_call_id: "call-1".to_string(),
-                title: "ls -la".to_string(),
+                title: Some("ls -la".to_string()),
+                ..ToolCallDetails::default()
             }]
         );
         assert!(chunk.tool_results.is_none());
@@ -196,5 +243,79 @@ mod tests {
         assert!(failed.is_error);
         let raw = &other.tool_results.unwrap()[0].output;
         assert!(raw.starts_with("[{") && raw.contains(r#""type":"image""#));
+    }
+
+    #[test]
+    fn file_changes_and_locations_become_details() {
+        let content: Vec<ToolCallContent> = serde_json::from_value(json!([
+            { "type": "diff", "path": "/repo/a.ts", "oldText": "let a = 1;", "newText": "let a = 2;" },
+            { "type": "diff", "path": "/repo/new.ts", "oldText": null, "newText": "export {};" },
+            { "type": "diff", "newText": "no path" },
+            { "type": "content", "content": { "type": "text", "text": "note" } }
+        ]))
+        .unwrap();
+        let chunk = tool_call_chunk(ToolCallReport {
+            locations: Some(vec![
+                json!({ "path": "/repo/a.ts", "line": 3 }),
+                json!({ "path": "/repo/b.ts" }),
+                json!({ "line": 9 }),
+            ]),
+            content: Some(content),
+            ..report("call-7")
+        });
+
+        assert!(
+            chunk.tool_calls.is_none(),
+            "no title or input, so no new call report"
+        );
+        let details = &chunk.tool_details.unwrap()[0];
+        assert_eq!(
+            details.diffs,
+            vec![
+                ToolCallDiff {
+                    path: "/repo/a.ts".to_string(),
+                    old_text: Some("let a = 1;".to_string()),
+                    new_text: "let a = 2;".to_string(),
+                },
+                ToolCallDiff {
+                    path: "/repo/new.ts".to_string(),
+                    old_text: None,
+                    new_text: "export {};".to_string(),
+                },
+            ]
+        );
+        assert_eq!(
+            details.locations,
+            vec![
+                ToolCallLocation {
+                    path: "/repo/a.ts".to_string(),
+                    line: Some(3),
+                },
+                ToolCallLocation {
+                    path: "/repo/b.ts".to_string(),
+                    line: None,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn a_change_after_the_result_still_reaches_the_chat() {
+        let content: Vec<ToolCallContent> = serde_json::from_value(json!([
+            { "type": "diff", "path": "/repo/a.ts", "oldText": "a", "newText": "b" }
+        ]))
+        .unwrap();
+        let chunk = tool_call_chunk(ToolCallReport {
+            status: Some("completed".to_string()),
+            raw_output: Some(json!("The file was updated")),
+            content: Some(content),
+            ..report("call-8")
+        });
+
+        assert_eq!(chunk.tool_details.unwrap()[0].diffs.len(), 1);
+        assert_eq!(
+            chunk.tool_results.unwrap()[0].output,
+            "The file was updated"
+        );
     }
 }

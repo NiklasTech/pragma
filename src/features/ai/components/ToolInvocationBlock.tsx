@@ -9,6 +9,8 @@ import { cn } from "@/shared/lib/utils";
 
 import { ActivityBlock } from "./ActivityBlock";
 import { Shimmer } from "./Shimmer";
+import { FileLink, ToolDiffList } from "./ToolDiff";
+import { toolDetails } from "./toolDetails";
 
 interface ToolInvocationBlockProps {
   toolCallId: string;
@@ -26,9 +28,15 @@ interface ToolInvocationBlockProps {
   title?: string;
   /** Whether the message is still streaming; a call waiting for its output then counts as running. */
   active?: boolean;
+  /** File changes and files a coding CLI reported for the call. */
+  toolMetadata?: unknown;
+  /** The session's folder; file paths inside it show relative to it. */
+  root?: string | null;
 }
 
 const PREVIEW_LINES = 3;
+/** Diff lines per file while the call is folded. */
+const PREVIEW_DIFF_LINES = 8;
 
 function formatValue(value: unknown): string {
   if (value === undefined) return "";
@@ -80,6 +88,8 @@ export function ToolInvocationBlock({
   errorText,
   title: cliTitle,
   active = false,
+  toolMetadata,
+  root = null,
 }: ToolInvocationBlockProps) {
   const isStreaming = state === "input-streaming" || state === "output-streaming";
   const isRunning = isStreaming || (active && state === "input-available");
@@ -89,9 +99,49 @@ export function ToolInvocationBlock({
   const known = stepLabel(toolName, input);
   const label = known.label === toolName ? humanizeToolName(toolName) : known.label;
   const detail = known.detail ?? titleDetail(cliTitle, toolName, label);
+  const { diffs, locations } = toolDetails(toolMetadata);
   const preview = isDone
     ? outputPreview(isError ? (errorText ?? "Tool execution failed") : formatValue(output))
     : null;
+  const outputLines =
+    preview && preview.lines.length > 0 ? (
+      <div
+        className={cn(
+          "flex flex-col font-mono text-ui-2xs leading-relaxed",
+          isError ? "text-status-error" : "text-fg-muted",
+        )}
+      >
+        {preview.lines.map((line, index) => (
+          <span key={index} className="truncate whitespace-pre">
+            {line || " "}
+          </span>
+        ))}
+        {preview.hidden > 0 && (
+          <span className="text-fg-subtle">
+            +{preview.hidden} {preview.hidden === 1 ? "line" : "lines"}
+          </span>
+        )}
+      </div>
+    ) : null;
+  // An edit shows its change; other calls show the files they worked on and their output.
+  const folded =
+    diffs.length > 0 ? (
+      <div className="flex flex-col gap-1">
+        <ToolDiffList diffs={diffs} limit={PREVIEW_DIFF_LINES} root={root} />
+        {isError && outputLines}
+      </div>
+    ) : locations.length > 0 || outputLines ? (
+      <div className="flex flex-col gap-0.5">
+        {locations.length > 0 && (
+          <div className="flex min-w-0 flex-wrap gap-x-3">
+            {locations.slice(0, 3).map((location, index) => (
+              <FileLink key={index} path={location.path} line={location.line} root={root} />
+            ))}
+          </div>
+        )}
+        {outputLines}
+      </div>
+    ) : undefined;
 
   const icon = isRunning ? (
     <Spinner size={13} className="animate-spin text-primary" />
@@ -131,30 +181,11 @@ export function ToolInvocationBlock({
       hint={toolName}
       streaming={isRunning}
       defaultOpen={isStreaming}
-      preview={
-        preview && preview.lines.length > 0 ? (
-          <div
-            className={cn(
-              "flex flex-col font-mono text-ui-2xs leading-relaxed",
-              isError ? "text-status-error" : "text-fg-muted",
-            )}
-          >
-            {preview.lines.map((line, index) => (
-              <span key={index} className="truncate whitespace-pre">
-                {line || " "}
-              </span>
-            ))}
-            {preview.hidden > 0 && (
-              <span className="text-fg-subtle">
-                +{preview.hidden} {preview.hidden === 1 ? "line" : "lines"}
-              </span>
-            )}
-          </div>
-        ) : undefined
-      }
+      preview={folded}
     >
       <div className="flex flex-col gap-2.5 text-ui-xs">
-        {input !== undefined && (
+        {diffs.length > 0 && <ToolDiffList diffs={diffs} root={root} />}
+        {input !== undefined && diffs.length === 0 && (
           <div>
             <span className="text-ui-2xs font-semibold tracking-wider text-fg-subtle uppercase">
               Input

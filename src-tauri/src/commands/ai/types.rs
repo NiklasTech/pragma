@@ -57,11 +57,31 @@ pub struct ToolResult {
     pub is_error: bool,
 }
 
-/// The title a coding CLI gives one of its tool calls, such as the shell command it runs.
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
-pub struct ToolCallTitle {
+/// What a coding CLI tells about one of its tool calls besides input and output: its title
+/// (such as the shell command), the file changes it makes and the files it works on.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+pub struct ToolCallDetails {
     pub tool_call_id: String,
-    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub diffs: Vec<ToolCallDiff>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub locations: Vec<ToolCallLocation>,
+}
+
+/// A change to one file; `old_text` is absent for a new file.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct ToolCallDiff {
+    pub path: String,
+    pub old_text: Option<String>,
+    pub new_text: String,
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct ToolCallLocation {
+    pub path: String,
+    pub line: Option<u32>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
@@ -78,7 +98,7 @@ pub struct StreamChunk {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub usage: Option<StreamUsage>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tool_titles: Option<Vec<ToolCallTitle>>,
+    pub tool_details: Option<Vec<ToolCallDetails>>,
 }
 
 /// Token counts of one model response. ACP agents may instead report the

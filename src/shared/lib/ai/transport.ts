@@ -125,22 +125,30 @@ export function createStreamTransport(
               safeEnqueue({ type: "reasoning-delta", id: reasoningId, delta: chunk.reasoning });
             }
 
-            if (chunk.tool_calls && chunk.tool_calls.length > 0) {
+            const calls = chunk.tool_calls ?? [];
+            const details = chunk.tool_details ?? [];
+            if (calls.length > 0) {
               hadToolCalls = true;
               endReasoning();
               endText();
-              for (const call of chunk.tool_calls) {
-                const update = toolCalls.update(
-                  call,
-                  chunk.tool_titles?.find((item) => item.tool_call_id === call.id)?.title,
-                );
-                if (update) safeEnqueue({ type: "tool-input-available", ...update });
-              }
+            }
+            for (const call of calls) {
+              const update = toolCalls.report(
+                call,
+                details.find((item) => item.tool_call_id === call.id),
+              );
+              if (update) safeEnqueue(update);
+            }
+            // Details of calls this chunk does not report, like the final diff of an edit.
+            for (const item of details) {
+              if (calls.some((call) => call.id === item.tool_call_id)) continue;
+              const update = toolCalls.report(null, item);
+              if (update) safeEnqueue(update);
             }
 
             if (chunk.tool_results && chunk.tool_results.length > 0) {
               for (const result of chunk.tool_results) {
-                toolCalls.finish(result.tool_call_id);
+                toolCalls.finish(result.tool_call_id, result.is_error ? null : result.output);
                 if (result.is_error) {
                   safeEnqueue({
                     type: "tool-output-error",

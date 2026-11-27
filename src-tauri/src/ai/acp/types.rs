@@ -217,6 +217,8 @@ pub enum SessionUpdateDetail {
     ToolCall {
         #[serde(default, rename = "_meta")]
         meta: Option<Value>,
+        #[serde(default)]
+        locations: Option<Vec<Value>>,
         #[serde(rename = "toolCallId")]
         tool_call_id: String,
         title: String,
@@ -233,6 +235,8 @@ pub enum SessionUpdateDetail {
     ToolCallUpdate {
         #[serde(default, rename = "_meta")]
         meta: Option<Value>,
+        #[serde(default)]
+        locations: Option<Vec<Value>>,
         #[serde(rename = "toolCallId")]
         tool_call_id: String,
         #[serde(default)]

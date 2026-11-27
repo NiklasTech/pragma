@@ -5,6 +5,7 @@ import { detectLanguage } from "@/shared/lib/language";
 import { useEditorStore } from "@/shared/stores/editor";
 import { openNonTextFile } from "@/features/editor/preview/openPreview";
 import { errorText } from "@/shared/lib/errorText";
+import { useUiModeStore } from "@/shell/mode";
 
 interface FileReadResult {
   path: string;
@@ -36,5 +37,15 @@ export async function openWorkspaceFile(path: string, panelId: string | null): P
     if (openNonTextFile(path, panelId, err)) return true;
     toast.error(errorText(err));
     return false;
+  }
+}
+
+/// Opens a file in the editor view, in the editor panel used last, at a line when one is given.
+export async function openFileAtLine(path: string, line: number | null): Promise<void> {
+  if (!(await openWorkspaceFile(path, useEditorStore.getState().lastFocusedPanelId))) return;
+  useUiModeStore.getState().setUiMode("editor");
+  const editor = useEditorStore.getState();
+  if (line !== null && editor.activeTabId) {
+    editor.goToPosition(editor.activeTabId, { line, column: 1 });
   }
 }

@@ -632,6 +632,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             title,
             status,
             meta,
+            locations,
             raw_input,
             content,
             ..
@@ -640,6 +641,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             title: Some(title),
             status,
             meta,
+            locations,
             raw_input,
             raw_output: None,
             content,
@@ -649,6 +651,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             title,
             status,
             meta,
+            locations,
             raw_input,
             content,
             raw_output,
@@ -658,6 +661,7 @@ fn session_update_to_chunk(payload: SessionUpdateDetail) -> StreamChunk {
             title,
             status,
             meta,
+            locations,
             raw_input,
             raw_output,
             content,
@@ -755,7 +759,7 @@ mod tests {
             && chunk.tool_calls.is_none()
             && chunk.tool_results.is_none()
             && chunk.usage.is_none()
-            && chunk.tool_titles.is_none()
+            && chunk.tool_details.is_none()
     }
 
     #[test]
@@ -872,7 +876,10 @@ mod tests {
         assert_eq!(call.id, "call-1");
         assert_eq!(call.function.name, "Bash");
         assert_eq!(call.function.arguments, r#"{"command":"git status"}"#);
-        assert_eq!(refined.tool_titles.unwrap()[0].title, "git status");
+        assert_eq!(
+            refined.tool_details.unwrap()[0].title.as_deref(),
+            Some("git status")
+        );
         assert!(is_empty(&status_only));
     }
 

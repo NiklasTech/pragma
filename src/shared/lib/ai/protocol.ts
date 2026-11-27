@@ -89,8 +89,27 @@ export interface StreamChunk {
   tool_calls?: BackendToolCall[];
   tool_results?: { tool_call_id: string; output: string; is_error: boolean }[];
   usage?: StreamUsage;
-  /** Titles coding CLIs give their tool calls, such as the shell command. */
-  tool_titles?: { tool_call_id: string; title: string }[];
+  /** What coding CLIs tell about their tool calls: titles, file changes, files. */
+  tool_details?: BackendToolDetails[];
+}
+
+export interface BackendToolDiff {
+  path: string;
+  /** Absent for a new file. */
+  old_text: string | null;
+  new_text: string;
+}
+
+export interface BackendToolLocation {
+  path: string;
+  line: number | null;
+}
+
+export interface BackendToolDetails {
+  tool_call_id: string;
+  title?: string;
+  diffs?: BackendToolDiff[];
+  locations?: BackendToolLocation[];
 }
 
 interface ToolInvocationPart {
@@ -131,6 +150,8 @@ export interface ToolInvocationLike {
   output?: unknown;
   errorText?: string;
   title?: string;
+  /** File changes and files of a coding CLI's call; see `toolDetails`. */
+  toolMetadata?: unknown;
 }
 
 export function getToolInvocation(
@@ -168,6 +189,7 @@ export function getToolInvocation(
       output: p.output,
       errorText: p.errorText,
       title: p.title,
+      toolMetadata: p.toolMetadata,
     };
   }
 
