@@ -229,6 +229,7 @@ pub async fn cli_acp_chat_stream(
                 account_dir: req.account_dir.as_deref(),
                 resume_session_id: req.resume_session_id.as_deref(),
                 replay_history: false,
+                sign_in_method: None,
             })
             .await
             .map_err(|e| e.to_string())?;

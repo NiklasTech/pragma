@@ -48,6 +48,8 @@ const COMMANDS: &[&str] = &[
     "cli_acp_session_config",
     "cli_acp_session_info",
     "cli_acp_set_config_option",
+    "cli_acp_sign_in",
+    "cli_acp_sign_in_methods",
     "cli_acp_stop_session",
     "cli_chat_stream",
     "cli_check_all_statuses",

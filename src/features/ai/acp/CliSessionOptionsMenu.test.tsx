@@ -13,6 +13,7 @@ describe("CliSessionOptionsMenu", () => {
           loading: false,
           error: null,
           setOption: () => {},
+          signIn: () => {},
           options: [
             {
               id: "model",
