@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Kbd } from "@/shared/components/ui/kbd";
@@ -26,6 +26,8 @@ interface ApprovalBarProps {
   alwaysLabel?: string;
   /** Only the first open request in a pane answers Enter. */
   takesEnter?: boolean;
+  /** What the request would change, e.g. the diff of an edit, shown under the bar's line. */
+  details?: ReactNode;
   onDeny: () => void;
   onAllow: () => void;
   onAllowAlways?: () => void;
@@ -38,6 +40,7 @@ export function ApprovalBar({
   description,
   alwaysLabel,
   takesEnter = false,
+  details,
   onDeny,
   onAllow,
   onAllowAlways,
@@ -117,6 +120,7 @@ export function ApprovalBar({
           )}
         </Button>
       </span>
+      {details && <div className="max-h-64 w-full overflow-y-auto">{details}</div>}
     </div>
   );
 }

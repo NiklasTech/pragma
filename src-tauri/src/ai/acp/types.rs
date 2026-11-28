@@ -390,7 +390,9 @@ pub struct FsWriteTextFileResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ToolCallUpdate {
     pub tool_call_id: String,
+    #[serde(default)]
     pub title: String,
+    #[serde(default)]
     pub content: Vec<ToolCallContent>,
 }
 

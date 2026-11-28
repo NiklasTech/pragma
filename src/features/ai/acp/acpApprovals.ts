@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { create } from "zustand";
 
+import type { BackendToolDiff } from "@/shared/lib/ai/protocol";
 import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
 import { useSettingsStore } from "@/shared/stores/settings";
@@ -20,6 +21,8 @@ export interface AcpApproval {
   description?: string;
   /** The agent's name for "always allow"; absent when it offers no such option. */
   alwaysLabel?: string;
+  /** The file changes the agent asks to make. */
+  diffs?: BackendToolDiff[];
 }
 
 interface AcpApprovalsState {

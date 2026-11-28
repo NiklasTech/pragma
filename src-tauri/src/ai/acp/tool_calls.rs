@@ -59,7 +59,7 @@ fn value_text(value: Value) -> String {
 }
 
 /// The file changes among a tool call's content; a diff without a path is left out.
-fn diffs(contents: &[ToolCallContent]) -> Vec<ToolCallDiff> {
+pub fn diffs(contents: &[ToolCallContent]) -> Vec<ToolCallDiff> {
     contents
         .iter()
         .filter(|content| content.kind == "diff")
