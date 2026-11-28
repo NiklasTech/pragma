@@ -8,7 +8,7 @@ const SESSION_ID = /^[A-Za-z0-9-]{8,64}$/;
 
 /** What a Pragma hook reports besides attention: the CLI's own session id, or its usage limit. */
 export type PragmaReport = { kind: "session"; id: string } | { kind: "limit" };
-const INPUT_PATTERN = /approv|permission|input|waiting|confirm/i;
+const INPUT_PATTERN = /approv|permission|input|waiting|confirm|attention/i;
 
 type ParserState = "ground" | "escape" | "osc" | "osc-escape" | "string" | "string-escape";
 
