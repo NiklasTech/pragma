@@ -1,6 +1,7 @@
 //! Pragma's built-in tool groups. Each group defines its tools in its own file; the app answers
 //! their calls in the window that holds the session (`src/features/ai/pragmaTools/`).
 
+mod agents;
 mod code;
 mod editor;
 mod user;
@@ -16,6 +17,7 @@ pub fn definitions() -> Vec<Value> {
     let mut tools = code::definitions();
     tools.extend(editor::definitions());
     tools.extend(user::definitions());
+    tools.extend(agents::definitions());
     tools.extend(workspace::definitions());
     tools
 }

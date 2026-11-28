@@ -8,6 +8,8 @@ import { useAIStore } from "@/shared/stores/ai";
 import { sessionCwd } from "../worktree/cwd";
 import { CODE_TOOLS } from "./codeTools";
 import { EDITOR_TOOLS } from "./editorTools";
+import { SESSION_TOOLS } from "./sessionTools";
+import { TASK_TOOLS } from "./taskTools";
 import { USER_TOOLS } from "./userTools";
 import { WORKSPACE_TOOLS } from "./workspaceTools";
 import type { PragmaToolHandler } from "./types";
@@ -19,6 +21,8 @@ export const PRAGMA_TOOLS: Record<string, PragmaToolHandler> = {
   ...CODE_TOOLS,
   ...EDITOR_TOOLS,
   ...USER_TOOLS,
+  ...SESSION_TOOLS,
+  ...TASK_TOOLS,
   ...WORKSPACE_TOOLS,
 };
 

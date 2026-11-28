@@ -55,6 +55,19 @@ Example: an agent that changed `src/store.ts` calls `lsp_diagnostics` with `{ "p
 | `editor_selection`  |                 | The text selected in the active file with its lines, or the cursor position                                            |
 | `review_request`    | `message?`      | A notice with a Review button that opens the session's review view; the user's comments come back as a message         |
 
+### Other agents and tasks
+
+| Tool            | Arguments                                        | What it does                                                                                                                                     |
+| --------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sessions_list` |                                                  | The project's live sessions with id, title, agent, kind and state; the caller's own is marked                                                    |
+| `session_read`  | `session`, `lines?`                              | A terminal session's screen (rendered like the terminal shows it) or a chat's last messages; up to 300 lines                                     |
+| `session_send`  | `session`, `message`                             | Types the message into a terminal session or hands it to a chat, which sends it when shown; asks unless agent actions are approved automatically |
+| `tasks_list`    |                                                  | The project's task board                                                                                                                         |
+| `task_create`   | `title`, `notes?`, `priority?`, `labels?`        | Adds a task in To do                                                                                                                             |
+| `task_update`   | `task`, `status?`, `title?`, `notes?`, `result?` | Changes a task                                                                                                                                   |
+
+Agents reach only sessions of their own project.
+
 ### Workspace
 
 | Tool                    | Arguments        | What it does                                                                                                                                                                                                    |
