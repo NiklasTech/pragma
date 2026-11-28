@@ -9,6 +9,7 @@ import { sessionCwd } from "../worktree/cwd";
 import { CODE_TOOLS } from "./codeTools";
 import { EDITOR_TOOLS } from "./editorTools";
 import { USER_TOOLS } from "./userTools";
+import { WORKSPACE_TOOLS } from "./workspaceTools";
 import type { PragmaToolHandler } from "./types";
 
 const PRAGMA_TOOL_EVENT = "pragma_tool_request";
@@ -18,6 +19,7 @@ export const PRAGMA_TOOLS: Record<string, PragmaToolHandler> = {
   ...CODE_TOOLS,
   ...EDITOR_TOOLS,
   ...USER_TOOLS,
+  ...WORKSPACE_TOOLS,
 };
 
 interface PragmaToolEvent {

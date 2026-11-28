@@ -55,6 +55,14 @@ Example: an agent that changed `src/store.ts` calls `lsp_diagnostics` with `{ "p
 | `editor_selection`  |                 | The text selected in the active file with its lines, or the cursor position                                            |
 | `review_request`    | `message?`      | A notice with a Review button that opens the session's review view; the user's comments come back as a message         |
 
+### Workspace
+
+| Tool                    | Arguments        | What it does                                                                                                                                                                                                    |
+| ----------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace_info`        |                  | Project and working folder, worktree and its base branch, git branch with upstream and changed files, run configurations, and the stack detected from files like `package.json` or `Cargo.toml`                 |
+| `local_history`         | `path`, `entry?` | The file's versions Pragma knows (snapshots from saves in the editor and edits of Pragma's own agent, plus git commits); with `entry`, that version's diff. Changes a coding CLI writes itself have no snapshot |
+| `local_history_restore` | `path`, `entry`  | Restores the file to that version; follows the setting for edits                                                                                                                                                |
+
 ### The user
 
 | Tool          | Arguments             | What it does                                                                                                                                                                                             |

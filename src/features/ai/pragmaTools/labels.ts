@@ -12,6 +12,9 @@ const LABELS: Record<string, { label: string; detailKey?: string }> = {
   editor_open_files: { label: "List open files" },
   editor_selection: { label: "Read selection" },
   review_request: { label: "Ask for review" },
+  workspace_info: { label: "Read workspace" },
+  local_history: { label: "Read file history", detailKey: "path" },
+  local_history_restore: { label: "Restore file", detailKey: "path" },
   ask_user: { label: "Ask you", detailKey: "question" },
   notify_user: { label: "Notify you", detailKey: "message" },
 };
