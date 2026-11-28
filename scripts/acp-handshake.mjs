@@ -1,7 +1,7 @@
 // ACP handshake check for the coding CLIs in src-tauri/src/ai/cli/manifest.rs. It needs no login:
 // it sends `initialize` and `session/new` and reports what each agent answers.
 // Usage: node scripts/acp-handshake.mjs [--json] [--timeout <s>] [--require <id,...>] [provider-id ...]
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -30,15 +30,16 @@ function parseArgs(argv) {
   return options;
 }
 
-function splitCommand(command) {
-  return command.split(/\s+/).filter(Boolean);
-}
-
 class AgentProcess {
   constructor(command, cwd, timeoutMs) {
-    const [bin, ...args] = splitCommand(command);
-    const windows = process.platform === "win32";
-    this.child = spawn(bin, args, { cwd, stdio: ["pipe", "pipe", "pipe"], shell: windows });
+    // Windows needs a shell to find `.cmd` shims such as the ones npm installs.
+    const options = { cwd, stdio: ["pipe", "pipe", "pipe"] };
+    if (process.platform === "win32") {
+      this.child = spawn(command, { ...options, shell: true });
+    } else {
+      const [bin, ...args] = command.split(/\s+/).filter(Boolean);
+      this.child = spawn(bin, args, options);
+    }
     this.timeoutMs = timeoutMs;
     this.nextId = 1;
     this.pending = new Map();
@@ -93,7 +94,13 @@ class AgentProcess {
   }
 
   stop() {
-    if (this.child.exitCode === null) this.child.kill();
+    if (this.child.exitCode !== null) return;
+    // Killing the shell on Windows leaves the agent running, so end the whole process tree.
+    if (process.platform === "win32" && this.child.pid) {
+      spawnSync("taskkill", ["/pid", String(this.child.pid), "/T", "/F"], { stdio: "ignore" });
+    } else {
+      this.child.kill();
+    }
   }
 }
 
@@ -158,7 +165,11 @@ async function check({ id, command }, timeoutMs) {
   } finally {
     agent.stop();
     await Promise.race([agent.exit, new Promise((resolve) => setTimeout(resolve, 2000))]);
-    rmSync(cwd, { recursive: true, force: true });
+    try {
+      rmSync(cwd, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+    } catch {
+      // A process that outlived the check still holds the folder; the OS cleans the temp dir.
+    }
   }
 }
 
