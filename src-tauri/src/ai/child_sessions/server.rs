@@ -211,6 +211,7 @@ async fn forward(
     let event_name = match req.tool.as_str() {
         TOOL_NAME => SPAWN_REQUEST_EVENT,
         name if is_browser_tool(name) => BROWSER_REQUEST_EVENT,
+        name if super::tools::is_pragma_tool(name) => super::tools::PRAGMA_TOOL_EVENT,
         name if name.starts_with(EXTENSION_TOOL_PREFIX) && is_registered_tool(tools, name) => {
             EXTENSION_TOOL_EVENT
         }
