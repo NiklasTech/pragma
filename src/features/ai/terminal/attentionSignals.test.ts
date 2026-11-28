@@ -61,6 +61,13 @@ describe("oscAttention", () => {
     expect(oscAttention("777;notify;Gemini;Task complete")).toBe("finished");
   });
 
+  it("reads Gemini CLI's own notifications", () => {
+    const attention = "Gemini CLI needs your attention;Answer requested by agent | Which file?";
+    expect(oscAttention(`777;notify;${attention}`)).toBe("input");
+    expect(oscAttention("9;Gemini CLI needs your attention | Action required")).toBe("input");
+    expect(oscAttention("777;notify;Gemini CLI session complete;Run finished")).toBe("finished");
+  });
+
   it("ignores other OSC sequences", () => {
     expect(oscAttention("7;file:///tmp")).toBeNull();
     expect(oscAttention("777;preexec")).toBeNull();
