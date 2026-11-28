@@ -5,8 +5,13 @@ import { useAIStore } from "@/shared/stores/ai";
 import { resolveAcpApproval, useAcpApprovalsStore, type AcpApproval } from "../acp/acpApprovals";
 import { ToolDiffList } from "../components/ToolDiff";
 import { useSessionFolder } from "../components/useSessionFolder";
-import { resolveSpawnApproval, useSpawnApprovalsStore } from "../children/acpSpawn";
+import {
+  chooseSpawnOption,
+  resolveSpawnApproval,
+  useSpawnApprovalsStore,
+} from "../children/acpSpawn";
 import { sessionAgentManifest } from "../sessions/sessionAgent";
+import { QuestionBar } from "./QuestionBar";
 
 const NONE: never[] = [];
 
@@ -80,6 +85,18 @@ export function SessionApprovals({
         />
       ))}
       {spawn.map((approval, index) => {
+        if (approval.options) {
+          return (
+            <QuestionBar
+              key={approval.toolCallId}
+              title={`${agentName} asks`}
+              question={approval.description ?? ""}
+              options={approval.options}
+              onChoose={(option) => chooseSpawnOption(sessionId, approval.toolCallId, option)}
+              onDismiss={() => resolveSpawnApproval(sessionId, approval.toolCallId, false)}
+            />
+          );
+        }
         const { label, detail } = stepLabel(approval.toolName, approval.args);
         return (
           <ApprovalBar

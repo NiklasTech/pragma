@@ -30,7 +30,8 @@ export function useFirstRequest(sessionId: string): FirstRequest | null {
       allow: () => void resolveAcpApproval(sessionId, acp.toolCallId, "allow"),
     };
   }
-  if (spawn) {
+  // A question is answered with one of its options, not allowed.
+  if (spawn && !spawn.options) {
     const { label, detail } = stepLabel(spawn.toolName, spawn.args);
     return {
       request: detail ?? label,

@@ -2,6 +2,7 @@
 //! their calls in the window that holds the session (`src/features/ai/pragmaTools/`).
 
 mod code;
+mod user;
 
 use serde_json::Value;
 
@@ -10,7 +11,9 @@ pub const PRAGMA_TOOL_EVENT: &str = "pragma_tool_request";
 
 /// MCP definitions of every built-in tool group.
 pub fn definitions() -> Vec<Value> {
-    code::definitions()
+    let mut tools = code::definitions();
+    tools.extend(user::definitions());
+    tools
 }
 
 pub fn is_pragma_tool(name: &str) -> bool {

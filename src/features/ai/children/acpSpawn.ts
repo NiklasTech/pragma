@@ -44,17 +44,26 @@ export function requestSpawnApproval(
   });
 }
 
-export function resolveSpawnApproval(sessionId: string, toolCallId: string, approved: boolean) {
+function takeSpawnApproval(sessionId: string, toolCallId: string): AgentApproval | undefined {
   const approvals = useSpawnApprovalsStore.getState().bySession[sessionId] ?? [];
   const approval = approvals.find((item) => item.toolCallId === toolCallId);
-  if (!approval) return;
+  if (!approval) return undefined;
   useSpawnApprovalsStore.setState((state) => ({
     bySession: {
       ...state.bySession,
       [sessionId]: approvals.filter((item) => item.toolCallId !== toolCallId),
     },
   }));
-  approval.resolve(approved);
+  return approval;
+}
+
+export function resolveSpawnApproval(sessionId: string, toolCallId: string, approved: boolean) {
+  takeSpawnApproval(sessionId, toolCallId)?.resolve(approved);
+}
+
+/// Answers a request that offers options, such as a coding CLI's question to the user.
+export function chooseSpawnOption(sessionId: string, toolCallId: string, option: string) {
+  takeSpawnApproval(sessionId, toolCallId)?.choose?.(option);
 }
 
 function acpContext(parentId: string, cliProviderId: string | null): AgentRunContext {
