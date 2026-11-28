@@ -27,6 +27,7 @@ import { useDiagnosticsCleanup } from "@/shared/hooks/useDiagnosticsCleanup";
 import { useTerminalShellResolver } from "@/shared/hooks/useTerminalShellResolver";
 import { useExtensions } from "@/features/extensions/useExtensions";
 import { useAcpBrowserRequests } from "@/features/ai/browser/acpBrowser";
+import { useAcpPragmaTools } from "@/features/ai/pragmaTools/useAcpPragmaTools";
 import { useAcpApprovalRequests } from "@/features/ai/acp/acpApprovals";
 import { useAcpSpawnRequests } from "@/features/ai/children/acpSpawn";
 import { useSessionNotifications } from "@/features/ai/notifications/useSessionNotifications";
@@ -88,6 +89,7 @@ export default function App() {
   useAcpSpawnRequests();
   useAcpApprovalRequests();
   useAcpBrowserRequests();
+  useAcpPragmaTools();
   useSessionNotifications();
   useAgentStateFeed();
   useWorkingAgentsReport();

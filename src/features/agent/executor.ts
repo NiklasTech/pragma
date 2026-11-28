@@ -17,6 +17,7 @@ import {
 } from "@/features/ai/browser/agentTool";
 import { isSkillPath } from "@/features/ai/skills/paths";
 import { useSkillsStore } from "@/features/ai/skills/store";
+import { pragmaToolLabel } from "@/features/ai/pragmaTools/labels";
 
 import type { AgentStep, AgentTodo } from "./store";
 import { resolveAgentApproval, type AgentApprovalDecision } from "./permissions";
@@ -123,7 +124,9 @@ export function stepLabel(toolName: string, input: unknown): { label: string; de
     case AGENT_TOOL_NAMES.browserConsole:
       return { label: "Read browser console" };
     default:
-      return insightStepLabel(toolName, input) ?? { label: toolName };
+      return (
+        insightStepLabel(toolName, input) ?? pragmaToolLabel(toolName, input) ?? { label: toolName }
+      );
   }
 }
 

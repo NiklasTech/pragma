@@ -145,6 +145,7 @@ fn list_tools(send: ToolSender) -> Value {
         browser_screenshot_tool_definition(),
         browser_console_tool_definition(),
     ];
+    tools.extend(super::tools::definitions());
     if let Ok(reply) = send(LIST_EXTENSION_TOOLS, json!({})) {
         if let Ok(Value::Array(extension_tools)) = serde_json::from_str::<Value>(&reply.text) {
             tools.extend(extension_tools);
@@ -155,8 +156,10 @@ fn list_tools(send: ToolSender) -> Value {
 
 fn call_tool(params: &Value, send: ToolSender) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or("");
-    let forwarded =
-        name == TOOL_NAME || is_browser_tool(name) || name.starts_with(EXTENSION_TOOL_PREFIX);
+    let forwarded = name == TOOL_NAME
+        || is_browser_tool(name)
+        || super::tools::is_pragma_tool(name)
+        || name.starts_with(EXTENSION_TOOL_PREFIX);
     let reply = if forwarded {
         let arguments = params
             .get("arguments")
@@ -314,7 +317,9 @@ mod tests {
             response["result"]["tools"][3]["name"],
             BROWSER_CONSOLE_TOOL_NAME
         );
-        assert_eq!(response["result"]["tools"].as_array().unwrap().len(), 4);
+        let tools = response["result"]["tools"].as_array().unwrap();
+        assert_eq!(tools.len(), 4 + super::super::tools::definitions().len());
+        assert!(tools.iter().any(|tool| tool["name"] == "lsp_diagnostics"));
     }
 
     #[test]
@@ -329,10 +334,28 @@ mod tests {
         };
         let response =
             handle_message(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#, &send).unwrap();
-        assert_eq!(
-            response["result"]["tools"][4]["name"],
-            "ext__word-count__count"
-        );
+        let tools = response["result"]["tools"].as_array().unwrap();
+        assert_eq!(tools.last().unwrap()["name"], "ext__word-count__count");
+    }
+
+    #[test]
+    fn forwards_built_in_tool_calls() {
+        let send = |tool: &str, arguments: Value| {
+            assert_eq!(tool, "lsp_hover");
+            assert_eq!(arguments["symbol"], "run");
+            Ok(SpawnReply {
+                ok: true,
+                text: "fn run()".to_string(),
+                images: Vec::new(),
+            })
+        };
+        let response = handle_message(
+            r#"{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"lsp_hover","arguments":{"path":"a.rs","line":1,"symbol":"run"}}}"#,
+            &send,
+        )
+        .unwrap();
+        assert_eq!(response["result"]["content"][0]["text"], "fn run()");
+        assert_eq!(response["result"]["isError"], false);
     }
 
     #[test]

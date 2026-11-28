@@ -9,6 +9,7 @@ pub mod bridge;
 pub mod cli_config;
 mod protocol;
 pub mod server;
+mod tools;
 
 pub use server::ChildSessionServer;
 
