@@ -15,6 +15,12 @@ const LABELS: Record<string, { label: string; detailKey?: string }> = {
   workspace_info: { label: "Read workspace" },
   local_history: { label: "Read file history", detailKey: "path" },
   local_history_restore: { label: "Restore file", detailKey: "path" },
+  sessions_list: { label: "List sessions" },
+  session_read: { label: "Read session", detailKey: "session" },
+  session_send: { label: "Message session", detailKey: "title" },
+  tasks_list: { label: "List tasks" },
+  task_create: { label: "Add task", detailKey: "title" },
+  task_update: { label: "Update task", detailKey: "task" },
   ask_user: { label: "Ask you", detailKey: "question" },
   notify_user: { label: "Notify you", detailKey: "message" },
 };
