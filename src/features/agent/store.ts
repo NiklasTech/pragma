@@ -28,6 +28,9 @@ export interface AgentApproval {
   args?: unknown;
   description?: string;
   resolve: (approved: boolean) => void;
+  /** Answers to pick from instead of allow and deny, e.g. for a coding CLI's question. */
+  options?: string[];
+  choose?: (option: string) => void;
 }
 
 export interface AgentEditReview {

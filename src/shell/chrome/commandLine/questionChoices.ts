@@ -1,5 +1,5 @@
 import { resolveAcpApproval } from "@/features/ai/acp/acpApprovals";
-import { resolveSpawnApproval } from "@/features/ai/children/acpSpawn";
+import { chooseSpawnOption, resolveSpawnApproval } from "@/features/ai/children/acpSpawn";
 import { stepLabel } from "@/features/agent/executor";
 
 import { requestText, type Question } from "./question";
@@ -27,7 +27,23 @@ export function questionChoices(question: Question, onGo: () => void): QuestionC
   }
   if (question.kind === "spawn") {
     const { sessionId } = question.entry;
-    const { toolCallId } = question.approval;
+    const { toolCallId, options } = question.approval;
+    if (options) {
+      return [
+        ...options.slice(0, 9).map((option, index) => ({
+          key: String(index + 1),
+          label: option,
+          main: index === 0,
+          run: () => chooseSpawnOption(sessionId, toolCallId, option),
+        })),
+        {
+          key: "n",
+          label: "dismiss",
+          run: () => resolveSpawnApproval(sessionId, toolCallId, false),
+        },
+        go,
+      ];
+    }
     return [
       {
         key: "y",
@@ -49,6 +65,9 @@ export function questionSummary(
 ): { text: string; request?: string } {
   if (question.kind === "acp") {
     return { text: `${name} wants to run`, request: requestText(question.approval.toolName) };
+  }
+  if (question.kind === "spawn" && question.approval.options) {
+    return { text: `${name} asks`, request: question.approval.description };
   }
   if (question.kind === "spawn") {
     const { label, detail } = stepLabel(question.approval.toolName, question.approval.args);

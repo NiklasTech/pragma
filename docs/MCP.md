@@ -45,6 +45,13 @@ Example: an agent that changed `src/store.ts` calls `lsp_diagnostics` with `{ "p
 /repo/src/store.ts:42:7: error: Type 'string' is not assignable to type 'number'. [typescript]
 ```
 
+### The user
+
+| Tool          | Arguments             | What it does                                                                                                                                                                                             |
+| ------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ask_user`    | `question`, `options` | Shows a question with 2 to 9 answers on the session and on the command line (keys 1 to 9) and waits for the pick; returns the answer, or that the user dismissed it. The question goes after 14 minutes. |
+| `notify_user` | `message`             | A notification titled with the session: a toast while Pragma is in front, a system notification in the background, as the notification settings allow.                                                   |
+
 ### Extension tools
 
 Extensions can offer tools named `ext__<extension id>__<tool>`; see [EXTENSIONS.md](EXTENSIONS.md).

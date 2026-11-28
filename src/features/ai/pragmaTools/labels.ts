@@ -7,6 +7,8 @@ const LABELS: Record<string, { label: string; detailKey?: string }> = {
   lsp_hover: { label: "Look up symbol", detailKey: "symbol" },
   lsp_document_symbols: { label: "List symbols", detailKey: "path" },
   lsp_workspace_symbols: { label: "Find symbols", detailKey: "query" },
+  ask_user: { label: "Ask you", detailKey: "question" },
+  notify_user: { label: "Notify you", detailKey: "message" },
 };
 
 /// How a built-in Pragma tool call reads in approvals and step lists.
