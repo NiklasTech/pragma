@@ -65,7 +65,7 @@ fn rules_files(names: &[&str]) -> Vec<String> {
     names.iter().map(|name| name.to_string()).collect()
 }
 
-/// Built-in manifests for verified CLI providers.
+/// Built-in manifests for verified CLI providers. Verified facts per CLI: `docs/CODING_CLIS.md`.
 ///
 /// Each entry speaks the Agent Client Protocol (ACP), so the session manager
 /// is manifest-driven and works for any id in this table.
