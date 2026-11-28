@@ -9,9 +9,11 @@ use tokio::sync::{oneshot, Mutex};
 use tokio::time::timeout;
 
 use super::error::{AcpError, Result};
+use super::tool_calls::diffs;
 use super::types::{
     PermissionOption, PermissionOutcome, RequestPermissionRequest, RequestPermissionResponse,
 };
+use crate::commands::ai::ToolCallDiff;
 
 const APPROVAL_TIMEOUT_SECONDS: u64 = 60;
 /// Kimi answers to this id when it sends no options of the standard kinds.
@@ -40,6 +42,9 @@ struct ApprovalEvent {
     /// The agent's own name for "always allow", when it offers one.
     #[serde(skip_serializing_if = "Option::is_none")]
     always_label: Option<String>,
+    /// The file changes the agent asks to make, so the person sees what they allow.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    diffs: Vec<ToolCallDiff>,
 }
 
 /// The option that carries a decision, preferring the exact kind the agent offers.
@@ -99,6 +104,7 @@ impl ApprovalBridge {
             }
             _ => None,
         });
+        let diffs = diffs(&req.tool_call.content);
         let always_label = req
             .options
             .iter()
@@ -119,6 +125,7 @@ impl ApprovalBridge {
             args,
             description: None,
             always_label,
+            diffs,
         };
 
         self.app_handle
@@ -206,5 +213,31 @@ mod tests {
     fn agents_without_options_get_the_legacy_approve_id() {
         let allow = response_for(&[], ApprovalDecision::Allow).map(selected);
         assert_eq!(allow.ok().as_deref(), Some(LEGACY_APPROVE_OPTION));
+    }
+
+    #[test]
+    fn permission_requests_carry_their_diff_and_may_leave_out_content() {
+        let edit: RequestPermissionRequest = serde_json::from_value(serde_json::json!({
+            "sessionId": "s1",
+            "options": [{ "optionId": "allow", "name": "Allow", "kind": "allow_once" }],
+            "toolCall": {
+                "toolCallId": "t1",
+                "title": "Edit a.ts",
+                "rawInput": { "file_path": "/repo/a.ts" },
+                "content": [{ "type": "diff", "path": "/repo/a.ts", "oldText": "a", "newText": "b" }]
+            }
+        }))
+        .expect("edit request");
+        let bare: RequestPermissionRequest = serde_json::from_value(serde_json::json!({
+            "sessionId": "s1",
+            "options": [],
+            "toolCall": { "toolCallId": "t2" }
+        }))
+        .expect("request without title and content");
+
+        let found = diffs(&edit.tool_call.content);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].path, "/repo/a.ts");
+        assert!(bare.tool_call.content.is_empty());
     }
 }
