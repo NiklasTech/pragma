@@ -4,6 +4,7 @@
 mod code;
 mod editor;
 mod user;
+mod workspace;
 
 use serde_json::Value;
 
@@ -15,6 +16,7 @@ pub fn definitions() -> Vec<Value> {
     let mut tools = code::definitions();
     tools.extend(editor::definitions());
     tools.extend(user::definitions());
+    tools.extend(workspace::definitions());
     tools
 }
 

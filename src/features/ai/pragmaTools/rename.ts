@@ -18,7 +18,7 @@ function changedFiles(edits: LspFileEdit[]): string {
 }
 
 /// Renames edit files, so they follow the agent setting for edits like Pragma's own agent.
-function editsNeedApproval(rootPath: string): boolean {
+export function editsNeedApproval(rootPath: string): boolean {
   if (useSettingsStore.getState().ai.yoloMode) return false;
   const { autoApprove } = getAgentSettings(rootPath);
   return autoApprove !== "all" && autoApprove !== "edits";
