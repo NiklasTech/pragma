@@ -21,12 +21,28 @@ struct BridgeConfig {
 }
 
 impl BridgeConfig {
-    fn from_env() -> Option<Self> {
+    fn from_vars(var: impl Fn(&str) -> Option<String>) -> Option<Self> {
         Some(Self {
-            port: std::env::var(PORT_ENV).ok()?.parse().ok()?,
-            token: std::env::var(TOKEN_ENV).ok()?,
-            session_id: std::env::var(SESSION_ENV).ok()?,
+            port: var(PORT_ENV)?.parse().ok()?,
+            token: var(TOKEN_ENV)?,
+            session_id: var(SESSION_ENV)?,
         })
+    }
+
+    fn from_env() -> Option<Self> {
+        Self::from_vars(|name| std::env::var(name).ok())
+    }
+
+    /// Reads the variables from the MCP config file Pragma wrote, for CLIs that cannot pass them.
+    fn from_file(path: &str) -> Option<Self> {
+        let config: Value = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
+        config["mcpServers"]
+            .as_object()?
+            .values()
+            .find_map(|server| {
+                let env = server["env"].as_object()?;
+                Self::from_vars(|name| env.get(name)?.as_str().map(str::to_string))
+            })
     }
 }
 
@@ -209,7 +225,11 @@ fn handle_message(line: &str, send: ToolSender) -> Option<Value> {
 
 /// Runs the stdio MCP server the ACP agent launched; returns the process exit code.
 pub fn run() -> i32 {
-    let Some(config) = BridgeConfig::from_env() else {
+    let config = BridgeConfig::from_env().or_else(|| {
+        let path = std::env::args().nth(2)?;
+        BridgeConfig::from_file(&path)
+    });
+    let Some(config) = config else {
         eprintln!("Pragma child session bridge: missing configuration");
         return 2;
     };
@@ -241,6 +261,23 @@ mod tests {
 
     fn unused(_: &str, _: Value) -> Result<SpawnReply, String> {
         Err("not called".to_string())
+    }
+
+    #[test]
+    fn reads_its_configuration_from_the_mcp_config_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("session.json");
+        let config = json!({ "mcpServers": { "pragma": { "env": {
+            PORT_ENV: "4242", TOKEN_ENV: "secret", SESSION_ENV: "chat-1"
+        } } } });
+        std::fs::write(&path, config.to_string()).unwrap();
+        let config = BridgeConfig::from_file(path.to_str().unwrap()).unwrap();
+        assert_eq!(config.port, 4242);
+        assert_eq!(config.token, "secret");
+        assert_eq!(config.session_id, "chat-1");
+        assert!(
+            BridgeConfig::from_file(dir.path().join("missing.json").to_str().unwrap()).is_none()
+        );
     }
 
     #[test]

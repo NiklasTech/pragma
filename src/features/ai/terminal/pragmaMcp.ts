@@ -2,13 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { useAIStore } from "@/shared/stores/ai";
 
-/** CLIs that load extra MCP servers from a config file given at launch. */
-const MCP_CONFIG_FLAG: Record<string, string> = {
-  "anthropic-claude": "--mcp-config",
-};
+const PLAIN_ARG = /^[\w@%+=:,./-]+$/;
 
-function quotePath(path: string, windows: boolean): string {
-  return windows ? `"${path}"` : `'${path.replace(/'/g, "'\\''")}'`;
+function quoteArg(arg: string, windows: boolean): string {
+  if (PLAIN_ARG.test(arg)) return arg;
+  return windows ? `"${arg}"` : `'${arg.replace(/'/g, "'\\''")}'`;
 }
 
 function isWindows(): boolean {
@@ -19,11 +17,16 @@ function isWindows(): boolean {
 /// It goes last: `--mcp-config` takes several values and would read a following prompt as a file.
 export async function withPragmaMcp(sessionId: string, command: string): Promise<string> {
   const session = useAIStore.getState().chatSessions.find((item) => item.id === sessionId);
-  const flag = session?.cliProviderId ? MCP_CONFIG_FLAG[session.cliProviderId] : undefined;
-  if (!flag || !command) return command;
+  const providerId = session?.cliProviderId;
+  if (!providerId || !command) return command;
   try {
-    const path = await invoke<string>("child_session_mcp_config", { chatSessionId: sessionId });
-    return `${command} ${flag} ${quotePath(path, isWindows())}`;
+    const args = await invoke<string[] | null>("child_session_mcp_config", {
+      chatSessionId: sessionId,
+      providerId,
+    });
+    if (!args) return command;
+    const windows = isWindows();
+    return [command, ...args.map((arg) => quoteArg(arg, windows))].join(" ");
   } catch {
     // Without the bridge the CLI still starts, only without Pragma's tools.
     return command;
