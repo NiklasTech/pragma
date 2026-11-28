@@ -45,6 +45,16 @@ Example: an agent that changed `src/store.ts` calls `lsp_diagnostics` with `{ "p
 /repo/src/store.ts:42:7: error: Type 'string' is not assignable to type 'number'. [typescript]
 ```
 
+### Editor and review
+
+| Tool                | Arguments       | What it does                                                                                                           |
+| ------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `editor_open`       | `path`, `line?` | Opens the file in Pragma's editor at the line; a toast offers to switch to the editor instead of pulling the user away |
+| `editor_show_diff`  | `path`          | Opens the file's uncommitted changes (else its staged ones) as a diff tab                                              |
+| `editor_open_files` |                 | The files open in the editor, the active one and those with unsaved changes                                            |
+| `editor_selection`  |                 | The text selected in the active file with its lines, or the cursor position                                            |
+| `review_request`    | `message?`      | A notice with a Review button that opens the session's review view; the user's comments come back as a message         |
+
 ### The user
 
 | Tool          | Arguments             | What it does                                                                                                                                                                                             |

@@ -338,6 +338,7 @@ export function FileEditor({
         <StickyLinesOverlay view={editorView} enabled={stickyLines} />
         <div
           ref={containerRef}
+          data-file-path={filePath}
           className="h-full w-full"
           onBlur={(e) => {
             const related = e.relatedTarget as HTMLElement | null;
