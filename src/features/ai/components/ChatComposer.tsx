@@ -1,8 +1,7 @@
 "use client";
 
-import { openSettings as openSettingsOverlay } from "@/features/settings/openSettings";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PaperPlaneRight, Plug, Plus, Stop } from "@phosphor-icons/react";
+import { PaperPlaneRight, Plus, Stop } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 import { IconButton } from "@/shared/components/ui/icon-button";
@@ -39,6 +38,7 @@ import { AiModelSelector } from "./AiModelSelector";
 import { ChatToolbar } from "./ChatToolbar";
 import { ComposerMicButton } from "./ComposerMicButton";
 import { ContextPicker, type ContextPickerRef } from "./ContextPicker";
+import { ProviderSetupHint } from "./ProviderSetupHint";
 import { useChatAgentName } from "./useChatAgentName";
 
 interface ChatComposerProps {
@@ -139,10 +139,6 @@ export function ChatComposer({
   useEffect(() => {
     if (focused) textareaRef.current?.focus();
   }, [focused]);
-
-  const openSettings = () => {
-    openSettingsOverlay("agents");
-  };
 
   const moveCursor = useCallback((position: number) => {
     cursorRef.current = position;
@@ -257,17 +253,7 @@ export function ChatComposer({
 
   return (
     <div className="flex flex-col gap-2">
-      {!canChat && (
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-xl border border-border bg-bg-surface py-2 pr-2 pl-3">
-          <Plug size={15} className="shrink-0 text-fg-subtle" />
-          <span className="min-w-[160px] flex-1 text-ui-xs text-fg-muted">
-            Connect an AI provider to start working with Pragma.
-          </span>
-          <Button size="sm" onClick={openSettings} className="ml-auto">
-            Configure a provider in Settings
-          </Button>
-        </div>
-      )}
+      <ProviderSetupHint canChat={canChat} agentName={agentName} />
       {cliSession && <AgentSignIn session={cliSession} />}
       <AgentPlan entries={agentSession.plan} />
       <form

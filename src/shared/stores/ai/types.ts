@@ -186,6 +186,8 @@ export interface AIState {
   // CLI
   cliManifests: CLIManifest[];
   cliStatuses: Record<string, CLIStatus>;
+  /** False until the first check of the coding CLIs finished; their sign-in is unknown before. */
+  cliStatusesLoaded: boolean;
   activeCLIProvider: string | null;
   copilotAuth: {
     authenticated: boolean;
