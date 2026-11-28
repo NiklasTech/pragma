@@ -81,6 +81,7 @@ const initialState: AIState = {
   },
   cliManifests: [],
   cliStatuses: {},
+  cliStatusesLoaded: false,
   activeCLIProvider: null,
 };
 

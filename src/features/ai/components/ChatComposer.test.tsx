@@ -70,7 +70,11 @@ describe("ChatComposer", () => {
     const textarea = html.match(/<textarea[\s\S]*?<\/textarea>/)?.[0] ?? "";
     expect(textarea).not.toContain("disabled=");
     expect(html).toContain('aria-label="Dictate"');
-    expect(html).toContain("Configure a provider in Settings");
     expect(html).toMatch(/aria-label="Send"[^>]*disabled/);
+  });
+
+  it("shows no setup hint while the coding CLIs are still being checked", () => {
+    const html = renderToStaticMarkup(<ChatComposer {...baseProps} canChat={false} />);
+    expect(html).not.toContain("Sign in to a coding CLI");
   });
 });

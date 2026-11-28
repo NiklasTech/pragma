@@ -24,8 +24,10 @@ export const createCLISlice: AISlice<
       for (const s of statuses) {
         map[s.provider_id] = s;
       }
-      set({ cliStatuses: map });
-    } catch {}
+      set({ cliStatuses: map, cliStatusesLoaded: true });
+    } catch {
+      set({ cliStatusesLoaded: true });
+    }
   },
 
   installCLI: async (providerId) => {
