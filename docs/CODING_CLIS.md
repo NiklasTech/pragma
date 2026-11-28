@@ -10,7 +10,7 @@ Lab run: 2026-11-28, macOS 27 arm64, Node 24.21, npm 11.19. Every CLI was instal
 
 | id                        | Agent (`agentInfo`)                             | `loadSession` | `sessionCapabilities`          | MCP over         | Auth methods                                               | `session/new` without login                 |
 | ------------------------- | ----------------------------------------------- | ------------- | ------------------------------ | ---------------- | ---------------------------------------------------------- | ------------------------------------------- |
-| `anthropic-claude`        | `@agentclientprotocol/claude-agent-acp` 0.113.0 | yes           | list, resume, close, fork, ... | stdio, http, sse | none                                                       | ok (uses the macOS keychain login)          |
+| `anthropic-claude`        | `@agentclientprotocol/claude-agent-acp` 0.113.0 | yes           | list, resume, close, fork, ... | stdio, http, sse | none                                                       | ok, also on a CI runner without any login   |
 | `openai-codex`            | `@agentclientprotocol/codex-acp` 2.12.1         | yes           | list, resume, close, fork, ... | stdio, http      | `api-key`, `chat-gpt`                                      | auth required                               |
 | `google-gemini`           | `gemini-cli` 0.71.1                             | yes           | none                           | stdio, http, sse | `oauth-personal`, `gemini-api-key`, `vertex-ai`, `gateway` | auth required ("Gemini API key is missing") |
 | `github-copilot`          | `Copilot` 1.0.117                               | yes           | list, close                    | stdio, http, sse | `copilot-login`                                            | auth required                               |
@@ -22,7 +22,7 @@ Lab run: 2026-11-28, macOS 27 arm64, Node 24.21, npm 11.19. Every CLI was instal
 | `hermes-agent`            | not run                                         |               |                                |                  |                                                            |                                             |
 | Qwen Code (not in Pragma) | `qwen-code` 0.28.7, `qwen --acp`                | yes           | list, resume                   | stdio, http, sse | `openai`                                                   | auth required                               |
 
-All agents speak protocol version 1 and answer `initialize` without a login. Every "auth required" answer is JSON-RPC error `-32000`, which Pragma turns into its sign-in card. Claude Code and OpenCode also sent `available_commands_update` right after `session/new` (49 and 5 commands). Cursor and Hermes install through a shell script that the lab did not run; their rows stay open.
+All agents speak protocol version 1 and answer `initialize` without a login. The CI run on Linux, macOS and Windows (2026-11-28) gave the same answers for the eight npm CLIs. Every "auth required" answer is JSON-RPC error `-32000`, which Pragma turns into its sign-in card. Claude Code and OpenCode also sent `available_commands_update` right after `session/new` (49 and 5 commands). Cursor and Hermes install through a shell script that the lab did not run; their rows stay open.
 
 ## Install
 
