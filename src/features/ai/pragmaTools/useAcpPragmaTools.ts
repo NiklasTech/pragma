@@ -6,6 +6,7 @@ import { unlistenQuietly } from "@/shared/lib/unlisten";
 import { useAIStore } from "@/shared/stores/ai";
 
 import { sessionCwd } from "../worktree/cwd";
+import { BROWSER_TOOLS } from "./browserTools";
 import { CODE_TOOLS } from "./codeTools";
 import { EDITOR_TOOLS } from "./editorTools";
 import { SESSION_TOOLS } from "./sessionTools";
@@ -23,6 +24,7 @@ export const PRAGMA_TOOLS: Record<string, PragmaToolHandler> = {
   ...USER_TOOLS,
   ...SESSION_TOOLS,
   ...TASK_TOOLS,
+  ...BROWSER_TOOLS,
   ...WORKSPACE_TOOLS,
 };
 

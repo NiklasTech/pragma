@@ -21,6 +21,11 @@ const LABELS: Record<string, { label: string; detailKey?: string }> = {
   tasks_list: { label: "List tasks" },
   task_create: { label: "Add task", detailKey: "title" },
   task_update: { label: "Update task", detailKey: "task" },
+  browser_navigate: { label: "Navigate browser", detailKey: "url" },
+  browser_read: { label: "Read page" },
+  browser_click: { label: "Click in browser", detailKey: "text" },
+  browser_type: { label: "Type in browser", detailKey: "text" },
+  browser_network: { label: "Check failed requests" },
   ask_user: { label: "Ask you", detailKey: "question" },
   notify_user: { label: "Notify you", detailKey: "message" },
 };

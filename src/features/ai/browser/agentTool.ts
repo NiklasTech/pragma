@@ -29,7 +29,7 @@ function readLimitInput(input: unknown): number {
   return Math.min(MAX_CONSOLE_LIMIT, Math.max(1, Math.floor(limit)));
 }
 
-function workspaceRoot(): string {
+export function workspaceRoot(): string {
   return useFileExplorerStore.getState().rootPath ?? "default";
 }
 
@@ -45,7 +45,7 @@ export function runOpenBrowserTool(input: unknown): string {
   return `Opened ${parsed.url} in the browser pane. The user can see it; the page content is not returned.`;
 }
 
-function currentBrowserPage(): { leafId: string; url: string } {
+export function currentBrowserPage(): { leafId: string; url: string } {
   const root = selectRoot(useAgentsPanesStore.getState(), paneTreeKey(workspaceRoot()));
   const leaf = findBrowserLeaf(root);
   const url = leaf ? currentUrl(useBrowserHistoryStore.getState().byLeaf[leaf.id]) : null;

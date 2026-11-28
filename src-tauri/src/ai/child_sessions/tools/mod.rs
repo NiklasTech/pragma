@@ -2,6 +2,7 @@
 //! their calls in the window that holds the session (`src/features/ai/pragmaTools/`).
 
 mod agents;
+mod browser;
 mod code;
 mod editor;
 mod user;
@@ -18,6 +19,7 @@ pub fn definitions() -> Vec<Value> {
     tools.extend(editor::definitions());
     tools.extend(user::definitions());
     tools.extend(agents::definitions());
+    tools.extend(browser::definitions());
     tools.extend(workspace::definitions());
     tools
 }
