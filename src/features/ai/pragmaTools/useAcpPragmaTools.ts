@@ -7,13 +7,18 @@ import { useAIStore } from "@/shared/stores/ai";
 
 import { sessionCwd } from "../worktree/cwd";
 import { CODE_TOOLS } from "./codeTools";
+import { EDITOR_TOOLS } from "./editorTools";
 import { USER_TOOLS } from "./userTools";
 import type { PragmaToolHandler } from "./types";
 
 const PRAGMA_TOOL_EVENT = "pragma_tool_request";
 
 /** The built-in tools by name; each group adds its handlers here. */
-export const PRAGMA_TOOLS: Record<string, PragmaToolHandler> = { ...CODE_TOOLS, ...USER_TOOLS };
+export const PRAGMA_TOOLS: Record<string, PragmaToolHandler> = {
+  ...CODE_TOOLS,
+  ...EDITOR_TOOLS,
+  ...USER_TOOLS,
+};
 
 interface PragmaToolEvent {
   requestId: string;

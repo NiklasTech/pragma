@@ -7,6 +7,11 @@ const LABELS: Record<string, { label: string; detailKey?: string }> = {
   lsp_hover: { label: "Look up symbol", detailKey: "symbol" },
   lsp_document_symbols: { label: "List symbols", detailKey: "path" },
   lsp_workspace_symbols: { label: "Find symbols", detailKey: "query" },
+  editor_open: { label: "Open in editor", detailKey: "path" },
+  editor_show_diff: { label: "Show changes", detailKey: "path" },
+  editor_open_files: { label: "List open files" },
+  editor_selection: { label: "Read selection" },
+  review_request: { label: "Ask for review" },
   ask_user: { label: "Ask you", detailKey: "question" },
   notify_user: { label: "Notify you", detailKey: "message" },
 };
