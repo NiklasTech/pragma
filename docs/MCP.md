@@ -17,12 +17,19 @@ Paths are absolute or relative to the session's working folder (its worktree, el
 
 ### Sessions and browser
 
-| Tool                       | Arguments                                          | What it does                                                     |
-| -------------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| `agent_spawn_session`      | `title`, `prompt`, `kind?`, `environment?`, `cli?` | Starts a child session (conversation or coding CLI); always asks |
-| `agent_open_browser`       | `url`                                              | Opens an http(s) URL in Pragma's browser pane                    |
-| `agent_browser_screenshot` |                                                    | Screenshot of the browser pane as an image                       |
-| `agent_browser_console`    | `limit?`                                           | Recent console messages, errors and failed requests of the page  |
+| Tool                       | Arguments                                          | What it does                                                                                         |
+| -------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `agent_spawn_session`      | `title`, `prompt`, `kind?`, `environment?`, `cli?` | Starts a child session (conversation or coding CLI); always asks                                     |
+| `agent_open_browser`       | `url`                                              | Opens an http(s) URL in Pragma's browser pane                                                        |
+| `agent_browser_screenshot` |                                                    | Screenshot of the browser pane as an image                                                           |
+| `agent_browser_console`    | `limit?`                                           | Recent console messages, errors and failed requests of the page                                      |
+| `browser_navigate`         | `url?`, `action?`                                  | Opens a URL in the browser pane, or goes back, forward or reloads                                    |
+| `browser_read`             |                                                    | Title, URL, visible text and the shown links, buttons and fields of the page                         |
+| `browser_click`            | `selector?`, `text?`                               | Clicks the element matched by CSS selector or by its visible label                                   |
+| `browser_type`             | `selector?`, `text?`, `value`, `submit?`           | Sets a field's value (also in React apps), optionally presses Enter and submits the form             |
+| `browser_network`          |                                                    | The page's failed requests since it loaded: HTTP errors, failed fetches, resources that did not load |
+
+The browser tools work on pages shown in the pane's frame, such as the local dev server; they act through the script that already records the console, which answers only Pragma itself.
 
 ### Code intelligence
 
